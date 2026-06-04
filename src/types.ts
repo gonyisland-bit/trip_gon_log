@@ -42,3 +42,41 @@ export interface TimelineItem {
 export interface TimelineData {
   [date: string]: TimelineItem[];
 }
+
+export interface FlightItem {
+  id: number;
+  title: string; // e.g. "OUTBOUND FLIGHT"
+  date: string;
+  fromCode: string;
+  fromTerminal: string;
+  fromTime: string;
+  toCode: string;
+  toTerminal: string;
+  toTime: string;
+  flightNo: string;
+  seat: string;
+  pnr: string;
+}
+
+export interface StayItem {
+  id: number;
+  status: string; // e.g. "BOOKING CONFIRMED"
+  title: string;
+  dateRange: string;
+  address: string;
+  memo: string;
+  confNo: string;
+  img: string;
+}
+
+export interface TransitItem {
+  id: number;
+  ticketType: string; // e.g. "TRAIN TICKET"
+  date: string;
+  title: string;
+  route: string;
+  time: string;
+  seat: string;
+  bookingRef: string;
+}
+

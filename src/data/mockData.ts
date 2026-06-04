@@ -1,5 +1,5 @@
 import { Sun, Cloud, CloudRain } from 'lucide-react';
-import { Trip, Plan, TripDate, TimelineData } from '../types';
+import { Trip, Plan, TripDate, TimelineData, FlightItem, StayItem, TransitItem } from '../types';
 
 export const initialTrips: Trip[] = [
   { id: 1, title: 'KYOTO, JAPAN', date: '2025.04.12 - 04.16', tags: ['2025', 'Kyoto', 'Personal'], img: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=1600&auto=format&fit=crop', mapImg: 'https://images.unsplash.com/photo-1588421357574-87938a86fa28?q=80&w=1600&auto=format&fit=crop', locationStr: 'Kyoto, Japan' },
@@ -31,5 +31,68 @@ export const timelineDataByDate: TimelineData = {
   '2025.04.13': [
     { id: 7, time: '09:00 AM', type: 'activity', place: '아라시야마 치쿠린', cost: '무료', memo: '아침 일찍 방문하여 사람 없을 때 산책', x: 30, y: 35, location: 'Arashiyama, Ukyo Ward, Kyoto', hours: '24 Hours Open', link: 'https://maps.google.com/?q=Arashiyama+Bamboo+Grove', img: 'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?q=80&w=200&auto=format&fit=crop' },
     { id: 8, time: '12:30 PM', type: 'dining', place: '아라시야마 요시무라', cost: '¥2,500', memo: '도게츠교가 보이는 소바 맛집', x: 33, y: 40, location: 'Arashiyama Nakaoshitacho, Nishikyo Ward, Kyoto', hours: '11:00 AM - 17:00 PM', link: 'https://maps.google.com/?q=Arashiyama+Yoshimura', img: null },
+  ]
+};
+
+export const initialFlightsByTrip: { [tripId: number]: FlightItem[] } = {
+  1: [
+    {
+      id: 1,
+      title: 'OUTBOUND FLIGHT',
+      date: '2025.04.12',
+      fromCode: 'ICN',
+      fromTerminal: 'TERMINAL T1',
+      fromTime: '08:00 AM',
+      toCode: 'KIX',
+      toTerminal: 'TERMINAL T1',
+      toTime: '10:10 AM',
+      flightNo: 'KE721',
+      seat: '14A',
+      pnr: 'A8B9C2'
+    },
+    {
+      id: 2,
+      title: 'INBOUND FLIGHT',
+      date: '2025.04.16',
+      fromCode: 'KIX',
+      fromTerminal: 'TERMINAL T1',
+      fromTime: '18:30 PM',
+      toCode: 'ICN',
+      toTerminal: 'TERMINAL T2',
+      toTime: '20:30 PM',
+      flightNo: 'KE722',
+      seat: '14B',
+      pnr: 'A8B9C2'
+    }
+  ]
+};
+
+export const initialStaysByTrip: { [tripId: number]: StayItem[] } = {
+  1: [
+    {
+      id: 1,
+      status: 'BOOKING CONFIRMED',
+      title: 'ACE HOTEL KYOTO',
+      dateRange: '2025.04.12 - 04.15 (3 Nights)',
+      address: '214-1 Kurumayacho, Nakagyo Ward, Kyoto',
+      memo: '스탠다드 킹 룸. 체크인 시 여권 필요. 조식 포함.',
+      confNo: 'HTL-9921',
+      img: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=800&auto=format&fit=crop'
+    }
+  ]
+};
+
+export const initialTransitByTrip: { [tripId: number]: TransitItem[] } = {
+  1: [
+    {
+      id: 1,
+      ticketType: 'TRAIN TICKET',
+      date: '2025.04.12',
+      title: 'HARUKA EXPRESS',
+      route: 'Kansai Airport → Kyoto Station',
+      time: '11:14 AM',
+      seat: 'Car 4, 12A',
+      bookingRef: 'TRN-881'
+    }
   ]
 };
