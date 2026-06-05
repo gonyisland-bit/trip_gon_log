@@ -23,7 +23,7 @@ import { auth, storage } from '../firebase';
 
 interface JourneyDetailPageProps {
   isLoggedIn: boolean;
-  trip: Trip;
+  trip: Trip | undefined;
   isEditMode: boolean;
   onUpdateTrip: (tripId: number, field: string, value: any) => void;
   
@@ -113,18 +113,10 @@ export const JourneyDetailPage: React.FC<JourneyDetailPageProps> = ({
   
   isDarkMode,
 }) => {
+  // ── ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURN ──
   const [activeTab, setActiveTab] = useState<TabType>('timeline');
   const [selectedDate, setSelectedDate] = useState<string>('ALL');
   const [expandedItemId, setExpandedItemId] = useState<number | null>(null);
-  
-  // trip이 undefined일 때 하위 렌더링 연산 이전에 로딩 스크린으로 즉시 차단
-  if (!trip) {
-    return (
-      <div className="flex-grow flex items-center justify-center bg-[#F9F8F6] dark:bg-[#111111] h-[80vh] text-xs font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
-        Loading Journey Details...
-      </div>
-    );
-  }
 
   // Lightbox & Gallery state
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -134,17 +126,6 @@ export const JourneyDetailPage: React.FC<JourneyDetailPageProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const itemRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const dateBarRef = useRef<HTMLDivElement>(null);
-
-  // --- 날짜 동적 계산 (안전 장치 추가) ---
-  const generatedDates = generateDateList(trip?.date || '');
-  const dynamicDates = [
-    { id: 'all', date: 'ALL', label: 'Overall' },
-    ...generatedDates.map((d, index) => ({
-      id: d,
-      date: d,
-      label: `Day ${index + 1}`
-    }))
-  ];
 
   // --- 기존의 좌표 복구 및 Geocoding 자동화 효과 (마이그레이션) ---
   useEffect(() => {
@@ -167,7 +148,6 @@ export const JourneyDetailPage: React.FC<JourneyDetailPageProps> = ({
           if (item.place && (item.lat === undefined || item.lng === undefined)) {
             const coords = await fetchCoordinates(item.place);
             if (coords) {
-              // App.tsx의 handler 가 문자열로 저장하므로 string으로 업데이트 처리
               onUpdateTimelineItem(date, item.id, 'lat' as any, String(coords.lat));
               onUpdateTimelineItem(date, item.id, 'lng' as any, String(coords.lng));
             }
@@ -187,6 +167,27 @@ export const JourneyDetailPage: React.FC<JourneyDetailPageProps> = ({
       activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
   }, [selectedDate]);
+
+  // ── CONDITIONAL EARLY RETURN (after all hooks) ──
+  // trip이 undefined일 때 로딩 스크린 표시 (모든 훅 호출 이후에 배치해야 Rules of Hooks 준수)
+  if (!trip) {
+    return (
+      <div className="flex-grow flex items-center justify-center bg-[#F9F8F6] dark:bg-[#111111] h-[80vh] text-xs font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
+        Loading Journey Details...
+      </div>
+    );
+  }
+
+  // --- 날짜 동적 계산 (안전 장치 추가) ---
+  const generatedDates = generateDateList(trip?.date || '');
+  const dynamicDates = [
+    { id: 'all', date: 'ALL', label: 'Overall' },
+    ...generatedDates.map((d, index) => ({
+      id: d,
+      date: d,
+      label: `Day ${index + 1}`
+    }))
+  ];
 
   // 타임라인 선택 및 정렬 (안전 참조 처리)
   const currentTimeline = selectedDate === 'ALL' 

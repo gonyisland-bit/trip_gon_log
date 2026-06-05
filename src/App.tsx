@@ -58,9 +58,11 @@ function App() {
   const [staysByTrip, setStaysByTrip] = useState<{ [id: number]: StayItem[] }>(initialStaysByTrip);
   const [transitByTrip, setTransitByTrip] = useState<{ [id: number]: TransitItem[] }>(initialTransitByTrip);
 
+  // Firebase 로딩 중에 trips[0]을 폴백으로 쓰면 잘못된 여정이 보임.
+  // undefined를 반환하면 App의 로딩 스피너가 표시되고, 데이터 로드 후 올바른 여정으로 업데이트됨.
   const activeTrip = trips.find(t => String(t.id) === String(activeTripId)) 
     || plans.find(p => String(p.id) === String(activeTripId)) 
-    || trips[0];
+    || undefined;
 
   useEffect(() => {
     if (!isLoggedIn) setIsEditMode(false);
