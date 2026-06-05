@@ -498,8 +498,9 @@ export function JourneyDetailPage({
   };
 
   const handleAddTimelineItem = (date: string) => {
+    const newId = Date.now();
     const newItem: TimelineItem = {
-      id: Date.now(),
+      id: newId,
       time: '12:00 PM',
       type: 'activity',
       place: '새로운 장소',
@@ -511,6 +512,19 @@ export function JourneyDetailPage({
       tripId: trip.id
     };
     setDraftTimeline(prev => [...prev, newItem]);
+    setExpandedItemId(newId);
+
+    // Scroll and focus newly added item
+    setTimeout(() => {
+      if (itemRefs.current[newId]) {
+        itemRefs.current[newId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      const inputEl = document.getElementById(`title-input-${newId}`) as HTMLInputElement | null;
+      if (inputEl) {
+        inputEl.focus();
+        inputEl.select();
+      }
+    }, 250);
   };
 
   const handleDeleteTimelineItem = (id: number) => {
@@ -922,6 +936,7 @@ export function JourneyDetailPage({
                               {isEditing ? (
                                 <div className="w-full" onClick={(e) => e.stopPropagation()}>
                                   <input
+                                    id={`title-input-${item.id}`}
                                     type="text"
                                     value={item.place}
                                     onChange={(e) => updateTimelineItem(item.id, 'place', e.target.value)}

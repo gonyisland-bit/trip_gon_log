@@ -199,6 +199,13 @@ export function MapArea({
       hasFitRef.current = true;
     }
 
+    // Pan to active marker if expandedItemId is set
+    if (expandedItemId !== null && markersRef.current[expandedItemId]) {
+      const marker = markersRef.current[expandedItemId];
+      const latLng = marker.getLatLng();
+      map.setView(latLng, Math.max(map.getZoom(), 14), { animate: true });
+    }
+
   }, [mapPoints, expandedItemId, isDarkMode, mapReady, isInteractive]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Effect 4: Map click → open Google Maps ────────────────────────────────
