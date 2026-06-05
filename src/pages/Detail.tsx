@@ -60,38 +60,34 @@ const generateDateList = (dateRangeStr: string): string[] => {
   if (parts.length < 2) return [];
   
   const startStr = parts[0].trim().replace(/\./g, '-');
-  let endStr = parts[1].trim().replace(/\./g, '-');
+  const rawEndStr = parts[1].trim().replace(/\./g, '-');
   
   // 종료일에 연도가 없는 경우 (예: '04-16'), 시작일의 연도를 앞에 붙임
   const startYear = startStr.split('-')[0];
-  if (endStr.split('-').length < 3) {
-    endStr = `${startYear}-${endStr}`;
-  }
+  const endStr = rawEndStr.split('-').length < 3 ? `${startYear}-${rawEndStr}` : rawEndStr;
   
-  const start = new Date(startStr);
-  const end = new Date(endStr);
+  const startDate = new Date(startStr);
+  const endDate = new Date(endStr);
   
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
     return [];
   }
   
   // 종료일이 시작일보다 앞인 경우 (연도가 넘어간 케이스) 연도+1 처리
-  if (end < start) {
-    end.setFullYear(end.getFullYear() + 1);
+  if (endDate < startDate) {
+    endDate.setFullYear(endDate.getFullYear() + 1);
   }
 
   const list: string[] = [];
-  let current = new Date(start);
+  const cursor = new Date(startDate);
   
   // 무한 루프 예방 (최대 100일 제한)
-  let safetyCounter = 0;
-  while (current <= end && safetyCounter < 100) {
-    const yyyy = current.getFullYear();
-    const mm = String(current.getMonth() + 1).padStart(2, '0');
-    const dd = String(current.getDate()).padStart(2, '0');
+  for (let i = 0; i < 100 && cursor <= endDate; i++) {
+    const yyyy = cursor.getFullYear();
+    const mm = String(cursor.getMonth() + 1).padStart(2, '0');
+    const dd = String(cursor.getDate()).padStart(2, '0');
     list.push(`${yyyy}.${mm}.${dd}`);
-    current.setDate(current.getDate() + 1);
-    safetyCounter++;
+    cursor.setDate(cursor.getDate() + 1);
   }
   
   return list;

@@ -64,40 +64,37 @@ export const MapArea: React.FC<MapAreaProps> = ({
     }));
 
   // 만약 개별 핀들의 위경도가 없다면 여행 중심(trip.lat, trip.lng)을 사용하거나 폴백 좌표 사용
-  const baseCenter: Coordinates = trip.lat !== undefined && trip.lng !== undefined && !isNaN(Number(trip.lat)) && !isNaN(Number(trip.lng))
+  const baseCenter: Coordinates = (trip.lat !== undefined && trip.lng !== undefined && !isNaN(Number(trip.lat)) && !isNaN(Number(trip.lng)))
     ? { lat: Number(trip.lat), lng: Number(trip.lng) }
     : { lat: 35.0116, lng: 135.7681 }; // 기본 폴백: 교토
 
-  // 3. 최적의 지도 중심 및 줌 레벨 계산 (try/catch로 수학 예외 방어)
-  let center: Coordinates = baseCenter;
-  let zoom = 13;
-
-  try {
-    if (validCoords.length > 0) {
+  // 3. 최적의 지도 중심 및 줌 레벨 계산 (IIFE + try/catch로 Rolldown TDZ 버그 및 수학 예외 방어)
+  const { center, zoom } = ((): { center: Coordinates; zoom: number } => {
+    if (validCoords.length === 0) return { center: baseCenter, zoom: 13 };
+    try {
       const bounds = calculateMapBounds(validCoords, dimensions.width, dimensions.height);
-      center = bounds.center;
-      zoom = bounds.zoom;
+      return { center: bounds.center, zoom: bounds.zoom };
+    } catch (e) {
+      return { center: baseCenter, zoom: 13 };
     }
-  } catch {
-    center = baseCenter;
-    zoom = 13;
-  }
+  })();
 
-  // 4. 구글 정적 지도 이미지 URL 획득 (try/catch로 예외 방어)
-  let staticMapUrl = trip.mapImg || '';
-  try {
-    staticMapUrl = getStaticMapUrl(
-      center.lat,
-      center.lng,
-      zoom,
-      dimensions.width,
-      dimensions.height,
-      isDarkMode,
-      validCoords
-    );
-  } catch {
-    staticMapUrl = trip.mapImg || '';
-  }
+  // 4. 구글 정적 지도 이미지 URL 획득 (IIFE + try/catch로 예외 방어)
+  const staticMapUrl = ((): string => {
+    try {
+      return getStaticMapUrl(
+        center.lat,
+        center.lng,
+        zoom,
+        dimensions.width,
+        dimensions.height,
+        isDarkMode,
+        validCoords
+      );
+    } catch (e) {
+      return trip.mapImg || '';
+    }
+  })();
 
   // 5. 각 위경도를 정적 지도 크기 대비 화면상의 % (x, y) 좌표로 매핑 (NaN/Infinity 2차 방어)
   const pinsWithXY = validCoords.map(c => {
@@ -114,7 +111,7 @@ export const MapArea: React.FC<MapAreaProps> = ({
       const px = isNaN(point.x) || !isFinite(point.x) ? 50 : point.x;
       const py = isNaN(point.y) || !isFinite(point.y) ? 50 : point.y;
       return { ...c, x: px, y: py };
-    } catch {
+    } catch (e) {
       return { ...c, x: 50, y: 50 };
     }
   });
