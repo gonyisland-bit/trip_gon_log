@@ -8,7 +8,7 @@ export interface Coordinates {
 /**
  * 구글 Geocoding API를 호출하여 장소명/주소를 위도, 경도로 변환합니다.
  */
-export const fetchCoordinates = async (address: string): Promise<Coordinates | null> => {
+export async function fetchCoordinates(address: string): Promise<Coordinates | null> {
   if (!address || address.trim() === '') return null;
   
   try {
@@ -27,14 +27,14 @@ export const fetchCoordinates = async (address: string): Promise<Coordinates | n
     console.error('Error fetching coordinates:', error);
   }
   return null;
-};
+}
 
 /**
  * Web Mercator Projection 공식을 사용하여 특정 위경도가 
  * 중심점(centerLat, centerLng) 및 줌 레벨(zoom)을 가진 정적 지도(가로 w, 세로 h) 상의 
  * 상대 % 좌표(x, y)의 어느 곳에 매핑되는지 계산합니다.
  */
-export const latLngToPoint = (
+export function latLngToPoint(
   lat: number,
   lng: number,
   centerLat: number,
@@ -42,7 +42,7 @@ export const latLngToPoint = (
   zoom: number,
   width: number,
   height: number
-): { x: number; y: number } => {
+): { x: number; y: number } {
   const TILE_SIZE = 256;
   const safeWidth = width > 50 ? width : 800;
   const safeHeight = height > 50 ? height : 600;
@@ -80,16 +80,16 @@ export const latLngToPoint = (
     x: isNaN(rx) || !isFinite(rx) ? 50 : rx,
     y: isNaN(ry) || !isFinite(ry) ? 50 : ry
   };
-};
+}
 
 /**
  * 여러 개의 좌표 목록을 감싸는 최적의 지도 중심과 줌 레벨을 동적으로 계산합니다.
  */
-export const calculateMapBounds = (
+export function calculateMapBounds(
   coords: Coordinates[],
   mapWidth: number,
   mapHeight: number
-): { center: Coordinates; zoom: number } => {
+): { center: Coordinates; zoom: number } {
   const WORLD_DIM = { height: 256, width: 256 };
   const ZOOM_MAX = 21;
   const ZOOM_MIN = 1;
@@ -150,12 +150,12 @@ export const calculateMapBounds = (
     center: { lat: centerLat, lng: centerLng },
     zoom: safeZoom
   };
-};
+}
 
 /**
  * Google Static Maps API URL을 조립합니다. (다크/라이트 모드 대응)
  */
-export const getStaticMapUrl = (
+export function getStaticMapUrl(
   centerLat: number,
   centerLng: number,
   zoom: number,
@@ -163,7 +163,7 @@ export const getStaticMapUrl = (
   height: number,
   isDarkMode: boolean,
   coords: Coordinates[]
-): string => {
+): string {
   const safeWidth = width > 50 ? width : 800;
   const safeHeight = height > 50 ? height : 600;
   const safeZoom = isNaN(zoom) || !isFinite(zoom) ? 13 : Math.max(1, Math.min(zoom, 21));
@@ -201,4 +201,4 @@ export const getStaticMapUrl = (
     : '';
 
   return `https://maps.googleapis.com/maps/api/staticmap?center=${centerLat},${centerLng}&zoom=${safeZoom}&size=${safeWidth}x${safeHeight}&scale=2&maptype=roadmap${styleString}${visibleString}&key=${GOOGLE_MAPS_API_KEY}`;
-};
+}

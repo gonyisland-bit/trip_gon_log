@@ -18,7 +18,7 @@ interface MapAreaProps {
   isDarkMode: boolean;
 }
 
-export const MapArea: React.FC<MapAreaProps> = ({
+export function MapArea({
   trip,
   isEditMode,
   mapPoints,
@@ -26,7 +26,7 @@ export const MapArea: React.FC<MapAreaProps> = ({
   handleItemToggle,
   selectedDate,
   isDarkMode,
-}) => {
+}: MapAreaProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
 
@@ -218,4 +218,4 @@ export const MapArea: React.FC<MapAreaProps> = ({
       </div>
     </div>
   );
-};
+}

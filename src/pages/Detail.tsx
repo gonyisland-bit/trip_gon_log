@@ -9,6 +9,7 @@ import { FlightCard } from '../components/FlightCard';
 import { StayCard } from '../components/StayCard';
 import { TransitCard } from '../components/TransitCard';
 import { Lightbox } from '../components/Lightbox';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { 
   Trip, 
   TimelineItem, 
@@ -334,15 +335,22 @@ export const JourneyDetailPage: React.FC<JourneyDetailPageProps> = ({
         </div>
         
         {/* Dynamic Map Area */}
-        <MapArea 
-          trip={trip}
-          isEditMode={isEditMode}
-          mapPoints={mapPoints}
-          expandedItemId={expandedItemId}
-          handleItemToggle={handleItemToggle}
-          selectedDate={selectedDate}
-          isDarkMode={isDarkMode}
-        />
+        <ErrorBoundary fallback={
+          <div className="flex-grow flex flex-col items-center justify-center bg-[#EAE8E3] dark:bg-[#1A1A1A] text-black/40 dark:text-white/40 p-6 relative">
+            <span className="text-[10px] uppercase tracking-widest font-bold z-10 mb-2">Map Temporary Unavailable</span>
+            <img src={trip.mapImg || 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1600&auto=format&fit=crop'} className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none" />
+          </div>
+        }>
+          <MapArea 
+            trip={trip}
+            isEditMode={isEditMode}
+            mapPoints={mapPoints}
+            expandedItemId={expandedItemId}
+            handleItemToggle={handleItemToggle}
+            selectedDate={selectedDate}
+            isDarkMode={isDarkMode}
+          />
+        </ErrorBoundary>
       </section>
 
       {/* Right: Record / Tabs Section */}
