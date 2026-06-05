@@ -56,6 +56,7 @@ function App() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [activeTripId, setActiveTripId] = useState<number | null>(null);
+  const [dbError, setDbError] = useState<string | null>(null);
   
   const [timelineData, setTimelineData] = useState<TimelineData>({});
   const [flightsByTrip, setFlightsByTrip] = useState<{ [id: number]: FlightItem[] }>({});
@@ -143,8 +144,10 @@ function App() {
         list.push(doc.data() as Trip);
       });
       setTrips(list.sort((a, b) => a.id - b.id));
+      setDbError(null);
     }, (err) => {
       console.error("Trips snapshot subscription error:", err);
+      setDbError(err.message);
     });
 
     const unsubPlans = onSnapshot(collection(db, 'users', uid, 'plans'), (snapshot) => {
@@ -153,8 +156,10 @@ function App() {
         list.push(doc.data() as Plan);
       });
       setPlans(list.sort((a, b) => a.id - b.id));
+      setDbError(null);
     }, (err) => {
       console.error("Plans snapshot subscription error:", err);
+      setDbError(err.message);
     });
 
     const unsubTimeline = onSnapshot(collection(db, 'users', uid, 'timeline'), (snapshot) => {
@@ -170,8 +175,10 @@ function App() {
         grouped[date].sort((a, b) => a.id - b.id);
       });
       setTimelineData(grouped);
+      setDbError(null);
     }, (err) => {
       console.error("Timeline snapshot subscription error:", err);
+      setDbError(err.message);
     });
 
     const unsubFlights = onSnapshot(collection(db, 'users', uid, 'flights'), (snapshot) => {
@@ -187,8 +194,10 @@ function App() {
         grouped[Number(tid)].sort((a, b) => a.id - b.id);
       });
       setFlightsByTrip(grouped);
+      setDbError(null);
     }, (err) => {
       console.error("Flights snapshot subscription error:", err);
+      setDbError(err.message);
     });
 
     const unsubStays = onSnapshot(collection(db, 'users', uid, 'stays'), (snapshot) => {
@@ -204,8 +213,10 @@ function App() {
         grouped[Number(tid)].sort((a, b) => a.id - b.id);
       });
       setStaysByTrip(grouped);
+      setDbError(null);
     }, (err) => {
       console.error("Stays snapshot subscription error:", err);
+      setDbError(err.message);
     });
 
     const unsubTransit = onSnapshot(collection(db, 'users', uid, 'transits'), (snapshot) => {
@@ -221,8 +232,10 @@ function App() {
         grouped[Number(tid)].sort((a, b) => a.id - b.id);
       });
       setTransitByTrip(grouped);
+      setDbError(null);
     }, (err) => {
       console.error("Transit snapshot subscription error:", err);
+      setDbError(err.message);
     });
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -665,6 +678,18 @@ function App() {
     <div className={`${isDarkMode ? 'dark' : ''} overflow-x-hidden w-full`}>
       <div className="min-h-screen bg-[#F9F8F6] text-[#111111] dark:bg-[#111111] dark:text-[#F9F8F6] font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 w-full overflow-x-hidden">
         
+        {/* Firebase Error/Status Banners */}
+        {dbError && (
+          <div className="bg-red-500/10 border-b border-red-500/20 backdrop-blur-md px-6 py-3 text-center text-xs tracking-wide text-red-600 dark:text-red-400 font-medium z-50">
+            ⚠️ Firebase 연결 오류: {dbError}. Firestore의 보안 규칙(Security Rules)이나 Config 키가 올바른지 확인해 주세요.
+          </div>
+        )}
+        {!dbError && trips.length === 0 && plans.length === 0 && (
+          <div className="bg-amber-500/10 border-b border-amber-500/20 backdrop-blur-md px-6 py-3 text-center text-xs tracking-wide text-amber-700 dark:text-amber-400 font-medium z-50">
+            ℹ️ 현재 Firebase(Public 경로)에 데이터가 없습니다. <strong>우측 상단의 로그인 버튼을 통해 로그인해 주시면</strong>, 기존의 기본 목업 데이터가 Firestore로 자동 업로드(Seed)됩니다.
+          </div>
+        )}
+
         {/* Global Navigation */}
         <Navigation 
           currentView={currentView}
