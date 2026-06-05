@@ -1,7 +1,7 @@
 {
-  "name": "trip_mood",
+  "name": "trip_gon_log",
   "private": true,
-  "version": "0.1a",
+  "version": "0.1c",
   "type": "module",
   "scripts": {
     "dev": "vite",

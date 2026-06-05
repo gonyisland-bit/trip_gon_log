@@ -7,6 +7,7 @@ import { PlanHubPage } from './pages/Plan';
 import { JourneyDetailPage } from './pages/Detail';
 import { AuthModal } from './components/AuthModal';
 import { CreateTripModal } from './components/CreateTripModal';
+import { ManageTripsModal } from './components/ManageTripsModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { fetchCoordinates } from './utils/googleMapsHelper';
 import { 
@@ -47,24 +48,32 @@ function App() {
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+  const [isManageModalOpen, setIsManageModalOpen] = useState<boolean>(false);
   const [createModalType, setCreateModalType] = useState<'archive' | 'plan'>('archive');
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
-  const [trips, setTrips] = useState<Trip[]>(initialTrips);
-  const [plans, setPlans] = useState<Plan[]>(initialPlans);
-  const [activeTripId, setActiveTripId] = useState<number>(initialTrips[0].id);
   
-  // App-level lifted states for timeline & custom cards
-  const [timelineData, setTimelineData] = useState<TimelineData>(timelineDataByDate);
-  const [flightsByTrip, setFlightsByTrip] = useState<{ [id: number]: FlightItem[] }>(initialFlightsByTrip);
-  const [staysByTrip, setStaysByTrip] = useState<{ [id: number]: StayItem[] }>(initialStaysByTrip);
-  const [transitByTrip, setTransitByTrip] = useState<{ [id: number]: TransitItem[] }>(initialTransitByTrip);
+  // Start with empty state for clean public load
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [activeTripId, setActiveTripId] = useState<number | null>(null);
+  
+  const [timelineData, setTimelineData] = useState<TimelineData>({});
+  const [flightsByTrip, setFlightsByTrip] = useState<{ [id: number]: FlightItem[] }>({});
+  const [staysByTrip, setStaysByTrip] = useState<{ [id: number]: StayItem[] }>({});
+  const [transitByTrip, setTransitByTrip] = useState<{ [id: number]: TransitItem[] }>({});
 
-  // activeTrip: find by id first; fall back to trips[0] only (not plans)
-  // Falling back to plans[0] caused wrong trip (Tokyo) to show during Firestore sync.
+  // activeTrip: strictly match activeTripId. Do not automatically fall back to trips[0]
+  // to avoid rendering one trip's map with another trip's details during sync.
   const activeTrip = trips.find(t => String(t.id) === String(activeTripId)) 
     || plans.find(p => String(p.id) === String(activeTripId)) 
-    || trips[0]
     || undefined;
+
+  // Sync activeTripId with trips[0]?.id if it is null and trips have loaded
+  useEffect(() => {
+    if (activeTripId === null && trips.length > 0) {
+      setActiveTripId(trips[0].id);
+    }
+  }, [trips, activeTripId]);
 
   useEffect(() => {
     if (!isLoggedIn) setIsEditMode(false);
@@ -79,8 +88,8 @@ function App() {
     }
   }, [isDarkMode]);
 
-  // Firestore seeding script
-  const seedUserData = async (uid: string) => {
+  // Firestore seeding script (stores all mock data under 'public')
+  const seedUserData = async (uid: string = 'public') => {
     const tripsRef = collection(db, 'users', uid, 'trips');
     const tripsSnapshot = await getDocs(tripsRef);
     if (!tripsSnapshot.empty) {
@@ -99,7 +108,7 @@ function App() {
 
     Object.entries(timelineDataByDate).forEach(([date, items]) => {
       items.forEach(item => {
-        batch.set(doc(db, 'users', uid, 'timeline', String(item.id)), { ...item, date });
+        batch.set(doc(db, 'users', uid, 'timeline', String(item.id)), { ...item, date, tripId: 1 });
       });
     });
 
@@ -124,134 +133,103 @@ function App() {
     await batch.commit();
   };
 
-  // Real-time Firestore sync
+  // Real-time Firestore sync pointing to public path by default
   useEffect(() => {
-    let unsubTrips = () => {};
-    let unsubPlans = () => {};
-    let unsubTimeline = () => {};
-    let unsubFlights = () => {};
-    let unsubStays = () => {};
-    let unsubTransit = () => {};
+    const uid = 'public';
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      // Clean up previous listeners if any
-      unsubTrips();
-      unsubPlans();
-      unsubTimeline();
-      unsubFlights();
-      unsubStays();
-      unsubTransit();
+    const unsubTrips = onSnapshot(collection(db, 'users', uid, 'trips'), (snapshot) => {
+      const list: Trip[] = [];
+      snapshot.forEach(doc => {
+        list.push(doc.data() as Trip);
+      });
+      setTrips(list.sort((a, b) => a.id - b.id));
+    }, (err) => {
+      console.error("Trips snapshot subscription error:", err);
+    });
 
+    const unsubPlans = onSnapshot(collection(db, 'users', uid, 'plans'), (snapshot) => {
+      const list: Plan[] = [];
+      snapshot.forEach(doc => {
+        list.push(doc.data() as Plan);
+      });
+      setPlans(list.sort((a, b) => a.id - b.id));
+    }, (err) => {
+      console.error("Plans snapshot subscription error:", err);
+    });
+
+    const unsubTimeline = onSnapshot(collection(db, 'users', uid, 'timeline'), (snapshot) => {
+      const grouped: TimelineData = {};
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const date = data.date as string;
+        if (!grouped[date]) grouped[date] = [];
+        const { date: _, ...item } = data;
+        grouped[date].push({ ...item, date } as TimelineItem);
+      });
+      Object.keys(grouped).forEach(date => {
+        grouped[date].sort((a, b) => a.id - b.id);
+      });
+      setTimelineData(grouped);
+    }, (err) => {
+      console.error("Timeline snapshot subscription error:", err);
+    });
+
+    const unsubFlights = onSnapshot(collection(db, 'users', uid, 'flights'), (snapshot) => {
+      const grouped: { [tripId: number]: FlightItem[] } = {};
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const tripId = data.tripId as number;
+        if (!grouped[tripId]) grouped[tripId] = [];
+        const { tripId: _, ...item } = data;
+        grouped[tripId].push(item as FlightItem);
+      });
+      Object.keys(grouped).forEach(tid => {
+        grouped[Number(tid)].sort((a, b) => a.id - b.id);
+      });
+      setFlightsByTrip(grouped);
+    }, (err) => {
+      console.error("Flights snapshot subscription error:", err);
+    });
+
+    const unsubStays = onSnapshot(collection(db, 'users', uid, 'stays'), (snapshot) => {
+      const grouped: { [tripId: number]: StayItem[] } = {};
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const tripId = data.tripId as number;
+        if (!grouped[tripId]) grouped[tripId] = [];
+        const { tripId: _, ...item } = data;
+        grouped[tripId].push(item as StayItem);
+      });
+      Object.keys(grouped).forEach(tid => {
+        grouped[Number(tid)].sort((a, b) => a.id - b.id);
+      });
+      setStaysByTrip(grouped);
+    }, (err) => {
+      console.error("Stays snapshot subscription error:", err);
+    });
+
+    const unsubTransit = onSnapshot(collection(db, 'users', uid, 'transits'), (snapshot) => {
+      const grouped: { [tripId: number]: TransitItem[] } = {};
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const tripId = data.tripId as number;
+        if (!grouped[tripId]) grouped[tripId] = [];
+        const { tripId: _, ...item } = data;
+        grouped[tripId].push(item as TransitItem);
+      });
+      Object.keys(grouped).forEach(tid => {
+        grouped[Number(tid)].sort((a, b) => a.id - b.id);
+      });
+      setTransitByTrip(grouped);
+    }, (err) => {
+      console.error("Transit snapshot subscription error:", err);
+    });
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setIsLoggedIn(true);
-        try {
-          await seedUserData(user.uid);
-        } catch (err) {
-          console.error("Error seeding user data:", err);
-        }
-
-        const uid = user.uid;
-
-        try {
-          unsubTrips = onSnapshot(collection(db, 'users', uid, 'trips'), (snapshot) => {
-            const list: Trip[] = [];
-            snapshot.forEach(doc => {
-              list.push(doc.data() as Trip);
-            });
-            setTrips(list.sort((a, b) => a.id - b.id));
-          }, (err) => {
-            console.error("Trips snapshot subscription error:", err);
-          });
-
-          unsubPlans = onSnapshot(collection(db, 'users', uid, 'plans'), (snapshot) => {
-            const list: Plan[] = [];
-            snapshot.forEach(doc => {
-              list.push(doc.data() as Plan);
-            });
-            setPlans(list.sort((a, b) => a.id - b.id));
-          }, (err) => {
-            console.error("Plans snapshot subscription error:", err);
-          });
-
-          unsubTimeline = onSnapshot(collection(db, 'users', uid, 'timeline'), (snapshot) => {
-            const grouped: TimelineData = {};
-            snapshot.forEach(doc => {
-              const data = doc.data();
-              const date = data.date as string;
-              if (!grouped[date]) grouped[date] = [];
-              const { date: _, ...item } = data;
-              grouped[date].push(item as TimelineItem);
-            });
-            Object.keys(grouped).forEach(date => {
-              grouped[date].sort((a, b) => a.id - b.id);
-            });
-            setTimelineData(grouped);
-          }, (err) => {
-            console.error("Timeline snapshot subscription error:", err);
-          });
-
-          unsubFlights = onSnapshot(collection(db, 'users', uid, 'flights'), (snapshot) => {
-            const grouped: { [tripId: number]: FlightItem[] } = {};
-            snapshot.forEach(doc => {
-              const data = doc.data();
-              const tripId = data.tripId as number;
-              if (!grouped[tripId]) grouped[tripId] = [];
-              const { tripId: _, ...item } = data;
-              grouped[tripId].push(item as FlightItem);
-            });
-            Object.keys(grouped).forEach(tid => {
-              grouped[Number(tid)].sort((a, b) => a.id - b.id);
-            });
-            setFlightsByTrip(grouped);
-          }, (err) => {
-            console.error("Flights snapshot subscription error:", err);
-          });
-
-          unsubStays = onSnapshot(collection(db, 'users', uid, 'stays'), (snapshot) => {
-            const grouped: { [tripId: number]: StayItem[] } = {};
-            snapshot.forEach(doc => {
-              const data = doc.data();
-              const tripId = data.tripId as number;
-              if (!grouped[tripId]) grouped[tripId] = [];
-              const { tripId: _, ...item } = data;
-              grouped[tripId].push(item as StayItem);
-            });
-            Object.keys(grouped).forEach(tid => {
-              grouped[Number(tid)].sort((a, b) => a.id - b.id);
-            });
-            setStaysByTrip(grouped);
-          }, (err) => {
-            console.error("Stays snapshot subscription error:", err);
-          });
-
-          unsubTransit = onSnapshot(collection(db, 'users', uid, 'transits'), (snapshot) => {
-            const grouped: { [tripId: number]: TransitItem[] } = {};
-            snapshot.forEach(doc => {
-              const data = doc.data();
-              const tripId = data.tripId as number;
-              if (!grouped[tripId]) grouped[tripId] = [];
-              const { tripId: _, ...item } = data;
-              grouped[tripId].push(item as TransitItem);
-            });
-            Object.keys(grouped).forEach(tid => {
-              grouped[Number(tid)].sort((a, b) => a.id - b.id);
-            });
-            setTransitByTrip(grouped);
-          }, (err) => {
-            console.error("Transit snapshot subscription error:", err);
-          });
-        } catch (err) {
-          console.error("Error setting up firestore snapshots:", err);
-        }
-
       } else {
         setIsLoggedIn(false);
-        setTrips(initialTrips);
-        setPlans(initialPlans);
-        setTimelineData(timelineDataByDate);
-        setFlightsByTrip(initialFlightsByTrip);
-        setStaysByTrip(initialStaysByTrip);
-        setTransitByTrip(initialTransitByTrip);
       }
     });
 
@@ -265,6 +243,13 @@ function App() {
       unsubTransit();
     };
   }, []);
+
+  // Auto-seed if database is empty when admin logs in
+  useEffect(() => {
+    if (isLoggedIn && trips.length === 0 && plans.length === 0) {
+      seedUserData('public');
+    }
+  }, [isLoggedIn, trips.length, plans.length]);
 
   // Sync state with browser History API on initial load
   useEffect(() => {
@@ -329,13 +314,10 @@ function App() {
 
   const handleUpdateTrip = async (tripId: number, field: string, value: any) => {
     if (!isLoggedIn) return;
-    const user = auth.currentUser;
-    if (!user) return;
-
     const isPlan = plans.some(p => p.id === tripId);
     const collectionName = isPlan ? 'plans' : 'trips';
     try {
-      await setDoc(doc(db, 'users', user.uid, collectionName, String(tripId)), {
+      await setDoc(doc(db, 'users', 'public', collectionName, String(tripId)), {
         [field]: value
       }, { merge: true });
     } catch (err: any) {
@@ -346,11 +328,9 @@ function App() {
 
   const handleMoveToArchive = async (plan: Plan) => {
     if (!isLoggedIn) return alert("로그인 후 이용 가능합니다.");
-    const user = auth.currentUser;
-    if (!user) return;
 
-    const planRef = doc(db, 'users', user.uid, 'plans', String(plan.id));
-    const tripRef = doc(db, 'users', user.uid, 'trips', String(plan.id));
+    const planRef = doc(db, 'users', 'public', 'plans', String(plan.id));
+    const tripRef = doc(db, 'users', 'public', 'trips', String(plan.id));
 
     const newTrip: Trip = { 
       ...plan, 
@@ -405,12 +385,11 @@ function App() {
     };
 
     try {
-      // 1. Save journey doc immediately (before geocoding)
-      await setDoc(doc(db, 'users', user.uid, collectionName, String(newId)), newJourney);
+      // 1. Save journey doc immediately
+      await setDoc(doc(db, 'users', 'public', collectionName, String(newId)), newJourney);
 
-      // 2. Generate default template timeline items by date
+      // 2. Generate default template timeline items
       const generateTemplateDays = (): { date: string; items: any[] }[] => {
-        // Parse dateRange: 'YYYY.MM.DD - YYYY.MM.DD'
         const parts = dateRange.split(' - ');
         if (parts.length < 2) return [];
         const parseDate = (s: string) => {
@@ -445,7 +424,6 @@ function App() {
           let items: any[] = [];
 
           if (isFirst && totalDays === 1) {
-            // Single day trip
             items = [
               { id: baseId,     time: '08:00 AM', type: 'transit',  place: '출국 공항 도착',          cost: '-',   memo: '탑승 수속 및 출국심사', date },
               { id: baseId + 1, time: '10:00 AM', type: 'transit',  place: '항공기 탑승 (출발)',       cost: '-',   memo: '항공편 출발', date },
@@ -455,7 +433,6 @@ function App() {
               { id: baseId + 5, time: '09:00 PM', type: 'transit',  place: '항공기 탑승 (귀국)',       cost: '-',   memo: '귀국 항공편 탑승', date },
             ];
           } else if (isFirst) {
-            // First day: departure
             items = [
               { id: baseId,     time: '08:00 AM', type: 'transit',  place: '출국 공항 도착',          cost: '-',   memo: '탑승 수속 및 출국심사', date },
               { id: baseId + 1, time: '10:00 AM', type: 'transit',  place: '항공기 탑승 (출발)',       cost: '-',   memo: '항공편 출발', date },
@@ -465,7 +442,6 @@ function App() {
               { id: baseId + 5, time: '07:00 PM', type: 'dining',   place: '저녁 식사',               cost: '-',   memo: '현지 식당 탐방', date },
             ];
           } else if (isLast) {
-            // Last day: return
             items = [
               { id: baseId,     time: '08:00 AM', type: 'dining',   place: '아침 식사',               cost: '-',   memo: '숙소 조식 또는 근처 카페', date },
               { id: baseId + 1, time: '10:00 AM', type: 'stay',     place: '숙소 체크아웃',           cost: '-',   memo: '체크아웃 후 짐 보관', date },
@@ -475,7 +451,6 @@ function App() {
               { id: baseId + 5, time: '06:00 PM', type: 'transit',  place: '항공기 탑승 (귀국)',       cost: '-',   memo: '귀국 항공편 탑승', date },
             ];
           } else {
-            // Middle days
             items = [
               { id: baseId,     time: '08:00 AM', type: 'dining',   place: '아침 식사',               cost: '-',   memo: '숙소 조식 또는 인근 카페', date },
               { id: baseId + 1, time: '10:00 AM', type: 'activity', place: `${cityDisplay} 오전 관람`, cost: '-',   memo: '주요 명소 방문', date },
@@ -490,26 +465,25 @@ function App() {
         });
       };
 
-      // 3. Batch-write template timeline items
       const templateDays = generateTemplateDays();
       if (templateDays.length > 0) {
         const batch = writeBatch(db);
         templateDays.forEach(({ date, items }) => {
           items.forEach(item => {
-            batch.set(doc(db, 'users', user.uid, 'timeline', String(item.id)), item);
+            batch.set(doc(db, 'users', 'public', 'timeline', String(item.id)), { ...item, tripId: newId });
           });
         });
         await batch.commit();
       }
 
-      // 4. Navigate to the new journey immediately
+      // Navigate to detail page
       navigateTo('detail', newId);
 
-      // 5. Background geocoding for the trip location
+      // Background geocoding
       fetchCoordinates(location).then(async (coords) => {
-        if (coords && user) {
+        if (coords) {
           try {
-            await setDoc(doc(db, 'users', user.uid, collectionName, String(newId)), {
+            await setDoc(doc(db, 'users', 'public', collectionName, String(newId)), {
               lat: coords.lat,
               lng: coords.lng
             }, { merge: true });
@@ -526,235 +500,166 @@ function App() {
     }
   };
 
-  // --- Handlers for Timeline Items ---
-  const handleUpdateTimelineItem = async (date: string, itemId: number, field: keyof TimelineItem, value: string) => {
+  // --- Core save handler for Detail page Edit/Save ---
+  const handleSaveJourneyDetails = async (
+    tripId: number,
+    updatedTrip: Trip,
+    updatedTimeline: TimelineItem[],
+    updatedFlights: FlightItem[],
+    updatedStays: StayItem[],
+    updatedTransits: TransitItem[]
+  ) => {
     if (!isLoggedIn) return;
-    const user = auth.currentUser;
-    if (!user) return;
-
-    // Special case for Detail page date hack
-    if (itemId === 0 && field === 'time') {
-      await handleUpdateTrip(activeTripId, 'date', value);
-      return;
-    }
 
     try {
-      await setDoc(doc(db, 'users', user.uid, 'timeline', String(itemId)), {
-        [field]: value
-      }, { merge: true });
+      const batch = writeBatch(db);
+
+      const isPlan = plans.some(p => p.id === tripId);
+      const collectionName = isPlan ? 'plans' : 'trips';
+      const tripRef = doc(db, 'users', 'public', collectionName, String(tripId));
+      batch.set(tripRef, updatedTrip, { merge: true });
+
+      // Clean timeline items for this trip
+      const timelineRef = collection(db, 'users', 'public', 'timeline');
+      const timelineSnap = await getDocs(timelineRef);
+      timelineSnap.forEach(doc => {
+        const data = doc.data();
+        if (Number(data.tripId) === Number(tripId)) {
+          batch.delete(doc.ref);
+        }
+      });
+      // Add updated timeline items
+      updatedTimeline.forEach(item => {
+        const { originDate: _, ...cleanItem } = item as any;
+        const itemRef = doc(db, 'users', 'public', 'timeline', String(cleanItem.id));
+        batch.set(itemRef, { ...cleanItem, tripId });
+      });
+
+      // Sync Flights
+      const flightsRef = collection(db, 'users', 'public', 'flights');
+      const flightsSnap = await getDocs(flightsRef);
+      flightsSnap.forEach(doc => {
+        const data = doc.data();
+        if (Number(data.tripId) === Number(tripId)) {
+          batch.delete(doc.ref);
+        }
+      });
+      updatedFlights.forEach(item => {
+        const itemRef = doc(db, 'users', 'public', 'flights', String(item.id));
+        batch.set(itemRef, { ...item, tripId });
+      });
+
+      // Sync Stays
+      const staysRef = collection(db, 'users', 'public', 'stays');
+      const staysSnap = await getDocs(staysRef);
+      staysSnap.forEach(doc => {
+        const data = doc.data();
+        if (Number(data.tripId) === Number(tripId)) {
+          batch.delete(doc.ref);
+        }
+      });
+      updatedStays.forEach(item => {
+        const itemRef = doc(db, 'users', 'public', 'stays', String(item.id));
+        batch.set(itemRef, { ...item, tripId });
+      });
+
+      // Sync Transits
+      const transitsRef = collection(db, 'users', 'public', 'transits');
+      const transitsSnap = await getDocs(transitsRef);
+      transitsSnap.forEach(doc => {
+        const data = doc.data();
+        if (Number(data.tripId) === Number(tripId)) {
+          batch.delete(doc.ref);
+        }
+      });
+      updatedTransits.forEach(item => {
+        const itemRef = doc(db, 'users', 'public', 'transits', String(item.id));
+        batch.set(itemRef, { ...item, tripId });
+      });
+
+      await batch.commit();
+      alert("성공적으로 저장되었습니다.");
     } catch (err: any) {
-      console.error("Error updating timeline item:", err);
-      alert("타임라인 업데이트에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+      console.error("Error saving journey details:", err);
+      alert("저장에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+      throw err;
     }
   };
 
-  const handleDeleteTimelineItem = async (date: string, itemId: number) => {
+  const handleDeleteJourney = async (tripId: number) => {
     if (!isLoggedIn) return;
-    const user = auth.currentUser;
-    if (!user) return;
 
     try {
-      await deleteDoc(doc(db, 'users', user.uid, 'timeline', String(itemId)));
+      const batch = writeBatch(db);
+
+      const isPlan = plans.some(p => p.id === tripId);
+      const collectionName = isPlan ? 'plans' : 'trips';
+      const tripRef = doc(db, 'users', 'public', collectionName, String(tripId));
+      batch.delete(tripRef);
+
+      // Clean timeline items for this trip
+      const timelineRef = collection(db, 'users', 'public', 'timeline');
+      const timelineSnap = await getDocs(timelineRef);
+      timelineSnap.forEach(doc => {
+        const data = doc.data();
+        if (Number(data.tripId) === Number(tripId)) {
+          batch.delete(doc.ref);
+        }
+      });
+
+      // Sync Flights
+      const flightsRef = collection(db, 'users', 'public', 'flights');
+      const flightsSnap = await getDocs(flightsRef);
+      flightsSnap.forEach(doc => {
+        const data = doc.data();
+        if (Number(data.tripId) === Number(tripId)) {
+          batch.delete(doc.ref);
+        }
+      });
+
+      // Sync Stays
+      const staysRef = collection(db, 'users', 'public', 'stays');
+      const staysSnap = await getDocs(staysRef);
+      staysSnap.forEach(doc => {
+        const data = doc.data();
+        if (Number(data.tripId) === Number(tripId)) {
+          batch.delete(doc.ref);
+        }
+      });
+
+      // Sync Transits
+      const transitsRef = collection(db, 'users', 'public', 'transits');
+      const transitsSnap = await getDocs(transitsRef);
+      transitsSnap.forEach(doc => {
+        const data = doc.data();
+        if (Number(data.tripId) === Number(tripId)) {
+          batch.delete(doc.ref);
+        }
+      });
+
+      await batch.commit();
+      alert("여정이 성공적으로 삭제되었습니다.");
+      navigateTo('home');
     } catch (err: any) {
-      console.error("Error deleting timeline item:", err);
-      alert("타임라인 삭제에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+      console.error("Error deleting journey:", err);
+      alert("삭제에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
     }
   };
 
-  const handleAddTimelineItem = async (date: string) => {
-    if (!isLoggedIn) return;
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const newItemId = Date.now();
-    const newItem = {
-      id: newItemId,
-      time: '12:00 PM',
-      type: 'activity',
-      place: '새로운 장소',
-      cost: '-',
-      memo: '메모를 입력하세요',
-      x: 50,
-      y: 50,
-      date: date
-    };
-    try {
-      await setDoc(doc(db, 'users', user.uid, 'timeline', String(newItemId)), newItem);
-    } catch (err: any) {
-      console.error("Error adding timeline item:", err);
-      alert("타임라인 추가에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+  // Redirect guest if they try to view a Plan detail page
+  useEffect(() => {
+    if (currentView === 'detail' && activeTrip) {
+      const isPlan = plans.some(p => String(p.id) === String(activeTrip.id));
+      if (!isLoggedIn && isPlan) {
+        alert("이 계획 여정은 로그인 후 조회할 수 있습니다.");
+        navigateTo('home', null, true);
+      }
     }
-  };
+  }, [currentView, activeTrip, isLoggedIn, plans]);
 
-  // --- Handlers for Flights ---
-  const handleUpdateFlight = async (itemId: number, field: keyof FlightItem, val: string) => {
-    if (!isLoggedIn) return;
-    const user = auth.currentUser;
-    if (!user) return;
-
-    try {
-      await setDoc(doc(db, 'users', user.uid, 'flights', String(itemId)), {
-        [field]: val
-      }, { merge: true });
-    } catch (err: any) {
-      console.error("Error updating flight:", err);
-      alert("항공 정보 업데이트에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
-    }
-  };
-
-  const handleDeleteFlight = async (itemId: number) => {
-    if (!isLoggedIn) return;
-    const user = auth.currentUser;
-    if (!user) return;
-
-    try {
-      await deleteDoc(doc(db, 'users', user.uid, 'flights', String(itemId)));
-    } catch (err: any) {
-      console.error("Error deleting flight:", err);
-      alert("항공 정보 삭제에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
-    }
-  };
-
-  const handleAddFlight = async (title: string) => {
-    if (!isLoggedIn) return;
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const newFlightId = Date.now();
-    const newFlight = {
-      id: newFlightId,
-      title: title,
-      date: 'YYYY.MM.DD',
-      fromCode: 'ICN',
-      fromTerminal: 'TERMINAL T1',
-      fromTime: '08:00 AM',
-      toCode: 'KIX',
-      toTerminal: 'TERMINAL T1',
-      toTime: '10:00 AM',
-      flightNo: 'KE000',
-      seat: '00A',
-      pnr: '000000',
-      tripId: activeTripId
-    };
-    try {
-      await setDoc(doc(db, 'users', user.uid, 'flights', String(newFlightId)), newFlight);
-    } catch (err: any) {
-      console.error("Error adding flight:", err);
-      alert("항공 정보 추가에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
-    }
-  };
-
-  // --- Handlers for Stays ---
-  const handleUpdateStay = async (itemId: number, field: keyof StayItem, val: string) => {
-    if (!isLoggedIn) return;
-    const user = auth.currentUser;
-    if (!user) return;
-
-    try {
-      await setDoc(doc(db, 'users', user.uid, 'stays', String(itemId)), {
-        [field]: val
-      }, { merge: true });
-    } catch (err: any) {
-      console.error("Error updating stay:", err);
-      alert("숙소 정보 업데이트에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
-    }
-  };
-
-  const handleDeleteStay = async (itemId: number) => {
-    if (!isLoggedIn) return;
-    const user = auth.currentUser;
-    if (!user) return;
-
-    try {
-      await deleteDoc(doc(db, 'users', user.uid, 'stays', String(itemId)));
-    } catch (err: any) {
-      console.error("Error deleting stay:", err);
-      alert("숙소 정보 삭제에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
-    }
-  };
-
-  const handleAddStay = async () => {
-    if (!isLoggedIn) return;
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const newStayId = Date.now();
-    const newStay = {
-      id: newStayId,
-      status: 'BOOKING CONFIRMED',
-      title: '새로운 숙소',
-      dateRange: 'YYYY.MM.DD - YYYY.MM.DD (0 Nights)',
-      address: '숙소 주소를 입력하세요',
-      memo: '메모를 입력하세요',
-      confNo: 'HTL-0000',
-      img: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=800&auto=format&fit=crop',
-      tripId: activeTripId
-    };
-    try {
-      await setDoc(doc(db, 'users', user.uid, 'stays', String(newStayId)), newStay);
-    } catch (err: any) {
-      console.error("Error adding stay:", err);
-      alert("숙소 정보 추가에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
-    }
-  };
-
-  // --- Handlers for Transit ---
-  const handleUpdateTransit = async (itemId: number, field: keyof TransitItem, val: string) => {
-    if (!isLoggedIn) return;
-    const user = auth.currentUser;
-    if (!user) return;
-
-    try {
-      await setDoc(doc(db, 'users', user.uid, 'transits', String(itemId)), {
-        [field]: val
-      }, { merge: true });
-    } catch (err: any) {
-      console.error("Error updating transit:", err);
-      alert("교통 정보 업데이트에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
-    }
-  };
-
-  const handleDeleteTransit = async (itemId: number) => {
-    if (!isLoggedIn) return;
-    const user = auth.currentUser;
-    if (!user) return;
-
-    try {
-      await deleteDoc(doc(db, 'users', user.uid, 'transits', String(itemId)));
-    } catch (err: any) {
-      console.error("Error deleting transit:", err);
-      alert("교통 정보 삭제에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
-    }
-  };
-
-  const handleAddTransit = async () => {
-    if (!isLoggedIn) return;
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const newTransitId = Date.now();
-    const newTransit = {
-      id: newTransitId,
-      ticketType: 'TRAIN TICKET',
-      date: 'YYYY.MM.DD',
-      title: '열차/이동 수단 이름',
-      route: '출발지 → 도착지',
-      time: '12:00 PM',
-      seat: 'Car 0, 00A',
-      bookingRef: 'TRN-000',
-      tripId: activeTripId
-    };
-    try {
-      await setDoc(doc(db, 'users', user.uid, 'transits', String(newTransitId)), newTransit);
-    } catch (err: any) {
-      console.error("Error adding transit:", err);
-      alert("교통 정보 추가에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
-    }
-  };
-
-  const activeFlights = flightsByTrip[activeTripId] || [];
-  const activeStays = staysByTrip[activeTripId] || [];
-  const activeTransits = transitByTrip[activeTripId] || [];
+  const activeFlights = flightsByTrip[activeTripId || 0] || [];
+  const activeStays = staysByTrip[activeTripId || 0] || [];
+  const activeTransits = transitByTrip[activeTripId || 0] || [];
 
   return (
     <div className={`${isDarkMode ? 'dark' : ''} overflow-x-hidden w-full`}>
@@ -766,13 +671,12 @@ function App() {
           navigateTo={navigateTo}
           isLoggedIn={isLoggedIn}
           setIsLoggedIn={setIsLoggedIn}
-          isEditMode={isEditMode}
-          setIsEditMode={setIsEditMode}
           isDarkMode={isDarkMode}
           setIsDarkMode={setIsDarkMode}
           showSettings={showSettings}
           setShowSettings={setShowSettings}
           openAuthModal={(mode) => { setAuthModalMode(mode); setIsAuthModalOpen(true); }}
+          openManageModal={() => setIsManageModalOpen(true)}
         />
 
         {/* View Routing */}
@@ -783,8 +687,6 @@ function App() {
               trips={trips} 
               plans={plans} 
               handleMoveToArchive={handleMoveToArchive}
-              isEditMode={isEditMode}
-              onUpdateTrip={handleUpdateTrip}
             />
           )}
           {currentView === 'archive' && (
@@ -792,8 +694,7 @@ function App() {
               trips={trips} 
               onNavigate={navigateTo} 
               onAddArchive={handleAddArchive}
-              isEditMode={isEditMode}
-              onUpdateTrip={handleUpdateTrip}
+              isLoggedIn={isLoggedIn}
             />
           )}
           {currentView === 'plan' && (
@@ -802,42 +703,35 @@ function App() {
               onNavigate={navigateTo} 
               onAddPlan={handleAddPlan}
               handleMoveToArchive={handleMoveToArchive}
-              isEditMode={isEditMode}
-              onUpdateTrip={handleUpdateTrip}
+              isLoggedIn={isLoggedIn}
             />
           )}
           {currentView === 'detail' && (
-            activeTrip ? (
-              <ErrorBoundary>
-                <JourneyDetailPage 
-                  isLoggedIn={isLoggedIn} 
-                  trip={activeTrip}
-                  isEditMode={isEditMode}
-                  onUpdateTrip={handleUpdateTrip}
-                  
-                  timelineData={timelineData}
-                  onUpdateTimelineItem={handleUpdateTimelineItem}
-                  onDeleteTimelineItem={handleDeleteTimelineItem}
-                  onAddTimelineItem={handleAddTimelineItem}
+            activeTrip ? (() => {
+              const activeTimelineData: TimelineData = {};
+              Object.entries(timelineData).forEach(([date, items]) => {
+                const filtered = items.filter(item => Number(item.tripId) === Number(activeTrip.id));
+                if (filtered.length > 0) {
+                  activeTimelineData[date] = filtered;
+                }
+              });
 
-                  flights={activeFlights}
-                  onUpdateFlight={handleUpdateFlight}
-                  onDeleteFlight={handleDeleteFlight}
-                  onAddFlight={handleAddFlight}
-
-                  stays={activeStays}
-                  onUpdateStay={handleUpdateStay}
-                  onDeleteStay={handleDeleteStay}
-                  onAddStay={handleAddStay}
-
-                  transits={activeTransits}
-                  onUpdateTransit={handleUpdateTransit}
-                  onDeleteTransit={handleDeleteTransit}
-                  onAddTransit={handleAddTransit}
-                  isDarkMode={isDarkMode}
-                />
-              </ErrorBoundary>
-            ) : (
+              return (
+                <ErrorBoundary>
+                  <JourneyDetailPage 
+                    isLoggedIn={isLoggedIn} 
+                    trip={activeTrip}
+                    timelineData={activeTimelineData}
+                    flights={activeFlights}
+                    stays={activeStays}
+                    transits={activeTransits}
+                    onSave={handleSaveJourneyDetails}
+                    onDelete={handleDeleteJourney}
+                    isDarkMode={isDarkMode}
+                  />
+                </ErrorBoundary>
+              );
+            })() : (
               <div className="min-h-[60vh] flex flex-col items-center justify-center bg-[#F9F8F6] dark:bg-[#111111] transition-colors w-full">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black dark:border-white mb-2"></div>
                 <span className="text-[10px] uppercase tracking-widest font-bold text-black/40 dark:text-white/40">Loading Journey Data...</span>
@@ -861,6 +755,17 @@ function App() {
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
           onCreate={handleCreateJourney}
+        />
+
+        {/* Manage Trips Modal Popup */}
+        <ManageTripsModal
+          isOpen={isManageModalOpen}
+          onClose={() => setIsManageModalOpen(false)}
+          trips={trips}
+          plans={plans}
+          onUpdateTrip={handleUpdateTrip}
+          onDeleteJourney={handleDeleteJourney}
+          onMoveToArchive={handleMoveToArchive}
         />
       </div>
     </div>

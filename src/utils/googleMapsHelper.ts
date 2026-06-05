@@ -230,3 +230,58 @@ export function getStaticMapUrl(
 
   return `https://maps.googleapis.com/maps/api/staticmap?center=${centerLat},${centerLng}&zoom=${safeZoom}&size=${safeWidth}x${safeHeight}&scale=2&maptype=roadmap${styleString}${visibleString}&key=${GOOGLE_MAPS_API_KEY}`;
 }
+
+export interface PlacePrediction {
+  description: string;
+  placeId: string;
+}
+
+/**
+ * google.maps.places.AutocompleteService를 호출하여 자동완성 예측 검색 결과 리스트를 가져옵니다.
+ */
+export async function fetchPlacePredictions(input: string): Promise<PlacePrediction[]> {
+  if (!input || input.trim() === '') return [];
+  
+  const google = (window as any).google;
+  if (!google || !google.maps || !google.maps.places) {
+    console.warn("Google Maps Places API not loaded.");
+    return [];
+  }
+
+  const service = new google.maps.places.AutocompleteService();
+  return new Promise((resolve) => {
+    service.getPlacePredictions({ input }, (predictions: any, status: any) => {
+      if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+        resolve(
+          predictions.map((p: any) => ({
+            description: p.description,
+            placeId: p.place_id
+          }))
+        );
+      } else {
+        resolve([]);
+      }
+    });
+  });
+}
+
+/**
+ * placeId를 기반으로 Google Geocoding API를 통해 위경도 좌표를 조회합니다.
+ */
+export async function fetchCoordinatesByPlaceId(placeId: string): Promise<Coordinates | null> {
+  if (!placeId) return null;
+  try {
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?place_id=${placeId}&key=${GOOGLE_MAPS_API_KEY}`
+    );
+    const data = await response.json();
+    if (data.status === 'OK' && data.results && data.results.length > 0) {
+      const { lat, lng } = data.results[0].geometry.location;
+      return { lat, lng };
+    }
+  } catch (error) {
+    console.error('Failed to fetch coordinates by placeId:', error);
+  }
+  return null;
+}
+

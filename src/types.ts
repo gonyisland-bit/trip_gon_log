@@ -43,6 +43,7 @@ export interface TimelineItem {
   lat?: number;
   lng?: number;
   date?: string;
+  tripId?: number;
 }
 
 export interface TimelineData {

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Clock, Plane, Bed, Train, User, Edit2, Trash2, 
-  Image as ImageIcon, ChevronUp, ChevronDown, MapPin, Map, Plus, Loader2
+  Image as ImageIcon, ChevronUp, ChevronDown, MapPin, Map, Plus, Loader2, Search
 } from 'lucide-react';
 import { MapArea } from '../components/MapArea';
 import { ImageEditOverlay } from '../components/ImageEditOverlay';
@@ -18,43 +18,32 @@ import {
   StayItem, 
   TransitItem 
 } from '../types';
-import { fetchCoordinates } from '../utils/googleMapsHelper';
+import { fetchCoordinates, fetchPlacePredictions, fetchCoordinatesByPlaceId } from '../utils/googleMapsHelper';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, storage } from '../firebase';
 
 interface JourneyDetailPageProps {
   isLoggedIn: boolean;
   trip: Trip | undefined;
-  isEditMode: boolean;
-  onUpdateTrip: (tripId: number, field: string, value: any) => void;
-  
   timelineData: TimelineData;
-  onUpdateTimelineItem: (date: string, itemId: number, field: keyof TimelineItem, value: string) => void;
-  onDeleteTimelineItem: (date: string, itemId: number) => void;
-  onAddTimelineItem: (date: string) => void;
-  
   flights: FlightItem[];
-  onUpdateFlight: (id: number, field: keyof FlightItem, val: string) => void;
-  onDeleteFlight: (id: number) => void;
-  onAddFlight: (title: string) => void;
-  
   stays: StayItem[];
-  onUpdateStay: (id: number, field: keyof StayItem, val: string) => void;
-  onDeleteStay: (id: number) => void;
-  onAddStay: () => void;
-  
   transits: TransitItem[];
-  onUpdateTransit: (id: number, field: keyof TransitItem, val: string) => void;
-  onDeleteTransit: (id: number) => void;
-  onAddTransit: () => void;
-  
+  onSave: (
+    tripId: number,
+    updatedTrip: Trip,
+    updatedTimeline: TimelineItem[],
+    updatedFlights: FlightItem[],
+    updatedStays: StayItem[],
+    updatedTransits: TransitItem[]
+  ) => Promise<void>;
+  onDelete: (id: number) => Promise<void>;
   isDarkMode: boolean;
 }
 
 type TabType = 'timeline' | 'flights' | 'stays' | 'transit' | 'gallery';
 
-// 날짜 범위 파싱 및 하루 단위 날짜 배열 생성 헬퍼
-// '2025.04.12 - 04.16' 처럼 종료일에 연도가 없는 형식도 처리
+// Parse dateRange: 'YYYY.MM.DD - YYYY.MM.DD'
 function generateDateList(dateRangeStr: string): string[] {
   if (!dateRangeStr) return [];
   const parts = dateRangeStr.split(' - ');
@@ -62,8 +51,6 @@ function generateDateList(dateRangeStr: string): string[] {
   
   const startStr = parts[0].trim().replace(/\./g, '-');
   const rawEndStr = parts[1].trim().replace(/\./g, '-');
-  
-  // 종료일에 연도가 없는 경우 (예: '04-16'), 시작일의 연도를 앞에 붙임
   const startYear = startStr.split('-')[0];
   const endStr = rawEndStr.split('-').length < 3 ? `${startYear}-${rawEndStr}` : rawEndStr;
   
@@ -74,7 +61,6 @@ function generateDateList(dateRangeStr: string): string[] {
     return [];
   }
   
-  // 종료일이 시작일보다 앞인 경우 (연도가 넘어간 케이스) 연도+1 처리
   if (endDate < startDate) {
     endDate.setFullYear(endDate.getFullYear() + 1);
   }
@@ -82,7 +68,6 @@ function generateDateList(dateRangeStr: string): string[] {
   const list: string[] = [];
   const cursor = new Date(startDate);
   
-  // 무한 루프 예방 (최대 100일 제한)
   for (let i = 0; i < 100 && cursor <= endDate; i++) {
     const yyyy = cursor.getFullYear();
     const mm = String(cursor.getMonth() + 1).padStart(2, '0');
@@ -94,49 +79,185 @@ function generateDateList(dateRangeStr: string): string[] {
   return list;
 }
 
+// Convert "10:30 AM" or "15:30" into total minutes from midnight for sorting
+function parseTimeToMinutes(timeStr: string): number {
+  if (!timeStr) return 0;
+  const clean = timeStr.trim();
+  const match = clean.match(/^(\d+):(\d+)\s*(AM|PM)?$/i);
+  if (!match) return 0;
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const ampm = match[3]?.toUpperCase();
+
+  if (ampm === 'PM' && hours < 12) {
+    hours += 12;
+  } else if (ampm === 'AM' && hours === 12) {
+    hours = 0;
+  }
+  return hours * 60 + minutes;
+}
+
+// Autocomplete Input component
+interface PlaceAutocompleteInputProps {
+  value: string;
+  onChange: (val: string) => void;
+  onSelectPlace: (placeName: string, coords: { lat: number; lng: number } | null, address: string) => void;
+  className?: string;
+  placeholder?: string;
+}
+
+function PlaceAutocompleteInput({
+  value,
+  onChange,
+  onSelectPlace,
+  className,
+  placeholder
+}: PlaceAutocompleteInputProps) {
+  const [preds, setPreds] = useState<{ description: string; placeId: string }[]>([]);
+  const [show, setShow] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const clickOut = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShow(false);
+      }
+    };
+    document.addEventListener('mousedown', clickOut);
+    return () => document.removeEventListener('mousedown', clickOut);
+  }, []);
+
+  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    onChange(val);
+    if (val.trim().length > 1) {
+      const results = await fetchPlacePredictions(val);
+      setPreds(results);
+      setShow(true);
+    } else {
+      setPreds([]);
+      setShow(false);
+    }
+  };
+
+  const handleSelect = async (pred: any) => {
+    onChange(pred.description);
+    setShow(false);
+    const coords = await fetchCoordinatesByPlaceId(pred.placeId);
+    onSelectPlace(pred.description, coords, pred.description);
+  };
+
+  return (
+    <div className="relative w-full" ref={dropdownRef}>
+      <div className="relative">
+        <input
+          type="text"
+          value={value}
+          onChange={handleChange}
+          className={className}
+          placeholder={placeholder}
+        />
+        <Search className="w-3.5 h-3.5 absolute right-2 top-1/2 -translate-y-1/2 opacity-35" />
+      </div>
+      {show && preds.length > 0 && (
+        <div className="absolute left-0 right-0 top-full mt-1 bg-[#F9F8F6] dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 shadow-xl z-50 max-h-40 overflow-y-auto">
+          {preds.map(p => (
+            <div
+              key={p.placeId}
+              onClick={() => handleSelect(p)}
+              className="p-2 text-[10px] hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer truncate text-black dark:text-white border-b border-black/5 dark:border-white/5 last:border-0"
+            >
+              {p.description}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function JourneyDetailPage({
   isLoggedIn,
   trip,
-  isEditMode,
-  onUpdateTrip,
-  
   timelineData,
-  onUpdateTimelineItem,
-  onDeleteTimelineItem,
-  onAddTimelineItem,
-
   flights,
-  onUpdateFlight,
-  onDeleteFlight,
-  onAddFlight,
-
   stays,
-  onUpdateStay,
-  onDeleteStay,
-  onAddStay,
-
   transits,
-  onUpdateTransit,
-  onDeleteTransit,
-  onAddTransit,
-  
+  onSave,
+  onDelete,
   isDarkMode,
 }: JourneyDetailPageProps) {
-  // ── ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURN ──
+  // All hooks must be called before conditional return
   const [activeTab, setActiveTab] = useState<TabType>('timeline');
   const [selectedDate, setSelectedDate] = useState<string>('ALL');
   const [expandedItemId, setExpandedItemId] = useState<number | null>(null);
+
+  // Edit / Draft state
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftTrip, setDraftTrip] = useState<Trip | null>(null);
+  const [draftTimeline, setDraftTimeline] = useState<TimelineItem[]>([]);
+  const [draftFlights, setDraftFlights] = useState<FlightItem[]>([]);
+  const [draftStays, setDraftStays] = useState<StayItem[]>([]);
+  const [draftTransits, setDraftTransits] = useState<TransitItem[]>([]);
 
   // Lightbox & Gallery state
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [saving, setSaving] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const itemRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const dateBarRef = useRef<HTMLDivElement>(null);
-  // --- 날짜 동적 계산 (안전 장치 추가) ---
-  const generatedDates = generateDateList(trip?.date || '');
+
+  // Set draft state when entering edit mode
+  const handleStartEditing = () => {
+    if (!trip) return;
+    setDraftTrip({ ...trip });
+    // Flatten current timelineData
+    const flatTimeline = Object.entries(timelineData || {}).flatMap(([d, list]) => 
+      (list || []).map(item => ({ ...item, date: item.date || d }))
+    );
+    setDraftTimeline(flatTimeline);
+    setDraftFlights([...flights]);
+    setDraftStays([...stays]);
+    setDraftTransits([...transits]);
+    setIsEditing(true);
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setDraftTrip(null);
+    setDraftTimeline([]);
+    setDraftFlights([]);
+    setDraftStays([]);
+    setDraftTransits([]);
+  };
+
+  const handleSave = async () => {
+    if (!trip || !draftTrip) return;
+    setSaving(true);
+    try {
+      await onSave(
+        trip.id,
+        draftTrip,
+        draftTimeline,
+        draftFlights,
+        draftStays,
+        draftTransits
+      );
+      setIsEditing(false);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Safe check if trip is undefined
+  const tripToUse = isEditing ? draftTrip : trip;
+
+  const generatedDates = generateDateList(tripToUse?.date || '');
   const dynamicDates = [
     { id: 'all', date: 'ALL', label: 'Overall' },
     ...generatedDates.map((d, index) => ({
@@ -146,21 +267,38 @@ export function JourneyDetailPage({
     }))
   ];
 
-  // 타임라인 선택 및 정렬 (안전 참조 처리)
-  const currentTimeline = selectedDate === 'ALL' 
-    ? Object.entries(timelineData || {}).flatMap(([d, list]) => 
-        (list || []).map(item => ({ ...item, originDate: d }))
-      ) 
-    : ((timelineData || {})[selectedDate] || []).map(item => ({ ...item, originDate: selectedDate }));
+  // Determine current timeline items (original or draft)
+  const baseTimeline = isEditing
+    ? draftTimeline
+    : Object.entries(timelineData || {}).flatMap(([d, list]) => 
+        (list || []).map(item => ({ ...item, date: item.date || d }))
+      );
 
-  // 위경도 lat, lng 값을 가져올 때 string 또는 number 형식을 number로 안전하게 형변환 (x, y 퍼센트 좌표도 유지)
+  const filteredTimeline = selectedDate === 'ALL'
+    ? baseTimeline
+    : baseTimeline.filter(item => item.date === selectedDate);
+
+  // Sort chronologically: by date, then by parsed time
+  const currentTimeline = [...filteredTimeline].sort((a, b) => {
+    const dateA = a.date || '';
+    const dateB = b.date || '';
+    if (dateA !== dateB) {
+      return dateA.localeCompare(dateB);
+    }
+    const timeA = parseTimeToMinutes(a.time);
+    const timeB = parseTimeToMinutes(b.time);
+    if (timeA !== timeB) {
+      return timeA - timeB;
+    }
+    return a.id - b.id;
+  });
+
   const mapPoints = currentTimeline.map(item => ({
     ...item,
     lat: item.lat !== undefined && item.lat !== null ? Number(item.lat) : undefined,
     lng: item.lng !== undefined && item.lng !== null ? Number(item.lng) : undefined
   }));
 
-  // 활성 탭 날짜가 선택되었을 때, 가로 날짜 바 중앙 정렬 처리
   useEffect(() => {
     if (!dateBarRef.current) return;
     const activeBtn = dateBarRef.current.querySelector('[data-active="true"]');
@@ -169,59 +307,7 @@ export function JourneyDetailPage({
     }
   }, [selectedDate]);
 
-  // ── 데이터 자가복구 (Self-Healing) 효과 ──
-  // Firestore에 좌표가 누락된 기존 여정이나 타임라인 항목의 위경도를 백그라운드에서 자동 등록합니다.
-  // 의존성을 trip.id + isLoggedIn 으로만 제한해서, timeline 데이터가 변경될 때마다 재실행하지 않습니다.
-  const currentTimelineRef = useRef(currentTimeline);
-  currentTimelineRef.current = currentTimeline;
-
-  useEffect(() => {
-    if (!isLoggedIn || !trip) return;
-
-    let isSubscribed = true;
-    // 500ms 지연 후 실행 – Firestore 첫 snapshot 이후에 실행되도록
-    const timer = setTimeout(async () => {
-      if (!isSubscribed) return;
-      const snapshot = currentTimelineRef.current;
-
-      // 1. 여행 대표 위치 복구
-      const hasTripCoords = trip.lat !== undefined && trip.lng !== undefined && trip.lat !== null && trip.lng !== null;
-      if (!hasTripCoords && trip.locationStr && trip.locationStr.trim() !== '') {
-        console.log(`[Self-Healing] Geocoding trip location: "${trip.locationStr}"`);
-        const coords = await fetchCoordinates(trip.locationStr);
-        if (coords && isSubscribed) {
-          onUpdateTrip(trip.id, 'lat', coords.lat);
-          onUpdateTrip(trip.id, 'lng', coords.lng);
-        }
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-
-      // 2. 개별 타임라인 아이템 위치 복구
-      const unplacedItems = snapshot.filter(item => {
-        const hasCoords = item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null;
-        return !hasCoords && item.place && item.place.trim() !== '' && item.place !== '새로운 장소';
-      });
-
-      for (const item of unplacedItems) {
-        if (!isSubscribed) break;
-        console.log(`[Self-Healing] Geocoding timeline item "${item.place}" (ID: ${item.id})`);
-        const coords = await fetchCoordinates(item.place);
-        if (coords && isSubscribed) {
-          onUpdateTimelineItem((item as any).originDate || selectedDate, item.id, 'lat' as any, String(coords.lat));
-          onUpdateTimelineItem((item as any).originDate || selectedDate, item.id, 'lng' as any, String(coords.lng));
-        }
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-    }, 500);
-
-    return () => {
-      isSubscribed = false;
-      clearTimeout(timer);
-    };
-  }, [trip?.id, isLoggedIn]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── CONDITIONAL EARLY RETURN (after all hooks) ──
-  // trip이 undefined일 때 로딩 스크린 표시 (모든 훅 호출 이후에 배치해야 Rules of Hooks 준수)
+  // Early Return (conditional render)
   if (!trip) {
     return (
       <div className="flex-grow flex items-center justify-center bg-[#F9F8F6] dark:bg-[#111111] h-[80vh] text-xs font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
@@ -229,7 +315,6 @@ export function JourneyDetailPage({
       </div>
     );
   }
-
 
   const handleItemToggle = (id: number) => {
     setExpandedItemId(prevId => prevId === id ? null : id);
@@ -240,60 +325,99 @@ export function JourneyDetailPage({
     }
   };
 
-  // 장소(place) 텍스트 수정 시 Geocoding 연동
-  const handleTimelinePlaceBlur = async (originDate: string, itemId: number, newPlace: string) => {
-    if (!newPlace || newPlace.trim() === '') return;
-    
-    // 장소 텍스트 업데이트
-    onUpdateTimelineItem(originDate, itemId, 'place', newPlace);
-    
-    // Geocoding 조회 후 좌표 업데이트
-    const coords = await fetchCoordinates(newPlace);
-    if (coords) {
-      onUpdateTimelineItem(originDate, itemId, 'lat' as any, String(coords.lat));
-      onUpdateTimelineItem(originDate, itemId, 'lng' as any, String(coords.lng));
-    }
+  // Draft update helpers
+  const updateTimelineItem = (id: number, field: keyof TimelineItem, value: any) => {
+    setDraftTimeline(prev => 
+      prev.map(item => item.id === id ? { ...item, [field]: value } : item)
+    );
   };
 
-  // 여행 대표 도시명 수정 시 Geocoding 연동
-  const handleTripLocationBlur = async (newLocation: string) => {
-    if (!newLocation || newLocation.trim() === '') return;
-    onUpdateTrip(trip.id, 'locationStr', newLocation);
-    
-    const coords = await fetchCoordinates(newLocation);
-    if (coords) {
-      onUpdateTrip(trip.id, 'lat', coords.lat);
-      onUpdateTrip(trip.id, 'lng', coords.lng);
-    }
+  const handleAddTimelineItem = (date: string) => {
+    const newItem: TimelineItem = {
+      id: Date.now(),
+      time: '12:00 PM',
+      type: 'activity',
+      place: '새로운 장소',
+      cost: '-',
+      memo: '메모를 입력하세요',
+      x: 50,
+      y: 50,
+      date: date,
+      tripId: trip.id
+    };
+    setDraftTimeline(prev => [...prev, newItem]);
   };
 
-  // --- Deletion prompts with confirmation checks ---
-  const confirmDeleteTimeline = (originDate: string, id: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (window.confirm("정말 이 타임라인 일정을 삭제하시겠습니까?")) {
-      onDeleteTimelineItem(originDate, id);
-    }
+  const handleDeleteTimelineItem = (id: number) => {
+    setDraftTimeline(prev => prev.filter(item => item.id !== id));
   };
 
-  const confirmDeleteFlight = (id: number) => {
-    if (window.confirm("정말 이 항공편 정보를 삭제하시겠습니까?")) {
-      onDeleteFlight(id);
-    }
+  // Draft updates for custom cards
+  const updateFlight = (id: number, field: keyof FlightItem, val: string) => {
+    setDraftFlights(prev => prev.map(f => f.id === id ? { ...f, [field]: val } : f));
+  };
+  const deleteFlight = (id: number) => {
+    setDraftFlights(prev => prev.filter(f => f.id !== id));
+  };
+  const handleAddFlight = (title: string) => {
+    const newFlight: FlightItem = {
+      id: Date.now(),
+      title: title,
+      date: 'YYYY.MM.DD',
+      fromCode: 'ICN',
+      fromTerminal: 'TERMINAL T1',
+      fromTime: '08:00 AM',
+      toCode: 'KIX',
+      toTerminal: 'TERMINAL T1',
+      toTime: '10:00 AM',
+      flightNo: 'KE000',
+      seat: '00A',
+      pnr: '000000',
+    };
+    setDraftFlights(prev => [...prev, newFlight]);
   };
 
-  const confirmDeleteStay = (id: number) => {
-    if (window.confirm("정말 이 숙박 정보를 삭제하시겠습니까?")) {
-      onDeleteStay(id);
-    }
+  const updateStay = (id: number, field: keyof StayItem, val: string) => {
+    setDraftStays(prev => prev.map(s => s.id === id ? { ...s, [field]: val } : s));
+  };
+  const deleteStay = (id: number) => {
+    setDraftStays(prev => prev.filter(s => s.id !== id));
+  };
+  const handleAddStay = () => {
+    const newStay: StayItem = {
+      id: Date.now(),
+      status: 'BOOKING CONFIRMED',
+      title: '새로운 숙소',
+      dateRange: 'YYYY.MM.DD - YYYY.MM.DD (0 Nights)',
+      address: '숙소 주소를 입력하세요',
+      memo: '메모를 입력하세요',
+      confNo: 'HTL-0000',
+      img: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=800&auto=format&fit=crop',
+    };
+    setDraftStays(prev => [...prev, newStay]);
   };
 
-  const confirmDeleteTransit = (id: number) => {
-    if (window.confirm("정말 이 교통 편 정보를 삭제하시겠습니까?")) {
-      onDeleteTransit(id);
-    }
+  const updateTransit = (id: number, field: keyof TransitItem, val: string) => {
+    setDraftTransits(prev => prev.map(t => t.id === id ? { ...t, [field]: val } : t));
+  };
+  const deleteTransit = (id: number) => {
+    setDraftTransits(prev => prev.filter(t => t.id !== id));
+  };
+  const handleAddTransit = () => {
+    const newTransit: TransitItem = {
+      id: Date.now(),
+      ticketType: 'TRAIN TICKET',
+      date: 'YYYY.MM.DD',
+      title: '열차/이동 수단 이름',
+      route: '출발지 → 도착지',
+      time: '12:00 PM',
+      seat: 'Car 0, 00A',
+      bookingRef: 'TRN-000',
+    };
+    setDraftTransits(prev => [...prev, newTransit]);
   };
 
-  // 갤러리 이미지 업로드 핸들러
+  // Gallery actions
   const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -303,12 +427,26 @@ export function JourneyDetailPage({
 
     setUploadingImage(true);
     try {
-      const storageRef = ref(storage, `users/${user.uid}/gallery/${Date.now()}_${file.name}`);
+      const storageRef = ref(storage, `users/public/gallery/${Date.now()}_${file.name}`);
       await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
       
-      const currentGallery = trip.gallery || [];
-      onUpdateTrip(trip.id, 'gallery', [...currentGallery, url]);
+      if (isEditing && draftTrip) {
+        const currentGallery = draftTrip.gallery || [];
+        setDraftTrip({ ...draftTrip, gallery: [...currentGallery, url] });
+      } else {
+        const currentGallery = trip.gallery || [];
+        const updatedGallery = [...currentGallery, url];
+        // If not in editing mode, write straight to public trip metadata in Firestore
+        await onSave(
+          trip.id,
+          { ...trip, gallery: updatedGallery },
+          baseTimeline,
+          flights,
+          stays,
+          transits
+        );
+      }
     } catch (error) {
       console.error("Gallery image upload failed:", error);
       alert("이미지 업로드에 실패했습니다.");
@@ -318,21 +456,28 @@ export function JourneyDetailPage({
     }
   };
 
-  // 갤러리 이미지 삭제
-  const handleRemoveGalleryImage = (imageUrl: string, e: React.MouseEvent) => {
+  const handleRemoveGalleryImage = async (imageUrl: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!window.confirm("이 이미지를 갤러리에서 삭제하시겠습니까?")) return;
 
-    const currentGallery = trip.gallery || [];
-    const updatedGallery = currentGallery.filter(url => url !== imageUrl);
-    onUpdateTrip(trip.id, 'gallery', updatedGallery);
+    if (isEditing && draftTrip) {
+      const currentGallery = draftTrip.gallery || [];
+      setDraftTrip({ ...draftTrip, gallery: currentGallery.filter(url => url !== imageUrl) });
+    } else {
+      const currentGallery = trip.gallery || [];
+      const updatedGallery = currentGallery.filter(url => url !== imageUrl);
+      await onSave(
+        trip.id,
+        { ...trip, gallery: updatedGallery },
+        baseTimeline,
+        flights,
+        stays,
+        transits
+      );
+    }
   };
 
-  const textEditableClass = isEditMode 
-    ? 'outline-dashed outline-1 outline-red-500/40 hover:bg-black/5 dark:hover:bg-white/5 cursor-text transition-all rounded px-1' 
-    : '';
-
-  const galleryImages = trip.gallery || [];
+  const galleryImages = tripToUse?.gallery || [];
 
   return (
     <main className="animate-in slide-in-from-right-8 duration-500 flex flex-col md:flex-row h-[calc(100vh-73px)] w-full overflow-hidden">
@@ -340,38 +485,101 @@ export function JourneyDetailPage({
       {/* Left: Map & Info Section */}
       <section className="w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-colors duration-300 h-[55vh] md:h-full shrink-0">
         <div className="p-4 md:p-8 border-b border-black/20 dark:border-white/20 z-10 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0">
-          <div className="flex items-center space-x-2 text-[10px] md:text-xs font-bold uppercase tracking-widest text-black/50 dark:text-white/50 mb-3 md:mb-4 transition-colors">
-            <span 
-              contentEditable={isEditMode} 
-              suppressContentEditableWarning 
-              onBlur={(e) => onUpdateTrip(trip.id, 'date', e.currentTarget.innerText)}
-              className={textEditableClass}
-            >
-              {trip.date}
-            </span>
-            <span>—</span>
-            <span 
-              contentEditable={isEditMode}
-              suppressContentEditableWarning
-              onBlur={(e) => handleTripLocationBlur(e.currentTarget.innerText)}
-              className={textEditableClass}
-            >
-              {trip.locationStr}
-            </span>
+          
+          {/* Header metadata area (date and location) */}
+          <div className="flex justify-between items-start gap-4 mb-3 md:mb-4">
+            <div className="flex items-center space-x-2 text-[10px] md:text-xs font-bold uppercase tracking-widest text-black/50 dark:text-white/50 transition-colors w-full">
+              {isEditing && draftTrip ? (
+                <div className="flex items-center gap-2 w-full flex-wrap">
+                  <input
+                    type="text"
+                    value={draftTrip.date}
+                    onChange={(e) => setDraftTrip({ ...draftTrip, date: e.target.value })}
+                    className="bg-[#EAE8E3] dark:bg-white/10 px-2 py-1 outline-none text-[10px] md:text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10"
+                    placeholder="YYYY.MM.DD - YYYY.MM.DD"
+                  />
+                  <span>—</span>
+                  <div className="w-48">
+                    <PlaceAutocompleteInput
+                      value={draftTrip.locationStr}
+                      onChange={(val) => setDraftTrip({ ...draftTrip, locationStr: val })}
+                      onSelectPlace={(name, coords) => {
+                        setDraftTrip(prev => {
+                          if (!prev) return null;
+                          return {
+                            ...prev,
+                            locationStr: name,
+                            lat: coords?.lat ?? prev.lat,
+                            lng: coords?.lng ?? prev.lng
+                          };
+                        });
+                      }}
+                      className="bg-[#EAE8E3] dark:bg-white/10 px-2 py-1 outline-none text-[10px] md:text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
+                      placeholder="Default Map City"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <span>{trip.date}</span>
+                  <span>—</span>
+                  <span>{trip.locationStr}</span>
+                </>
+              )}
+            </div>
+
+            {/* Edit controls */}
+            {isLoggedIn && (
+              <div className="shrink-0 flex items-center gap-2">
+                {isEditing ? (
+                  <>
+                    <button
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-black uppercase tracking-widest rounded-sm transition-all flex items-center gap-1 disabled:opacity-50"
+                    >
+                      {saving && <Loader2 className="w-3 h-3 animate-spin" />}
+                      Save
+                    </button>
+                    <button
+                      onClick={handleCancel}
+                      className="px-3 py-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[10px] font-black uppercase tracking-widest rounded-sm transition-all text-black/60 dark:text-white/60"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={handleStartEditing}
+                    className="px-3 py-1.5 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-[10px] font-black uppercase tracking-widest rounded-sm transition-all"
+                  >
+                    Edit Journey
+                  </button>
+                )}
+              </div>
+            )}
           </div>
           
-          <h1 
-            contentEditable={isEditMode} 
-            suppressContentEditableWarning 
-            onBlur={(e) => onUpdateTrip(trip.id, 'title', e.currentTarget.innerText)}
-            className={`text-3xl sm:text-4xl md:text-6xl font-black tracking-tighter uppercase leading-none break-keep ${textEditableClass}`}
-            style={{ wordBreak: 'keep-all' }}
-          >
-            {(trip.title || '').replace(' (Plan)', '')}
-          </h1>
+          {/* Trip Title */}
+          {isEditing && draftTrip ? (
+            <input
+              type="text"
+              value={draftTrip.title}
+              onChange={(e) => setDraftTrip({ ...draftTrip, title: e.target.value })}
+              className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter uppercase leading-none bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 p-2 outline-none w-full text-black dark:text-white"
+              placeholder="JOURNEY TITLE"
+            />
+          ) : (
+            <h1 
+              className="text-3xl sm:text-4xl md:text-6xl font-black tracking-tighter uppercase leading-none break-keep"
+              style={{ wordBreak: 'keep-all' }}
+            >
+              {(trip.title || '').replace(' (Plan)', '')}
+            </h1>
+          )}
           
           <div className="mt-4 md:mt-6 flex flex-wrap gap-2">
-            {(trip.tags || []).slice(0, 2).map(tag => (
+            {(tripToUse?.tags || []).slice(0, 2).map(tag => (
                <span key={tag} className="text-[9px] md:text-[10px] font-bold border border-black/20 dark:border-white/20 px-2 py-1 uppercase rounded-full">
                  {tag}
                </span>
@@ -383,12 +591,12 @@ export function JourneyDetailPage({
         <ErrorBoundary fallback={
           <div className="flex-grow flex flex-col items-center justify-center bg-[#EAE8E3] dark:bg-[#1A1A1A] text-black/40 dark:text-white/40 p-6 relative">
             <span className="text-[10px] uppercase tracking-widest font-bold z-10 mb-2">Map Temporary Unavailable</span>
-            <img src={trip.mapImg || 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1600&auto=format&fit=crop'} className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none" />
+            <img src={tripToUse?.mapImg || 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1600&auto=format&fit=crop'} className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none" />
           </div>
         }>
           <MapArea 
-            trip={trip}
-            isEditMode={isEditMode}
+            trip={tripToUse!}
+            isEditMode={isEditing}
             mapPoints={mapPoints}
             expandedItemId={expandedItemId}
             handleItemToggle={handleItemToggle}
@@ -397,7 +605,7 @@ export function JourneyDetailPage({
           />
         </ErrorBoundary>
       </section>
-
+      
       {/* Right: Record / Tabs Section */}
       <section className="w-full md:w-1/2 flex flex-col bg-[#F9F8F6] dark:bg-[#111111] transition-colors duration-300 flex-grow overflow-hidden">
         
@@ -426,7 +634,7 @@ export function JourneyDetailPage({
           {/* TIMELINE TAB */}
           {activeTab === 'timeline' && (
             <div className="animate-in fade-in duration-300 h-full flex flex-col w-full">
-              {/* Day filter selector bar (Dynamic layout with fade overlays) */}
+              {/* Day filter selector bar */}
               <div className="relative border-b border-black/20 dark:border-white/20 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0 w-full flex">
                 <div 
                   ref={dateBarRef}
@@ -457,6 +665,12 @@ export function JourneyDetailPage({
                 </div>
               )}
 
+              {isLoggedIn && !isEditing && (
+                <div className="bg-black/5 dark:bg-white/10 px-4 py-2 text-[9px] md:text-[10px] uppercase font-bold tracking-widest text-center flex items-center justify-center gap-2 shrink-0 w-full">
+                  <Edit2 className="w-3 h-3 shrink-0 text-red-600 dark:text-red-400" /> <span className="truncate text-red-600 dark:text-red-400">우측 상단 'Edit Journey' 버튼을 클릭하면 편집이 시작됩니다.</span>
+                </div>
+              )}
+
               {/* Timeline Items List */}
               <div className="flex flex-col pb-20 w-full">
                 {currentTimeline.length === 0 ? (
@@ -478,48 +692,84 @@ export function JourneyDetailPage({
                         >
                           {/* Time */}
                           <div className={`w-16 md:w-24 shrink-0 text-[10px] md:text-xs font-bold tracking-widest mt-1 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60'}`}>
-                            <span 
-                              contentEditable={isEditMode} 
-                              suppressContentEditableWarning 
-                              onBlur={(e) => onUpdateTimelineItem(item.originDate, item.id, 'time', e.currentTarget.innerText)}
-                              onClick={(e) => isEditMode && e.stopPropagation()}
-                              className={textEditableClass}
-                            >
-                              {item.time}
-                            </span>
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={item.time}
+                                onChange={(e) => updateTimelineItem(item.id, 'time', e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-[10px] md:text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-20"
+                              />
+                            ) : (
+                              <span>{item.time}</span>
+                            )}
                           </div>
 
                           {/* Details */}
                           <div className="flex-grow pr-2 md:pr-4 min-w-0">
                             <div className={`font-bold tracking-tight text-sm md:text-base flex items-center gap-2 flex-wrap ${isActive ? 'text-red-600 dark:text-red-400' : ''}`}>
-                              <span 
-                                contentEditable={isEditMode} 
-                                suppressContentEditableWarning 
-                                onBlur={(e) => handleTimelinePlaceBlur(item.originDate, item.id, e.currentTarget.innerText)}
-                                onClick={(e) => isEditMode && e.stopPropagation()}
-                                className={`break-words ${textEditableClass}`}
-                              >
-                                {item.place}
-                              </span>
+                              {isEditing ? (
+                                <div className="w-full" onClick={(e) => e.stopPropagation()}>
+                                  <PlaceAutocompleteInput
+                                    value={item.place}
+                                    onChange={(val) => updateTimelineItem(item.id, 'place', val)}
+                                    onSelectPlace={(name, coords, address) => {
+                                      updateTimelineItem(item.id, 'place', name);
+                                      if (coords) {
+                                        updateTimelineItem(item.id, 'lat', coords.lat);
+                                        updateTimelineItem(item.id, 'lng', coords.lng);
+                                      }
+                                      if (address) {
+                                        updateTimelineItem(item.id, 'location', address);
+                                      }
+                                    }}
+                                    className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-sm md:text-base text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
+                                    placeholder="Place Name"
+                                  />
+                                </div>
+                              ) : (
+                                <span>{item.place}</span>
+                              )}
                               {isActive ? <ChevronUp className="w-3 h-3 md:w-4 md:h-4 text-current shrink-0" /> : <ChevronDown className="w-3 h-3 md:w-4 md:h-4 text-black/40 dark:text-white/40 shrink-0" />}
                             </div>
                             
-                            <div 
-                              contentEditable={isEditMode} 
-                              suppressContentEditableWarning 
-                              onBlur={(e) => onUpdateTimelineItem(item.originDate, item.id, 'memo', e.currentTarget.innerText)}
-                              onClick={(e) => isEditMode && e.stopPropagation()}
-                              className={`text-xs md:text-sm text-black/60 dark:text-white/60 mt-1 transition-colors break-words w-full ${textEditableClass}`}
-                            >
-                              {item.memo}
+                            <div className="mt-1">
+                              {isEditing ? (
+                                <textarea
+                                  value={item.memo}
+                                  onChange={(e) => updateTimelineItem(item.id, 'memo', e.target.value)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="bg-[#EAE8E3] dark:bg-white/10 p-1 outline-none text-xs md:text-sm text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full resize-none"
+                                  rows={1}
+                                  placeholder="Memo"
+                                />
+                              ) : (
+                                <div className="text-xs md:text-sm text-black/60 dark:text-white/60 break-words w-full">{item.memo}</div>
+                              )}
                             </div>
 
-                            {/* Delete Item Actions (Visible in Edit Mode / Logged In) */}
-                            {isLoggedIn && isActive && (
-                              <div className="flex gap-4 mt-3 pt-3 border-t border-black/10 dark:border-white/10 text-[10px] md:text-xs font-bold uppercase tracking-widest">
+                            {/* Assign day dropdown (Edit mode) */}
+                            {isEditing && (
+                              <div className="flex items-center gap-1.5 mt-2" onClick={(e) => e.stopPropagation()}>
+                                <span className="text-[8px] uppercase font-black tracking-widest opacity-40">Move to Day</span>
+                                <select
+                                  value={item.date}
+                                  onChange={(e) => updateTimelineItem(item.id, 'date', e.target.value)}
+                                  className="bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 text-[9px] font-bold p-1 outline-none text-black dark:text-white rounded-none"
+                                >
+                                  {generatedDates.map(d => (
+                                    <option key={d} value={d}>{d}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
+
+                            {/* Delete timeline item (Edit mode) */}
+                            {isEditing && isActive && (
+                              <div className="flex gap-4 mt-3 pt-3 border-t border-black/10 dark:border-white/10 text-[10px] md:text-xs font-bold uppercase tracking-widest" onClick={(e) => e.stopPropagation()}>
                                  <button 
                                    className="flex items-center gap-1 text-red-600 hover:text-red-400 transition-colors" 
-                                   onClick={(e) => confirmDeleteTimeline(item.originDate, item.id, e)}
+                                   onClick={() => handleDeleteTimelineItem(item.id)}
                                  >
                                    <Trash2 className="w-3 h-3"/> Delete
                                  </button>
@@ -531,30 +781,36 @@ export function JourneyDetailPage({
                           <div className="shrink-0 flex flex-col items-end gap-2 ml-2">
                             <div className="flex items-center gap-1">
                               <span className="text-[8px] opacity-40 uppercase font-bold tracking-widest">Cost</span>
-                              <span 
-                                contentEditable={isEditMode} 
-                                suppressContentEditableWarning 
-                                onBlur={(e) => onUpdateTimelineItem(item.originDate, item.id, 'cost', e.currentTarget.innerText)}
-                                onClick={(e) => isEditMode && e.stopPropagation()}
-                                className={`text-[9px] md:text-[10px] font-bold uppercase tracking-widest bg-black/10 dark:bg-white/10 px-2 py-0.5 md:py-1 rounded-sm whitespace-nowrap block ${textEditableClass}`}
-                              >
-                                {item.cost}
-                              </span>
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  value={item.cost}
+                                  onChange={(e) => updateTimelineItem(item.id, 'cost', e.target.value)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-[9px] md:text-[10px] text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-16"
+                                />
+                              ) : (
+                                <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest bg-black/10 dark:bg-white/10 px-2 py-0.5 md:py-1 rounded-sm whitespace-nowrap block">
+                                  {item.cost}
+                                </span>
+                              )}
                             </div>
+                            
+                            {/* Card thumbnail (strictly preview, image is uploadable) */}
                             {item.img ? (
                               <div className={`w-10 h-10 md:w-12 md:h-12 overflow-hidden border transition-all relative ${isActive ? 'border-red-600 dark:border-red-400 scale-110 origin-right' : 'border-black/20 dark:border-white/20'}`}>
                                 <img src={item.img} alt={item.place} className={`w-full h-full object-cover transition-all ${isActive ? 'grayscale-0' : 'grayscale group-hover:grayscale-0'}`} />
                                 <ImageEditOverlay 
-                                  isEditMode={isEditMode} 
-                                  onImageUploaded={(url) => onUpdateTimelineItem(item.originDate, item.id, 'img', url)} 
+                                  isEditMode={isEditing} 
+                                  onImageUploaded={(url) => updateTimelineItem(item.id, 'img', url)} 
                                 />
                               </div>
                             ) : (
                               <div className={`w-10 h-10 md:w-12 md:h-12 border bg-black/5 dark:bg-white/5 flex items-center justify-center transition-colors relative ${isActive ? 'border-red-600 dark:border-red-400 text-red-600 scale-110 origin-right' : 'border-black/10 dark:border-white/10 text-black/30 dark:text-white/30'}`}>
                                 <ImageIcon className="w-3 h-3 md:w-4 md:h-4" />
                                 <ImageEditOverlay 
-                                  isEditMode={isEditMode} 
-                                  onImageUploaded={(url) => onUpdateTimelineItem(item.originDate, item.id, 'img', url)} 
+                                  isEditMode={isEditing} 
+                                  onImageUploaded={(url) => updateTimelineItem(item.id, 'img', url)} 
                                 />
                               </div>
                             )}
@@ -565,27 +821,43 @@ export function JourneyDetailPage({
                         {isActive && (
                           <div className="px-4 md:px-6 pb-4 md:pb-6 pt-1 md:pt-2 animate-in slide-in-from-top-2 fade-in duration-200">
                             <div className="bg-white/80 dark:bg-black/40 border border-black/10 dark:border-white/10 p-3 md:p-4 flex flex-col gap-3 text-xs md:text-sm transition-colors shadow-inner">
+                              
+                              {/* Address Input */}
                               <div className="flex items-start gap-3 group/copy">
                                 <Map className="w-3.5 h-3.5 md:w-4 md:h-4 mt-0.5 text-black/60 dark:text-white/60 shrink-0" />
-                                <span 
-                                  contentEditable={isEditMode} 
-                                  suppressContentEditableWarning 
-                                  onBlur={(e) => onUpdateTimelineItem(item.originDate, item.id, 'location', e.currentTarget.innerText)}
-                                  className={`flex-grow text-black/80 dark:text-white/80 font-medium break-words ${textEditableClass}`}
-                                >
-                                  {item.location || '위치 정보 없음'}
-                                </span>
+                                {isEditing ? (
+                                  <input
+                                    type="text"
+                                    value={item.location || ''}
+                                    onChange={(e) => updateTimelineItem(item.id, 'location', e.target.value)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="bg-[#EAE8E3] dark:bg-white/10 px-2 py-1 outline-none text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
+                                    placeholder="Address details"
+                                  />
+                                ) : (
+                                  <span className="flex-grow text-black/80 dark:text-white/80 font-medium break-words">
+                                    {item.location || '위치 정보 없음'}
+                                  </span>
+                                )}
                               </div>
+
+                              {/* Hours Input */}
                               <div className="flex items-center gap-3 text-black/80 dark:text-white/80">
                                 <Clock className="w-3.5 h-3.5 md:w-4 md:h-4 text-black/60 dark:text-white/60 shrink-0" />
-                                <span 
-                                  contentEditable={isEditMode} 
-                                  suppressContentEditableWarning 
-                                  onBlur={(e) => onUpdateTimelineItem(item.originDate, item.id, 'hours', e.currentTarget.innerText)}
-                                  className={`font-medium ${textEditableClass}`}
-                                >
-                                  {item.hours || '영업시간 정보 없음'}
-                                </span>
+                                {isEditing ? (
+                                  <input
+                                    type="text"
+                                    value={item.hours || ''}
+                                    onChange={(e) => updateTimelineItem(item.id, 'hours', e.target.value)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="bg-[#EAE8E3] dark:bg-white/10 px-2 py-1 outline-none text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
+                                    placeholder="Hours e.g. 09:00 AM - 18:00 PM"
+                                  />
+                                ) : (
+                                  <span className="font-medium">
+                                    {item.hours || '영업시간 정보 없음'}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -596,10 +868,10 @@ export function JourneyDetailPage({
                 )}
 
                 {/* Add Timeline item button */}
-                {isEditMode && (
+                {isEditing && (
                   <div className="p-6 flex justify-center w-full">
                     <button 
-                      onClick={() => onAddTimelineItem(selectedDate === 'ALL' ? generatedDates[0] || '2025.04.12' : selectedDate)}
+                      onClick={() => handleAddTimelineItem(selectedDate === 'ALL' ? generatedDates[0] || '2025.04.12' : selectedDate)}
                       className="text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-2"
                     >
                       <Plus className="w-4 h-4" /> Add Timeline Event
@@ -613,33 +885,33 @@ export function JourneyDetailPage({
           {/* FLIGHTS TAB */}
           {activeTab === 'flights' && (
             <div className="p-4 md:p-6 animate-in fade-in duration-300">
-              {flights.length === 0 ? (
+              {(isEditing ? draftFlights : flights).length === 0 ? (
                 <div className="text-center py-12 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
                   등록된 항공편이 없습니다.
                 </div>
               ) : (
-                flights.map(flight => (
+                (isEditing ? draftFlights : flights).map(flight => (
                   <FlightCard 
                     key={flight.id} 
                     flight={flight} 
-                    isEditMode={isEditMode} 
-                    onUpdate={onUpdateFlight} 
-                    onDelete={confirmDeleteFlight} 
+                    isEditMode={isEditing} 
+                    onUpdate={updateFlight} 
+                    onDelete={deleteFlight} 
                   />
                 ))
               )}
               
               {/* Add Flight controls */}
-              {isEditMode && (
+              {isEditing && (
                 <div className="flex gap-4 justify-center mt-6">
                   <button 
-                    onClick={() => onAddFlight('OUTBOUND FLIGHT')} 
+                    onClick={() => handleAddFlight('OUTBOUND FLIGHT')} 
                     className="text-[10px] md:text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5"
                   >
                     <Plus className="w-3.5 h-3.5" /> Outbound Flight
                   </button>
                   <button 
-                    onClick={() => onAddFlight('INBOUND FLIGHT')} 
+                    onClick={() => handleAddFlight('INBOUND FLIGHT')} 
                     className="text-[10px] md:text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5"
                   >
                     <Plus className="w-3.5 h-3.5" /> Inbound Flight
@@ -652,27 +924,27 @@ export function JourneyDetailPage({
           {/* STAYS TAB */}
           {activeTab === 'stays' && (
             <div className="p-4 md:p-6 animate-in fade-in duration-300">
-              {stays.length === 0 ? (
+              {(isEditing ? draftStays : stays).length === 0 ? (
                 <div className="text-center py-12 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
                   등록된 숙소 정보가 없습니다.
                 </div>
               ) : (
-                stays.map(stay => (
+                (isEditing ? draftStays : stays).map(stay => (
                   <StayCard 
                     key={stay.id} 
                     stay={stay} 
-                    isEditMode={isEditMode} 
-                    onUpdate={onUpdateStay} 
-                    onDelete={confirmDeleteStay} 
+                    isEditMode={isEditing} 
+                    onUpdate={updateStay} 
+                    onDelete={deleteStay} 
                   />
                 ))
               )}
 
               {/* Add Stay control */}
-              {isEditMode && (
+              {isEditing && (
                 <div className="flex justify-center mt-6">
                   <button 
-                    onClick={onAddStay} 
+                    onClick={handleAddStay} 
                     className="text-[10px] md:text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-6 py-2.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-2"
                   >
                     <Plus className="w-4 h-4" /> Add Accommodation
@@ -685,27 +957,27 @@ export function JourneyDetailPage({
           {/* TRANSIT TAB */}
           {activeTab === 'transit' && (
             <div className="p-4 md:p-6 animate-in fade-in duration-300">
-              {transits.length === 0 ? (
+              {(isEditing ? draftTransits : transits).length === 0 ? (
                 <div className="text-center py-12 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
                   등록된 교통편이 없습니다.
                 </div>
               ) : (
-                transits.map(transit => (
+                (isEditing ? draftTransits : transits).map(transit => (
                   <TransitCard 
                     key={transit.id} 
                     transit={transit} 
-                    isEditMode={isEditMode} 
-                    onUpdate={onUpdateTransit} 
-                    onDelete={confirmDeleteTransit} 
+                    isEditMode={isEditing} 
+                    onUpdate={updateTransit} 
+                    onDelete={deleteTransit} 
                   />
                 ))
               )}
 
               {/* Add Transit control */}
-              {isEditMode && (
+              {isEditing && (
                 <div className="flex justify-center mt-6">
                   <button 
-                    onClick={onAddTransit} 
+                    onClick={handleAddTransit} 
                     className="text-[10px] md:text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-6 py-2.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-2"
                   >
                     <Plus className="w-4 h-4" /> Add Transit Ticket
@@ -719,8 +991,8 @@ export function JourneyDetailPage({
           {activeTab === 'gallery' && (
             <div className="p-4 md:p-6 animate-in fade-in duration-300 flex flex-col h-full">
               
-              {/* Add Gallery Image Area (Edit Mode) */}
-              {isEditMode && (
+              {/* Add Gallery Image Area */}
+              {isLoggedIn && (
                 <div className="mb-6 flex justify-center">
                   <input 
                     type="file" 
@@ -772,8 +1044,8 @@ export function JourneyDetailPage({
                       />
                       <div className="absolute inset-0 bg-black/0 group-hover/gallery:bg-black/10 transition-colors pointer-events-none" />
                       
-                      {/* Delete image button (Edit Mode) */}
-                      {isEditMode && (
+                      {/* Delete image button */}
+                      {isLoggedIn && (
                         <button
                           onClick={(e) => handleRemoveGalleryImage(imgUrl, e)}
                           className="absolute top-2 right-2 p-1.5 bg-black/75 hover:bg-red-600 text-white transition-colors opacity-0 group-hover/gallery:opacity-100 z-10 rounded-sm"

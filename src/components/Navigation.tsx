@@ -8,13 +8,12 @@ interface NavigationProps {
   navigateTo: (view: string, tripId?: number | null) => void;
   isLoggedIn: boolean;
   setIsLoggedIn: (value: boolean) => void;
-  isEditMode: boolean;
-  setIsEditMode: (value: boolean) => void;
   isDarkMode: boolean;
   setIsDarkMode: (value: boolean) => void;
   showSettings: boolean;
   setShowSettings: (value: boolean) => void;
   openAuthModal: (mode: 'login' | 'signup') => void;
+  openManageModal: () => void;
 }
 
 export function Navigation({
@@ -22,13 +21,12 @@ export function Navigation({
   navigateTo,
   isLoggedIn,
   setIsLoggedIn,
-  isEditMode,
-  setIsEditMode,
   isDarkMode,
   setIsDarkMode,
   showSettings,
   setShowSettings,
   openAuthModal,
+  openManageModal,
 }: NavigationProps) {
   const currentUser = auth.currentUser;
   const displayName = currentUser?.displayName || currentUser?.email?.split('@')[0].toUpperCase() || 'USER';
@@ -66,22 +64,6 @@ export function Navigation({
         >
           Tripgon log
         </div>
-        
-        {/* minimal edit mode button */}
-        {isLoggedIn && (
-          <button 
-            onClick={() => setIsEditMode(!isEditMode)}
-            className={`ml-2 sm:ml-4 text-[9px] sm:text-[10px] md:text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 transition-all
-              ${isEditMode ? 'text-red-600 dark:text-red-400' : 'text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'}
-            `}
-          >
-            {isEditMode ? (
-               <><span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span> <span className="hidden sm:inline">Edit Mode</span></>
-            ) : (
-               <><Edit2 className="w-3 h-3" /> <span className="hidden sm:inline">Edit</span></>
-            )}
-          </button>
-        )}
       </div>
 
       <div className="flex items-center space-x-3 sm:space-x-5 md:space-x-8 text-[10px] md:text-sm font-medium tracking-wide uppercase relative">
@@ -108,6 +90,18 @@ export function Navigation({
                 <div className="px-4 py-3 border-b border-black/10 dark:border-white/10 text-[10px] uppercase tracking-widest text-black/50 dark:text-white/50">
                   Logged in as <strong className="text-black dark:text-white ml-1">{displayName}</strong>
                 </div>
+              )}
+              {isLoggedIn && (
+                <button 
+                  onClick={() => { 
+                    setShowSettings(false); 
+                    openManageModal(); 
+                  }}
+                  className="p-4 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 border-b border-black/10 dark:border-white/10 transition-colors text-xs font-bold uppercase tracking-widest w-full text-left text-red-600 dark:text-red-400"
+                >
+                  <span>Manage Journeys</span>
+                  <Edit2 className="w-4 h-4" />
+                </button>
               )}
               {isLoggedIn ? (
                 <button 

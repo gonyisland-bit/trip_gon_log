@@ -1,22 +1,19 @@
 import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
-import { ImageEditOverlay } from '../components/ImageEditOverlay';
 import { Trip } from '../types';
 
 interface ArchiveHubPageProps {
   trips: Trip[];
   onNavigate: (view: string, tripId?: number | null) => void;
   onAddArchive: () => void;
-  isEditMode: boolean;
-  onUpdateTrip: (tripId: number, field: string, value: any) => void;
+  isLoggedIn: boolean;
 }
 
 export function ArchiveHubPage({
   trips,
   onNavigate,
   onAddArchive,
-  isEditMode,
-  onUpdateTrip,
+  isLoggedIn,
 }: ArchiveHubPageProps) {
   const [activeFilter, setActiveFilter] = useState('All');
   const filters = ['All', '2026', '2025', '2024', 'Kyoto', 'Paris', 'Personal', 'Business'];
@@ -46,28 +43,21 @@ export function ArchiveHubPage({
             ))}
           </div>
         </div>
-        <button onClick={onAddArchive} className="flex items-center justify-center gap-2 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors shrink-0 w-auto">
-          <Plus className="w-3 h-3 md:w-4 md:h-4" /> Add Archive
-        </button>
+        {isLoggedIn && (
+          <button onClick={onAddArchive} className="flex items-center justify-center gap-2 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors shrink-0 w-auto">
+            <Plus className="w-3 h-3 md:w-4 md:h-4" /> Add Archive
+          </button>
+        )}
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-black/20 dark:divide-white/20 transition-colors border-b border-black/20 dark:border-white/20 w-full">
         {filteredTrips.map((trip) => (
-          <div key={trip.id} className="group cursor-pointer p-6 flex flex-col h-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-b sm:border-b-0 border-black/20 dark:border-white/20 w-full" onClick={() => { if(!isEditMode) onNavigate('detail', trip.id) }}>
+          <div key={trip.id} className="group cursor-pointer p-6 flex flex-col h-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-b sm:border-b-0 border-black/20 dark:border-white/20 w-full" onClick={() => onNavigate('detail', trip.id)}>
             <div className="aspect-[3/4] w-full overflow-hidden mb-4 border border-black/10 dark:border-white/10 relative bg-black/5">
               <img src={trip.img} alt={trip.title} className="absolute inset-0 w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
-              <ImageEditOverlay 
-                isEditMode={isEditMode} 
-                onImageUploaded={(url) => onUpdateTrip(trip.id, 'img', url)} 
-              />
             </div>
             <div className="mt-auto">
-              <div 
-                contentEditable={isEditMode} suppressContentEditableWarning 
-                onBlur={(e) => onUpdateTrip(trip.id, 'title', e.currentTarget.innerText)}
-                onClick={(e) => isEditMode && e.stopPropagation()}
-                className={`font-bold tracking-tight uppercase text-sm break-words ${isEditMode ? 'outline-dashed outline-1 outline-red-500/50 cursor-text' : ''}`}
-              >
+              <div className="font-bold tracking-tight uppercase text-sm break-words">
                 {trip.title}
               </div>
             </div>
