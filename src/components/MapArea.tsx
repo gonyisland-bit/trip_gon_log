@@ -55,58 +55,68 @@ export const MapArea: React.FC<MapAreaProps> = ({
 
   // 2. 위/경도 좌표가 있는 마커 추출
   const validCoords: (Coordinates & { id: number; place: string })[] = mapPoints
-    .filter(p => p.lat !== undefined && p.lng !== undefined)
+    .filter(p => p.lat !== undefined && p.lng !== undefined && !isNaN(Number(p.lat)) && !isNaN(Number(p.lng)))
     .map(p => ({
-      lat: p.lat!,
-      lng: p.lng!,
+      lat: Number(p.lat!),
+      lng: Number(p.lng!),
       id: p.id,
       place: p.place
     }));
 
   // 만약 개별 핀들의 위경도가 없다면 여행 중심(trip.lat, trip.lng)을 사용하거나 폴백 좌표 사용
-  const baseCenter: Coordinates = trip.lat !== undefined && trip.lng !== undefined
-    ? { lat: trip.lat, lng: trip.lng }
+  const baseCenter: Coordinates = trip.lat !== undefined && trip.lng !== undefined && !isNaN(Number(trip.lat)) && !isNaN(Number(trip.lng))
+    ? { lat: Number(trip.lat), lng: Number(trip.lng) }
     : { lat: 35.0116, lng: 135.7681 }; // 기본 폴백: 교토
 
-  // 3. 최적의 지도 중심 및 줌 레벨 계산
+  // 3. 최적의 지도 중심 및 줌 레벨 계산 (try/catch로 수학 예외 방어)
   let center: Coordinates = baseCenter;
   let zoom = 13;
 
-  if (validCoords.length > 0) {
-    const bounds = calculateMapBounds(validCoords, dimensions.width, dimensions.height);
-    center = bounds.center;
-    zoom = bounds.zoom;
+  try {
+    if (validCoords.length > 0) {
+      const bounds = calculateMapBounds(validCoords, dimensions.width, dimensions.height);
+      center = bounds.center;
+      zoom = bounds.zoom;
+    }
+  } catch {
+    center = baseCenter;
+    zoom = 13;
   }
 
-  // 4. 구글 정적 지도 이미지 URL 획득
-  const staticMapUrl = getStaticMapUrl(
-    center.lat,
-    center.lng,
-    zoom,
-    dimensions.width,
-    dimensions.height,
-    isDarkMode,
-    validCoords
-  );
-
-  // 5. 각 위경도를 정적 지도 크기 대비 화면상의 % (x, y) 좌표로 매핑 (NaN/Infinity 2차 방어)
-  const pinsWithXY = validCoords.map(c => {
-    const point = latLngToPoint(
-      c.lat,
-      c.lng,
+  // 4. 구글 정적 지도 이미지 URL 획득 (try/catch로 예외 방어)
+  let staticMapUrl = trip.mapImg || '';
+  try {
+    staticMapUrl = getStaticMapUrl(
       center.lat,
       center.lng,
       zoom,
       dimensions.width,
-      dimensions.height
+      dimensions.height,
+      isDarkMode,
+      validCoords
     );
-    const px = isNaN(point.x) || !isFinite(point.x) ? 50 : point.x;
-    const py = isNaN(point.y) || !isFinite(point.y) ? 50 : point.y;
-    return {
-      ...c,
-      x: px,
-      y: py
-    };
+  } catch {
+    staticMapUrl = trip.mapImg || '';
+  }
+
+  // 5. 각 위경도를 정적 지도 크기 대비 화면상의 % (x, y) 좌표로 매핑 (NaN/Infinity 2차 방어)
+  const pinsWithXY = validCoords.map(c => {
+    try {
+      const point = latLngToPoint(
+        c.lat,
+        c.lng,
+        center.lat,
+        center.lng,
+        zoom,
+        dimensions.width,
+        dimensions.height
+      );
+      const px = isNaN(point.x) || !isFinite(point.x) ? 50 : point.x;
+      const py = isNaN(point.y) || !isFinite(point.y) ? 50 : point.y;
+      return { ...c, x: px, y: py };
+    } catch {
+      return { ...c, x: 50, y: 50 };
+    }
   });
 
   // 지도 클릭 시 외부 구글 맵으로 연결
@@ -128,6 +138,13 @@ export const MapArea: React.FC<MapAreaProps> = ({
       <img 
         src={staticMapUrl} 
         alt="Dynamic Google Map" 
+        onError={(e) => {
+          // 구글 정적 지도 로드 실패 시 원본 mapImg로 폴백
+          const target = e.currentTarget;
+          if (trip.mapImg && target.src !== trip.mapImg) {
+            target.src = trip.mapImg;
+          }
+        }}
         className="absolute inset-0 w-full h-full object-cover opacity-90 dark:opacity-40 grayscale contrast-105 pointer-events-none transition-all duration-700 group-hover/map:scale-[1.02] group-hover/map:opacity-100 dark:group-hover/map:opacity-60"
       />
       <div className="absolute inset-0 opacity-10 dark:opacity-5 bg-[url('https://www.transparenttextures.com/patterns/grid-me.png')] pointer-events-none"></div>

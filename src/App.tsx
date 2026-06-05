@@ -7,6 +7,7 @@ import { PlanHubPage } from './pages/Plan';
 import { JourneyDetailPage } from './pages/Detail';
 import { AuthModal } from './components/AuthModal';
 import { CreateTripModal } from './components/CreateTripModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { fetchCoordinates } from './utils/googleMapsHelper';
 import { 
   initialTrips, 
@@ -602,33 +603,35 @@ function App() {
           )}
           {currentView === 'detail' && (
             activeTrip ? (
-              <JourneyDetailPage 
-                isLoggedIn={isLoggedIn} 
-                trip={activeTrip}
-                isEditMode={isEditMode}
-                onUpdateTrip={handleUpdateTrip}
-                
-                timelineData={timelineData}
-                onUpdateTimelineItem={handleUpdateTimelineItem}
-                onDeleteTimelineItem={handleDeleteTimelineItem}
-                onAddTimelineItem={handleAddTimelineItem}
+              <ErrorBoundary>
+                <JourneyDetailPage 
+                  isLoggedIn={isLoggedIn} 
+                  trip={activeTrip}
+                  isEditMode={isEditMode}
+                  onUpdateTrip={handleUpdateTrip}
+                  
+                  timelineData={timelineData}
+                  onUpdateTimelineItem={handleUpdateTimelineItem}
+                  onDeleteTimelineItem={handleDeleteTimelineItem}
+                  onAddTimelineItem={handleAddTimelineItem}
 
-                flights={activeFlights}
-                onUpdateFlight={handleUpdateFlight}
-                onDeleteFlight={handleDeleteFlight}
-                onAddFlight={handleAddFlight}
+                  flights={activeFlights}
+                  onUpdateFlight={handleUpdateFlight}
+                  onDeleteFlight={handleDeleteFlight}
+                  onAddFlight={handleAddFlight}
 
-                stays={activeStays}
-                onUpdateStay={handleUpdateStay}
-                onDeleteStay={handleDeleteStay}
-                onAddStay={handleAddStay}
+                  stays={activeStays}
+                  onUpdateStay={handleUpdateStay}
+                  onDeleteStay={handleDeleteStay}
+                  onAddStay={handleAddStay}
 
-                transits={activeTransits}
-                onUpdateTransit={handleUpdateTransit}
-                onDeleteTransit={handleDeleteTransit}
-                onAddTransit={handleAddTransit}
-                isDarkMode={isDarkMode}
-              />
+                  transits={activeTransits}
+                  onUpdateTransit={handleUpdateTransit}
+                  onDeleteTransit={handleDeleteTransit}
+                  onAddTransit={handleAddTransit}
+                  isDarkMode={isDarkMode}
+                />
+              </ErrorBoundary>
             ) : (
               <div className="min-h-[60vh] flex flex-col items-center justify-center bg-[#F9F8F6] dark:bg-[#111111] transition-colors w-full">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black dark:border-white mb-2"></div>

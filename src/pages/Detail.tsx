@@ -53,13 +53,20 @@ interface JourneyDetailPageProps {
 type TabType = 'timeline' | 'flights' | 'stays' | 'transit' | 'gallery';
 
 // 날짜 범위 파싱 및 하루 단위 날짜 배열 생성 헬퍼
+// '2025.04.12 - 04.16' 처럼 종료일에 연도가 없는 형식도 처리
 const generateDateList = (dateRangeStr: string): string[] => {
   if (!dateRangeStr) return [];
-  const dates = dateRangeStr.split(' - ');
-  if (dates.length < 2) return [];
+  const parts = dateRangeStr.split(' - ');
+  if (parts.length < 2) return [];
   
-  const startStr = dates[0].replace(/\./g, '-');
-  const endStr = dates[1].replace(/\./g, '-');
+  const startStr = parts[0].trim().replace(/\./g, '-');
+  let endStr = parts[1].trim().replace(/\./g, '-');
+  
+  // 종료일에 연도가 없는 경우 (예: '04-16'), 시작일의 연도를 앞에 붙임
+  const startYear = startStr.split('-')[0];
+  if (endStr.split('-').length < 3) {
+    endStr = `${startYear}-${endStr}`;
+  }
   
   const start = new Date(startStr);
   const end = new Date(endStr);
@@ -68,6 +75,11 @@ const generateDateList = (dateRangeStr: string): string[] => {
     return [];
   }
   
+  // 종료일이 시작일보다 앞인 경우 (연도가 넘어간 케이스) 연도+1 처리
+  if (end < start) {
+    end.setFullYear(end.getFullYear() + 1);
+  }
+
   const list: string[] = [];
   let current = new Date(start);
   
@@ -313,11 +325,11 @@ export const JourneyDetailPage: React.FC<JourneyDetailPageProps> = ({
             className={`text-3xl sm:text-4xl md:text-6xl font-black tracking-tighter uppercase leading-none break-keep ${textEditableClass}`}
             style={{ wordBreak: 'keep-all' }}
           >
-            {trip.title.replace(' (Plan)', '')}
+            {(trip.title || '').replace(' (Plan)', '')}
           </h1>
           
           <div className="mt-4 md:mt-6 flex flex-wrap gap-2">
-            {trip.tags.slice(0, 2).map(tag => (
+            {(trip.tags || []).slice(0, 2).map(tag => (
                <span key={tag} className="text-[9px] md:text-[10px] font-bold border border-black/20 dark:border-white/20 px-2 py-1 uppercase rounded-full">
                  {tag}
                </span>
