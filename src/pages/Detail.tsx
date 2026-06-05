@@ -377,15 +377,15 @@ export function JourneyDetailPage({
         draftTimeline.map(async (item) => {
           if (
             (item.lat === undefined || item.lng === undefined || item.lat === null || item.lng === null) &&
-            item.place && item.place !== '새로운 장소' && item.place.trim() !== ''
+            item.location && item.location.trim() !== ''
           ) {
             try {
-              const coords = await fetchCoordinates(item.place);
+              const coords = await fetchCoordinates(item.location);
               if (coords) {
-                return { ...item, lat: coords.lat, lng: coords.lng, location: item.location || item.place };
+                return { ...item, lat: coords.lat, lng: coords.lng };
               }
             } catch (e) {
-              console.error(`Geocoding failed for ${item.place} during save:`, e);
+              console.error(`Geocoding failed for ${item.location} during save:`, e);
             }
           }
           return item;
@@ -921,38 +921,12 @@ export function JourneyDetailPage({
                             <div className={`font-bold tracking-tight text-sm md:text-base flex items-center gap-2 flex-wrap ${isActive ? 'text-red-600 dark:text-red-400' : ''}`}>
                               {isEditing ? (
                                 <div className="w-full" onClick={(e) => e.stopPropagation()}>
-                                  <PlaceAutocompleteInput
+                                  <input
+                                    type="text"
                                     value={item.place}
-                                    onChange={(val) => updateTimelineItem(item.id, 'place', val)}
-                                    onBlur={async () => {
-                                      // Only geocode if no coords yet (don't override Places API selection)
-                                      if (
-                                        item.place &&
-                                        item.place.trim() !== '' &&
-                                        item.place !== '새로운 장소' &&
-                                        (item.lat === undefined || item.lat === null)
-                                      ) {
-                                        const coords = await fetchCoordinates(item.place);
-                                        if (coords) {
-                                          updateTimelineItemFields(item.id, {
-                                            lat: coords.lat,
-                                            lng: coords.lng,
-                                            location: item.location || item.place,
-                                          });
-                                        }
-                                      }
-                                    }}
-                                    onSelectPlace={(name, coords, address) => {
-                                      // Atomic update: place + lat + lng + location in one setState
-                                      updateTimelineItemFields(item.id, {
-                                        place: name,
-                                        lat: coords?.lat ?? item.lat,
-                                        lng: coords?.lng ?? item.lng,
-                                        location: address || name,
-                                      });
-                                    }}
+                                    onChange={(e) => updateTimelineItem(item.id, 'place', e.target.value)}
                                     className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-sm md:text-base text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
-                                    placeholder="Place Name"
+                                    placeholder="일정 이름"
                                   />
                                 </div>
                               ) : (
@@ -1047,10 +1021,10 @@ export function JourneyDetailPage({
                                 <ImageEditOverlay 
                                   isEditMode={isEditing} 
                                   onImageUploaded={(url, gps) => {
-                                    updateTimelineItem(item.id, 'img', url);
                                     if (gps) {
-                                      updateTimelineItem(item.id, 'lat', gps.lat);
-                                      updateTimelineItem(item.id, 'lng', gps.lng);
+                                      updateTimelineItemFields(item.id, { img: url, lat: gps.lat, lng: gps.lng });
+                                    } else {
+                                      updateTimelineItemFields(item.id, { img: url });
                                     }
                                   }} 
                                 />
@@ -1061,10 +1035,10 @@ export function JourneyDetailPage({
                                 <ImageEditOverlay 
                                   isEditMode={isEditing} 
                                   onImageUploaded={(url, gps) => {
-                                    updateTimelineItem(item.id, 'img', url);
                                     if (gps) {
-                                      updateTimelineItem(item.id, 'lat', gps.lat);
-                                      updateTimelineItem(item.id, 'lng', gps.lng);
+                                      updateTimelineItemFields(item.id, { img: url, lat: gps.lat, lng: gps.lng });
+                                    } else {
+                                      updateTimelineItemFields(item.id, { img: url });
                                     }
                                   }} 
                                 />
@@ -1079,17 +1053,41 @@ export function JourneyDetailPage({
                             <div className="bg-white/80 dark:bg-black/40 border border-black/10 dark:border-white/10 p-3 md:p-4 flex flex-col gap-3 text-xs md:text-sm transition-colors shadow-inner">
                               
                               {/* Address Input */}
-                              <div className="flex items-start gap-3 group/copy">
-                                <Map className="w-3.5 h-3.5 md:w-4 md:h-4 mt-0.5 text-black/60 dark:text-white/60 shrink-0" />
+                              <div className="flex items-start gap-3 group/copy w-full">
+                                <Map className="w-3.5 h-3.5 md:w-4 md:h-4 mt-1.5 text-black/60 dark:text-white/60 shrink-0" />
                                 {isEditing ? (
-                                  <input
-                                    type="text"
-                                    value={item.location || ''}
-                                    onChange={(e) => updateTimelineItem(item.id, 'location', e.target.value)}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="bg-[#EAE8E3] dark:bg-white/10 px-2 py-1 outline-none text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
-                                    placeholder="Address details"
-                                  />
+                                  <div className="w-full" onClick={(e) => e.stopPropagation()}>
+                                    <PlaceAutocompleteInput
+                                      value={item.location || ''}
+                                      onChange={(val) => updateTimelineItemFields(item.id, { location: val, lat: undefined, lng: undefined })}
+                                      onBlur={async () => {
+                                        // Only geocode if no coords yet (don't override Places API selection)
+                                        if (
+                                          item.location &&
+                                          item.location.trim() !== '' &&
+                                          (item.lat === undefined || item.lat === null || item.lng === undefined || item.lng === null)
+                                        ) {
+                                          const coords = await fetchCoordinates(item.location);
+                                          if (coords) {
+                                            updateTimelineItemFields(item.id, {
+                                              lat: coords.lat,
+                                              lng: coords.lng,
+                                            });
+                                          }
+                                        }
+                                      }}
+                                      onSelectPlace={(name, coords, address) => {
+                                        // Atomic update: location + lat + lng in one setState
+                                        updateTimelineItemFields(item.id, {
+                                          location: address || name,
+                                          lat: coords?.lat ?? item.lat,
+                                          lng: coords?.lng ?? item.lng,
+                                        });
+                                      }}
+                                      className="bg-[#EAE8E3] dark:bg-white/10 px-2 py-1 outline-none text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
+                                      placeholder="위치 지정 (예: 나리타공항)"
+                                    />
+                                  </div>
                                 ) : (
                                   <span className="flex-grow text-black/80 dark:text-white/80 font-medium break-words">
                                     {item.location || '위치 정보 없음'}

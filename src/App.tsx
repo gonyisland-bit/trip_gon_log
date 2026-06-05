@@ -42,6 +42,22 @@ import {
   where
 } from 'firebase/firestore';
 
+function cleanForFirestore(obj: any): any {
+  if (obj === null || obj === undefined) return null;
+  if (typeof obj !== 'object') return obj;
+  if (obj instanceof Date) return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(cleanForFirestore);
+  }
+  const cleaned: any = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      cleaned[key] = cleanForFirestore(value);
+    }
+  }
+  return cleaned;
+}
+
 function App() {
   const [currentView, setCurrentView] = useState<string>('home'); 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
@@ -419,7 +435,7 @@ function App() {
     const isPlan = plans.some(p => p.id === tripId);
     const collectionName = isPlan ? 'plans' : 'trips';
     try {
-      await setDoc(doc(db, 'users', 'public', collectionName, String(tripId)), updatedData, { merge: true });
+      await setDoc(doc(db, 'users', 'public', collectionName, String(tripId)), cleanForFirestore(updatedData), { merge: true });
     } catch (err: any) {
       console.error("Error updating trip cover:", err);
       alert("여정 정보 저장에 실패했습니다.");
@@ -598,52 +614,51 @@ function App() {
       // ── 1. Update trip/plan document ──────────────────────────────────────
       const isPlan = plans.some(p => p.id === tripId);
       const collectionName = isPlan ? 'plans' : 'trips';
-      await setDoc(doc(db, 'users', uid, collectionName, String(tripId)), updatedTrip, { merge: true });
 
-      // ── 2. Replace timeline items for this trip ───────────────────────────
-      // Use targeted query (where tripId ==) to avoid reading entire collection
-      const timelineQ = query(collection(db, 'users', uid, 'timeline'), where('tripId', '==', tripId));
-      const timelineSnap = await getDocs(timelineQ);
-      const batch1 = writeBatch(db);
-      timelineSnap.forEach(d => batch1.delete(d.ref));
-      await batch1.commit();
+      // Parallelize fetching existing documents to delete
+      const [timelineSnap, flightsSnap, staysSnap, transitsSnap] = await Promise.all([
+        getDocs(query(collection(db, 'users', uid, 'timeline'), where('tripId', '==', tripId))),
+        getDocs(query(collection(db, 'users', uid, 'flights'), where('tripId', '==', tripId))),
+        getDocs(query(collection(db, 'users', uid, 'stays'), where('tripId', '==', tripId))),
+        getDocs(query(collection(db, 'users', uid, 'transits'), where('tripId', '==', tripId)))
+      ]);
 
-      const batch2 = writeBatch(db);
+      // ── 2. Run delete in a single batch ───────────────────────────────────
+      const deleteBatch = writeBatch(db);
+      timelineSnap.forEach(d => deleteBatch.delete(d.ref));
+      flightsSnap.forEach(d => deleteBatch.delete(d.ref));
+      staysSnap.forEach(d => deleteBatch.delete(d.ref));
+      transitsSnap.forEach(d => deleteBatch.delete(d.ref));
+      await deleteBatch.commit();
+
+      // ── 3. Save updated documents in a single batch (with cleanForFirestore) ──
+      const saveBatch = writeBatch(db);
+      
+      // Save Trip document (cleaned)
+      saveBatch.set(doc(db, 'users', uid, collectionName, String(tripId)), cleanForFirestore(updatedTrip), { merge: true });
+
+      // Save Timeline items (cleaned)
       updatedTimeline.forEach(item => {
         const { originDate: _, ...cleanItem } = item as any;
-        batch2.set(doc(db, 'users', uid, 'timeline', String(cleanItem.id)), { ...cleanItem, tripId });
+        saveBatch.set(doc(db, 'users', uid, 'timeline', String(cleanItem.id)), cleanForFirestore({ ...cleanItem, tripId }));
       });
-      await batch2.commit();
 
-      // ── 3. Replace flights ───────────────────────────────────────────────
-      const flightsQ = query(collection(db, 'users', uid, 'flights'), where('tripId', '==', tripId));
-      const flightsSnap = await getDocs(flightsQ);
-      const batch3 = writeBatch(db);
-      flightsSnap.forEach(d => batch3.delete(d.ref));
+      // Save Flights (cleaned)
       updatedFlights.forEach(item => {
-        batch3.set(doc(db, 'users', uid, 'flights', String(item.id)), { ...item, tripId });
+        saveBatch.set(doc(db, 'users', uid, 'flights', String(item.id)), cleanForFirestore({ ...item, tripId }));
       });
-      await batch3.commit();
 
-      // ── 4. Replace stays ─────────────────────────────────────────────────
-      const staysQ = query(collection(db, 'users', uid, 'stays'), where('tripId', '==', tripId));
-      const staysSnap = await getDocs(staysQ);
-      const batch4 = writeBatch(db);
-      staysSnap.forEach(d => batch4.delete(d.ref));
+      // Save Stays (cleaned)
       updatedStays.forEach(item => {
-        batch4.set(doc(db, 'users', uid, 'stays', String(item.id)), { ...item, tripId });
+        saveBatch.set(doc(db, 'users', uid, 'stays', String(item.id)), cleanForFirestore({ ...item, tripId }));
       });
-      await batch4.commit();
 
-      // ── 5. Replace transits ──────────────────────────────────────────────
-      const transitsQ = query(collection(db, 'users', uid, 'transits'), where('tripId', '==', tripId));
-      const transitsSnap = await getDocs(transitsQ);
-      const batch5 = writeBatch(db);
-      transitsSnap.forEach(d => batch5.delete(d.ref));
+      // Save Transits (cleaned)
       updatedTransits.forEach(item => {
-        batch5.set(doc(db, 'users', uid, 'transits', String(item.id)), { ...item, tripId });
+        saveBatch.set(doc(db, 'users', uid, 'transits', String(item.id)), cleanForFirestore({ ...item, tripId }));
       });
-      await batch5.commit();
+
+      await saveBatch.commit();
 
       alert('성공적으로 저장되었습니다.');
     } catch (err: any) {
@@ -684,7 +699,7 @@ function App() {
         tags: [...((tripToDelete?.tags || []).filter(t => t !== 'Plan')), isPlan ? 'Plan' : 'Archive']
       };
       const trashRef = doc(db, 'users', 'public', 'trash', String(tripId));
-      batch.set(trashRef, trashedData);
+      batch.set(trashRef, cleanForFirestore(trashedData));
       batch.delete(tripRef);
 
       await batch.commit();
@@ -710,7 +725,7 @@ function App() {
       const restoreRef = doc(db, 'users', 'public', collectionName, String(tripId));
       const trashRef = doc(db, 'users', 'public', 'trash', String(tripId));
 
-      batch.set(restoreRef, restoredData);
+      batch.set(restoreRef, cleanForFirestore(restoredData));
       batch.delete(trashRef);
       await batch.commit();
       alert(`'${trashed.title}' 여정이 성공적으로 복구되었습니다.`);
