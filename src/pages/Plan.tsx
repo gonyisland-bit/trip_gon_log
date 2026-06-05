@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Archive } from 'lucide-react';
+import { Plus, Archive, Trash2 } from 'lucide-react';
 import { Plan } from '../types';
 
 interface PlanHubPageProps {
@@ -8,6 +8,7 @@ interface PlanHubPageProps {
   onAddPlan: () => void;
   handleMoveToArchive: (plan: Plan) => void;
   isLoggedIn: boolean;
+  onDeletePlan: (id: number) => Promise<void>;
 }
 
 export function PlanHubPage({
@@ -16,6 +17,7 @@ export function PlanHubPage({
   onAddPlan,
   handleMoveToArchive,
   isLoggedIn,
+  onDeletePlan,
 }: PlanHubPageProps) {
   return (
     <main className="animate-in fade-in duration-500 min-h-screen w-full">
@@ -33,9 +35,23 @@ export function PlanHubPage({
       
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-black/20 dark:divide-white/20 border-b border-black/20 dark:border-white/20 w-full">
         {plans.map((plan) => (
-          <div key={plan.id} className="p-6 md:p-8 flex flex-col group cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-b md:border-b-0 border-black/20 dark:border-white/20 w-full" onClick={() => onNavigate('detail', plan.id)}>
+          <div key={plan.id} className="p-6 md:p-8 flex flex-col group cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-b md:border-b-0 border-black/20 dark:border-white/20 w-full relative" onClick={() => onNavigate('detail', plan.id)}>
             <div className="aspect-[4/3] w-full overflow-hidden mb-6 border border-black/10 dark:border-white/10 relative bg-black/5">
               <img src={plan.img} alt={plan.title} className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500" />
+              {isLoggedIn && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm(`'${plan.title}' 계획을 영구 삭제하시겠습니까?`)) {
+                      onDeletePlan(plan.id);
+                    }
+                  }}
+                  className="absolute top-3 right-3 p-2 bg-black/70 hover:bg-red-600 text-white transition-colors opacity-0 group-hover:opacity-100 z-10"
+                  title="Delete Plan"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
             </div>
             <div className="font-bold tracking-tight uppercase text-lg mb-6 leading-tight break-words">
               {plan.title}

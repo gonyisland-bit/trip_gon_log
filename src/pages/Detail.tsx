@@ -21,6 +21,7 @@ import {
 import { fetchCoordinates, fetchPlacePredictions, fetchCoordinatesByPlaceId } from '../utils/googleMapsHelper';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, storage } from '../firebase';
+import { compressImage } from '../utils/imageHelper';
 
 interface JourneyDetailPageProps {
   isLoggedIn: boolean;
@@ -77,6 +78,18 @@ function generateDateList(dateRangeStr: string): string[] {
   }
   
   return list;
+}
+
+// Convert total minutes from midnight to "HH:MM AM/PM" format
+function minutesToTimeStr(minutes: number): string {
+  const positiveMin = Math.max(0, Math.min(1439, minutes));
+  let hours = Math.floor(positiveMin / 60);
+  const mins = positiveMin % 60;
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  const minsStr = String(mins).padStart(2, '0');
+  return `${hours}:${minsStr} ${ampm}`;
 }
 
 // Convert "10:30 AM" or "15:30" into total minutes from midnight for sorting
@@ -205,10 +218,124 @@ export function JourneyDetailPage({
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const itemRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const dateBarRef = useRef<HTMLDivElement>(null);
+
+  // Drag and Drop reorder helper
+  const handleDropTimelineItem = (targetId: number) => {
+    if (draggedItemId === null || draggedItemId === targetId) return;
+
+    const flatTimeline = [...draftTimeline];
+    const draggedIndex = flatTimeline.findIndex(item => item.id === draggedItemId);
+    const targetIndex = flatTimeline.findIndex(item => item.id === targetId);
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    // Remove item and insert at target
+    const [draggedItem] = flatTimeline.splice(draggedIndex, 1);
+    flatTimeline.splice(targetIndex, 0, draggedItem);
+
+    // Recompute time for dragged item based on its new neighbors
+    const prevItem = targetIndex > 0 ? flatTimeline[targetIndex - 1] : null;
+    const nextItem = targetIndex < flatTimeline.length - 1 ? flatTimeline[targetIndex + 1] : null;
+
+    let newTime = draggedItem.time;
+
+    if (prevItem && nextItem) {
+      const prevMin = parseTimeToMinutes(prevItem.time);
+      const nextMin = parseTimeToMinutes(nextItem.time);
+      let midMin = Math.round((prevMin + nextMin) / 2);
+      if (Math.abs(prevMin - nextMin) <= 1) {
+        midMin = prevMin + 5;
+      }
+      newTime = minutesToTimeStr(midMin);
+    } else if (prevItem) {
+      const prevMin = parseTimeToMinutes(prevItem.time);
+      newTime = minutesToTimeStr(prevMin + 60);
+    } else if (nextItem) {
+      const nextMin = parseTimeToMinutes(nextItem.time);
+      newTime = minutesToTimeStr(Math.max(0, nextMin - 60));
+    }
+
+    draggedItem.time = newTime;
+    
+    // Ensure it belongs to the target item's date context
+    const targetItem = flatTimeline.find(item => item.id === targetId);
+    if (targetItem) {
+      draggedItem.date = targetItem.date;
+    }
+
+    setDraftTimeline(flatTimeline);
+    setDraggedItemId(null);
+  };
+
+  // Generate default timeline template for the entire journey duration
+  const handleGenerateDefaultTemplate = () => {
+    if (!draftTrip) return;
+    if (draftTimeline.length > 0) {
+      if (!window.confirm("기존의 모든 타임라인 일정이 초기화되고 기본 템플릿으로 대체됩니다. 진행하시겠습니까?")) {
+        return;
+      }
+    }
+
+    const dates = generatedDates;
+    const totalDays = dates.length;
+    const cityDisplay = (draftTrip.locationStr || '').split(',')[0].trim().toUpperCase() || 'CITY';
+
+    const items: TimelineItem[] = [];
+    dates.forEach((date, idx) => {
+      const isFirst = idx === 0;
+      const isLast = idx === totalDays - 1;
+      const baseId = Date.now() + idx * 100 + 1;
+
+      let dayItems: any[] = [];
+      if (isFirst && totalDays === 1) {
+        dayItems = [
+          { id: baseId,     time: '08:00 AM', type: 'transit',  place: '출국 공항 도착',          cost: '-',   memo: '탑승 수속 및 출국심사', date },
+          { id: baseId + 1, time: '10:00 AM', type: 'transit',  place: '항공기 탑승 (출발)',       cost: '-',   memo: '항공편 출발', date },
+          { id: baseId + 2, time: '12:00 PM', type: 'transit',  place: `${cityDisplay} 도착`,     cost: '-',   memo: '입국 심사 및 현지 이동', date },
+          { id: baseId + 3, time: '02:00 PM', type: 'activity', place: `${cityDisplay} 관람`,     cost: '-',   memo: '현지 관광 일정', date },
+          { id: baseId + 4, time: '07:00 PM', type: 'transit',  place: '귀국 공항 이동',           cost: '-',   memo: '공항 이동 및 탑승수속', date },
+          { id: baseId + 5, time: '09:00 PM', type: 'transit',  place: '항공기 탑승 (귀국)',       cost: '-',   memo: '귀국 항공편 탑승', date },
+        ];
+      } else if (isFirst) {
+        dayItems = [
+          { id: baseId,     time: '08:00 AM', type: 'transit',  place: '출국 공항 도착',          cost: '-',   memo: '탑승 수속 및 출국심사', date },
+          { id: baseId + 1, time: '10:00 AM', type: 'transit',  place: '항공기 탑승 (출발)',       cost: '-',   memo: '항공편 출발', date },
+          { id: baseId + 2, time: '12:00 PM', type: 'transit',  place: `${cityDisplay} 도착·입국`, cost: '-',   memo: '입국 심사 후 시내 이동', date },
+          { id: baseId + 3, time: '02:00 PM', type: 'transit',  place: '시내 교통 이동',           cost: '-',   memo: '숙소까지 이동', date },
+          { id: baseId + 4, time: '04:00 PM', type: 'stay',     place: '숙소 체크인',             cost: '-',   memo: '짐 풀고 휴식', date },
+          { id: baseId + 5, time: '07:00 PM', type: 'dining',   place: '저녁 식사',               cost: '-',   memo: '현지 식당 탐방', date },
+        ];
+      } else if (isLast) {
+        dayItems = [
+          { id: baseId,     time: '08:00 AM', type: 'dining',   place: '아침 식사',               cost: '-',   memo: '숙소 조식 또는 근처 카페', date },
+          { id: baseId + 1, time: '10:00 AM', type: 'stay',     place: '숙소 체크아웃',           cost: '-',   memo: '체크아웃 후 짐 보관', date },
+          { id: baseId + 2, time: '11:00 AM', type: 'activity', place: '출발 전 마지막 일정',      cost: '-',   memo: '기념품 구입 등', date },
+          { id: baseId + 3, time: '01:00 PM', type: 'transit',  place: '공항 이동',               cost: '-',   memo: '공항 셔틀 또는 대중교통', date },
+          { id: baseId + 4, time: '03:00 PM', type: 'transit',  place: '귀국 탑승수속·출국심사',  cost: '-',   memo: '면세점 쇼핑', date },
+          { id: baseId + 5, time: '06:00 PM', type: 'transit',  place: '항공기 탑승 (귀국)',       cost: '-',   memo: '귀국 항공편 탑승', date },
+        ];
+      } else {
+        dayItems = [
+          { id: baseId,     time: '08:00 AM', type: 'dining',   place: '아침 식사',               cost: '-',   memo: '숙소 조식 또는 인근 카페', date },
+          { id: baseId + 1, time: '10:00 AM', type: 'activity', place: `${cityDisplay} 오전 관람`, cost: '-',   memo: '주요 명소 방문', date },
+          { id: baseId + 2, time: '12:30 PM', type: 'dining',   place: '점심 식사',               cost: '-',   memo: '현지 맛집 방문', date },
+          { id: baseId + 3, time: '02:00 PM', type: 'activity', place: `${cityDisplay} 오후 일정`, cost: '-',   memo: '쇼핑, 카페, 문화 체험 등', date },
+          { id: baseId + 4, time: '07:00 PM', type: 'dining',   place: '저녁 식사',               cost: '-',   memo: '현지 레스토랑 저녁', date },
+          { id: baseId + 5, time: '09:30 PM', type: 'stay',     place: '숙소 복귀',               cost: '-',   memo: '숙소 휴식', date },
+        ];
+      }
+
+      dayItems.forEach(di => {
+        items.push({ ...di, tripId: draftTrip.id });
+      });
+    });
+
+    setDraftTimeline(items);
+  };
 
   // Set draft state when entering edit mode
   const handleStartEditing = () => {
@@ -417,7 +544,7 @@ export function JourneyDetailPage({
     setDraftTransits(prev => [...prev, newTransit]);
   };
 
-  // Gallery actions
+  // Gallery actions with image compression
   const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -427,8 +554,9 @@ export function JourneyDetailPage({
 
     setUploadingImage(true);
     try {
+      const compressedBlob = await compressImage(file);
       const storageRef = ref(storage, `users/public/gallery/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
+      await uploadBytes(storageRef, compressedBlob);
       const url = await getDownloadURL(storageRef);
       
       if (isEditing && draftTrip) {
@@ -477,7 +605,13 @@ export function JourneyDetailPage({
     }
   };
 
-  const galleryImages = tripToUse?.gallery || [];
+  // Combine custom metadata gallery with all image attachments within timeline items
+  const galleryImages = [
+    ...new Set([
+      ...(tripToUse?.gallery || []),
+      ...baseTimeline.map(item => item.img).filter(Boolean) as string[]
+    ])
+  ];
 
   return (
     <main className="animate-in slide-in-from-right-8 duration-500 flex flex-col md:flex-row h-[calc(100vh-73px)] w-full overflow-hidden">
@@ -673,6 +807,16 @@ export function JourneyDetailPage({
 
               {/* Timeline Items List */}
               <div className="flex flex-col pb-20 w-full">
+                {isEditing && (
+                  <div className="flex justify-center py-3 border-b border-black/10 dark:border-white/10 shrink-0 bg-black/5 dark:bg-white/5">
+                    <button
+                      onClick={handleGenerateDefaultTemplate}
+                      className="text-[10px] font-black uppercase tracking-widest border border-red-600 text-red-600 hover:bg-red-600 hover:text-white px-4 py-2 transition-colors flex items-center gap-1.5"
+                    >
+                      Generate Default Template
+                    </button>
+                  </div>
+                )}
                 {currentTimeline.length === 0 ? (
                   <div className="text-center py-16 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
                     해당 날짜에 등록된 일정이 없습니다.
@@ -684,7 +828,11 @@ export function JourneyDetailPage({
                       <div 
                         key={item.id} 
                         ref={el => { itemRefs.current[item.id] = el; }} 
-                        className={`flex flex-col border-b border-black/10 dark:border-white/10 transition-colors w-full ${isActive ? 'bg-black/5 dark:bg-white/5' : ''}`}
+                        className={`flex flex-col border-b border-black/10 dark:border-white/10 transition-colors w-full ${isActive ? 'bg-black/5 dark:bg-white/5' : ''} ${isEditing ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                        draggable={isEditing}
+                        onDragStart={() => setDraggedItemId(item.id)}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={() => handleDropTimelineItem(item.id)}
                       >
                         <div 
                           className="group flex flex-row items-start py-4 px-4 md:py-5 md:px-6 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer relative w-full" 
@@ -798,7 +946,23 @@ export function JourneyDetailPage({
                             
                             {/* Card thumbnail (strictly preview, image is uploadable) */}
                             {item.img ? (
-                              <div className={`w-10 h-10 md:w-12 md:h-12 overflow-hidden border transition-all relative ${isActive ? 'border-red-600 dark:border-red-400 scale-110 origin-right' : 'border-black/20 dark:border-white/20'}`}>
+                              <div 
+                                className={`w-10 h-10 md:w-12 md:h-12 overflow-hidden border transition-all relative ${isActive ? 'border-red-600 dark:border-red-400 scale-110 origin-right' : 'border-black/20 dark:border-white/20'}`}
+                                onClick={(e) => {
+                                  if (!isEditing) {
+                                    e.stopPropagation();
+                                    const imgIdx = galleryImages.indexOf(item.img!);
+                                    if (imgIdx !== -1) {
+                                      setLightboxIndex(imgIdx);
+                                      setIsLightboxOpen(true);
+                                    } else {
+                                      // Fallback
+                                      setLightboxIndex(0);
+                                      setIsLightboxOpen(true);
+                                    }
+                                  }
+                                }}
+                              >
                                 <img src={item.img} alt={item.place} className={`w-full h-full object-cover transition-all ${isActive ? 'grayscale-0' : 'grayscale group-hover:grayscale-0'}`} />
                                 <ImageEditOverlay 
                                   isEditMode={isEditing} 

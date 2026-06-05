@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { Trip } from '../types';
 
 interface ArchiveHubPageProps {
@@ -7,6 +7,7 @@ interface ArchiveHubPageProps {
   onNavigate: (view: string, tripId?: number | null) => void;
   onAddArchive: () => void;
   isLoggedIn: boolean;
+  onDeleteTrip: (id: number) => Promise<void>;
 }
 
 export function ArchiveHubPage({
@@ -14,6 +15,7 @@ export function ArchiveHubPage({
   onNavigate,
   onAddArchive,
   isLoggedIn,
+  onDeleteTrip,
 }: ArchiveHubPageProps) {
   const [activeFilter, setActiveFilter] = useState('All');
   const filters = ['All', '2026', '2025', '2024', 'Kyoto', 'Paris', 'Personal', 'Business'];
@@ -52,9 +54,23 @@ export function ArchiveHubPage({
       
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-black/20 dark:divide-white/20 transition-colors border-b border-black/20 dark:border-white/20 w-full">
         {filteredTrips.map((trip) => (
-          <div key={trip.id} className="group cursor-pointer p-6 flex flex-col h-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-b sm:border-b-0 border-black/20 dark:border-white/20 w-full" onClick={() => onNavigate('detail', trip.id)}>
+          <div key={trip.id} className="group cursor-pointer p-6 flex flex-col h-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-b sm:border-b-0 border-black/20 dark:border-white/20 w-full relative" onClick={() => onNavigate('detail', trip.id)}>
             <div className="aspect-[3/4] w-full overflow-hidden mb-4 border border-black/10 dark:border-white/10 relative bg-black/5">
               <img src={trip.img} alt={trip.title} className="absolute inset-0 w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
+              {isLoggedIn && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm(`'${trip.title}' 여정을 영구 삭제하시겠습니까?`)) {
+                      onDeleteTrip(trip.id);
+                    }
+                  }}
+                  className="absolute top-3 right-3 p-2 bg-black/70 hover:bg-red-600 text-white transition-colors opacity-0 group-hover:opacity-100 z-10"
+                  title="Delete Journey"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
             </div>
             <div className="mt-auto">
               <div className="font-bold tracking-tight uppercase text-sm break-words">

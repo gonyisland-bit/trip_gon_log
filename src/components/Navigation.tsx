@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Edit2, LogOut, User, Sun, Moon } from 'lucide-react';
+import { Menu, LogOut, User, Sun, Moon, Settings } from 'lucide-react';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 
@@ -13,7 +13,7 @@ interface NavigationProps {
   showSettings: boolean;
   setShowSettings: (value: boolean) => void;
   openAuthModal: (mode: 'login' | 'signup') => void;
-  openManageModal: () => void;
+  openSettingModal: () => void;
 }
 
 export function Navigation({
@@ -26,7 +26,7 @@ export function Navigation({
   showSettings,
   setShowSettings,
   openAuthModal,
-  openManageModal,
+  openSettingModal,
 }: NavigationProps) {
   const currentUser = auth.currentUser;
   const displayName = currentUser?.displayName || currentUser?.email?.split('@')[0].toUpperCase() || 'USER';
@@ -95,12 +95,12 @@ export function Navigation({
                 <button 
                   onClick={() => { 
                     setShowSettings(false); 
-                    openManageModal(); 
+                    openSettingModal(); 
                   }}
-                  className="p-4 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 border-b border-black/10 dark:border-white/10 transition-colors text-xs font-bold uppercase tracking-widest w-full text-left text-red-600 dark:text-red-400"
+                  className="p-4 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 border-b border-black/10 dark:border-white/10 transition-colors text-xs font-bold uppercase tracking-widest w-full text-left text-black dark:text-white"
                 >
-                  <span>Manage Journeys</span>
-                  <Edit2 className="w-4 h-4" />
+                  <span>Setting</span>
+                  <Settings className="w-4 h-4" />
                 </button>
               )}
               {isLoggedIn ? (

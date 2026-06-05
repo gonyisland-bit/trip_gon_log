@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { ImagePlus, Loader2 } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../firebase';
+import { compressImage } from '../utils/imageHelper';
 
 interface ImageEditOverlayProps {
   isEditMode: boolean;
@@ -31,9 +32,13 @@ export function ImageEditOverlay({ isEditMode, onImageUploaded }: ImageEditOverl
 
     setUploading(true);
     try {
-      const storagePath = `users/${user.uid}/images/${Date.now()}_${file.name}`;
+      // Compress the image before uploading
+      const compressedBlob = await compressImage(file);
+      
+      // Store in users/public for public visibility and ease of rules management
+      const storagePath = `users/public/images/${Date.now()}_${file.name}`;
       const imageRef = ref(storage, storagePath);
-      await uploadBytes(imageRef, file);
+      await uploadBytes(imageRef, compressedBlob);
       const downloadUrl = await getDownloadURL(imageRef);
       onImageUploaded(downloadUrl);
     } catch (error) {

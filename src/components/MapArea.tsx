@@ -30,6 +30,7 @@ export function MapArea({
   // After first fit, we don't snap back on empty mapPoints.
   const hasFitRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
+  const [isInteractive, setIsInteractive] = useState(false);
 
   // ─── Effect 1: Initialize Leaflet map (once per trip.id) ───────────────────
   useEffect(() => {
@@ -53,9 +54,10 @@ export function MapArea({
     const map = L.map(containerRef.current, {
       zoomControl: false,       // we render custom controls
       attributionControl: false,
-      scrollWheelZoom: true,
-      dragging: true,
-      touchZoom: true,
+      scrollWheelZoom: false,   // disabled by default to prevent page scroll interference
+      dragging: false,          // disabled by default
+      touchZoom: false,         // disabled by default
+      doubleClickZoom: false,   // disabled by default
     }).setView([defaultLat, defaultLng], 13);
 
     mapRef.current = map;
@@ -87,6 +89,23 @@ export function MapArea({
       }
     };
   }, [trip.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Effect 1b: Toggle map dragging/zooming based on isInteractive state ───
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    if (isInteractive) {
+      map.dragging.enable();
+      map.scrollWheelZoom.enable();
+      map.doubleClickZoom.enable();
+      map.touchZoom.enable();
+    } else {
+      map.dragging.disable();
+      map.scrollWheelZoom.disable();
+      map.doubleClickZoom.disable();
+      map.touchZoom.disable();
+    }
+  }, [isInteractive, mapReady]);
 
   // ─── Effect 2: Swap tiles on dark-mode toggle ───────────────────────────────
   useEffect(() => {
@@ -173,14 +192,14 @@ export function MapArea({
       markersRef.current[p.id] = marker;
     });
 
-    // Fit bounds only the FIRST time we have real pins
-    if (!hasFitRef.current) {
+    // Fit bounds automatically if map interaction is locked or if it's the very first load
+    if (coords.length > 0 && (!isInteractive || !hasFitRef.current)) {
       const bounds = L.latLngBounds(coords);
       map.fitBounds(bounds, { padding: [48, 48], maxZoom: 15 });
       hasFitRef.current = true;
     }
 
-  }, [mapPoints, expandedItemId, isDarkMode, mapReady]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mapPoints, expandedItemId, isDarkMode, mapReady, isInteractive]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Effect 4: Map click → open Google Maps ────────────────────────────────
   useEffect(() => {
@@ -243,12 +262,25 @@ export function MapArea({
         </button>
       </div>
 
-      {/* ── Status Bar ── */}
-      <div className="absolute bottom-4 left-4 right-4 md:bottom-6 md:left-6 md:right-6 flex justify-between z-20 pointer-events-none">
+      {/* ── Status Bar & Interaction Toggles ── */}
+      <div className="absolute bottom-4 left-4 right-4 md:bottom-6 md:left-6 md:right-6 flex justify-between items-end z-20 pointer-events-none">
         <div className="bg-[#F9F8F6]/95 dark:bg-[#111111]/95 backdrop-blur border border-black/20 dark:border-white/20 px-2 py-1.5 md:px-3 md:py-2 text-[9px] md:text-[10px] uppercase font-bold tracking-widest flex items-center gap-1.5 transition-colors pointer-events-auto">
           <MapPin className="w-3 h-3 md:w-4 md:h-4 text-red-600 dark:text-red-400" />
           <span className="hidden sm:inline">{trip.locationStr} : </span>
           {selectedDate === 'ALL' ? 'Overall Routes' : 'Daily Route'}
+        </div>
+
+        <div className="pointer-events-auto">
+          <button
+            onClick={() => setIsInteractive(!isInteractive)}
+            className={`px-3 py-1.5 md:px-4 md:py-2 text-[9px] md:text-[10px] uppercase font-black tracking-widest border transition-all rounded-sm flex items-center gap-1.5 shadow-md ${
+              isInteractive
+                ? 'bg-red-500 border-red-500 text-white hover:bg-red-600'
+                : 'bg-[#F9F8F6]/95 dark:bg-[#111111]/95 text-black dark:text-white border-black/20 dark:border-white/20 hover:bg-white dark:hover:bg-[#222]'
+            }`}
+          >
+            {isInteractive ? '🔒 LOCK MAP' : '🔓 UNLOCK MAP (ZOOM/DRAG)'}
+          </button>
         </div>
       </div>
     </div>

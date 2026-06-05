@@ -7,6 +7,8 @@ interface HomePageProps {
   trips: Trip[];
   plans: Plan[];
   handleMoveToArchive: (plan: Plan) => void;
+  homeTitle: string;
+  homeSubtitle: string;
 }
 
 export function HomePage({
@@ -14,6 +16,8 @@ export function HomePage({
   trips,
   plans,
   handleMoveToArchive,
+  homeTitle,
+  homeSubtitle,
 }: HomePageProps) {
   const [activeFilter, setActiveFilter] = useState('All');
   const filters = ['All', '2026', '2025', '2024', 'Kyoto', 'Paris', 'Personal', 'Business'];
@@ -37,15 +41,31 @@ export function HomePage({
         <div className="absolute inset-0 flex flex-col justify-center p-6 sm:p-10 md:p-16 w-full md:w-2/3 lg:w-1/2 text-white z-10 pointer-events-none">
           <div className="pointer-events-auto max-w-full">
             <h1 
-              className="text-4xl min-[390px]:text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[0.85] uppercase drop-shadow-xl"
+              className="text-4xl min-[390px]:text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[0.9] uppercase drop-shadow-xl"
               style={{ wordBreak: 'keep-all' }}
             >
-              Your <br />Personal <br />Travel <br />Magazine.
+              {homeTitle.includes('<br />') ? (
+                homeTitle.split('<br />').map((part, idx) => (
+                  <React.Fragment key={idx}>
+                    {part}
+                    {idx < homeTitle.split('<br />').length - 1 && <br />}
+                  </React.Fragment>
+                ))
+              ) : homeTitle.includes('\n') ? (
+                homeTitle.split('\n').map((part, idx) => (
+                  <React.Fragment key={idx}>
+                    {part}
+                    {idx < homeTitle.split('\n').length - 1 && <br />}
+                  </React.Fragment>
+                ))
+              ) : (
+                homeTitle
+              )}
             </h1>
           </div>
           <div className="pointer-events-auto max-w-full pr-4 mt-6 md:mt-8">
-            <p className="text-sm md:text-base text-white/80 drop-shadow-md truncate">
-              나만의 감성으로 기록하고 보관하는 여행 아카이브.
+            <p className="text-sm md:text-base text-white/80 drop-shadow-md break-keep">
+              {homeSubtitle}
             </p>
           </div>
         </div>

@@ -7,7 +7,7 @@ import { PlanHubPage } from './pages/Plan';
 import { JourneyDetailPage } from './pages/Detail';
 import { AuthModal } from './components/AuthModal';
 import { CreateTripModal } from './components/CreateTripModal';
-import { ManageTripsModal } from './components/ManageTripsModal';
+import { SettingsModal } from './components/SettingsModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { fetchCoordinates } from './utils/googleMapsHelper';
 import { 
@@ -62,6 +62,8 @@ function App() {
   const [flightsByTrip, setFlightsByTrip] = useState<{ [id: number]: FlightItem[] }>({});
   const [staysByTrip, setStaysByTrip] = useState<{ [id: number]: StayItem[] }>({});
   const [transitByTrip, setTransitByTrip] = useState<{ [id: number]: TransitItem[] }>({});
+  const [homeTitle, setHomeTitle] = useState("Your Personal Travel Magazine.");
+  const [homeSubtitle, setHomeSubtitle] = useState("나만의 감성으로 기록하고 보관하는 여행 아카이브.");
 
   // activeTrip: strictly match activeTripId. Do not automatically fall back to trips[0]
   // to avoid rendering one trip's map with another trip's details during sync.
@@ -238,6 +240,16 @@ function App() {
       setDbError(err.message);
     });
 
+    const unsubSettings = onSnapshot(doc(db, 'users', uid, 'settings', 'home'), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.title) setHomeTitle(data.title);
+        if (data.subtitle) setHomeSubtitle(data.subtitle);
+      }
+    }, (err) => {
+      console.error("Settings snapshot subscription error:", err);
+    });
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setIsLoggedIn(true);
@@ -254,6 +266,7 @@ function App() {
       unsubFlights();
       unsubStays();
       unsubTransit();
+      unsubSettings();
     };
   }, []);
 
@@ -359,6 +372,19 @@ function App() {
     } catch (err: any) {
       console.error("Error moving plan to archive:", err);
       alert("아카이브로 이동하는 데 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+    }
+  };
+
+  const handleSaveSettings = async (title: string, subtitle: string) => {
+    if (!isLoggedIn) return;
+    try {
+      await setDoc(doc(db, 'users', 'public', 'settings', 'home'), {
+        title,
+        subtitle
+      });
+    } catch (err) {
+      console.error("Failed to save settings:", err);
+      throw err;
     }
   };
 
@@ -701,7 +727,7 @@ function App() {
           showSettings={showSettings}
           setShowSettings={setShowSettings}
           openAuthModal={(mode) => { setAuthModalMode(mode); setIsAuthModalOpen(true); }}
-          openManageModal={() => setIsManageModalOpen(true)}
+          openSettingModal={() => setIsManageModalOpen(true)}
         />
 
         {/* View Routing */}
@@ -712,6 +738,8 @@ function App() {
               trips={trips} 
               plans={plans} 
               handleMoveToArchive={handleMoveToArchive}
+              homeTitle={homeTitle}
+              homeSubtitle={homeSubtitle}
             />
           )}
           {currentView === 'archive' && (
@@ -720,6 +748,7 @@ function App() {
               onNavigate={navigateTo} 
               onAddArchive={handleAddArchive}
               isLoggedIn={isLoggedIn}
+              onDeleteTrip={handleDeleteJourney}
             />
           )}
           {currentView === 'plan' && (
@@ -729,6 +758,7 @@ function App() {
               onAddPlan={handleAddPlan}
               handleMoveToArchive={handleMoveToArchive}
               isLoggedIn={isLoggedIn}
+              onDeletePlan={handleDeleteJourney}
             />
           )}
           {currentView === 'detail' && (
@@ -782,15 +812,13 @@ function App() {
           onCreate={handleCreateJourney}
         />
 
-        {/* Manage Trips Modal Popup */}
-        <ManageTripsModal
+        {/* Settings Modal Popup */}
+        <SettingsModal
           isOpen={isManageModalOpen}
           onClose={() => setIsManageModalOpen(false)}
-          trips={trips}
-          plans={plans}
-          onUpdateTrip={handleUpdateTrip}
-          onDeleteJourney={handleDeleteJourney}
-          onMoveToArchive={handleMoveToArchive}
+          homeTitle={homeTitle}
+          homeSubtitle={homeSubtitle}
+          onSaveSettings={handleSaveSettings}
         />
       </div>
     </div>
