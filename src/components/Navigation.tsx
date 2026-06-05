@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Menu, Edit2, LogOut, User, Sun, Moon } from 'lucide-react';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
-import { AuthModal } from './AuthModal';
 
 interface NavigationProps {
   currentView: string;
@@ -33,6 +32,30 @@ export function Navigation({
 }: NavigationProps) {
   const currentUser = auth.currentUser;
   const displayName = currentUser?.displayName || currentUser?.email?.split('@')[0].toUpperCase() || 'USER';
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click or Escape key
+  useEffect(() => {
+    if (!showSettings) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowSettings(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowSettings(false);
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showSettings, setShowSettings]);
 
   return (
     <nav className="sticky top-0 z-50 flex items-center justify-between px-4 md:px-6 py-4 bg-[#F9F8F6]/90 dark:bg-[#111111]/90 backdrop-blur-md border-b border-black/20 dark:border-white/20 transition-colors duration-300 w-full">
@@ -67,7 +90,7 @@ export function Navigation({
         <button onClick={() => navigateTo('plan')} className={`hover:opacity-60 transition-opacity ${currentView === 'plan' ? 'font-black border-b-2 border-black dark:border-white' : ''}`}>Plan</button>
         
         {/* Settings & User (Hamburger Menu) */}
-        <div className="relative">
+        <div className="relative" ref={dropdownRef}>
           <button 
             onClick={() => setShowSettings(!showSettings)} 
             className="hover:opacity-60 transition-opacity flex items-center border-l border-black/20 dark:border-white/20 pl-3 sm:pl-4 md:pl-8 ml-1 sm:ml-2 md:ml-4"

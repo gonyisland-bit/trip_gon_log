@@ -42,6 +42,7 @@ export interface TimelineItem {
   img?: string | null;
   lat?: number;
   lng?: number;
+  date?: string;
 }
 
 export interface TimelineData {

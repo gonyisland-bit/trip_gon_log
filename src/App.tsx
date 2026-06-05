@@ -407,13 +407,107 @@ function App() {
     };
 
     try {
-      // 1. 우선 위경도 없이 즉시 Firestore에 저장 (화면 전환을 지연시키지 않음)
+      // 1. Save journey doc immediately (before geocoding)
       await setDoc(doc(db, 'users', user.uid, collectionName, String(newId)), newJourney);
-      
-      // 2. 생성과 동시에 상세 페이지로 즉시 전환
+
+      // 2. Generate default template timeline items by date
+      const generateTemplateDays = (): { date: string; items: any[] }[] => {
+        // Parse dateRange: 'YYYY.MM.DD - YYYY.MM.DD'
+        const parts = dateRange.split(' - ');
+        if (parts.length < 2) return [];
+        const parseDate = (s: string) => {
+          const d = s.trim().replace(/\./g, '-');
+          return new Date(d);
+        };
+        const startDate = parseDate(parts[0]);
+        const rawEnd = parts[1].trim().replace(/\./g, '-');
+        const endDateStr = rawEnd.split('-').length < 3
+          ? `${parts[0].trim().split('.')[0]}-${rawEnd}`
+          : rawEnd;
+        const endDate = new Date(endDateStr);
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return [];
+
+        const dayList: string[] = [];
+        const cur = new Date(startDate);
+        for (let i = 0; i < 60 && cur <= endDate; i++) {
+          const yyyy = cur.getFullYear();
+          const mm = String(cur.getMonth() + 1).padStart(2, '0');
+          const dd = String(cur.getDate()).padStart(2, '0');
+          dayList.push(`${yyyy}.${mm}.${dd}`);
+          cur.setDate(cur.getDate() + 1);
+        }
+
+        const totalDays = dayList.length;
+        const cityDisplay = location.split(',')[0].trim().toUpperCase();
+
+        return dayList.map((date, idx) => {
+          const isFirst = idx === 0;
+          const isLast = idx === totalDays - 1;
+          const baseId = newId + idx * 100 + 1;
+          let items: any[] = [];
+
+          if (isFirst && totalDays === 1) {
+            // Single day trip
+            items = [
+              { id: baseId,     time: '08:00 AM', type: 'transit',  place: '출국 공항 도착',          cost: '-',   memo: '탑승 수속 및 출국심사', date },
+              { id: baseId + 1, time: '10:00 AM', type: 'transit',  place: '항공기 탑승 (출발)',       cost: '-',   memo: '항공편 출발', date },
+              { id: baseId + 2, time: '12:00 PM', type: 'transit',  place: `${cityDisplay} 도착`,     cost: '-',   memo: '입국 심사 및 현지 이동', date },
+              { id: baseId + 3, time: '02:00 PM', type: 'activity', place: `${cityDisplay} 관람`,     cost: '-',   memo: '현지 관광 일정', date },
+              { id: baseId + 4, time: '07:00 PM', type: 'transit',  place: '귀국 공항 이동',           cost: '-',   memo: '공항 이동 및 탑승수속', date },
+              { id: baseId + 5, time: '09:00 PM', type: 'transit',  place: '항공기 탑승 (귀국)',       cost: '-',   memo: '귀국 항공편 탑승', date },
+            ];
+          } else if (isFirst) {
+            // First day: departure
+            items = [
+              { id: baseId,     time: '08:00 AM', type: 'transit',  place: '출국 공항 도착',          cost: '-',   memo: '탑승 수속 및 출국심사', date },
+              { id: baseId + 1, time: '10:00 AM', type: 'transit',  place: '항공기 탑승 (출발)',       cost: '-',   memo: '항공편 출발', date },
+              { id: baseId + 2, time: '12:00 PM', type: 'transit',  place: `${cityDisplay} 도착·입국`, cost: '-',   memo: '입국 심사 후 시내 이동', date },
+              { id: baseId + 3, time: '02:00 PM', type: 'transit',  place: '시내 교통 이동',           cost: '-',   memo: '숙소까지 이동', date },
+              { id: baseId + 4, time: '04:00 PM', type: 'stay',     place: '숙소 체크인',             cost: '-',   memo: '짐 풀고 휴식', date },
+              { id: baseId + 5, time: '07:00 PM', type: 'dining',   place: '저녁 식사',               cost: '-',   memo: '현지 식당 탐방', date },
+            ];
+          } else if (isLast) {
+            // Last day: return
+            items = [
+              { id: baseId,     time: '08:00 AM', type: 'dining',   place: '아침 식사',               cost: '-',   memo: '숙소 조식 또는 근처 카페', date },
+              { id: baseId + 1, time: '10:00 AM', type: 'stay',     place: '숙소 체크아웃',           cost: '-',   memo: '체크아웃 후 짐 보관', date },
+              { id: baseId + 2, time: '11:00 AM', type: 'activity', place: '출발 전 마지막 일정',      cost: '-',   memo: '기념품 구입 등', date },
+              { id: baseId + 3, time: '01:00 PM', type: 'transit',  place: '공항 이동',               cost: '-',   memo: '공항 셔틀 또는 대중교통', date },
+              { id: baseId + 4, time: '03:00 PM', type: 'transit',  place: '귀국 탑승수속·출국심사',  cost: '-',   memo: '면세점 쇼핑', date },
+              { id: baseId + 5, time: '06:00 PM', type: 'transit',  place: '항공기 탑승 (귀국)',       cost: '-',   memo: '귀국 항공편 탑승', date },
+            ];
+          } else {
+            // Middle days
+            items = [
+              { id: baseId,     time: '08:00 AM', type: 'dining',   place: '아침 식사',               cost: '-',   memo: '숙소 조식 또는 인근 카페', date },
+              { id: baseId + 1, time: '10:00 AM', type: 'activity', place: `${cityDisplay} 오전 관람`, cost: '-',   memo: '주요 명소 방문', date },
+              { id: baseId + 2, time: '12:30 PM', type: 'dining',   place: '점심 식사',               cost: '-',   memo: '현지 맛집 방문', date },
+              { id: baseId + 3, time: '02:00 PM', type: 'activity', place: `${cityDisplay} 오후 일정`, cost: '-',   memo: '쇼핑, 카페, 문화 체험 등', date },
+              { id: baseId + 4, time: '07:00 PM', type: 'dining',   place: '저녁 식사',               cost: '-',   memo: '현지 레스토랑 저녁', date },
+              { id: baseId + 5, time: '09:30 PM', type: 'stay',     place: '숙소 복귀',               cost: '-',   memo: '숙소 휴식', date },
+            ];
+          }
+
+          return { date, items };
+        });
+      };
+
+      // 3. Batch-write template timeline items
+      const templateDays = generateTemplateDays();
+      if (templateDays.length > 0) {
+        const batch = writeBatch(db);
+        templateDays.forEach(({ date, items }) => {
+          items.forEach(item => {
+            batch.set(doc(db, 'users', user.uid, 'timeline', String(item.id)), item);
+          });
+        });
+        await batch.commit();
+      }
+
+      // 4. Navigate to the new journey immediately
       navigateTo('detail', newId);
 
-      // 3. 백그라운드에서 Geocoding 위경도를 구한 뒤 있으면 Firestore 문서 업데이트
+      // 5. Background geocoding for the trip location
       fetchCoordinates(location).then(async (coords) => {
         if (coords && user) {
           try {

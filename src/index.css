@@ -18,4 +18,85 @@
 .custom-leaflet-pin-icon {
   background: transparent !important;
   border: none !important;
+  overflow: visible !important;
 }
+
+/* Pin wrapper */
+.pin-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+
+/* Base pin dot */
+.leaflet-pin {
+  width: 12px;
+  height: 12px;
+  background: #dc2626;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.leaflet-pin.active-pin {
+  width: 18px;
+  height: 18px;
+  background: #dc2626;
+  border: 2.5px solid #fff;
+  box-shadow: 0 0 0 5px rgba(220, 38, 38, 0.25), 0 3px 10px rgba(0,0,0,0.4);
+  transform: scale(1.15);
+}
+
+.pin-inner-dot {
+  width: 6px;
+  height: 6px;
+  background: #fff;
+  border-radius: 50%;
+}
+
+/* Pin label */
+.pin-label {
+  margin-top: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(249,248,246,0.96);
+  color: #111;
+  border: 1px solid rgba(0,0,0,0.12);
+  padding: 2px 6px;
+  border-radius: 3px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.pin-label-active {
+  opacity: 1 !important;
+  color: #dc2626;
+  border-color: rgba(220,38,38,0.3);
+}
+
+.pin-wrapper:hover .pin-label {
+  opacity: 1;
+}
+
+/* Dark mode pin labels */
+.dark .pin-label {
+  background: rgba(17,17,17,0.96);
+  color: #f9f8f6;
+  border-color: rgba(255,255,255,0.12);
+}
+
+.dark .pin-label-active {
+  color: #f87171;
+  border-color: rgba(248,113,113,0.3);
+}
+
