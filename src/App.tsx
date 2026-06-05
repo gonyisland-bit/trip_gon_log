@@ -128,97 +128,123 @@ function App() {
 
   // Real-time Firestore sync
   useEffect(() => {
+    let unsubTrips = () => {};
+    let unsubPlans = () => {};
+    let unsubTimeline = () => {};
+    let unsubFlights = () => {};
+    let unsubStays = () => {};
+    let unsubTransit = () => {};
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      // Clean up previous listeners if any
+      unsubTrips();
+      unsubPlans();
+      unsubTimeline();
+      unsubFlights();
+      unsubStays();
+      unsubTransit();
+
       if (user) {
         setIsLoggedIn(true);
-        await seedUserData(user.uid);
+        try {
+          await seedUserData(user.uid);
+        } catch (err) {
+          console.error("Error seeding user data:", err);
+        }
 
         const uid = user.uid;
 
-        const unsubTrips = onSnapshot(collection(db, 'users', uid, 'trips'), (snapshot) => {
-          const list: Trip[] = [];
-          snapshot.forEach(doc => {
-            list.push(doc.data() as Trip);
+        try {
+          unsubTrips = onSnapshot(collection(db, 'users', uid, 'trips'), (snapshot) => {
+            const list: Trip[] = [];
+            snapshot.forEach(doc => {
+              list.push(doc.data() as Trip);
+            });
+            setTrips(list.sort((a, b) => a.id - b.id));
+          }, (err) => {
+            console.error("Trips snapshot subscription error:", err);
           });
-          setTrips(list.sort((a, b) => a.id - b.id));
-        });
 
-        const unsubPlans = onSnapshot(collection(db, 'users', uid, 'plans'), (snapshot) => {
-          const list: Plan[] = [];
-          snapshot.forEach(doc => {
-            list.push(doc.data() as Plan);
+          unsubPlans = onSnapshot(collection(db, 'users', uid, 'plans'), (snapshot) => {
+            const list: Plan[] = [];
+            snapshot.forEach(doc => {
+              list.push(doc.data() as Plan);
+            });
+            setPlans(list.sort((a, b) => a.id - b.id));
+          }, (err) => {
+            console.error("Plans snapshot subscription error:", err);
           });
-          setPlans(list.sort((a, b) => a.id - b.id));
-        });
 
-        const unsubTimeline = onSnapshot(collection(db, 'users', uid, 'timeline'), (snapshot) => {
-          const grouped: TimelineData = {};
-          snapshot.forEach(doc => {
-            const data = doc.data();
-            const date = data.date as string;
-            if (!grouped[date]) grouped[date] = [];
-            const { date: _, ...item } = data;
-            grouped[date].push(item as TimelineItem);
+          unsubTimeline = onSnapshot(collection(db, 'users', uid, 'timeline'), (snapshot) => {
+            const grouped: TimelineData = {};
+            snapshot.forEach(doc => {
+              const data = doc.data();
+              const date = data.date as string;
+              if (!grouped[date]) grouped[date] = [];
+              const { date: _, ...item } = data;
+              grouped[date].push(item as TimelineItem);
+            });
+            Object.keys(grouped).forEach(date => {
+              grouped[date].sort((a, b) => a.id - b.id);
+            });
+            setTimelineData(grouped);
+          }, (err) => {
+            console.error("Timeline snapshot subscription error:", err);
           });
-          Object.keys(grouped).forEach(date => {
-            grouped[date].sort((a, b) => a.id - b.id);
-          });
-          setTimelineData(grouped);
-        });
 
-        const unsubFlights = onSnapshot(collection(db, 'users', uid, 'flights'), (snapshot) => {
-          const grouped: { [tripId: number]: FlightItem[] } = {};
-          snapshot.forEach(doc => {
-            const data = doc.data();
-            const tripId = data.tripId as number;
-            if (!grouped[tripId]) grouped[tripId] = [];
-            const { tripId: _, ...item } = data;
-            grouped[tripId].push(item as FlightItem);
+          unsubFlights = onSnapshot(collection(db, 'users', uid, 'flights'), (snapshot) => {
+            const grouped: { [tripId: number]: FlightItem[] } = {};
+            snapshot.forEach(doc => {
+              const data = doc.data();
+              const tripId = data.tripId as number;
+              if (!grouped[tripId]) grouped[tripId] = [];
+              const { tripId: _, ...item } = data;
+              grouped[tripId].push(item as FlightItem);
+            });
+            Object.keys(grouped).forEach(tid => {
+              grouped[Number(tid)].sort((a, b) => a.id - b.id);
+            });
+            setFlightsByTrip(grouped);
+          }, (err) => {
+            console.error("Flights snapshot subscription error:", err);
           });
-          Object.keys(grouped).forEach(tid => {
-            grouped[Number(tid)].sort((a, b) => a.id - b.id);
-          });
-          setFlightsByTrip(grouped);
-        });
 
-        const unsubStays = onSnapshot(collection(db, 'users', uid, 'stays'), (snapshot) => {
-          const grouped: { [tripId: number]: StayItem[] } = {};
-          snapshot.forEach(doc => {
-            const data = doc.data();
-            const tripId = data.tripId as number;
-            if (!grouped[tripId]) grouped[tripId] = [];
-            const { tripId: _, ...item } = data;
-            grouped[tripId].push(item as StayItem);
+          unsubStays = onSnapshot(collection(db, 'users', uid, 'stays'), (snapshot) => {
+            const grouped: { [tripId: number]: StayItem[] } = {};
+            snapshot.forEach(doc => {
+              const data = doc.data();
+              const tripId = data.tripId as number;
+              if (!grouped[tripId]) grouped[tripId] = [];
+              const { tripId: _, ...item } = data;
+              grouped[tripId].push(item as StayItem);
+            });
+            Object.keys(grouped).forEach(tid => {
+              grouped[Number(tid)].sort((a, b) => a.id - b.id);
+            });
+            setStaysByTrip(grouped);
+          }, (err) => {
+            console.error("Stays snapshot subscription error:", err);
           });
-          Object.keys(grouped).forEach(tid => {
-            grouped[Number(tid)].sort((a, b) => a.id - b.id);
-          });
-          setStaysByTrip(grouped);
-        });
 
-        const unsubTransit = onSnapshot(collection(db, 'users', uid, 'transits'), (snapshot) => {
-          const grouped: { [tripId: number]: TransitItem[] } = {};
-          snapshot.forEach(doc => {
-            const data = doc.data();
-            const tripId = data.tripId as number;
-            if (!grouped[tripId]) grouped[tripId] = [];
-            const { tripId: _, ...item } = data;
-            grouped[tripId].push(item as TransitItem);
+          unsubTransit = onSnapshot(collection(db, 'users', uid, 'transits'), (snapshot) => {
+            const grouped: { [tripId: number]: TransitItem[] } = {};
+            snapshot.forEach(doc => {
+              const data = doc.data();
+              const tripId = data.tripId as number;
+              if (!grouped[tripId]) grouped[tripId] = [];
+              const { tripId: _, ...item } = data;
+              grouped[tripId].push(item as TransitItem);
+            });
+            Object.keys(grouped).forEach(tid => {
+              grouped[Number(tid)].sort((a, b) => a.id - b.id);
+            });
+            setTransitByTrip(grouped);
+          }, (err) => {
+            console.error("Transit snapshot subscription error:", err);
           });
-          Object.keys(grouped).forEach(tid => {
-            grouped[Number(tid)].sort((a, b) => a.id - b.id);
-          });
-          setTransitByTrip(grouped);
-        });
-
-        return () => {
-          unsubTrips();
-          unsubPlans();
-          unsubTimeline();
-          unsubFlights();
-          unsubStays();
-          unsubTransit();
-        };
+        } catch (err) {
+          console.error("Error setting up firestore snapshots:", err);
+        }
 
       } else {
         setIsLoggedIn(false);
@@ -231,7 +257,15 @@ function App() {
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      unsubTrips();
+      unsubPlans();
+      unsubTimeline();
+      unsubFlights();
+      unsubStays();
+      unsubTransit();
+    };
   }, []);
 
   // Sync state with browser History API on initial load
@@ -302,9 +336,14 @@ function App() {
 
     const isPlan = plans.some(p => p.id === tripId);
     const collectionName = isPlan ? 'plans' : 'trips';
-    await setDoc(doc(db, 'users', user.uid, collectionName, String(tripId)), {
-      [field]: value
-    }, { merge: true });
+    try {
+      await setDoc(doc(db, 'users', user.uid, collectionName, String(tripId)), {
+        [field]: value
+      }, { merge: true });
+    } catch (err: any) {
+      console.error("Error updating trip:", err);
+      alert("정보 저장에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+    }
   };
 
   const handleMoveToArchive = async (plan: Plan) => {
@@ -321,10 +360,15 @@ function App() {
       tags: [...plan.tags.filter(t => t !== 'Plan'), 'Archived'] 
     };
 
-    const batch = writeBatch(db);
-    batch.delete(planRef);
-    batch.set(tripRef, newTrip);
-    await batch.commit();
+    try {
+      const batch = writeBatch(db);
+      batch.delete(planRef);
+      batch.set(tripRef, newTrip);
+      await batch.commit();
+    } catch (err: any) {
+      console.error("Error moving plan to archive:", err);
+      alert("아카이브로 이동하는 데 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+    }
   };
 
   const handleAddArchive = async () => {
@@ -362,23 +406,32 @@ function App() {
       gallery: []
     };
 
-    // 1. 우선 위경도 없이 즉시 Firestore에 저장 (화면 전환을 지연시키지 않음)
-    await setDoc(doc(db, 'users', user.uid, collectionName, String(newId)), newJourney);
-    
-    // 2. 생성과 동시에 상세 페이지로 즉시 전환
-    navigateTo('detail', newId);
+    try {
+      // 1. 우선 위경도 없이 즉시 Firestore에 저장 (화면 전환을 지연시키지 않음)
+      await setDoc(doc(db, 'users', user.uid, collectionName, String(newId)), newJourney);
+      
+      // 2. 생성과 동시에 상세 페이지로 즉시 전환
+      navigateTo('detail', newId);
 
-    // 3. 백그라운드에서 Geocoding 위경도를 구한 뒤 있으면 Firestore 문서 업데이트
-    fetchCoordinates(location).then(async (coords) => {
-      if (coords && user) {
-        await setDoc(doc(db, 'users', user.uid, collectionName, String(newId)), {
-          lat: coords.lat,
-          lng: coords.lng
-        }, { merge: true });
-      }
-    }).catch(err => {
-      console.error("Background geocoding failed for new journey:", err);
-    });
+      // 3. 백그라운드에서 Geocoding 위경도를 구한 뒤 있으면 Firestore 문서 업데이트
+      fetchCoordinates(location).then(async (coords) => {
+        if (coords && user) {
+          try {
+            await setDoc(doc(db, 'users', user.uid, collectionName, String(newId)), {
+              lat: coords.lat,
+              lng: coords.lng
+            }, { merge: true });
+          } catch (e) {
+            console.error("Failed to update coordinates in background:", e);
+          }
+        }
+      }).catch(err => {
+        console.error("Background geocoding failed for new journey:", err);
+      });
+    } catch (err: any) {
+      console.error("Error creating journey:", err);
+      alert("여정 생성에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+    }
   };
 
   // --- Handlers for Timeline Items ---
@@ -393,9 +446,14 @@ function App() {
       return;
     }
 
-    await setDoc(doc(db, 'users', user.uid, 'timeline', String(itemId)), {
-      [field]: value
-    }, { merge: true });
+    try {
+      await setDoc(doc(db, 'users', user.uid, 'timeline', String(itemId)), {
+        [field]: value
+      }, { merge: true });
+    } catch (err: any) {
+      console.error("Error updating timeline item:", err);
+      alert("타임라인 업데이트에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+    }
   };
 
   const handleDeleteTimelineItem = async (date: string, itemId: number) => {
@@ -403,7 +461,12 @@ function App() {
     const user = auth.currentUser;
     if (!user) return;
 
-    await deleteDoc(doc(db, 'users', user.uid, 'timeline', String(itemId)));
+    try {
+      await deleteDoc(doc(db, 'users', user.uid, 'timeline', String(itemId)));
+    } catch (err: any) {
+      console.error("Error deleting timeline item:", err);
+      alert("타임라인 삭제에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+    }
   };
 
   const handleAddTimelineItem = async (date: string) => {
@@ -423,7 +486,12 @@ function App() {
       y: 50,
       date: date
     };
-    await setDoc(doc(db, 'users', user.uid, 'timeline', String(newItemId)), newItem);
+    try {
+      await setDoc(doc(db, 'users', user.uid, 'timeline', String(newItemId)), newItem);
+    } catch (err: any) {
+      console.error("Error adding timeline item:", err);
+      alert("타임라인 추가에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+    }
   };
 
   // --- Handlers for Flights ---
@@ -432,9 +500,14 @@ function App() {
     const user = auth.currentUser;
     if (!user) return;
 
-    await setDoc(doc(db, 'users', user.uid, 'flights', String(itemId)), {
-      [field]: val
-    }, { merge: true });
+    try {
+      await setDoc(doc(db, 'users', user.uid, 'flights', String(itemId)), {
+        [field]: val
+      }, { merge: true });
+    } catch (err: any) {
+      console.error("Error updating flight:", err);
+      alert("항공 정보 업데이트에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+    }
   };
 
   const handleDeleteFlight = async (itemId: number) => {
@@ -442,7 +515,12 @@ function App() {
     const user = auth.currentUser;
     if (!user) return;
 
-    await deleteDoc(doc(db, 'users', user.uid, 'flights', String(itemId)));
+    try {
+      await deleteDoc(doc(db, 'users', user.uid, 'flights', String(itemId)));
+    } catch (err: any) {
+      console.error("Error deleting flight:", err);
+      alert("항공 정보 삭제에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+    }
   };
 
   const handleAddFlight = async (title: string) => {
@@ -466,7 +544,12 @@ function App() {
       pnr: '000000',
       tripId: activeTripId
     };
-    await setDoc(doc(db, 'users', user.uid, 'flights', String(newFlightId)), newFlight);
+    try {
+      await setDoc(doc(db, 'users', user.uid, 'flights', String(newFlightId)), newFlight);
+    } catch (err: any) {
+      console.error("Error adding flight:", err);
+      alert("항공 정보 추가에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+    }
   };
 
   // --- Handlers for Stays ---
@@ -475,9 +558,14 @@ function App() {
     const user = auth.currentUser;
     if (!user) return;
 
-    await setDoc(doc(db, 'users', user.uid, 'stays', String(itemId)), {
-      [field]: val
-    }, { merge: true });
+    try {
+      await setDoc(doc(db, 'users', user.uid, 'stays', String(itemId)), {
+        [field]: val
+      }, { merge: true });
+    } catch (err: any) {
+      console.error("Error updating stay:", err);
+      alert("숙소 정보 업데이트에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+    }
   };
 
   const handleDeleteStay = async (itemId: number) => {
@@ -485,7 +573,12 @@ function App() {
     const user = auth.currentUser;
     if (!user) return;
 
-    await deleteDoc(doc(db, 'users', user.uid, 'stays', String(itemId)));
+    try {
+      await deleteDoc(doc(db, 'users', user.uid, 'stays', String(itemId)));
+    } catch (err: any) {
+      console.error("Error deleting stay:", err);
+      alert("숙소 정보 삭제에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+    }
   };
 
   const handleAddStay = async () => {
@@ -505,7 +598,12 @@ function App() {
       img: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=800&auto=format&fit=crop',
       tripId: activeTripId
     };
-    await setDoc(doc(db, 'users', user.uid, 'stays', String(newStayId)), newStay);
+    try {
+      await setDoc(doc(db, 'users', user.uid, 'stays', String(newStayId)), newStay);
+    } catch (err: any) {
+      console.error("Error adding stay:", err);
+      alert("숙소 정보 추가에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+    }
   };
 
   // --- Handlers for Transit ---
@@ -514,9 +612,14 @@ function App() {
     const user = auth.currentUser;
     if (!user) return;
 
-    await setDoc(doc(db, 'users', user.uid, 'transits', String(itemId)), {
-      [field]: val
-    }, { merge: true });
+    try {
+      await setDoc(doc(db, 'users', user.uid, 'transits', String(itemId)), {
+        [field]: val
+      }, { merge: true });
+    } catch (err: any) {
+      console.error("Error updating transit:", err);
+      alert("교통 정보 업데이트에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+    }
   };
 
   const handleDeleteTransit = async (itemId: number) => {
@@ -524,7 +627,12 @@ function App() {
     const user = auth.currentUser;
     if (!user) return;
 
-    await deleteDoc(doc(db, 'users', user.uid, 'transits', String(itemId)));
+    try {
+      await deleteDoc(doc(db, 'users', user.uid, 'transits', String(itemId)));
+    } catch (err: any) {
+      console.error("Error deleting transit:", err);
+      alert("교통 정보 삭제에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+    }
   };
 
   const handleAddTransit = async () => {
@@ -544,7 +652,12 @@ function App() {
       bookingRef: 'TRN-000',
       tripId: activeTripId
     };
-    await setDoc(doc(db, 'users', user.uid, 'transits', String(newTransitId)), newTransit);
+    try {
+      await setDoc(doc(db, 'users', user.uid, 'transits', String(newTransitId)), newTransit);
+    } catch (err: any) {
+      console.error("Error adding transit:", err);
+      alert("교통 정보 추가에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+    }
   };
 
   const activeFlights = flightsByTrip[activeTripId] || [];
