@@ -11,6 +11,7 @@ export interface Coordinates {
 export async function fetchCoordinates(address: string): Promise<Coordinates | null> {
   if (!address || address.trim() === '') return null;
   
+  // 1. Google Geocoding API 시도
   try {
     const response = await fetch(
       `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_MAPS_API_KEY}`
@@ -21,11 +22,38 @@ export async function fetchCoordinates(address: string): Promise<Coordinates | n
       const { lat, lng } = data.results[0].geometry.location;
       return { lat, lng };
     } else {
-      console.warn(`Geocoding failed for address "${address}":`, data.status);
+      console.warn(`Google Geocoding failed for address "${address}":`, data.status || 'No status');
     }
   } catch (error) {
-    console.error('Error fetching coordinates:', error);
+    console.error('Google Geocoding fetch failed, fallback to Nominatim:', error);
   }
+
+  // 2. Nominatim (OpenStreetMap) API 폴백 시도
+  try {
+    console.log(`[Geocoding] Fallback to Nominatim for address: "${address}"`);
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`,
+      {
+        headers: {
+          'User-Agent': 'TripgonLog/1.0'
+        }
+      }
+    );
+    const data = await response.json();
+    if (data && data.length > 0) {
+      const lat = Number(data[0].lat);
+      const lng = Number(data[0].lon);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        console.log(`[Geocoding] Nominatim successfully resolved: "${address}" ->`, { lat, lng });
+        return { lat, lng };
+      }
+    } else {
+      console.warn(`[Geocoding] Nominatim found no results for: "${address}"`);
+    }
+  } catch (error) {
+    console.error('[Geocoding] Nominatim fetch failed:', error);
+  }
+
   return null;
 }
 

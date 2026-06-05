@@ -13,3 +13,9 @@
     scrollbar-width: none;  /* Firefox */
   }
 }
+
+/* Custom Leaflet overrides */
+.custom-leaflet-pin-icon {
+  background: transparent !important;
+  border: none !important;
+}

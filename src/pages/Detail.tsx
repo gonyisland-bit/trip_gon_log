@@ -135,28 +135,6 @@ export function JourneyDetailPage({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const itemRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const dateBarRef = useRef<HTMLDivElement>(null);
-
-
-
-  // 활성 탭 날짜가 선택되었을 때, 가로 날짜 바 중앙 정렬 처리
-  useEffect(() => {
-    if (!dateBarRef.current) return;
-    const activeBtn = dateBarRef.current.querySelector('[data-active="true"]');
-    if (activeBtn) {
-      activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }
-  }, [selectedDate]);
-
-  // ── CONDITIONAL EARLY RETURN (after all hooks) ──
-  // trip이 undefined일 때 로딩 스크린 표시 (모든 훅 호출 이후에 배치해야 Rules of Hooks 준수)
-  if (!trip) {
-    return (
-      <div className="flex-grow flex items-center justify-center bg-[#F9F8F6] dark:bg-[#111111] h-[80vh] text-xs font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
-        Loading Journey Details...
-      </div>
-    );
-  }
-
   // --- 날짜 동적 계산 (안전 장치 추가) ---
   const generatedDates = generateDateList(trip?.date || '');
   const dynamicDates = [
@@ -175,15 +153,78 @@ export function JourneyDetailPage({
       ) 
     : ((timelineData || {})[selectedDate] || []).map(item => ({ ...item, originDate: selectedDate }));
 
-  // 위경도 lat, lng 값을 가져올 때 string 또는 number 형식을 number로 안전하게 형변환
-  const mapPoints = currentTimeline
-    .filter(item => item.lat !== undefined && item.lng !== undefined)
-    .map(item => ({
-      ...item,
-      lat: Number(item.lat),
-      lng: Number(item.lng)
-    }));
+  // 위경도 lat, lng 값을 가져올 때 string 또는 number 형식을 number로 안전하게 형변환 (x, y 퍼센트 좌표도 유지)
+  const mapPoints = currentTimeline.map(item => ({
+    ...item,
+    lat: item.lat !== undefined && item.lat !== null ? Number(item.lat) : undefined,
+    lng: item.lng !== undefined && item.lng !== null ? Number(item.lng) : undefined
+  }));
 
+  // 활성 탭 날짜가 선택되었을 때, 가로 날짜 바 중앙 정렬 처리
+  useEffect(() => {
+    if (!dateBarRef.current) return;
+    const activeBtn = dateBarRef.current.querySelector('[data-active="true"]');
+    if (activeBtn) {
+      activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [selectedDate]);
+
+  // ── 데이터 자가복구 (Self-Healing) 효과 ──
+  // Firestore에 좌표가 누락된 기존 여정이나 타임라인 항목의 위경도를 백그라운드에서 자동 등록합니다.
+  useEffect(() => {
+    if (!isLoggedIn || !trip) return;
+
+    let isSubscribed = true;
+
+    const runSelfHealing = async () => {
+      // 1. 여행 대표 위치 복구
+      const hasTripCoords = trip.lat !== undefined && trip.lng !== undefined && trip.lat !== null && trip.lng !== null;
+      if (!hasTripCoords && trip.locationStr && trip.locationStr.trim() !== '') {
+        console.log(`[Self-Healing] Geocoding trip location: "${trip.locationStr}"`);
+        const coords = await fetchCoordinates(trip.locationStr);
+        if (coords && isSubscribed) {
+          onUpdateTrip(trip.id, 'lat', coords.lat);
+          onUpdateTrip(trip.id, 'lng', coords.lng);
+        }
+        // Nominatim Rate Limit 방지용 대기
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      // 2. 개별 타임라인 아이템 위치 복구
+      const unplacedItems = currentTimeline.filter(item => {
+        const hasCoords = item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null;
+        return !hasCoords && item.place && item.place.trim() !== '' && item.place !== '새로운 장소';
+      });
+
+      for (const item of unplacedItems) {
+        if (!isSubscribed) break;
+        console.log(`[Self-Healing] Geocoding timeline item "${item.place}" (ID: ${item.id})`);
+        const coords = await fetchCoordinates(item.place);
+        if (coords && isSubscribed) {
+          onUpdateTimelineItem(item.originDate || selectedDate, item.id, 'lat' as any, String(coords.lat));
+          onUpdateTimelineItem(item.originDate || selectedDate, item.id, 'lng' as any, String(coords.lng));
+        }
+        // Rate Limit 준수를 위해 1초 대기
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    };
+
+    runSelfHealing();
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [trip?.id, isLoggedIn, currentTimeline.length]);
+
+  // ── CONDITIONAL EARLY RETURN (after all hooks) ──
+  // trip이 undefined일 때 로딩 스크린 표시 (모든 훅 호출 이후에 배치해야 Rules of Hooks 준수)
+  if (!trip) {
+    return (
+      <div className="flex-grow flex items-center justify-center bg-[#F9F8F6] dark:bg-[#111111] h-[80vh] text-xs font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
+        Loading Journey Details...
+      </div>
+    );
+  }
 
 
   const handleItemToggle = (id: number) => {
