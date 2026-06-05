@@ -30,6 +30,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   setShowSettings,
 }) => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
   const currentUser = auth.currentUser;
   const displayName = currentUser?.displayName || currentUser?.email?.split('@')[0].toUpperCase() || 'USER';
 
@@ -40,7 +41,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           className="text-lg sm:text-2xl md:text-3xl font-black tracking-tighter cursor-pointer hover:opacity-70 transition-opacity"
           onClick={() => navigateTo('home')}
         >
-          Trip mood
+          Tripgon log
         </div>
         
         {/* minimal edit mode button */}
@@ -85,20 +86,43 @@ export const Navigation: React.FC<NavigationProps> = ({
                   Logged in as <strong className="text-black dark:text-white ml-1">{displayName}</strong>
                 </div>
               )}
-              <button 
-                onClick={async () => { 
-                  setShowSettings(false); 
-                  if (isLoggedIn) {
+              {isLoggedIn ? (
+                <button 
+                  onClick={async () => { 
+                    setShowSettings(false); 
                     await signOut(auth);
-                  } else {
-                    setIsAuthModalOpen(true);
-                  }
-                }}
-                className="p-4 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 border-b border-black/10 dark:border-white/10 transition-colors text-xs font-bold uppercase tracking-widest"
-              >
-                <span>{isLoggedIn ? 'Log out' : 'Log in'}</span>
-                {isLoggedIn ? <LogOut className="w-4 h-4" /> : <User className="w-4 h-4" />}
-              </button>
+                  }}
+                  className="p-4 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 border-b border-black/10 dark:border-white/10 transition-colors text-xs font-bold uppercase tracking-widest w-full text-left"
+                >
+                  <span>Log out</span>
+                  <LogOut className="w-4 h-4" />
+                </button>
+              ) : (
+                <>
+                  <button 
+                    onClick={() => { 
+                      setShowSettings(false); 
+                      setAuthModalMode('login');
+                      setIsAuthModalOpen(true);
+                    }}
+                    className="p-4 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 border-b border-black/10 dark:border-white/10 transition-colors text-xs font-bold uppercase tracking-widest w-full text-left"
+                  >
+                    <span>Log in</span>
+                    <User className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={() => { 
+                      setShowSettings(false); 
+                      setAuthModalMode('signup');
+                      setIsAuthModalOpen(true);
+                    }}
+                    className="p-4 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 border-b border-black/10 dark:border-white/10 transition-colors text-xs font-bold uppercase tracking-widest w-full text-left"
+                  >
+                    <span>Sign up</span>
+                    <User className="w-4 h-4" />
+                  </button>
+                </>
+              )}
               <button 
                 onClick={() => { setIsDarkMode(!isDarkMode); setShowSettings(false); }}
                 className="p-4 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-xs font-bold uppercase tracking-widest"
@@ -115,6 +139,7 @@ export const Navigation: React.FC<NavigationProps> = ({
       <AuthModal 
         isOpen={isAuthModalOpen} 
         onClose={() => setIsAuthModalOpen(false)} 
+        initialMode={authModalMode}
       />
     </nav>
   );
