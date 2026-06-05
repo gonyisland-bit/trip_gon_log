@@ -52,68 +52,68 @@ export function Lightbox({
 
   const currentImage = images[currentIndex];
 
-  const resetZoom = () => {
+  function resetZoom() {
     setScale(1);
     setPosition({ x: 0, y: 0 });
-  };
+  }
 
-  const handlePrev = () => {
+  function handlePrev() {
     const nextIndex = (currentIndex - 1 + images.length) % images.length;
     onNavigate(nextIndex);
-  };
+  }
 
-  const handleNext = () => {
+  function handleNext() {
     const nextIndex = (currentIndex + 1) % images.length;
     onNavigate(nextIndex);
-  };
+  }
 
-  const handleZoomIn = () => {
+  function handleZoomIn() {
     setScale(prev => Math.min(prev + 0.25, 4));
-  };
+  }
 
-  const handleZoomOut = () => {
+  function handleZoomOut() {
     setScale(prev => Math.max(prev - 0.25, 0.5));
-  };
+  }
 
   // 더블 클릭 줌 토글
-  const handleDoubleClicks = (e: React.MouseEvent) => {
+  function handleDoubleClicks(e: React.MouseEvent) {
     e.preventDefault();
     if (scale > 1.1) {
       resetZoom();
     } else {
       setScale(2.5);
     }
-  };
+  }
 
   // 마우스 휠 줌
-  const handleWheel = (e: React.WheelEvent) => {
+  function handleWheel(e: React.WheelEvent) {
     e.preventDefault();
     const zoomFactor = e.deltaY < 0 ? 0.1 : -0.1;
     setScale(prev => Math.max(0.5, Math.min(prev + zoomFactor, 4)));
-  };
+  }
 
   // 마우스 드래그 이동 (Pan) 시작
-  const handleMouseDown = (e: React.MouseEvent) => {
+  function handleMouseDown(e: React.MouseEvent) {
     if (scale <= 1) return; // 줌이 1 이하일 때는 드래그 금지
     e.preventDefault();
     setIsDragging(true);
     dragStart.current = { x: e.clientX - position.x, y: e.clientY - position.y };
-  };
+  }
 
   // 마우스 드래그 이동 중
-  const handleMouseMove = (e: React.MouseEvent) => {
+  function handleMouseMove(e: React.MouseEvent) {
     if (!isDragging || scale <= 1) return;
     e.preventDefault();
     setPosition({
       x: e.clientX - dragStart.current.x,
       y: e.clientY - dragStart.current.y
     });
-  };
+  }
 
   // 마우스 드래그 종료
-  const handleMouseUp = () => {
+  function handleMouseUp() {
     setIsDragging(false);
-  };
+  }
 
   return createPortal(
     <div 
