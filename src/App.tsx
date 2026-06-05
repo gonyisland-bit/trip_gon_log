@@ -58,6 +58,8 @@ function App() {
   const [trashedJourneys, setTrashedJourneys] = useState<Trip[]>([]);
   const [activeTripId, setActiveTripId] = useState<number | null>(null);
   const [dbError, setDbError] = useState<string | null>(null);
+  const [tripsLoaded, setTripsLoaded] = useState<boolean>(false);
+  const [plansLoaded, setPlansLoaded] = useState<boolean>(false);
   
   const [timelineData, setTimelineData] = useState<TimelineData>({});
   const [flightsByTrip, setFlightsByTrip] = useState<{ [id: number]: FlightItem[] }>({});
@@ -147,10 +149,12 @@ function App() {
         list.push(doc.data() as Trip);
       });
       setTrips(list.sort((a, b) => a.id - b.id));
+      setTripsLoaded(true);
       setDbError(null);
     }, (err) => {
       console.error("Trips snapshot subscription error:", err);
       setDbError(err.message);
+      setTripsLoaded(true);
     });
 
     const unsubPlans = onSnapshot(collection(db, 'users', uid, 'plans'), (snapshot) => {
@@ -159,10 +163,12 @@ function App() {
         list.push(doc.data() as Plan);
       });
       setPlans(list.sort((a, b) => a.id - b.id));
+      setPlansLoaded(true);
       setDbError(null);
     }, (err) => {
       console.error("Plans snapshot subscription error:", err);
       setDbError(err.message);
+      setPlansLoaded(true);
     });
 
     const unsubTimeline = onSnapshot(collection(db, 'users', uid, 'timeline'), (snapshot) => {
@@ -764,7 +770,7 @@ function App() {
             ⚠️ Firebase 연결 오류: {dbError}. Firestore의 보안 규칙(Security Rules)이나 Config 키가 올바른지 확인해 주세요.
           </div>
         )}
-        {!dbError && trips.length === 0 && plans.length === 0 && (
+        {!dbError && tripsLoaded && plansLoaded && trips.length === 0 && plans.length === 0 && (
           <div className="bg-amber-500/10 border-b border-amber-500/20 backdrop-blur-md px-6 py-3 text-center text-xs tracking-wide text-amber-700 dark:text-amber-400 font-medium z-50">
             ℹ️ 현재 Firebase(Public 경로)에 데이터가 없습니다. <strong>우측 상단의 로그인 버튼을 통해 로그인해 주시면</strong>, 기존의 기본 목업 데이터가 Firestore로 자동 업로드(Seed)됩니다.
           </div>

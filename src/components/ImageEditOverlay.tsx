@@ -3,10 +3,11 @@ import { ImagePlus, Loader2 } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../firebase';
 import { compressImage } from '../utils/imageHelper';
+import { extractGpsFromImage } from '../utils/exifHelper';
 
 interface ImageEditOverlayProps {
   isEditMode: boolean;
-  onImageUploaded: (url: string) => void;
+  onImageUploaded: (url: string, gps?: { lat: number; lng: number } | null) => void;
 }
 
 export function ImageEditOverlay({ isEditMode, onImageUploaded }: ImageEditOverlayProps) {
@@ -32,6 +33,9 @@ export function ImageEditOverlay({ isEditMode, onImageUploaded }: ImageEditOverl
 
     setUploading(true);
     try {
+      // Extract GPS data from EXIF before compressing
+      const gps = await extractGpsFromImage(file);
+
       // Compress the image before uploading
       const compressedBlob = await compressImage(file);
       
@@ -40,7 +44,7 @@ export function ImageEditOverlay({ isEditMode, onImageUploaded }: ImageEditOverl
       const imageRef = ref(storage, storagePath);
       await uploadBytes(imageRef, compressedBlob);
       const downloadUrl = await getDownloadURL(imageRef);
-      onImageUploaded(downloadUrl);
+      onImageUploaded(downloadUrl, gps);
     } catch (error) {
       console.error("Image upload failed:", error);
       alert("이미지 업로드에 실패했습니다. 다시 시도해 주세요.");

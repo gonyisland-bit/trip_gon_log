@@ -117,6 +117,7 @@ interface PlaceAutocompleteInputProps {
   onSelectPlace: (placeName: string, coords: { lat: number; lng: number } | null, address: string) => void;
   className?: string;
   placeholder?: string;
+  onBlur?: () => void;
 }
 
 function PlaceAutocompleteInput({
@@ -124,7 +125,8 @@ function PlaceAutocompleteInput({
   onChange,
   onSelectPlace,
   className,
-  placeholder
+  placeholder,
+  onBlur
 }: PlaceAutocompleteInputProps) {
   const [preds, setPreds] = useState<{ description: string; placeId: string }[]>([]);
   const [show, setShow] = useState(false);
@@ -167,6 +169,7 @@ function PlaceAutocompleteInput({
           type="text"
           value={value}
           onChange={handleChange}
+          onBlur={onBlur}
           className={className}
           placeholder={placeholder}
         />
@@ -177,6 +180,10 @@ function PlaceAutocompleteInput({
           {preds.map(p => (
             <div
               key={p.placeId}
+              onMouseDown={(e) => {
+                // Prevent input blur before click triggers
+                e.preventDefault();
+              }}
               onClick={() => handleSelect(p)}
               className="p-2 text-[10px] hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer truncate text-black dark:text-white border-b border-black/5 dark:border-white/5 last:border-0"
             >
@@ -365,10 +372,32 @@ export function JourneyDetailPage({
     if (!trip || !draftTrip) return;
     setSaving(true);
     try {
+      // Geocode empty coordinates before saving
+      const resolvedTimeline = await Promise.all(
+        draftTimeline.map(async (item) => {
+          if ((item.lat === undefined || item.lng === undefined || item.lat === null || item.lng === null) && item.place && item.place !== '새로운 장소' && item.place.trim() !== '') {
+            try {
+              const coords = await fetchCoordinates(item.place);
+              if (coords) {
+                return {
+                  ...item,
+                  lat: coords.lat,
+                  lng: coords.lng,
+                  location: item.location || item.place
+                };
+              }
+            } catch (e) {
+              console.error(`Geocoding failed for ${item.place} during save:`, e);
+            }
+          }
+          return item;
+        })
+      );
+
       await onSave(
         trip.id,
         draftTrip,
-        draftTimeline,
+        resolvedTimeline,
         draftFlights,
         draftStays,
         draftTransits
@@ -873,6 +902,16 @@ export function JourneyDetailPage({
                                   <PlaceAutocompleteInput
                                     value={item.place}
                                     onChange={(val) => updateTimelineItem(item.id, 'place', val)}
+                                    onBlur={async () => {
+                                      if (item.place && item.place.trim() !== '' && item.place !== '새로운 장소') {
+                                        const coords = await fetchCoordinates(item.place);
+                                        if (coords) {
+                                          updateTimelineItem(item.id, 'lat', coords.lat);
+                                          updateTimelineItem(item.id, 'lng', coords.lng);
+                                          updateTimelineItem(item.id, 'location', item.location || item.place);
+                                        }
+                                      }
+                                    }}
                                     onSelectPlace={(name, coords, address) => {
                                       updateTimelineItem(item.id, 'place', name);
                                       if (coords) {
@@ -978,7 +1017,13 @@ export function JourneyDetailPage({
                                 <img src={item.img} alt={item.place} className={`w-full h-full object-cover transition-all ${isActive ? 'grayscale-0' : 'grayscale group-hover:grayscale-0'}`} />
                                 <ImageEditOverlay 
                                   isEditMode={isEditing} 
-                                  onImageUploaded={(url) => updateTimelineItem(item.id, 'img', url)} 
+                                  onImageUploaded={(url, gps) => {
+                                    updateTimelineItem(item.id, 'img', url);
+                                    if (gps) {
+                                      updateTimelineItem(item.id, 'lat', gps.lat);
+                                      updateTimelineItem(item.id, 'lng', gps.lng);
+                                    }
+                                  }} 
                                 />
                               </div>
                             ) : (
@@ -986,7 +1031,13 @@ export function JourneyDetailPage({
                                 <ImageIcon className="w-3 h-3 md:w-4 md:h-4" />
                                 <ImageEditOverlay 
                                   isEditMode={isEditing} 
-                                  onImageUploaded={(url) => updateTimelineItem(item.id, 'img', url)} 
+                                  onImageUploaded={(url, gps) => {
+                                    updateTimelineItem(item.id, 'img', url);
+                                    if (gps) {
+                                      updateTimelineItem(item.id, 'lat', gps.lat);
+                                      updateTimelineItem(item.id, 'lng', gps.lng);
+                                    }
+                                  }} 
                                 />
                               </div>
                             )}
