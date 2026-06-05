@@ -100,3 +100,59 @@
   border-color: rgba(248,113,113,0.3);
 }
 
+/* Google Places Autocomplete dropdown overrides */
+.pac-container {
+  background-color: #F9F8F6 !important;
+  border: 1px solid rgba(0, 0, 0, 0.2) !important;
+  border-radius: 0px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  font-family: 'Inter', sans-serif !important;
+  z-index: 9999 !important;
+  margin-top: 2px !important;
+}
+
+.pac-item {
+  padding: 8px 12px !important;
+  font-size: 11px !important;
+  cursor: pointer !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+  color: #111 !important;
+}
+
+.pac-item:hover {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+.pac-item-query {
+  font-size: 11px !important;
+  color: #111 !important;
+  font-weight: 700 !important;
+}
+
+.pac-matched {
+  color: #dc2626 !important;
+}
+
+.pac-icon {
+  margin-right: 8px !important;
+}
+
+/* Dark mode overrides for autocomplete */
+.dark .pac-container {
+  background-color: #1A1A1A !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.dark .pac-item {
+  color: #f9f8f6 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.dark .pac-item:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.dark .pac-item-query {
+  color: #f9f8f6 !important;
+}
+

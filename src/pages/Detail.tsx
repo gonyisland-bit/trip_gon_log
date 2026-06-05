@@ -110,7 +110,7 @@ function parseTimeToMinutes(timeStr: string): number {
   return hours * 60 + minutes;
 }
 
-// Autocomplete Input component
+// Autocomplete Input component using google.maps.places.Autocomplete widget
 interface PlaceAutocompleteInputProps {
   value: string;
   onChange: (val: string) => void;
@@ -128,70 +128,57 @@ function PlaceAutocompleteInput({
   placeholder,
   onBlur
 }: PlaceAutocompleteInputProps) {
-  const [preds, setPreds] = useState<{ description: string; placeId: string }[]>([]);
-  const [show, setShow] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const autocompleteRef = useRef<any>(null);
 
   useEffect(() => {
-    const clickOut = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setShow(false);
+    const google = (window as any).google;
+    if (!google || !google.maps || !google.maps.places || !inputRef.current) {
+      return;
+    }
+
+    const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
+      fields: ['geometry', 'name', 'formatted_address']
+    });
+    autocompleteRef.current = autocomplete;
+
+    const listener = autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace();
+      if (place && place.geometry && place.geometry.location) {
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+        const name = place.name || place.formatted_address || '';
+        const address = place.formatted_address || name;
+        onSelectPlace(name, { lat, lng }, address);
+      }
+    });
+
+    return () => {
+      if (google && google.maps && google.maps.event && listener) {
+        google.maps.event.removeListener(listener);
       }
     };
-    document.addEventListener('mousedown', clickOut);
-    return () => document.removeEventListener('mousedown', clickOut);
-  }, []);
+  }, [onSelectPlace]);
 
-  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    onChange(val);
-    if (val.trim().length > 1) {
-      const results = await fetchPlacePredictions(val);
-      setPreds(results);
-      setShow(true);
-    } else {
-      setPreds([]);
-      setShow(false);
+  useEffect(() => {
+    if (inputRef.current && value !== undefined && inputRef.current.value !== value) {
+      inputRef.current.value = value;
     }
-  };
-
-  const handleSelect = async (pred: any) => {
-    onChange(pred.description);
-    setShow(false);
-    const coords = await fetchCoordinatesByPlaceId(pred.placeId);
-    onSelectPlace(pred.description, coords, pred.description);
-  };
+  }, [value]);
 
   return (
-    <div className="relative w-full" ref={dropdownRef}>
+    <div className="relative w-full">
       <div className="relative">
         <input
+          ref={inputRef}
           type="text"
-          value={value}
-          onChange={handleChange}
+          onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}
           className={className}
           placeholder={placeholder}
         />
         <Search className="w-3.5 h-3.5 absolute right-2 top-1/2 -translate-y-1/2 opacity-35" />
       </div>
-      {show && preds.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1 bg-[#F9F8F6] dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 shadow-xl z-50 max-h-40 overflow-y-auto">
-          {preds.map(p => (
-            <div
-              key={p.placeId}
-              onMouseDown={(e) => {
-                // Prevent input blur before click triggers
-                e.preventDefault();
-              }}
-              onClick={() => handleSelect(p)}
-              className="p-2 text-[10px] hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer truncate text-black dark:text-white border-b border-black/5 dark:border-white/5 last:border-0"
-            >
-              {p.description}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -691,10 +678,10 @@ export function JourneyDetailPage({
   const galleryAllUnique = galleryAllMeta.map(m => m.url);
 
   return (
-    <main className="animate-in slide-in-from-right-8 duration-500 flex flex-col md:flex-row h-[calc(100vh-73px)] w-full overflow-hidden">
+    <main className="animate-in slide-in-from-right-8 duration-500 flex flex-col md:flex-row h-auto md:h-[calc(100vh-73px)] w-full overflow-y-visible md:overflow-hidden">
       
       {/* Left: Map & Info Section */}
-      <section className="w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-colors duration-300 h-[55vh] md:h-full shrink-0">
+      <section className="w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-colors duration-300 h-[45vh] md:h-full shrink-0">
         <div className="p-4 md:p-8 border-b border-black/20 dark:border-white/20 z-10 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0">
           
           {/* Header metadata area (date and location) */}
@@ -818,7 +805,7 @@ export function JourneyDetailPage({
       </section>
       
       {/* Right: Record / Tabs Section */}
-      <section className="w-full md:w-1/2 flex flex-col bg-[#F9F8F6] dark:bg-[#111111] transition-colors duration-300 flex-grow overflow-hidden">
+      <section className="w-full md:w-1/2 flex flex-col bg-[#F9F8F6] dark:bg-[#111111] transition-colors duration-300 flex-grow h-auto md:h-full md:overflow-hidden">
         
         {/* Tab Headers */}
         <div className="flex border-b border-black/20 dark:border-white/20 bg-[#F9F8F6] dark:bg-[#111111] sticky top-0 z-30 overflow-x-auto hide-scrollbar transition-colors shrink-0 w-full">
@@ -840,11 +827,11 @@ export function JourneyDetailPage({
         </div>
 
         {/* Tab Contents */}
-        <div className="flex-grow flex flex-col relative overflow-y-auto overflow-x-hidden w-full">
+        <div className="flex-grow flex flex-col relative overflow-y-visible md:overflow-y-auto overflow-x-hidden w-full h-auto md:h-full">
           
           {/* TIMELINE TAB */}
           {activeTab === 'timeline' && (
-            <div className="animate-in fade-in duration-300 h-full flex flex-col w-full">
+            <div className="animate-in fade-in duration-300 h-auto md:h-full flex flex-col w-full">
               {/* Day filter selector bar */}
               <div className="relative border-b border-black/20 dark:border-white/20 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0 w-full flex">
                 <div 
