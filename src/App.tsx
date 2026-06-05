@@ -59,13 +59,11 @@ function App() {
   const [staysByTrip, setStaysByTrip] = useState<{ [id: number]: StayItem[] }>(initialStaysByTrip);
   const [transitByTrip, setTransitByTrip] = useState<{ [id: number]: TransitItem[] }>(initialTransitByTrip);
 
-  // Firebase 로딩 중에 trips[0]을 폴백으로 쓰면 잘못된 여정이 보일 수 있으나,
-  // 찰나의 지연 시간이나 비동기 동기화 렌더 사이클에서 activeTrip이 undefined가 되어 렌더 트리가 깨지는 것을 방지하기 위해 
-  // trips[0] || plans[0]을 안전한 마지막 폴백으로 복원합니다.
+  // activeTrip: find by id first; fall back to trips[0] only (not plans)
+  // Falling back to plans[0] caused wrong trip (Tokyo) to show during Firestore sync.
   const activeTrip = trips.find(t => String(t.id) === String(activeTripId)) 
     || plans.find(p => String(p.id) === String(activeTripId)) 
     || trips[0]
-    || plans[0]
     || undefined;
 
   useEffect(() => {

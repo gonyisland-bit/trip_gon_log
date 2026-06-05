@@ -171,12 +171,19 @@ export function JourneyDetailPage({
 
   // ── 데이터 자가복구 (Self-Healing) 효과 ──
   // Firestore에 좌표가 누락된 기존 여정이나 타임라인 항목의 위경도를 백그라운드에서 자동 등록합니다.
+  // 의존성을 trip.id + isLoggedIn 으로만 제한해서, timeline 데이터가 변경될 때마다 재실행하지 않습니다.
+  const currentTimelineRef = useRef(currentTimeline);
+  currentTimelineRef.current = currentTimeline;
+
   useEffect(() => {
     if (!isLoggedIn || !trip) return;
 
     let isSubscribed = true;
+    // 500ms 지연 후 실행 – Firestore 첫 snapshot 이후에 실행되도록
+    const timer = setTimeout(async () => {
+      if (!isSubscribed) return;
+      const snapshot = currentTimelineRef.current;
 
-    const runSelfHealing = async () => {
       // 1. 여행 대표 위치 복구
       const hasTripCoords = trip.lat !== undefined && trip.lng !== undefined && trip.lat !== null && trip.lng !== null;
       if (!hasTripCoords && trip.locationStr && trip.locationStr.trim() !== '') {
@@ -186,12 +193,11 @@ export function JourneyDetailPage({
           onUpdateTrip(trip.id, 'lat', coords.lat);
           onUpdateTrip(trip.id, 'lng', coords.lng);
         }
-        // Nominatim Rate Limit 방지용 대기
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
       // 2. 개별 타임라인 아이템 위치 복구
-      const unplacedItems = currentTimeline.filter(item => {
+      const unplacedItems = snapshot.filter(item => {
         const hasCoords = item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null;
         return !hasCoords && item.place && item.place.trim() !== '' && item.place !== '새로운 장소';
       });
@@ -201,20 +207,18 @@ export function JourneyDetailPage({
         console.log(`[Self-Healing] Geocoding timeline item "${item.place}" (ID: ${item.id})`);
         const coords = await fetchCoordinates(item.place);
         if (coords && isSubscribed) {
-          onUpdateTimelineItem(item.originDate || selectedDate, item.id, 'lat' as any, String(coords.lat));
-          onUpdateTimelineItem(item.originDate || selectedDate, item.id, 'lng' as any, String(coords.lng));
+          onUpdateTimelineItem((item as any).originDate || selectedDate, item.id, 'lat' as any, String(coords.lat));
+          onUpdateTimelineItem((item as any).originDate || selectedDate, item.id, 'lng' as any, String(coords.lng));
         }
-        // Rate Limit 준수를 위해 1초 대기
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
-    };
-
-    runSelfHealing();
+    }, 500);
 
     return () => {
       isSubscribed = false;
+      clearTimeout(timer);
     };
-  }, [trip?.id, isLoggedIn, currentTimeline.length]);
+  }, [trip?.id, isLoggedIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── CONDITIONAL EARLY RETURN (after all hooks) ──
   // trip이 undefined일 때 로딩 스크린 표시 (모든 훅 호출 이후에 배치해야 Rules of Hooks 준수)

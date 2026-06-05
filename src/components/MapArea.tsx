@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { MapPin } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { MapPin, Plus, Minus } from 'lucide-react';
 import { Trip, TimelineItem } from '../types';
 
 interface MapAreaProps {
@@ -26,148 +26,137 @@ export function MapArea({
   const markersRef = useRef<{ [id: number]: any }>({});
   const polylineRef = useRef<any>(null);
   const tileLayerRef = useRef<any>(null);
-  const initializedRef = useRef(false);
+  // Track whether we have already fit bounds at least once.
+  // After first fit, we don't snap back on empty mapPoints.
+  const hasFitRef = useRef(false);
+  const [mapReady, setMapReady] = useState(false);
 
-  // 1. Initialize Leaflet Map (runs once per trip.id)
+  // ─── Effect 1: Initialize Leaflet map (once per trip.id) ───────────────────
   useEffect(() => {
     if (!containerRef.current) return;
-    if (!(window as any).L) {
-      console.warn("Leaflet (L) global is not loaded yet.");
-      return;
-    }
-    // Prevent double-init (StrictMode)
-    if (mapRef.current) return;
-
     const L = (window as any).L;
+    if (!L) { console.warn("Leaflet not loaded."); return; }
+    // Tear down any existing map first (trip changed)
+    if (mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+      tileLayerRef.current = null;
+      markersRef.current = {};
+      polylineRef.current = null;
+      hasFitRef.current = false;
+      setMapReady(false);
+    }
 
-    const defaultLat = trip.lat !== undefined && trip.lat !== null && !isNaN(Number(trip.lat)) ? Number(trip.lat) : 35.0116;
-    const defaultLng = trip.lng !== undefined && trip.lng !== null && !isNaN(Number(trip.lng)) ? Number(trip.lng) : 135.7681;
+    const defaultLat = typeof trip.lat === 'number' && !isNaN(trip.lat) ? trip.lat : 35.0116;
+    const defaultLng = typeof trip.lng === 'number' && !isNaN(trip.lng) ? trip.lng : 135.7681;
 
     const map = L.map(containerRef.current, {
-      zoomControl: false,
+      zoomControl: false,       // we render custom controls
       attributionControl: false,
-      scrollWheelZoom: false,
+      scrollWheelZoom: true,
       dragging: true,
-      touchZoom: true
+      touchZoom: true,
     }).setView([defaultLat, defaultLng], 13);
 
     mapRef.current = map;
-    initializedRef.current = true;
 
-    // — Add tile layer FIRST so it sits at the bottom —
+    // Add tile layer FIRST so it sits at z-index 1 (below markers)
     const tileUrl = isDarkMode
       ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
       : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-
     tileLayerRef.current = L.tileLayer(tileUrl, { maxZoom: 20, zIndex: 1 }).addTo(map);
 
-    // invalidateSize after a short delay to fix blank tile edges
+    // Fix blank tile edge after layout settles
     setTimeout(() => { if (mapRef.current) mapRef.current.invalidateSize(); }, 200);
 
-    const resizeObserver = new ResizeObserver(() => {
-      if (mapRef.current) mapRef.current.invalidateSize();
-    });
-    resizeObserver.observe(containerRef.current);
+    const ro = new ResizeObserver(() => { if (mapRef.current) mapRef.current.invalidateSize(); });
+    ro.observe(containerRef.current);
+
+    setMapReady(true);
 
     return () => {
-      resizeObserver.disconnect();
+      ro.disconnect();
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
         tileLayerRef.current = null;
         markersRef.current = {};
         polylineRef.current = null;
-        initializedRef.current = false;
+        hasFitRef.current = false;
+        setMapReady(false);
       }
     };
   }, [trip.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 2. Dark-mode tile swap (does NOT recreate entire map)
+  // ─── Effect 2: Swap tiles on dark-mode toggle ───────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !(window as any).L) return;
+    if (!map || !mapReady) return;
     const L = (window as any).L;
+    if (!L) return;
 
-    if (tileLayerRef.current) {
-      map.removeLayer(tileLayerRef.current);
-    }
+    if (tileLayerRef.current) map.removeLayer(tileLayerRef.current);
 
     const tileUrl = isDarkMode
       ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
       : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
 
-    // Use zIndex 1 so it stays underneath markers (default pane)
     tileLayerRef.current = L.tileLayer(tileUrl, { maxZoom: 20, zIndex: 1 }).addTo(map);
 
-    // Bring all markers to front after tile swap
-    Object.values(markersRef.current).forEach((marker: any) => {
-      if (marker && marker.bringToFront) marker.bringToFront();
-    });
-    if (polylineRef.current && polylineRef.current.bringToFront) {
-      polylineRef.current.bringToFront();
-    }
-  }, [isDarkMode]);
+    // Bring markers/polyline back to front after tile swap
+    if (polylineRef.current?.bringToFront) polylineRef.current.bringToFront();
+    Object.values(markersRef.current).forEach((m: any) => { if (m?.bringToFront) m.bringToFront(); });
+  }, [isDarkMode, mapReady]);
 
-  // 3. Render Markers and Paths (re-runs when mapPoints or expandedItemId changes)
+  // ─── Effect 3: Render markers & polyline ───────────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !(window as any).L) return;
+    if (!map || !mapReady) return;
     const L = (window as any).L;
+    if (!L) return;
 
-    // Clear previous markers
-    Object.values(markersRef.current).forEach((marker: any) => map.removeLayer(marker));
+    // Clear previous overlays
+    Object.values(markersRef.current).forEach((m: any) => map.removeLayer(m));
     markersRef.current = {};
+    if (polylineRef.current) { map.removeLayer(polylineRef.current); polylineRef.current = null; }
 
-    // Clear previous polyline
-    if (polylineRef.current) {
-      map.removeLayer(polylineRef.current);
-      polylineRef.current = null;
-    }
-
-    const validPoints = mapPoints.filter(p =>
+    const valid = mapPoints.filter(p =>
       p.lat !== undefined && p.lng !== undefined &&
       !isNaN(Number(p.lat)) && !isNaN(Number(p.lng))
     );
 
-    if (validPoints.length === 0) {
-      const defaultLat = trip.lat !== undefined && trip.lat !== null && !isNaN(Number(trip.lat)) ? Number(trip.lat) : 35.0116;
-      const defaultLng = trip.lng !== undefined && trip.lng !== null && !isNaN(Number(trip.lng)) ? Number(trip.lng) : 135.7681;
-      map.setView([defaultLat, defaultLng], 13);
+    if (valid.length === 0) {
+      // Only snap to trip center if we have NEVER fit bounds before.
+      // Once the user has seen the map with pins, keep the current view.
+      if (!hasFitRef.current) {
+        const lat = typeof trip.lat === 'number' && !isNaN(trip.lat) ? trip.lat : 35.0116;
+        const lng = typeof trip.lng === 'number' && !isNaN(trip.lng) ? trip.lng : 135.7681;
+        map.setView([lat, lng], 13);
+      }
       return;
     }
 
-    const latlngs: [number, number][] = [];
+    const coords: [number, number][] = valid.map(p => [Number(p.lat), Number(p.lng)]);
 
-    // — Add polyline BEFORE markers so markers render on top —
-    // We collect coords first, then draw line, then markers
-    const coords = validPoints.map(p => [Number(p.lat), Number(p.lng)] as [number, number]);
-
+    // Draw polyline UNDER markers (rendered first)
     if (coords.length > 1) {
       polylineRef.current = L.polyline(coords, {
         color: isDarkMode ? '#f87171' : '#dc2626',
         weight: 2.5,
-        dashArray: '5, 5',
+        dashArray: '6, 5',
         opacity: 0.75,
       }).addTo(map);
     }
 
-    // Add markers on top of polyline
-    validPoints.forEach((p) => {
+    // Draw markers ON TOP of polyline
+    valid.forEach(p => {
       const lat = Number(p.lat);
       const lng = Number(p.lng);
-      latlngs.push([lat, lng]);
-
       const isActive = expandedItemId === p.id;
-
-      const pinClass = isActive
-        ? 'leaflet-pin active-pin'
-        : 'leaflet-pin';
-
-      const innerDot = isActive ? '<div class="pin-inner-dot"></div>' : '';
 
       const htmlContent = `
         <div class="pin-wrapper">
-          <div class="${pinClass}">${innerDot}</div>
+          <div class="leaflet-pin${isActive ? ' active-pin' : ''}">${isActive ? '<div class="pin-inner-dot"></div>' : ''}</div>
           <div class="pin-label${isActive ? ' pin-label-active' : ''}">${p.place}</div>
         </div>
       `;
@@ -176,50 +165,49 @@ export function MapArea({
         className: 'custom-leaflet-pin-icon',
         html: htmlContent,
         iconSize: [140, 60],
-        iconAnchor: [70, isActive ? 12 : 9]
+        iconAnchor: [70, isActive ? 12 : 9],
       });
 
       const marker = L.marker([lat, lng], { icon, zIndexOffset: 1000 }).addTo(map);
-
-      marker.on('click', (e: any) => {
-        L.DomEvent.stopPropagation(e);
-        handleItemToggle(p.id);
-      });
-
+      marker.on('click', (e: any) => { L.DomEvent.stopPropagation(e); handleItemToggle(p.id); });
       markersRef.current[p.id] = marker;
     });
 
-    // Fit bounds to show all pins nicely
-    const bounds = L.latLngBounds(latlngs);
-    map.fitBounds(bounds, { padding: [44, 44], maxZoom: 15 });
+    // Fit bounds only the FIRST time we have real pins
+    if (!hasFitRef.current) {
+      const bounds = L.latLngBounds(coords);
+      map.fitBounds(bounds, { padding: [48, 48], maxZoom: 15 });
+      hasFitRef.current = true;
+    }
 
-  }, [mapPoints, expandedItemId, isDarkMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mapPoints, expandedItemId, isDarkMode, mapReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 4. Map click → Open Google Maps
+  // ─── Effect 4: Map click → open Google Maps ────────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-
     const onMapClick = () => {
       if (isEditMode) return;
-      const validCoords = mapPoints.filter(p =>
+      const valid = mapPoints.filter(p =>
         p.lat !== undefined && p.lng !== undefined &&
         !isNaN(Number(p.lat)) && !isNaN(Number(p.lng))
       );
-      const q = validCoords.length > 0
-        ? validCoords.map(c => c.place).join(' to ')
+      const q = valid.length > 0
+        ? valid.map(c => c.place).join(' to ')
         : (trip.locationStr || trip.title || '');
       if (!q) return;
       window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank');
     };
-
     map.off('click');
     map.on('click', onMapClick);
-
     return () => { map.off('click', onMapClick); };
   }, [mapPoints, trip, isEditMode]);
 
-  // Fallback if Leaflet is not yet loaded
+  // Zoom helpers
+  const zoomIn = () => { if (mapRef.current) mapRef.current.zoomIn(); };
+  const zoomOut = () => { if (mapRef.current) mapRef.current.zoomOut(); };
+
+  // Leaflet not yet loaded fallback
   if (!(window as any).L) {
     return (
       <div className="flex-grow relative bg-[#EAE8E3] dark:bg-[#1A1A1A] overflow-hidden flex flex-col items-center justify-center text-black/40 dark:text-white/40 p-6">
@@ -230,13 +218,32 @@ export function MapArea({
 
   return (
     <div className="flex-grow relative bg-[#EAE8E3] dark:bg-[#1A1A1A] overflow-hidden transition-colors duration-300">
+      {/* Leaflet map container */}
       <div
         ref={containerRef}
         id="leaflet-map"
         className="absolute inset-0 w-full h-full z-0"
       />
 
-      {/* Overlay Status Bar */}
+      {/* ── Custom Zoom Controls ── */}
+      <div className="absolute top-4 right-4 md:top-6 md:right-6 flex flex-col gap-1 z-20">
+        <button
+          onClick={zoomIn}
+          className="w-8 h-8 bg-[#F9F8F6]/95 dark:bg-[#111111]/95 backdrop-blur border border-black/20 dark:border-white/20 shadow flex items-center justify-center hover:bg-white dark:hover:bg-[#222] transition-colors"
+          aria-label="Zoom in"
+        >
+          <Plus className="w-4 h-4 text-black dark:text-white" />
+        </button>
+        <button
+          onClick={zoomOut}
+          className="w-8 h-8 bg-[#F9F8F6]/95 dark:bg-[#111111]/95 backdrop-blur border border-black/20 dark:border-white/20 shadow flex items-center justify-center hover:bg-white dark:hover:bg-[#222] transition-colors"
+          aria-label="Zoom out"
+        >
+          <Minus className="w-4 h-4 text-black dark:text-white" />
+        </button>
+      </div>
+
+      {/* ── Status Bar ── */}
       <div className="absolute bottom-4 left-4 right-4 md:bottom-6 md:left-6 md:right-6 flex justify-between z-20 pointer-events-none">
         <div className="bg-[#F9F8F6]/95 dark:bg-[#111111]/95 backdrop-blur border border-black/20 dark:border-white/20 px-2 py-1.5 md:px-3 md:py-2 text-[9px] md:text-[10px] uppercase font-bold tracking-widest flex items-center gap-1.5 transition-colors pointer-events-auto">
           <MapPin className="w-3 h-3 md:w-4 md:h-4 text-red-600 dark:text-red-400" />
