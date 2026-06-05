@@ -15,6 +15,7 @@ interface NavigationProps {
   setIsDarkMode: (value: boolean) => void;
   showSettings: boolean;
   setShowSettings: (value: boolean) => void;
+  openAuthModal: (mode: 'login' | 'signup') => void;
 }
 
 export const Navigation: React.FC<NavigationProps> = ({
@@ -28,9 +29,8 @@ export const Navigation: React.FC<NavigationProps> = ({
   setIsDarkMode,
   showSettings,
   setShowSettings,
+  openAuthModal,
 }) => {
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
   const currentUser = auth.currentUser;
   const displayName = currentUser?.displayName || currentUser?.email?.split('@')[0].toUpperCase() || 'USER';
 
@@ -102,8 +102,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                   <button 
                     onClick={() => { 
                       setShowSettings(false); 
-                      setAuthModalMode('login');
-                      setIsAuthModalOpen(true);
+                      openAuthModal('login');
                     }}
                     className="p-4 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 border-b border-black/10 dark:border-white/10 transition-colors text-xs font-bold uppercase tracking-widest w-full text-left"
                   >
@@ -113,8 +112,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                   <button 
                     onClick={() => { 
                       setShowSettings(false); 
-                      setAuthModalMode('signup');
-                      setIsAuthModalOpen(true);
+                      openAuthModal('signup');
                     }}
                     className="p-4 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 border-b border-black/10 dark:border-white/10 transition-colors text-xs font-bold uppercase tracking-widest w-full text-left"
                   >
@@ -135,12 +133,6 @@ export const Navigation: React.FC<NavigationProps> = ({
         </div>
       </div>
       
-      {/* Auth Modal Popup */}
-      <AuthModal 
-        isOpen={isAuthModalOpen} 
-        onClose={() => setIsAuthModalOpen(false)} 
-        initialMode={authModalMode}
-      />
     </nav>
   );
 };

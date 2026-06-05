@@ -71,7 +71,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-center items-start p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] flex justify-center items-start p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto">
       {/* Click outside to close */}
       <div className="absolute inset-0" onClick={onClose} />
 

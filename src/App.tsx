@@ -5,6 +5,7 @@ import { HomePage } from './pages/Home';
 import { ArchiveHubPage } from './pages/Archive';
 import { PlanHubPage } from './pages/Plan';
 import { JourneyDetailPage } from './pages/Detail';
+import { AuthModal } from './components/AuthModal';
 import { 
   initialTrips, 
   initialPlans, 
@@ -41,6 +42,8 @@ function App() {
   const [showSettings, setShowSettings] = useState<boolean>(false);
   
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
   const [trips, setTrips] = useState<Trip[]>(initialTrips);
   const [plans, setPlans] = useState<Plan[]>(initialPlans);
   const [activeTripId, setActiveTripId] = useState<number>(initialTrips[0].id);
@@ -536,6 +539,7 @@ function App() {
           setIsDarkMode={setIsDarkMode}
           showSettings={showSettings}
           setShowSettings={setShowSettings}
+          openAuthModal={(mode) => { setAuthModalMode(mode); setIsAuthModalOpen(true); }}
         />
 
         {/* View Routing */}
@@ -601,6 +605,13 @@ function App() {
         
         {/* Footer */}
         <Footer />
+
+        {/* Auth Modal Popup */}
+        <AuthModal 
+          isOpen={isAuthModalOpen} 
+          onClose={() => setIsAuthModalOpen(false)} 
+          initialMode={authModalMode}
+        />
       </div>
     </div>
   );
