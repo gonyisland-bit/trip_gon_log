@@ -82,7 +82,7 @@ export const Navigation: React.FC<NavigationProps> = ({
             <div className="absolute top-full right-0 mt-4 w-48 bg-[#F9F8F6] dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 shadow-xl flex flex-col z-50">
               {isLoggedIn && (
                 <div className="px-4 py-3 border-b border-black/10 dark:border-white/10 text-[10px] uppercase tracking-widest text-black/50 dark:text-white/50">
-                  Signed in as <strong className="text-black dark:text-white ml-1">{displayName}</strong>
+                  Logged in as <strong className="text-black dark:text-white ml-1">{displayName}</strong>
                 </div>
               )}
               <button 
@@ -96,7 +96,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 }}
                 className="p-4 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 border-b border-black/10 dark:border-white/10 transition-colors text-xs font-bold uppercase tracking-widest"
               >
-                <span>{isLoggedIn ? 'Sign out' : 'Sign in'}</span>
+                <span>{isLoggedIn ? 'Log out' : 'Log in'}</span>
                 {isLoggedIn ? <LogOut className="w-4 h-4" /> : <User className="w-4 h-4" />}
               </button>
               <button 

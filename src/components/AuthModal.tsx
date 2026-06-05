@@ -36,7 +36,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           displayName: username
         });
       } else {
-        // Sign In
+        // Log In
         await signInWithEmailAndPassword(auth, email, password);
       }
       onClose();
@@ -82,7 +82,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             Trip Mood
           </h2>
           <p className="text-[10px] md:text-xs text-black/50 dark:text-white/50 uppercase tracking-widest">
-            {isSignUp ? 'Create your personal account' : 'Sign in to edit your journeys'}
+            {isSignUp ? 'Create your personal account' : 'Log in to edit your journeys'}
           </p>
         </div>
 
@@ -93,7 +93,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             onClick={() => { setIsSignUp(false); setError(''); }}
             className={`flex-1 pb-3 text-center transition-colors ${!isSignUp ? 'border-b-2 border-black dark:border-white text-black dark:text-white' : 'text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'}`}
           >
-            Sign In
+            Log In
           </button>
           <button 
             type="button"
@@ -152,7 +152,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             disabled={loading}
             className="mt-4 py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-bold uppercase tracking-widest hover:opacity-85 active:opacity-95 transition-opacity disabled:opacity-50 flex items-center justify-center rounded-none"
           >
-            {loading ? 'Processing...' : isSignUp ? 'Create Account' : 'Sign In'}
+            {loading ? 'Processing...' : isSignUp ? 'Create Account' : 'Log In'}
           </button>
         </form>
       </div>
