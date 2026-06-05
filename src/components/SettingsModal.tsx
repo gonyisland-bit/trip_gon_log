@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Settings, Loader2, Trash2, RotateCcw, AlertTriangle } from 'lucide-react';
+import { X, Save, Settings, Loader2, Trash2, RotateCcw, AlertTriangle, Star, Check } from 'lucide-react';
 import { Trip } from '../types';
-
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   homeTitle: string;
   homeSubtitle: string;
-  onSaveSettings: (title: string, subtitle: string) => Promise<void>;
+  onSaveSettings: (title: string, subtitle: string, heroJourneyIds: number[]) => Promise<void>;
   trashedJourneys: Trip[];
   onRestoreJourney: (id: number) => Promise<void>;
   onPermanentDeleteJourney: (id: number) => Promise<void>;
   isLoggedIn: boolean;
+  trips: Trip[];
+  plans: Trip[];
+  initialHeroJourneyIds: number[];
 }
 
 type SettingsTab = 'general' | 'trash';
@@ -26,10 +28,14 @@ export function SettingsModal({
   onRestoreJourney,
   onPermanentDeleteJourney,
   isLoggedIn,
+  trips,
+  plans,
+  initialHeroJourneyIds,
 }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [title, setTitle] = useState(homeTitle);
   const [subtitle, setSubtitle] = useState(homeSubtitle);
+  const [selectedHeroIds, setSelectedHeroIds] = useState<number[]>(initialHeroJourneyIds);
   const [saving, setSaving] = useState(false);
   const [loadingId, setLoadingId] = useState<number | null>(null);
 
@@ -38,9 +44,10 @@ export function SettingsModal({
     if (isOpen) {
       setTitle(homeTitle);
       setSubtitle(homeSubtitle);
+      setSelectedHeroIds(initialHeroJourneyIds);
       setActiveTab('general');
     }
-  }, [isOpen, homeTitle, homeSubtitle]);
+  }, [isOpen, homeTitle, homeSubtitle, initialHeroJourneyIds]);
 
   if (!isOpen) return null;
 
@@ -48,7 +55,7 @@ export function SettingsModal({
     e.preventDefault();
     setSaving(true);
     try {
-      await onSaveSettings(title, subtitle);
+      await onSaveSettings(title, subtitle, selectedHeroIds);
       onClose();
     } catch (err) {
       console.error(err);
@@ -56,6 +63,12 @@ export function SettingsModal({
     } finally {
       setSaving(false);
     }
+  };
+
+  const toggleHeroId = (id: number) => {
+    setSelectedHeroIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
   };
 
   const handleRestore = async (id: number) => {
@@ -82,6 +95,9 @@ export function SettingsModal({
       year: 'numeric', month: 'short', day: 'numeric',
     });
   };
+
+  // All journeys (trips + plans) available for hero selection
+  const allJourneys = [...trips, ...plans];
 
   return (
     <div
@@ -158,14 +174,83 @@ export function SettingsModal({
                 <textarea
                   value={subtitle}
                   onChange={(e) => setSubtitle(e.target.value)}
-                  className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-3 text-xs md:text-sm font-medium text-black dark:text-white outline-none w-full h-24 resize-none focus:border-red-600 dark:focus:border-red-400 transition-colors"
+                  className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-3 text-xs md:text-sm font-medium text-black dark:text-white outline-none w-full h-20 resize-none focus:border-red-600 dark:focus:border-red-400 transition-colors"
                   placeholder="나만의 감성으로 기록하고 보관하는 여행 아카이브."
                   required
                 />
               </div>
 
+              {/* Hero Journey Selection */}
+              <div className="flex flex-col gap-2.5 pt-2">
+                <div className="flex items-center gap-2">
+                  <Star className="w-3.5 h-3.5 text-red-500 dark:text-red-400" />
+                  <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+                    Hero Featured Journey{selectedHeroIds.length > 1 ? 's' : ''}
+                    {selectedHeroIds.length > 0 && (
+                      <span className="ml-2 text-red-500 dark:text-red-400 not-italic normal-case font-black">
+                        ({selectedHeroIds.length} selected)
+                      </span>
+                    )}
+                  </label>
+                </div>
+                <p className="text-[9px] text-black/40 dark:text-white/40 leading-relaxed -mt-1">
+                  첫 화면에 표시할 여정을 선택하세요. 복수 선택 시 슬라이드 캐러셀로 표시됩니다.
+                </p>
+                {allJourneys.length === 0 ? (
+                  <div className="text-[10px] text-black/30 dark:text-white/30 py-4 text-center border border-dashed border-black/10 dark:border-white/10">
+                    등록된 여정이 없습니다.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-2 max-h-52 overflow-y-auto pr-1">
+                    {allJourneys.map(journey => {
+                      const isSelected = selectedHeroIds.includes(journey.id);
+                      const isPlan = plans.some(p => p.id === journey.id);
+                      return (
+                        <button
+                          key={journey.id}
+                          type="button"
+                          onClick={() => toggleHeroId(journey.id)}
+                          className={`flex items-center gap-3 p-2.5 border transition-all text-left group ${
+                            isSelected
+                              ? 'border-red-500/60 bg-red-50 dark:bg-red-900/15'
+                              : 'border-black/10 dark:border-white/10 hover:border-black/25 dark:hover:border-white/25 bg-black/2 dark:bg-white/2'
+                          }`}
+                        >
+                          {/* Thumbnail */}
+                          <div className="w-10 h-10 shrink-0 overflow-hidden border border-black/10 dark:border-white/10 relative">
+                            <img
+                              src={journey.img}
+                              alt={journey.title}
+                              className={`w-full h-full object-cover transition-all duration-300 ${isSelected ? 'opacity-100' : 'opacity-60 group-hover:opacity-80'}`}
+                            />
+                          </div>
+                          {/* Info */}
+                          <div className="flex-grow min-w-0">
+                            <div className="font-bold text-[10px] uppercase tracking-tight truncate text-black dark:text-white">
+                              {journey.title}
+                            </div>
+                            <div className="text-[9px] text-black/40 dark:text-white/40 font-medium flex items-center gap-1.5 mt-0.5">
+                              <span>{journey.date}</span>
+                              {isPlan && <span className="text-blue-500 dark:text-blue-400 font-bold">PLAN</span>}
+                            </div>
+                          </div>
+                          {/* Check */}
+                          <div className={`w-5 h-5 shrink-0 flex items-center justify-center border transition-all ${
+                            isSelected
+                              ? 'bg-red-500 border-red-500 text-white'
+                              : 'border-black/20 dark:border-white/20 text-transparent'
+                          }`}>
+                            <Check className="w-3 h-3" />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               {/* Action Buttons */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-black/10 dark:border-white/10 mt-6">
+              <div className="flex justify-end gap-3 pt-4 border-t border-black/10 dark:border-white/10 mt-2">
                 <button
                   type="button"
                   onClick={onClose}

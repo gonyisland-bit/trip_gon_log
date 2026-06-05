@@ -8,7 +8,7 @@ import { ImageEditOverlay } from '../components/ImageEditOverlay';
 import { FlightCard } from '../components/FlightCard';
 import { StayCard } from '../components/StayCard';
 import { TransitCard } from '../components/TransitCard';
-import { Lightbox } from '../components/Lightbox';
+import { Lightbox, LightboxImageMeta } from '../components/Lightbox';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { 
   Trip, 
@@ -647,12 +647,25 @@ export function JourneyDetailPage({
       type: 'timeline' as const,
     }));
 
-  // Combined for lightbox: first meta, then timeline
-  const galleryImages = [
-    ...galleryMetaImages,
-    ...timelineImages.map(t => t.url)
-  ];
-  const galleryAllUnique = [...new Set(galleryImages)];
+  // Combined LightboxImageMeta array: gallery photos first (no date/place), then timeline photos with metadata
+  const galleryMetaMetas: LightboxImageMeta[] = galleryMetaImages.map(url => ({ url, type: 'gallery' as const }));
+  const timelineMetas: LightboxImageMeta[] = timelineImages.map(t => ({
+    url: t.url,
+    place: t.place,
+    date: t.date,
+    memo: t.memo,
+    imgNote: t.imgNote,
+    type: 'timeline' as const,
+  }));
+  // Deduplicate by url
+  const seenUrls = new Set<string>();
+  const galleryAllMeta: LightboxImageMeta[] = [...galleryMetaMetas, ...timelineMetas].filter(m => {
+    if (seenUrls.has(m.url)) return false;
+    seenUrls.add(m.url);
+    return true;
+  });
+  // Keep backward compat
+  const galleryAllUnique = galleryAllMeta.map(m => m.url);
 
   return (
     <main className="animate-in slide-in-from-right-8 duration-500 flex flex-col md:flex-row h-[calc(100vh-73px)] w-full overflow-hidden">
@@ -1002,7 +1015,7 @@ export function JourneyDetailPage({
                                 onClick={(e) => {
                                   if (!isEditing) {
                                     e.stopPropagation();
-                                    const imgIdx = galleryImages.indexOf(item.img!);
+                                    const imgIdx = galleryAllUnique.indexOf(item.img!);
                                     if (imgIdx !== -1) {
                                       setLightboxIndex(imgIdx);
                                       setIsLightboxOpen(true);
@@ -1393,7 +1406,7 @@ export function JourneyDetailPage({
       {/* Fullscreen Lightbox component */}
       <Lightbox 
         isOpen={isLightboxOpen}
-        images={galleryAllUnique}
+        images={galleryAllMeta}
         currentIndex={lightboxIndex}
         onClose={() => setIsLightboxOpen(false)}
         onNavigate={(idx) => setLightboxIndex(idx)}

@@ -8,6 +8,7 @@ import { JourneyDetailPage } from './pages/Detail';
 import { AuthModal } from './components/AuthModal';
 import { CreateTripModal } from './components/CreateTripModal';
 import { SettingsModal } from './components/SettingsModal';
+import { EditTripModal } from './components/EditTripModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { fetchCoordinates } from './utils/googleMapsHelper';
 import { 
@@ -67,6 +68,8 @@ function App() {
   const [transitByTrip, setTransitByTrip] = useState<{ [id: number]: TransitItem[] }>({});
   const [homeTitle, setHomeTitle] = useState("Your Personal Travel Magazine.");
   const [homeSubtitle, setHomeSubtitle] = useState("나만의 감성으로 기록하고 보관하는 여행 아카이브.");
+  const [heroJourneyIds, setHeroJourneyIds] = useState<number[]>([]);
+  const [editingTripId, setEditingTripId] = useState<number | null>(null);
 
   // activeTrip: strictly match activeTripId. Do not automatically fall back to trips[0]
   // to avoid rendering one trip's map with another trip's details during sync.
@@ -262,6 +265,7 @@ function App() {
         const data = docSnap.data();
         if (data.title) setHomeTitle(data.title);
         if (data.subtitle) setHomeSubtitle(data.subtitle);
+        if (Array.isArray(data.heroJourneyIds)) setHeroJourneyIds(data.heroJourneyIds);
       }
     }, (err) => {
       console.error("Settings snapshot subscription error:", err);
@@ -393,15 +397,30 @@ function App() {
     }
   };
 
-  const handleSaveSettings = async (title: string, subtitle: string) => {
+  const handleSaveSettings = async (title: string, subtitle: string, heroIds: number[]) => {
     if (!isLoggedIn) return;
     try {
       await setDoc(doc(db, 'users', 'public', 'settings', 'home'), {
         title,
-        subtitle
+        subtitle,
+        heroJourneyIds: heroIds,
       });
+      setHeroJourneyIds(heroIds);
     } catch (err) {
       console.error("Failed to save settings:", err);
+      throw err;
+    }
+  };
+
+  const handleEditTripSave = async (tripId: number, updatedData: Partial<Trip>) => {
+    if (!isLoggedIn) return;
+    const isPlan = plans.some(p => p.id === tripId);
+    const collectionName = isPlan ? 'plans' : 'trips';
+    try {
+      await setDoc(doc(db, 'users', 'public', collectionName, String(tripId)), updatedData, { merge: true });
+    } catch (err: any) {
+      console.error("Error updating trip cover:", err);
+      alert("여정 정보 저장에 실패했습니다.");
       throw err;
     }
   };
@@ -800,6 +819,9 @@ function App() {
               handleMoveToArchive={handleMoveToArchive}
               homeTitle={homeTitle}
               homeSubtitle={homeSubtitle}
+              heroJourneyIds={heroJourneyIds}
+              onEditTrip={(id) => setEditingTripId(id)}
+              isLoggedIn={isLoggedIn}
             />
           )}
           {currentView === 'archive' && (
@@ -882,6 +904,18 @@ function App() {
           trashedJourneys={trashedJourneys}
           onRestoreJourney={handleRestoreJourney}
           onPermanentDeleteJourney={handlePermanentDeleteJourney}
+          isLoggedIn={isLoggedIn}
+          trips={trips}
+          plans={plans}
+          initialHeroJourneyIds={heroJourneyIds}
+        />
+
+        {/* Edit Trip Cover Modal */}
+        <EditTripModal
+          isOpen={editingTripId !== null}
+          onClose={() => setEditingTripId(null)}
+          trip={trips.find(t => t.id === editingTripId) || plans.find(p => p.id === editingTripId)}
+          onSave={handleEditTripSave}
           isLoggedIn={isLoggedIn}
         />
       </div>
