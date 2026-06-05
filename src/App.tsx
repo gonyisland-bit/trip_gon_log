@@ -221,9 +221,65 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  const navigateTo = (view: string, tripId: number | null = null) => {
+  // Sync state with browser History API on initial load
+  useEffect(() => {
+    const path = window.location.pathname;
+    const params = new URLSearchParams(window.location.search);
+    const idParam = params.get('id');
+
+    let initialView = 'home';
+    let initialTripId: number | null = null;
+
+    if (path === '/archive') {
+      initialView = 'archive';
+    } else if (path === '/plan') {
+      initialView = 'plan';
+    } else if (path === '/detail' || idParam) {
+      initialView = 'detail';
+      if (idParam) {
+        initialTripId = Number(idParam);
+      }
+    }
+
+    if (initialTripId) {
+      setActiveTripId(initialTripId);
+    }
+    setCurrentView(initialView);
+    window.history.replaceState({ view: initialView, tripId: initialTripId }, '', window.location.pathname + window.location.search);
+  }, []);
+
+  // Listen to popstate events for browser back/forward navigation
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      const state = event.state;
+      if (state && state.view) {
+        if (state.tripId) {
+          setActiveTripId(state.tripId);
+        }
+        setCurrentView(state.view);
+      } else {
+        setCurrentView('home');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigateTo = (view: string, tripId: number | null = null, pushHistory = true) => {
     if (tripId) setActiveTripId(tripId);
     setCurrentView(view);
+
+    if (pushHistory) {
+      let path = '/';
+      if (view === 'archive') path = '/archive';
+      else if (view === 'plan') path = '/plan';
+      else if (view === 'detail') {
+        const idToUse = tripId || activeTripId;
+        path = idToUse ? `/detail?id=${idToUse}` : '/detail';
+      }
+      window.history.pushState({ view, tripId: tripId || activeTripId }, '', path);
+    }
   };
 
   const handleUpdateTrip = async (tripId: number, field: string, value: any) => {
