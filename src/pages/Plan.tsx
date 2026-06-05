@@ -42,9 +42,7 @@ export function PlanHubPage({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (window.confirm(`'${plan.title}' 계획을 영구 삭제하시겠습니까?`)) {
-                      onDeletePlan(plan.id);
-                    }
+                    onDeletePlan(plan.id);
                   }}
                   className="absolute top-3 right-3 p-2 bg-black/70 hover:bg-red-600 text-white transition-colors opacity-0 group-hover:opacity-100 z-10"
                   title="Delete Plan"

@@ -605,13 +605,25 @@ export function JourneyDetailPage({
     }
   };
 
-  // Combine custom metadata gallery with all image attachments within timeline items
+  // Separate gallery: metadata gallery (from trip.gallery) and timeline images (from timeline items)
+  const galleryMetaImages = tripToUse?.gallery || [];
+  const timelineImages = baseTimeline
+    .filter(item => item.img)
+    .map(item => ({
+      url: item.img as string,
+      place: item.place,
+      date: item.date || '',
+      memo: item.memo,
+      imgNote: item.imgNote || '',
+      type: 'timeline' as const,
+    }));
+
+  // Combined for lightbox: first meta, then timeline
   const galleryImages = [
-    ...new Set([
-      ...(tripToUse?.gallery || []),
-      ...baseTimeline.map(item => item.img).filter(Boolean) as string[]
-    ])
+    ...galleryMetaImages,
+    ...timelineImages.map(t => t.url)
   ];
+  const galleryAllUnique = [...new Set(galleryImages)];
 
   return (
     <main className="animate-in slide-in-from-right-8 duration-500 flex flex-col md:flex-row h-[calc(100vh-73px)] w-full overflow-hidden">
@@ -1023,6 +1035,27 @@ export function JourneyDetailPage({
                                   </span>
                                 )}
                               </div>
+
+                              {/* Photo Note Input (only shown if photo exists) */}
+                              {item.img && (
+                                <div className="flex items-start gap-3">
+                                  <ImageIcon className="w-3.5 h-3.5 md:w-4 md:h-4 mt-0.5 text-black/60 dark:text-white/60 shrink-0" />
+                                  {isEditing ? (
+                                    <input
+                                      type="text"
+                                      value={item.imgNote || ''}
+                                      onChange={(e) => updateTimelineItem(item.id, 'imgNote', e.target.value)}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="bg-[#EAE8E3] dark:bg-white/10 px-2 py-1 outline-none text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
+                                      placeholder="사진 메모 (갤러리에 표시됩니다)"
+                                    />
+                                  ) : (
+                                    <span className="flex-grow text-black/60 dark:text-white/60 italic break-words">
+                                      {item.imgNote || '사진 메모 없음'}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
                         )}
@@ -1185,41 +1218,119 @@ export function JourneyDetailPage({
                 </div>
               )}
 
-              {/* Gallery Grid */}
-              {galleryImages.length === 0 ? (
+              {/* ── Section: Gallery Photos ── */}
+              {galleryMetaImages.length > 0 && (
+                <>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-px flex-grow bg-black/10 dark:bg-white/10" />
+                    <span className="text-[9px] uppercase font-black tracking-widest text-black/40 dark:text-white/40 shrink-0">Gallery Photos</span>
+                    <div className="h-px flex-grow bg-black/10 dark:bg-white/10" />
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4 mb-8">
+                    {galleryMetaImages.map((imgUrl, idx) => (
+                      <div 
+                        key={`meta-${imgUrl}-${idx}`}
+                        className="group/gallery relative aspect-[4/3] overflow-hidden border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 cursor-pointer shadow-sm"
+                        onClick={() => {
+                          setLightboxIndex(idx);
+                          setIsLightboxOpen(true);
+                        }}
+                      >
+                        <img 
+                          src={imgUrl} 
+                          alt={`Gallery ${idx + 1}`} 
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover/gallery:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover/gallery:bg-black/10 transition-colors pointer-events-none" />
+                        
+                        {/* Delete image button */}
+                        {isLoggedIn && (
+                          <button
+                            onClick={(e) => handleRemoveGalleryImage(imgUrl, e)}
+                            className="absolute top-2 right-2 p-1.5 bg-black/75 hover:bg-red-600 text-white transition-colors opacity-0 group-hover/gallery:opacity-100 z-10 rounded-sm"
+                            title="Remove Image"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {/* ── Section: Timeline Photos ── */}
+              {timelineImages.length > 0 && (
+                <>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-px flex-grow bg-black/10 dark:bg-white/10" />
+                    <span className="text-[9px] uppercase font-black tracking-widest text-black/40 dark:text-white/40 shrink-0">Timeline Photos</span>
+                    <div className="h-px flex-grow bg-black/10 dark:bg-white/10" />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5 pb-12">
+                    {timelineImages.map((imgItem, idx) => (
+                      <div key={`timeline-${imgItem.url}-${idx}`} className="flex flex-col group/gallery">
+                        {/* Film-photo styled image */}
+                        <div
+                          className="relative overflow-hidden border border-black/10 dark:border-white/10 cursor-pointer aspect-[4/3]"
+                          onClick={() => {
+                            const globalIdx = galleryAllUnique.indexOf(imgItem.url);
+                            setLightboxIndex(globalIdx !== -1 ? globalIdx : 0);
+                            setIsLightboxOpen(true);
+                          }}
+                        >
+                          <img
+                            src={imgItem.url}
+                            alt={imgItem.place}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover/gallery:scale-105"
+                          />
+                          {/* Film stamp overlay (top-left) */}
+                          <div className="absolute top-2 left-2 flex flex-col gap-0.5 z-10 pointer-events-none">
+                            {imgItem.date && (
+                              <div className="bg-black/60 backdrop-blur-sm px-1.5 py-0.5">
+                                <span className="text-[8px] text-amber-300 font-mono font-bold tracking-widest leading-none">
+                                  {imgItem.date.replace(/\./g, '/')}
+                                </span>
+                              </div>
+                            )}
+                            {imgItem.place && (
+                              <div className="bg-black/60 backdrop-blur-sm px-1.5 py-0.5">
+                                <span className="text-[8px] text-amber-300 font-mono font-bold tracking-widest leading-none truncate block max-w-[160px]">
+                                  📍 {imgItem.place}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="absolute inset-0 bg-black/0 group-hover/gallery:bg-black/10 transition-colors pointer-events-none" />
+                        </div>
+
+                        {/* Memo & note section below the image */}
+                        <div className="bg-black/3 dark:bg-white/3 border border-t-0 border-black/10 dark:border-white/10 px-3 py-2 flex flex-col gap-1">
+                          {imgItem.memo && (
+                            <p className="text-[10px] text-black/70 dark:text-white/70 font-medium leading-relaxed">
+                              {imgItem.memo}
+                            </p>
+                          )}
+                          {imgItem.imgNote && (
+                            <p className="text-[10px] text-black/50 dark:text-white/50 italic leading-relaxed border-t border-black/5 dark:border-white/5 pt-1">
+                              {imgItem.imgNote}
+                            </p>
+                          )}
+                          {!imgItem.memo && !imgItem.imgNote && (
+                            <p className="text-[10px] text-black/30 dark:text-white/30 italic">
+                              메모 없음
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {galleryMetaImages.length === 0 && timelineImages.length === 0 && (
                 <div className="text-center py-16 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
                   등록된 갤러리 사진이 없습니다.
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4 pb-12">
-                  {galleryImages.map((imgUrl, idx) => (
-                    <div 
-                      key={`${imgUrl}-${idx}`}
-                      className="group/gallery relative aspect-[4/3] overflow-hidden border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 cursor-pointer shadow-sm"
-                      onClick={() => {
-                        setLightboxIndex(idx);
-                        setIsLightboxOpen(true);
-                      }}
-                    >
-                      <img 
-                        src={imgUrl} 
-                        alt={`Gallery ${idx + 1}`} 
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover/gallery:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover/gallery:bg-black/10 transition-colors pointer-events-none" />
-                      
-                      {/* Delete image button */}
-                      {isLoggedIn && (
-                        <button
-                          onClick={(e) => handleRemoveGalleryImage(imgUrl, e)}
-                          className="absolute top-2 right-2 p-1.5 bg-black/75 hover:bg-red-600 text-white transition-colors opacity-0 group-hover/gallery:opacity-100 z-10 rounded-sm"
-                          title="Remove Image"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
                 </div>
               )}
             </div>
@@ -1231,7 +1342,7 @@ export function JourneyDetailPage({
       {/* Fullscreen Lightbox component */}
       <Lightbox 
         isOpen={isLightboxOpen}
-        images={galleryImages}
+        images={galleryAllUnique}
         currentIndex={lightboxIndex}
         onClose={() => setIsLightboxOpen(false)}
         onNavigate={(idx) => setLightboxIndex(idx)}

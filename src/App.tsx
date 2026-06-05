@@ -55,6 +55,7 @@ function App() {
   // Start with empty state for clean public load
   const [trips, setTrips] = useState<Trip[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [trashedJourneys, setTrashedJourneys] = useState<Trip[]>([]);
   const [activeTripId, setActiveTripId] = useState<number | null>(null);
   const [dbError, setDbError] = useState<string | null>(null);
   
@@ -240,6 +241,16 @@ function App() {
       setDbError(err.message);
     });
 
+    const unsubTrash = onSnapshot(collection(db, 'users', uid, 'trash'), (snapshot) => {
+      const list: Trip[] = [];
+      snapshot.forEach(doc => {
+        list.push(doc.data() as Trip);
+      });
+      setTrashedJourneys(list.sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0)));
+    }, (err) => {
+      console.error("Trash snapshot subscription error:", err);
+    });
+
     const unsubSettings = onSnapshot(doc(db, 'users', uid, 'settings', 'home'), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -266,6 +277,7 @@ function App() {
       unsubFlights();
       unsubStays();
       unsubTransit();
+      unsubTrash();
       unsubSettings();
     };
   }, []);
@@ -628,60 +640,102 @@ function App() {
   const handleDeleteJourney = async (tripId: number) => {
     if (!isLoggedIn) return;
 
+    // First confirmation
+    const tripToDelete = trips.find(t => t.id === tripId) || plans.find(p => p.id === tripId);
+    const journeyTitle = tripToDelete?.title || '이 여정';
+    const confirmed = window.confirm(`'${journeyTitle}' 여정을 삭제하시겠습니까?\n\n삭제된 여정은 휴지통(Settings)에서 복구하거나 완전히 삭제할 수 있습니다.`);
+    if (!confirmed) return;
+
     try {
       const batch = writeBatch(db);
-
       const isPlan = plans.some(p => p.id === tripId);
       const collectionName = isPlan ? 'plans' : 'trips';
       const tripRef = doc(db, 'users', 'public', collectionName, String(tripId));
+
+      // Move to trash collection with deletedAt timestamp
+      const trashedData: Trip = {
+        ...(tripToDelete as Trip),
+        deletedAt: Date.now(),
+        tags: [...((tripToDelete?.tags || []).filter(t => t !== 'Plan')), isPlan ? 'Plan' : 'Archive']
+      };
+      const trashRef = doc(db, 'users', 'public', 'trash', String(tripId));
+      batch.set(trashRef, trashedData);
       batch.delete(tripRef);
+
+      await batch.commit();
+      alert(`'${journeyTitle}' 여정이 휴지통으로 이동되었습니다.\n\nSettings > 휴지통에서 복구하거나 완전히 삭제할 수 있습니다.`);
+      navigateTo('home');
+    } catch (err: any) {
+      console.error("Error soft-deleting journey:", err);
+      alert("삭제에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+    }
+  };
+
+  const handleRestoreJourney = async (tripId: number) => {
+    if (!isLoggedIn) return;
+    const trashed = trashedJourneys.find(t => t.id === tripId);
+    if (!trashed) return;
+
+    try {
+      const batch = writeBatch(db);
+      const isPlan = (trashed.tags || []).includes('Plan');
+      const collectionName = isPlan ? 'plans' : 'trips';
+
+      const { deletedAt: _, ...restoredData } = trashed as any;
+      const restoreRef = doc(db, 'users', 'public', collectionName, String(tripId));
+      const trashRef = doc(db, 'users', 'public', 'trash', String(tripId));
+
+      batch.set(restoreRef, restoredData);
+      batch.delete(trashRef);
+      await batch.commit();
+      alert(`'${trashed.title}' 여정이 성공적으로 복구되었습니다.`);
+    } catch (err: any) {
+      console.error("Error restoring journey:", err);
+      alert("복구에 실패했습니다.");
+    }
+  };
+
+  const handlePermanentDeleteJourney = async (tripId: number) => {
+    if (!isLoggedIn) return;
+    const trashed = trashedJourneys.find(t => t.id === tripId);
+    const journeyTitle = trashed?.title || '이 여정';
+
+    const confirmed = window.confirm(`'${journeyTitle}' 여정을 영구 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다. 모든 타임라인, 비행, 숙소 데이터가 삭제됩니다.`);
+    if (!confirmed) return;
+
+    try {
+      const batch = writeBatch(db);
+      const trashRef = doc(db, 'users', 'public', 'trash', String(tripId));
+      batch.delete(trashRef);
 
       // Clean timeline items for this trip
       const timelineRef = collection(db, 'users', 'public', 'timeline');
       const timelineSnap = await getDocs(timelineRef);
       timelineSnap.forEach(doc => {
         const data = doc.data();
-        if (Number(data.tripId) === Number(tripId)) {
-          batch.delete(doc.ref);
-        }
+        if (Number(data.tripId) === Number(tripId)) batch.delete(doc.ref);
       });
 
-      // Sync Flights
-      const flightsRef = collection(db, 'users', 'public', 'flights');
-      const flightsSnap = await getDocs(flightsRef);
+      const flightsSnap = await getDocs(collection(db, 'users', 'public', 'flights'));
       flightsSnap.forEach(doc => {
-        const data = doc.data();
-        if (Number(data.tripId) === Number(tripId)) {
-          batch.delete(doc.ref);
-        }
+        if (Number(doc.data().tripId) === Number(tripId)) batch.delete(doc.ref);
       });
 
-      // Sync Stays
-      const staysRef = collection(db, 'users', 'public', 'stays');
-      const staysSnap = await getDocs(staysRef);
+      const staysSnap = await getDocs(collection(db, 'users', 'public', 'stays'));
       staysSnap.forEach(doc => {
-        const data = doc.data();
-        if (Number(data.tripId) === Number(tripId)) {
-          batch.delete(doc.ref);
-        }
+        if (Number(doc.data().tripId) === Number(tripId)) batch.delete(doc.ref);
       });
 
-      // Sync Transits
-      const transitsRef = collection(db, 'users', 'public', 'transits');
-      const transitsSnap = await getDocs(transitsRef);
+      const transitsSnap = await getDocs(collection(db, 'users', 'public', 'transits'));
       transitsSnap.forEach(doc => {
-        const data = doc.data();
-        if (Number(data.tripId) === Number(tripId)) {
-          batch.delete(doc.ref);
-        }
+        if (Number(doc.data().tripId) === Number(tripId)) batch.delete(doc.ref);
       });
 
       await batch.commit();
-      alert("여정이 성공적으로 삭제되었습니다.");
-      navigateTo('home');
+      alert(`'${journeyTitle}' 여정이 영구 삭제되었습니다.`);
     } catch (err: any) {
-      console.error("Error deleting journey:", err);
-      alert("삭제에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+      console.error("Error permanently deleting journey:", err);
+      alert("영구 삭제에 실패했습니다.");
     }
   };
 
@@ -819,6 +873,10 @@ function App() {
           homeTitle={homeTitle}
           homeSubtitle={homeSubtitle}
           onSaveSettings={handleSaveSettings}
+          trashedJourneys={trashedJourneys}
+          onRestoreJourney={handleRestoreJourney}
+          onPermanentDeleteJourney={handlePermanentDeleteJourney}
+          isLoggedIn={isLoggedIn}
         />
       </div>
     </div>

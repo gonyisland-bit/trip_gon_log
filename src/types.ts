@@ -23,6 +23,7 @@ export interface Trip {
   lat?: number;
   lng?: number;
   gallery?: string[];
+  deletedAt?: number | null; // Soft-delete timestamp (null = active)
 }
 
 export interface Plan extends Trip {}
@@ -40,6 +41,7 @@ export interface TimelineItem {
   hours?: string;
   link?: string;
   img?: string | null;
+  imgNote?: string;    // Per-image memo displayed in gallery
   lat?: number;
   lng?: number;
   date?: string;
