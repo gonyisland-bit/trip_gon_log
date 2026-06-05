@@ -37,7 +37,9 @@ import {
   deleteDoc, 
   onSnapshot, 
   getDocs, 
-  writeBatch 
+  writeBatch,
+  query,
+  where
 } from 'firebase/firestore';
 
 function App() {
@@ -585,79 +587,77 @@ function App() {
     updatedStays: StayItem[],
     updatedTransits: TransitItem[]
   ) => {
-    if (!isLoggedIn) return;
+    if (!isLoggedIn) {
+      alert('로그인 후 저장할 수 있습니다.');
+      return;
+    }
 
     try {
-      const batch = writeBatch(db);
+      const uid = 'public';
 
+      // ── 1. Update trip/plan document ──────────────────────────────────────
       const isPlan = plans.some(p => p.id === tripId);
       const collectionName = isPlan ? 'plans' : 'trips';
-      const tripRef = doc(db, 'users', 'public', collectionName, String(tripId));
-      batch.set(tripRef, updatedTrip, { merge: true });
+      await setDoc(doc(db, 'users', uid, collectionName, String(tripId)), updatedTrip, { merge: true });
 
-      // Clean timeline items for this trip
-      const timelineRef = collection(db, 'users', 'public', 'timeline');
-      const timelineSnap = await getDocs(timelineRef);
-      timelineSnap.forEach(doc => {
-        const data = doc.data();
-        if (Number(data.tripId) === Number(tripId)) {
-          batch.delete(doc.ref);
-        }
-      });
-      // Add updated timeline items
+      // ── 2. Replace timeline items for this trip ───────────────────────────
+      // Use targeted query (where tripId ==) to avoid reading entire collection
+      const timelineQ = query(collection(db, 'users', uid, 'timeline'), where('tripId', '==', tripId));
+      const timelineSnap = await getDocs(timelineQ);
+      const batch1 = writeBatch(db);
+      timelineSnap.forEach(d => batch1.delete(d.ref));
+      await batch1.commit();
+
+      const batch2 = writeBatch(db);
       updatedTimeline.forEach(item => {
         const { originDate: _, ...cleanItem } = item as any;
-        const itemRef = doc(db, 'users', 'public', 'timeline', String(cleanItem.id));
-        batch.set(itemRef, { ...cleanItem, tripId });
+        batch2.set(doc(db, 'users', uid, 'timeline', String(cleanItem.id)), { ...cleanItem, tripId });
       });
+      await batch2.commit();
 
-      // Sync Flights
-      const flightsRef = collection(db, 'users', 'public', 'flights');
-      const flightsSnap = await getDocs(flightsRef);
-      flightsSnap.forEach(doc => {
-        const data = doc.data();
-        if (Number(data.tripId) === Number(tripId)) {
-          batch.delete(doc.ref);
-        }
-      });
+      // ── 3. Replace flights ───────────────────────────────────────────────
+      const flightsQ = query(collection(db, 'users', uid, 'flights'), where('tripId', '==', tripId));
+      const flightsSnap = await getDocs(flightsQ);
+      const batch3 = writeBatch(db);
+      flightsSnap.forEach(d => batch3.delete(d.ref));
       updatedFlights.forEach(item => {
-        const itemRef = doc(db, 'users', 'public', 'flights', String(item.id));
-        batch.set(itemRef, { ...item, tripId });
+        batch3.set(doc(db, 'users', uid, 'flights', String(item.id)), { ...item, tripId });
       });
+      await batch3.commit();
 
-      // Sync Stays
-      const staysRef = collection(db, 'users', 'public', 'stays');
-      const staysSnap = await getDocs(staysRef);
-      staysSnap.forEach(doc => {
-        const data = doc.data();
-        if (Number(data.tripId) === Number(tripId)) {
-          batch.delete(doc.ref);
-        }
-      });
+      // ── 4. Replace stays ─────────────────────────────────────────────────
+      const staysQ = query(collection(db, 'users', uid, 'stays'), where('tripId', '==', tripId));
+      const staysSnap = await getDocs(staysQ);
+      const batch4 = writeBatch(db);
+      staysSnap.forEach(d => batch4.delete(d.ref));
       updatedStays.forEach(item => {
-        const itemRef = doc(db, 'users', 'public', 'stays', String(item.id));
-        batch.set(itemRef, { ...item, tripId });
+        batch4.set(doc(db, 'users', uid, 'stays', String(item.id)), { ...item, tripId });
       });
+      await batch4.commit();
 
-      // Sync Transits
-      const transitsRef = collection(db, 'users', 'public', 'transits');
-      const transitsSnap = await getDocs(transitsRef);
-      transitsSnap.forEach(doc => {
-        const data = doc.data();
-        if (Number(data.tripId) === Number(tripId)) {
-          batch.delete(doc.ref);
-        }
-      });
+      // ── 5. Replace transits ──────────────────────────────────────────────
+      const transitsQ = query(collection(db, 'users', uid, 'transits'), where('tripId', '==', tripId));
+      const transitsSnap = await getDocs(transitsQ);
+      const batch5 = writeBatch(db);
+      transitsSnap.forEach(d => batch5.delete(d.ref));
       updatedTransits.forEach(item => {
-        const itemRef = doc(db, 'users', 'public', 'transits', String(item.id));
-        batch.set(itemRef, { ...item, tripId });
+        batch5.set(doc(db, 'users', uid, 'transits', String(item.id)), { ...item, tripId });
       });
+      await batch5.commit();
 
-      await batch.commit();
-      alert("성공적으로 저장되었습니다.");
+      alert('성공적으로 저장되었습니다.');
     } catch (err: any) {
-      console.error("Error saving journey details:", err);
-      alert("저장에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+      console.error('Error saving journey details:', err);
+      console.error('Error code:', err?.code);
+      console.error('Error message:', err?.message);
+      // Provide user-friendly message based on error type
+      if (err?.code === 'permission-denied') {
+        alert('저장 권한이 없습니다. 로그인 상태를 확인해주세요.');
+      } else if (err?.code === 'unavailable') {
+        alert('네트워크 연결을 확인해주세요.');
+      } else {
+        alert(`저장에 실패했습니다. (${err?.code || err?.message || '알 수 없는 오류'})`);
+      }
       throw err;
     }
   };

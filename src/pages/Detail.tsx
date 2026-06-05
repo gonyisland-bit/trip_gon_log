@@ -375,16 +375,14 @@ export function JourneyDetailPage({
       // Geocode empty coordinates before saving
       const resolvedTimeline = await Promise.all(
         draftTimeline.map(async (item) => {
-          if ((item.lat === undefined || item.lng === undefined || item.lat === null || item.lng === null) && item.place && item.place !== '새로운 장소' && item.place.trim() !== '') {
+          if (
+            (item.lat === undefined || item.lng === undefined || item.lat === null || item.lng === null) &&
+            item.place && item.place !== '새로운 장소' && item.place.trim() !== ''
+          ) {
             try {
               const coords = await fetchCoordinates(item.place);
               if (coords) {
-                return {
-                  ...item,
-                  lat: coords.lat,
-                  lng: coords.lng,
-                  location: item.location || item.place
-                };
+                return { ...item, lat: coords.lat, lng: coords.lng, location: item.location || item.place };
               }
             } catch (e) {
               console.error(`Geocoding failed for ${item.place} during save:`, e);
@@ -393,6 +391,9 @@ export function JourneyDetailPage({
           return item;
         })
       );
+
+      // Update draftTimeline with resolved coords so map pins show immediately
+      setDraftTimeline(resolvedTimeline);
 
       await onSave(
         trip.id,
@@ -409,6 +410,7 @@ export function JourneyDetailPage({
       setSaving(false);
     }
   };
+
 
   // Safe check if trip is undefined
   const tripToUse = isEditing ? draftTrip : trip;
