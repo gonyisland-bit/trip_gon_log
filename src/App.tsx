@@ -343,12 +343,6 @@ function App() {
     if (!user) return;
 
     const newId = Date.now();
-    
-    // Geocoding으로 위경도 구하기
-    const coords = await fetchCoordinates(location);
-    const lat = coords?.lat;
-    const lng = coords?.lng;
-
     const img = createModalType === 'archive'
       ? 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=800&auto=format&fit=crop'
       : 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=800&auto=format&fit=crop';
@@ -367,15 +361,23 @@ function App() {
       gallery: []
     };
 
-    if (lat !== undefined && lng !== undefined) {
-      newJourney.lat = lat;
-      newJourney.lng = lng;
-    }
-
+    // 1. 우선 위경도 없이 즉시 Firestore에 저장 (화면 전환을 지연시키지 않음)
     await setDoc(doc(db, 'users', user.uid, collectionName, String(newId)), newJourney);
     
-    // 생성과 동시에 상세 페이지로 즉시 전환
+    // 2. 생성과 동시에 상세 페이지로 즉시 전환
     navigateTo('detail', newId);
+
+    // 3. 백그라운드에서 Geocoding 위경도를 구한 뒤 있으면 Firestore 문서 업데이트
+    fetchCoordinates(location).then(async (coords) => {
+      if (coords && user) {
+        await setDoc(doc(db, 'users', user.uid, collectionName, String(newId)), {
+          lat: coords.lat,
+          lng: coords.lng
+        }, { merge: true });
+      }
+    }).catch(err => {
+      console.error("Background geocoding failed for new journey:", err);
+    });
   };
 
   // --- Handlers for Timeline Items ---

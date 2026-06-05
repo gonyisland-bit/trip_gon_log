@@ -127,37 +127,7 @@ export const JourneyDetailPage: React.FC<JourneyDetailPageProps> = ({
   const itemRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const dateBarRef = useRef<HTMLDivElement>(null);
 
-  // --- 기존의 좌표 복구 및 Geocoding 자동화 효과 (마이그레이션) ---
-  useEffect(() => {
-    if (!isLoggedIn || !isEditMode || !trip) return;
-    
-    const autoGeocodeData = async () => {
-      // 1. Trip 자체 좌표 복구
-      if (trip.locationStr && (trip.lat === undefined || trip.lng === undefined)) {
-        const coords = await fetchCoordinates(trip.locationStr);
-        if (coords) {
-          onUpdateTrip(trip.id, 'lat', coords.lat);
-          onUpdateTrip(trip.id, 'lng', coords.lng);
-        }
-      }
 
-      // 2. Timeline Item 좌표 복구
-      Object.entries(timelineData || {}).forEach(([date, list]) => {
-        if (!list) return;
-        list.forEach(async (item) => {
-          if (item.place && (item.lat === undefined || item.lng === undefined)) {
-            const coords = await fetchCoordinates(item.place);
-            if (coords) {
-              onUpdateTimelineItem(date, item.id, 'lat' as any, String(coords.lat));
-              onUpdateTimelineItem(date, item.id, 'lng' as any, String(coords.lng));
-            }
-          }
-        });
-      });
-    };
-
-    autoGeocodeData();
-  }, [trip?.id, timelineData, isEditMode, isLoggedIn]);
 
   // 활성 탭 날짜가 선택되었을 때, 가로 날짜 바 중앙 정렬 처리
   useEffect(() => {
