@@ -8,11 +8,11 @@ interface CreateTripModalProps {
   onCreate: (title: string, dateRange: string, location: string, tags: string[]) => void;
 }
 
-export const CreateTripModal: React.FC<CreateTripModalProps> = ({
+export function CreateTripModal({
   isOpen,
   onClose,
   onCreate,
-}) => {
+}: CreateTripModalProps) {
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -198,4 +198,4 @@ export const CreateTripModal: React.FC<CreateTripModalProps> = ({
     </div>,
     document.body
   );
-};
+}

@@ -8,7 +8,7 @@ interface ImageEditOverlayProps {
   onImageUploaded: (url: string) => void;
 }
 
-export const ImageEditOverlay: React.FC<ImageEditOverlayProps> = ({ isEditMode, onImageUploaded }) => {
+export function ImageEditOverlay({ isEditMode, onImageUploaded }: ImageEditOverlayProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -69,4 +69,4 @@ export const ImageEditOverlay: React.FC<ImageEditOverlayProps> = ({ isEditMode, 
       </span>
     </div>
   );
-};
+}

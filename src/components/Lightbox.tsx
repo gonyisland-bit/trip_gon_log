@@ -10,13 +10,13 @@ interface LightboxProps {
   onNavigate: (index: number) => void;
 }
 
-export const Lightbox: React.FC<LightboxProps> = ({
+export function Lightbox({
   isOpen,
   images,
   currentIndex,
   onClose,
   onNavigate,
-}) => {
+}: LightboxProps) {
   const [scale, setScale] = useState<number>(1);
   const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -238,4 +238,4 @@ export const Lightbox: React.FC<LightboxProps> = ({
     </div>,
     document.body
   );
-};
+}

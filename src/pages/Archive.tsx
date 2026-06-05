@@ -11,13 +11,13 @@ interface ArchiveHubPageProps {
   onUpdateTrip: (tripId: number, field: string, value: any) => void;
 }
 
-export const ArchiveHubPage: React.FC<ArchiveHubPageProps> = ({
+export function ArchiveHubPage({
   trips,
   onNavigate,
   onAddArchive,
   isEditMode,
   onUpdateTrip,
-}) => {
+}: ArchiveHubPageProps) {
   const [activeFilter, setActiveFilter] = useState('All');
   const filters = ['All', '2026', '2025', '2024', 'Kyoto', 'Paris', 'Personal', 'Business'];
   const filteredTrips = activeFilter === 'All' ? trips : trips.filter(t => t.tags.includes(activeFilter));
@@ -76,4 +76,4 @@ export const ArchiveHubPage: React.FC<ArchiveHubPageProps> = ({
       </div>
     </main>
   );
-};
+}

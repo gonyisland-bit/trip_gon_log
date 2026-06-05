@@ -12,14 +12,14 @@ interface PlanHubPageProps {
   onUpdateTrip: (tripId: number, field: string, value: any) => void;
 }
 
-export const PlanHubPage: React.FC<PlanHubPageProps> = ({
+export function PlanHubPage({
   plans,
   onNavigate,
   onAddPlan,
   handleMoveToArchive,
   isEditMode,
   onUpdateTrip,
-}) => {
+}: PlanHubPageProps) {
   return (
     <main className="animate-in fade-in duration-500 min-h-screen w-full">
       <div className="p-6 md:px-12 md:py-16 border-b border-black/20 dark:border-white/20 bg-[#EAE8E3]/30 dark:bg-[#1a1a1a]/30 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
@@ -64,4 +64,4 @@ export const PlanHubPage: React.FC<PlanHubPageProps> = ({
       </div>
     </main>
   );
-};
+}

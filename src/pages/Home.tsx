@@ -12,14 +12,14 @@ interface HomePageProps {
   onUpdateTrip: (tripId: number, field: string, value: any) => void;
 }
 
-export const HomePage: React.FC<HomePageProps> = ({
+export function HomePage({
   onNavigate,
   trips,
   plans,
   handleMoveToArchive,
   isEditMode,
   onUpdateTrip,
-}) => {
+}: HomePageProps) {
   const [activeFilter, setActiveFilter] = useState('All');
   const filters = ['All', '2026', '2025', '2024', 'Kyoto', 'Paris', 'Personal', 'Business'];
   const filteredTrips = activeFilter === 'All' ? trips : trips.filter(t => t.tags.includes(activeFilter));
@@ -202,4 +202,4 @@ export const HomePage: React.FC<HomePageProps> = ({
       </section>
     </main>
   );
-};
+}

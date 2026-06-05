@@ -18,7 +18,7 @@ interface NavigationProps {
   openAuthModal: (mode: 'login' | 'signup') => void;
 }
 
-export const Navigation: React.FC<NavigationProps> = ({
+export function Navigation({
   currentView,
   navigateTo,
   isLoggedIn,
@@ -30,7 +30,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   showSettings,
   setShowSettings,
   openAuthModal,
-}) => {
+}: NavigationProps) {
   const currentUser = auth.currentUser;
   const displayName = currentUser?.displayName || currentUser?.email?.split('@')[0].toUpperCase() || 'USER';
 
@@ -135,4 +135,4 @@ export const Navigation: React.FC<NavigationProps> = ({
       
     </nav>
   );
-};
+}

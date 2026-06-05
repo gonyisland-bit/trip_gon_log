@@ -9,12 +9,12 @@ interface StayCardProps {
   onDelete: (id: number) => void;
 }
 
-export const StayCard: React.FC<StayCardProps> = ({
+export function StayCard({
   stay,
   isEditMode,
   onUpdate,
   onDelete,
-}) => {
+}: StayCardProps) {
   const textEditableClass = isEditMode 
     ? 'outline-dashed outline-1 outline-red-500/40 hover:bg-black/5 dark:hover:bg-white/5 cursor-text transition-all rounded px-1' 
     : '';
@@ -133,4 +133,4 @@ export const StayCard: React.FC<StayCardProps> = ({
       )}
     </div>
   );
-};
+}

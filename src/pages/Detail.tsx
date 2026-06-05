@@ -55,7 +55,7 @@ type TabType = 'timeline' | 'flights' | 'stays' | 'transit' | 'gallery';
 
 // 날짜 범위 파싱 및 하루 단위 날짜 배열 생성 헬퍼
 // '2025.04.12 - 04.16' 처럼 종료일에 연도가 없는 형식도 처리
-const generateDateList = (dateRangeStr: string): string[] => {
+function generateDateList(dateRangeStr: string): string[] {
   if (!dateRangeStr) return [];
   const parts = dateRangeStr.split(' - ');
   if (parts.length < 2) return [];
@@ -92,9 +92,9 @@ const generateDateList = (dateRangeStr: string): string[] => {
   }
   
   return list;
-};
+}
 
-export const JourneyDetailPage: React.FC<JourneyDetailPageProps> = ({
+export function JourneyDetailPage({
   isLoggedIn,
   trip,
   isEditMode,
@@ -121,7 +121,7 @@ export const JourneyDetailPage: React.FC<JourneyDetailPageProps> = ({
   onAddTransit,
   
   isDarkMode,
-}) => {
+}: JourneyDetailPageProps) {
   // ── ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURN ──
   const [activeTab, setActiveTab] = useState<TabType>('timeline');
   const [selectedDate, setSelectedDate] = useState<string>('ALL');
@@ -757,4 +757,4 @@ export const JourneyDetailPage: React.FC<JourneyDetailPageProps> = ({
       />
     </main>
   );
-};
+}

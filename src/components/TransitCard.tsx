@@ -9,12 +9,12 @@ interface TransitCardProps {
   onDelete: (id: number) => void;
 }
 
-export const TransitCard: React.FC<TransitCardProps> = ({
+export function TransitCard({
   transit,
   isEditMode,
   onUpdate,
   onDelete,
-}) => {
+}: TransitCardProps) {
   const textEditableClass = isEditMode 
     ? 'outline-dashed outline-1 outline-red-500/40 hover:bg-black/5 dark:hover:bg-white/5 cursor-text transition-all rounded px-1' 
     : '';
@@ -116,4 +116,4 @@ export const TransitCard: React.FC<TransitCardProps> = ({
       )}
     </div>
   );
-};
+}

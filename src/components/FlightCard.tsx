@@ -9,12 +9,12 @@ interface FlightCardProps {
   onDelete: (id: number) => void;
 }
 
-export const FlightCard: React.FC<FlightCardProps> = ({
+export function FlightCard({
   flight,
   isEditMode,
   onUpdate,
   onDelete,
-}) => {
+}: FlightCardProps) {
   const textEditableClass = isEditMode 
     ? 'outline-dashed outline-1 outline-red-500/40 hover:bg-black/5 dark:hover:bg-white/5 cursor-text transition-all rounded px-1' 
     : '';
@@ -163,4 +163,4 @@ export const FlightCard: React.FC<FlightCardProps> = ({
       )}
     </div>
   );
-};
+}
