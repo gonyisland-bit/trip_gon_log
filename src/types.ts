@@ -20,6 +20,9 @@ export interface Trip {
   img: string;
   mapImg: string;
   locationStr: string;
+  lat?: number;
+  lng?: number;
+  gallery?: string[];
 }
 
 export interface Plan extends Trip {}
@@ -37,6 +40,8 @@ export interface TimelineItem {
   hours?: string;
   link?: string;
   img?: string | null;
+  lat?: number;
+  lng?: number;
 }
 
 export interface TimelineData {

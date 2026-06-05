@@ -6,6 +6,8 @@ import { ArchiveHubPage } from './pages/Archive';
 import { PlanHubPage } from './pages/Plan';
 import { JourneyDetailPage } from './pages/Detail';
 import { AuthModal } from './components/AuthModal';
+import { CreateTripModal } from './components/CreateTripModal';
+import { fetchCoordinates } from './utils/googleMapsHelper';
 import { 
   initialTrips, 
   initialPlans, 
@@ -43,6 +45,8 @@ function App() {
   
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+  const [createModalType, setCreateModalType] = useState<'archive' | 'plan'>('archive');
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
   const [trips, setTrips] = useState<Trip[]>(initialTrips);
   const [plans, setPlans] = useState<Plan[]>(initialPlans);
@@ -319,38 +323,54 @@ function App() {
 
   const handleAddArchive = async () => {
     if (!isLoggedIn) return alert("로그인 후 이용 가능합니다.");
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const newTripId = Date.now();
-    const newTrip: Trip = { 
-      id: newTripId, 
-      title: 'NEW DESTINATION', 
-      date: 'YYYY.MM.DD - YYYY.MM.DD', 
-      tags: ['New', 'Personal'], 
-      img: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=800&auto=format&fit=crop',
-      mapImg: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1600&auto=format&fit=crop',
-      locationStr: 'New Location'
-    };
-    await setDoc(doc(db, 'users', user.uid, 'trips', String(newTripId)), newTrip);
+    setCreateModalType('archive');
+    setIsCreateModalOpen(true);
   };
 
   const handleAddPlan = async () => {
     if (!isLoggedIn) return alert("로그인 후 이용 가능합니다.");
+    setCreateModalType('plan');
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCreateJourney = async (title: string, dateRange: string, location: string, tags: string[]) => {
     const user = auth.currentUser;
     if (!user) return;
 
-    const newPlanId = Date.now();
-    const newPlan: Plan = { 
-      id: newPlanId, 
-      title: 'UPCOMING JOURNEY', 
-      date: 'YYYY.MM.DD - YYYY.MM.DD', 
-      tags: ['Plan', 'Personal'], 
-      img: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=800&auto=format&fit=crop',
-      mapImg: 'https://images.unsplash.com/photo-1588421357574-87938a86fa28?q=80&w=1600&auto=format&fit=crop',
-      locationStr: 'Plan Location'
+    const newId = Date.now();
+    
+    // Geocoding으로 위경도 구하기
+    const coords = await fetchCoordinates(location);
+    const lat = coords?.lat;
+    const lng = coords?.lng;
+
+    const img = createModalType === 'archive'
+      ? 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=800&auto=format&fit=crop'
+      : 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=800&auto=format&fit=crop';
+
+    const mapImg = 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1600&auto=format&fit=crop';
+    const collectionName = createModalType === 'archive' ? 'trips' : 'plans';
+
+    const newJourney: any = {
+      id: newId,
+      title,
+      date: dateRange,
+      tags: createModalType === 'plan' ? [...tags, 'Plan'] : tags,
+      img,
+      mapImg,
+      locationStr: location,
+      gallery: []
     };
-    await setDoc(doc(db, 'users', user.uid, 'plans', String(newPlanId)), newPlan);
+
+    if (lat !== undefined && lng !== undefined) {
+      newJourney.lat = lat;
+      newJourney.lng = lng;
+    }
+
+    await setDoc(doc(db, 'users', user.uid, collectionName, String(newId)), newJourney);
+    
+    // 생성과 동시에 상세 페이지로 즉시 전환
+    navigateTo('detail', newId);
   };
 
   // --- Handlers for Timeline Items ---
@@ -599,6 +619,7 @@ function App() {
               onUpdateTransit={handleUpdateTransit}
               onDeleteTransit={handleDeleteTransit}
               onAddTransit={handleAddTransit}
+              isDarkMode={isDarkMode}
             />
           )}
         </div>
@@ -611,6 +632,13 @@ function App() {
           isOpen={isAuthModalOpen} 
           onClose={() => setIsAuthModalOpen(false)} 
           initialMode={authModalMode}
+        />
+
+        {/* Create Trip Modal Popup */}
+        <CreateTripModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onCreate={handleCreateJourney}
         />
       </div>
     </div>
