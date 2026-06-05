@@ -126,8 +126,8 @@ export const JourneyDetailPage: React.FC<JourneyDetailPageProps> = ({
   const itemRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const dateBarRef = useRef<HTMLDivElement>(null);
 
-  // --- 날짜 동적 계산 ---
-  const generatedDates = generateDateList(trip.date);
+  // --- 날짜 동적 계산 (안전 장치 추가) ---
+  const generatedDates = generateDateList(trip?.date || '');
   const dynamicDates = [
     { id: 'all', date: 'ALL', label: 'Overall' },
     ...generatedDates.map((d, index) => ({
@@ -139,7 +139,7 @@ export const JourneyDetailPage: React.FC<JourneyDetailPageProps> = ({
 
   // --- 기존의 좌표 복구 및 Geocoding 자동화 효과 (마이그레이션) ---
   useEffect(() => {
-    if (!isLoggedIn || !isEditMode) return;
+    if (!isLoggedIn || !isEditMode || !trip) return;
     
     const autoGeocodeData = async () => {
       // 1. Trip 자체 좌표 복구
@@ -152,7 +152,8 @@ export const JourneyDetailPage: React.FC<JourneyDetailPageProps> = ({
       }
 
       // 2. Timeline Item 좌표 복구
-      Object.entries(timelineData).forEach(([date, list]) => {
+      Object.entries(timelineData || {}).forEach(([date, list]) => {
+        if (!list) return;
         list.forEach(async (item) => {
           if (item.place && (item.lat === undefined || item.lng === undefined)) {
             const coords = await fetchCoordinates(item.place);
@@ -167,7 +168,7 @@ export const JourneyDetailPage: React.FC<JourneyDetailPageProps> = ({
     };
 
     autoGeocodeData();
-  }, [trip.id, timelineData, isEditMode, isLoggedIn]);
+  }, [trip?.id, timelineData, isEditMode, isLoggedIn]);
 
   // 활성 탭 날짜가 선택되었을 때, 가로 날짜 바 중앙 정렬 처리
   useEffect(() => {
@@ -178,12 +179,12 @@ export const JourneyDetailPage: React.FC<JourneyDetailPageProps> = ({
     }
   }, [selectedDate]);
 
-  // 타임라인 선택 및 정렬
+  // 타임라인 선택 및 정렬 (안전 참조 처리)
   const currentTimeline = selectedDate === 'ALL' 
-    ? Object.entries(timelineData).flatMap(([d, list]) => 
-        list.map(item => ({ ...item, originDate: d }))
+    ? Object.entries(timelineData || {}).flatMap(([d, list]) => 
+        (list || []).map(item => ({ ...item, originDate: d }))
       ) 
-    : (timelineData[selectedDate] || []).map(item => ({ ...item, originDate: selectedDate }));
+    : ((timelineData || {})[selectedDate] || []).map(item => ({ ...item, originDate: selectedDate }));
 
   // 위경도 lat, lng 값을 가져올 때 string 또는 number 형식을 number로 안전하게 형변환
   const mapPoints = currentTimeline
@@ -193,6 +194,14 @@ export const JourneyDetailPage: React.FC<JourneyDetailPageProps> = ({
       lat: Number(item.lat),
       lng: Number(item.lng)
     }));
+
+  if (!trip) {
+    return (
+      <div className="flex-grow flex items-center justify-center bg-[#F9F8F6] dark:bg-[#111111] h-[80vh] text-xs font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
+        Loading Journey Details...
+      </div>
+    );
+  }
 
   const handleItemToggle = (id: number) => {
     setExpandedItemId(prevId => prevId === id ? null : id);

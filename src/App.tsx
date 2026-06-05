@@ -58,8 +58,8 @@ function App() {
   const [staysByTrip, setStaysByTrip] = useState<{ [id: number]: StayItem[] }>(initialStaysByTrip);
   const [transitByTrip, setTransitByTrip] = useState<{ [id: number]: TransitItem[] }>(initialTransitByTrip);
 
-  const activeTrip = trips.find(t => t.id === activeTripId) 
-    || plans.find(p => p.id === activeTripId) 
+  const activeTrip = trips.find(t => String(t.id) === String(activeTripId)) 
+    || plans.find(p => String(p.id) === String(activeTripId)) 
     || trips[0];
 
   useEffect(() => {
@@ -594,33 +594,40 @@ function App() {
             />
           )}
           {currentView === 'detail' && (
-            <JourneyDetailPage 
-              isLoggedIn={isLoggedIn} 
-              trip={activeTrip}
-              isEditMode={isEditMode}
-              onUpdateTrip={handleUpdateTrip}
-              
-              timelineData={timelineData}
-              onUpdateTimelineItem={handleUpdateTimelineItem}
-              onDeleteTimelineItem={handleDeleteTimelineItem}
-              onAddTimelineItem={handleAddTimelineItem}
+            activeTrip ? (
+              <JourneyDetailPage 
+                isLoggedIn={isLoggedIn} 
+                trip={activeTrip}
+                isEditMode={isEditMode}
+                onUpdateTrip={handleUpdateTrip}
+                
+                timelineData={timelineData}
+                onUpdateTimelineItem={handleUpdateTimelineItem}
+                onDeleteTimelineItem={handleDeleteTimelineItem}
+                onAddTimelineItem={handleAddTimelineItem}
 
-              flights={activeFlights}
-              onUpdateFlight={handleUpdateFlight}
-              onDeleteFlight={handleDeleteFlight}
-              onAddFlight={handleAddFlight}
+                flights={activeFlights}
+                onUpdateFlight={handleUpdateFlight}
+                onDeleteFlight={handleDeleteFlight}
+                onAddFlight={handleAddFlight}
 
-              stays={activeStays}
-              onUpdateStay={handleUpdateStay}
-              onDeleteStay={handleDeleteStay}
-              onAddStay={handleAddStay}
+                stays={activeStays}
+                onUpdateStay={handleUpdateStay}
+                onDeleteStay={handleDeleteStay}
+                onAddStay={handleAddStay}
 
-              transits={activeTransits}
-              onUpdateTransit={handleUpdateTransit}
-              onDeleteTransit={handleDeleteTransit}
-              onAddTransit={handleAddTransit}
-              isDarkMode={isDarkMode}
-            />
+                transits={activeTransits}
+                onUpdateTransit={handleUpdateTransit}
+                onDeleteTransit={handleDeleteTransit}
+                onAddTransit={handleAddTransit}
+                isDarkMode={isDarkMode}
+              />
+            ) : (
+              <div className="min-h-[60vh] flex flex-col items-center justify-center bg-[#F9F8F6] dark:bg-[#111111] transition-colors w-full">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black dark:border-white mb-2"></div>
+                <span className="text-[10px] uppercase tracking-widest font-bold text-black/40 dark:text-white/40">Loading Journey Data...</span>
+              </div>
+            )
           )}
         </div>
         
