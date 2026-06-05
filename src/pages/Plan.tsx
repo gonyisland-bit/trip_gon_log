@@ -1,7 +1,7 @@
 import React from 'react';
 import { Plus, Archive } from 'lucide-react';
 import { ImageEditOverlay } from '../components/ImageEditOverlay';
-import { Plan } from '../types';
+import { Plan, Trip } from '../types';
 
 interface PlanHubPageProps {
   plans: Plan[];
@@ -9,6 +9,7 @@ interface PlanHubPageProps {
   onAddPlan: () => void;
   handleMoveToArchive: (plan: Plan) => void;
   isEditMode: boolean;
+  onUpdateTrip: (tripId: number, field: string, value: any) => void;
 }
 
 export const PlanHubPage: React.FC<PlanHubPageProps> = ({
@@ -17,6 +18,7 @@ export const PlanHubPage: React.FC<PlanHubPageProps> = ({
   onAddPlan,
   handleMoveToArchive,
   isEditMode,
+  onUpdateTrip,
 }) => {
   return (
     <main className="animate-in fade-in duration-500 min-h-screen w-full">
@@ -35,9 +37,19 @@ export const PlanHubPage: React.FC<PlanHubPageProps> = ({
           <div key={plan.id} className="p-6 md:p-8 flex flex-col group cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-b md:border-b-0 border-black/20 dark:border-white/20 w-full" onClick={() => { if(!isEditMode) onNavigate('detail', plan.id) }}>
             <div className="aspect-[4/3] w-full overflow-hidden mb-6 border border-black/10 dark:border-white/10 relative bg-black/5">
               <img src={plan.img} alt={plan.title} className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500" />
-              <ImageEditOverlay isEditMode={isEditMode} />
+              <ImageEditOverlay 
+                isEditMode={isEditMode} 
+                onImageUploaded={(url) => onUpdateTrip(plan.id, 'img', url)} 
+              />
             </div>
-            <div contentEditable={isEditMode} suppressContentEditableWarning className={`font-bold tracking-tight uppercase text-lg mb-6 leading-tight break-words ${isEditMode ? 'outline-dashed outline-1 outline-red-500/50 cursor-text' : ''}`}>{plan.title}</div>
+            <div 
+              contentEditable={isEditMode} suppressContentEditableWarning 
+              onBlur={(e) => onUpdateTrip(plan.id, 'title', e.currentTarget.innerText)}
+              onClick={(e) => isEditMode && e.stopPropagation()}
+              className={`font-bold tracking-tight uppercase text-lg mb-6 leading-tight break-words ${isEditMode ? 'outline-dashed outline-1 outline-red-500/50 cursor-text' : ''}`}
+            >
+              {plan.title}
+            </div>
             
             {!isEditMode && (
               <button 

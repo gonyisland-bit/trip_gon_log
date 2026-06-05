@@ -22,6 +22,7 @@ interface JourneyDetailPageProps {
   isLoggedIn: boolean;
   trip: Trip;
   isEditMode: boolean;
+  onUpdateTrip: (tripId: number, field: string, value: any) => void;
   
   timelineData: TimelineData;
   onUpdateTimelineItem: (date: string, itemId: number, field: keyof TimelineItem, value: string) => void;
@@ -50,6 +51,7 @@ export const JourneyDetailPage: React.FC<JourneyDetailPageProps> = ({
   isLoggedIn,
   trip,
   isEditMode,
+  onUpdateTrip,
   
   timelineData,
   onUpdateTimelineItem,
@@ -135,7 +137,7 @@ export const JourneyDetailPage: React.FC<JourneyDetailPageProps> = ({
             <span 
               contentEditable={isEditMode} 
               suppressContentEditableWarning 
-              onBlur={(e) => onUpdateTimelineItem(selectedDate === 'ALL' ? '2025.04.12' : selectedDate, 0, 'time', e.currentTarget.innerText)}
+              onBlur={(e) => onUpdateTrip(trip.id, 'date', e.currentTarget.innerText)}
               className={textEditableClass}
             >
               {trip.date}
@@ -147,10 +149,11 @@ export const JourneyDetailPage: React.FC<JourneyDetailPageProps> = ({
           <h1 
             contentEditable={isEditMode} 
             suppressContentEditableWarning 
+            onBlur={(e) => onUpdateTrip(trip.id, 'title', e.currentTarget.innerText)}
             className={`text-3xl sm:text-4xl md:text-6xl font-black tracking-tighter uppercase leading-none break-keep ${textEditableClass}`}
             style={{ wordBreak: 'keep-all' }}
           >
-            {trip.title.split(',')[0]} <br/> {trip.tags.includes('Plan') ? 'Plan' : 'Archive'}
+            {trip.title.replace(' (Plan)', '')}
           </h1>
           
           <div className="mt-4 md:mt-6 flex flex-wrap gap-2">
@@ -304,12 +307,18 @@ export const JourneyDetailPage: React.FC<JourneyDetailPageProps> = ({
                           {item.img ? (
                             <div className={`w-10 h-10 md:w-12 md:h-12 overflow-hidden border transition-all relative ${isActive ? 'border-red-600 dark:border-red-400 scale-110 origin-right' : 'border-black/20 dark:border-white/20'}`}>
                               <img src={item.img} alt={item.place} className={`w-full h-full object-cover transition-all ${isActive ? 'grayscale-0' : 'grayscale group-hover:grayscale-0'}`} />
-                              <ImageEditOverlay isEditMode={isEditMode} />
+                              <ImageEditOverlay 
+                                isEditMode={isEditMode} 
+                                onImageUploaded={(url) => onUpdateTimelineItem(item.originDate, item.id, 'img', url)} 
+                              />
                             </div>
                           ) : (
                             <div className={`w-10 h-10 md:w-12 md:h-12 border bg-black/5 dark:bg-white/5 flex items-center justify-center transition-colors relative ${isActive ? 'border-red-600 dark:border-red-400 text-red-600 scale-110 origin-right' : 'border-black/10 dark:border-white/10 text-black/30 dark:text-white/30'}`}>
                               <ImageIcon className="w-3 h-3 md:w-4 md:h-4" />
-                              <ImageEditOverlay isEditMode={isEditMode} />
+                              <ImageEditOverlay 
+                                isEditMode={isEditMode} 
+                                onImageUploaded={(url) => onUpdateTimelineItem(item.originDate, item.id, 'img', url)} 
+                              />
                             </div>
                           )}
                         </div>

@@ -1,5 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Menu, Edit2, LogOut, User, Sun, Moon } from 'lucide-react';
+import { auth } from '../firebase';
+import { signOut } from 'firebase/auth';
+import { AuthModal } from './AuthModal';
 
 interface NavigationProps {
   currentView: string;
@@ -26,6 +29,10 @@ export const Navigation: React.FC<NavigationProps> = ({
   showSettings,
   setShowSettings,
 }) => {
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const currentUser = auth.currentUser;
+  const displayName = currentUser?.displayName || currentUser?.email?.split('@')[0].toUpperCase() || 'USER';
+
   return (
     <nav className="sticky top-0 z-50 flex items-center justify-between px-4 md:px-6 py-4 bg-[#F9F8F6]/90 dark:bg-[#111111]/90 backdrop-blur-md border-b border-black/20 dark:border-white/20 transition-colors duration-300 w-full">
       <div className="flex items-center">
@@ -75,11 +82,18 @@ export const Navigation: React.FC<NavigationProps> = ({
             <div className="absolute top-full right-0 mt-4 w-48 bg-[#F9F8F6] dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 shadow-xl flex flex-col z-50">
               {isLoggedIn && (
                 <div className="px-4 py-3 border-b border-black/10 dark:border-white/10 text-[10px] uppercase tracking-widest text-black/50 dark:text-white/50">
-                  Signed in as <strong className="text-black dark:text-white ml-1">ALEX</strong>
+                  Signed in as <strong className="text-black dark:text-white ml-1">{displayName}</strong>
                 </div>
               )}
               <button 
-                onClick={() => { setIsLoggedIn(!isLoggedIn); setShowSettings(false); }}
+                onClick={async () => { 
+                  setShowSettings(false); 
+                  if (isLoggedIn) {
+                    await signOut(auth);
+                  } else {
+                    setIsAuthModalOpen(true);
+                  }
+                }}
                 className="p-4 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 border-b border-black/10 dark:border-white/10 transition-colors text-xs font-bold uppercase tracking-widest"
               >
                 <span>{isLoggedIn ? 'Sign out' : 'Sign in'}</span>
@@ -96,6 +110,12 @@ export const Navigation: React.FC<NavigationProps> = ({
           )}
         </div>
       </div>
+      
+      {/* Auth Modal Popup */}
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+      />
     </nav>
   );
 };

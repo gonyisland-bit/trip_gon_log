@@ -22,6 +22,17 @@ import {
   StayItem, 
   TransitItem 
 } from './types';
+import { auth, db } from './firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  deleteDoc, 
+  onSnapshot, 
+  getDocs, 
+  writeBatch 
+} from 'firebase/firestore';
 
 function App() {
   const [currentView, setCurrentView] = useState<string>('home'); 
@@ -57,28 +68,204 @@ function App() {
     }
   }, [isDarkMode]);
 
+  // Firestore seeding script
+  const seedUserData = async (uid: string) => {
+    const tripsRef = collection(db, 'users', uid, 'trips');
+    const tripsSnapshot = await getDocs(tripsRef);
+    if (!tripsSnapshot.empty) {
+      return; // already has data
+    }
+
+    const batch = writeBatch(db);
+
+    initialTrips.forEach(trip => {
+      batch.set(doc(db, 'users', uid, 'trips', String(trip.id)), trip);
+    });
+
+    initialPlans.forEach(plan => {
+      batch.set(doc(db, 'users', uid, 'plans', String(plan.id)), plan);
+    });
+
+    Object.entries(timelineDataByDate).forEach(([date, items]) => {
+      items.forEach(item => {
+        batch.set(doc(db, 'users', uid, 'timeline', String(item.id)), { ...item, date });
+      });
+    });
+
+    Object.entries(initialFlightsByTrip).forEach(([tripId, items]) => {
+      items.forEach(item => {
+        batch.set(doc(db, 'users', uid, 'flights', String(item.id)), { ...item, tripId: Number(tripId) });
+      });
+    });
+
+    Object.entries(initialStaysByTrip).forEach(([tripId, items]) => {
+      items.forEach(item => {
+        batch.set(doc(db, 'users', uid, 'stays', String(item.id)), { ...item, tripId: Number(tripId) });
+      });
+    });
+
+    Object.entries(initialTransitByTrip).forEach(([tripId, items]) => {
+      items.forEach(item => {
+        batch.set(doc(db, 'users', uid, 'transits', String(item.id)), { ...item, tripId: Number(tripId) });
+      });
+    });
+
+    await batch.commit();
+  };
+
+  // Real-time Firestore sync
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setIsLoggedIn(true);
+        await seedUserData(user.uid);
+
+        const uid = user.uid;
+
+        const unsubTrips = onSnapshot(collection(db, 'users', uid, 'trips'), (snapshot) => {
+          const list: Trip[] = [];
+          snapshot.forEach(doc => {
+            list.push(doc.data() as Trip);
+          });
+          setTrips(list.sort((a, b) => a.id - b.id));
+        });
+
+        const unsubPlans = onSnapshot(collection(db, 'users', uid, 'plans'), (snapshot) => {
+          const list: Plan[] = [];
+          snapshot.forEach(doc => {
+            list.push(doc.data() as Plan);
+          });
+          setPlans(list.sort((a, b) => a.id - b.id));
+        });
+
+        const unsubTimeline = onSnapshot(collection(db, 'users', uid, 'timeline'), (snapshot) => {
+          const grouped: TimelineData = {};
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const date = data.date as string;
+            if (!grouped[date]) grouped[date] = [];
+            const { date: _, ...item } = data;
+            grouped[date].push(item as TimelineItem);
+          });
+          Object.keys(grouped).forEach(date => {
+            grouped[date].sort((a, b) => a.id - b.id);
+          });
+          setTimelineData(grouped);
+        });
+
+        const unsubFlights = onSnapshot(collection(db, 'users', uid, 'flights'), (snapshot) => {
+          const grouped: { [tripId: number]: FlightItem[] } = {};
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const tripId = data.tripId as number;
+            if (!grouped[tripId]) grouped[tripId] = [];
+            const { tripId: _, ...item } = data;
+            grouped[tripId].push(item as FlightItem);
+          });
+          Object.keys(grouped).forEach(tid => {
+            grouped[Number(tid)].sort((a, b) => a.id - b.id);
+          });
+          setFlightsByTrip(grouped);
+        });
+
+        const unsubStays = onSnapshot(collection(db, 'users', uid, 'stays'), (snapshot) => {
+          const grouped: { [tripId: number]: StayItem[] } = {};
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const tripId = data.tripId as number;
+            if (!grouped[tripId]) grouped[tripId] = [];
+            const { tripId: _, ...item } = data;
+            grouped[tripId].push(item as StayItem);
+          });
+          Object.keys(grouped).forEach(tid => {
+            grouped[Number(tid)].sort((a, b) => a.id - b.id);
+          });
+          setStaysByTrip(grouped);
+        });
+
+        const unsubTransit = onSnapshot(collection(db, 'users', uid, 'transits'), (snapshot) => {
+          const grouped: { [tripId: number]: TransitItem[] } = {};
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const tripId = data.tripId as number;
+            if (!grouped[tripId]) grouped[tripId] = [];
+            const { tripId: _, ...item } = data;
+            grouped[tripId].push(item as TransitItem);
+          });
+          Object.keys(grouped).forEach(tid => {
+            grouped[Number(tid)].sort((a, b) => a.id - b.id);
+          });
+          setTransitByTrip(grouped);
+        });
+
+        return () => {
+          unsubTrips();
+          unsubPlans();
+          unsubTimeline();
+          unsubFlights();
+          unsubStays();
+          unsubTransit();
+        };
+
+      } else {
+        setIsLoggedIn(false);
+        setTrips(initialTrips);
+        setPlans(initialPlans);
+        setTimelineData(timelineDataByDate);
+        setFlightsByTrip(initialFlightsByTrip);
+        setStaysByTrip(initialStaysByTrip);
+        setTransitByTrip(initialTransitByTrip);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const navigateTo = (view: string, tripId: number | null = null) => {
     if (tripId) setActiveTripId(tripId);
     setCurrentView(view);
   };
 
-  const handleMoveToArchive = (plan: Plan) => {
-    if (!isLoggedIn) return alert("로그인 후 이용 가능합니다.");
-    setPlans(plans.filter(p => p.id !== plan.id));
-    setTrips([
-      { 
-        ...plan, 
-        title: plan.title.replace(' (Plan)', ''), 
-        tags: [...plan.tags.filter(t => t !== 'Plan'), 'Archived'] 
-      }, 
-      ...trips
-    ]);
+  const handleUpdateTrip = async (tripId: number, field: string, value: any) => {
+    if (!isLoggedIn) return;
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const isPlan = plans.some(p => p.id === tripId);
+    const collectionName = isPlan ? 'plans' : 'trips';
+    await setDoc(doc(db, 'users', user.uid, collectionName, String(tripId)), {
+      [field]: value
+    }, { merge: true });
   };
 
-  const handleAddArchive = () => {
+  const handleMoveToArchive = async (plan: Plan) => {
     if (!isLoggedIn) return alert("로그인 후 이용 가능합니다.");
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const planRef = doc(db, 'users', user.uid, 'plans', String(plan.id));
+    const tripRef = doc(db, 'users', user.uid, 'trips', String(plan.id));
+
     const newTrip: Trip = { 
-      id: Date.now(), 
+      ...plan, 
+      title: plan.title.replace(' (Plan)', ''), 
+      tags: [...plan.tags.filter(t => t !== 'Plan'), 'Archived'] 
+    };
+
+    const batch = writeBatch(db);
+    batch.delete(planRef);
+    batch.set(tripRef, newTrip);
+    await batch.commit();
+  };
+
+  const handleAddArchive = async () => {
+    if (!isLoggedIn) return alert("로그인 후 이용 가능합니다.");
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const newTripId = Date.now();
+    const newTrip: Trip = { 
+      id: newTripId, 
       title: 'NEW DESTINATION', 
       date: 'YYYY.MM.DD - YYYY.MM.DD', 
       tags: ['New', 'Personal'], 
@@ -86,13 +273,17 @@ function App() {
       mapImg: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1600&auto=format&fit=crop',
       locationStr: 'New Location'
     };
-    setTrips([newTrip, ...trips]);
+    await setDoc(doc(db, 'users', user.uid, 'trips', String(newTripId)), newTrip);
   };
 
-  const handleAddPlan = () => {
+  const handleAddPlan = async () => {
     if (!isLoggedIn) return alert("로그인 후 이용 가능합니다.");
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const newPlanId = Date.now();
     const newPlan: Plan = { 
-      id: Date.now(), 
+      id: newPlanId, 
       title: 'UPCOMING JOURNEY', 
       date: 'YYYY.MM.DD - YYYY.MM.DD', 
       tags: ['Plan', 'Personal'], 
@@ -100,67 +291,82 @@ function App() {
       mapImg: 'https://images.unsplash.com/photo-1588421357574-87938a86fa28?q=80&w=1600&auto=format&fit=crop',
       locationStr: 'Plan Location'
     };
-    setPlans([newPlan, ...plans]);
+    await setDoc(doc(db, 'users', user.uid, 'plans', String(newPlanId)), newPlan);
   };
 
   // --- Handlers for Timeline Items ---
-  const handleUpdateTimelineItem = (date: string, itemId: number, field: keyof TimelineItem, value: string) => {
-    setTimelineData(prev => {
-      const items = prev[date] || [];
-      const updatedItems = items.map(item => {
-        if (item.id === itemId) {
-          return { ...item, [field]: value };
-        }
-        return item;
-      });
-      return { ...prev, [date]: updatedItems };
-    });
+  const handleUpdateTimelineItem = async (date: string, itemId: number, field: keyof TimelineItem, value: string) => {
+    if (!isLoggedIn) return;
+    const user = auth.currentUser;
+    if (!user) return;
+
+    // Special case for Detail page date hack
+    if (itemId === 0 && field === 'time') {
+      await handleUpdateTrip(activeTripId, 'date', value);
+      return;
+    }
+
+    await setDoc(doc(db, 'users', user.uid, 'timeline', String(itemId)), {
+      [field]: value
+    }, { merge: true });
   };
 
-  const handleDeleteTimelineItem = (date: string, itemId: number) => {
-    setTimelineData(prev => {
-      const items = prev[date] || [];
-      return { ...prev, [date]: items.filter(item => item.id !== itemId) };
-    });
+  const handleDeleteTimelineItem = async (date: string, itemId: number) => {
+    if (!isLoggedIn) return;
+    const user = auth.currentUser;
+    if (!user) return;
+
+    await deleteDoc(doc(db, 'users', user.uid, 'timeline', String(itemId)));
   };
 
-  const handleAddTimelineItem = (date: string) => {
-    const newItem: TimelineItem = {
-      id: Date.now(),
+  const handleAddTimelineItem = async (date: string) => {
+    if (!isLoggedIn) return;
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const newItemId = Date.now();
+    const newItem = {
+      id: newItemId,
       time: '12:00 PM',
       type: 'activity',
       place: '새로운 장소',
       cost: '-',
       memo: '메모를 입력하세요',
       x: 50,
-      y: 50
+      y: 50,
+      date: date
     };
-    setTimelineData(prev => {
-      const items = prev[date] || [];
-      return { ...prev, [date]: [...items, newItem] };
-    });
+    await setDoc(doc(db, 'users', user.uid, 'timeline', String(newItemId)), newItem);
   };
 
   // --- Handlers for Flights ---
-  const handleUpdateFlight = (itemId: number, field: keyof FlightItem, val: string) => {
-    setFlightsByTrip(prev => {
-      const list = prev[activeTripId] || [];
-      const updated = list.map(item => item.id === itemId ? { ...item, [field]: val } : item);
-      return { ...prev, [activeTripId]: updated };
-    });
+  const handleUpdateFlight = async (itemId: number, field: keyof FlightItem, val: string) => {
+    if (!isLoggedIn) return;
+    const user = auth.currentUser;
+    if (!user) return;
+
+    await setDoc(doc(db, 'users', user.uid, 'flights', String(itemId)), {
+      [field]: val
+    }, { merge: true });
   };
 
-  const handleDeleteFlight = (itemId: number) => {
-    setFlightsByTrip(prev => {
-      const list = prev[activeTripId] || [];
-      return { ...prev, [activeTripId]: list.filter(item => item.id !== itemId) };
-    });
+  const handleDeleteFlight = async (itemId: number) => {
+    if (!isLoggedIn) return;
+    const user = auth.currentUser;
+    if (!user) return;
+
+    await deleteDoc(doc(db, 'users', user.uid, 'flights', String(itemId)));
   };
 
-  const handleAddFlight = (title: string) => {
-    const newFlight: FlightItem = {
-      id: Date.now(),
-      title: title, // e.g., 'OUTBOUND FLIGHT'
+  const handleAddFlight = async (title: string) => {
+    if (!isLoggedIn) return;
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const newFlightId = Date.now();
+    const newFlight = {
+      id: newFlightId,
+      title: title,
       date: 'YYYY.MM.DD',
       fromCode: 'ICN',
       fromTerminal: 'TERMINAL T1',
@@ -170,78 +376,88 @@ function App() {
       toTime: '10:00 AM',
       flightNo: 'KE000',
       seat: '00A',
-      pnr: '000000'
+      pnr: '000000',
+      tripId: activeTripId
     };
-    setFlightsByTrip(prev => ({
-      ...prev,
-      [activeTripId]: [...(prev[activeTripId] || []), newFlight]
-    }));
+    await setDoc(doc(db, 'users', user.uid, 'flights', String(newFlightId)), newFlight);
   };
 
   // --- Handlers for Stays ---
-  const handleUpdateStay = (itemId: number, field: keyof StayItem, val: string) => {
-    setStaysByTrip(prev => {
-      const list = prev[activeTripId] || [];
-      const updated = list.map(item => item.id === itemId ? { ...item, [field]: val } : item);
-      return { ...prev, [activeTripId]: updated };
-    });
+  const handleUpdateStay = async (itemId: number, field: keyof StayItem, val: string) => {
+    if (!isLoggedIn) return;
+    const user = auth.currentUser;
+    if (!user) return;
+
+    await setDoc(doc(db, 'users', user.uid, 'stays', String(itemId)), {
+      [field]: val
+    }, { merge: true });
   };
 
-  const handleDeleteStay = (itemId: number) => {
-    setStaysByTrip(prev => {
-      const list = prev[activeTripId] || [];
-      return { ...prev, [activeTripId]: list.filter(item => item.id !== itemId) };
-    });
+  const handleDeleteStay = async (itemId: number) => {
+    if (!isLoggedIn) return;
+    const user = auth.currentUser;
+    if (!user) return;
+
+    await deleteDoc(doc(db, 'users', user.uid, 'stays', String(itemId)));
   };
 
-  const handleAddStay = () => {
-    const newStay: StayItem = {
-      id: Date.now(),
+  const handleAddStay = async () => {
+    if (!isLoggedIn) return;
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const newStayId = Date.now();
+    const newStay = {
+      id: newStayId,
       status: 'BOOKING CONFIRMED',
       title: '새로운 숙소',
       dateRange: 'YYYY.MM.DD - YYYY.MM.DD (0 Nights)',
       address: '숙소 주소를 입력하세요',
       memo: '메모를 입력하세요',
       confNo: 'HTL-0000',
-      img: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=800&auto=format&fit=crop'
+      img: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=800&auto=format&fit=crop',
+      tripId: activeTripId
     };
-    setStaysByTrip(prev => ({
-      ...prev,
-      [activeTripId]: [...(prev[activeTripId] || []), newStay]
-    }));
+    await setDoc(doc(db, 'users', user.uid, 'stays', String(newStayId)), newStay);
   };
 
   // --- Handlers for Transit ---
-  const handleUpdateTransit = (itemId: number, field: keyof TransitItem, val: string) => {
-    setTransitByTrip(prev => {
-      const list = prev[activeTripId] || [];
-      const updated = list.map(item => item.id === itemId ? { ...item, [field]: val } : item);
-      return { ...prev, [activeTripId]: updated };
-    });
+  const handleUpdateTransit = async (itemId: number, field: keyof TransitItem, val: string) => {
+    if (!isLoggedIn) return;
+    const user = auth.currentUser;
+    if (!user) return;
+
+    await setDoc(doc(db, 'users', user.uid, 'transits', String(itemId)), {
+      [field]: val
+    }, { merge: true });
   };
 
-  const handleDeleteTransit = (itemId: number) => {
-    setTransitByTrip(prev => {
-      const list = prev[activeTripId] || [];
-      return { ...prev, [activeTripId]: list.filter(item => item.id !== itemId) };
-    });
+  const handleDeleteTransit = async (itemId: number) => {
+    if (!isLoggedIn) return;
+    const user = auth.currentUser;
+    if (!user) return;
+
+    await deleteDoc(doc(db, 'users', user.uid, 'transits', String(itemId)));
   };
 
-  const handleAddTransit = () => {
-    const newTransit: TransitItem = {
-      id: Date.now(),
+  const handleAddTransit = async () => {
+    if (!isLoggedIn) return;
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const newTransitId = Date.now();
+    const newTransit = {
+      id: newTransitId,
       ticketType: 'TRAIN TICKET',
       date: 'YYYY.MM.DD',
       title: '열차/이동 수단 이름',
       route: '출발지 → 도착지',
       time: '12:00 PM',
       seat: 'Car 0, 00A',
-      bookingRef: 'TRN-000'
+      bookingRef: 'TRN-000',
+      tripId: activeTripId
     };
-    setTransitByTrip(prev => ({
-      ...prev,
-      [activeTripId]: [...(prev[activeTripId] || []), newTransit]
-    }));
+    await setDoc(doc(db, 'users', user.uid, 'transits', String(newTransitId)), newTransit);
   };
 
   const activeFlights = flightsByTrip[activeTripId] || [];
@@ -275,6 +491,7 @@ function App() {
               plans={plans} 
               handleMoveToArchive={handleMoveToArchive}
               isEditMode={isEditMode}
+              onUpdateTrip={handleUpdateTrip}
             />
           )}
           {currentView === 'archive' && (
@@ -283,6 +500,7 @@ function App() {
               onNavigate={navigateTo} 
               onAddArchive={handleAddArchive}
               isEditMode={isEditMode}
+              onUpdateTrip={handleUpdateTrip}
             />
           )}
           {currentView === 'plan' && (
@@ -292,6 +510,7 @@ function App() {
               onAddPlan={handleAddPlan}
               handleMoveToArchive={handleMoveToArchive}
               isEditMode={isEditMode}
+              onUpdateTrip={handleUpdateTrip}
             />
           )}
           {currentView === 'detail' && (
@@ -299,6 +518,7 @@ function App() {
               isLoggedIn={isLoggedIn} 
               trip={activeTrip}
               isEditMode={isEditMode}
+              onUpdateTrip={handleUpdateTrip}
               
               timelineData={timelineData}
               onUpdateTimelineItem={handleUpdateTimelineItem}

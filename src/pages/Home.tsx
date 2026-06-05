@@ -9,6 +9,7 @@ interface HomePageProps {
   plans: Plan[];
   handleMoveToArchive: (plan: Plan) => void;
   isEditMode: boolean;
+  onUpdateTrip: (tripId: number, field: string, value: any) => void;
 }
 
 export const HomePage: React.FC<HomePageProps> = ({
@@ -17,6 +18,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   plans,
   handleMoveToArchive,
   isEditMode,
+  onUpdateTrip,
 }) => {
   const [activeFilter, setActiveFilter] = useState('All');
   const filters = ['All', '2026', '2025', '2024', 'Kyoto', 'Paris', 'Personal', 'Business'];
@@ -38,7 +40,12 @@ export const HomePage: React.FC<HomePageProps> = ({
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-[2000ms] group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 md:via-black/40 to-transparent pointer-events-none" />
-        <ImageEditOverlay isEditMode={isEditMode} />
+        {trips[0] && (
+          <ImageEditOverlay 
+            isEditMode={isEditMode} 
+            onImageUploaded={(url) => onUpdateTrip(trips[0].id, 'img', url)} 
+          />
+        )}
         
         <div className="absolute inset-0 flex flex-col justify-center p-6 sm:p-10 md:p-16 w-full md:w-2/3 lg:w-1/2 text-white z-10 pointer-events-none">
           <div className="pointer-events-auto max-w-full">
@@ -64,6 +71,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         <div className="absolute bottom-4 right-4 md:bottom-6 md:right-6 bg-white/40 dark:bg-black/40 backdrop-blur-md px-3 py-1.5 md:px-4 md:py-2 border border-white/20 dark:border-white/10 z-10 pointer-events-auto rounded-sm">
           <span 
             contentEditable={isEditMode} suppressContentEditableWarning 
+            onBlur={(e) => trips[0] && onUpdateTrip(trips[0].id, 'title', e.currentTarget.innerText.replace('Featured: ', ''))}
             className={`text-[10px] md:text-xs font-bold uppercase tracking-widest text-black/90 dark:text-white/90 drop-shadow-sm ${isEditMode ? 'outline-dashed outline-1 outline-red-500/50 cursor-text' : ''}`}
           >
             Featured: {trips[0]?.title}
@@ -92,10 +100,27 @@ export const HomePage: React.FC<HomePageProps> = ({
               >
                  <div className="aspect-[4/3] w-full overflow-hidden mb-4 border border-black/10 dark:border-white/10 relative">
                   <img src={plan.img} alt={plan.title} className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500" />
-                  <ImageEditOverlay isEditMode={isEditMode} />
+                  <ImageEditOverlay 
+                    isEditMode={isEditMode} 
+                    onImageUploaded={(url) => onUpdateTrip(plan.id, 'img', url)} 
+                  />
                 </div>
-                <div contentEditable={isEditMode} suppressContentEditableWarning className={`text-xs tracking-widest text-black/50 dark:text-white/50 mb-1 break-words ${isEditMode ? 'outline-dashed outline-1 outline-red-500/50 cursor-text' : ''}`}>{plan.date}</div>
-                <div contentEditable={isEditMode} suppressContentEditableWarning className={`font-bold tracking-tight uppercase text-sm mb-4 break-words ${isEditMode ? 'outline-dashed outline-1 outline-red-500/50 cursor-text' : ''}`}>{plan.title}</div>
+                <div 
+                  contentEditable={isEditMode} suppressContentEditableWarning 
+                  onBlur={(e) => onUpdateTrip(plan.id, 'date', e.currentTarget.innerText)}
+                  onClick={(e) => isEditMode && e.stopPropagation()}
+                  className={`text-xs tracking-widest text-black/50 dark:text-white/50 mb-1 break-words ${isEditMode ? 'outline-dashed outline-1 outline-red-500/50 cursor-text' : ''}`}
+                >
+                  {plan.date}
+                </div>
+                <div 
+                  contentEditable={isEditMode} suppressContentEditableWarning 
+                  onBlur={(e) => onUpdateTrip(plan.id, 'title', e.currentTarget.innerText)}
+                  onClick={(e) => isEditMode && e.stopPropagation()}
+                  className={`font-bold tracking-tight uppercase text-sm mb-4 break-words ${isEditMode ? 'outline-dashed outline-1 outline-red-500/50 cursor-text' : ''}`}
+                >
+                  {plan.title}
+                </div>
               </div>
             ))}
           </div>
@@ -138,7 +163,10 @@ export const HomePage: React.FC<HomePageProps> = ({
                   alt={trip.title} 
                   className="absolute inset-0 w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700"
                 />
-                <ImageEditOverlay isEditMode={isEditMode} />
+                <ImageEditOverlay 
+                  isEditMode={isEditMode} 
+                  onImageUploaded={(url) => onUpdateTrip(trip.id, 'img', url)} 
+                />
               </div>
               <div className="mt-auto">
                 <div className="flex flex-wrap gap-1 mb-2">
@@ -146,8 +174,22 @@ export const HomePage: React.FC<HomePageProps> = ({
                     <span key={tag} className="text-[9px] uppercase font-bold tracking-widest bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded-sm text-black/60 dark:text-white/60">{tag}</span>
                   ))}
                 </div>
-                <div contentEditable={isEditMode} suppressContentEditableWarning className={`text-xs tracking-widest text-black/50 dark:text-white/50 mb-1 transition-colors break-words ${isEditMode ? 'outline-dashed outline-1 outline-red-500/50 cursor-text' : ''}`}>{trip.date}</div>
-                <div contentEditable={isEditMode} suppressContentEditableWarning className={`font-bold tracking-tight uppercase text-sm break-words ${isEditMode ? 'outline-dashed outline-1 outline-red-500/50 cursor-text' : ''}`}>{trip.title}</div>
+                <div 
+                  contentEditable={isEditMode} suppressContentEditableWarning 
+                  onBlur={(e) => onUpdateTrip(trip.id, 'date', e.currentTarget.innerText)}
+                  onClick={(e) => isEditMode && e.stopPropagation()}
+                  className={`text-xs tracking-widest text-black/50 dark:text-white/50 mb-1 transition-colors break-words ${isEditMode ? 'outline-dashed outline-1 outline-red-500/50 cursor-text' : ''}`}
+                >
+                  {trip.date}
+                </div>
+                <div 
+                  contentEditable={isEditMode} suppressContentEditableWarning 
+                  onBlur={(e) => onUpdateTrip(trip.id, 'title', e.currentTarget.innerText)}
+                  onClick={(e) => isEditMode && e.stopPropagation()}
+                  className={`font-bold tracking-tight uppercase text-sm break-words ${isEditMode ? 'outline-dashed outline-1 outline-red-500/50 cursor-text' : ''}`}
+                >
+                  {trip.title}
+                </div>
               </div>
             </div>
           ))}
