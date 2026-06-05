@@ -821,6 +821,23 @@ function App() {
               homeSubtitle={homeSubtitle}
               heroJourneyIds={heroJourneyIds}
               onEditTrip={(id) => setEditingTripId(id)}
+              onDeleteTrip={(id) => handleDeleteJourney(id)}
+              onReorderTrips={async (orderedIds) => {
+                if (!isLoggedIn) return;
+                const batch = writeBatch(db);
+                orderedIds.forEach((id, idx) => {
+                  batch.update(doc(db, 'users', 'public', 'trips', String(id)), { displayOrder: idx });
+                });
+                await batch.commit();
+              }}
+              onReorderPlans={async (orderedIds) => {
+                if (!isLoggedIn) return;
+                const batch = writeBatch(db);
+                orderedIds.forEach((id, idx) => {
+                  batch.update(doc(db, 'users', 'public', 'plans', String(id)), { displayOrder: idx });
+                });
+                await batch.commit();
+              }}
               isLoggedIn={isLoggedIn}
             />
           )}

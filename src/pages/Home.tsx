@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { ArrowRight, Edit2, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Edit2, Trash2, GripVertical } from 'lucide-react';
 import { Trip, Plan } from '../types';
 
 interface HomePageProps {
@@ -11,7 +11,68 @@ interface HomePageProps {
   homeSubtitle: string;
   heroJourneyIds?: number[];
   onEditTrip?: (id: number) => void;
+  onDeleteTrip?: (id: number) => void;
+  onReorderTrips?: (orderedIds: number[]) => void;
+  onReorderPlans?: (orderedIds: number[]) => void;
   isLoggedIn?: boolean;
+}
+
+// Journey card hamburger menu
+function JourneyCardMenu({
+  onEdit,
+  onDelete,
+  isLoggedIn,
+}: {
+  onEdit?: () => void;
+  onDelete?: () => void;
+  isLoggedIn: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  if (!isLoggedIn) return null;
+
+  return (
+    <div ref={menuRef} className="absolute bottom-3 right-3 z-20">
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen(v => !v); }}
+        className="p-1.5 bg-black/50 hover:bg-black/80 text-white rounded-sm transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+        title="메뉴"
+        aria-label="Journey menu"
+      >
+        <MoreVertical className="w-3.5 h-3.5" />
+      </button>
+      {open && (
+        <div className="absolute bottom-full right-0 mb-1 w-32 bg-[#F9F8F6] dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 shadow-xl z-50 overflow-hidden">
+          {onEdit && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit(); setOpen(false); }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+            >
+              <Edit2 className="w-3 h-3" /> 수정
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(); setOpen(false); }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            >
+              <Trash2 className="w-3 h-3" /> 삭제
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function HomePage({
@@ -23,65 +84,84 @@ export function HomePage({
   homeSubtitle,
   heroJourneyIds = [],
   onEditTrip,
+  onDeleteTrip,
+  onReorderTrips,
+  onReorderPlans,
   isLoggedIn = false,
 }: HomePageProps) {
   const [activeFilter, setActiveFilter] = useState('All');
   const [heroSlide, setHeroSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Drag-reorder state for archive cards
+  const [draggedTripId, setDraggedTripId] = useState<number | null>(null);
+  const [localTrips, setLocalTrips] = useState<Trip[]>(trips);
+  const [localPlans, setLocalPlans] = useState<Plan[]>(plans);
+
+  // Sync local order when props change (e.g. initial load)
+  useEffect(() => { setLocalTrips(trips); }, [trips]);
+  useEffect(() => { setLocalPlans(plans); }, [plans]);
+
   const filters = ['All', '2026', '2025', '2024', 'Kyoto', 'Paris', 'Personal', 'Business'];
-  const filteredTrips = activeFilter === 'All' ? trips : trips.filter(t => t.tags.includes(activeFilter));
+  const filteredTrips = activeFilter === 'All' ? localTrips : localTrips.filter(t => t.tags?.includes(activeFilter));
 
   // Resolve hero journeys from heroJourneyIds. Fallback to trips[0] if nothing selected.
-  const allJourneys: (Trip | Plan)[] = [...trips, ...plans];
+  const allJourneys: (Trip | Plan)[] = [...localTrips, ...localPlans];
   const heroJourneys: (Trip | Plan)[] = heroJourneyIds.length > 0
-    ? heroJourneyIds
-        .map(id => allJourneys.find(j => j.id === id))
-        .filter(Boolean) as (Trip | Plan)[]
-    : (trips[0] ? [trips[0]] : []);
+    ? heroJourneyIds.map(id => allJourneys.find(j => j.id === id)).filter(Boolean) as (Trip | Plan)[]
+    : (localTrips[0] ? [localTrips[0]] : []);
 
   const currentHero = heroJourneys[heroSlide] || heroJourneys[0];
 
   // Auto-advance carousel every 6s when multiple heroes
   useEffect(() => {
     if (heroJourneys.length <= 1) return;
-    const timer = setInterval(() => {
-      goToNext();
-    }, 6000);
+    const timer = setInterval(() => { goToNext(); }, 6000);
     return () => clearInterval(timer);
   }, [heroJourneys.length, heroSlide]);
 
-  // Reset slide when heroJourneys changes
-  useEffect(() => {
-    setHeroSlide(0);
-  }, [heroJourneyIds.join(',')]);
+  useEffect(() => { setHeroSlide(0); }, [heroJourneyIds.join(',')]);
 
   const goToSlide = useCallback((idx: number) => {
     if (isTransitioning || idx === heroSlide) return;
     setIsTransitioning(true);
-    setTimeout(() => {
-      setHeroSlide(idx);
-      setIsTransitioning(false);
-    }, 350);
+    setTimeout(() => { setHeroSlide(idx); setIsTransitioning(false); }, 350);
   }, [heroSlide, isTransitioning]);
 
-  const goToPrev = () => {
-    const next = (heroSlide - 1 + heroJourneys.length) % heroJourneys.length;
-    goToSlide(next);
+  const goToPrev = () => goToSlide((heroSlide - 1 + heroJourneys.length) % heroJourneys.length);
+  const goToNext = () => goToSlide((heroSlide + 1) % heroJourneys.length);
+
+  // ── Drag-to-reorder for trip archive cards ──────────────────────────────
+  const handleTripDragStart = (e: React.DragEvent, id: number) => {
+    setDraggedTripId(id);
+    e.dataTransfer.effectAllowed = 'move';
   };
 
-  const goToNext = () => {
-    const next = (heroSlide + 1) % heroJourneys.length;
-    goToSlide(next);
+  const handleTripDragOver = (e: React.DragEvent, id: number) => {
+    e.preventDefault();
+    if (draggedTripId === null || draggedTripId === id) return;
+    setLocalTrips(prev => {
+      const arr = [...prev];
+      const fromIdx = arr.findIndex(t => t.id === draggedTripId);
+      const toIdx = arr.findIndex(t => t.id === id);
+      if (fromIdx === -1 || toIdx === -1) return prev;
+      const [moved] = arr.splice(fromIdx, 1);
+      arr.splice(toIdx, 0, moved);
+      return arr;
+    });
+  };
+
+  const handleTripDrop = () => {
+    setDraggedTripId(null);
+    if (onReorderTrips) onReorderTrips(localTrips.map(t => t.id));
   };
 
   return (
     <main className="animate-in fade-in duration-700 w-full">
-      
-      {/* ===== Hero Section (Carousel if multiple) ===== */}
-      <section
-        className="relative w-full h-[60vh] md:h-[80vh] overflow-hidden group border-b border-black/20 dark:border-white/20"
-      >
-        {/* Background image (transitions) */}
+
+      {/* ===== Hero Section ===== */}
+      <section className="relative w-full h-[60vh] md:h-[80vh] overflow-hidden group border-b border-black/20 dark:border-white/20">
+        {/* Background image */}
         {currentHero && (
           <img
             key={currentHero.id}
@@ -98,48 +178,22 @@ export function HomePage({
             className="absolute inset-0 w-full h-full object-cover"
           />
         )}
-
-        {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 md:via-black/40 to-transparent pointer-events-none" />
-
-        {/* Clickable area for navigating to hero journey */}
         {currentHero && (
-          <div
-            className="absolute inset-0 cursor-pointer z-0"
-            onClick={() => onNavigate('detail', currentHero.id)}
-          />
+          <div className="absolute inset-0 cursor-pointer z-0" onClick={() => onNavigate('detail', currentHero.id)} />
         )}
 
         {/* Text content */}
         <div className="absolute inset-0 flex flex-col justify-center p-6 sm:p-10 md:p-16 w-full md:w-2/3 lg:w-1/2 text-white z-10 pointer-events-none">
           <div className="pointer-events-auto max-w-full">
-            <h1
-              className="text-4xl min-[390px]:text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[0.9] uppercase drop-shadow-xl"
-              style={{ wordBreak: 'keep-all' }}
-            >
-              {homeTitle.includes('<br />') ? (
-                homeTitle.split('<br />').map((part, idx) => (
-                  <React.Fragment key={idx}>
-                    {part}
-                    {idx < homeTitle.split('<br />').length - 1 && <br />}
-                  </React.Fragment>
-                ))
-              ) : homeTitle.includes('\n') ? (
-                homeTitle.split('\n').map((part, idx) => (
-                  <React.Fragment key={idx}>
-                    {part}
-                    {idx < homeTitle.split('\n').length - 1 && <br />}
-                  </React.Fragment>
-                ))
-              ) : (
-                homeTitle
-              )}
+            <h1 className="text-4xl min-[390px]:text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[0.9] uppercase drop-shadow-xl" style={{ wordBreak: 'keep-all' }}>
+              {homeTitle.split(/\\n|\n/).map((part, idx, arr) => (
+                <React.Fragment key={idx}>{part}{idx < arr.length - 1 && <br />}</React.Fragment>
+              ))}
             </h1>
           </div>
           <div className="pointer-events-auto max-w-full pr-4 mt-6 md:mt-8">
-            <p className="text-sm md:text-base text-white/80 drop-shadow-md break-keep">
-              {homeSubtitle}
-            </p>
+            <p className="text-sm md:text-base text-white/80 drop-shadow-md break-keep">{homeSubtitle}</p>
           </div>
         </div>
 
@@ -151,18 +205,13 @@ export function HomePage({
                 Featured: {currentHero.title}
               </span>
             </div>
-            {/* Slide dots */}
             {heroJourneys.length > 1 && (
               <div className="flex items-center gap-1.5">
                 {heroJourneys.map((_, idx) => (
                   <button
                     key={idx}
                     onClick={(e) => { e.stopPropagation(); goToSlide(idx); }}
-                    className={`rounded-full transition-all ${
-                      idx === heroSlide
-                        ? 'w-4 h-1.5 bg-white'
-                        : 'w-1.5 h-1.5 bg-white/40 hover:bg-white/70'
-                    }`}
+                    className={`rounded-full transition-all ${idx === heroSlide ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/40 hover:bg-white/70'}`}
                     aria-label={`Go to slide ${idx + 1}`}
                   />
                 ))}
@@ -171,21 +220,13 @@ export function HomePage({
           </div>
         )}
 
-        {/* Carousel nav arrows (only when multiple) */}
+        {/* Carousel nav arrows */}
         {heroJourneys.length > 1 && (
           <>
-            <button
-              onClick={(e) => { e.stopPropagation(); goToPrev(); }}
-              className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/10 hover:bg-white/25 border border-white/15 text-white rounded-full transition-all backdrop-blur-sm"
-              aria-label="Previous hero"
-            >
+            <button onClick={(e) => { e.stopPropagation(); goToPrev(); }} className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/10 hover:bg-white/25 border border-white/15 text-white rounded-full transition-all backdrop-blur-sm">
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); goToNext(); }}
-              className="absolute right-4 md:right-6 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/10 hover:bg-white/25 border border-white/15 text-white rounded-full transition-all backdrop-blur-sm"
-              aria-label="Next hero"
-            >
+            <button onClick={(e) => { e.stopPropagation(); goToNext(); }} className="absolute right-4 md:right-6 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/10 hover:bg-white/25 border border-white/15 text-white rounded-full transition-all backdrop-blur-sm">
               <ChevronRight className="w-5 h-5" />
             </button>
           </>
@@ -193,7 +234,7 @@ export function HomePage({
       </section>
 
       {/* Plans Section Preview */}
-      {plans.length > 0 && (
+      {localPlans.length > 0 && (
         <section className="border-b border-black/20 dark:border-white/20 p-6 md:p-12 transition-colors w-full overflow-hidden">
           <div className="flex flex-col sm:flex-row justify-between sm:items-end mb-6 gap-4">
             <div>
@@ -205,43 +246,39 @@ export function HomePage({
             </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 w-full">
-            {plans.slice(0, 4).map((plan) => (
+            {localPlans.slice(0, 4).map((plan) => (
               <div
                 key={plan.id}
                 className="border border-black/20 dark:border-white/20 p-4 bg-white/50 dark:bg-black/20 flex flex-col group cursor-pointer w-full relative"
                 onClick={() => onNavigate('detail', plan.id)}
               >
-                {/* Edit button */}
-                {isLoggedIn && onEditTrip && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onEditTrip(plan.id); }}
-                    className="absolute top-2.5 right-2.5 z-10 p-1.5 bg-black/50 hover:bg-black/80 text-white rounded-sm opacity-0 group-hover:opacity-100 transition-all"
-                    title="편집"
-                    aria-label="Edit journey cover"
-                  >
-                    <Edit2 className="w-3 h-3" />
-                  </button>
-                )}
                 <div className="aspect-[4/3] w-full overflow-hidden mb-4 border border-black/10 dark:border-white/10 relative">
                   <img src={plan.img} alt={plan.title} className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500" />
                 </div>
-                <div className="text-xs tracking-widest text-black/50 dark:text-white/50 mb-1 break-words">
-                  {plan.date}
-                </div>
-                <div className="font-bold tracking-tight uppercase text-sm mb-4 break-words">
-                  {plan.title}
-                </div>
+                <div className="text-xs tracking-widest text-black/50 dark:text-white/50 mb-1 break-words">{plan.date}</div>
+                <div className="font-bold tracking-tight uppercase text-sm mb-4 break-words">{plan.title}</div>
+                {/* Hamburger menu */}
+                <JourneyCardMenu
+                  isLoggedIn={isLoggedIn}
+                  onEdit={onEditTrip ? () => onEditTrip(plan.id) : undefined}
+                  onDelete={onDeleteTrip ? () => onDeleteTrip(plan.id) : undefined}
+                />
               </div>
             ))}
           </div>
         </section>
       )}
 
-      {/* Archive Grid Section Preview */}
+      {/* Archive Grid Section */}
       <section className="flex flex-col w-full overflow-hidden">
         <div className="p-6 md:px-12 border-b border-black/20 dark:border-white/20 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
           <div className="flex items-center gap-4 shrink-0">
             <h2 className="text-2xl font-black tracking-tighter uppercase break-keep">Journeys Archive</h2>
+            {isLoggedIn && (
+              <span className="text-[9px] text-black/30 dark:text-white/30 uppercase tracking-widest font-bold hidden md:inline">
+                드래그로 순서 변경
+              </span>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
             {filters.map(f => (
@@ -264,20 +301,21 @@ export function HomePage({
           {filteredTrips.slice(0, 4).map((trip) => (
             <div
               key={trip.id}
-              className="group cursor-pointer p-6 flex flex-col h-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors relative w-full"
+              className={`group cursor-pointer p-6 flex flex-col h-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors relative w-full ${draggedTripId === trip.id ? 'opacity-40' : 'opacity-100'}`}
               onClick={() => onNavigate('detail', trip.id)}
+              draggable={isLoggedIn}
+              onDragStart={(e) => handleTripDragStart(e, trip.id)}
+              onDragOver={(e) => handleTripDragOver(e, trip.id)}
+              onDrop={handleTripDrop}
+              onDragEnd={() => setDraggedTripId(null)}
             >
-              {/* Edit button (pen icon) */}
-              {isLoggedIn && onEditTrip && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onEditTrip(trip.id); }}
-                  className="absolute top-7 right-7 z-10 p-1.5 bg-black/50 hover:bg-black/80 text-white rounded-sm opacity-0 group-hover:opacity-100 transition-all"
-                  title="편집"
-                  aria-label="Edit journey cover"
-                >
-                  <Edit2 className="w-3 h-3" />
-                </button>
+              {/* Drag handle indicator */}
+              {isLoggedIn && (
+                <div className="absolute top-3 left-3 z-10 opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none">
+                  <GripVertical className="w-4 h-4 text-black dark:text-white" />
+                </div>
               )}
+
               <div className="aspect-[3/4] w-full overflow-hidden mb-4 border border-black/10 dark:border-white/10 relative">
                 <img
                   src={trip.img}
@@ -287,17 +325,20 @@ export function HomePage({
               </div>
               <div className="mt-auto">
                 <div className="flex flex-wrap gap-1 mb-2">
-                  {trip.tags.slice(0, 2).map(tag => (
+                  {trip.tags?.slice(0, 2).map(tag => (
                     <span key={tag} className="text-[9px] uppercase font-bold tracking-widest bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded-sm text-black/60 dark:text-white/60">{tag}</span>
                   ))}
                 </div>
-                <div className="text-xs tracking-widest text-black/50 dark:text-white/50 mb-1 transition-colors break-words">
-                  {trip.date}
-                </div>
-                <div className="font-bold tracking-tight uppercase text-sm break-words">
-                  {trip.title}
-                </div>
+                <div className="text-xs tracking-widest text-black/50 dark:text-white/50 mb-1 transition-colors break-words">{trip.date}</div>
+                <div className="font-bold tracking-tight uppercase text-sm break-words">{trip.title}</div>
               </div>
+
+              {/* Hamburger menu */}
+              <JourneyCardMenu
+                isLoggedIn={isLoggedIn}
+                onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
+                onDelete={onDeleteTrip ? () => onDeleteTrip(trip.id) : undefined}
+              />
             </div>
           ))}
         </div>

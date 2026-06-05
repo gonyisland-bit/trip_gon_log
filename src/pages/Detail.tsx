@@ -488,6 +488,13 @@ export function JourneyDetailPage({
     );
   };
 
+  // Atomic multi-field update — avoids race condition when calling updateTimelineItem multiple times
+  const updateTimelineItemFields = (id: number, fields: Partial<TimelineItem>) => {
+    setDraftTimeline(prev =>
+      prev.map(item => item.id === id ? { ...item, ...fields } : item)
+    );
+  };
+
   const handleAddTimelineItem = (date: string) => {
     const newItem: TimelineItem = {
       id: Date.now(),
@@ -916,24 +923,31 @@ export function JourneyDetailPage({
                                     value={item.place}
                                     onChange={(val) => updateTimelineItem(item.id, 'place', val)}
                                     onBlur={async () => {
-                                      if (item.place && item.place.trim() !== '' && item.place !== '새로운 장소') {
+                                      // Only geocode if no coords yet (don't override Places API selection)
+                                      if (
+                                        item.place &&
+                                        item.place.trim() !== '' &&
+                                        item.place !== '새로운 장소' &&
+                                        (item.lat === undefined || item.lat === null)
+                                      ) {
                                         const coords = await fetchCoordinates(item.place);
                                         if (coords) {
-                                          updateTimelineItem(item.id, 'lat', coords.lat);
-                                          updateTimelineItem(item.id, 'lng', coords.lng);
-                                          updateTimelineItem(item.id, 'location', item.location || item.place);
+                                          updateTimelineItemFields(item.id, {
+                                            lat: coords.lat,
+                                            lng: coords.lng,
+                                            location: item.location || item.place,
+                                          });
                                         }
                                       }
                                     }}
                                     onSelectPlace={(name, coords, address) => {
-                                      updateTimelineItem(item.id, 'place', name);
-                                      if (coords) {
-                                        updateTimelineItem(item.id, 'lat', coords.lat);
-                                        updateTimelineItem(item.id, 'lng', coords.lng);
-                                      }
-                                      if (address) {
-                                        updateTimelineItem(item.id, 'location', address);
-                                      }
+                                      // Atomic update: place + lat + lng + location in one setState
+                                      updateTimelineItemFields(item.id, {
+                                        place: name,
+                                        lat: coords?.lat ?? item.lat,
+                                        lng: coords?.lng ?? item.lng,
+                                        location: address || name,
+                                      });
                                     }}
                                     className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-sm md:text-base text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
                                     placeholder="Place Name"

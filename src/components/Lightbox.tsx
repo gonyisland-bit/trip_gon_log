@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, MessageSquare, MapPin, Calendar } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, MessageSquare } from 'lucide-react';
 
 export interface LightboxImageMeta {
   url: string;
@@ -78,7 +78,9 @@ export function Lightbox({
   const prevMeta = images.length > 1 ? images[(currentIndex - 1 + images.length) % images.length] : null;
   const nextMeta = images.length > 1 ? images[(currentIndex + 1) % images.length] : null;
 
-  const hasLog = !!(currentMeta.date || currentMeta.place || currentMeta.memo || currentMeta.imgNote);
+  // Only timeline images have real log info
+  const hasLog = !!(currentMeta.place || currentMeta.memo || currentMeta.imgNote);
+  const hasDate = !!currentMeta.date;
 
   function resetZoom() {
     setScale(1);
@@ -128,10 +130,9 @@ export function Lightbox({
     setIsDragging(false);
   }
 
-  // Format date for film stamp style
+  // Format date: YYYY.MM.DD → 'MM / DD / YYYY' film stamp style
   function formatFilmDate(dateStr?: string) {
     if (!dateStr) return '';
-    // Convert YYYY.MM.DD → 'MM / DD / YYYY' film style
     const parts = dateStr.replace(/\./g, '-').split('-');
     if (parts.length === 3) {
       return `${parts[1]} / ${parts[2]} / ${parts[0]}`;
@@ -246,49 +247,74 @@ export function Lightbox({
           </button>
         )}
 
-        {/* Center: Main Image with film-print frame */}
+        {/* Center: Main Image */}
         <div
           className="relative flex items-center justify-center w-full h-full cursor-grab active:cursor-grabbing"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
         >
-          {/* Film date stamp overlay (bottom-right of image) */}
-          {showLog && hasLog && (
-            <div
-              className="absolute bottom-[calc(15%+8px)] right-[calc(5%+8px)] z-20 pointer-events-none text-right"
-              style={{ transition: 'opacity 0.3s ease' }}
-            >
-              {currentMeta.date && (
-                <div className="text-orange-300 font-mono text-[11px] md:text-sm font-bold tracking-widest drop-shadow-[0_0_8px_rgba(251,146,60,0.8)] leading-none mb-0.5">
-                  {formatFilmDate(currentMeta.date)}
-                </div>
-              )}
-              {currentMeta.place && (
-                <div className="text-orange-300/80 font-mono text-[9px] md:text-xs font-bold tracking-wider drop-shadow-[0_0_6px_rgba(251,146,60,0.7)] flex items-center justify-end gap-1">
-                  <MapPin className="w-2.5 h-2.5 inline-block" />
-                  {currentMeta.place}
-                </div>
-              )}
-            </div>
-          )}
+          <div className="relative inline-block">
+            <img
+              ref={imgRef}
+              src={currentMeta.url}
+              alt="Fullscreen Gallery"
+              onDoubleClick={handleDoubleClick}
+              style={{
+                transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+                transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                maxHeight: '80vh',
+                maxWidth: '80vw',
+                objectFit: 'contain',
+                userSelect: 'none',
+                pointerEvents: scale > 1 ? 'auto' : 'none',
+                display: 'block',
+              }}
+              className="shadow-2xl select-none"
+              draggable={false}
+            />
 
-          <img
-            ref={imgRef}
-            src={currentMeta.url}
-            alt="Fullscreen Gallery"
-            onDoubleClick={handleDoubleClick}
-            style={{
-              transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-              transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-              maxHeight: '82vh',
-              maxWidth: '80vw',
-              objectFit: 'contain',
-              userSelect: 'none',
-              pointerEvents: scale > 1 ? 'auto' : 'none',
-            }}
-            className="shadow-2xl select-none"
-            draggable={false}
-          />
+            {/* ── Film Date Stamp: bottom-right of image ── */}
+            {hasDate && (
+              <div
+                className="absolute bottom-3 right-3 z-30 pointer-events-none text-right"
+                style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`, transformOrigin: 'bottom right', transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)' }}
+              >
+                <span
+                  className="font-mono font-bold tracking-widest leading-none"
+                  style={{
+                    fontSize: 'clamp(10px, 1.4vw, 17px)',
+                    color: '#f97316',
+                    textShadow: '0 0 10px rgba(249,115,22,0.95), 0 0 20px rgba(249,115,22,0.5), 1px 1px 3px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.9)',
+                    letterSpacing: '0.15em',
+                  }}
+                >
+                  {formatFilmDate(currentMeta.date)}
+                </span>
+              </div>
+            )}
+
+            {/* ── Bottom info bar: place + memo (centered, overlapping photo bottom) ── */}
+            {(hasLog && showLog) && (
+              <div
+                className="absolute bottom-0 left-0 right-0 z-30 pointer-events-none"
+                style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`, transformOrigin: 'bottom center', transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)' }}
+              >
+                <div className="bg-gradient-to-t from-black/75 via-black/40 to-transparent px-4 pt-8 pb-3 text-center">
+                  {currentMeta.place && (
+                    <div className="text-white font-bold text-xs md:text-sm tracking-wide drop-shadow-lg">
+                      {currentMeta.place}
+                    </div>
+                  )}
+                  {currentMeta.memo && (
+                    <div className="text-white/70 text-[10px] md:text-xs mt-0.5 font-medium tracking-wide drop-shadow-md">
+                      {currentMeta.memo}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           {scale <= 1 && (
             <div
               className="absolute inset-0 z-10 w-full h-full"
@@ -325,54 +351,21 @@ export function Lightbox({
         )}
       </div>
 
-      {/* Bottom Log Panel (hide/unhide) */}
+      {/* Bottom imgNote panel (hide/unhide) */}
       <div
-        className={`relative z-20 bg-gradient-to-t from-black/90 to-transparent px-6 py-4 md:px-10 md:py-5 transition-all duration-500 overflow-hidden ${
-          showLog && hasLog ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0 py-0'
+        className={`relative z-20 bg-gradient-to-t from-black/90 to-transparent px-6 py-3 md:px-10 md:py-4 transition-all duration-500 overflow-hidden ${
+          showLog && currentMeta.imgNote ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0 py-0'
         }`}
       >
-        {hasLog && (
-          <div className="flex flex-col gap-1.5 max-w-2xl mx-auto">
-            {/* Place + Date row */}
-            {(currentMeta.place || currentMeta.date) && (
-              <div className="flex items-center gap-4 flex-wrap">
-                {currentMeta.place && (
-                  <div className="flex items-center gap-1.5 text-white/70 text-xs font-bold tracking-wider">
-                    <MapPin className="w-3.5 h-3.5 text-orange-300 shrink-0" />
-                    <span>{currentMeta.place}</span>
-                  </div>
-                )}
-                {currentMeta.date && (
-                  <div className="flex items-center gap-1.5 text-white/50 text-xs font-mono">
-                    <Calendar className="w-3 h-3 shrink-0" />
-                    <span>{currentMeta.date}</span>
-                  </div>
-                )}
-              </div>
-            )}
-            {/* Memo */}
-            {currentMeta.memo && (
-              <p className="text-white/60 text-xs leading-relaxed break-keep">
-                {currentMeta.memo}
-              </p>
-            )}
-            {/* imgNote (individual photo note) */}
-            {currentMeta.imgNote && (
-              <p className="text-orange-300/80 text-[11px] font-mono italic leading-relaxed border-t border-white/10 pt-1.5">
-                "{currentMeta.imgNote}"
-              </p>
-            )}
-          </div>
-        )}
-        {!hasLog && (
-          <p className="text-center text-white/30 text-[10px] uppercase tracking-widest font-bold">
-            Double click to Zoom · Drag to Pan when Zoomed
+        {currentMeta.imgNote && (
+          <p className="text-orange-300/90 text-[11px] font-mono italic leading-relaxed text-center max-w-xl mx-auto">
+            "{currentMeta.imgNote}"
           </p>
         )}
       </div>
 
-      {/* If no log shown, show minimal hint at bottom */}
-      {(!showLog || !hasLog) && (
+      {/* Hint when no log */}
+      {(!showLog || !hasLog) && !hasDate && (
         <div className="absolute bottom-0 left-0 right-0 z-20 pb-3 pt-6 text-center bg-gradient-to-t from-black/60 to-transparent pointer-events-none">
           <p className="text-white/25 text-[9px] uppercase tracking-widest font-bold">
             Double click to Zoom · Arrow keys to Navigate
