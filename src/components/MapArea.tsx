@@ -89,7 +89,7 @@ export const MapArea: React.FC<MapAreaProps> = ({
     validCoords
   );
 
-  // 5. 각 위경도를 정적 지도 크기 대비 화면상의 % (x, y) 좌표로 매핑
+  // 5. 각 위경도를 정적 지도 크기 대비 화면상의 % (x, y) 좌표로 매핑 (NaN/Infinity 2차 방어)
   const pinsWithXY = validCoords.map(c => {
     const point = latLngToPoint(
       c.lat,
@@ -100,10 +100,12 @@ export const MapArea: React.FC<MapAreaProps> = ({
       dimensions.width,
       dimensions.height
     );
+    const px = isNaN(point.x) || !isFinite(point.x) ? 50 : point.x;
+    const py = isNaN(point.y) || !isFinite(point.y) ? 50 : point.y;
     return {
       ...c,
-      x: point.x,
-      y: point.y
+      x: px,
+      y: py
     };
   });
 
@@ -143,12 +145,14 @@ export const MapArea: React.FC<MapAreaProps> = ({
         {pinsWithXY.map((p, index) => {
           if (index === 0) return null;
           const prevPoint = pinsWithXY[index - 1];
-          // 화면 영역 밖에 너무 나가는 선은 제외
+          // 화면 영역 밖에 너무 나가는 선 또는 NaN 선 제외
           if (
-            prevPoint.x < -10 || prevPoint.x > 110 || 
-            prevPoint.y < -10 || prevPoint.y > 110 ||
-            p.x < -10 || p.x > 110 || 
-            p.y < -10 || p.y > 110
+            isNaN(prevPoint.x) || isNaN(prevPoint.y) || 
+            isNaN(p.x) || isNaN(p.y) ||
+            prevPoint.x < -20 || prevPoint.x > 120 || 
+            prevPoint.y < -20 || prevPoint.y > 120 ||
+            p.x < -20 || p.x > 120 || 
+            p.y < -20 || p.y > 120
           ) return null;
           
           return (

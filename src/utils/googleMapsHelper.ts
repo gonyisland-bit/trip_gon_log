@@ -44,10 +44,12 @@ export const latLngToPoint = (
   height: number
 ): { x: number; y: number } => {
   const TILE_SIZE = 256;
+  const safeWidth = width > 50 ? width : 800;
+  const safeHeight = height > 50 ? height : 600;
+  const safeZoom = isNaN(zoom) || !isFinite(zoom) ? 12 : Math.max(1, Math.min(zoom, 21));
   
   // 1. 위경도를 World Coordinate (0 ~ 256)로 변환
   const siny = Math.sin((lat * Math.PI) / 180);
-  // 위도가 극지방에 가까워질 때 발산하는 것 방지
   const cappedSiny = Math.min(Math.max(siny, -0.9999), 0.9999);
   const latValue = Math.log((1 + cappedSiny) / (1 - cappedSiny));
   
@@ -63,16 +65,20 @@ export const latLngToPoint = (
   const cy = TILE_SIZE / 2 - (cLatValue * TILE_SIZE) / (4 * Math.PI);
   
   // 3. 줌 레벨 스케일 적용 (2^zoom)
-  const scale = Math.pow(2, zoom);
+  const scale = Math.pow(2, safeZoom);
+  const safeScale = isNaN(scale) || !isFinite(scale) ? Math.pow(2, 12) : scale;
   
   // 4. 중심점 기준의 픽셀 오프셋 구하기
-  const pixelX = (x - cx) * scale + width / 2;
-  const pixelY = (y - cy) * scale + height / 2;
+  const pixelX = (x - cx) * safeScale + safeWidth / 2;
+  const pixelY = (y - cy) * safeScale + safeHeight / 2;
   
-  // 5. 이미지 크기 대비 % 좌표로 변환
+  // 5. 이미지 크기 대비 % 좌표로 변환 (NaN 및 Infinity 방어)
+  const rx = (pixelX / safeWidth) * 100;
+  const ry = (pixelY / safeHeight) * 100;
+  
   return {
-    x: (pixelX / width) * 100,
-    y: (pixelY / height) * 100
+    x: isNaN(rx) || !isFinite(rx) ? 50 : rx,
+    y: isNaN(ry) || !isFinite(ry) ? 50 : ry
   };
 };
 
@@ -89,8 +95,10 @@ export const calculateMapBounds = (
   const ZOOM_MIN = 1;
   const PADDING = 1.35; // 지도 경계 주변의 패딩 팩터 (여유 공간)
 
+  const safeWidth = mapWidth > 50 ? mapWidth : 800;
+  const safeHeight = mapHeight > 50 ? mapHeight : 600;
+
   if (coords.length === 0) {
-    // 좌표가 없으면 기본값 (예: 교토 중심) 반환
     return { center: { lat: 35.0116, lng: 135.7681 }, zoom: 12 };
   }
 
@@ -113,7 +121,7 @@ export const calculateMapBounds = (
   const centerLat = (minLat + maxLat) / 2;
   const centerLng = (minLng + maxLng) / 2;
 
-  // 줌 레벨 계산 헬퍼 함수
+  // 줌 레벨 계산 헬퍼 함수 (0 분모 차단 및 안전장치)
   const latRad = (lat: number) => {
     const sin = Math.sin((lat * Math.PI) / 180);
     const radX2 = Math.log((1 + sin) / (1 - sin)) / 2;
@@ -121,7 +129,9 @@ export const calculateMapBounds = (
   };
 
   const zoom = (mapPx: number, worldPx: number, fraction: number): number => {
-    return Math.floor(Math.log(mapPx / worldPx / fraction) / Math.LN2);
+    if (mapPx <= 0 || fraction <= 0 || isNaN(fraction)) return 12;
+    const val = Math.floor(Math.log(mapPx / worldPx / fraction) / Math.LN2);
+    return isNaN(val) || !isFinite(val) ? 12 : val;
   };
 
   const latFraction = (latRad(maxLat) - latRad(minLat)) / Math.PI;
@@ -129,16 +139,16 @@ export const calculateMapBounds = (
   if (lngDiff < 0) lngDiff += 360;
   const lngFraction = lngDiff / 360;
 
-  const latZoom = zoom(mapHeight, WORLD_DIM.height, latFraction * PADDING);
-  const lngZoom = zoom(mapWidth, WORLD_DIM.width, lngFraction * PADDING);
+  const latZoom = zoom(safeHeight, WORLD_DIM.height, latFraction * PADDING);
+  const lngZoom = zoom(safeWidth, WORLD_DIM.width, lngFraction * PADDING);
 
-  // 화면 크기에 맞게 가로/세로 중 더 제한적인(더 낮은) 줌 레벨 선택
   const calculatedZoom = Math.min(latZoom, lngZoom);
   const finalZoom = Math.max(ZOOM_MIN, Math.min(calculatedZoom, ZOOM_MAX));
+  const safeZoom = isNaN(finalZoom) || !isFinite(finalZoom) ? 13 : finalZoom;
 
   return {
     center: { lat: centerLat, lng: centerLng },
-    zoom: finalZoom
+    zoom: safeZoom
   };
 };
 
@@ -154,8 +164,11 @@ export const getStaticMapUrl = (
   isDarkMode: boolean,
   coords: Coordinates[]
 ): string => {
+  const safeWidth = width > 50 ? width : 800;
+  const safeHeight = height > 50 ? height : 600;
+  const safeZoom = isNaN(zoom) || !isFinite(zoom) ? 13 : Math.max(1, Math.min(zoom, 21));
+
   // 프리미엄 매거진 감성을 위한 미니멀 스타일링 쿼리 적용
-  // 그레이스케일 및 심플 도로망만 렌더링
   const lightStyles = [
     'feature:all|element:labels.icon|visibility:off',
     'feature:all|element:labels.text.stroke|visibility:on|color:0xffffff|weight:2',
@@ -183,12 +196,9 @@ export const getStaticMapUrl = (
   const styles = isDarkMode ? darkStyles : lightStyles;
   const styleString = styles.map((s) => `&style=${encodeURIComponent(s)}`).join('');
 
-  // 맵에 표시할 실제 핀들도 static map 이미지에 백그라운드로 희미하게 찍어두고 싶다면 markers 추가 가능
-  // 하지만 React가 그 위에 정확한 마커를 그리므로, 맵 이미지 자체는 깨끗하게 그립니다.
-  // 단, 줌/센터 자동 계산 시 마커들의 범위를 구글맵이 강제 인지하도록 하려면 visible 파라미터를 추가할 수 있습니다.
   const visibleString = coords.length > 0 
     ? `&visible=${coords.map((c) => `${c.lat},${c.lng}`).join('|')}` 
     : '';
 
-  return `https://maps.googleapis.com/maps/api/staticmap?center=${centerLat},${centerLng}&zoom=${zoom}&size=${width}x${height}&scale=2&maptype=roadmap${styleString}${visibleString}&key=${GOOGLE_MAPS_API_KEY}`;
+  return `https://maps.googleapis.com/maps/api/staticmap?center=${centerLat},${centerLng}&zoom=${safeZoom}&size=${safeWidth}x${safeHeight}&scale=2&maptype=roadmap${styleString}${visibleString}&key=${GOOGLE_MAPS_API_KEY}`;
 };

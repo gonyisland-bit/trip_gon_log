@@ -117,6 +117,15 @@ export const JourneyDetailPage: React.FC<JourneyDetailPageProps> = ({
   const [selectedDate, setSelectedDate] = useState<string>('ALL');
   const [expandedItemId, setExpandedItemId] = useState<number | null>(null);
   
+  // trip이 undefined일 때 하위 렌더링 연산 이전에 로딩 스크린으로 즉시 차단
+  if (!trip) {
+    return (
+      <div className="flex-grow flex items-center justify-center bg-[#F9F8F6] dark:bg-[#111111] h-[80vh] text-xs font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
+        Loading Journey Details...
+      </div>
+    );
+  }
+
   // Lightbox & Gallery state
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -195,13 +204,7 @@ export const JourneyDetailPage: React.FC<JourneyDetailPageProps> = ({
       lng: Number(item.lng)
     }));
 
-  if (!trip) {
-    return (
-      <div className="flex-grow flex items-center justify-center bg-[#F9F8F6] dark:bg-[#111111] h-[80vh] text-xs font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
-        Loading Journey Details...
-      </div>
-    );
-  }
+
 
   const handleItemToggle = (id: number) => {
     setExpandedItemId(prevId => prevId === id ? null : id);
