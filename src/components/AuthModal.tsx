@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Mail, Lock } from 'lucide-react';
 import { 
   signInWithEmailAndPassword, 
@@ -70,7 +71,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[9999] flex justify-center items-start p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto">
       {/* Click outside to close */}
       <div className="absolute inset-0" onClick={onClose} />
@@ -166,6 +167,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
           </button>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
