@@ -936,7 +936,7 @@ export function JourneyDetailPage({
           
           {/* TIMELINE TAB */}
           {activeTab === 'timeline' && (
-            <div className="animate-in fade-in duration-300 h-auto md:h-full flex flex-col w-full">
+            <div className="animate-in fade-in duration-300 h-auto flex flex-col w-full relative">
               {/* Day filter selector bar */}
               <div className="relative border-b border-black/20 dark:border-white/20 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0 w-full flex">
                 <div 
@@ -1008,7 +1008,7 @@ export function JourneyDetailPage({
                         )}
                         <div 
                           ref={el => { itemRefs.current[item.id] = el; }} 
-                          className={`flex flex-col border-b border-black/10 dark:border-white/10 transition-colors w-full ${isActive ? 'bg-black/5 dark:bg-white/5' : ''} ${isEditing ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                          className={`flex flex-col border-b border-black/10 dark:border-white/10 transition-colors w-full ${isActive ? 'bg-red-500/[0.02] dark:bg-red-500/[0.02] border-l-2 border-l-red-600 dark:border-l-red-400' : 'border-l-2 border-l-transparent'} ${isEditing ? 'cursor-grab active:cursor-grabbing' : ''}`}
                           draggable={isEditing}
                           onDragStart={() => setDraggedItemId(item.id)}
                           onDragOver={(e) => e.preventDefault()}
@@ -1033,28 +1033,29 @@ export function JourneyDetailPage({
                                   <span>{item.time}</span>
                                 )}
                               </div>
-                              {selectedDate === 'ALL' && (
-                                <div className="mt-0.5" onClick={(e) => e.stopPropagation()}>
-                                  {isEditing ? (
-                                    <select
-                                      value={item.date}
-                                      onChange={(e) => {
-                                        const newDate = e.target.value;
-                                        updateTimelineItem(item.id, 'date', newDate);
-                                      }}
-                                      className="bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 text-[9px] font-bold p-0.5 outline-none text-black dark:text-white rounded-none w-20"
-                                    >
-                                      {generatedDates.map(d => (
-                                        <option key={d} value={d}>{d}</option>
-                                      ))}
-                                    </select>
-                                  ) : (
+                              <div className="mt-0.5" onClick={(e) => e.stopPropagation()}>
+                                {isEditing ? (
+                                  <select
+                                    value={item.date}
+                                    onChange={(e) => {
+                                      const newDate = e.target.value;
+                                      updateTimelineItem(item.id, 'date', newDate);
+                                      setSelectedDate(newDate);
+                                    }}
+                                    className="bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 text-[9px] font-bold p-0.5 outline-none text-black dark:text-white rounded-none w-20"
+                                  >
+                                    {generatedDates.map(d => (
+                                      <option key={d} value={d}>{d}</option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  selectedDate === 'ALL' && (
                                     <span className="text-[9px] text-black/40 dark:text-white/40 block font-normal leading-none mt-0.5">
                                       {item.date ? item.date.slice(5) : ''}
                                     </span>
-                                  )}
-                                </div>
-                              )}
+                                  )
+                                )}
+                              </div>
                             </div>
 
                           {/* Details */}
@@ -1092,25 +1093,6 @@ export function JourneyDetailPage({
                               )}
                             </div>
 
-                            {/* Assign day dropdown (Edit mode) */}
-                            {isEditing && (
-                              <div className="flex items-center gap-1.5 mt-2" onClick={(e) => e.stopPropagation()}>
-                                <span className="text-[8px] uppercase font-black tracking-widest opacity-40">Move to Day</span>
-                                <select
-                                  value={item.date}
-                                  onChange={(e) => {
-                                    const newDate = e.target.value;
-                                    updateTimelineItem(item.id, 'date', newDate);
-                                    setSelectedDate(newDate);
-                                  }}
-                                  className="bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 text-[9px] font-bold p-1 outline-none text-black dark:text-white rounded-none"
-                                >
-                                  {generatedDates.map(d => (
-                                    <option key={d} value={d}>{d}</option>
-                                  ))}
-                                </select>
-                              </div>
-                            )}
 
                             {/* Delete timeline item (Edit mode) */}
                             {isEditing && isActive && (
@@ -1302,22 +1284,24 @@ export function JourneyDetailPage({
                 )}
 
                 {selectedDate === 'ALL' && currentTimeline.length > 0 && (
-                  <div className="fixed bottom-20 right-4 md:absolute md:bottom-6 md:right-6 flex flex-col gap-2 z-20">
+                  <>
                     <button
                       onClick={() => handleScrollToDateSection('up')}
-                      className="p-2 bg-black/80 hover:bg-black text-white dark:bg-white/80 dark:hover:bg-white dark:text-black rounded-full shadow-lg transition-colors duration-200"
+                      className="sticky top-2 right-2 ml-auto z-40 p-1.5 bg-black/80 hover:bg-black text-white dark:bg-white/80 dark:hover:bg-white dark:text-black rounded-full shadow-md transition-colors duration-200 pointer-events-auto shrink-0 w-8 h-8 flex items-center justify-center"
+                      style={{ marginBottom: '-32px' }}
                       title="Scroll to Previous Day"
                     >
-                      <ChevronUp className="w-4 h-4 md:w-5 md:h-5" />
+                      <ChevronUp className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleScrollToDateSection('down')}
-                      className="p-2 bg-black/80 hover:bg-black text-white dark:bg-white/80 dark:hover:bg-white dark:text-black rounded-full shadow-lg transition-colors duration-200"
+                      className="sticky bottom-2 right-2 ml-auto mt-auto z-40 p-1.5 bg-black/80 hover:bg-black text-white dark:bg-white/80 dark:hover:bg-white dark:text-black rounded-full shadow-md transition-colors duration-200 pointer-events-auto shrink-0 w-8 h-8 flex items-center justify-center"
+                      style={{ marginTop: '-32px' }}
                       title="Scroll to Next Day"
                     >
-                      <ChevronDown className="w-4 h-4 md:w-5 md:h-5" />
+                      <ChevronDown className="w-4 h-4" />
                     </button>
-                  </div>
+                  </>
                 )}
               </div>
             </div>
@@ -1430,7 +1414,7 @@ export function JourneyDetailPage({
 
           {/* GALLERY TAB */}
           {activeTab === 'gallery' && (
-            <div className="p-4 md:p-6 animate-in fade-in duration-300 flex flex-col h-full">
+            <div className="p-4 md:p-6 animate-in fade-in duration-300 flex flex-col h-auto">
               
               {/* Add Gallery Image Area */}
               {isLoggedIn && (

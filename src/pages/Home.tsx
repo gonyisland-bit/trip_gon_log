@@ -245,24 +245,26 @@ export function HomePage({
               View All Plans <ArrowRight className="w-4 h-4 ml-2" />
             </button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-black/20 dark:divide-white/20 transition-colors border-b border-black/20 dark:border-white/20 w-full">
             {localPlans.slice(0, 4).map((plan) => (
               <div
                 key={plan.id}
-                className="border border-black/20 dark:border-white/20 p-4 bg-white/50 dark:bg-black/20 flex flex-col group cursor-pointer w-full relative"
+                className="group cursor-pointer p-6 flex flex-col h-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-red-500/10 bg-red-500/[0.01] dark:border-red-400/10 dark:bg-red-400/[0.01] w-full relative"
                 onClick={() => onNavigate('detail', plan.id)}
               >
-                <div className="aspect-[4/3] w-full overflow-hidden mb-4 border border-black/10 dark:border-white/10 relative">
-                  <img src={plan.img} alt={plan.title} className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500" />
+                <div className="aspect-[3/4] w-full overflow-hidden mb-4 border border-black/10 dark:border-white/10 relative bg-black/5">
+                  <img src={plan.img} alt={plan.title} className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500" />
+                  {/* Hamburger menu */}
+                  <JourneyCardMenu
+                    isLoggedIn={isLoggedIn}
+                    onEdit={onEditTrip ? () => onEditTrip(plan.id) : undefined}
+                    onDelete={onDeleteTrip ? () => onDeleteTrip(plan.id) : undefined}
+                  />
                 </div>
-                <div className="text-xs tracking-widest text-black/50 dark:text-white/50 mb-1 break-words">{plan.date}</div>
-                <div className="font-bold tracking-tight uppercase text-sm mb-4 break-words">{plan.title}</div>
-                {/* Hamburger menu */}
-                <JourneyCardMenu
-                  isLoggedIn={isLoggedIn}
-                  onEdit={onEditTrip ? () => onEditTrip(plan.id) : undefined}
-                  onDelete={onDeleteTrip ? () => onDeleteTrip(plan.id) : undefined}
-                />
+                <div className="mt-auto">
+                  <div className="text-xs tracking-widest text-black/50 dark:text-white/50 mb-1 break-words">{plan.date}</div>
+                  <div className="font-bold tracking-tight uppercase text-sm break-words">{plan.title}</div>
+                </div>
               </div>
             ))}
           </div>

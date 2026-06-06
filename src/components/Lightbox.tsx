@@ -220,28 +220,11 @@ export function Lightbox({
         className="flex-grow flex items-center justify-center relative overflow-hidden w-full"
         onWheel={handleWheel}
       >
-        {/* Prev image ghost (blurred preview) */}
-        {prevMeta && images.length > 1 && (
-          <div
-            className="absolute left-0 top-0 bottom-0 w-24 md:w-36 flex items-center justify-start pl-2 md:pl-3 z-10 cursor-pointer group"
-            onClick={handlePrev}
-          >
-            <div className="relative w-16 md:w-24 h-24 md:h-32 opacity-25 group-hover:opacity-45 transition-opacity duration-300 overflow-hidden rounded-sm border border-white/10 shadow-2xl">
-              <img
-                src={prevMeta.url}
-                alt="Previous"
-                className="w-full h-full object-cover blur-[1px] scale-105"
-                onLoad={() => setPrevLoaded(true)}
-              />
-            </div>
-          </div>
-        )}
-
         {/* Left Arrow */}
         {images.length > 1 && (
           <button
             onClick={handlePrev}
-            className="absolute left-20 md:left-32 z-20 p-2 md:p-3 bg-white/5 hover:bg-white/15 active:bg-white/25 border border-white/10 hover:border-white/30 text-white rounded-full transition-all focus:outline-none"
+            className="absolute left-4 md:left-8 z-20 p-2 md:p-3 bg-white/5 hover:bg-white/15 active:bg-white/25 border border-white/10 hover:border-white/30 text-white rounded-full transition-all focus:outline-none hidden md:flex"
           >
             <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
           </button>
@@ -262,8 +245,8 @@ export function Lightbox({
               style={{
                 transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
                 transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                maxHeight: '80vh',
-                maxWidth: '80vw',
+                maxHeight: '70vh',
+                maxWidth: '85vw',
                 objectFit: 'contain',
                 userSelect: 'none',
                 pointerEvents: scale > 1 ? 'auto' : 'none',
@@ -292,27 +275,6 @@ export function Lightbox({
                 </span>
               </div>
             )}
-
-            {/* ── Bottom info bar: place + memo (centered, overlapping photo bottom) ── */}
-            {(hasLog && showLog) && (
-              <div
-                className="absolute bottom-0 left-0 right-0 z-30 pointer-events-none"
-                style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`, transformOrigin: 'bottom center', transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)' }}
-              >
-                <div className="bg-gradient-to-t from-black/75 via-black/40 to-transparent px-4 pt-8 pb-3 text-center">
-                  {currentMeta.place && (
-                    <div className="text-white font-bold text-xs md:text-sm tracking-wide drop-shadow-lg">
-                      {currentMeta.place}
-                    </div>
-                  )}
-                  {currentMeta.memo && (
-                    <div className="text-white/70 text-[10px] md:text-xs mt-0.5 font-medium tracking-wide drop-shadow-md">
-                      {currentMeta.memo}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
 
           {scale <= 1 && (
@@ -327,48 +289,67 @@ export function Lightbox({
         {images.length > 1 && (
           <button
             onClick={handleNext}
-            className="absolute right-20 md:right-32 z-20 p-2 md:p-3 bg-white/5 hover:bg-white/15 active:bg-white/25 border border-white/10 hover:border-white/30 text-white rounded-full transition-all focus:outline-none"
+            className="absolute right-4 md:right-8 z-20 p-2 md:p-3 bg-white/5 hover:bg-white/15 active:bg-white/25 border border-white/10 hover:border-white/30 text-white rounded-full transition-all focus:outline-none hidden md:flex"
           >
             <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
           </button>
         )}
+      </div>
 
-        {/* Next image ghost (blurred preview) */}
-        {nextMeta && images.length > 1 && (
-          <div
-            className="absolute right-0 top-0 bottom-0 w-24 md:w-36 flex items-center justify-end pr-2 md:pr-3 z-10 cursor-pointer group"
-            onClick={handleNext}
-          >
-            <div className="relative w-16 md:w-24 h-24 md:h-32 opacity-25 group-hover:opacity-45 transition-opacity duration-300 overflow-hidden rounded-sm border border-white/10 shadow-2xl">
-              <img
-                src={nextMeta.url}
-                alt="Next"
-                className="w-full h-full object-cover blur-[1px] scale-105"
-                onLoad={() => setNextLoaded(true)}
-              />
-            </div>
+      {/* Bottom Thumbnails Strip */}
+      {images.length > 1 && (
+        <div className="w-full bg-black/40 py-2 border-t border-white/5 flex justify-center items-center overflow-x-auto hide-scrollbar z-20 shrink-0">
+          <div className="flex gap-2 px-4">
+            {images.map((img, idx) => {
+              const isActive = idx === currentIndex;
+              return (
+                <button
+                  key={idx}
+                  onClick={() => onNavigate(idx)}
+                  className={`relative overflow-hidden transition-all duration-300 focus:outline-none shrink-0 ${
+                    isActive 
+                      ? 'w-10 h-10 md:w-12 md:h-12 border-2 border-orange-500 scale-110 opacity-100 z-10' 
+                      : 'w-7 h-7 md:w-9 md:h-9 border border-white/20 opacity-40 hover:opacity-80'
+                  }`}
+                >
+                  <img
+                    src={img.url}
+                    alt={`Thumb ${idx + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              );
+            })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Bottom imgNote panel (hide/unhide) */}
-      <div
-        className={`relative z-20 bg-gradient-to-t from-black/90 to-transparent px-6 py-3 md:px-10 md:py-4 transition-all duration-500 overflow-hidden ${
-          showLog && currentMeta.imgNote ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0 py-0'
-        }`}
-      >
-        {currentMeta.imgNote && (
-          <p className="text-orange-300/90 text-[11px] font-mono italic leading-relaxed text-center max-w-xl mx-auto">
-            "{currentMeta.imgNote}"
-          </p>
-        )}
-      </div>
+      {/* Bottom captions panel (place, memo, imgNote) */}
+      {(hasLog && showLog) && (
+        <div className="relative z-20 bg-black/90 border-t border-white/10 px-6 py-4 md:px-10 flex flex-col items-center gap-1 shrink-0">
+          {currentMeta.place && (
+            <div className="text-white font-bold text-xs md:text-sm tracking-wide">
+              {currentMeta.place}
+            </div>
+          )}
+          {currentMeta.memo && (
+            <div className="text-white/70 text-[10px] md:text-xs font-medium tracking-wide text-center max-w-xl">
+              {currentMeta.memo}
+            </div>
+          )}
+          {currentMeta.imgNote && (
+            <p className="text-orange-300/90 text-[10px] md:text-[11px] font-mono italic leading-relaxed text-center max-w-xl mt-1">
+              "{currentMeta.imgNote}"
+            </p>
+          )}
+        </div>
+      )}
 
-      {/* Hint when no log */}
+      {/* Hint when no log or date */}
       {(!showLog || !hasLog) && !hasDate && (
         <div className="absolute bottom-0 left-0 right-0 z-20 pb-3 pt-6 text-center bg-gradient-to-t from-black/60 to-transparent pointer-events-none">
           <p className="text-white/25 text-[9px] uppercase tracking-widest font-bold">
-            Double click to Zoom · Arrow keys to Navigate
+            Double click to Zoom · Swipe/Click Thumbnails to Navigate
           </p>
         </div>
       )}
