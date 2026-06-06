@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Save, Edit2, Loader2, Upload } from 'lucide-react';
+import { X, Save, Edit2, Loader2, Upload, Tag, MapPin } from 'lucide-react';
 import { Trip } from '../types';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebase';
 import { compressImage } from '../utils/imageHelper';
+import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 
 interface EditTripModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface EditTripModalProps {
   trip: Trip | undefined;
   onSave: (tripId: number, updatedData: Partial<Trip>) => Promise<void>;
   isLoggedIn: boolean;
+  existingTags: string[];
 }
 
 export function EditTripModal({
@@ -19,11 +21,16 @@ export function EditTripModal({
   trip,
   onSave,
   isLoggedIn,
+  existingTags,
 }: EditTripModalProps) {
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
   const [locationStr, setLocationStr] = useState('');
+  const [lat, setLat] = useState<number | undefined>(undefined);
+  const [lng, setLng] = useState<number | undefined>(undefined);
   const [imgUrl, setImgUrl] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   
@@ -34,9 +41,15 @@ export function EditTripModal({
       setTitle(trip.title);
       setDate(trip.date);
       setLocationStr(trip.locationStr);
+      setLat(trip.lat);
+      setLng(trip.lng);
       setImgUrl(trip.img);
+      setTags(trip.tags || []);
+      setTagInput('');
     }
   }, [isOpen, trip]);
+
+  if (!isOpen || !trip) return null;
 
   const parseDateRange = (dateStr: string) => {
     if (!dateStr || !dateStr.includes('-')) return { start: '', end: '' };
@@ -80,7 +93,32 @@ export function EditTripModal({
     }
   };
 
-  if (!isOpen || !trip) return null;
+  const handleAddTag = (tagText: string) => {
+    const cleanTag = tagText.trim().replace(/,/g, '');
+    if (cleanTag && !tags.includes(cleanTag)) {
+      setTags(prev => [...prev, cleanTag]);
+    }
+    setTagInput('');
+  };
+
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === ',' || e.key === 'Enter') {
+      e.preventDefault();
+      handleAddTag(tagInput);
+    }
+  };
+
+  const handleTagInputChange = (val: string) => {
+    if (val.endsWith(',')) {
+      handleAddTag(val);
+    } else {
+      setTagInput(val);
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTags(prev => prev.filter(t => t !== tagToRemove));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,7 +129,10 @@ export function EditTripModal({
         title,
         date,
         locationStr,
+        lat: lat !== undefined ? lat : trip.lat,
+        lng: lng !== undefined ? lng : trip.lng,
         img: imgUrl,
+        tags,
       });
       onClose();
     } catch (err) {
@@ -122,6 +163,14 @@ export function EditTripModal({
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
+
+  const filteredSuggestions = tagInput.trim()
+    ? existingTags.filter(
+        tag =>
+          tag.toLowerCase().includes(tagInput.toLowerCase()) &&
+          !tags.includes(tag)
+      )
+    : [];
 
   return (
     <div
@@ -191,19 +240,82 @@ export function EditTripModal({
             </div>
           </div>
 
-          {/* Location */}
+          {/* Location with Google Autocomplete */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
               Location Name
             </label>
-            <input
-              type="text"
-              value={locationStr}
-              onChange={(e) => setLocationStr(e.target.value)}
-              className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-2.5 text-xs font-bold text-black dark:text-white outline-none w-full focus:border-red-600 dark:focus:border-red-400 transition-colors"
-              placeholder="e.g. Tokyo, Japan"
-              required
-            />
+            <div className="relative flex items-center">
+              <MapPin className="absolute left-3 w-4 h-4 text-black/30 dark:text-white/30 z-10 pointer-events-none" />
+              <PlaceAutocompleteInput
+                value={locationStr}
+                onChange={(val) => setLocationStr(val)}
+                onSelectPlace={(name, coords) => {
+                  setLocationStr(name);
+                  if (coords) {
+                    setLat(coords.lat);
+                    setLng(coords.lng);
+                  }
+                }}
+                className="w-full pl-10 pr-4 py-2.5 text-xs font-bold bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 focus:border-red-600 dark:focus:border-red-400 outline-none transition-colors rounded-none text-black dark:text-white"
+                placeholder="Search destination city..."
+              />
+            </div>
+          </div>
+
+          {/* Tags Pill Input */}
+          <div className="flex flex-col gap-1.5 relative">
+            <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+              Tags (comma or enter to separate)
+            </label>
+            
+            {/* Pill Display */}
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-1.5 max-h-24 overflow-y-auto p-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+                {tags.map(tag => (
+                  <span 
+                    key={tag} 
+                    className="flex items-center gap-1.5 bg-white dark:bg-[#151515] text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border border-black/15 dark:border-white/15 text-black dark:text-white shadow-xs"
+                  >
+                    {tag}
+                    <button 
+                      type="button" 
+                      onClick={() => handleRemoveTag(tag)} 
+                      className="text-black/45 dark:text-white/45 hover:text-red-500 transition-colors text-xs leading-none"
+                    >
+                      &times;
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="relative">
+              <input 
+                type="text"
+                value={tagInput}
+                onChange={(e) => handleTagInputChange(e.target.value)}
+                onKeyDown={handleTagInputKeyDown}
+                placeholder="e.g. Tokyo, 2026, Summer"
+                className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-2.5 text-xs font-bold text-black dark:text-white outline-none w-full focus:border-red-600 dark:focus:border-red-400 transition-colors"
+              />
+            </div>
+
+            {/* Suggestions dropdown */}
+            {filteredSuggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 shadow-xl max-h-36 overflow-y-auto z-50 flex flex-col divide-y divide-black/5 dark:divide-white/5">
+                {filteredSuggestions.map(suggestion => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    onClick={() => handleAddTag(suggestion)}
+                    className="w-full text-left px-3 py-2 text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-colors uppercase font-bold tracking-wider text-black dark:text-white"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Cover Image */}

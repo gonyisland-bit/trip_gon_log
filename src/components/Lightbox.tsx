@@ -193,15 +193,14 @@ export function Lightbox({
             <ZoomIn className="w-4 h-4 md:w-5 md:h-5" />
           </button>
 
-          {(scale !== 1 || position.x !== 0 || position.y !== 0) && (
-            <button
-              onClick={resetZoom}
-              className="p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors"
-              title="Reset Zoom"
-            >
-              <RotateCcw className="w-4 h-4 md:w-5 md:h-5" />
-            </button>
-          )}
+          <button
+            onClick={resetZoom}
+            disabled={scale === 1 && position.x === 0 && position.y === 0}
+            className="p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors disabled:opacity-30"
+            title="Reset Zoom"
+          >
+            <RotateCcw className="w-4 h-4 md:w-5 md:h-5" />
+          </button>
 
           <div className="h-4 w-[1px] bg-white/20 mx-1" />
 
@@ -249,6 +248,7 @@ export function Lightbox({
               src={currentMeta.url}
               alt="Fullscreen Gallery"
               onDoubleClick={handleDoubleClick}
+              data-pin-nopin="true"
               style={{
                 maxHeight: '78vh',
                 maxWidth: '90vw',
@@ -261,7 +261,7 @@ export function Lightbox({
             />
 
             {/* ── Film Date Stamp: bottom-right of image ── */}
-            {hasDate && (
+            {hasDate && showLog && (
               <div className="absolute bottom-3 right-3 z-30 pointer-events-none text-right">
                 <span
                   className="font-mono font-bold tracking-widest leading-none"
@@ -316,6 +316,7 @@ export function Lightbox({
                   <img
                     src={img.url}
                     alt={`Thumb ${idx + 1}`}
+                    data-pin-nopin="true"
                     className="w-full h-full object-cover"
                   />
                 </button>

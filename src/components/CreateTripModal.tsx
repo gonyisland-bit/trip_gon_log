@@ -1,23 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Calendar, MapPin, Tag, Edit3 } from 'lucide-react';
+import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 
 interface CreateTripModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (title: string, dateRange: string, location: string, tags: string[]) => void;
+  onCreate: (title: string, dateRange: string, location: string, tags: string[], lat?: number, lng?: number) => void;
+  existingTags: string[];
 }
 
 export function CreateTripModal({
   isOpen,
   onClose,
   onCreate,
+  existingTags,
 }: CreateTripModalProps) {
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [location, setLocation] = useState('');
-  const [tagsInput, setTagsInput] = useState('');
+  const [lat, setLat] = useState<number | undefined>(undefined);
+  const [lng, setLng] = useState<number | undefined>(undefined);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -26,12 +32,42 @@ export function CreateTripModal({
       setStartDate('');
       setEndDate('');
       setLocation('');
-      setTagsInput('');
+      setLat(undefined);
+      setLng(undefined);
+      setTags([]);
+      setTagInput('');
       setError('');
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
+
+  const handleAddTag = (tagText: string) => {
+    const cleanTag = tagText.trim().replace(/,/g, '');
+    if (cleanTag && !tags.includes(cleanTag)) {
+      setTags(prev => [...prev, cleanTag]);
+    }
+    setTagInput('');
+  };
+
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === ',' || e.key === 'Enter') {
+      e.preventDefault();
+      handleAddTag(tagInput);
+    }
+  };
+
+  const handleTagInputChange = (val: string) => {
+    if (val.endsWith(',')) {
+      handleAddTag(val);
+    } else {
+      setTagInput(val);
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTags(prev => prev.filter(t => t !== tagToRemove));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,25 +79,29 @@ export function CreateTripModal({
     if (new Date(startDate) > new Date(endDate)) return setError('종료일은 시작일보다 빠를 수 없습니다.');
     if (!location.trim()) return setError('여행 위치(도시명)를 입력해 주세요.');
 
-    // 날짜 포맷 변환: YYYY-MM-DD -> YYYY.MM.DD
+    // Convert dates: YYYY-MM-DD -> YYYY.MM.DD
     const startFormatted = startDate.replace(/-/g, '.');
     const endFormatted = endDate.replace(/-/g, '.');
     const dateRange = `${startFormatted} - ${endFormatted}`;
-
-    // 태그 파싱: 쉼표 분리 후 트림 처리
-    const tags = tagsInput
-      .split(',')
-      .map(tag => tag.trim())
-      .filter(tag => tag.length > 0);
 
     onCreate(
       title.trim(),
       dateRange,
       location.trim(),
-      tags.length > 0 ? tags : ['Personal']
+      tags.length > 0 ? tags : ['Personal'],
+      lat,
+      lng
     );
     onClose();
   };
+
+  const filteredSuggestions = tagInput.trim()
+    ? existingTags.filter(
+        tag =>
+          tag.toLowerCase().includes(tagInput.toLowerCase()) &&
+          !tags.includes(tag)
+      )
+    : [];
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex justify-center items-start p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto">
@@ -100,7 +140,7 @@ export function CreateTripModal({
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           
           {/* Title */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest text-black/50 dark:text-white/50">
               Journey Title
             </label>
@@ -112,14 +152,14 @@ export function CreateTripModal({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. KYOTO AUTUMN TRIP"
-                className="w-full pl-10 pr-4 py-2 text-xs md:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none"
+                className="w-full pl-10 pr-4 py-2 text-xs md:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none text-black dark:text-white"
               />
             </div>
           </div>
 
           {/* Date Range (Start & End) */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1.5">
               <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest text-black/50 dark:text-white/50">
                 Start Date
               </label>
@@ -130,12 +170,12 @@ export function CreateTripModal({
                   required
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 text-xs md:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none"
+                  className="w-full pl-10 pr-4 py-2 text-xs md:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none text-black dark:text-white"
                 />
               </div>
             </div>
 
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1.5">
               <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest text-black/50 dark:text-white/50">
                 End Date
               </label>
@@ -146,45 +186,89 @@ export function CreateTripModal({
                   required
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 text-xs md:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none"
+                  className="w-full pl-10 pr-4 py-2 text-xs md:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none text-black dark:text-white"
                 />
               </div>
             </div>
           </div>
 
-          {/* Location */}
-          <div className="flex flex-col gap-1">
+          {/* Location with Google Autocomplete */}
+          <div className="flex flex-col gap-1.5">
             <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest text-black/50 dark:text-white/50">
               Location / City
             </label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30 dark:text-white/30" />
-              <input 
-                type="text"
-                required
+            <div className="relative flex items-center">
+              <MapPin className="absolute left-3 w-4 h-4 text-black/30 dark:text-white/30 z-10 pointer-events-none" />
+              <PlaceAutocompleteInput
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="e.g. Kyoto, Japan"
-                className="w-full pl-10 pr-4 py-2 text-xs md:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none"
+                onChange={(val) => setLocation(val)}
+                onSelectPlace={(name, coords) => {
+                  setLocation(name);
+                  if (coords) {
+                    setLat(coords.lat);
+                    setLng(coords.lng);
+                  }
+                }}
+                className="w-full pl-10 pr-4 py-2 text-xs md:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none text-black dark:text-white"
+                placeholder="Search destination city..."
               />
             </div>
           </div>
 
-          {/* Tags */}
-          <div className="flex flex-col gap-1">
+          {/* Tags Pill Input */}
+          <div className="flex flex-col gap-1.5 relative">
             <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest text-black/50 dark:text-white/50">
-              Tags (comma separated)
+              Tags (comma or enter to separate)
             </label>
+            
+            {/* Pill Display */}
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-1.5 max-h-24 overflow-y-auto p-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+                {tags.map(tag => (
+                  <span 
+                    key={tag} 
+                    className="flex items-center gap-1.5 bg-white dark:bg-[#151515] text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border border-black/15 dark:border-white/15 text-black dark:text-white shadow-xs"
+                  >
+                    {tag}
+                    <button 
+                      type="button" 
+                      onClick={() => handleRemoveTag(tag)} 
+                      className="text-black/45 dark:text-white/45 hover:text-red-500 transition-colors text-xs leading-none"
+                    >
+                      &times;
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
             <div className="relative">
               <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30 dark:text-white/30" />
               <input 
                 type="text"
-                value={tagsInput}
-                onChange={(e) => setTagsInput(e.target.value)}
+                value={tagInput}
+                onChange={(e) => handleTagInputChange(e.target.value)}
+                onKeyDown={handleTagInputKeyDown}
                 placeholder="e.g. Kyoto, 2026, Autumn"
-                className="w-full pl-10 pr-4 py-2 text-xs md:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none"
+                className="w-full pl-10 pr-4 py-2 text-xs md:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none text-black dark:text-white"
               />
             </div>
+
+            {/* Suggestions dropdown */}
+            {filteredSuggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 shadow-xl max-h-36 overflow-y-auto z-50 flex flex-col divide-y divide-black/5 dark:divide-white/5">
+                {filteredSuggestions.map(suggestion => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    onClick={() => handleAddTag(suggestion)}
+                    className="w-full text-left px-3 py-2 text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-colors uppercase font-bold tracking-wider text-black dark:text-white"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <button 

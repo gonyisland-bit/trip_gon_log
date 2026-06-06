@@ -156,3 +156,19 @@
   color: #f9f8f6 !important;
 }
 
+/* Marquee animation */
+@keyframes marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-marquee {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: marquee var(--marquee-speed, 30s) linear infinite;
+}
+

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Navigation } from './components/Navigation';
 import { Footer } from './components/Footer';
 import { HomePage } from './pages/Home';
@@ -8,7 +8,9 @@ import { JourneyDetailPage } from './pages/Detail';
 import { AuthModal } from './components/AuthModal';
 import { CreateTripModal } from './components/CreateTripModal';
 import { SettingsModal } from './components/SettingsModal';
+import { SearchModal } from './components/SearchModal';
 import { EditTripModal } from './components/EditTripModal';
+import { Check, AlertTriangle } from 'lucide-react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { fetchCoordinates } from './utils/googleMapsHelper';
 import { 
@@ -88,6 +90,20 @@ function App() {
   const [homeSubtitle, setHomeSubtitle] = useState("나만의 감성으로 기록하고 보관하는 여행 아카이브.");
   const [heroJourneyIds, setHeroJourneyIds] = useState<number[]>([]);
   const [editingTripId, setEditingTripId] = useState<number | null>(null);
+  
+  const [heroAutoSlide, setHeroAutoSlide] = useState<boolean>(true);
+  const [marqueeShow, setMarqueeShow] = useState<boolean>(true);
+  const [marqueeMessage, setMarqueeMessage] = useState<string>("🎉 WELCOME TO TRIPGON LOG! PLAN YOUR JOURNEY OR EXPLORE ARCHIVED LOGS.");
+  const [marqueeSpeed, setMarqueeSpeed] = useState<number>(30);
+  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
+  const [searchFocusItemId, setSearchFocusItemId] = useState<number | null>(null);
+  const [searchFocusTab, setSearchFocusTab] = useState<string | null>(null);
+  const [isDetailEditing, setIsDetailEditing] = useState<boolean>(false);
+  const [marqueeOverrideText, setMarqueeOverrideText] = useState<string | null>(null);
+  const [showSaveCompleteModal, setShowSaveCompleteModal] = useState<boolean>(false);
+  const [showUnsavedModal, setShowUnsavedModal] = useState<boolean>(false);
+  const [pendingNavigation, setPendingNavigation] = useState<{ view: string; tripId: number | null } | null>(null);
+  const detailSaveRef = useRef<(() => Promise<void>) | null>(null);
 
   // activeTrip: strictly match activeTripId. Do not automatically fall back to trips[0]
   // to avoid rendering one trip's map with another trip's details during sync.
@@ -284,6 +300,10 @@ function App() {
         if (data.title) setHomeTitle(data.title);
         if (data.subtitle) setHomeSubtitle(data.subtitle);
         if (Array.isArray(data.heroJourneyIds)) setHeroJourneyIds(data.heroJourneyIds);
+        if (data.heroAutoSlide !== undefined) setHeroAutoSlide(data.heroAutoSlide);
+        if (data.marqueeShow !== undefined) setMarqueeShow(data.marqueeShow);
+        if (data.marqueeMessage !== undefined) setMarqueeMessage(data.marqueeMessage);
+        if (data.marqueeSpeed !== undefined) setMarqueeSpeed(data.marqueeSpeed);
       }
     }, (err) => {
       console.error("Settings snapshot subscription error:", err);
@@ -348,6 +368,18 @@ function App() {
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
       const state = event.state;
+      if (isDetailEditing) {
+        // Lock page transition and show unsaved changes modal
+        window.history.pushState({ view: currentView, tripId: activeTripId }, '', window.location.pathname + window.location.search);
+        if (state && state.view) {
+          setPendingNavigation({ view: state.view, tripId: state.tripId || null });
+        } else {
+          setPendingNavigation({ view: 'home', tripId: null });
+        }
+        setShowUnsavedModal(true);
+        return;
+      }
+
       if (state && state.view) {
         if (state.tripId) {
           setActiveTripId(state.tripId);
@@ -360,9 +392,15 @@ function App() {
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  }, [isDetailEditing, currentView, activeTripId]);
 
   const navigateTo = (view: string, tripId: number | null = null, pushHistory = true) => {
+    if (isDetailEditing && (view !== 'detail' || (tripId !== null && tripId !== activeTripId))) {
+      setPendingNavigation({ view, tripId });
+      setShowUnsavedModal(true);
+      return;
+    }
+
     if (tripId) setActiveTripId(tripId);
     setCurrentView(view);
 
@@ -376,6 +414,13 @@ function App() {
       }
       window.history.pushState({ view, tripId: tripId || activeTripId }, '', path);
     }
+  };
+
+  const handleSearchResultClick = (tripId: number, tabId: string, itemId: number | null) => {
+    setActiveTripId(tripId);
+    setSearchFocusTab(tabId);
+    setSearchFocusItemId(itemId);
+    navigateTo('detail', tripId);
   };
 
   const handleUpdateTrip = async (tripId: number, field: string, value: any) => {
@@ -415,15 +460,31 @@ function App() {
     }
   };
 
-  const handleSaveSettings = async (title: string, subtitle: string, heroIds: number[]) => {
+  const handleSaveSettings = async (
+    title: string,
+    subtitle: string,
+    heroIds: number[],
+    autoSlide?: boolean,
+    showMarquee?: boolean,
+    marqueeMsg?: string,
+    marqueeSpd?: number
+  ) => {
     if (!isLoggedIn) return;
     try {
       await setDoc(doc(db, 'users', 'public', 'settings', 'home'), {
         title,
         subtitle,
         heroJourneyIds: heroIds,
+        heroAutoSlide: autoSlide ?? heroAutoSlide,
+        marqueeShow: showMarquee ?? marqueeShow,
+        marqueeMessage: marqueeMsg ?? marqueeMessage,
+        marqueeSpeed: marqueeSpd ?? marqueeSpeed,
       });
       setHeroJourneyIds(heroIds);
+      if (autoSlide !== undefined) setHeroAutoSlide(autoSlide);
+      if (showMarquee !== undefined) setMarqueeShow(showMarquee);
+      if (marqueeMsg !== undefined) setMarqueeMessage(marqueeMsg);
+      if (marqueeSpd !== undefined) setMarqueeSpeed(marqueeSpd);
     } catch (err) {
       console.error("Failed to save settings:", err);
       throw err;
@@ -517,7 +578,7 @@ function App() {
     setIsCreateModalOpen(true);
   };
 
-  const handleCreateJourney = async (title: string, dateRange: string, location: string, tags: string[]) => {
+  const handleCreateJourney = async (title: string, dateRange: string, location: string, tags: string[], lat?: number, lng?: number) => {
     const user = auth.currentUser;
     if (!user) return;
 
@@ -537,6 +598,8 @@ function App() {
       img,
       mapImg,
       locationStr: location,
+      lat,
+      lng,
       gallery: []
     };
 
@@ -722,7 +785,11 @@ function App() {
 
       await saveBatch.commit();
 
-      alert('성공적으로 저장되었습니다.');
+      setMarqueeOverrideText("🎉 JOURNEY SAVED SUCCESSFULLY!");
+      setTimeout(() => {
+        setMarqueeOverrideText(null);
+      }, 5000);
+      setShowSaveCompleteModal(true);
     } catch (err: any) {
       console.error('Error saving journey details:', err);
       console.error('Error code:', err?.code);
@@ -856,6 +923,10 @@ function App() {
   const activeStays = staysByTrip[activeTripId || 0] || [];
   const activeTransits = transitByTrip[activeTripId || 0] || [];
 
+  const existingTags = Array.from(
+    new Set([...trips, ...plans].flatMap(t => t.tags || []))
+  ).filter(t => t !== 'Plan' && t !== 'Personal');
+
   return (
     <div className={`${isDarkMode ? 'dark' : ''} overflow-x-hidden w-full`}>
       <div className="min-h-screen bg-[#F9F8F6] text-[#111111] dark:bg-[#111111] dark:text-[#F9F8F6] font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 w-full overflow-x-hidden">
@@ -884,7 +955,18 @@ function App() {
           setShowSettings={setShowSettings}
           openAuthModal={(mode) => { setAuthModalMode(mode); setIsAuthModalOpen(true); }}
           openSettingModal={() => setIsManageModalOpen(true)}
+          onSearchClick={() => setIsSearchOpen(true)}
         />
+
+        {/* Marquee Banner */}
+        {marqueeShow && (
+          <div className="w-full bg-[#EAE8E3] dark:bg-[#161616] border-b border-black/10 dark:border-white/10 py-2 overflow-hidden flex items-center shrink-0">
+            <div className="animate-marquee text-[10px] md:text-xs font-black tracking-widest uppercase text-red-600 dark:text-red-400" style={{ '--marquee-speed': `${marqueeSpeed}s` } as React.CSSProperties}>
+              <span>{marqueeOverrideText || marqueeMessage}&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;</span>
+              <span>{marqueeOverrideText || marqueeMessage}&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;</span>
+            </div>
+          </div>
+        )}
 
         {/* View Routing */}
         <div className="w-full">
@@ -897,6 +979,7 @@ function App() {
               homeTitle={homeTitle}
               homeSubtitle={homeSubtitle}
               heroJourneyIds={heroJourneyIds}
+              heroAutoSlide={heroAutoSlide}
               onEditTrip={(id) => setEditingTripId(id)}
               onDeleteTrip={(id) => handleDeleteJourney(id)}
               onReorderTrips={async (orderedIds) => {
@@ -962,6 +1045,14 @@ function App() {
                     onDelete={handleDeleteJourney}
                     isDarkMode={isDarkMode}
                     onNavigate={navigateTo}
+                    searchFocusItemId={searchFocusItemId}
+                    searchFocusTab={searchFocusTab}
+                    onClearSearchFocus={() => {
+                      setSearchFocusItemId(null);
+                      setSearchFocusTab(null);
+                    }}
+                    onEditModeChange={setIsDetailEditing}
+                    saveRef={detailSaveRef}
                   />
                 </ErrorBoundary>
               );
@@ -989,6 +1080,7 @@ function App() {
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
           onCreate={handleCreateJourney}
+          existingTags={existingTags}
         />
 
         {/* Settings Modal Popup */}
@@ -1005,6 +1097,10 @@ function App() {
           trips={trips}
           plans={plans}
           initialHeroJourneyIds={heroJourneyIds}
+          heroAutoSlide={heroAutoSlide}
+          marqueeShow={marqueeShow}
+          marqueeMessage={marqueeMessage}
+          marqueeSpeed={marqueeSpeed}
         />
 
         {/* Edit Trip Cover Modal */}
@@ -1014,7 +1110,103 @@ function App() {
           trip={trips.find(t => t.id === editingTripId) || plans.find(p => p.id === editingTripId)}
           onSave={handleEditTripSave}
           isLoggedIn={isLoggedIn}
+          existingTags={existingTags}
         />
+
+        {/* Search Modal Popup */}
+        <SearchModal
+          isOpen={isSearchOpen}
+          onClose={() => setIsSearchOpen(false)}
+          trips={trips}
+          plans={plans}
+          timelineData={timelineData}
+          flightsByTrip={flightsByTrip}
+          staysByTrip={staysByTrip}
+          transitByTrip={transitByTrip}
+          onResultClick={handleSearchResultClick}
+        />
+
+        {/* Save Complete Modal */}
+        {showSaveCompleteModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+            <div className="bg-[#F9F8F6] dark:bg-[#161616] border border-black/20 dark:border-white/20 p-6 md:p-8 w-full max-w-sm text-center shadow-2xl rounded-none text-black dark:text-white">
+              <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-4">
+                <Check className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-black uppercase tracking-widest mb-2">저장 완료</h3>
+              <p className="text-xs text-black/55 dark:text-white/55 mb-6 font-medium leading-relaxed">
+                여정 상세 정보가 성공적으로 <br />
+                Firestore 클라우드에 영구 저장되었습니다.
+              </p>
+              <button
+                onClick={() => setShowSaveCompleteModal(false)}
+                className="w-full py-2.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-black uppercase tracking-widest rounded-none transition-all"
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Unsaved Changes Warning Modal */}
+        {showUnsavedModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+            <div className="bg-[#F9F8F6] dark:bg-[#161616] border border-black/20 dark:border-white/20 p-6 md:p-8 w-full max-w-sm text-center shadow-2xl rounded-none text-black dark:text-white">
+              <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4 animate-bounce">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-black uppercase tracking-widest mb-2">저장되지 않은 변경 사항</h3>
+              <p className="text-xs text-black/55 dark:text-white/55 mb-6 font-medium leading-relaxed">
+                수정 중인 내용이 있습니다. <br />
+                저장하지 않고 이동하면 모든 수정사항이 손실됩니다.
+              </p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={async () => {
+                    setShowUnsavedModal(false);
+                    if (detailSaveRef.current) {
+                      await detailSaveRef.current();
+                    }
+                    if (pendingNavigation) {
+                      const { view, tripId } = pendingNavigation;
+                      setPendingNavigation(null);
+                      setIsDetailEditing(false);
+                      setTimeout(() => {
+                        navigateTo(view, tripId);
+                      }, 100);
+                    }
+                  }}
+                  className="w-full py-2.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-black uppercase tracking-widest rounded-none transition-all flex items-center justify-center gap-1.5"
+                >
+                  저장하고 이동
+                </button>
+                <button
+                  onClick={() => {
+                    setShowUnsavedModal(false);
+                    setIsDetailEditing(false);
+                    if (pendingNavigation) {
+                      const { view, tripId } = pendingNavigation;
+                      setPendingNavigation(null);
+                      navigateTo(view, tripId);
+                    }
+                  }}
+                  className="w-full py-2.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[10px] font-black uppercase tracking-widest rounded-none transition-all"
+                >
+                  저장하지 않고 이동
+                </button>
+                <button
+                  onClick={() => {
+                    setShowUnsavedModal(false);
+                    setPendingNavigation(null);
+                  }}
+                  className="w-full py-2.5 text-black/45 dark:text-white/45 hover:text-black dark:hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors mt-1"
+                >
+                  취소
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

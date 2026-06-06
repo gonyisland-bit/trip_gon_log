@@ -91,5 +91,17 @@ export interface TransitItem {
   time: string;
   seat: string;
   bookingRef: string;
+  transitType?: 'train' | 'bus';
+  departPlace?: string;
+  departLat?: number;
+  departLng?: number;
+  arrivePlace?: string;
+  arriveLat?: number;
+  arriveLng?: number;
+  boardingPlace?: string;
+  boardingLat?: number;
+  boardingLng?: number;
+  boardingImg?: string | null;
+  tripId?: number;
 }
 

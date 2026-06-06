@@ -10,6 +10,7 @@ interface HomePageProps {
   homeTitle: string;
   homeSubtitle: string;
   heroJourneyIds?: number[];
+  heroAutoSlide?: boolean;
   onEditTrip?: (id: number) => void;
   onDeleteTrip?: (id: number) => void;
   onReorderTrips?: (orderedIds: number[]) => void;
@@ -83,6 +84,7 @@ export function HomePage({
   homeTitle,
   homeSubtitle,
   heroJourneyIds = [],
+  heroAutoSlide = true,
   onEditTrip,
   onDeleteTrip,
   onReorderTrips,
@@ -113,12 +115,12 @@ export function HomePage({
 
   const currentHero = heroJourneys[heroSlide] || heroJourneys[0];
 
-  // Auto-advance carousel every 6s when multiple heroes
+  // Auto-advance carousel every 6s when multiple heroes and auto-slide is enabled
   useEffect(() => {
-    if (heroJourneys.length <= 1) return;
+    if (!heroAutoSlide || heroJourneys.length <= 1) return;
     const timer = setInterval(() => { goToNext(); }, 6000);
     return () => clearInterval(timer);
-  }, [heroJourneys.length, heroSlide]);
+  }, [heroJourneys.length, heroSlide, heroAutoSlide]);
 
   useEffect(() => { setHeroSlide(0); }, [heroJourneyIds.join(',')]);
 

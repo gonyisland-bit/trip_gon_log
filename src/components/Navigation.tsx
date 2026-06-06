@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, LogOut, User, Sun, Moon, Settings } from 'lucide-react';
+import { Menu, LogOut, User, Sun, Moon, Settings, Search } from 'lucide-react';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 
@@ -14,6 +14,7 @@ interface NavigationProps {
   setShowSettings: (value: boolean) => void;
   openAuthModal: (mode: 'login' | 'signup') => void;
   openSettingModal: () => void;
+  onSearchClick: () => void;
 }
 
 export function Navigation({
@@ -27,6 +28,7 @@ export function Navigation({
   setShowSettings,
   openAuthModal,
   openSettingModal,
+  onSearchClick,
 }: NavigationProps) {
   const currentUser = auth.currentUser;
   const displayName = currentUser?.displayName || currentUser?.email?.split('@')[0].toUpperCase() || 'USER';
@@ -64,6 +66,13 @@ export function Navigation({
         >
           Tripgon log
         </div>
+        <button 
+          onClick={onSearchClick}
+          className="ml-3 p-1.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors rounded text-black dark:text-white"
+          title="Search"
+        >
+          <Search className="w-4 h-4 md:w-5 md:h-5" />
+        </button>
       </div>
 
       <div className="flex items-center space-x-3 sm:space-x-5 md:space-x-8 text-[10px] md:text-sm font-medium tracking-wide uppercase relative">

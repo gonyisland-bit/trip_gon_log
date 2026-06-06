@@ -10,6 +10,7 @@ interface MapAreaProps {
   handleItemToggle: (id: number) => void;
   selectedDate: string;
   isDarkMode: boolean;
+  activeTab?: string;
 }
 
 export function MapArea({
@@ -20,6 +21,7 @@ export function MapArea({
   handleItemToggle,
   selectedDate,
   isDarkMode,
+  activeTab,
 }: MapAreaProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -157,26 +159,78 @@ export function MapArea({
 
     const coords: [number, number][] = valid.map(p => [Number(p.lat), Number(p.lng)]);
 
-    // Draw polyline UNDER markers (rendered first)
-    if (coords.length > 1) {
-      polylineRef.current = L.polyline(coords, {
-        color: isDarkMode ? '#f87171' : '#dc2626',
-        weight: 2.5,
-        dashArray: '6, 5',
-        opacity: 0.75,
-      }).addTo(map);
+    if (activeTab === 'transit') {
+      const transitGroups: { [transitId: number]: { depart?: [number, number]; arrive?: [number, number] } } = {};
+      valid.forEach((p: any) => {
+        if (p.transitId) {
+          if (!transitGroups[p.transitId]) {
+            transitGroups[p.transitId] = {};
+          }
+          if (p.type === 'transit_depart') {
+            transitGroups[p.transitId].depart = [Number(p.lat), Number(p.lng)];
+          } else if (p.type === 'transit_arrive') {
+            transitGroups[p.transitId].arrive = [Number(p.lat), Number(p.lng)];
+          }
+        }
+      });
+
+      const transPolylines: any[] = [];
+      Object.values(transitGroups).forEach(group => {
+        if (group.depart && group.arrive) {
+          const poly = L.polyline([group.depart, group.arrive], {
+            color: isDarkMode ? '#f59e0b' : '#d97706',
+            weight: 3,
+            dashArray: '4, 6',
+            opacity: 0.85
+          });
+          transPolylines.push(poly);
+        }
+      });
+
+      if (transPolylines.length > 0) {
+        const fGroup = L.featureGroup(transPolylines).addTo(map);
+        polylineRef.current = fGroup;
+      }
+    } else {
+      // Draw standard polyline UNDER markers (rendered first)
+      if (coords.length > 1) {
+        polylineRef.current = L.polyline(coords, {
+          color: isDarkMode ? '#f87171' : '#dc2626',
+          weight: 2.5,
+          dashArray: '6, 5',
+          opacity: 0.75,
+        }).addTo(map);
+      }
     }
 
     // Draw markers ON TOP of polyline
     valid.forEach(p => {
-      const lat = Number(p.lat);
-      const lng = Number(p.lng);
-      const isActive = expandedItemId === p.id;
+      const item = p as any;
+      const lat = Number(item.lat);
+      const lng = Number(item.lng);
+      
+      const isTransitActive = activeTab === 'transit' ? (item.transitId === expandedItemId) : (expandedItemId === item.id);
+      const isActive = !!isTransitActive;
+      
+      let pinColor = '#dc2626';
+      let pinTextPrefix = '';
+      if (activeTab === 'transit') {
+        if (item.type === 'transit_depart') {
+          pinColor = '#3b82f6';
+          pinTextPrefix = '🛫 ';
+        } else if (item.type === 'transit_arrive') {
+          pinColor = '#10b981';
+          pinTextPrefix = '🛬 ';
+        } else if (item.type === 'transit_boarding') {
+          pinColor = '#f59e0b';
+          pinTextPrefix = '🎫 ';
+        }
+      }
 
       const htmlContent = `
         <div class="pin-wrapper">
-          <div class="leaflet-pin${isActive ? ' active-pin' : ''}">${isActive ? '<div class="pin-inner-dot"></div>' : ''}</div>
-          <div class="pin-label${isActive ? ' pin-label-active' : ''}">${p.place}</div>
+          <div class="leaflet-pin${isActive ? ' active-pin' : ''}" style="background-color: ${pinColor}; ${isActive ? `box-shadow: 0 0 0 5px ${pinColor}40, 0 3px 10px rgba(0,0,0,0.4);` : ''}">${isActive ? '<div class="pin-inner-dot"></div>' : ''}</div>
+          <div class="pin-label${isActive ? ' pin-label-active' : ''}">${pinTextPrefix}${item.place}</div>
         </div>
       `;
 
@@ -188,8 +242,11 @@ export function MapArea({
       });
 
       const marker = L.marker([lat, lng], { icon, zIndexOffset: 1000 }).addTo(map);
-      marker.on('click', (e: any) => { L.DomEvent.stopPropagation(e); handleItemToggle(p.id); });
-      markersRef.current[p.id] = marker;
+      marker.on('click', (e: any) => { 
+        L.DomEvent.stopPropagation(e); 
+        handleItemToggle(activeTab === 'transit' ? item.transitId : item.id); 
+      });
+      markersRef.current[item.id] = marker;
     });
 
     // Fit bounds automatically if map interaction is locked or if it's the very first load
@@ -200,13 +257,23 @@ export function MapArea({
     }
 
     // Pan to active marker if expandedItemId is set
-    if (expandedItemId !== null && markersRef.current[expandedItemId]) {
-      const marker = markersRef.current[expandedItemId];
-      const latLng = marker.getLatLng();
-      map.setView(latLng, Math.max(map.getZoom(), 14), { animate: true });
+    if (expandedItemId !== null) {
+      let activeMarker: any = null;
+      if (activeTab === 'transit') {
+        activeMarker = markersRef.current[expandedItemId * 10 + 2] 
+                    || markersRef.current[expandedItemId * 10] 
+                    || markersRef.current[expandedItemId * 10 + 1];
+      } else {
+        activeMarker = markersRef.current[expandedItemId];
+      }
+
+      if (activeMarker) {
+        const latLng = activeMarker.getLatLng();
+        map.setView(latLng, Math.max(map.getZoom(), 14), { animate: true });
+      }
     }
 
-  }, [mapPoints, expandedItemId, isDarkMode, mapReady, isInteractive]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mapPoints, expandedItemId, isDarkMode, mapReady, isInteractive, activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Effect 4: Map click → open Google Maps ────────────────────────────────
   useEffect(() => {

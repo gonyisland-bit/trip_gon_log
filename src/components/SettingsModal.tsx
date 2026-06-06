@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Settings, Loader2, Trash2, RotateCcw, AlertTriangle, Star, Check } from 'lucide-react';
 import { Trip } from '../types';
+
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   homeTitle: string;
   homeSubtitle: string;
-  onSaveSettings: (title: string, subtitle: string, heroJourneyIds: number[]) => Promise<void>;
+  onSaveSettings: (
+    title: string,
+    subtitle: string,
+    heroJourneyIds: number[],
+    heroAutoSlide: boolean,
+    marqueeShow: boolean,
+    marqueeMessage: string,
+    marqueeSpeed: number
+  ) => Promise<void>;
   trashedJourneys: Trip[];
   onRestoreJourney: (id: number) => Promise<void>;
   onPermanentDeleteJourney: (id: number) => Promise<void>;
@@ -14,6 +23,10 @@ interface SettingsModalProps {
   trips: Trip[];
   plans: Trip[];
   initialHeroJourneyIds: number[];
+  heroAutoSlide: boolean;
+  marqueeShow: boolean;
+  marqueeMessage: string;
+  marqueeSpeed: number;
 }
 
 type SettingsTab = 'general' | 'trash';
@@ -31,11 +44,19 @@ export function SettingsModal({
   trips,
   plans,
   initialHeroJourneyIds,
+  heroAutoSlide,
+  marqueeShow,
+  marqueeMessage,
+  marqueeSpeed,
 }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [title, setTitle] = useState(homeTitle);
   const [subtitle, setSubtitle] = useState(homeSubtitle);
   const [selectedHeroIds, setSelectedHeroIds] = useState<number[]>(initialHeroJourneyIds);
+  const [autoSlide, setAutoSlide] = useState(heroAutoSlide);
+  const [showMarquee, setShowMarquee] = useState(marqueeShow);
+  const [marqueeMsg, setMarqueeMsg] = useState(marqueeMessage);
+  const [marqueeSpd, setMarqueeSpd] = useState(marqueeSpeed);
   const [saving, setSaving] = useState(false);
   const [loadingId, setLoadingId] = useState<number | null>(null);
 
@@ -45,9 +66,22 @@ export function SettingsModal({
       setTitle(homeTitle);
       setSubtitle(homeSubtitle);
       setSelectedHeroIds(initialHeroJourneyIds);
+      setAutoSlide(heroAutoSlide);
+      setShowMarquee(marqueeShow);
+      setMarqueeMsg(marqueeMessage);
+      setMarqueeSpd(marqueeSpeed);
       setActiveTab('general');
     }
-  }, [isOpen, homeTitle, homeSubtitle, initialHeroJourneyIds]);
+  }, [
+    isOpen,
+    homeTitle,
+    homeSubtitle,
+    initialHeroJourneyIds,
+    heroAutoSlide,
+    marqueeShow,
+    marqueeMessage,
+    marqueeSpeed,
+  ]);
 
   if (!isOpen) return null;
 
@@ -55,7 +89,15 @@ export function SettingsModal({
     e.preventDefault();
     setSaving(true);
     try {
-      await onSaveSettings(title, subtitle, selectedHeroIds);
+      await onSaveSettings(
+        title,
+        subtitle,
+        selectedHeroIds,
+        autoSlide,
+        showMarquee,
+        marqueeMsg,
+        marqueeSpd
+      );
       onClose();
     } catch (err) {
       console.error(err);
@@ -92,7 +134,9 @@ export function SettingsModal({
   const formatDeletedDate = (ts: number | null | undefined) => {
     if (!ts) return '';
     return new Date(ts).toLocaleDateString('ko-KR', {
-      year: 'numeric', month: 'short', day: 'numeric',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
     });
   };
 
@@ -201,7 +245,7 @@ export function SettingsModal({
                     등록된 여정이 없습니다.
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 gap-2 max-h-52 overflow-y-auto pr-1">
+                  <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-1">
                     {allJourneys.map(journey => {
                       const isSelected = selectedHeroIds.includes(journey.id);
                       const isPlan = plans.some(p => p.id === journey.id);
@@ -221,7 +265,9 @@ export function SettingsModal({
                             <img
                               src={journey.img}
                               alt={journey.title}
-                              className={`w-full h-full object-cover transition-all duration-300 ${isSelected ? 'opacity-100' : 'opacity-60 group-hover:opacity-80'}`}
+                              className={`w-full h-full object-cover transition-all duration-300 ${
+                                isSelected ? 'opacity-100' : 'opacity-60 group-hover:opacity-80'
+                              }`}
                             />
                           </div>
                           {/* Info */}
@@ -235,16 +281,90 @@ export function SettingsModal({
                             </div>
                           </div>
                           {/* Check */}
-                          <div className={`w-5 h-5 shrink-0 flex items-center justify-center border transition-all ${
-                            isSelected
-                              ? 'bg-red-500 border-red-500 text-white'
-                              : 'border-black/20 dark:border-white/20 text-transparent'
-                          }`}>
+                          <div
+                            className={`w-5 h-5 shrink-0 flex items-center justify-center border transition-all ${
+                              isSelected
+                                ? 'bg-red-500 border-red-500 text-white'
+                                : 'border-black/20 dark:border-white/20 text-transparent'
+                            }`}
+                          >
                             <Check className="w-3 h-3" />
                           </div>
                         </button>
                       );
                     })}
+                  </div>
+                )}
+              </div>
+
+              {/* Hero Carousel Settings */}
+              <div className="border-t border-black/10 dark:border-white/10 pt-4 space-y-4">
+                <h3 className="text-[10px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white flex items-center gap-1.5">
+                  Hero Slideshow Settings
+                </h3>
+                <div className="flex items-center justify-between p-3 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-black dark:text-white">Auto-Slide Carousel</span>
+                    <span className="text-[8px] text-black/45 dark:text-white/45">Featured journeys carousel slides automatically.</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={autoSlide}
+                    onChange={(e) => setAutoSlide(e.target.checked)}
+                    className="w-4 h-4 cursor-pointer accent-red-600"
+                  />
+                </div>
+              </div>
+
+              {/* Marquee Banner Settings */}
+              <div className="border-t border-black/10 dark:border-white/10 pt-4 space-y-4">
+                <h3 className="text-[10px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+                  Marquee Banner Settings
+                </h3>
+                
+                <div className="flex items-center justify-between p-3 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-black dark:text-white">Show Marquee Banner</span>
+                    <span className="text-[8px] text-black/45 dark:text-white/45">Display text marquee banner under menu bar.</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={showMarquee}
+                    onChange={(e) => setShowMarquee(e.target.checked)}
+                    className="w-4 h-4 cursor-pointer accent-red-600"
+                  />
+                </div>
+
+                {showMarquee && (
+                  <div className="space-y-4 pl-2 border-l border-black/10 dark:border-white/10">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+                        Marquee Message
+                      </label>
+                      <input
+                        type="text"
+                        value={marqueeMsg}
+                        onChange={(e) => setMarqueeMsg(e.target.value)}
+                        className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-bold text-black dark:text-white outline-none w-full focus:border-red-600 dark:focus:border-red-400 transition-colors"
+                        placeholder="Enter marquee message..."
+                        required={showMarquee}
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+                        Marquee Speed (Duration in seconds, lower = faster)
+                      </label>
+                      <input
+                        type="number"
+                        min="5"
+                        max="120"
+                        value={marqueeSpd}
+                        onChange={(e) => setMarqueeSpd(Number(e.target.value))}
+                        className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-bold text-black dark:text-white outline-none w-full focus:border-red-600 dark:focus:border-red-400 transition-colors"
+                        required={showMarquee}
+                      />
+                    </div>
                   </div>
                 )}
               </div>

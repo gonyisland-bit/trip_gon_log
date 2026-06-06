@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  Clock, Plane, Bed, Train, User, Edit2, Trash2, 
+  Clock, Plane, Bed, Train, Bus, User, Edit2, Trash2, 
   Image as ImageIcon, ChevronUp, ChevronDown, MapPin, Map, Plus, Loader2, Search, ArrowLeft,
   ExternalLink, MapPinOff
 } from 'lucide-react';
@@ -22,8 +22,9 @@ import {
 } from '../types';
 import { fetchCoordinates, fetchPlacePredictions, fetchCoordinatesByPlaceId } from '../utils/googleMapsHelper';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { auth, storage } from '../firebase';
+import { auth, storage, db } from '../firebase';
 import { compressImage } from '../utils/imageHelper';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface JourneyDetailPageProps {
   isLoggedIn: boolean;
@@ -43,6 +44,11 @@ interface JourneyDetailPageProps {
   onDelete: (id: number) => Promise<void>;
   isDarkMode: boolean;
   onNavigate: (view: string, tripId?: number | null) => void;
+  searchFocusItemId?: number | null;
+  searchFocusTab?: string | null;
+  onClearSearchFocus?: () => void;
+  onEditModeChange?: (editing: boolean) => void;
+  saveRef?: React.MutableRefObject<(() => Promise<void>) | null>;
 }
 
 type TabType = 'timeline' | 'flights' | 'stays' | 'transit' | 'gallery';
@@ -307,6 +313,11 @@ export function JourneyDetailPage({
   onDelete,
   isDarkMode,
   onNavigate,
+  searchFocusItemId,
+  searchFocusTab,
+  onClearSearchFocus,
+  onEditModeChange,
+  saveRef,
 }: JourneyDetailPageProps) {
   // All hooks must be called before conditional return
   const [activeTab, setActiveTab] = useState<TabType>('timeline');
@@ -332,6 +343,9 @@ export function JourneyDetailPage({
   const [selectedItemIds, setSelectedItemIds] = useState<number[]>([]);
   const [hiddenMapItemIds, setHiddenMapItemIds] = useState<number[]>([]);
   const [stayCoords, setStayCoords] = useState<{ [stayId: number]: { lat: number; lng: number } }>({});
+
+  const tripToUse = isEditing ? draftTrip : trip;
+  const generatedDates = generateDateList(tripToUse?.date || '');
   const [airportGeocodedCoords, setAirportGeocodedCoords] = useState<{ [code: string]: { lat: number; lng: number } }>({});
 
   useEffect(() => {
@@ -390,6 +404,62 @@ export function JourneyDetailPage({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const itemRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const dateBarRef = useRef<HTMLDivElement>(null);
+
+  // Deep-linking search focus effect
+  useEffect(() => {
+    if (searchFocusTab) {
+      setActiveTab(searchFocusTab as TabType);
+      
+      if (searchFocusTab === 'timeline' && searchFocusItemId) {
+        const rawTimeline = Object.entries(timelineData || {}).flatMap(([d, list]) => 
+          (list || []).map(item => ({ ...item, date: item.date || d }))
+        );
+        const item = rawTimeline.find(x => x.id === searchFocusItemId);
+        if (item && item.date) {
+          setSelectedDate(item.date);
+        } else {
+          setSelectedDate('ALL');
+        }
+      } else {
+        setSelectedDate('ALL');
+      }
+
+      if (searchFocusItemId) {
+        setExpandedItemId(searchFocusItemId);
+        setTimeout(() => {
+          if (itemRefs.current[searchFocusItemId]) {
+            itemRefs.current[searchFocusItemId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 300);
+      }
+      
+      if (onClearSearchFocus) {
+        onClearSearchFocus();
+      }
+    }
+  }, [searchFocusTab, searchFocusItemId, timelineData, onClearSearchFocus]);
+
+  // Auto-healing date mismatch in Firestore on page load
+  useEffect(() => {
+    if (!isLoggedIn || !trip || !timelineData || generatedDates.length === 0) return;
+    const rawTimeline = Object.entries(timelineData).flatMap(([d, list]) => 
+      (list || []).map(item => ({ ...item, date: item.date || d }))
+    );
+    const hasMismatch = rawTimeline.some(item => !generatedDates.includes(item.date || ''));
+    if (hasMismatch) {
+      console.log("Auto-healing timeline date mismatches in Firestore...");
+      const healedTimeline = rawTimeline.map(item => {
+        const itemDate = item.date || '';
+        if (!generatedDates.includes(itemDate)) {
+          return { ...item, date: generatedDates[0] };
+        }
+        return item;
+      });
+      onSave(trip.id, trip, healedTimeline, flights, stays, transits)
+        .then(() => console.log("Auto-healed timeline dates saved to Firestore."))
+        .catch(err => console.error("Failed to auto-heal timeline dates in Firestore:", err));
+    }
+  }, [trip, timelineData, generatedDates, isLoggedIn]);
 
   // Date range picker parsing and formatting helpers
   const parseDateRange = (dateStr: string) => {
@@ -578,15 +648,24 @@ export function JourneyDetailPage({
     const flatTimeline = Object.entries(timelineData || {}).flatMap(([d, list]) => 
       (list || []).map(item => ({ ...item, date: item.date || d }))
     );
-    setDraftTimeline(flatTimeline);
+    const healedTimeline = flatTimeline.map(item => {
+      const itemDate = item.date || '';
+      if (generatedDates.length > 0 && !generatedDates.includes(itemDate)) {
+        return { ...item, date: generatedDates[0] };
+      }
+      return item;
+    });
+    setDraftTimeline(healedTimeline);
     setDraftFlights([...flights]);
     setDraftStays([...stays]);
     setDraftTransits([...transits]);
     setIsEditing(true);
+    onEditModeChange?.(true);
   };
 
   const handleCancel = () => {
     setIsEditing(false);
+    onEditModeChange?.(false);
     setDraftTrip(null);
     setDraftTimeline([]);
     setDraftFlights([]);
@@ -630,6 +709,7 @@ export function JourneyDetailPage({
         draftTransits
       );
       setIsEditing(false);
+      onEditModeChange?.(false);
     } catch (e) {
       console.error(e);
     } finally {
@@ -637,11 +717,17 @@ export function JourneyDetailPage({
     }
   };
 
+  useEffect(() => {
+    if (saveRef) {
+      saveRef.current = handleSave;
+      return () => {
+        saveRef.current = null;
+      };
+    }
+  }, [handleSave, saveRef]);
 
-  // Safe check if trip is undefined
-  const tripToUse = isEditing ? draftTrip : trip;
 
-  const generatedDates = generateDateList(tripToUse?.date || '');
+
   const dynamicDates = [
     { id: 'all', date: 'ALL', label: 'Overall' },
     ...generatedDates.map((d, index) => ({
@@ -651,12 +737,24 @@ export function JourneyDetailPage({
     }))
   ];
 
-  // Determine current timeline items (original or draft)
-  const baseTimeline = isEditing
-    ? draftTimeline
-    : Object.entries(timelineData || {}).flatMap(([d, list]) => 
-        (list || []).map(item => ({ ...item, date: item.date || d }))
-      );
+  // Determine current timeline items (original or draft) with date healing
+  const baseTimeline = (() => {
+    const rawTimeline = isEditing
+      ? draftTimeline
+      : Object.entries(timelineData || {}).flatMap(([d, list]) => 
+          (list || []).map(item => ({ ...item, date: item.date || d }))
+        );
+    if (generatedDates.length > 0) {
+      return rawTimeline.map(item => {
+        const itemDate = item.date || '';
+        if (!generatedDates.includes(itemDate)) {
+          return { ...item, date: generatedDates[0] };
+        }
+        return item;
+      });
+    }
+    return rawTimeline;
+  })();
 
   const filteredTimeline = selectedDate === 'ALL'
     ? baseTimeline
@@ -680,10 +778,7 @@ export function JourneyDetailPage({
   const mapPoints = (() => {
     if (activeTab === 'timeline') {
       return currentTimeline
-        .filter(item => {
-          const isExcluded = isEditing ? item.excludeFromMap : hiddenMapItemIds.includes(item.id);
-          return !isExcluded;
-        })
+        .filter(item => !item.excludeFromMap)
         .map(item => ({
           ...item,
           lat: item.lat !== undefined && item.lat !== null ? Number(item.lat) : undefined,
@@ -735,6 +830,48 @@ export function JourneyDetailPage({
         }
       });
       return stayPoints;
+    } else if (activeTab === 'transit') {
+      const transitsToUse = isEditing ? draftTransits : transits;
+      const transitPoints: any[] = [];
+      transitsToUse.forEach(t => {
+        if (t.departLat !== undefined && t.departLng !== undefined) {
+          transitPoints.push({
+            id: t.id * 10,
+            place: t.departPlace || 'Departure',
+            lat: t.departLat,
+            lng: t.departLng,
+            time: t.time || '',
+            memo: `${t.title || 'Transit'} - Departure from ${t.departPlace || ''}`,
+            type: 'transit_depart',
+            transitId: t.id
+          });
+        }
+        if (t.arriveLat !== undefined && t.arriveLng !== undefined) {
+          transitPoints.push({
+            id: t.id * 10 + 1,
+            place: t.arrivePlace || 'Arrival',
+            lat: t.arriveLat,
+            lng: t.arriveLng,
+            time: '',
+            memo: `${t.title || 'Transit'} - Arrival at ${t.arrivePlace || ''}`,
+            type: 'transit_arrive',
+            transitId: t.id
+          });
+        }
+        if (t.boardingLat !== undefined && t.boardingLng !== undefined) {
+          transitPoints.push({
+            id: t.id * 10 + 2,
+            place: t.boardingPlace || 'Boarding Place',
+            lat: t.boardingLat,
+            lng: t.boardingLng,
+            time: '',
+            memo: `${t.title || 'Transit'} - Boarding point at ${t.boardingPlace || ''}`,
+            type: 'transit_boarding',
+            transitId: t.id
+          });
+        }
+      });
+      return transitPoints;
     }
     return [];
   })();
@@ -758,7 +895,7 @@ export function JourneyDetailPage({
 
   const handleItemToggle = (id: number) => {
     let targetId = id;
-    if (activeTab === 'flights') {
+    if (activeTab === 'flights' || activeTab === 'transit') {
       targetId = Math.floor(id / 10);
     }
     setExpandedItemId(prevId => prevId === targetId ? null : targetId);
@@ -857,6 +994,24 @@ export function JourneyDetailPage({
     setDraftTimeline(prev =>
       prev.map(item => item.id === id ? { ...item, ...fields } : item)
     );
+  };
+
+  const handleToggleExcludeFromMap = async (item: TimelineItem) => {
+    const newExclude = !item.excludeFromMap;
+    if (isEditing) {
+      updateTimelineItem(item.id, 'excludeFromMap', newExclude);
+    } else {
+      if (!isLoggedIn) {
+        alert('로그인 후 지도의 표시 상태를 변경할 수 있습니다.');
+        return;
+      }
+      try {
+        const itemRef = doc(db, 'users', 'public', 'timeline', String(item.id));
+        await setDoc(itemRef, { excludeFromMap: newExclude }, { merge: true });
+      } catch (err) {
+        console.error("Failed to update excludeFromMap in Firestore:", err);
+      }
+    }
   };
 
   const handleAddTimelineItem = (date: string) => {
@@ -1091,7 +1246,7 @@ export function JourneyDetailPage({
     <main className="animate-in slide-in-from-right-8 duration-500 flex flex-col md:flex-row h-auto md:h-[calc(100vh-73px)] w-full overflow-y-visible md:overflow-hidden">
       
       {/* Left: Map & Info Section */}
-      <section className="w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-colors duration-300 h-[45vh] md:h-full shrink-0">
+      <section className="w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-colors duration-300 h-[48vh] md:h-full shrink-0">
         <div className="p-4 md:p-8 border-b border-black/20 dark:border-white/20 z-10 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0">
           
           {/* Back to hub button */}
@@ -1230,6 +1385,7 @@ export function JourneyDetailPage({
             handleItemToggle={handleItemToggle}
             selectedDate={selectedDate}
             isDarkMode={isDarkMode}
+            activeTab={activeTab}
           />
         </ErrorBoundary>
       </section>
@@ -1377,7 +1533,7 @@ export function JourneyDetailPage({
                     const isActive = expandedItemId === item.id;
                     const showDivider = selectedDate === 'ALL' && (idx === 0 || currentTimeline[idx - 1].date !== item.date);
                     const dayIndex = item.date ? generatedDates.indexOf(item.date) + 1 : 0;
-                    const isExcluded = isEditing ? item.excludeFromMap : hiddenMapItemIds.includes(item.id);
+                    const isExcluded = !!item.excludeFromMap;
                     return (
                       <div key={item.id} className="w-full flex flex-col">
                         {showDivider && (
@@ -1419,7 +1575,7 @@ export function JourneyDetailPage({
                               </div>
                             )}
                             {/* Time */}
-                            <div className={`w-16 md:w-24 shrink-0 text-[10px] md:text-xs font-bold tracking-widest mt-1 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60'} flex flex-col gap-1.5`}>
+                            <div className={`shrink-0 text-[10px] md:text-xs font-bold tracking-widest mt-1 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60'} ${isEditing ? 'w-36 md:w-44 flex flex-col gap-1' : 'w-16 md:w-24 flex flex-col gap-1.5'}`}>
                               <div>
                                 {isEditing ? (
                                   <input
@@ -1427,72 +1583,79 @@ export function JourneyDetailPage({
                                     value={item.time}
                                     onChange={(e) => updateTimelineItem(item.id, 'time', e.target.value)}
                                     onClick={(e) => e.stopPropagation()}
-                                    className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-[10px] md:text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-20"
+                                    className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-[10px] md:text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
                                   />
                                 ) : (
                                   <span>{item.time}</span>
                                 )}
                               </div>
-                              <div className="mt-0.5" onClick={(e) => e.stopPropagation()}>
+                              <div className={`flex ${isEditing ? 'flex-row items-center gap-1.5 mt-0.5' : 'flex-col mt-0.5'}`} onClick={(e) => e.stopPropagation()}>
                                 {isEditing ? (
-                                  <select
-                                    value={item.date}
-                                    onChange={(e) => {
-                                      const newDate = e.target.value;
-                                      updateTimelineItem(item.id, 'date', newDate);
-                                      setSelectedDate(newDate);
-                                    }}
-                                    className="bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 text-[9px] font-bold p-0.5 pr-4 outline-none text-black dark:text-white rounded-none w-24"
-                                  >
-                                    {generatedDates.map(d => (
-                                      <option key={d} value={d}>{d}</option>
-                                    ))}
-                                  </select>
+                                  <>
+                                    <select
+                                      value={item.date}
+                                      onChange={(e) => {
+                                        const newDate = e.target.value;
+                                        updateTimelineItem(item.id, 'date', newDate);
+                                        setSelectedDate(newDate);
+                                      }}
+                                      className="bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 text-[9px] font-bold p-0.5 pr-2 outline-none text-black dark:text-white rounded-none w-20 flex-shrink-0"
+                                    >
+                                      {generatedDates.map(d => (
+                                        <option key={d} value={d}>{d.slice(5).replace('.', '/')}</option>
+                                      ))}
+                                    </select>
+                                    
+                                    {/* Map Pin visibility toggle inline */}
+                                    {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) && (
+                                      <button
+                                        onClick={() => handleToggleExcludeFromMap(item)}
+                                        className={`flex items-center justify-center p-1 border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-colors ${
+                                          isExcluded
+                                            ? 'text-black/20 dark:text-white/20'
+                                            : 'text-red-600 dark:text-red-400'
+                                        }`}
+                                        title={isExcluded ? "지도에 표시하기" : "지도에서 제외하기"}
+                                      >
+                                        {isExcluded ? <MapPinOff className="w-3.5 h-3.5" /> : <MapPin className="w-3.5 h-3.5" />}
+                                      </button>
+                                    )}
+                                  </>
                                 ) : (
-                                  selectedDate === 'ALL' && (
-                                    <span className="text-[9px] text-black/40 dark:text-white/40 block font-normal leading-none mt-0.5">
-                                      {item.date ? item.date.slice(5) : ''}
-                                    </span>
-                                  )
+                                  <>
+                                    {selectedDate === 'ALL' && (
+                                      <span className="text-[9px] text-black/40 dark:text-white/40 block font-normal leading-none mt-0.5">
+                                        {item.date ? item.date.slice(5) : ''}
+                                      </span>
+                                    )}
+                                    
+                                    {/* Map Pin visibility toggle in view mode */}
+                                    {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) && (
+                                      <button
+                                        onClick={() => handleToggleExcludeFromMap(item)}
+                                        className={`flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest transition-colors mt-1.5 ${
+                                          isExcluded
+                                            ? 'text-black/20 dark:text-white/20 hover:text-black/45 dark:hover:text-white/45'
+                                            : 'text-red-600 dark:text-red-400 hover:opacity-80'
+                                        }`}
+                                        title={isExcluded ? "지도에 표시하기" : "지도에서 제외하기"}
+                                      >
+                                        {isExcluded ? (
+                                          <>
+                                            <MapPinOff className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
+                                            <span className="text-black/30 dark:text-white/30 text-[7px] md:text-[8px]">OFF</span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <MapPin className="w-3.5 h-3.5" />
+                                            <span className="text-[7px] md:text-[8px]">ON</span>
+                                          </>
+                                        )}
+                                      </button>
+                                    )}
+                                  </>
                                 )}
                               </div>
-                              
-                              {/* Map Pin visibility toggle */}
-                              {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) && (
-                                <div className="mt-1" onClick={(e) => e.stopPropagation()}>
-                                  <button
-                                    onClick={() => {
-                                      if (isEditing) {
-                                        updateTimelineItem(item.id, 'excludeFromMap', !item.excludeFromMap);
-                                      } else {
-                                        setHiddenMapItemIds(prev => 
-                                          prev.includes(item.id) 
-                                            ? prev.filter(id => id !== item.id) 
-                                            : [...prev, item.id]
-                                        );
-                                      }
-                                    }}
-                                    className={`flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest transition-colors ${
-                                      isExcluded
-                                        ? 'text-black/20 dark:text-white/20 hover:text-black/45 dark:hover:text-white/45'
-                                        : 'text-red-600 dark:text-red-400 hover:opacity-80'
-                                    }`}
-                                    title={isExcluded ? "지도에 표시하기" : "지도에서 제외하기"}
-                                  >
-                                    {isExcluded ? (
-                                      <>
-                                        <MapPinOff className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
-                                        <span className="text-black/30 dark:text-white/30 text-[7px] md:text-[8px]">OFF</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <MapPin className="w-3.5 h-3.5" />
-                                        <span className="text-[7px] md:text-[8px]">ON</span>
-                                      </>
-                                    )}
-                                  </button>
-                                </div>
-                              )}
                             </div>
 
                           {/* Details */}
@@ -1915,21 +2078,57 @@ export function JourneyDetailPage({
           {/* TRANSIT TAB */}
           {activeTab === 'transit' && (
             <div className="p-4 md:p-6 animate-in fade-in duration-300">
-              {(isEditing ? draftTransits : transits).length === 0 ? (
-                <div className="text-center py-12 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
-                  등록된 교통편이 없습니다.
-                </div>
-              ) : (
-                (isEditing ? draftTransits : transits).map(transit => (
-                  <TransitCard 
-                    key={transit.id} 
-                    transit={transit} 
-                    isEditMode={isEditing} 
-                    onUpdate={updateTransit} 
-                    onDelete={deleteTransit} 
-                  />
-                ))
-              )}
+              {(() => {
+                const transitList = isEditing ? draftTransits : transits;
+                if (transitList.length === 0) {
+                  return (
+                    <div className="text-center py-12 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
+                      등록된 교통편이 없습니다.
+                    </div>
+                  );
+                }
+
+                const trains = transitList.filter(t => t.transitType !== 'bus');
+                const buses = transitList.filter(t => t.transitType === 'bus');
+
+                const renderGroup = (items: TransitItem[], label: string, IconComponent: any) => {
+                  if (items.length === 0) return null;
+                  return (
+                    <div className="mb-8 last:mb-0">
+                      <div className="flex items-center gap-2 mb-4">
+                        <IconComponent className="w-4 h-4 text-black/55 dark:text-white/55" />
+                        <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-black/55 dark:text-white/55">
+                          {label} ({items.length})
+                        </span>
+                        <div className="h-[1px] flex-grow bg-black/10 dark:bg-white/10" />
+                      </div>
+                      <div className="space-y-4">
+                        {items.map(transit => (
+                          <div ref={el => { itemRefs.current[transit.id] = el; }} key={transit.id}>
+                            <TransitCard 
+                              transit={transit} 
+                              isEditMode={isEditing} 
+                              onUpdate={updateTransit} 
+                              onDelete={deleteTransit} 
+                              isActive={expandedItemId === transit.id}
+                              onClick={() => {
+                                setExpandedItemId(prev => prev === transit.id ? null : transit.id);
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                };
+
+                return (
+                  <div className="flex flex-col">
+                    {renderGroup(trains, 'Train Tickets', Train)}
+                    {renderGroup(buses, 'Bus Tickets', Bus)}
+                  </div>
+                );
+              })()}
 
               {/* Add Transit control */}
               {isEditing && (
@@ -2098,7 +2297,7 @@ export function JourneyDetailPage({
           )}
 
           {/* Footer inside Detail scroll container */}
-          <div className="w-full shrink-0 pb-16 pt-8 mt-auto border-t border-black/5 dark:border-white/5">
+          <div className="w-full shrink-0 pb-16 pt-8 mt-12 border-t border-black/5 dark:border-white/5">
             <Footer />
           </div>
         </div>
