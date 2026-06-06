@@ -38,7 +38,7 @@ export function PlanHubPage({
       
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-black/20 dark:divide-white/20 border-b border-black/20 dark:border-white/20 w-full">
         {plans.map((plan) => (
-          <div key={plan.id} className="group cursor-pointer p-6 flex flex-col h-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-b sm:border-b-0 border-red-500/10 bg-red-500/[0.01] dark:border-red-400/10 dark:bg-red-400/[0.01] w-full relative" onClick={() => onNavigate('detail', plan.id)}>
+          <div key={plan.id} className="group cursor-pointer p-6 flex flex-col h-full hover:bg-red-500/[0.04] dark:hover:bg-red-400/[0.04] transition-colors border border-red-600/80 dark:border-red-400/80 bg-red-500/[0.02] dark:bg-red-400/[0.02] w-full relative shadow-[0_0_15px_rgba(239,68,68,0.08)]" onClick={() => onNavigate('detail', plan.id)}>
             <div className="aspect-[3/4] w-full overflow-hidden mb-4 border border-black/10 dark:border-white/10 relative bg-black/5">
               <img src={plan.img} alt={plan.title} className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500" />
               <JourneyCardMenu

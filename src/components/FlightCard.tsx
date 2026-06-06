@@ -7,6 +7,8 @@ interface FlightCardProps {
   isEditMode: boolean;
   onUpdate: (id: number, field: keyof FlightItem, val: string) => void;
   onDelete: (id: number) => void;
+  isActive?: boolean;
+  onClick?: () => void;
 }
 
 export function FlightCard({
@@ -14,6 +16,8 @@ export function FlightCard({
   isEditMode,
   onUpdate,
   onDelete,
+  isActive,
+  onClick,
 }: FlightCardProps) {
   const textEditableClass = isEditMode 
     ? 'outline-dashed outline-1 outline-red-500/40 hover:bg-black/5 dark:hover:bg-white/5 cursor-text transition-all rounded px-1' 
@@ -24,7 +28,14 @@ export function FlightCard({
   };
 
   return (
-    <div className="border border-black/10 dark:border-white/10 bg-white dark:bg-[#1a1a1a] mb-6 font-sans text-black dark:text-white relative shadow-sm">
+    <div 
+      onClick={onClick}
+      className={`border mb-6 font-sans text-black dark:text-white relative shadow-sm transition-all duration-300 cursor-pointer ${
+        isActive 
+          ? 'border-red-600 dark:border-red-400 ring-1 ring-red-600/30 bg-red-500/[0.01] dark:bg-red-400/[0.01]' 
+          : 'border-black/10 dark:border-white/10 bg-white dark:bg-[#1a1a1a]'
+      }`}
+    >
       {/* Header bar with grey background */}
       <div className="bg-[#EAE8E3]/50 dark:bg-white/10 px-4 py-2 flex justify-between items-center text-[10px] md:text-xs font-bold tracking-widest text-black/60 dark:text-white/60 border-b border-black/10 dark:border-white/10">
         <span 

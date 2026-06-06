@@ -236,20 +236,24 @@ export function Lightbox({
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
         >
-          <div className="relative inline-block">
+          <div 
+            className="relative inline-block"
+            style={{
+              transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+              transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+              transformOrigin: 'center center',
+            }}
+          >
             <img
               ref={imgRef}
               src={currentMeta.url}
               alt="Fullscreen Gallery"
               onDoubleClick={handleDoubleClick}
               style={{
-                transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-                transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                maxHeight: '70vh',
-                maxWidth: '85vw',
+                maxHeight: '78vh',
+                maxWidth: '90vw',
                 objectFit: 'contain',
                 userSelect: 'none',
-                pointerEvents: scale > 1 ? 'auto' : 'none',
                 display: 'block',
               }}
               className="shadow-2xl select-none"
@@ -258,10 +262,7 @@ export function Lightbox({
 
             {/* ── Film Date Stamp: bottom-right of image ── */}
             {hasDate && (
-              <div
-                className="absolute bottom-3 right-3 z-30 pointer-events-none text-right"
-                style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`, transformOrigin: 'bottom right', transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)' }}
-              >
+              <div className="absolute bottom-3 right-3 z-30 pointer-events-none text-right">
                 <span
                   className="font-mono font-bold tracking-widest leading-none"
                   style={{
@@ -279,7 +280,7 @@ export function Lightbox({
 
           {scale <= 1 && (
             <div
-              className="absolute inset-0 z-10 w-full h-full"
+              className="absolute inset-0 z-10 w-full h-full cursor-pointer"
               onDoubleClick={handleDoubleClick}
             />
           )}

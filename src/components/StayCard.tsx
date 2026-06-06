@@ -7,6 +7,8 @@ interface StayCardProps {
   isEditMode: boolean;
   onUpdate: (id: number, field: keyof StayItem, val: string) => void;
   onDelete: (id: number) => void;
+  isActive?: boolean;
+  onClick?: () => void;
 }
 
 export function StayCard({
@@ -14,6 +16,8 @@ export function StayCard({
   isEditMode,
   onUpdate,
   onDelete,
+  isActive,
+  onClick,
 }: StayCardProps) {
   const textEditableClass = isEditMode 
     ? 'outline-dashed outline-1 outline-red-500/40 hover:bg-black/5 dark:hover:bg-white/5 cursor-text transition-all rounded px-1' 
@@ -24,7 +28,14 @@ export function StayCard({
   };
 
   return (
-    <div className="border border-black/10 dark:border-white/10 bg-white dark:bg-[#1a1a1a] mb-6 font-sans text-black dark:text-white relative shadow-sm">
+    <div 
+      onClick={onClick}
+      className={`border mb-6 font-sans text-black dark:text-white relative shadow-sm transition-all duration-300 cursor-pointer ${
+        isActive 
+          ? 'border-red-600 dark:border-red-400 ring-1 ring-red-600/30 bg-red-500/[0.01] dark:bg-red-400/[0.01]' 
+          : 'border-black/10 dark:border-white/10 bg-white dark:bg-[#1a1a1a]'
+      }`}
+    >
       {/* Image & Booking Status Pill Tag */}
       <div className="relative aspect-[21/9] w-full overflow-hidden border-b border-black/10 dark:border-white/10 bg-black/5">
         <img 

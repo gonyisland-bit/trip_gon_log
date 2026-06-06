@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Clock, Plane, Bed, Train, User, Edit2, Trash2, 
-  Image as ImageIcon, ChevronUp, ChevronDown, MapPin, Map, Plus, Loader2, Search, ArrowLeft
+  Image as ImageIcon, ChevronUp, ChevronDown, MapPin, Map, Plus, Loader2, Search, ArrowLeft,
+  ExternalLink, MapPinOff
 } from 'lucide-react';
 import { MapArea } from '../components/MapArea';
 import { ImageEditOverlay } from '../components/ImageEditOverlay';
@@ -45,6 +46,116 @@ interface JourneyDetailPageProps {
 }
 
 type TabType = 'timeline' | 'flights' | 'stays' | 'transit' | 'gallery';
+
+const airportCoords: { [code: string]: { lat: number; lng: number } } = {
+  ICN: { lat: 37.4602, lng: 126.4407 },
+  GMP: { lat: 37.5583, lng: 126.7906 },
+  NRT: { lat: 35.7720, lng: 140.3929 },
+  HND: { lat: 35.5494, lng: 139.7798 },
+  KIX: { lat: 34.4320, lng: 135.2304 },
+  ITM: { lat: 34.7895, lng: 135.4382 },
+  CTS: { lat: 42.7752, lng: 141.6923 },
+  FUK: { lat: 33.5860, lng: 130.4507 },
+  LAX: { lat: 33.9416, lng: -118.4085 },
+  JFK: { lat: 40.6413, lng: -73.7781 },
+  CDG: { lat: 49.0097, lng: 2.5479 },
+  TPE: { lat: 25.0797, lng: 121.2342 },
+  OKA: { lat: 26.1958, lng: 127.6458 },
+  BKK: { lat: 13.6900, lng: 100.7501 },
+  CXR: { lat: 11.9981, lng: 109.2194 },
+  DAD: { lat: 16.0439, lng: 108.1994 },
+  SGN: { lat: 10.8188, lng: 106.6519 },
+  HAN: { lat: 21.2212, lng: 105.8072 },
+  SIN: { lat: 1.3644, lng: 103.9915 },
+  HKG: { lat: 22.3080, lng: 113.9185 },
+  CEB: { lat: 10.3075, lng: 123.9794 },
+  DPS: { lat: -8.7481, lng: 115.1672 },
+  NGO: { lat: 34.8584, lng: 136.8054 },
+  KOJ: { lat: 31.8007, lng: 130.7196 },
+  OKJ: { lat: 34.7567, lng: 133.8549 },
+  MYJ: { lat: 33.8272, lng: 132.6997 },
+  TAK: { lat: 34.2141, lng: 134.0156 },
+  OIT: { lat: 33.4794, lng: 131.7375 },
+  KMJ: { lat: 32.8372, lng: 130.8550 },
+  KUV: { lat: 35.9264, lng: 126.6153 },
+  CJU: { lat: 33.5113, lng: 126.4930 },
+  PUS: { lat: 35.1796, lng: 128.9382 },
+  TAE: { lat: 35.8939, lng: 128.6589 },
+  USN: { lat: 35.5936, lng: 129.3517 },
+  YNY: { lat: 38.0611, lng: 128.6692 },
+  MWX: { lat: 34.9814, lng: 126.3833 },
+  LHR: { lat: 51.4700, lng: -0.4543 },
+  FCO: { lat: 41.8003, lng: 12.2389 },
+  MXP: { lat: 45.6301, lng: 8.7259 },
+  MAD: { lat: 40.4839, lng: -3.5680 },
+  BCN: { lat: 41.2974, lng: 2.0833 },
+  MUC: { lat: 48.3537, lng: 11.7860 },
+  FRA: { lat: 50.0379, lng: 8.5622 },
+  AMS: { lat: 52.3105, lng: 4.7683 },
+  ZRH: { lat: 47.4582, lng: 8.5555 },
+  VIE: { lat: 48.1103, lng: 16.5697 },
+  SYD: { lat: -33.9461, lng: 151.1772 },
+  MEL: { lat: -37.6690, lng: 144.8410 },
+  BNE: { lat: -27.3842, lng: 153.1175 },
+  YVR: { lat: 49.1967, lng: -123.1815 },
+  YYZ: { lat: 43.6777, lng: -79.6248 },
+  SFO: { lat: 37.6213, lng: -122.3790 },
+  SEA: { lat: 47.4502, lng: -122.3088 },
+  ORD: { lat: 41.9742, lng: -87.9073 },
+  DFW: { lat: 32.8998, lng: -97.0403 },
+  ATL: { lat: 33.6407, lng: -84.4277 },
+  HNL: { lat: 21.3245, lng: -157.9251 },
+  GUM: { lat: 13.4839, lng: 144.7961 },
+  SPN: { lat: 15.1190, lng: 145.7290 },
+};
+
+function calculateLayoverTime(arrDate: string, arrTime: string, depDate: string, depTime: string): string {
+  try {
+    const parseDate = (dStr: string) => dStr.replace(/\./g, '-');
+    
+    const parseTimeTo24 = (tStr: string) => {
+      let [time, modifier] = tStr.split(' ');
+      if (!modifier) {
+        const match = tStr.match(/([0-9:]+)\s*(AM|PM)/i);
+        if (match) {
+          time = match[1];
+          modifier = match[2];
+        }
+      }
+      let [hours, minutes] = time.split(':').map(Number);
+      if (modifier && modifier.toUpperCase() === 'PM' && hours < 12) {
+        hours += 12;
+      }
+      if (modifier && modifier.toUpperCase() === 'AM' && hours === 12) {
+        hours = 0;
+      }
+      return { hours, minutes };
+    };
+
+    const arr = parseTimeTo24(arrTime);
+    const dep = parseTimeTo24(depTime);
+
+    const arrD = new Date(parseDate(arrDate));
+    arrD.setHours(arr.hours, arr.minutes, 0, 0);
+
+    const depD = new Date(parseDate(depDate));
+    depD.setHours(dep.hours, dep.minutes, 0, 0);
+
+    const diffMs = depD.getTime() - arrD.getTime();
+    if (diffMs <= 0) return '';
+
+    const diffMins = Math.floor(diffMs / 60000);
+    const hrs = Math.floor(diffMins / 60);
+    const mins = diffMins % 60;
+
+    if (hrs > 0) {
+      return `${hrs}h ${mins}m layover`;
+    }
+    return `${mins}m layover`;
+  } catch (e) {
+    return '';
+  }
+}
 
 // Parse dateRange: 'YYYY.MM.DD - YYYY.MM.DD'
 function generateDateList(dateRangeStr: string): string[] {
@@ -216,6 +327,65 @@ export function JourneyDetailPage({
   const [uploadingImage, setUploadingImage] = useState(false);
   const [saving, setSaving] = useState(false);
   const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
+
+  // Multi-select & map visibilities state
+  const [selectedItemIds, setSelectedItemIds] = useState<number[]>([]);
+  const [hiddenMapItemIds, setHiddenMapItemIds] = useState<number[]>([]);
+  const [stayCoords, setStayCoords] = useState<{ [stayId: number]: { lat: number; lng: number } }>({});
+  const [airportGeocodedCoords, setAirportGeocodedCoords] = useState<{ [code: string]: { lat: number; lng: number } }>({});
+
+  useEffect(() => {
+    if (!isEditing) {
+      setSelectedItemIds([]);
+    }
+  }, [isEditing]);
+
+  // Geocode stay addresses
+  useEffect(() => {
+    if (activeTab === 'stays') {
+      const staysToUse = isEditing ? draftStays : stays;
+      staysToUse.forEach(async (stay) => {
+        if (stay.address && !stayCoords[stay.id]) {
+          try {
+            const coords = await fetchCoordinates(stay.address);
+            if (coords) {
+              setStayCoords(prev => ({
+                ...prev,
+                [stay.id]: coords
+              }));
+            }
+          } catch (e) {
+            console.error("Geocoding stay failed:", e);
+          }
+        }
+      });
+    }
+  }, [activeTab, draftStays, stays, isEditing]);
+
+  // Geocode airports
+  useEffect(() => {
+    if (activeTab === 'flights') {
+      const flightsToUse = isEditing ? draftFlights : flights;
+      flightsToUse.forEach((f) => {
+        ['fromCode', 'toCode'].forEach(async (key) => {
+          const code = (f as any)[key];
+          if (code && !airportCoords[code] && !airportGeocodedCoords[code]) {
+            try {
+              const coords = await fetchCoordinates(`${code} Airport`);
+              if (coords) {
+                setAirportGeocodedCoords(prev => ({
+                  ...prev,
+                  [code]: coords
+                }));
+              }
+            } catch (e) {
+              console.error(`Geocoding airport ${code} failed:`, e);
+            }
+          }
+        });
+      });
+    }
+  }, [activeTab, draftFlights, flights, isEditing]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const itemRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
@@ -261,10 +431,29 @@ export function JourneyDetailPage({
         formattedEnd = formattedEnd.slice(5); // removes "YYYY."
       }
       
+      const oldDates = generateDateList(draftTrip.date);
+      const newDateStr = `${formattedStart} - ${formattedEnd}`;
+
       setDraftTrip({
         ...draftTrip,
-        date: `${formattedStart} - ${formattedEnd}`
+        date: newDateStr
       });
+
+      const newDates = generateDateList(newDateStr);
+
+      if (oldDates.length > 0 && newDates.length > 0) {
+        setDraftTimeline(prev => 
+          prev.map(item => {
+            if (!item.date) return item;
+            const idx = oldDates.indexOf(item.date);
+            if (idx !== -1) {
+              const newDateVal = newDates[Math.min(idx, newDates.length - 1)];
+              return { ...item, date: newDateVal };
+            }
+            return item;
+          })
+        );
+      }
     }
   };
 
@@ -488,11 +677,67 @@ export function JourneyDetailPage({
     return a.id - b.id;
   });
 
-  const mapPoints = currentTimeline.map(item => ({
-    ...item,
-    lat: item.lat !== undefined && item.lat !== null ? Number(item.lat) : undefined,
-    lng: item.lng !== undefined && item.lng !== null ? Number(item.lng) : undefined
-  }));
+  const mapPoints = (() => {
+    if (activeTab === 'timeline') {
+      return currentTimeline
+        .filter(item => {
+          const isExcluded = isEditing ? item.excludeFromMap : hiddenMapItemIds.includes(item.id);
+          return !isExcluded;
+        })
+        .map(item => ({
+          ...item,
+          lat: item.lat !== undefined && item.lat !== null ? Number(item.lat) : undefined,
+          lng: item.lng !== undefined && item.lng !== null ? Number(item.lng) : undefined
+        }));
+    } else if (activeTab === 'flights') {
+      const flightsToUse = isEditing ? draftFlights : flights;
+      const flightPoints: any[] = [];
+      flightsToUse.forEach(f => {
+        const fromVal = airportCoords[f.fromCode] || airportGeocodedCoords[f.fromCode];
+        const toVal = airportCoords[f.toCode] || airportGeocodedCoords[f.toCode];
+        
+        if (fromVal) {
+          flightPoints.push({
+            id: f.id * 10,
+            place: f.fromCode,
+            lat: fromVal.lat,
+            lng: fromVal.lng,
+            time: f.fromTime,
+            memo: `${f.flightNo} Departure from ${f.fromCode}`
+          });
+        }
+        if (toVal) {
+          flightPoints.push({
+            id: f.id * 10 + 1,
+            place: f.toCode,
+            lat: toVal.lat,
+            lng: toVal.lng,
+            time: f.toTime,
+            memo: `${f.flightNo} Arrival at ${f.toCode}`
+          });
+        }
+      });
+      return flightPoints;
+    } else if (activeTab === 'stays') {
+      const staysToUse = isEditing ? draftStays : stays;
+      const stayPoints: any[] = [];
+      staysToUse.forEach(s => {
+        const coords = stayCoords[s.id];
+        if (coords) {
+          stayPoints.push({
+            id: s.id,
+            place: s.title,
+            lat: coords.lat,
+            lng: coords.lng,
+            time: '',
+            memo: s.address
+          });
+        }
+      });
+      return stayPoints;
+    }
+    return [];
+  })();
 
   useEffect(() => {
     if (!dateBarRef.current) return;
@@ -512,12 +757,92 @@ export function JourneyDetailPage({
   }
 
   const handleItemToggle = (id: number) => {
-    setExpandedItemId(prevId => prevId === id ? null : id);
-    if (expandedItemId !== id && itemRefs.current[id]) {
+    let targetId = id;
+    if (activeTab === 'flights') {
+      targetId = Math.floor(id / 10);
+    }
+    setExpandedItemId(prevId => prevId === targetId ? null : targetId);
+    if (expandedItemId !== targetId && itemRefs.current[targetId]) {
       setTimeout(() => {
-        itemRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        itemRefs.current[targetId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 100);
     }
+  };
+
+  const handleAddTimelineItemRelativeTo = (relativeId: number, position: 'above' | 'below') => {
+    const sorted = [...currentTimeline];
+    const targetIdx = sorted.findIndex(item => item.id === relativeId);
+    if (targetIdx === -1) return;
+    const targetItem = sorted[targetIdx];
+
+    const targetMin = parseTimeToMinutes(targetItem.time);
+    let newMin = targetMin;
+
+    if (position === 'above') {
+      const prevSameDay = targetIdx > 0 && sorted[targetIdx - 1].date === targetItem.date ? sorted[targetIdx - 1] : null;
+      if (prevSameDay) {
+        const prevMin = parseTimeToMinutes(prevSameDay.time);
+        newMin = Math.round((prevMin + targetMin) / 2);
+        if (Math.abs(prevMin - targetMin) <= 1) {
+          newMin = targetMin - 5;
+        }
+      } else {
+        newMin = targetMin - 30;
+      }
+    } else {
+      const nextSameDay = targetIdx < sorted.length - 1 && sorted[targetIdx + 1].date === targetItem.date ? sorted[targetIdx + 1] : null;
+      if (nextSameDay) {
+        const nextMin = parseTimeToMinutes(nextSameDay.time);
+        newMin = Math.round((targetMin + nextMin) / 2);
+        if (Math.abs(targetMin - nextMin) <= 1) {
+          newMin = targetMin + 5;
+        }
+      } else {
+        newMin = targetMin + 60;
+      }
+    }
+
+    newMin = Math.max(0, Math.min(1439, newMin));
+    const newTimeStr = minutesToTimeStr(newMin);
+
+    const newId = Date.now();
+    const newItem: TimelineItem = {
+      id: newId,
+      time: newTimeStr,
+      type: 'activity',
+      place: '새로운 장소',
+      cost: '-',
+      memo: '메모를 입력하세요',
+      x: 50,
+      y: 50,
+      date: targetItem.date,
+      tripId: trip.id
+    };
+
+    setDraftTimeline(prev => {
+      const copy = [...prev];
+      const targetDraftIdx = copy.findIndex(item => item.id === relativeId);
+      if (targetDraftIdx !== -1) {
+        const insertIdx = position === 'above' ? targetDraftIdx : targetDraftIdx + 1;
+        copy.splice(insertIdx, 0, newItem);
+      } else {
+        copy.push(newItem);
+      }
+      return copy;
+    });
+
+    setExpandedItemId(newId);
+
+    setTimeout(() => {
+      if (itemRefs.current[newId]) {
+        itemRefs.current[newId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      const inputEl = document.getElementById(`title-input-${newId}`) as HTMLInputElement | null;
+      if (inputEl) {
+        inputEl.focus();
+        inputEl.select();
+      }
+    }, 250);
   };
 
   // Draft update helpers
@@ -975,15 +1300,72 @@ export function JourneyDetailPage({
               )}
 
               {/* Timeline Items List */}
-              <div className="flex flex-col pb-20 w-full">
+              <div className="flex flex-col pb-20 w-full relative">
                 {isEditing && (
-                  <div className="flex justify-center py-3 border-b border-black/10 dark:border-white/10 shrink-0 bg-black/5 dark:bg-white/5">
-                    <button
-                      onClick={handleGenerateDefaultTemplate}
-                      className="text-[10px] font-black uppercase tracking-widest border border-red-600 text-red-600 hover:bg-red-600 hover:text-white px-4 py-2 transition-colors flex items-center gap-1.5"
-                    >
-                      Generate Default Template
-                    </button>
+                  <div className="flex flex-col shrink-0 bg-black/5 dark:bg-white/5 border-b border-black/10 dark:border-white/10 relative">
+                    <div className="flex justify-between items-center py-3 px-4 md:px-6 flex-wrap gap-2">
+                      <button
+                        onClick={handleGenerateDefaultTemplate}
+                        className="text-[10px] font-black uppercase tracking-widest border border-red-600 text-red-600 hover:bg-red-600 hover:text-white px-4 py-2 transition-colors flex items-center gap-1.5"
+                      >
+                        Generate Default Template
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (selectedItemIds.length === currentTimeline.length) {
+                            setSelectedItemIds([]);
+                          } else {
+                            setSelectedItemIds(currentTimeline.map(item => item.id));
+                          }
+                        }}
+                        className="text-[10px] font-bold uppercase tracking-widest text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white border border-black/10 dark:border-white/10 px-3 py-1.5 transition-colors"
+                      >
+                        {selectedItemIds.length === currentTimeline.length ? 'Deselect All' : 'Select All'}
+                      </button>
+                    </div>
+
+                    {selectedItemIds.length > 0 && (
+                      <div className="sticky top-0 z-20 flex justify-between items-center py-3 px-4 md:px-6 bg-red-600 text-white shadow-md transition-all animate-in slide-in-from-top duration-300">
+                        <div className="text-xs font-bold uppercase tracking-widest">
+                          {selectedItemIds.length} items selected
+                        </div>
+                        <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                          <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">Move to:</span>
+                          <select
+                            onChange={(e) => {
+                              const targetDate = e.target.value;
+                              if (!targetDate) return;
+                              
+                              setDraftTimeline(prev => 
+                                prev.map(item => {
+                                  if (selectedItemIds.includes(item.id)) {
+                                    return { ...item, date: targetDate };
+                                  }
+                                  return item;
+                                })
+                              );
+                              
+                              setSelectedItemIds([]);
+                              setSelectedDate(targetDate);
+                            }}
+                            className="bg-white text-black text-[10px] font-bold p-1 outline-none border border-white/20 rounded-none w-28"
+                            defaultValue=""
+                          >
+                            <option value="" disabled>Select Day</option>
+                            {generatedDates.map((d, index) => (
+                              <option key={d} value={d}>Day {index + 1} ({d.slice(5).replace('.', '/')})</option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => setSelectedItemIds([])}
+                            className="text-[10px] font-bold uppercase tracking-widest hover:underline"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
                 {currentTimeline.length === 0 ? (
@@ -995,6 +1377,7 @@ export function JourneyDetailPage({
                     const isActive = expandedItemId === item.id;
                     const showDivider = selectedDate === 'ALL' && (idx === 0 || currentTimeline[idx - 1].date !== item.date);
                     const dayIndex = item.date ? generatedDates.indexOf(item.date) + 1 : 0;
+                    const isExcluded = isEditing ? item.excludeFromMap : hiddenMapItemIds.includes(item.id);
                     return (
                       <div key={item.id} className="w-full flex flex-col">
                         {showDivider && (
@@ -1008,7 +1391,7 @@ export function JourneyDetailPage({
                         )}
                         <div 
                           ref={el => { itemRefs.current[item.id] = el; }} 
-                          className={`flex flex-col border-b border-black/10 dark:border-white/10 transition-colors w-full ${isActive ? 'bg-red-500/[0.02] dark:bg-red-500/[0.02] border-l-2 border-l-red-600 dark:border-l-red-400' : 'border-l-2 border-l-transparent'} ${isEditing ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                          className={`flex flex-col border-b border-black/10 dark:border-white/10 transition-colors w-full ${isActive ? 'bg-red-500/[0.02] dark:bg-red-500/[0.02] border-l-2 border-l-red-600 dark:border-l-red-400' : 'border-l-2 border-l-transparent'} ${isEditing ? 'cursor-grab active:cursor-grabbing' : ''} ${isExcluded ? 'opacity-60' : 'opacity-100'}`}
                           draggable={isEditing}
                           onDragStart={() => setDraggedItemId(item.id)}
                           onDragOver={(e) => e.preventDefault()}
@@ -1018,6 +1401,23 @@ export function JourneyDetailPage({
                             className="group flex flex-row items-start py-4 px-4 md:py-5 md:px-6 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer relative w-full" 
                             onClick={() => handleItemToggle(item.id)}
                           >
+                            {/* Checkbox for batch select */}
+                            {isEditing && (
+                              <div className="mr-3 mt-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                <input
+                                  type="checkbox"
+                                  checked={selectedItemIds.includes(item.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedItemIds(prev => [...prev, item.id]);
+                                    } else {
+                                      setSelectedItemIds(prev => prev.filter(id => id !== item.id));
+                                    }
+                                  }}
+                                  className="w-4 h-4 rounded border-black/20 dark:border-white/20 text-red-600 focus:ring-red-500 cursor-pointer accent-red-600"
+                                />
+                              </div>
+                            )}
                             {/* Time */}
                             <div className={`w-16 md:w-24 shrink-0 text-[10px] md:text-xs font-bold tracking-widest mt-1 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60'} flex flex-col gap-1.5`}>
                               <div>
@@ -1042,7 +1442,7 @@ export function JourneyDetailPage({
                                       updateTimelineItem(item.id, 'date', newDate);
                                       setSelectedDate(newDate);
                                     }}
-                                    className="bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 text-[9px] font-bold p-0.5 outline-none text-black dark:text-white rounded-none w-20"
+                                    className="bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 text-[9px] font-bold p-0.5 pr-4 outline-none text-black dark:text-white rounded-none w-24"
                                   >
                                     {generatedDates.map(d => (
                                       <option key={d} value={d}>{d}</option>
@@ -1056,6 +1456,43 @@ export function JourneyDetailPage({
                                   )
                                 )}
                               </div>
+                              
+                              {/* Map Pin visibility toggle */}
+                              {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) && (
+                                <div className="mt-1" onClick={(e) => e.stopPropagation()}>
+                                  <button
+                                    onClick={() => {
+                                      if (isEditing) {
+                                        updateTimelineItem(item.id, 'excludeFromMap', !item.excludeFromMap);
+                                      } else {
+                                        setHiddenMapItemIds(prev => 
+                                          prev.includes(item.id) 
+                                            ? prev.filter(id => id !== item.id) 
+                                            : [...prev, item.id]
+                                        );
+                                      }
+                                    }}
+                                    className={`flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest transition-colors ${
+                                      isExcluded
+                                        ? 'text-black/20 dark:text-white/20 hover:text-black/45 dark:hover:text-white/45'
+                                        : 'text-red-600 dark:text-red-400 hover:opacity-80'
+                                    }`}
+                                    title={isExcluded ? "지도에 표시하기" : "지도에서 제외하기"}
+                                  >
+                                    {isExcluded ? (
+                                      <>
+                                        <MapPinOff className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
+                                        <span className="text-black/30 dark:text-white/30 text-[7px] md:text-[8px]">OFF</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <MapPin className="w-3.5 h-3.5" />
+                                        <span className="text-[7px] md:text-[8px]">ON</span>
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                              )}
                             </div>
 
                           {/* Details */}
@@ -1094,11 +1531,26 @@ export function JourneyDetailPage({
                             </div>
 
 
-                            {/* Delete timeline item (Edit mode) */}
+                            {/* Actions (Edit mode) */}
                             {isEditing && isActive && (
-                              <div className="flex gap-4 mt-3 pt-3 border-t border-black/10 dark:border-white/10 text-[10px] md:text-xs font-bold uppercase tracking-widest" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex flex-wrap gap-4 mt-3 pt-3 border-t border-black/10 dark:border-white/10 text-[10px] md:text-xs font-bold uppercase tracking-widest" onClick={(e) => e.stopPropagation()}>
                                  <button 
-                                   className="flex items-center gap-1 text-red-600 hover:text-red-400 transition-colors" 
+                                   type="button"
+                                   className="flex items-center gap-1 text-black dark:text-white hover:opacity-75 transition-opacity" 
+                                   onClick={() => handleAddTimelineItemRelativeTo(item.id, 'above')}
+                                 >
+                                   <Plus className="w-3 h-3"/> Add Above
+                                 </button>
+                                 <button 
+                                   type="button"
+                                   className="flex items-center gap-1 text-black dark:text-white hover:opacity-75 transition-opacity" 
+                                   onClick={() => handleAddTimelineItemRelativeTo(item.id, 'below')}
+                                 >
+                                   <Plus className="w-3 h-3"/> Add Below
+                                 </button>
+                                 <button 
+                                   type="button"
+                                   className="flex items-center gap-1 text-red-600 hover:text-red-400 transition-colors ml-auto" 
                                    onClick={() => handleDeleteTimelineItem(item.id)}
                                  >
                                    <Trash2 className="w-3 h-3"/> Delete
@@ -1218,7 +1670,20 @@ export function JourneyDetailPage({
                                   </div>
                                 ) : (
                                   <span className="flex-grow text-black/80 dark:text-white/80 font-medium break-words">
-                                    {item.location || '위치 정보 없음'}
+                                    {item.location ? (
+                                      <a
+                                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-red-600 dark:text-red-400 hover:underline inline-flex items-center gap-1"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        {item.location}
+                                        <ExternalLink className="w-3 h-3 shrink-0" />
+                                      </a>
+                                    ) : (
+                                      '위치 정보 없음'
+                                    )}
                                   </span>
                                 )}
                               </div>
@@ -1310,21 +1775,84 @@ export function JourneyDetailPage({
           {/* FLIGHTS TAB */}
           {activeTab === 'flights' && (
             <div className="p-4 md:p-6 animate-in fade-in duration-300">
-              {(isEditing ? draftFlights : flights).length === 0 ? (
-                <div className="text-center py-12 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
-                  등록된 항공편이 없습니다.
-                </div>
-              ) : (
-                (isEditing ? draftFlights : flights).map(flight => (
-                  <FlightCard 
-                    key={flight.id} 
-                    flight={flight} 
-                    isEditMode={isEditing} 
-                    onUpdate={updateFlight} 
-                    onDelete={deleteFlight} 
-                  />
-                ))
-              )}
+              {(() => {
+                const flightsToUse = isEditing ? draftFlights : flights;
+                if (flightsToUse.length === 0) {
+                  return (
+                    <div className="text-center py-12 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
+                      등록된 항공편이 없습니다.
+                    </div>
+                  );
+                }
+                
+                const sorted = [...flightsToUse].sort((a, b) => {
+                  const dateCompare = (a.date || '').localeCompare(b.date || '');
+                  if (dateCompare !== 0) return dateCompare;
+                  return (a.fromTime || '').localeCompare(b.fromTime || '');
+                });
+
+                const outbound = sorted.filter(f => f.title.toUpperCase().includes('OUTBOUND'));
+                const inbound = sorted.filter(f => f.title.toUpperCase().includes('INBOUND'));
+                const other = sorted.filter(f => !f.title.toUpperCase().includes('OUTBOUND') && !f.title.toUpperCase().includes('INBOUND'));
+
+                const renderGroup = (groupFlights: FlightItem[], groupLabel: string) => {
+                  if (groupFlights.length === 0) return null;
+                  return (
+                    <div className="mb-8">
+                      <div className="flex items-center gap-3 mb-4">
+                        <span className="text-[10px] uppercase font-black tracking-widest text-red-600 dark:text-red-400 shrink-0 font-bold">
+                          {groupLabel} ({groupFlights.length})
+                        </span>
+                        <div className="h-[1px] flex-grow bg-red-600/20 dark:bg-red-400/20" />
+                      </div>
+                      
+                      {groupFlights.map((flight, idx) => {
+                        const prevFlight = idx > 0 ? groupFlights[idx - 1] : null;
+                        const layoverTimeStr = prevFlight 
+                          ? calculateLayoverTime(prevFlight.date, prevFlight.toTime, flight.date, flight.fromTime)
+                          : '';
+                        
+                        return (
+                          <div 
+                            ref={el => { itemRefs.current[flight.id] = el; }} 
+                            key={flight.id}
+                            className="w-full flex flex-col"
+                          >
+                            {prevFlight && layoverTimeStr && (
+                              <div className="my-4 flex items-center justify-center relative w-full" onClick={(e) => e.stopPropagation()}>
+                                <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                                  <div className="w-full border-t border-dashed border-red-500/30 dark:border-red-400/30" />
+                                </div>
+                                <div className="relative flex justify-center text-[9px] font-black uppercase tracking-widest bg-[#F9F8F6] dark:bg-[#111111] px-3 text-red-600 dark:text-red-400 border border-red-500/20 py-1 rounded-full">
+                                  ✈️ Layover at {prevFlight.toCode} : {layoverTimeStr}
+                                </div>
+                              </div>
+                            )}
+                            <FlightCard 
+                              flight={flight} 
+                              isEditMode={isEditing} 
+                              onUpdate={updateFlight} 
+                              onDelete={deleteFlight} 
+                              isActive={expandedItemId === flight.id}
+                              onClick={() => {
+                                setExpandedItemId(prev => prev === flight.id ? null : flight.id);
+                              }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                };
+
+                return (
+                  <div className="flex flex-col">
+                    {renderGroup(outbound, 'Outbound Flights')}
+                    {renderGroup(inbound, 'Inbound Flights')}
+                    {renderGroup(other, 'Other Flights')}
+                  </div>
+                );
+              })()}
               
               {/* Add Flight controls */}
               {isEditing && (
@@ -1355,13 +1883,18 @@ export function JourneyDetailPage({
                 </div>
               ) : (
                 (isEditing ? draftStays : stays).map(stay => (
-                  <StayCard 
-                    key={stay.id} 
-                    stay={stay} 
-                    isEditMode={isEditing} 
-                    onUpdate={updateStay} 
-                    onDelete={deleteStay} 
-                  />
+                  <div ref={el => { itemRefs.current[stay.id] = el; }} key={stay.id}>
+                    <StayCard 
+                      stay={stay} 
+                      isEditMode={isEditing} 
+                      onUpdate={updateStay} 
+                      onDelete={deleteStay} 
+                      isActive={expandedItemId === stay.id}
+                      onClick={() => {
+                        setExpandedItemId(prev => prev === stay.id ? null : stay.id);
+                      }}
+                    />
+                  </div>
                 ))
               )}
 
@@ -1565,7 +2098,9 @@ export function JourneyDetailPage({
           )}
 
           {/* Footer inside Detail scroll container */}
-          <Footer />
+          <div className="w-full shrink-0 pb-16 pt-8 mt-auto border-t border-black/5 dark:border-white/5">
+            <Footer />
+          </div>
         </div>
       </section>
 

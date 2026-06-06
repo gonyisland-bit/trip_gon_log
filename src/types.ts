@@ -46,6 +46,7 @@ export interface TimelineItem {
   lng?: number;
   date?: string;
   tripId?: number;
+  excludeFromMap?: boolean;
 }
 
 export interface TimelineData {

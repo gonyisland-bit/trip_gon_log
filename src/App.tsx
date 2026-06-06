@@ -430,12 +430,74 @@ function App() {
     }
   };
 
+  // Helper to generate date list for shifting logic
+  const generateDateList = (dateRangeStr: string): string[] => {
+    if (!dateRangeStr) return [];
+    const parts = dateRangeStr.split(' - ');
+    if (parts.length < 2) return [];
+    
+    const startStr = parts[0].trim().replace(/\./g, '-');
+    const rawEndStr = parts[1].trim().replace(/\./g, '-');
+    const startYear = startStr.split('-')[0];
+    const endStr = rawEndStr.split('-').length < 3 ? `${startYear}-${rawEndStr}` : rawEndStr;
+    
+    const startDate = new Date(startStr);
+    const endDate = new Date(endStr);
+    
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      return [];
+    }
+    
+    if (endDate < startDate) {
+      endDate.setFullYear(endDate.getFullYear() + 1);
+    }
+
+    const list: string[] = [];
+    const cursor = new Date(startDate);
+    
+    for (let i = 0; i < 100 && cursor <= endDate; i++) {
+      const yyyy = cursor.getFullYear();
+      const mm = String(cursor.getMonth() + 1).padStart(2, '0');
+      const dd = String(cursor.getDate()).padStart(2, '0');
+      list.push(`${yyyy}.${mm}.${dd}`);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    
+    return list;
+  };
+
   const handleEditTripSave = async (tripId: number, updatedData: Partial<Trip>) => {
     if (!isLoggedIn) return;
     const isPlan = plans.some(p => p.id === tripId);
     const collectionName = isPlan ? 'plans' : 'trips';
+    const oldTrip = (isPlan ? plans : trips).find(t => t.id === tripId);
+    const dateChanged = oldTrip && updatedData.date && oldTrip.date !== updatedData.date;
+
     try {
       await setDoc(doc(db, 'users', 'public', collectionName, String(tripId)), cleanForFirestore(updatedData), { merge: true });
+      
+      if (dateChanged && oldTrip && updatedData.date) {
+        const oldDates = generateDateList(oldTrip.date);
+        const newDates = generateDateList(updatedData.date);
+        if (oldDates.length > 0 && newDates.length > 0) {
+          const timelineRef = collection(db, 'users', 'public', 'timeline');
+          const q = query(timelineRef, where('tripId', '==', tripId));
+          const snapshot = await getDocs(q);
+          const batch = writeBatch(db);
+          snapshot.forEach(docSnap => {
+            const itemData = docSnap.data();
+            const oldDate = itemData.date;
+            if (oldDate) {
+              const idx = oldDates.indexOf(oldDate);
+              if (idx !== -1) {
+                const newDateVal = newDates[Math.min(idx, newDates.length - 1)];
+                batch.update(docSnap.ref, { date: newDateVal });
+              }
+            }
+          });
+          await batch.commit();
+        }
+      }
     } catch (err: any) {
       console.error("Error updating trip cover:", err);
       alert("여정 정보 저장에 실패했습니다.");

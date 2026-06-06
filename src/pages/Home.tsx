@@ -235,8 +235,8 @@ export function HomePage({
 
       {/* Plans Section Preview */}
       {localPlans.length > 0 && (
-        <section className="border-b border-black/20 dark:border-white/20 p-6 md:p-12 transition-colors w-full overflow-hidden">
-          <div className="flex flex-col sm:flex-row justify-between sm:items-end mb-6 gap-4">
+        <section className="flex flex-col w-full overflow-hidden border-b border-black/20 dark:border-white/20 transition-colors">
+          <div className="p-6 md:px-12 border-b border-black/20 dark:border-white/20 flex flex-col sm:flex-row justify-between sm:items-end gap-4 transition-colors bg-[#EAE8E3]/35 dark:bg-[#1a1a1a]/35">
             <div>
               <h2 className="text-2xl font-black tracking-tighter uppercase break-keep">Upcoming Plans</h2>
               <p className="text-sm text-black/50 dark:text-white/50 mt-1 break-keep">다가오는 여행 계획을 준비하고, 여행 후 아카이브로 전환하세요.</p>
@@ -249,7 +249,7 @@ export function HomePage({
             {localPlans.slice(0, 4).map((plan) => (
               <div
                 key={plan.id}
-                className="group cursor-pointer p-6 flex flex-col h-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-red-500/10 bg-red-500/[0.01] dark:border-red-400/10 dark:bg-red-400/[0.01] w-full relative"
+                className="group cursor-pointer p-6 flex flex-col h-full hover:bg-red-500/[0.04] dark:hover:bg-red-400/[0.04] transition-colors border border-red-600/80 dark:border-red-400/80 bg-red-500/[0.02] dark:bg-red-400/[0.02] w-full relative shadow-[0_0_15px_rgba(239,68,68,0.08)]"
                 onClick={() => onNavigate('detail', plan.id)}
               >
                 <div className="aspect-[3/4] w-full overflow-hidden mb-4 border border-black/10 dark:border-white/10 relative bg-black/5">
