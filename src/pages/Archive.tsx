@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Trip } from '../types';
+import { JourneyCardMenu } from './Home';
 
 interface ArchiveHubPageProps {
   trips: Trip[];
@@ -8,6 +9,7 @@ interface ArchiveHubPageProps {
   onAddArchive: () => void;
   isLoggedIn: boolean;
   onDeleteTrip: (id: number) => Promise<void>;
+  onEditTrip?: (id: number) => void;
 }
 
 export function ArchiveHubPage({
@@ -16,6 +18,7 @@ export function ArchiveHubPage({
   onAddArchive,
   isLoggedIn,
   onDeleteTrip,
+  onEditTrip,
 }: ArchiveHubPageProps) {
   const [activeFilter, setActiveFilter] = useState('All');
   const filters = ['All', '2026', '2025', '2024', 'Kyoto', 'Paris', 'Personal', 'Business'];
@@ -57,18 +60,11 @@ export function ArchiveHubPage({
           <div key={trip.id} className="group cursor-pointer p-6 flex flex-col h-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-b sm:border-b-0 border-black/20 dark:border-white/20 w-full relative" onClick={() => onNavigate('detail', trip.id)}>
             <div className="aspect-[3/4] w-full overflow-hidden mb-4 border border-black/10 dark:border-white/10 relative bg-black/5">
               <img src={trip.img} alt={trip.title} className="absolute inset-0 w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
-              {isLoggedIn && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteTrip(trip.id);
-                  }}
-                  className="absolute top-3 right-3 p-2 bg-black/70 hover:bg-red-600 text-white transition-colors opacity-0 group-hover:opacity-100 z-10"
-                  title="Delete Journey"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
+              <JourneyCardMenu
+                isLoggedIn={isLoggedIn}
+                onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
+                onDelete={() => onDeleteTrip(trip.id)}
+              />
             </div>
             <div className="mt-auto">
               <div className="font-bold tracking-tight uppercase text-sm break-words">

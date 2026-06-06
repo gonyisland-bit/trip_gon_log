@@ -38,6 +38,48 @@ export function EditTripModal({
     }
   }, [isOpen, trip]);
 
+  const parseDateRange = (dateStr: string) => {
+    if (!dateStr || !dateStr.includes('-')) return { start: '', end: '' };
+    const parts = dateStr.split('-').map(p => p.trim());
+    if (parts.length < 2) return { start: '', end: '' };
+    
+    const formatToInputDate = (d: string, yearFallback?: string) => {
+      let normalized = d.replace(/\./g, '-');
+      if (normalized.length === 5 && yearFallback) {
+        normalized = `${yearFallback}-${normalized}`;
+      }
+      return normalized;
+    };
+
+    const startRaw = parts[0];
+    const startYear = startRaw.slice(0, 4);
+    const start = formatToInputDate(startRaw);
+    const end = formatToInputDate(parts[1], startYear);
+    return { start, end };
+  };
+
+  const handleDateChange = (type: 'start' | 'end', val: string) => {
+    const { start, end } = parseDateRange(date);
+    
+    const newStart = type === 'start' ? val : start;
+    const newEnd = type === 'end' ? val : end;
+    
+    const formatFromInputDate = (d: string) => d.replace(/-/g, '.');
+    
+    if (newStart && newEnd) {
+      const formattedStart = formatFromInputDate(newStart);
+      let formattedEnd = formatFromInputDate(newEnd);
+      
+      const startYear = newStart.slice(0, 4);
+      const endYear = newEnd.slice(0, 4);
+      if (startYear === endYear && formattedEnd.startsWith(startYear + '.')) {
+        formattedEnd = formattedEnd.slice(5); // removes "YYYY."
+      }
+      
+      setDate(`${formattedStart} - ${formattedEnd}`);
+    }
+  };
+
   if (!isOpen || !trip) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -130,14 +172,23 @@ export function EditTripModal({
             <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
               Journey Dates
             </label>
-            <input
-              type="text"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-2.5 text-xs font-bold text-black dark:text-white outline-none w-full focus:border-red-600 dark:focus:border-red-400 transition-colors"
-              placeholder="e.g. 2026.09.10 - 09.15"
-              required
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={parseDateRange(date).start}
+                onChange={(e) => handleDateChange('start', e.target.value)}
+                className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-bold text-black dark:text-white outline-none flex-1 focus:border-red-600 dark:focus:border-red-400 transition-colors"
+                required
+              />
+              <span className="text-xs font-bold text-black/40 dark:text-white/40">—</span>
+              <input
+                type="date"
+                value={parseDateRange(date).end}
+                onChange={(e) => handleDateChange('end', e.target.value)}
+                className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-bold text-black dark:text-white outline-none flex-1 focus:border-red-600 dark:focus:border-red-400 transition-colors"
+                required
+              />
+            </div>
           </div>
 
           {/* Location */}

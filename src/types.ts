@@ -65,6 +65,9 @@ export interface FlightItem {
   flightNo: string;
   seat: string;
   pnr: string;
+  layoverCode?: string;
+  layoverTime?: string;
+  tripId?: number;
 }
 
 export interface StayItem {

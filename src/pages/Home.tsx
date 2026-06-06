@@ -18,7 +18,7 @@ interface HomePageProps {
 }
 
 // Journey card hamburger menu
-function JourneyCardMenu({
+export function JourneyCardMenu({
   onEdit,
   onDelete,
   isLoggedIn,

@@ -863,6 +863,7 @@ function App() {
               onAddArchive={handleAddArchive}
               isLoggedIn={isLoggedIn}
               onDeleteTrip={handleDeleteJourney}
+              onEditTrip={(id) => setEditingTripId(id)}
             />
           )}
           {currentView === 'plan' && (
@@ -873,6 +874,7 @@ function App() {
               handleMoveToArchive={handleMoveToArchive}
               isLoggedIn={isLoggedIn}
               onDeletePlan={handleDeleteJourney}
+              onEditPlan={(id) => setEditingTripId(id)}
             />
           )}
           {currentView === 'detail' && (
@@ -897,6 +899,7 @@ function App() {
                     onSave={handleSaveJourneyDetails}
                     onDelete={handleDeleteJourney}
                     isDarkMode={isDarkMode}
+                    onNavigate={navigateTo}
                   />
                 </ErrorBoundary>
               );
@@ -910,7 +913,7 @@ function App() {
         </div>
         
         {/* Footer */}
-        <Footer />
+        {currentView !== 'detail' && <Footer />}
 
         {/* Auth Modal Popup */}
         <AuthModal 

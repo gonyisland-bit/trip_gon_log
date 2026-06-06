@@ -1,6 +1,7 @@
 import React from 'react';
-import { Plus, Archive, Trash2 } from 'lucide-react';
+import { Plus, Archive } from 'lucide-react';
 import { Plan } from '../types';
+import { JourneyCardMenu } from './Home';
 
 interface PlanHubPageProps {
   plans: Plan[];
@@ -9,6 +10,7 @@ interface PlanHubPageProps {
   handleMoveToArchive: (plan: Plan) => void;
   isLoggedIn: boolean;
   onDeletePlan: (id: number) => Promise<void>;
+  onEditPlan?: (id: number) => void;
 }
 
 export function PlanHubPage({
@@ -18,6 +20,7 @@ export function PlanHubPage({
   handleMoveToArchive,
   isLoggedIn,
   onDeletePlan,
+  onEditPlan,
 }: PlanHubPageProps) {
   return (
     <main className="animate-in fade-in duration-500 min-h-screen w-full">
@@ -35,34 +38,30 @@ export function PlanHubPage({
       
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-black/20 dark:divide-white/20 border-b border-black/20 dark:border-white/20 w-full">
         {plans.map((plan) => (
-          <div key={plan.id} className="p-6 md:p-8 flex flex-col group cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-b md:border-b-0 border-black/20 dark:border-white/20 w-full relative" onClick={() => onNavigate('detail', plan.id)}>
-            <div className="aspect-[4/3] w-full overflow-hidden mb-6 border border-black/10 dark:border-white/10 relative bg-black/5">
+          <div key={plan.id} className="group cursor-pointer p-6 flex flex-col h-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-b sm:border-b-0 border-red-500/10 bg-red-500/[0.01] dark:border-red-400/10 dark:bg-red-400/[0.01] w-full relative" onClick={() => onNavigate('detail', plan.id)}>
+            <div className="aspect-[3/4] w-full overflow-hidden mb-4 border border-black/10 dark:border-white/10 relative bg-black/5">
               <img src={plan.img} alt={plan.title} className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500" />
+              <JourneyCardMenu
+                isLoggedIn={isLoggedIn}
+                onEdit={onEditPlan ? () => onEditPlan(plan.id) : undefined}
+                onDelete={() => onDeletePlan(plan.id)}
+              />
+            </div>
+            
+            <div className="mt-auto flex flex-col">
+              <div className="font-bold tracking-tight uppercase text-sm break-words mb-3">
+                {plan.title}
+              </div>
+              
               {isLoggedIn && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeletePlan(plan.id);
-                  }}
-                  className="absolute top-3 right-3 p-2 bg-black/70 hover:bg-red-600 text-white transition-colors opacity-0 group-hover:opacity-100 z-10"
-                  title="Delete Plan"
+                <button 
+                  onClick={(e) => { e.stopPropagation(); handleMoveToArchive(plan); }}
+                  className="flex justify-center items-center gap-2 w-full py-2.5 border border-black dark:border-white text-[10px] font-bold uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors z-10 relative"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Archive className="w-3.5 h-3.5" /> Move to Archive
                 </button>
               )}
             </div>
-            <div className="font-bold tracking-tight uppercase text-lg mb-6 leading-tight break-words">
-              {plan.title}
-            </div>
-            
-            {isLoggedIn && (
-              <button 
-                onClick={(e) => { e.stopPropagation(); handleMoveToArchive(plan); }}
-                className="mt-auto flex justify-center items-center gap-2 w-full py-3 border border-black dark:border-white text-xs font-bold uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
-              >
-                <Archive className="w-3.5 h-3.5" /> Move to Archive
-              </button>
-            )}
           </div>
         ))}
       </div>

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Clock, Plane, Bed, Train, User, Edit2, Trash2, 
-  Image as ImageIcon, ChevronUp, ChevronDown, MapPin, Map, Plus, Loader2, Search
+  Image as ImageIcon, ChevronUp, ChevronDown, MapPin, Map, Plus, Loader2, Search, ArrowLeft
 } from 'lucide-react';
 import { MapArea } from '../components/MapArea';
 import { ImageEditOverlay } from '../components/ImageEditOverlay';
@@ -10,6 +10,7 @@ import { StayCard } from '../components/StayCard';
 import { TransitCard } from '../components/TransitCard';
 import { Lightbox, LightboxImageMeta } from '../components/Lightbox';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { Footer } from '../components/Footer';
 import { 
   Trip, 
   TimelineItem, 
@@ -40,6 +41,7 @@ interface JourneyDetailPageProps {
   ) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
   isDarkMode: boolean;
+  onNavigate: (view: string, tripId?: number | null) => void;
 }
 
 type TabType = 'timeline' | 'flights' | 'stays' | 'transit' | 'gallery';
@@ -193,6 +195,7 @@ export function JourneyDetailPage({
   onSave,
   onDelete,
   isDarkMode,
+  onNavigate,
 }: JourneyDetailPageProps) {
   // All hooks must be called before conditional return
   const [activeTab, setActiveTab] = useState<TabType>('timeline');
@@ -217,6 +220,53 @@ export function JourneyDetailPage({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const itemRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const dateBarRef = useRef<HTMLDivElement>(null);
+
+  // Date range picker parsing and formatting helpers
+  const parseDateRange = (dateStr: string) => {
+    if (!dateStr || !dateStr.includes('-')) return { start: '', end: '' };
+    const parts = dateStr.split('-').map(p => p.trim());
+    if (parts.length < 2) return { start: '', end: '' };
+    
+    const formatToInputDate = (d: string, yearFallback?: string) => {
+      let normalized = d.replace(/\./g, '-');
+      if (normalized.length === 5 && yearFallback) {
+        normalized = `${yearFallback}-${normalized}`;
+      }
+      return normalized;
+    };
+
+    const startRaw = parts[0];
+    const startYear = startRaw.slice(0, 4);
+    const start = formatToInputDate(startRaw);
+    const end = formatToInputDate(parts[1], startYear);
+    return { start, end };
+  };
+
+  const handleDateChange = (type: 'start' | 'end', val: string) => {
+    if (!draftTrip) return;
+    const { start, end } = parseDateRange(draftTrip.date);
+    
+    const newStart = type === 'start' ? val : start;
+    const newEnd = type === 'end' ? val : end;
+    
+    const formatFromInputDate = (d: string) => d.replace(/-/g, '.');
+    
+    if (newStart && newEnd) {
+      const formattedStart = formatFromInputDate(newStart);
+      let formattedEnd = formatFromInputDate(newEnd);
+      
+      const startYear = newStart.slice(0, 4);
+      const endYear = newEnd.slice(0, 4);
+      if (startYear === endYear && formattedEnd.startsWith(startYear + '.')) {
+        formattedEnd = formattedEnd.slice(5); // removes "YYYY."
+      }
+      
+      setDraftTrip({
+        ...draftTrip,
+        date: `${formattedStart} - ${formattedEnd}`
+      });
+    }
+  };
 
   // Drag and Drop reorder helper
   const handleDropTimelineItem = (targetId: number) => {
@@ -518,6 +568,41 @@ export function JourneyDetailPage({
     setDraftTimeline(prev => prev.filter(item => item.id !== id));
   };
 
+  const handleScrollToDateSection = (direction: 'up' | 'down') => {
+    const sections = Array.from(document.querySelectorAll('[data-date-section]')) as HTMLElement[];
+    if (sections.length === 0) return;
+
+    const container = dateBarRef.current?.closest('.overflow-y-auto') || window;
+    const containerTop = container === window ? 0 : (container as HTMLElement).getBoundingClientRect().top;
+
+    let targetSection: HTMLElement | null = null;
+
+    if (direction === 'down') {
+      for (const section of sections) {
+        const rect = section.getBoundingClientRect();
+        const relativeTop = rect.top - containerTop;
+        if (relativeTop > 10) {
+          targetSection = section;
+          break;
+        }
+      }
+    } else {
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const section = sections[i];
+        const rect = section.getBoundingClientRect();
+        const relativeTop = rect.top - containerTop;
+        if (relativeTop < -10) {
+          targetSection = section;
+          break;
+        }
+      }
+    }
+
+    if (targetSection) {
+      targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   // Draft updates for custom cards
   const updateFlight = (id: number, field: keyof FlightItem, val: string) => {
     setDraftFlights(prev => prev.map(f => f.id === id ? { ...f, [field]: val } : f));
@@ -684,18 +769,38 @@ export function JourneyDetailPage({
       <section className="w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-colors duration-300 h-[45vh] md:h-full shrink-0">
         <div className="p-4 md:p-8 border-b border-black/20 dark:border-white/20 z-10 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0">
           
+          {/* Back to hub button */}
+          <button
+            onClick={() => {
+              const isPlan = trip?.tags.includes('Plan') || trip?.title.includes('(Plan)');
+              onNavigate(isPlan ? 'plan' : 'archive');
+            }}
+            className="flex items-center gap-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors mb-3"
+            title="Go back to Hub"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Back to { (trip?.tags.includes('Plan') || trip?.title.includes('(Plan)')) ? 'Plans' : 'Archive' }
+          </button>
+
           {/* Header metadata area (date and location) */}
           <div className="flex justify-between items-start gap-4 mb-3 md:mb-4">
             <div className="flex items-center space-x-2 text-[10px] md:text-xs font-bold uppercase tracking-widest text-black/50 dark:text-white/50 transition-colors w-full">
               {isEditing && draftTrip ? (
                 <div className="flex items-center gap-2 w-full flex-wrap">
-                  <input
-                    type="text"
-                    value={draftTrip.date}
-                    onChange={(e) => setDraftTrip({ ...draftTrip, date: e.target.value })}
-                    className="bg-[#EAE8E3] dark:bg-white/10 px-2 py-1 outline-none text-[10px] md:text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10"
-                    placeholder="YYYY.MM.DD - YYYY.MM.DD"
-                  />
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="date"
+                      value={parseDateRange(draftTrip.date).start}
+                      onChange={(e) => handleDateChange('start', e.target.value)}
+                      className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10"
+                    />
+                    <span>—</span>
+                    <input
+                      type="date"
+                      value={parseDateRange(draftTrip.date).end}
+                      onChange={(e) => handleDateChange('end', e.target.value)}
+                      className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10"
+                    />
+                  </div>
                   <span>—</span>
                   <div className="w-48">
                     <PlaceAutocompleteInput
@@ -886,36 +991,71 @@ export function JourneyDetailPage({
                     해당 날짜에 등록된 일정이 없습니다.
                   </div>
                 ) : (
-                  currentTimeline.map((item) => {
+                  currentTimeline.map((item, idx) => {
                     const isActive = expandedItemId === item.id;
+                    const showDivider = selectedDate === 'ALL' && (idx === 0 || currentTimeline[idx - 1].date !== item.date);
+                    const dayIndex = item.date ? generatedDates.indexOf(item.date) + 1 : 0;
                     return (
-                      <div 
-                        key={item.id} 
-                        ref={el => { itemRefs.current[item.id] = el; }} 
-                        className={`flex flex-col border-b border-black/10 dark:border-white/10 transition-colors w-full ${isActive ? 'bg-black/5 dark:bg-white/5' : ''} ${isEditing ? 'cursor-grab active:cursor-grabbing' : ''}`}
-                        draggable={isEditing}
-                        onDragStart={() => setDraggedItemId(item.id)}
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={() => handleDropTimelineItem(item.id)}
-                      >
-                        <div 
-                          className="group flex flex-row items-start py-4 px-4 md:py-5 md:px-6 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer relative w-full" 
-                          onClick={() => handleItemToggle(item.id)}
-                        >
-                          {/* Time */}
-                          <div className={`w-16 md:w-24 shrink-0 text-[10px] md:text-xs font-bold tracking-widest mt-1 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60'}`}>
-                            {isEditing ? (
-                              <input
-                                type="text"
-                                value={item.time}
-                                onChange={(e) => updateTimelineItem(item.id, 'time', e.target.value)}
-                                onClick={(e) => e.stopPropagation()}
-                                className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-[10px] md:text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-20"
-                              />
-                            ) : (
-                              <span>{item.time}</span>
-                            )}
+                      <div key={item.id} className="w-full flex flex-col">
+                        {showDivider && (
+                          <div 
+                            id={`date-section-${item.date}`}
+                            data-date-section={item.date}
+                            className="bg-[#EAE8E3]/60 dark:bg-white/5 py-2 px-4 md:px-6 border-b border-t border-black/10 dark:border-white/10 text-[10px] md:text-xs font-bold uppercase tracking-widest text-black/50 dark:text-white/50 flex items-center justify-between"
+                          >
+                            <span>Day {dayIndex} — {item.date}</span>
                           </div>
+                        )}
+                        <div 
+                          ref={el => { itemRefs.current[item.id] = el; }} 
+                          className={`flex flex-col border-b border-black/10 dark:border-white/10 transition-colors w-full ${isActive ? 'bg-black/5 dark:bg-white/5' : ''} ${isEditing ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                          draggable={isEditing}
+                          onDragStart={() => setDraggedItemId(item.id)}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={() => handleDropTimelineItem(item.id)}
+                        >
+                          <div 
+                            className="group flex flex-row items-start py-4 px-4 md:py-5 md:px-6 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer relative w-full" 
+                            onClick={() => handleItemToggle(item.id)}
+                          >
+                            {/* Time */}
+                            <div className={`w-16 md:w-24 shrink-0 text-[10px] md:text-xs font-bold tracking-widest mt-1 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60'} flex flex-col gap-1.5`}>
+                              <div>
+                                {isEditing ? (
+                                  <input
+                                    type="text"
+                                    value={item.time}
+                                    onChange={(e) => updateTimelineItem(item.id, 'time', e.target.value)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-[10px] md:text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-20"
+                                  />
+                                ) : (
+                                  <span>{item.time}</span>
+                                )}
+                              </div>
+                              {selectedDate === 'ALL' && (
+                                <div className="mt-0.5" onClick={(e) => e.stopPropagation()}>
+                                  {isEditing ? (
+                                    <select
+                                      value={item.date}
+                                      onChange={(e) => {
+                                        const newDate = e.target.value;
+                                        updateTimelineItem(item.id, 'date', newDate);
+                                      }}
+                                      className="bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 text-[9px] font-bold p-0.5 outline-none text-black dark:text-white rounded-none w-20"
+                                    >
+                                      {generatedDates.map(d => (
+                                        <option key={d} value={d}>{d}</option>
+                                      ))}
+                                    </select>
+                                  ) : (
+                                    <span className="text-[9px] text-black/40 dark:text-white/40 block font-normal leading-none mt-0.5">
+                                      {item.date ? item.date.slice(5) : ''}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
 
                           {/* Details */}
                           <div className="flex-grow pr-2 md:pr-4 min-w-0">
@@ -944,11 +1084,11 @@ export function JourneyDetailPage({
                                   onChange={(e) => updateTimelineItem(item.id, 'memo', e.target.value)}
                                   onClick={(e) => e.stopPropagation()}
                                   className="bg-[#EAE8E3] dark:bg-white/10 p-1 outline-none text-xs md:text-sm text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full resize-none"
-                                  rows={1}
+                                  rows={item.memo ? Math.max(1, item.memo.split('\n').length) : 1}
                                   placeholder="Memo"
                                 />
                               ) : (
-                                <div className="text-xs md:text-sm text-black/60 dark:text-white/60 break-words w-full">{item.memo}</div>
+                                <div className="text-xs md:text-sm text-black/60 dark:text-white/60 break-words w-full whitespace-pre-wrap">{item.memo}</div>
                               )}
                             </div>
 
@@ -958,7 +1098,11 @@ export function JourneyDetailPage({
                                 <span className="text-[8px] uppercase font-black tracking-widest opacity-40">Move to Day</span>
                                 <select
                                   value={item.date}
-                                  onChange={(e) => updateTimelineItem(item.id, 'date', e.target.value)}
+                                  onChange={(e) => {
+                                    const newDate = e.target.value;
+                                    updateTimelineItem(item.id, 'date', newDate);
+                                    setSelectedDate(newDate);
+                                  }}
                                   className="bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 text-[9px] font-bold p-1 outline-none text-black dark:text-white rounded-none"
                                 >
                                   {generatedDates.map(d => (
@@ -1140,6 +1284,7 @@ export function JourneyDetailPage({
                           </div>
                         )}
                       </div>
+                      </div>
                     );
                   })
                 )}
@@ -1152,6 +1297,25 @@ export function JourneyDetailPage({
                       className="text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-2"
                     >
                       <Plus className="w-4 h-4" /> Add Timeline Event
+                    </button>
+                  </div>
+                )}
+
+                {selectedDate === 'ALL' && currentTimeline.length > 0 && (
+                  <div className="fixed bottom-20 right-4 md:absolute md:bottom-6 md:right-6 flex flex-col gap-2 z-20">
+                    <button
+                      onClick={() => handleScrollToDateSection('up')}
+                      className="p-2 bg-black/80 hover:bg-black text-white dark:bg-white/80 dark:hover:bg-white dark:text-black rounded-full shadow-lg transition-colors duration-200"
+                      title="Scroll to Previous Day"
+                    >
+                      <ChevronUp className="w-4 h-4 md:w-5 md:h-5" />
+                    </button>
+                    <button
+                      onClick={() => handleScrollToDateSection('down')}
+                      className="p-2 bg-black/80 hover:bg-black text-white dark:bg-white/80 dark:hover:bg-white dark:text-black rounded-full shadow-lg transition-colors duration-200"
+                      title="Scroll to Next Day"
+                    >
+                      <ChevronDown className="w-4 h-4 md:w-5 md:h-5" />
                     </button>
                   </div>
                 )}
@@ -1416,6 +1580,8 @@ export function JourneyDetailPage({
             </div>
           )}
 
+          {/* Footer inside Detail scroll container */}
+          <Footer />
         </div>
       </section>
 

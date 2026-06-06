@@ -90,6 +90,39 @@ export function FlightCard({
                 {flight.flightNo}
               </span>
             </div>
+            {/* Layover Info */}
+            {(flight.layoverCode || isEditMode) && (
+              <div className="text-[9px] md:text-[10px] font-bold text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
+                {isEditMode ? (
+                  <>
+                    <span className="opacity-50">경유:</span>
+                    <span
+                      contentEditable
+                      suppressContentEditableWarning
+                      onBlur={(e) => onUpdate(flight.id, 'layoverCode', e.currentTarget.innerText.trim())}
+                      className={`uppercase min-w-[30px] inline-block text-center border-b border-dashed border-red-500/30 ${textEditableClass}`}
+                    >
+                      {flight.layoverCode || ''}
+                    </span>
+                    <span className="opacity-50 ml-1">시간:</span>
+                    <span
+                      contentEditable
+                      suppressContentEditableWarning
+                      onBlur={(e) => onUpdate(flight.id, 'layoverTime', e.currentTarget.innerText.trim())}
+                      className={`min-w-[40px] inline-block text-center border-b border-dashed border-red-500/30 ${textEditableClass}`}
+                    >
+                      {flight.layoverTime || ''}
+                    </span>
+                  </>
+                ) : (
+                  flight.layoverCode && (
+                    <span>
+                      경유: {flight.layoverCode} {flight.layoverTime ? `(${flight.layoverTime})` : ''}
+                    </span>
+                  )
+                )}
+              </div>
+            )}
           </div>
           
           {/* Arrival */}
