@@ -168,8 +168,9 @@ export function MapArea({
       !isNaN(Number(p.lat)) && !isNaN(Number(p.lng))
     );
 
+    const isGalleryTab = activeTab === 'gallery';
     if (valid.length === 0) {
-      if (!hasFitRef.current) {
+      if (!hasFitRef.current || isGalleryTab) {
         const lat = typeof trip.lat === 'number' && !isNaN(trip.lat) ? trip.lat : 35.0116;
         const lng = typeof trip.lng === 'number' && !isNaN(trip.lng) ? trip.lng : 135.7681;
         map.setView([lat, lng], 13);
@@ -283,7 +284,7 @@ export function MapArea({
       markersRef.current[item.id] = marker;
     });
 
-    if (coords.length > 0 && (!isInteractive || !hasFitRef.current)) {
+    if (coords.length > 0 && (!isInteractive || !hasFitRef.current || isGalleryTab)) {
       const bounds = L.latLngBounds(coords);
       map.fitBounds(bounds, { padding: [48, 48], maxZoom: 15 });
       hasFitRef.current = true;
@@ -317,33 +318,45 @@ export function MapArea({
 
   // ─── Effect 3b: OSM Overpass API POIs Fetcher ──────────────────────────────
   useEffect(() => {
-    if (activeTab !== 'stays' || expandedItemId === null) {
+    if (activeTab !== 'stays') {
       setPoiItems([]);
       return;
     }
 
-    const activePoint = mapPoints.find(p => p.id === expandedItemId);
-    if (!activePoint || !activePoint.lat || !activePoint.lng) {
-      setPoiItems([]);
-      return;
+    // Determine reference lat/lng
+    let lat = Number(trip.lat);
+    let lng = Number(trip.lng);
+
+    if (expandedItemId !== null) {
+      // Prioritize actively selected stay item coordinates
+      const activePoint = mapPoints.find(p => p.id === expandedItemId);
+      if (activePoint && activePoint.lat && activePoint.lng) {
+        lat = Number(activePoint.lat);
+        lng = Number(activePoint.lng);
+      }
+    } else if (mapPoints.length > 0) {
+      // If no stay card is selected, use the first stay in the mapPoints list
+      const firstStay = mapPoints.find(p => p.lat !== undefined && p.lng !== undefined && !isNaN(Number(p.lat)) && !isNaN(Number(p.lng)));
+      if (firstStay) {
+        lat = Number(firstStay.lat);
+        lng = Number(firstStay.lng);
+      }
     }
 
-    const lat = Number(activePoint.lat);
-    const lng = Number(activePoint.lng);
     if (isNaN(lat) || isNaN(lng)) {
       setPoiItems([]);
       return;
     }
 
-    // Define rich set of fallback POIs representing typical brands
+    // Define rich set of generic fallback POIs representing typical amenities globally
     const fallbackPois = [
-      { id: 900001, lat: lat + 0.0021, lng: lng + 0.0019, name: 'GS25 편의점', type: 'convenience' },
-      { id: 900002, lat: lat - 0.0015, lng: lng - 0.0024, name: 'CU 편의점', type: 'convenience' },
-      { id: 900003, lat: lat + 0.0011, lng: lng - 0.0032, name: '세븐일레븐 편의점', type: 'convenience' },
-      { id: 900004, lat: lat + 0.0031, lng: lng - 0.0013, name: '이마트 에브리데이', type: 'supermarket' },
-      { id: 900005, lat: lat - 0.0022, lng: lng + 0.0012, name: '홈플러스 익스프레스', type: 'supermarket' },
-      { id: 900006, lat: lat - 0.0034, lng: lng + 0.0029, name: '인근 지하철역 (1호선)', type: 'station' },
-      { id: 900007, lat: lat + 0.0028, lng: lng - 0.0027, name: '인근 지하철역 (2호선)', type: 'station' }
+      { id: 900001, lat: lat + 0.0021, lng: lng + 0.0019, name: '편의점 (Convenience Store)', type: 'convenience' },
+      { id: 900002, lat: lat - 0.0015, lng: lng - 0.0024, name: '편의점 (Convenience Store)', type: 'convenience' },
+      { id: 900003, lat: lat + 0.0011, lng: lng - 0.0032, name: '편의점 (Convenience Store)', type: 'convenience' },
+      { id: 900004, lat: lat + 0.0031, lng: lng - 0.0013, name: '슈퍼마켓 (Supermarket)', type: 'supermarket' },
+      { id: 900005, lat: lat - 0.0022, lng: lng + 0.0012, name: '슈퍼마켓 (Supermarket)', type: 'supermarket' },
+      { id: 900006, lat: lat - 0.0034, lng: lng + 0.0029, name: '지하철역 (Subway Station)', type: 'station' },
+      { id: 900007, lat: lat + 0.0028, lng: lng - 0.0027, name: '지하철역 (Subway Station)', type: 'station' }
     ];
 
     // Synchronously preload fallback POIs so toggling shows pins immediately
@@ -406,23 +419,18 @@ export function MapArea({
             }).filter(Boolean);
           }
 
-          // Safety Fallback net: If OSM Overpass returns too few results, merge additional nearby fallback POIs
-          if (items.length < 7) {
-            fallbackPois.forEach(fp => {
-              // Only add mock POI if the API items don't have enough of this type to avoid clutter
-              if (items.filter(it => it.type === fp.type).length < 2) {
-                items.push(fp);
-              }
-            });
+          // ONLY merge mock fallbacks if OSM returned absolutely 0 results
+          // If OSM returned real local shops, show ONLY real shops for strict regional accuracy.
+          if (items.length === 0) {
+            setPoiItems(fallbackPois);
+          } else {
+            setPoiItems(items);
           }
-
-          setPoiItems(items);
         }
       })
       .catch(err => {
         clearTimeout(timeoutId);
         console.error("Overpass API failed or timed out, keeping fallback POIs:", err);
-        // We do not overwrite poiItems since it already contains fallbackPois
       })
       .finally(() => {
         if (isMounted) setPoiLoading(false);
@@ -433,7 +441,7 @@ export function MapArea({
       controller.abort();
       clearTimeout(timeoutId);
     };
-  }, [expandedItemId, activeTab, mapPoints]);
+  }, [expandedItemId, activeTab, mapPoints, trip.lat, trip.lng]);
 
   // ─── Effect 3c: Render POI markers on map ──────────────────────────────────
   useEffect(() => {
@@ -636,7 +644,7 @@ export function MapArea({
     );
   }
 
-  const isStayTabWithSelection = activeTab === 'stays' && expandedItemId !== null;
+  const isStayTab = activeTab === 'stays';
 
   return (
     <div className="flex-grow relative bg-[#EAE8E3] dark:bg-[#1A1A1A] overflow-hidden transition-colors duration-300">
@@ -666,7 +674,7 @@ export function MapArea({
       </div>
 
       {/* ── Nearby POI Toggles Overlay (Stays tab only) ── */}
-      {isStayTabWithSelection && (
+      {isStayTab && (
         <div className="absolute top-4 left-4 md:top-6 md:left-6 flex flex-col gap-2 z-20 bg-[#F9F8F6]/95 dark:bg-[#111111]/95 backdrop-blur border border-black/20 dark:border-white/20 p-2.5 shadow-md">
           <div className="flex items-center gap-1.5 mb-1">
             <span className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-black/50 dark:text-white/50">Nearby Amenities</span>

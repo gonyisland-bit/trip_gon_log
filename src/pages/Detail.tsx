@@ -2737,11 +2737,11 @@ export function JourneyDetailPage({
                       </div>
 
                       {/* Divider Line */}
-                      <div className="w-full h-px bg-black/10 dark:bg-white/10 my-4" />
+                      <div className="w-full h-px bg-black/10 dark:bg-white/10 mt-6 mb-4" />
 
                       {/* Info & Memo area - Transparent & Borderless */}
                       <div className="px-1 flex flex-col gap-3">
-                        <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[10px] md:text-xs font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
+                        <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-[10px] md:text-xs font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
                           {meta.date && (
                             <span className="text-amber-600 dark:text-amber-400">
                               📅 {meta.date.replace(/\./g, '/')}
@@ -3071,9 +3071,11 @@ export function JourneyDetailPage({
           )}
 
           {/* Footer inside Detail scroll container */}
-          <div className="w-full shrink-0 pb-16 pt-8 mt-16 border-t border-black/5 dark:border-white/5">
-            <Footer />
-          </div>
+          {activeTab !== 'gallery' && (
+            <div className="w-full shrink-0 pb-16 pt-8 mt-16 border-t border-black/5 dark:border-white/5">
+              <Footer />
+            </div>
+          )}
         </div>
       </section>
 
