@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Navigation } from './components/Navigation';
 import { Footer } from './components/Footer';
 import { HomePage } from './pages/Home';
@@ -78,6 +78,7 @@ function App() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [trashedJourneys, setTrashedJourneys] = useState<Trip[]>([]);
   const [activeTripId, setActiveTripId] = useState<number | null>(null);
+  const [selectedTagFilter, setSelectedTagFilter] = useState<string | null>(null);
   const [dbError, setDbError] = useState<string | null>(null);
   const [tripsLoaded, setTripsLoaded] = useState<boolean>(false);
   const [plansLoaded, setPlansLoaded] = useState<boolean>(false);
@@ -110,6 +111,18 @@ function App() {
   const activeTrip = trips.find(t => String(t.id) === String(activeTripId)) 
     || plans.find(p => String(p.id) === String(activeTripId)) 
     || undefined;
+
+  const displayMarqueeText = useMemo(() => {
+    if (marqueeOverrideText) return marqueeOverrideText;
+    if (currentView === 'detail' && activeTrip) {
+      const tagsStr = (activeTrip.tags || [])
+        .filter(t => t !== 'Plan' && t !== 'Personal')
+        .map(t => `#${t}`)
+        .join(' ');
+      return `✈️ 여정: ${(activeTrip.title || '').replace(' (Plan)', '').toUpperCase()} • 장소: ${activeTrip.locationStr.toUpperCase()} • 기간: ${activeTrip.date} ${tagsStr ? `• 태그: ${tagsStr.toUpperCase()}` : ''}`;
+    }
+    return marqueeMessage;
+  }, [marqueeOverrideText, currentView, activeTrip, marqueeMessage]);
 
   // Sync activeTripId with trips[0]?.id if it is null and trips have loaded
   useEffect(() => {
@@ -394,7 +407,7 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [isDetailEditing, currentView, activeTripId]);
 
-  const navigateTo = (view: string, tripId: number | null = null, pushHistory = true) => {
+  const navigateTo = (view: string, tripId: number | null = null, pushHistory = true, tagFilter: string | null = null) => {
     if (isDetailEditing && (view !== 'detail' || (tripId !== null && tripId !== activeTripId))) {
       setPendingNavigation({ view, tripId });
       setShowUnsavedModal(true);
@@ -403,6 +416,7 @@ function App() {
 
     if (tripId) setActiveTripId(tripId);
     setCurrentView(view);
+    setSelectedTagFilter(tagFilter);
 
     if (pushHistory) {
       let path = '/';
@@ -961,9 +975,9 @@ function App() {
         {/* Marquee Banner */}
         {marqueeShow && (
           <div className="w-full bg-[#EAE8E3] dark:bg-[#161616] border-b border-black/10 dark:border-white/10 py-2 overflow-hidden flex items-center shrink-0">
-            <div className="animate-marquee text-[10px] md:text-xs font-black tracking-widest uppercase text-red-600 dark:text-red-400" style={{ '--marquee-speed': `${marqueeSpeed}s` } as React.CSSProperties}>
-              <span>{marqueeOverrideText || marqueeMessage}&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;</span>
-              <span>{marqueeOverrideText || marqueeMessage}&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;</span>
+            <div className="animate-marquee text-[10px] md:text-xs font-black tracking-widest uppercase text-red-600 dark:text-red-400" style={{ '--marquee-speed': `${marqueeSpeed / 1.5}s` } as React.CSSProperties}>
+              <span>{displayMarqueeText}&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;</span>
+              <span>{displayMarqueeText}&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;</span>
             </div>
           </div>
         )}
@@ -1009,6 +1023,7 @@ function App() {
               isLoggedIn={isLoggedIn}
               onDeleteTrip={handleDeleteJourney}
               onEditTrip={(id) => setEditingTripId(id)}
+              initialTagFilter={selectedTagFilter}
             />
           )}
           {currentView === 'plan' && (
@@ -1020,6 +1035,7 @@ function App() {
               isLoggedIn={isLoggedIn}
               onDeletePlan={handleDeleteJourney}
               onEditPlan={(id) => setEditingTripId(id)}
+              initialTagFilter={selectedTagFilter}
             />
           )}
           {currentView === 'detail' && (

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { Trip } from '../types';
 import { JourneyCardMenu } from './Home';
@@ -10,6 +10,7 @@ interface ArchiveHubPageProps {
   isLoggedIn: boolean;
   onDeleteTrip: (id: number) => Promise<void>;
   onEditTrip?: (id: number) => void;
+  initialTagFilter?: string | null;
 }
 
 export function ArchiveHubPage({
@@ -19,9 +20,18 @@ export function ArchiveHubPage({
   isLoggedIn,
   onDeleteTrip,
   onEditTrip,
+  initialTagFilter,
 }: ArchiveHubPageProps) {
-  const [activeFilter, setActiveFilter] = useState('All');
-  const filters = ['All', '2026', '2025', '2024', 'Kyoto', 'Paris', 'Personal', 'Business'];
+  const [activeFilter, setActiveFilter] = useState(initialTagFilter || 'All');
+
+  useEffect(() => {
+    if (initialTagFilter) {
+      setActiveFilter(initialTagFilter);
+    }
+  }, [initialTagFilter]);
+
+  const baseFilters = ['All', '2026', '2025', '2024', 'Kyoto', 'Paris', 'Personal', 'Business'];
+  const filters = baseFilters.includes(activeFilter) ? baseFilters : [...baseFilters, activeFilter];
   const filteredTrips = activeFilter === 'All' ? trips : trips.filter(t => t.tags.includes(activeFilter));
 
   return (

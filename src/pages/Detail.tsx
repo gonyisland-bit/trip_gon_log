@@ -45,7 +45,7 @@ interface JourneyDetailPageProps {
   ) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
   isDarkMode: boolean;
-  onNavigate: (view: string, tripId?: number | null) => void;
+  onNavigate: (view: string, tripId?: number | null, pushHistory?: boolean, tagFilter?: string | null) => void;
   searchFocusItemId?: number | null;
   searchFocusTab?: string | null;
   onClearSearchFocus?: () => void;
@@ -1403,11 +1403,18 @@ export function JourneyDetailPage({
           )}
           
           <div className="mt-4 md:mt-6 flex flex-wrap gap-2">
-            {(tripToUse?.tags || []).slice(0, 2).map(tag => (
-               <span key={tag} className="text-[9px] md:text-[10px] font-bold border border-black/20 dark:border-white/20 px-2 py-1 uppercase rounded-full">
-                 {tag}
-               </span>
-            ))}
+            {(tripToUse?.tags || []).filter(t => t !== 'Personal').map(tag => {
+              const isPlan = trip?.tags.includes('Plan') || trip?.title.includes('(Plan)');
+              return (
+                <button
+                  key={tag}
+                  onClick={() => onNavigate(isPlan ? 'plan' : 'archive', null, true, tag)}
+                  className="text-[9px] md:text-[10px] font-bold border border-black/25 dark:border-white/25 px-2.5 py-1 uppercase rounded-full hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black hover:border-black dark:hover:border-white transition-all duration-200 cursor-pointer shadow-sm"
+                >
+                  #{tag}
+                </button>
+              );
+            })}
           </div>
         </div>
         
@@ -1617,54 +1624,52 @@ export function JourneyDetailPage({
                               </div>
                             )}
                             {/* Time */}
-                            <div className={`shrink-0 text-[10px] md:text-xs font-bold tracking-widest mt-1 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60'} ${isEditing ? 'w-20 md:w-44 flex flex-col gap-1' : 'w-16 md:w-24 flex flex-col gap-1.5'}`}>
-                              <div>
-                                {isEditing ? (
+                            <div className={`shrink-0 text-[10px] md:text-xs font-bold tracking-widest mt-1 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60'} ${isEditing ? 'w-[72px] md:w-44 flex flex-col gap-1' : 'w-16 md:w-24 flex flex-col gap-1.5'}`}>
+                              {isEditing ? (
+                                <div className="flex flex-col gap-1 w-full" onClick={(e) => e.stopPropagation()}>
                                   <input
                                     type="text"
                                     value={item.time}
                                     onChange={(e) => updateTimelineItem(item.id, 'time', e.target.value)}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-[10px] md:text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
+                                    className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-[9px] md:text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full text-center animate-in fade-in duration-300"
+                                    placeholder="Time"
                                   />
-                                ) : (
-                                  <span>{item.time}</span>
-                                )}
-                              </div>
-                              <div className={`flex ${isEditing ? 'flex-row items-center gap-1.5 mt-0.5' : 'flex-col mt-0.5'}`} onClick={(e) => e.stopPropagation()}>
-                                {isEditing ? (
-                                  <>
-                                    <select
-                                      value={item.date}
-                                      onChange={(e) => {
-                                        const newDate = e.target.value;
-                                        updateTimelineItem(item.id, 'date', newDate);
-                                        setSelectedDate(newDate);
-                                      }}
-                                      className="bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 text-[9px] font-bold p-0.5 pr-2 outline-none text-black dark:text-white rounded-none w-20 flex-shrink-0"
+                                  <select
+                                    value={item.date}
+                                    onChange={(e) => {
+                                      const newDate = e.target.value;
+                                      updateTimelineItem(item.id, 'date', newDate);
+                                      setSelectedDate(newDate);
+                                    }}
+                                    className="bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 text-[9px] md:text-xs font-bold p-0.5 outline-none text-black dark:text-white rounded-none w-full text-center animate-in fade-in duration-300"
+                                  >
+                                    {generatedDates.map(d => (
+                                      <option key={d} value={d}>{d.slice(5).replace('.', '/')}</option>
+                                    ))}
+                                  </select>
+                                  
+                                  {/* Map Pin visibility toggle inline */}
+                                  {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) && (
+                                    <button
+                                      onClick={() => handleToggleExcludeFromMap(item)}
+                                      className={`flex items-center justify-center py-0.5 border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-colors w-full mt-0.5 text-black/60 dark:text-white/60 ${
+                                        isExcluded
+                                          ? 'text-black/20 dark:text-white/20'
+                                          : 'text-red-600 dark:text-red-400'
+                                      }`}
+                                      title={isExcluded ? "지도에 표시하기" : "지도에서 제외하기"}
                                     >
-                                      {generatedDates.map(d => (
-                                        <option key={d} value={d}>{d.slice(5).replace('.', '/')}</option>
-                                      ))}
-                                    </select>
-                                    
-                                    {/* Map Pin visibility toggle inline */}
-                                    {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) && (
-                                      <button
-                                        onClick={() => handleToggleExcludeFromMap(item)}
-                                        className={`flex items-center justify-center p-1 border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-colors ${
-                                          isExcluded
-                                            ? 'text-black/20 dark:text-white/20'
-                                            : 'text-red-600 dark:text-red-400'
-                                        }`}
-                                        title={isExcluded ? "지도에 표시하기" : "지도에서 제외하기"}
-                                      >
-                                        {isExcluded ? <MapPinOff className="w-3.5 h-3.5" /> : <MapPin className="w-3.5 h-3.5" />}
-                                      </button>
-                                    )}
-                                  </>
-                                ) : (
-                                  <>
+                                      {isExcluded ? <MapPinOff className="w-3.5 h-3.5" /> : <MapPin className="w-3.5 h-3.5" />}
+                                      <span className="text-[7px] md:text-[8px] font-bold ml-1">{isExcluded ? "OFF" : "ON"}</span>
+                                    </button>
+                                  )}
+                                </div>
+                              ) : (
+                                <>
+                                  <div>
+                                    <span>{item.time}</span>
+                                  </div>
+                                  <div className="flex flex-col mt-0.5" onClick={(e) => e.stopPropagation()}>
                                     {selectedDate === 'ALL' && (
                                       <span className="text-[9px] text-black/40 dark:text-white/40 block font-normal leading-none mt-0.5">
                                         {item.date ? item.date.slice(5) : ''}
@@ -1695,9 +1700,9 @@ export function JourneyDetailPage({
                                         )}
                                       </button>
                                     )}
-                                  </>
-                                )}
-                              </div>
+                                  </div>
+                                </>
+                              )}
                             </div>
 
                           {/* Details */}
