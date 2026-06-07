@@ -9,7 +9,7 @@ export function compressImage(
   maxHeight = 1600,
   quality = 0.8
 ): Promise<Blob> {
-  return new Promise((resolve, reject) => {
+  return new Promise<Blob>((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = (event) => {
@@ -26,7 +26,7 @@ export function compressImage(
             width = maxWidth;
           } else {
             width = Math.round((width * maxHeight) / height);
-            height = maxHeight;
+            width = maxHeight;
           }
         }
 
@@ -61,5 +61,77 @@ export function compressImage(
     reader.onerror = (err) => {
       reject(err);
     };
+  }).then((compressedBlob) => {
+    // If it's a JPEG, restore the original EXIF headers after canvas compression
+    if (file.type === 'image/jpeg') {
+      return restoreExif(file, compressedBlob);
+    }
+    return compressedBlob;
+  });
+}
+
+/**
+ * Extracts the APP1 (EXIF) segment from the source file array buffer,
+ * and inserts it right after the SOI (0xFFD8) marker of the destination JPEG blob.
+ */
+function restoreExif(srcFile: File, destBlob: Blob): Promise<Blob> {
+  return new Promise((resolve) => {
+    const srcReader = new FileReader();
+    srcReader.readAsArrayBuffer(srcFile);
+    srcReader.onload = () => {
+      const srcBuffer = srcReader.result as ArrayBuffer;
+      const srcView = new DataView(srcBuffer);
+      
+      // Check if source is a valid JPEG
+      if (srcView.byteLength < 4 || srcView.getUint16(0, false) !== 0xFFD8) {
+        resolve(destBlob);
+        return;
+      }
+      
+      let offset = 2;
+      let app1Buffer: ArrayBuffer | null = null;
+      
+      // Find APP1 marker (0xFFE1) in source JPEG
+      while (offset < srcView.byteLength - 2) {
+        const marker = srcView.getUint16(offset, false);
+        if (marker === 0xFFE1) {
+          const length = srcView.getUint16(offset + 2, false);
+          app1Buffer = srcBuffer.slice(offset, offset + 2 + length);
+          break;
+        }
+        if ((marker & 0xFF00) !== 0xFF00 || marker === 0xFFDA) {
+          // SOS or invalid marker, stop scanning
+          break;
+        }
+        const length = srcView.getUint16(offset + 2, false);
+        offset += 2 + length;
+      }
+      
+      if (!app1Buffer) {
+        resolve(destBlob);
+        return;
+      }
+      
+      const destReader = new FileReader();
+      destReader.readAsArrayBuffer(destBlob);
+      destReader.onload = () => {
+        const destBuffer = destReader.result as ArrayBuffer;
+        const destView = new DataView(destBuffer);
+        
+        // Check if destination is a valid JPEG
+        if (destView.byteLength < 4 || destView.getUint16(0, false) !== 0xFFD8) {
+          resolve(destBlob);
+          return;
+        }
+        
+        const header = destBuffer.slice(0, 2);
+        const rest = destBuffer.slice(2);
+        
+        const newBlob = new Blob([header, app1Buffer, rest], { type: 'image/jpeg' });
+        resolve(newBlob);
+      };
+      destReader.onerror = () => resolve(destBlob);
+    };
+    srcReader.onerror = () => resolve(destBlob);
   });
 }

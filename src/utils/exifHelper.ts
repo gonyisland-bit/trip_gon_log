@@ -159,6 +159,19 @@ export function readExif(file: File): Promise<ExifData> {
         }
 
         parseIFD(firstIFDOffset);
+        
+        // Fallback: If no EXIF dateTime was found, use the file's last modified timestamp
+        if (!exifData.dateTime && file.lastModified) {
+          const d = new Date(file.lastModified);
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          const hh = String(d.getHours()).padStart(2, '0');
+          const min = String(d.getMinutes()).padStart(2, '0');
+          const ss = String(d.getSeconds()).padStart(2, '0');
+          exifData.dateTime = `${yyyy}:${mm}:${dd} ${hh}:${min}:${ss}`;
+        }
+        
         resolve(exifData);
       } catch (err) {
         console.error("EXIF binary parsing error:", err);

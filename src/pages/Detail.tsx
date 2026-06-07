@@ -27,6 +27,18 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, storage, db } from '../firebase';
 import { compressImage } from '../utils/imageHelper';
 import { doc, setDoc } from 'firebase/firestore';
+const dayColors = [
+  '#dc2626', // Day 1: Red
+  '#2563eb', // Day 2: Blue
+  '#16a34a', // Day 3: Green
+  '#d97706', // Day 4: Orange/Amber
+  '#7c3aed', // Day 5: Purple
+  '#db2777', // Day 6: Pink
+  '#0891b2', // Day 7: Cyan
+  '#4b5563', // Day 8: Gray
+];
+
+
 
 interface JourneyDetailPageProps {
   isLoggedIn: boolean;
@@ -352,6 +364,7 @@ export function JourneyDetailPage({
   // All hooks must be called before conditional return
   const [activeTab, setActiveTab] = useState<TabType>('timeline');
   const [selectedDate, setSelectedDate] = useState<string>('ALL');
+  const [collapsedDays, setCollapsedDays] = useState<string[]>([]);
   const [expandedItemId, setExpandedItemId] = useState<number | null>(null);
 
   // Edit / Draft state
@@ -817,6 +830,7 @@ export function JourneyDetailPage({
     const photoPoints: any[] = [];
     galleryMetaImages.forEach((imgMeta, idx) => {
       if (imgMeta.lat !== undefined && imgMeta.lng !== undefined && imgMeta.lat !== null && imgMeta.lng !== null) {
+        const dayIndex = imgMeta.date ? generatedDates.indexOf(imgMeta.date) + 1 : 0;
         photoPoints.push({
           id: 500000 + idx, // unique ID offset for photo pins
           place: imgMeta.place || '사진 위치',
@@ -826,7 +840,8 @@ export function JourneyDetailPage({
           date: imgMeta.date || '',
           memo: imgMeta.imgNote || '갤러리 사진',
           isPhoto: true,
-          photoUrl: imgMeta.url
+          photoUrl: imgMeta.url,
+          dayIndex
         });
       }
     });
@@ -834,11 +849,15 @@ export function JourneyDetailPage({
     if (activeTab === 'timeline') {
       const timelinePoints = currentTimeline
         .filter(item => !item.excludeFromMap)
-        .map(item => ({
-          ...item,
-          lat: item.lat !== undefined && item.lat !== null ? Number(item.lat) : undefined,
-          lng: item.lng !== undefined && item.lng !== null ? Number(item.lng) : undefined
-        }));
+        .map(item => {
+          const dayIndex = item.date ? generatedDates.indexOf(item.date) + 1 : 0;
+          return {
+            ...item,
+            lat: item.lat !== undefined && item.lat !== null ? Number(item.lat) : undefined,
+            lng: item.lng !== undefined && item.lng !== null ? Number(item.lng) : undefined,
+            dayIndex
+          };
+        });
 
       // Add photo points if they match the selectedDate (or ALL)
       const visiblePhotoPoints = photoPoints.filter(p => {
@@ -846,9 +865,12 @@ export function JourneyDetailPage({
         return p.date === selectedDate;
       });
 
-      // Combine and sort by time
+      // Combine and sort by date first, then by time
       const combined = [...timelinePoints, ...visiblePhotoPoints];
       combined.sort((a, b) => {
+        const dateA = a.date || '';
+        const dateB = b.date || '';
+        if (dateA !== dateB) return dateA.localeCompare(dateB);
         const timeA = parseTimeToMinutes(a.time);
         const timeB = parseTimeToMinutes(b.time);
         if (timeA !== timeB) return timeA - timeB;
@@ -860,8 +882,11 @@ export function JourneyDetailPage({
         if (selectedDate === 'ALL') return true;
         return p.date === selectedDate;
       });
-      // Sort photos by time to construct chronological photo paths
+      // Sort photos by date first, then by time to construct chronological photo paths
       visiblePhotoPoints.sort((a, b) => {
+        const dateA = a.date || '';
+        const dateB = b.date || '';
+        if (dateA !== dateB) return dateA.localeCompare(dateB);
         const timeA = parseTimeToMinutes(a.time);
         const timeB = parseTimeToMinutes(b.time);
         if (timeA !== timeB) return timeA - timeB;
@@ -1473,43 +1498,42 @@ export function JourneyDetailPage({
     <main className="animate-in slide-in-from-right-8 duration-500 flex flex-col md:flex-row h-auto md:h-[calc(100vh-73px)] w-full overflow-y-visible md:overflow-hidden">
       
       {/* Left: Map & Info Section */}
-      <section className={`w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-colors duration-300 ${isEditing ? 'h-[65vh]' : 'h-[48vh]'} md:h-full shrink-0`}>
-        <div className="p-4 md:p-8 border-b border-black/20 dark:border-white/20 z-10 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0">
+      <section className={`w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-colors duration-300 ${isEditing ? 'h-[70vh]' : 'h-[58vh]'} md:h-full shrink-0`}>
+        <div className="p-3 md:py-4 md:px-6 border-b border-black/20 dark:border-white/20 z-10 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0">
           
-          {/* Back to hub button */}
-          <button
-            onClick={() => {
-              const isPlan = trip?.tags.includes('Plan') || trip?.title.includes('(Plan)');
-              onNavigate(isPlan ? 'plan' : 'archive');
-            }}
-            className="flex items-center gap-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors mb-3"
-            title="Go back to Hub"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to { (trip?.tags.includes('Plan') || trip?.title.includes('(Plan)')) ? 'Plans' : 'Archive' }
-          </button>
-
-          {/* Header metadata area (date and location) */}
-          <div className="flex justify-between items-start gap-4 mb-3 md:mb-4">
-            <div className="flex items-center space-x-2 text-[10px] md:text-xs font-bold uppercase tracking-widest text-black/50 dark:text-white/50 transition-colors w-full">
+          {/* Back to hub & Metadata row */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+            <button
+              onClick={() => {
+                const isPlan = trip?.tags.includes('Plan') || trip?.title.includes('(Plan)');
+                onNavigate(isPlan ? 'plan' : 'archive');
+              }}
+              className="flex items-center gap-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors"
+              title="Go back to Hub"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Back to { (trip?.tags.includes('Plan') || trip?.title.includes('(Plan)')) ? 'Plans' : 'Archive' }
+            </button>
+            
+            <div className="flex items-center space-x-2 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-black/40 dark:text-white/40 transition-colors">
               {isEditing && draftTrip ? (
-                <div className="flex items-center gap-2 w-full flex-wrap">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <div className="flex items-center gap-1">
                     <input
                       type="date"
                       value={parseDateRange(draftTrip.date).start}
                       onChange={(e) => handleDateChange('start', e.target.value)}
-                      className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10"
+                      className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-[9px] md:text-[10px] text-black dark:text-white rounded-none border border-black/10 dark:border-white/10"
                     />
                     <span>—</span>
                     <input
                       type="date"
                       value={parseDateRange(draftTrip.date).end}
                       onChange={(e) => handleDateChange('end', e.target.value)}
-                      className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10"
+                      className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-[9px] md:text-[10px] text-black dark:text-white rounded-none border border-black/10 dark:border-white/10"
                     />
                   </div>
                   <span>—</span>
-                  <div className="w-48">
+                  <div className="w-32 md:w-40">
                     <PlaceAutocompleteInput
                       value={draftTrip.locationStr}
                       onChange={(val) => setDraftTrip({ ...draftTrip, locationStr: val })}
@@ -1524,7 +1548,7 @@ export function JourneyDetailPage({
                           };
                         });
                       }}
-                      className="bg-[#EAE8E3] dark:bg-white/10 px-2 py-1 outline-none text-[10px] md:text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
+                      className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[9px] md:text-[10px] text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
                       placeholder="Default Map City"
                     />
                   </div>
@@ -1537,23 +1561,44 @@ export function JourneyDetailPage({
                 </>
               )}
             </div>
-
-            {/* Edit controls */}
+          </div>
+          
+          {/* Journey Title & Edit controls row */}
+          <div className="flex justify-between items-center gap-4">
+            <div className="flex-grow">
+              {isEditing && draftTrip ? (
+                <input
+                  type="text"
+                  value={draftTrip.title}
+                  onChange={(e) => setDraftTrip({ ...draftTrip, title: e.target.value })}
+                  className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter uppercase leading-none bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 p-1.5 outline-none w-full text-black dark:text-white"
+                  placeholder="JOURNEY TITLE"
+                />
+              ) : (
+                <h1 
+                  className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter uppercase leading-none break-keep"
+                  style={{ wordBreak: 'keep-all' }}
+                >
+                  {(trip.title || '').replace(' (Plan)', '')}
+                </h1>
+              )}
+            </div>
+            
             {isLoggedIn && (
-              <div className="shrink-0 flex items-center gap-2">
+              <div className="shrink-0 flex items-center gap-1.5">
                 {isEditing ? (
                   <>
                     <button
                       onClick={handleSave}
                       disabled={saving}
-                      className="px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-black uppercase tracking-widest rounded-sm transition-all flex items-center gap-1 disabled:opacity-50"
+                      className="px-2.5 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all flex items-center gap-1 disabled:opacity-50"
                     >
                       {saving && <Loader2 className="w-3 h-3 animate-spin" />}
                       Save
                     </button>
                     <button
                       onClick={handleCancel}
-                      className="px-3 py-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[10px] font-black uppercase tracking-widest rounded-sm transition-all text-black/60 dark:text-white/60"
+                      className="px-2.5 py-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all text-black/60 dark:text-white/60"
                     >
                       Cancel
                     </button>
@@ -1561,7 +1606,7 @@ export function JourneyDetailPage({
                 ) : (
                   <button
                     onClick={handleStartEditing}
-                    className="px-3 py-1.5 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-[10px] font-black uppercase tracking-widest rounded-sm transition-all"
+                    className="px-2.5 py-1.5 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-[9px] font-black uppercase tracking-widest rounded-sm transition-all"
                   >
                     Edit Journey
                   </button>
@@ -1570,32 +1615,15 @@ export function JourneyDetailPage({
             )}
           </div>
           
-          {/* Trip Title */}
-          {isEditing && draftTrip ? (
-            <input
-              type="text"
-              value={draftTrip.title}
-              onChange={(e) => setDraftTrip({ ...draftTrip, title: e.target.value })}
-              className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter uppercase leading-none bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 p-2 outline-none w-full text-black dark:text-white"
-              placeholder="JOURNEY TITLE"
-            />
-          ) : (
-            <h1 
-              className="text-3xl sm:text-4xl md:text-6xl font-black tracking-tighter uppercase leading-none break-keep"
-              style={{ wordBreak: 'keep-all' }}
-            >
-              {(trip.title || '').replace(' (Plan)', '')}
-            </h1>
-          )}
-          
-          <div className="mt-4 md:mt-6 flex flex-wrap gap-2">
+          {/* Tags row */}
+          <div className="mt-2 flex flex-wrap gap-1.5">
             {(tripToUse?.tags || []).filter(t => t !== 'Personal').map(tag => {
               const isPlan = trip?.tags.includes('Plan') || trip?.title.includes('(Plan)');
               return (
                 <button
                   key={tag}
                   onClick={() => onNavigate(isPlan ? 'plan' : 'archive', null, true, tag)}
-                  className="text-[9px] md:text-[10px] font-bold border border-black/25 dark:border-white/25 px-2.5 py-1 uppercase rounded-full hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black hover:border-black dark:hover:border-white transition-all duration-200 cursor-pointer shadow-sm"
+                  className="text-[8px] md:text-[9px] font-bold border border-black/20 dark:border-white/20 px-2 py-0.5 uppercase rounded-full hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black hover:border-black dark:hover:border-white transition-all duration-200 cursor-pointer shadow-sm"
                 >
                   #{tag}
                 </button>
@@ -1605,24 +1633,28 @@ export function JourneyDetailPage({
         </div>
         
         {/* Dynamic Map Area */}
-        <ErrorBoundary fallback={
-          <div className="flex-grow flex flex-col items-center justify-center bg-[#EAE8E3] dark:bg-[#1A1A1A] text-black/40 dark:text-white/40 p-6 relative">
-            <span className="text-[10px] uppercase tracking-widest font-bold z-10 mb-2">Map Temporary Unavailable</span>
-            <img src={tripToUse?.mapImg || 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1600&auto=format&fit=crop'} className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none" />
+        <div className="flex-grow w-full relative md:px-6 md:pb-6">
+          <div className="w-full h-full relative md:border md:border-black/10 md:dark:border-white/10 md:rounded-lg md:overflow-hidden md:shadow-md">
+            <ErrorBoundary fallback={
+              <div className="flex-grow flex flex-col items-center justify-center bg-[#EAE8E3] dark:bg-[#1A1A1A] text-black/40 dark:text-white/40 p-6 relative h-full w-full">
+                <span className="text-[10px] uppercase tracking-widest font-bold z-10 mb-2">Map Temporary Unavailable</span>
+                <img src={tripToUse?.mapImg || 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1600&auto=format&fit=crop'} className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none" />
+              </div>
+            }>
+              <MapArea 
+                trip={tripToUse!}
+                isEditMode={isEditing}
+                mapPoints={mapPoints}
+                expandedItemId={expandedItemId}
+                handleItemToggle={handleItemToggle}
+                selectedDate={selectedDate}
+                isDarkMode={isDarkMode}
+                activeTab={activeTab}
+                transitFocusType={transitFocusType}
+              />
+            </ErrorBoundary>
           </div>
-        }>
-          <MapArea 
-            trip={tripToUse!}
-            isEditMode={isEditing}
-            mapPoints={mapPoints}
-            expandedItemId={expandedItemId}
-            handleItemToggle={handleItemToggle}
-            selectedDate={selectedDate}
-            isDarkMode={isDarkMode}
-            activeTab={activeTab}
-            transitFocusType={transitFocusType}
-          />
-        </ErrorBoundary>
+        </div>
       </section>
       
       {/* Right: Record / Tabs Section */}
@@ -1692,6 +1724,22 @@ export function JourneyDetailPage({
 
               {/* Timeline Items List */}
               <div className="flex flex-col pb-20 w-full relative">
+                {selectedDate === 'ALL' && currentTimeline.length > 0 && (
+                  <div className="flex justify-end px-4 md:px-6 py-2 bg-black/5 dark:bg-white/5 border-b border-black/10 dark:border-white/10 shrink-0 select-none">
+                    <button
+                      onClick={() => {
+                        if (collapsedDays.length === generatedDates.length) {
+                          setCollapsedDays([]);
+                        } else {
+                          setCollapsedDays([...generatedDates]);
+                        }
+                      }}
+                      className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-black/50 dark:text-white/50 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                    >
+                      {collapsedDays.length === generatedDates.length ? '▼ EXPAND ALL DAYS' : '▲ COLLAPSE ALL DAYS'}
+                    </button>
+                  </div>
+                )}
                 {isEditing && (
                   <div className="flex flex-col shrink-0 bg-black/5 dark:bg-white/5 border-b border-black/10 dark:border-white/10 relative">
                     <div className="flex justify-between items-center py-3 px-4 md:px-6 flex-wrap gap-2">
@@ -1769,20 +1817,32 @@ export function JourneyDetailPage({
                     const showDivider = selectedDate === 'ALL' && (idx === 0 || currentTimeline[idx - 1].date !== item.date);
                     const dayIndex = item.date ? generatedDates.indexOf(item.date) + 1 : 0;
                     const isExcluded = !!item.excludeFromMap;
+                    const dayColor = selectedDate === 'ALL' && dayIndex > 0 ? dayColors[(dayIndex - 1) % dayColors.length] : undefined;
                     return (
                       <div key={item.id} className="w-full flex flex-col">
                         {showDivider && (
                           <div 
                             id={`date-section-${item.date}`}
                             data-date-section={item.date}
-                            className="bg-[#EAE8E3]/60 dark:bg-white/5 py-2 px-4 md:px-6 border-b border-t border-black/10 dark:border-white/10 text-[10px] md:text-xs font-bold uppercase tracking-widest text-black/50 dark:text-white/50 flex items-center justify-between"
+                            onClick={() => {
+                              const dVal = item.date || '';
+                              if (collapsedDays.includes(dVal)) {
+                                setCollapsedDays(prev => prev.filter(d => d !== dVal));
+                              } else {
+                                setCollapsedDays(prev => [...prev, dVal]);
+                              }
+                            }}
+                            className="bg-[#EAE8E3]/60 dark:bg-white/5 py-2.5 px-4 md:px-6 border-b border-t border-black/10 dark:border-white/10 text-[10px] md:text-xs font-bold uppercase tracking-widest text-black/60 dark:text-white/60 flex items-center justify-between cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors select-none"
                           >
                             <span>Day {dayIndex} — {item.date}</span>
+                            <span className="text-[8px] md:text-[9px] font-black text-black/40 dark:text-white/40 flex items-center gap-1">
+                              {collapsedDays.includes(item.date || '') ? '▼ EXPAND' : '▲ COLLAPSE'}
+                            </span>
                           </div>
                         )}
                         <div 
                           ref={el => { itemRefs.current[item.id] = el; }} 
-                          className={`flex flex-col border-b border-black/10 dark:border-white/10 transition-colors w-full ${isActive ? 'bg-red-500/[0.02] dark:bg-red-500/[0.02] border-l-2 border-l-red-600 dark:border-l-red-400' : 'border-l-2 border-l-transparent'} ${isEditing ? 'cursor-grab active:cursor-grabbing' : ''} ${isExcluded ? 'opacity-60' : 'opacity-100'}`}
+                          className={`flex flex-col border-b border-black/10 dark:border-white/10 transition-all w-full ${isActive ? 'bg-red-500/[0.02] dark:bg-red-500/[0.02] border-l-2 border-l-red-600 dark:border-l-red-400' : 'border-l-2 border-l-transparent'} ${isEditing ? 'cursor-grab active:cursor-grabbing' : ''} ${isExcluded ? 'opacity-60' : 'opacity-100'} ${collapsedDays.includes(item.date || '') ? 'hidden' : ''}`}
                           draggable={isEditing}
                           onDragStart={() => setDraggedItemId(item.id)}
                           onDragOver={(e) => e.preventDefault()}
@@ -1841,14 +1901,15 @@ export function JourneyDetailPage({
                                   {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) && (
                                     <button
                                       onClick={() => handleToggleExcludeFromMap(item)}
-                                      className={`flex items-center justify-center py-0.5 border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-colors w-full mt-0.5 text-black/60 dark:text-white/60 ${
+                                      className={`flex items-center justify-center py-0.5 border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-colors w-full mt-0.5 ${
                                         isExcluded
                                           ? 'text-black/20 dark:text-white/20'
-                                          : 'text-red-600 dark:text-red-400'
+                                          : 'hover:opacity-80'
                                       }`}
+                                      style={!isExcluded && dayColor ? { color: dayColor, borderColor: dayColor } : undefined}
                                       title={isExcluded ? "지도에 표시하기" : "지도에서 제외하기"}
                                     >
-                                      {isExcluded ? <MapPinOff className="w-3.5 h-3.5" /> : <MapPin className="w-3.5 h-3.5" />}
+                                      {isExcluded ? <MapPinOff className="w-3.5 h-3.5" /> : <MapPin className="w-3.5 h-3.5" style={dayColor ? { color: dayColor } : undefined} />}
                                       <span className="text-[7px] md:text-[8px] font-bold ml-1">{isExcluded ? "OFF" : "ON"}</span>
                                     </button>
                                   )}
@@ -1860,8 +1921,8 @@ export function JourneyDetailPage({
                                   </div>
                                   <div className="flex flex-col mt-0.5" onClick={(e) => e.stopPropagation()}>
                                     {selectedDate === 'ALL' && (
-                                      <span className="text-[9px] text-black/40 dark:text-white/40 block font-normal leading-none mt-0.5">
-                                        {item.date ? item.date.slice(5) : ''}
+                                      <span className="text-[9px] block font-bold leading-none mt-0.5" style={{ color: dayColor || 'inherit' }}>
+                                        D{dayIndex} {item.date ? item.date.slice(5).replace('.', '/') : ''}
                                       </span>
                                     )}
                                     
@@ -1872,8 +1933,9 @@ export function JourneyDetailPage({
                                         className={`flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest transition-colors mt-1.5 ${
                                           isExcluded
                                             ? 'text-black/20 dark:text-white/20 hover:text-black/45 dark:hover:text-white/45'
-                                            : 'text-red-600 dark:text-red-400 hover:opacity-80'
+                                            : 'hover:opacity-80'
                                         }`}
+                                        style={!isExcluded && dayColor ? { color: dayColor } : undefined}
                                         title={isExcluded ? "지도에 표시하기" : "지도에서 제외하기"}
                                       >
                                         {isExcluded ? (
@@ -2477,24 +2539,20 @@ export function JourneyDetailPage({
                           <div className="absolute inset-0 bg-black/0 group-hover/gallery:bg-black/10 transition-colors pointer-events-none" />
                           
                           {/* EXIF metadata overlay (top-left) */}
-                          {(imgMeta.date || imgMeta.place) && (
-                            <div className="absolute top-2 left-2 flex flex-col gap-0.5 z-10 pointer-events-none">
-                              {imgMeta.date && (
-                                <div className="bg-black/60 backdrop-blur-sm px-1.5 py-0.5">
-                                  <span className="text-[8px] text-amber-300 font-mono font-bold tracking-widest leading-none">
-                                    {imgMeta.date.replace(/\./g, '/')}
-                                  </span>
-                                </div>
-                              )}
-                              {imgMeta.place && (
-                                <div className="bg-black/60 backdrop-blur-sm px-1.5 py-0.5">
-                                  <span className="text-[8px] text-amber-300 font-mono font-bold tracking-widest leading-none truncate block max-w-[160px]">
-                                    📍 {imgMeta.place}
-                                  </span>
-                                </div>
-                              )}
+                          <div className="absolute top-2 left-2 flex flex-col gap-0.5 z-10 pointer-events-none">
+                            <div className="bg-black/60 backdrop-blur-sm px-1.5 py-0.5">
+                              <span className="text-[8px] text-amber-300 font-mono font-bold tracking-widest leading-none">
+                                {(imgMeta.date || generatedDates[0] || trip.date?.split(' ~ ')[0] || '').replace(/\./g, '/')}
+                              </span>
                             </div>
-                          )}
+                            {imgMeta.place && (
+                              <div className="bg-black/60 backdrop-blur-sm px-1.5 py-0.5">
+                                <span className="text-[8px] text-amber-300 font-mono font-bold tracking-widest leading-none truncate block max-w-[160px]">
+                                  📍 {imgMeta.place}
+                                </span>
+                              </div>
+                            )}
+                          </div>
 
                           {/* Maximize / Expand button to trigger fullscreen Lightbox (bottom-right) */}
                           <button

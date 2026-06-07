@@ -2,6 +2,17 @@ import React, { useRef, useEffect, useState } from 'react';
 import { MapPin, Plus, Minus, Store, ShoppingBag, Train, Loader2 } from 'lucide-react';
 import { Trip, TimelineItem } from '../types';
 
+const dayColors = [
+  '#dc2626', // Day 1: Red
+  '#2563eb', // Day 2: Blue
+  '#16a34a', // Day 3: Green
+  '#d97706', // Day 4: Orange/Amber
+  '#7c3aed', // Day 5: Purple
+  '#db2777', // Day 6: Pink
+  '#0891b2', // Day 7: Cyan
+  '#4b5563', // Day 8: Gray
+];
+
 interface MapAreaProps {
   trip: Trip;
   isEditMode: boolean;
@@ -237,6 +248,13 @@ export function MapArea({
       } else if (item.isPhoto) {
         pinColor = '#f97316';
         pinTextPrefix = '📷 ';
+      } else if (selectedDate === 'ALL') {
+        const dayIndex = item.dayIndex || 0;
+        const colorIndex = (dayIndex ? dayIndex - 1 : 0) % dayColors.length;
+        pinColor = dayColors[colorIndex];
+        if (dayIndex) {
+          pinTextPrefix = `[D${dayIndex}] `;
+        }
       }
 
       const htmlContent = `
