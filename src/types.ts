@@ -15,8 +15,11 @@ export interface TripDate {
 export interface GalleryImageMeta {
   url: string;
   date?: string;
+  time?: string;
   place?: string;
   imgNote?: string;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 export interface Trip {

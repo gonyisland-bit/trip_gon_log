@@ -72,8 +72,9 @@ export function MapArea({
 
     mapRef.current = map;
 
-    // Use light tile layer (CSS filter in index.css will invert it in dark mode)
-    const tileUrl = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+    const tileUrl = isDarkMode
+      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
     tileLayerRef.current = L.tileLayer(tileUrl, { maxZoom: 20, zIndex: 1 }).addTo(map);
 
     // Fix blank tile edge after layout settles
@@ -117,6 +118,19 @@ export function MapArea({
 
   // ─── Effect 2: Leaflet redraw helper on dark-mode toggle ───────────────────
   useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    const L = (window as any).L;
+    if (!L) return;
+
+    if (tileLayerRef.current) map.removeLayer(tileLayerRef.current);
+
+    const tileUrl = isDarkMode
+      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+
+    tileLayerRef.current = L.tileLayer(tileUrl, { maxZoom: 20, zIndex: 1 }).addTo(map);
+
     // Redraw polyline to bring to front and align layers
     if (polylineRef.current?.bringToFront) polylineRef.current.bringToFront();
     Object.values(markersRef.current).forEach((m: any) => { if (m?.bringToFront) m.bringToFront(); });
@@ -220,6 +234,9 @@ export function MapArea({
           pinColor = '#f59e0b';
           pinTextPrefix = '🎫 ';
         }
+      } else if (item.isPhoto) {
+        pinColor = '#f97316';
+        pinTextPrefix = '📷 ';
       }
 
       const htmlContent = `

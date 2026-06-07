@@ -256,17 +256,17 @@ export function HomePage({
               >
                 <div className="aspect-[3/4] w-full overflow-hidden mb-4 border border-black/10 dark:border-white/10 relative bg-black/5">
                   <img src={plan.img} alt={plan.title} className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500" />
-                  {/* Hamburger menu */}
-                  <JourneyCardMenu
-                    isLoggedIn={isLoggedIn}
-                    onEdit={onEditTrip ? () => onEditTrip(plan.id) : undefined}
-                    onDelete={onDeleteTrip ? () => onDeleteTrip(plan.id) : undefined}
-                  />
                 </div>
                 <div className="mt-auto">
                   <div className="text-xs tracking-widest text-black/50 dark:text-white/50 mb-1 break-words">{plan.date}</div>
                   <div className="font-bold tracking-tight uppercase text-sm break-words">{plan.title}</div>
                 </div>
+                {/* Hamburger menu */}
+                <JourneyCardMenu
+                  isLoggedIn={isLoggedIn}
+                  onEdit={onEditTrip ? () => onEditTrip(plan.id) : undefined}
+                  onDelete={onDeleteTrip ? () => onDeleteTrip(plan.id) : undefined}
+                />
               </div>
             ))}
           </div>

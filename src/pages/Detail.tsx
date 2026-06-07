@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Clock, Plane, Bed, Train, Bus, User, Edit2, Trash2, 
   Image as ImageIcon, ChevronUp, ChevronDown, MapPin, Map, Plus, Loader2, Search, ArrowLeft,
-  ExternalLink, MapPinOff
+  ExternalLink, MapPinOff, Maximize2
 } from 'lucide-react';
 import { MapArea } from '../components/MapArea';
 import { ImageEditOverlay } from '../components/ImageEditOverlay';
@@ -268,6 +268,13 @@ function PlaceAutocompleteInput({
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
   useEffect(() => {
     const google = (window as any).google;
     if (!google || !google.maps || !google.maps.places || !inputRef.current) {
@@ -280,13 +287,17 @@ function PlaceAutocompleteInput({
     autocompleteRef.current = autocomplete;
 
     const listener = autocomplete.addListener('place_changed', () => {
-      const place = autocomplete.getPlace();
-      if (place && place.geometry && place.geometry.location) {
-        const lat = place.geometry.location.lat();
-        const lng = place.geometry.location.lng();
-        const name = place.name || place.formatted_address || '';
-        const address = place.formatted_address || name;
-        onSelectPlace(name, { lat, lng }, address);
+      try {
+        const place = autocomplete.getPlace();
+        if (place && place.geometry && place.geometry.location) {
+          const lat = place.geometry.location.lat();
+          const lng = place.geometry.location.lng();
+          const name = place.name || place.formatted_address || '';
+          const address = place.formatted_address || name;
+          onSelectPlace(name, { lat, lng }, address);
+        }
+      } catch (err) {
+        console.error("Autocomplete select failed:", err);
       }
     });
 
@@ -311,6 +322,7 @@ function PlaceAutocompleteInput({
           type="text"
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}
+          onKeyDown={handleKeyDown}
           className={className}
           placeholder={placeholder}
         />
@@ -796,14 +808,66 @@ export function JourneyDetailPage({
   });
 
   const mapPoints = (() => {
+    // Collect gallery photo points that have valid coordinates
+    const galleryMetaImages = (tripToUse?.gallery || []).map(img => {
+      if (typeof img === 'string') return { url: img };
+      return img;
+    });
+
+    const photoPoints: any[] = [];
+    galleryMetaImages.forEach((imgMeta, idx) => {
+      if (imgMeta.lat !== undefined && imgMeta.lng !== undefined && imgMeta.lat !== null && imgMeta.lng !== null) {
+        photoPoints.push({
+          id: 500000 + idx, // unique ID offset for photo pins
+          place: imgMeta.place || '사진 위치',
+          lat: Number(imgMeta.lat),
+          lng: Number(imgMeta.lng),
+          time: imgMeta.time || '12:00 PM', // Fallback time if none
+          date: imgMeta.date || '',
+          memo: imgMeta.imgNote || '갤러리 사진',
+          isPhoto: true,
+          photoUrl: imgMeta.url
+        });
+      }
+    });
+
     if (activeTab === 'timeline') {
-      return currentTimeline
+      const timelinePoints = currentTimeline
         .filter(item => !item.excludeFromMap)
         .map(item => ({
           ...item,
           lat: item.lat !== undefined && item.lat !== null ? Number(item.lat) : undefined,
           lng: item.lng !== undefined && item.lng !== null ? Number(item.lng) : undefined
         }));
+
+      // Add photo points if they match the selectedDate (or ALL)
+      const visiblePhotoPoints = photoPoints.filter(p => {
+        if (selectedDate === 'ALL') return true;
+        return p.date === selectedDate;
+      });
+
+      // Combine and sort by time
+      const combined = [...timelinePoints, ...visiblePhotoPoints];
+      combined.sort((a, b) => {
+        const timeA = parseTimeToMinutes(a.time);
+        const timeB = parseTimeToMinutes(b.time);
+        if (timeA !== timeB) return timeA - timeB;
+        return a.id - b.id;
+      });
+      return combined;
+    } else if (activeTab === 'gallery') {
+      const visiblePhotoPoints = photoPoints.filter(p => {
+        if (selectedDate === 'ALL') return true;
+        return p.date === selectedDate;
+      });
+      // Sort photos by time to construct chronological photo paths
+      visiblePhotoPoints.sort((a, b) => {
+        const timeA = parseTimeToMinutes(a.time);
+        const timeB = parseTimeToMinutes(b.time);
+        if (timeA !== timeB) return timeA - timeB;
+        return a.id - b.id;
+      });
+      return visiblePhotoPoints;
     } else if (activeTab === 'flights') {
       const flightsToUse = isEditing ? draftFlights : flights;
       const flightPoints: any[] = [];
@@ -1224,11 +1288,13 @@ export function JourneyDetailPage({
         // 1. Extract EXIF BEFORE compressing (canvas strips metadata)
         const exif = await readExif(file);
         let exifDate: string | undefined;
+        let exifTime: string | undefined;
         let exifPlace: string | undefined;
 
         if (exif.dateTime) {
           // Format YYYY:MM:DD HH:MM:SS → YYYY.MM.DD
           exifDate = exif.dateTime.slice(0, 10).replace(/:/g, '.');
+          exifTime = exif.dateTime.slice(11, 16); // "HH:MM"
         }
         if (exif.latitude !== undefined && exif.longitude !== undefined) {
           try {
@@ -1243,10 +1309,16 @@ export function JourneyDetailPage({
         await uploadBytes(storageRef, compressedBlob);
         const url = await getDownloadURL(storageRef);
 
-        // 3. Build GalleryImageMeta if we have metadata
-        const newEntry = (exifDate || exifPlace)
-          ? { url, date: exifDate, place: exifPlace }
-          : url;
+        // 3. Build GalleryImageMeta
+        const newEntry = {
+          url,
+          date: exifDate || '',
+          time: exifTime || '12:00 PM',
+          place: exifPlace || '',
+          lat: exif.latitude !== undefined ? exif.latitude : null,
+          lng: exif.longitude !== undefined ? exif.longitude : null,
+          imgNote: ''
+        };
         
         newEntries.push(newEntry);
       }
@@ -1372,7 +1444,13 @@ export function JourneyDetailPage({
     }));
 
   // Combined LightboxImageMeta array: gallery photos first, then timeline photos
-  const galleryMetaMetas: LightboxImageMeta[] = galleryMetaImages.map(g => ({ url: g.url, type: 'gallery' as const }));
+  const galleryMetaMetas: LightboxImageMeta[] = galleryMetaImages.map(g => ({
+    url: g.url,
+    place: g.place,
+    date: g.date,
+    imgNote: g.imgNote || '',
+    type: 'gallery' as const
+  }));
   const timelineMetas: LightboxImageMeta[] = timelineImages.map(t => ({
     url: t.url,
     place: t.place,
@@ -1732,7 +1810,7 @@ export function JourneyDetailPage({
                               </div>
                             )}
                             {/* Time */}
-                            <div className={`shrink-0 text-[10px] md:text-xs font-bold tracking-widest mt-1 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60'} ${isEditing ? 'w-[72px] md:w-44 flex flex-col gap-1' : 'w-16 md:w-24 flex flex-col gap-1.5'}`}>
+                            <div className={`shrink-0 text-[10px] md:text-xs font-bold tracking-widest mt-1 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60'} ${isEditing ? 'w-[76px] md:w-28 flex flex-col gap-1' : 'w-16 md:w-24 flex flex-col gap-1.5'}`}>
                               {isEditing ? (
                                 <div className="flex flex-col gap-1 w-full" onClick={(e) => e.stopPropagation()}>
                                   <input
@@ -1964,25 +2042,30 @@ export function JourneyDetailPage({
                                       value={item.location || ''}
                                       onChange={(val) => updateTimelineItemFields(item.id, { location: val, lat: undefined, lng: undefined })}
                                       onBlur={async () => {
-                                        // Only geocode if no coords yet (don't override Places API selection)
-                                        if (
-                                          item.location &&
-                                          item.location.trim() !== '' &&
-                                          (item.lat === undefined || item.lat === null || item.lng === undefined || item.lng === null)
-                                        ) {
-                                          const coords = await fetchCoordinates(item.location);
-                                          if (coords) {
-                                            updateTimelineItemFields(item.id, {
-                                              lat: coords.lat,
-                                              lng: coords.lng,
-                                            });
+                                        // Use a small delay to let onSelectPlace write coords first if a place was selected
+                                        setTimeout(async () => {
+                                          const currentItem = (isEditing ? draftTimeline : baseTimeline).find((t: any) => t.id === item.id);
+                                          if (!currentItem) return;
+
+                                          if (
+                                            currentItem.location &&
+                                            currentItem.location.trim() !== '' &&
+                                            (currentItem.lat === undefined || currentItem.lat === null || currentItem.lng === undefined || currentItem.lng === null)
+                                          ) {
+                                            const coords = await fetchCoordinates(currentItem.location);
+                                            if (coords) {
+                                              updateTimelineItemFields(currentItem.id, {
+                                                lat: coords.lat,
+                                                lng: coords.lng,
+                                              });
+                                            }
                                           }
-                                        }
+                                        }, 200);
                                       }}
                                       onSelectPlace={(name, coords, address) => {
-                                        // Atomic update: location + lat + lng in one setState
+                                        // Atomic update: location (name) + lat + lng in one setState
                                         updateTimelineItemFields(item.id, {
-                                          location: address || name,
+                                          location: name || address,
                                           lat: coords?.lat ?? item.lat,
                                           lng: coords?.lng ?? item.lng,
                                         });
@@ -2380,10 +2463,10 @@ export function JourneyDetailPage({
                       >
                         {/* Film-photo styled clickable image */}
                         <div
-                          className="relative overflow-hidden border border-black/10 dark:border-white/10 cursor-pointer aspect-[4/3]"
+                          className="relative overflow-hidden border border-black/10 dark:border-white/10 cursor-pointer aspect-[4/3] group"
                           onClick={() => {
-                            setLightboxIndex(idx);
-                            setIsLightboxOpen(true);
+                            // Focus map pin for this photo
+                            setExpandedItemId(500000 + idx);
                           }}
                         >
                           <img 
@@ -2412,11 +2495,27 @@ export function JourneyDetailPage({
                               )}
                             </div>
                           )}
+
+                          {/* Maximize / Expand button to trigger fullscreen Lightbox (bottom-right) */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation(); // Avoid triggering map focus
+                              setLightboxIndex(idx);
+                              setIsLightboxOpen(true);
+                            }}
+                            className="absolute bottom-2 right-2 p-1.5 bg-black/75 hover:bg-black text-white transition-colors z-10 rounded-sm opacity-0 group-hover:opacity-100 focus:opacity-100"
+                            title="Expand Photo"
+                          >
+                            <Maximize2 className="w-3.5 h-3.5" />
+                          </button>
                           
                           {/* Delete image button */}
                           {isLoggedIn && (
                             <button
-                              onClick={(e) => handleRemoveGalleryImage(imgMeta.url, e)}
+                              onClick={(e) => {
+                                e.stopPropagation(); // Avoid triggering map focus
+                                handleRemoveGalleryImage(imgMeta.url, e);
+                              }}
                               className="absolute top-2 right-2 p-1.5 bg-black/75 hover:bg-red-600 text-white transition-colors opacity-0 group-hover/gallery:opacity-100 z-10 rounded-sm"
                               title="Remove Image"
                             >
@@ -2461,11 +2560,14 @@ export function JourneyDetailPage({
                       <div key={`timeline-${imgItem.url}-${idx}`} className="flex flex-col group/gallery">
                         {/* Film-photo styled image */}
                         <div
-                          className="relative overflow-hidden border border-black/10 dark:border-white/10 cursor-pointer aspect-[4/3]"
+                          className="relative overflow-hidden border border-black/10 dark:border-white/10 cursor-pointer aspect-[4/3] group"
                           onClick={() => {
+                            // Focus map pin for this photo
                             const globalIdx = galleryAllUnique.indexOf(imgItem.url);
-                            setLightboxIndex(globalIdx !== -1 ? globalIdx : 0);
-                            setIsLightboxOpen(true);
+                            const photoInGalleryIdx = galleryMetaImages.findIndex(g => g.url === imgItem.url);
+                            if (photoInGalleryIdx !== -1) {
+                              setExpandedItemId(500000 + photoInGalleryIdx);
+                            }
                           }}
                         >
                           <img
@@ -2496,6 +2598,21 @@ export function JourneyDetailPage({
                               🗓️ TIMELINE
                             </span>
                           </div>
+
+                          {/* Maximize / Expand button to trigger fullscreen Lightbox (bottom-right) */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation(); // Avoid triggering map focus
+                              const globalIdx = galleryAllUnique.indexOf(imgItem.url);
+                              setLightboxIndex(globalIdx !== -1 ? globalIdx : 0);
+                              setIsLightboxOpen(true);
+                            }}
+                            className="absolute bottom-2 right-2 p-1.5 bg-black/75 hover:bg-black text-white transition-colors z-10 rounded-sm opacity-0 group-hover/gallery:opacity-100 focus:opacity-100"
+                            title="Expand Photo"
+                          >
+                            <Maximize2 className="w-3.5 h-3.5" />
+                          </button>
+
                           <div className="absolute inset-0 bg-black/0 group-hover/gallery:bg-black/10 transition-colors pointer-events-none" />
                         </div>
 

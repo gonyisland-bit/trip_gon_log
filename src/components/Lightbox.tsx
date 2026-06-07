@@ -78,8 +78,8 @@ export function Lightbox({
   const prevMeta = images.length > 1 ? images[(currentIndex - 1 + images.length) % images.length] : null;
   const nextMeta = images.length > 1 ? images[(currentIndex + 1) % images.length] : null;
 
-  // Only timeline images have real log info
-  const hasLog = !!(currentMeta.place || currentMeta.memo || currentMeta.imgNote);
+  // Always enable log panel for consistent layout container
+  const hasLog = true;
   const hasDate = !!currentMeta.date;
 
   function resetZoom() {
@@ -154,20 +154,18 @@ export function Lightbox({
 
         <div className="flex items-center gap-2 md:gap-3 pointer-events-auto">
           {/* Log toggle */}
-          {hasLog && (
-            <button
-              onClick={() => setShowLog(v => !v)}
-              className={`flex items-center gap-1 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-widest border transition-all ${
-                showLog
-                  ? 'bg-white/10 border-white/20 text-white'
-                  : 'border-white/10 text-white/40 hover:text-white/70 hover:border-white/20'
-              }`}
-              title="Toggle log info"
-            >
-              <MessageSquare className="w-3 h-3" />
-              Log {showLog ? 'ON' : 'OFF'}
-            </button>
-          )}
+          <button
+            onClick={() => setShowLog(v => !v)}
+            className={`flex items-center gap-1 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-widest border transition-all ${
+              showLog
+                ? 'bg-white/10 border-white/20 text-white font-black'
+                : 'border-white/10 text-white/40 hover:text-white/70 hover:border-white/20'
+            }`}
+            title="Toggle log info"
+          >
+            <MessageSquare className="w-3 h-3" />
+            Log {showLog ? 'ON' : 'OFF'}
+          </button>
 
           <div className="h-4 w-[1px] bg-white/20 mx-1" />
 
@@ -326,22 +324,29 @@ export function Lightbox({
         </div>
       )}
 
-      {/* Bottom captions panel (place, memo, imgNote) */}
-      {(hasLog && showLog) && (
-        <div className="relative z-20 bg-black/90 border-t border-white/10 px-6 py-4 md:px-10 flex flex-col items-center gap-1 shrink-0">
-          {currentMeta.place && (
-            <div className="text-white font-bold text-xs md:text-sm tracking-wide">
+      {/* Bottom captions panel (place, memo, imgNote) - Fixed height/area layout */}
+      {showLog && (
+        <div className="relative z-20 bg-black/90 border-t border-white/10 px-6 py-4 md:px-10 flex flex-col items-center justify-center gap-1 shrink-0 h-24 md:h-28 text-center w-full">
+          {currentMeta.place ? (
+            <div className="text-white font-bold text-xs md:text-sm tracking-wide truncate max-w-2xl uppercase">
               {currentMeta.place}
             </div>
-          )}
-          {currentMeta.memo && (
-            <div className="text-white/70 text-[10px] md:text-xs font-medium tracking-wide text-center max-w-xl">
-              {currentMeta.memo}
+          ) : (
+            <div className="text-white/25 font-bold text-[10px] md:text-xs tracking-widest uppercase">
+              No Location Tagged
             </div>
           )}
-          {currentMeta.imgNote && (
-            <p className="text-orange-300/90 text-[10px] md:text-[11px] font-mono italic leading-relaxed text-center max-w-xl mt-1">
+          {currentMeta.memo ? (
+            <div className="text-white/70 text-[10px] md:text-xs font-medium tracking-wide text-center max-w-xl truncate">
+              {currentMeta.memo}
+            </div>
+          ) : currentMeta.imgNote ? (
+            <p className="text-orange-300/90 text-[10px] md:text-[11px] font-mono italic leading-relaxed text-center max-w-xl truncate">
               "{currentMeta.imgNote}"
+            </p>
+          ) : (
+            <p className="text-white/25 text-[10px] md:text-[11px] font-mono italic">
+              "No description added"
             </p>
           )}
         </div>

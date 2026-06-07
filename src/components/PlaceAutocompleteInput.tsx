@@ -21,6 +21,13 @@ export function PlaceAutocompleteInput({
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
   useEffect(() => {
     const google = (window as any).google;
     if (!google || !google.maps || !google.maps.places || !inputRef.current) {
@@ -33,13 +40,17 @@ export function PlaceAutocompleteInput({
     autocompleteRef.current = autocomplete;
 
     const listener = autocomplete.addListener('place_changed', () => {
-      const place = autocomplete.getPlace();
-      if (place && place.geometry && place.geometry.location) {
-        const lat = place.geometry.location.lat();
-        const lng = place.geometry.location.lng();
-        const name = place.name || place.formatted_address || '';
-        const address = place.formatted_address || name;
-        onSelectPlace(name, { lat, lng }, address);
+      try {
+        const place = autocomplete.getPlace();
+        if (place && place.geometry && place.geometry.location) {
+          const lat = place.geometry.location.lat();
+          const lng = place.geometry.location.lng();
+          const name = place.name || place.formatted_address || '';
+          const address = place.formatted_address || name;
+          onSelectPlace(name, { lat, lng }, address);
+        }
+      } catch (err) {
+        console.error("Autocomplete select failed:", err);
       }
     });
 
@@ -64,6 +75,7 @@ export function PlaceAutocompleteInput({
           type="text"
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}
+          onKeyDown={handleKeyDown}
           className={className}
           placeholder={placeholder}
         />
