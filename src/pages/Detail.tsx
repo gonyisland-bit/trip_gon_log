@@ -1633,27 +1633,25 @@ export function JourneyDetailPage({
         </div>
         
         {/* Dynamic Map Area */}
-        <div className="flex-grow w-full relative md:px-6 md:pb-6">
-          <div className="w-full h-full relative md:border md:border-black/10 md:dark:border-white/10 md:rounded-lg md:overflow-hidden md:shadow-md">
-            <ErrorBoundary fallback={
-              <div className="flex-grow flex flex-col items-center justify-center bg-[#EAE8E3] dark:bg-[#1A1A1A] text-black/40 dark:text-white/40 p-6 relative h-full w-full">
-                <span className="text-[10px] uppercase tracking-widest font-bold z-10 mb-2">Map Temporary Unavailable</span>
-                <img src={tripToUse?.mapImg || 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1600&auto=format&fit=crop'} className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none" />
-              </div>
-            }>
-              <MapArea 
-                trip={tripToUse!}
-                isEditMode={isEditing}
-                mapPoints={mapPoints}
-                expandedItemId={expandedItemId}
-                handleItemToggle={handleItemToggle}
-                selectedDate={selectedDate}
-                isDarkMode={isDarkMode}
-                activeTab={activeTab}
-                transitFocusType={transitFocusType}
-              />
-            </ErrorBoundary>
-          </div>
+        <div className="flex-grow w-full relative md:pb-6 flex flex-col">
+          <ErrorBoundary fallback={
+            <div className="flex-grow flex flex-col items-center justify-center bg-[#EAE8E3] dark:bg-[#1A1A1A] text-black/40 dark:text-white/40 p-6 relative h-full w-full">
+              <span className="text-[10px] uppercase tracking-widest font-bold z-10 mb-2">Map Temporary Unavailable</span>
+              <img src={tripToUse?.mapImg || 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1600&auto=format&fit=crop'} className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none" />
+            </div>
+          }>
+            <MapArea 
+              trip={tripToUse!}
+              isEditMode={isEditing}
+              mapPoints={mapPoints}
+              expandedItemId={expandedItemId}
+              handleItemToggle={handleItemToggle}
+              selectedDate={selectedDate}
+              isDarkMode={isDarkMode}
+              activeTab={activeTab}
+              transitFocusType={transitFocusType}
+            />
+          </ErrorBoundary>
         </div>
       </section>
       
@@ -1711,14 +1709,8 @@ export function JourneyDetailPage({
               </div>
 
               {!isLoggedIn && (
-                <div className="bg-black/5 dark:bg-white/10 px-4 py-2 text-[9px] md:text-[10px] uppercase font-bold tracking-widest text-center flex items-center justify-center gap-2 shrink-0 w-full">
+                <div className="bg-black/5 dark:bg-white/10 px-4 py-1.5 text-[9px] md:text-[10px] uppercase font-bold tracking-widest text-center flex items-center justify-center gap-2 shrink-0 w-full">
                   <User className="w-3 h-3 shrink-0" /> <span className="truncate">로그인 후 기록을 수정하거나 새 일정을 추가할 수 있습니다.</span>
-                </div>
-              )}
-
-              {isLoggedIn && !isEditing && (
-                <div className="bg-black/5 dark:bg-white/10 px-4 py-2 text-[9px] md:text-[10px] uppercase font-bold tracking-widest text-center flex items-center justify-center gap-2 shrink-0 w-full">
-                  <Edit2 className="w-3 h-3 shrink-0 text-red-600 dark:text-red-400" /> <span className="truncate text-red-600 dark:text-red-400">우측 상단 'Edit Journey' 버튼을 클릭하면 편집이 시작됩니다.</span>
                 </div>
               )}
 
