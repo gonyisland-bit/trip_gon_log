@@ -250,3 +250,57 @@
   animation-duration: 700ms;
 }
 
+/* Dark mode Leaflet tile inversion for high-visibility dark map */
+.dark #leaflet-map .leaflet-tile-container {
+  filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(110%);
+}
+
+/* POI Pin Marker & Label Styles */
+.custom-poi-pin-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+.poi-pin-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.poi-pin {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+
+.poi-label {
+  background: rgba(249,248,246,0.95);
+  border: 1.5px solid #111111;
+  color: #111111;
+  font-size: 8px;
+  font-weight: 900;
+  padding: 1.5px 4.5px;
+  border-radius: 0px;
+  margin-top: 3.5px;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transform: scale(0.95);
+}
+
+.dark .poi-label {
+  background: rgba(22,22,22,0.95);
+  border: 1.5px solid #ffffff;
+  color: #ffffff;
+}
+
+

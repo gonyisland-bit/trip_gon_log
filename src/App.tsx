@@ -143,16 +143,43 @@ function App() {
     || undefined;
 
   const displayMarqueeText = useMemo(() => {
-    if (marqueeOverrideText) return marqueeOverrideText;
+    if (marqueeOverrideText) {
+      return `${marqueeOverrideText}   ★   ${marqueeOverrideText}   ★   ${marqueeOverrideText}   ★   `;
+    }
     if (currentView === 'detail' && activeTrip) {
       const tagsStr = (activeTrip.tags || [])
         .filter(t => t !== 'Plan' && t !== 'Personal')
         .map(t => `#${t}`)
         .join(' ');
-      return `✈️ 여정: ${(activeTrip.title || '').replace(' (Plan)', '').toUpperCase()} • 장소: ${activeTrip.locationStr.toUpperCase()} • 기간: ${activeTrip.date} ${tagsStr ? `• 태그: ${tagsStr.toUpperCase()}` : ''}`;
+
+      const title = (activeTrip.title || '').replace(' (Plan)', '').toUpperCase();
+      const location = activeTrip.locationStr.toUpperCase();
+      const duration = activeTrip.date;
+
+      // Extract flight details
+      const tripFlights = flightsByTrip[activeTrip.id] || [];
+      const flightInfo = tripFlights
+        .map(f => `${f.fromCode} ➔ ${f.toCode} (${f.flightNo})`)
+        .join(', ');
+
+      // Extract stay details
+      const tripStays = staysByTrip[activeTrip.id] || [];
+      const stayInfo = tripStays
+        .map(s => s.title)
+        .join(', ');
+
+      let text = `✈️ ${title} • 📍 ${location} • 📅 ${duration}`;
+      if (flightInfo) text += ` • 🛫 ${flightInfo}`;
+      if (stayInfo) text += ` • 🏨 ${stayInfo}`;
+      if (tagsStr) text += ` • ${tagsStr.toUpperCase()}`;
+
+      return `${text}   ★   ${text}   ★   ${text}   ★   `;
     }
-    return marqueeMessage;
-  }, [marqueeOverrideText, currentView, activeTrip, marqueeMessage]);
+    
+    // Repeat default message to keep it seamless
+    const baseMsg = marqueeMessage || '';
+    return `${baseMsg}   ★   ${baseMsg}   ★   ${baseMsg}   ★   `;
+  }, [marqueeOverrideText, currentView, activeTrip, marqueeMessage, flightsByTrip, staysByTrip]);
 
   // Sync activeTripId with trips[0]?.id if it is null and trips have loaded
   useEffect(() => {

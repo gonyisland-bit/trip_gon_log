@@ -1157,6 +1157,15 @@ export function JourneyDetailPage({
   const updateStay = (id: number, field: keyof StayItem, val: string) => {
     setDraftStays(prev => prev.map(s => s.id === id ? { ...s, [field]: val } : s));
   };
+  const updateStayPlace = (id: number, address: string, coords: { lat: number; lng: number } | null) => {
+    setDraftStays(prev => prev.map(s => s.id === id ? { ...s, address } : s));
+    if (coords) {
+      setStayCoords(prev => ({
+        ...prev,
+        [id]: coords
+      }));
+    }
+  };
   const deleteStay = (id: number) => {
     setDraftStays(prev => prev.filter(s => s.id !== id));
   };
@@ -2202,6 +2211,7 @@ export function JourneyDetailPage({
                       stay={stay} 
                       isEditMode={isEditing} 
                       onUpdate={updateStay} 
+                      onSelectPlace={updateStayPlace}
                       onDelete={deleteStay} 
                       isActive={expandedItemId === stay.id}
                       onClick={() => {

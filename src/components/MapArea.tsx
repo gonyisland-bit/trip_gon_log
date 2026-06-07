@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { MapPin, Plus, Minus } from 'lucide-react';
+import { MapPin, Plus, Minus, Store, ShoppingBag, Train, Loader2 } from 'lucide-react';
 import { Trip, TimelineItem } from '../types';
 
 interface MapAreaProps {
@@ -30,11 +30,17 @@ export function MapArea({
   const markersRef = useRef<{ [id: number]: any }>({});
   const polylineRef = useRef<any>(null);
   const tileLayerRef = useRef<any>(null);
-  // Track whether we have already fit bounds at least once.
-  // After first fit, we don't snap back on empty mapPoints.
   const hasFitRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
   const [isInteractive, setIsInteractive] = useState(false);
+
+  // POI Features
+  const [poiItems, setPoiItems] = useState<any[]>([]);
+  const [poiLoading, setPoiLoading] = useState(false);
+  const [showConvenience, setShowConvenience] = useState(false);
+  const [showSupermarket, setShowSupermarket] = useState(false);
+  const [showStation, setShowStation] = useState(false);
+  const poiMarkersRef = useRef<any[]>([]);
 
   // ─── Effect 1: Initialize Leaflet map (once per trip.id) ───────────────────
   useEffect(() => {
@@ -66,10 +72,8 @@ export function MapArea({
 
     mapRef.current = map;
 
-    // Add tile layer FIRST so it sits at z-index 1 (below markers)
-    const tileUrl = isDarkMode
-      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-      : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+    // Use light tile layer (CSS filter in index.css will invert it in dark mode)
+    const tileUrl = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
     tileLayerRef.current = L.tileLayer(tileUrl, { maxZoom: 20, zIndex: 1 }).addTo(map);
 
     // Fix blank tile edge after layout settles
@@ -111,22 +115,9 @@ export function MapArea({
     }
   }, [isInteractive, mapReady]);
 
-  // ─── Effect 2: Swap tiles on dark-mode toggle ───────────────────────────────
+  // ─── Effect 2: Leaflet redraw helper on dark-mode toggle ───────────────────
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady) return;
-    const L = (window as any).L;
-    if (!L) return;
-
-    if (tileLayerRef.current) map.removeLayer(tileLayerRef.current);
-
-    const tileUrl = isDarkMode
-      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-      : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-
-    tileLayerRef.current = L.tileLayer(tileUrl, { maxZoom: 20, zIndex: 1 }).addTo(map);
-
-    // Bring markers/polyline back to front after tile swap
+    // Redraw polyline to bring to front and align layers
     if (polylineRef.current?.bringToFront) polylineRef.current.bringToFront();
     Object.values(markersRef.current).forEach((m: any) => { if (m?.bringToFront) m.bringToFront(); });
   }, [isDarkMode, mapReady]);
@@ -149,8 +140,6 @@ export function MapArea({
     );
 
     if (valid.length === 0) {
-      // Only snap to trip center if we have NEVER fit bounds before.
-      // Once the user has seen the map with pins, keep the current view.
       if (!hasFitRef.current) {
         const lat = typeof trip.lat === 'number' && !isNaN(trip.lat) ? trip.lat : 35.0116;
         const lng = typeof trip.lng === 'number' && !isNaN(trip.lng) ? trip.lng : 135.7681;
@@ -198,7 +187,6 @@ export function MapArea({
         polylineRef.current = fGroup;
       }
     } else {
-      // Draw standard polyline UNDER markers (rendered first)
       if (coords.length > 1) {
         polylineRef.current = L.polyline(coords, {
           color: isDarkMode ? '#f87171' : '#dc2626',
@@ -217,7 +205,6 @@ export function MapArea({
       
       const isTransitActive = activeTab === 'transit' ? (item.transitId === expandedItemId) : (expandedItemId === item.id);
       const isActive = !!isTransitActive;
-      // In transit mode, fade out pins that don't belong to the expanded transit
       const isTransitFaded = activeTab === 'transit' && expandedItemId !== null && !isTransitActive;
       
       let pinColor = '#dc2626';
@@ -257,18 +244,15 @@ export function MapArea({
       markersRef.current[item.id] = marker;
     });
 
-    // Fit bounds automatically if map interaction is locked or if it's the very first load
     if (coords.length > 0 && (!isInteractive || !hasFitRef.current)) {
       const bounds = L.latLngBounds(coords);
       map.fitBounds(bounds, { padding: [48, 48], maxZoom: 15 });
       hasFitRef.current = true;
     }
 
-    // Pan to active marker if expandedItemId is set
     if (expandedItemId !== null) {
       let activeMarker: any = null;
       if (activeTab === 'transit') {
-        // If a specific focus type is specified, target that pin
         if (transitFocusType === 'depart') {
           activeMarker = markersRef.current[expandedItemId * 10];
         } else if (transitFocusType === 'arrive') {
@@ -276,7 +260,6 @@ export function MapArea({
         } else if (transitFocusType === 'boarding') {
           activeMarker = markersRef.current[expandedItemId * 10 + 2];
         } else {
-          // Default: boarding > depart > arrive
           activeMarker = markersRef.current[expandedItemId * 10 + 2] 
                       || markersRef.current[expandedItemId * 10] 
                       || markersRef.current[expandedItemId * 10 + 1];
@@ -292,6 +275,122 @@ export function MapArea({
     }
 
   }, [mapPoints, expandedItemId, isDarkMode, mapReady, isInteractive, activeTab, transitFocusType]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Effect 3b: OSM Overpass API POIs Fetcher ──────────────────────────────
+  useEffect(() => {
+    if (activeTab !== 'stays' || expandedItemId === null) {
+      setPoiItems([]);
+      return;
+    }
+
+    const activePoint = mapPoints.find(p => p.id === expandedItemId);
+    if (!activePoint || !activePoint.lat || !activePoint.lng) {
+      setPoiItems([]);
+      return;
+    }
+
+    const lat = Number(activePoint.lat);
+    const lng = Number(activePoint.lng);
+    if (isNaN(lat) || isNaN(lng)) {
+      setPoiItems([]);
+      return;
+    }
+
+    let isMounted = true;
+    setPoiLoading(true);
+
+    const query = `
+      [out:json][timeout:15];
+      (
+        node["shop"="convenience"](around:1000, ${lat}, ${lng});
+        node["shop"="supermarket"](around:1000, ${lat}, ${lng});
+        node["railway"="station"](around:1000, ${lat}, ${lng});
+        node["public_transport"="station"](around:1000, ${lat}, ${lng});
+      );
+      out body 30;
+    `;
+
+    fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (isMounted && data && data.elements) {
+          const items = data.elements.map((el: any) => {
+            let type = 'convenience';
+            if (el.tags?.shop === 'supermarket') type = 'supermarket';
+            else if (el.tags?.railway === 'station' || el.tags?.public_transport === 'station') type = 'station';
+
+            return {
+              id: el.id,
+              lat: el.lat,
+              lng: el.lon,
+              name: el.tags?.name || el.tags?.['name:ko'] || el.tags?.['name:en'] || (type === 'convenience' ? '편의점' : type === 'supermarket' ? '마켓' : '역'),
+              type
+            };
+          });
+          setPoiItems(items);
+        }
+      })
+      .catch(err => {
+        console.error("Overpass API failed:", err);
+      })
+      .finally(() => {
+        if (isMounted) setPoiLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [expandedItemId, activeTab, mapPoints]);
+
+  // ─── Effect 3c: Render POI markers on map ──────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    const L = (window as any).L;
+    if (!L) return;
+
+    // Clear previous POIs
+    poiMarkersRef.current.forEach(m => map.removeLayer(m));
+    poiMarkersRef.current = [];
+
+    if (activeTab !== 'stays' || expandedItemId === null) return;
+
+    poiItems.forEach(poi => {
+      const isVisible = 
+        (poi.type === 'convenience' && showConvenience) ||
+        (poi.type === 'supermarket' && showSupermarket) ||
+        (poi.type === 'station' && showStation);
+
+      if (!isVisible) return;
+
+      let color = '#a855f7'; // station (purple)
+      let emoji = '🚉';
+      if (poi.type === 'convenience') {
+        color = '#3b82f6'; // convenience (blue)
+        emoji = '🏪';
+      } else if (poi.type === 'supermarket') {
+        color = '#10b981'; // supermarket (green)
+        emoji = '🛒';
+      }
+
+      const htmlContent = `
+        <div class="poi-pin-wrapper">
+          <div class="poi-pin" style="background-color: ${color};">${emoji}</div>
+          <div class="poi-label">${poi.name}</div>
+        </div>
+      `;
+
+      const icon = L.divIcon({
+        className: 'custom-poi-pin-icon',
+        html: htmlContent,
+        iconSize: [100, 45],
+        iconAnchor: [50, 10],
+      });
+
+      const marker = L.marker([poi.lat, poi.lng], { icon, zIndexOffset: 500 }).addTo(map);
+      poiMarkersRef.current.push(marker);
+    });
+  }, [poiItems, showConvenience, showSupermarket, showStation, mapReady, activeTab, expandedItemId]);
 
   // ─── Effect 4: Map click → open Google Maps ────────────────────────────────
   useEffect(() => {
@@ -318,7 +417,6 @@ export function MapArea({
   const zoomIn = () => { if (mapRef.current) mapRef.current.zoomIn(); };
   const zoomOut = () => { if (mapRef.current) mapRef.current.zoomOut(); };
 
-  // Leaflet not yet loaded fallback
   if (!(window as any).L) {
     return (
       <div className="flex-grow relative bg-[#EAE8E3] dark:bg-[#1A1A1A] overflow-hidden flex flex-col items-center justify-center text-black/40 dark:text-white/40 p-6">
@@ -326,6 +424,8 @@ export function MapArea({
       </div>
     );
   }
+
+  const isStayTabWithSelection = activeTab === 'stays' && expandedItemId !== null;
 
   return (
     <div className="flex-grow relative bg-[#EAE8E3] dark:bg-[#1A1A1A] overflow-hidden transition-colors duration-300">
@@ -353,6 +453,51 @@ export function MapArea({
           <Minus className="w-4 h-4 text-black dark:text-white" />
         </button>
       </div>
+
+      {/* ── Nearby POI Toggles Overlay (Stays tab only) ── */}
+      {isStayTabWithSelection && (
+        <div className="absolute top-4 left-4 md:top-6 md:left-6 flex flex-col gap-2 z-20 bg-[#F9F8F6]/95 dark:bg-[#111111]/95 backdrop-blur border border-black/20 dark:border-white/20 p-2.5 shadow-md">
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-black/50 dark:text-white/50">Nearby Amenities</span>
+            {poiLoading && <Loader2 className="w-3 h-3 text-red-600 animate-spin" />}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <button
+              onClick={() => setShowConvenience(!showConvenience)}
+              className={`flex items-center gap-2 px-2.5 py-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-all border ${
+                showConvenience 
+                  ? 'bg-blue-600 border-blue-600 text-white shadow-sm' 
+                  : 'bg-transparent border-black/10 dark:border-white/10 text-black/75 dark:text-white/75 hover:bg-black/5 dark:hover:bg-white/5'
+              }`}
+            >
+              <Store className="w-3.5 h-3.5" />
+              <span>Convenience ({poiItems.filter(p => p.type === 'convenience').length})</span>
+            </button>
+            <button
+              onClick={() => setShowSupermarket(!showSupermarket)}
+              className={`flex items-center gap-2 px-2.5 py-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-all border ${
+                showSupermarket 
+                  ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
+                  : 'bg-transparent border-black/10 dark:border-white/10 text-black/75 dark:text-white/75 hover:bg-black/5 dark:hover:bg-white/5'
+              }`}
+            >
+              <ShoppingBag className="w-3.5 h-3.5" />
+              <span>Supermarket ({poiItems.filter(p => p.type === 'supermarket').length})</span>
+            </button>
+            <button
+              onClick={() => setShowStation(!showStation)}
+              className={`flex items-center gap-2 px-2.5 py-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-all border ${
+                showStation 
+                  ? 'bg-purple-600 border-purple-600 text-white shadow-sm' 
+                  : 'bg-transparent border-black/10 dark:border-white/10 text-black/75 dark:text-white/75 hover:bg-black/5 dark:hover:bg-white/5'
+              }`}
+            >
+              <Train className="w-3.5 h-3.5" />
+              <span>Stations ({poiItems.filter(p => p.type === 'station').length})</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Status Bar & Interaction Toggles ── */}
       <div className="absolute bottom-4 left-4 right-4 md:bottom-6 md:left-6 md:right-6 flex justify-between items-end z-20 pointer-events-none">
