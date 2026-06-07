@@ -467,10 +467,12 @@ export function MapArea({
           const dx = endLng - startLng;
           const angle = Math.atan2(dx, dy) * 180 / Math.PI;
 
-          // Rotated plane emoji icon
+          // SVG airplane path with nose pointing straight up (0 deg / North)
           const planeIconHtml = `
             <div class="animated-plane-wrapper" style="transform: rotate(${angle}deg); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
-              <span style="font-size: 26px; line-height: 1; filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.45)); display: inline-block;">✈️</span>
+              <svg viewBox="0 0 512 512" width="26" height="26" fill="#dc2626" style="filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.45));">
+                <path d="M496 384L320 240V96c0-53-43-96-96-96s-96 43-96 96v144L16 384v48l128-48v96l-32 32v32l96-32 96 32v-32l-32-32v-96l128 48v-48z"/>
+              </svg>
             </div>
           `;
 

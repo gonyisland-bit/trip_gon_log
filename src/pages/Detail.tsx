@@ -899,6 +899,21 @@ export function JourneyDetailPage({
     return points;
   }, [baseTimeline, generatedDates]);
 
+  // Escape key hotkey to return to gallery grid from detail view
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (!isLightboxOpen && activeGalleryPhotoUrl) {
+          setActiveGalleryPhotoUrl(null);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isLightboxOpen, activeGalleryPhotoUrl]);
+
   const filteredTimeline = selectedDate === 'ALL'
     ? baseTimeline
     : baseTimeline.filter(item => item.date === selectedDate);
@@ -2656,13 +2671,13 @@ export function JourneyDetailPage({
 
                   return (
                     <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 pb-24 md:pb-32">
-                      {/* Navigation bar for Detail view */}
-                      <div className="flex justify-between items-center pb-2 border-b border-black/5 dark:border-white/5">
+                      {/* Navigation bar for Detail view - Compact & Space-optimized */}
+                      <div className="flex justify-between items-center py-1 mb-1 text-[10px] md:text-xs">
                         <button
                           onClick={() => setActiveGalleryPhotoUrl(null)}
-                          className="text-[10px] md:text-xs font-bold uppercase tracking-widest hover:text-red-600 transition-colors flex items-center gap-1.5"
+                          className="font-bold opacity-60 hover:opacity-100 hover:text-red-600 transition-all flex items-center gap-1"
                         >
-                          ← 목록으로 돌아가기
+                          ← BACK (ESC)
                         </button>
                         
                         <button
@@ -2671,9 +2686,9 @@ export function JourneyDetailPage({
                             setLightboxIndex(globalIdx !== -1 ? globalIdx : 0);
                             setIsLightboxOpen(true);
                           }}
-                          className="text-[10px] md:text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-3 py-1.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5"
+                          className="font-bold opacity-60 hover:opacity-100 transition-all flex items-center gap-1"
                         >
-                          <Maximize2 className="w-3.5 h-3.5" /> 전체화면 보기
+                          <Maximize2 className="w-3.5 h-3.5" /> FULLSCREEN
                         </button>
                       </div>
 
@@ -3053,7 +3068,7 @@ export function JourneyDetailPage({
           )}
 
           {/* Footer inside Detail scroll container */}
-          <div className="w-full shrink-0 pb-16 pt-8 mt-12 border-t border-black/5 dark:border-white/5">
+          <div className="w-full shrink-0 pb-16 pt-8 mt-auto border-t border-black/5 dark:border-white/5">
             <Footer />
           </div>
         </div>
