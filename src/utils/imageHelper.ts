@@ -7,7 +7,7 @@ export function compressImage(
   file: File,
   maxWidth = 1600,
   maxHeight = 1600,
-  quality = 0.8
+  quality = 0.75
 ): Promise<Blob> {
   return new Promise<Blob>((resolve, reject) => {
     const reader = new FileReader();
@@ -19,15 +19,11 @@ export function compressImage(
         let width = img.width;
         let height = img.height;
 
-        // Calculate new dimensions while keeping aspect ratio
+        // Calculate new dimensions while keeping aspect ratio mathematically perfect
         if (width > maxWidth || height > maxHeight) {
-          if (width > height) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          } else {
-            width = Math.round((width * maxHeight) / height);
-            width = maxHeight;
-          }
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
         }
 
         const canvas = document.createElement('canvas');

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { ImagePlus, Loader2 } from 'lucide-react';
+import { ImagePlus, Loader2, Trash2 } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../firebase';
 import { compressImage } from '../utils/imageHelper';
@@ -8,16 +8,23 @@ import { extractGpsFromImage } from '../utils/exifHelper';
 interface ImageEditOverlayProps {
   isEditMode: boolean;
   onImageUploaded: (url: string, gps?: { lat: number; lng: number } | null) => void;
+  hasImage?: boolean;
+  onImageRemoved?: () => void;
 }
 
-export function ImageEditOverlay({ isEditMode, onImageUploaded }: ImageEditOverlayProps) {
+export function ImageEditOverlay({ 
+  isEditMode, 
+  onImageUploaded, 
+  hasImage, 
+  onImageRemoved 
+}: ImageEditOverlayProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
 
   if (!isEditMode) return null;
 
-  const handleOverlayClick = (e: React.MouseEvent) => {
+  const handleChangeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     fileInputRef.current?.click();
   };
@@ -92,14 +99,14 @@ export function ImageEditOverlay({ isEditMode, onImageUploaded }: ImageEditOverl
 
   return (
     <div 
-      onClick={handleOverlayClick}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center transition-all z-30 cursor-pointer text-white
-        ${isDragActive ? 'opacity-100 border-2 border-dashed border-red-600 bg-black/60' : 'opacity-0 group-hover:opacity-100'}
+      className={`absolute inset-0 bg-black/50 flex items-center justify-center gap-1.5 z-30 transition-all cursor-default
+        ${isDragActive ? 'opacity-100 border border-dashed border-red-600 bg-black/70' : 'opacity-0 group-hover:opacity-100'}
       `}
+      onClick={(e) => e.stopPropagation()}
     >
       <input 
         type="file"
@@ -108,21 +115,35 @@ export function ImageEditOverlay({ isEditMode, onImageUploaded }: ImageEditOverl
         accept="image/*"
         className="hidden"
       />
-      <span className="bg-red-600 text-white text-[10px] sm:text-xs font-bold tracking-widest uppercase px-3 py-1.5 sm:px-4 sm:py-2 flex items-center gap-2 shadow-lg rounded-none">
-        {uploading ? (
-          <>
-            <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" /> Uploading...
-          </>
-        ) : isDragActive ? (
-          <>
-            <ImagePlus className="w-3 h-3 sm:w-4 sm:h-4 animate-bounce" /> Drop to Upload
-          </>
-        ) : (
-          <>
-            <ImagePlus className="w-3 h-3 sm:w-4 sm:h-4" /> Change Image
-          </>
-        )}
-      </span>
+      {uploading ? (
+        <span className="p-1 bg-white/20 text-white rounded">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+        </span>
+      ) : (
+        <>
+          <button
+            onClick={handleChangeClick}
+            className="p-1 bg-white/20 hover:bg-red-600 text-white rounded transition-colors shadow-sm"
+            title="사진 변경"
+          >
+            <ImagePlus className="w-3.5 h-3.5" />
+          </button>
+          {hasImage && onImageRemoved && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (confirm("일정 사진을 삭제하시겠습니까?")) {
+                  onImageRemoved();
+                }
+              }}
+              className="p-1 bg-white/20 hover:bg-red-600 text-white rounded transition-colors shadow-sm"
+              title="사진 삭제"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </>
+      )}
     </div>
   );
 }

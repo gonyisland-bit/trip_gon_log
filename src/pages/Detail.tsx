@@ -2055,9 +2055,25 @@ export function JourneyDetailPage({
                                 <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-600 rounded-full border border-white dark:border-black shadow z-10" />
                                 <ImageEditOverlay 
                                   isEditMode={isEditing} 
-                                  onImageUploaded={(url, gps) => {
+                                  hasImage={true}
+                                  onImageRemoved={() => {
+                                    updateTimelineItemFields(item.id, { img: '' });
+                                  }}
+                                  onImageUploaded={async (url, gps) => {
                                     if (gps) {
-                                      updateTimelineItemFields(item.id, { img: url, lat: gps.lat, lng: gps.lng });
+                                      let addr = '';
+                                      try {
+                                        addr = await fetchAddressFromCoords(gps.lat, gps.lng) || '';
+                                      } catch (e) {
+                                        console.warn(e);
+                                      }
+                                      updateTimelineItemFields(item.id, { 
+                                        img: url, 
+                                        lat: gps.lat, 
+                                        lng: gps.lng,
+                                        location: addr || item.location,
+                                        place: addr ? addr.split(',')[0].trim() : item.place
+                                      });
                                     } else {
                                       updateTimelineItemFields(item.id, { img: url });
                                     }
@@ -2065,20 +2081,34 @@ export function JourneyDetailPage({
                                 />
                               </div>
                             ) : (
-                              <div className={`w-10 h-10 md:w-12 md:h-12 border bg-black/5 dark:bg-white/5 flex items-center justify-center transition-colors relative ${isActive ? 'border-red-600 dark:border-red-400 text-red-600 scale-110 origin-right' : 'border-black/10 dark:border-white/10 text-black/30 dark:text-white/30'}`}>
+                              <div className={`w-10 h-10 md:w-12 md:h-12 border bg-black/5 dark:bg-white/5 flex items-center justify-center transition-colors relative ${isActive ? 'border-red-600 dark:border-red-400 text-red-600 scale-110 origin-right' : 'border-black/10 dark:border-white/10'}`}>
                                 <ImageIcon className="w-3 h-3 md:w-4 md:h-4" />
                                 <ImageEditOverlay 
                                   isEditMode={isEditing} 
-                                  onImageUploaded={(url, gps) => {
+                                  hasImage={false}
+                                  onImageUploaded={async (url, gps) => {
                                     if (gps) {
-                                      updateTimelineItemFields(item.id, { img: url, lat: gps.lat, lng: gps.lng });
+                                      let addr = '';
+                                      try {
+                                        addr = await fetchAddressFromCoords(gps.lat, gps.lng) || '';
+                                      } catch (e) {
+                                        console.warn(e);
+                                      }
+                                      updateTimelineItemFields(item.id, { 
+                                        img: url, 
+                                        lat: gps.lat, 
+                                        lng: gps.lng,
+                                        location: addr || item.location,
+                                        place: addr ? addr.split(',')[0].trim() : item.place
+                                      });
                                     } else {
                                       updateTimelineItemFields(item.id, { img: url });
                                     }
                                   }} 
                                 />
                               </div>
-                            )}
+                            )
+                           }
                           </div>
                         </div>
                         
@@ -2522,6 +2552,10 @@ export function JourneyDetailPage({
                             // Focus map pin for this photo
                             setExpandedItemId(500000 + idx);
                           }}
+                          onDoubleClick={() => {
+                            setLightboxIndex(idx);
+                            setIsLightboxOpen(true);
+                          }}
                         >
                           <img 
                             src={imgMeta.url} 
@@ -2618,6 +2652,11 @@ export function JourneyDetailPage({
                             if (photoInGalleryIdx !== -1) {
                               setExpandedItemId(500000 + photoInGalleryIdx);
                             }
+                          }}
+                          onDoubleClick={() => {
+                            const globalIdx = galleryAllUnique.indexOf(imgItem.url);
+                            setLightboxIndex(globalIdx !== -1 ? globalIdx : 0);
+                            setIsLightboxOpen(true);
                           }}
                         >
                           <img
