@@ -13,6 +13,7 @@ interface ImageEditOverlayProps {
 export function ImageEditOverlay({ isEditMode, onImageUploaded }: ImageEditOverlayProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [isDragActive, setIsDragActive] = useState(false);
 
   if (!isEditMode) return null;
 
@@ -21,10 +22,7 @@ export function ImageEditOverlay({ isEditMode, onImageUploaded }: ImageEditOverl
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const uploadFile = async (file: File) => {
     const user = auth.currentUser;
     if (!user) {
       alert("이미지를 업로드하려면 로그인이 필요합니다.");
@@ -53,10 +51,55 @@ export function ImageEditOverlay({ isEditMode, onImageUploaded }: ImageEditOverl
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadFile(file);
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(true);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      if (file.type.startsWith('image/')) {
+        await uploadFile(file);
+      } else {
+        alert("이미지 파일만 업로드할 수 있습니다.");
+      }
+    }
+  };
+
   return (
     <div 
       onClick={handleOverlayClick}
-      className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-30 cursor-pointer text-white"
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center transition-all z-30 cursor-pointer text-white
+        ${isDragActive ? 'opacity-100 border-2 border-dashed border-red-600 bg-black/60' : 'opacity-0 group-hover:opacity-100'}
+      `}
     >
       <input 
         type="file"
@@ -69,6 +112,10 @@ export function ImageEditOverlay({ isEditMode, onImageUploaded }: ImageEditOverl
         {uploading ? (
           <>
             <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" /> Uploading...
+          </>
+        ) : isDragActive ? (
+          <>
+            <ImagePlus className="w-3 h-3 sm:w-4 sm:h-4 animate-bounce" /> Drop to Upload
           </>
         ) : (
           <>

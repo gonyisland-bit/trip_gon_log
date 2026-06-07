@@ -14,6 +14,51 @@ interface TransitCardProps {
   onFocusPlace?: (type: 'depart' | 'arrive' | 'boarding') => void;
 }
 
+// Time conversion helpers
+function parseTimeToMinutes(timeStr: string): number {
+  if (!timeStr) return 0;
+  const clean = timeStr.trim();
+  const match = clean.match(/^(\d+):(\d+)\s*(AM|PM)?$/i);
+  if (!match) return 0;
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const ampm = match[3]?.toUpperCase();
+
+  if (ampm === 'PM' && hours < 12) {
+    hours += 12;
+  } else if (ampm === 'AM' && hours === 12) {
+    hours = 0;
+  }
+  return hours * 60 + minutes;
+}
+
+function minutesToTimeStr(minutes: number): string {
+  const positiveMin = Math.max(0, Math.min(1439, minutes));
+  let hours = Math.floor(positiveMin / 60);
+  const mins = positiveMin % 60;
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  const minsStr = String(mins).padStart(2, '0');
+  return `${hours}:${minsStr} ${ampm}`;
+}
+
+function timeStrTo24h(timeStr: string): string {
+  if (!timeStr) return '00:00';
+  const minutes = parseTimeToMinutes(timeStr);
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+function time24hTo12h(val24h: string): string {
+  if (!val24h) return '12:00 AM';
+  const parts = val24h.split(':');
+  const h24 = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  return minutesToTimeStr(h24 * 60 + m);
+}
+
 export function TransitCard({
   transit,
   isEditMode,
@@ -23,14 +68,6 @@ export function TransitCard({
   onClick,
   onFocusPlace,
 }: TransitCardProps) {
-  const textEditableClass = isEditMode 
-    ? 'outline-dashed outline-1 outline-red-500/40 hover:bg-black/5 dark:hover:bg-white/5 cursor-text transition-all rounded px-1' 
-    : '';
-
-  const handleBlur = (field: keyof TransitItem, e: React.FocusEvent<HTMLSpanElement>) => {
-    onUpdate(transit.id, field, e.currentTarget.innerText.trim());
-  };
-
   const handlePlaceLinkClick = (e: React.MouseEvent, placeName: string) => {
     e.stopPropagation();
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -39,7 +76,6 @@ export function TransitCard({
       : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(placeName)}`;
     
     if (isMobile) {
-      // Try opening app first, fallback to browser
       window.location.href = url;
       setTimeout(() => {
         window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(placeName)}`, '_blank');
@@ -56,86 +92,123 @@ export function TransitCard({
         !isEditMode ? 'cursor-pointer hover:shadow-md hover:border-black/20 dark:hover:border-white/20' : ''
       } ${isActive && !isEditMode ? 'ring-1 ring-red-500/50 dark:ring-red-400/50 shadow-md' : ''}`}
     >
-      {/* Header bar with grey background */}
-      <div className="bg-[#EAE8E3]/50 dark:bg-white/10 px-4 py-2 border-b border-black/10 dark:border-white/10 flex justify-between items-center text-[10px] md:text-xs font-bold tracking-widest text-black/60 dark:text-white/60">
+      {/* Header bar */}
+      <div className="bg-[#EAE8E3]/50 dark:bg-white/10 px-4 py-2 border-b border-black/10 dark:border-white/10 flex justify-between items-center text-[10px] md:text-xs font-bold tracking-widest text-black/60 dark:text-white/60 gap-4">
         <div className="flex items-center gap-2">
           {transit.transitType === 'bus' ? (
-            <Bus className="w-3.5 h-3.5" />
+            <Bus className="w-3.5 h-3.5 animate-in fade-in duration-300" />
           ) : (
-            <Train className="w-3.5 h-3.5" />
+            <Train className="w-3.5 h-3.5 animate-in fade-in duration-300" />
           )}
-          <span 
-            contentEditable={isEditMode} 
-            suppressContentEditableWarning 
-            onBlur={(e) => handleBlur('ticketType', e)}
-            className={`uppercase ${textEditableClass}`}
-          >
-            {transit.ticketType || (transit.transitType === 'bus' ? 'BUS TICKET' : 'TRAIN TICKET')}
-          </span>
+          {isEditMode ? (
+            <input
+              type="text"
+              value={transit.ticketType || (transit.transitType === 'bus' ? 'BUS TICKET' : 'TRAIN TICKET')}
+              onChange={(e) => onUpdate(transit.id, 'ticketType', e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm uppercase w-32"
+              placeholder="TICKET TYPE"
+            />
+          ) : (
+            <span className="uppercase">{transit.ticketType || (transit.transitType === 'bus' ? 'BUS TICKET' : 'TRAIN TICKET')}</span>
+          )}
         </div>
-        <span 
-          contentEditable={isEditMode} 
-          suppressContentEditableWarning 
-          onBlur={(e) => handleBlur('date', e)}
-          className={textEditableClass}
-        >
-          {transit.date}
-        </span>
+        {isEditMode ? (
+          <input
+            type="text"
+            value={transit.date}
+            onChange={(e) => onUpdate(transit.id, 'date', e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 text-right"
+            placeholder="YYYY.MM.DD"
+          />
+        ) : (
+          <span>{transit.date}</span>
+        )}
       </div>
       
       {/* Card Body */}
       <div className="p-4 md:p-6">
         <div className="flex flex-row items-center justify-between">
-          <div className="flex-grow">
-            <h3 
-              contentEditable={isEditMode} 
-              suppressContentEditableWarning 
-              onBlur={(e) => handleBlur('title', e)}
-              className={`text-lg md:text-xl font-black tracking-tight leading-snug uppercase ${textEditableClass}`}
-            >
-              {transit.title}
-            </h3>
-            <p 
-              contentEditable={isEditMode} 
-              suppressContentEditableWarning 
-              onBlur={(e) => handleBlur('route', e)}
-              className={`text-xs md:text-sm text-black/50 dark:text-white/50 mt-1 block ${textEditableClass}`}
-            >
-              {transit.route}
-            </p>
-            <div 
-              contentEditable={isEditMode} 
-              suppressContentEditableWarning 
-              onBlur={(e) => handleBlur('time', e)}
-              className={`text-2xl md:text-4xl font-black mt-4 tracking-tighter leading-none ${textEditableClass}`}
-            >
-              {transit.time}
-            </div>
+          <div className="flex-grow min-w-0 pr-4">
+            {isEditMode ? (
+              <input
+                type="text"
+                value={transit.title}
+                onChange={(e) => onUpdate(transit.id, 'title', e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none font-black text-lg md:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
+                placeholder="TRANSIT TITLE"
+              />
+            ) : (
+              <h3 className="text-lg md:text-xl font-black tracking-tight leading-snug uppercase truncate">
+                {transit.title}
+              </h3>
+            )}
+            {isEditMode ? (
+              <input
+                type="text"
+                value={transit.route}
+                onChange={(e) => onUpdate(transit.id, 'route', e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs md:text-sm text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full mt-1.5"
+                placeholder="Route (e.g. City A → City B)"
+              />
+            ) : (
+              <p className="text-xs md:text-sm text-black/50 dark:text-white/50 mt-1 block">
+                {transit.route}
+              </p>
+            )}
+            {isEditMode ? (
+              <input
+                type="time"
+                value={timeStrTo24h(transit.time)}
+                onChange={(e) => onUpdate(transit.id, 'time', time24hTo12h(e.target.value))}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none font-bold text-2xl md:text-3xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 mt-3 text-center"
+              />
+            ) : (
+              <div className="text-2xl md:text-4xl font-black mt-4 tracking-tighter leading-none">
+                {transit.time}
+              </div>
+            )}
           </div>
           
           {/* Right Side: Seat & Booking Ref Box */}
           <div className="border border-black/10 dark:border-white/10 p-3 md:p-4 text-left w-28 md:w-36 shrink-0 bg-white/30 dark:bg-black/10">
             <div className="mb-3">
               <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5">SEAT</span>
-              <span 
-                contentEditable={isEditMode} 
-                suppressContentEditableWarning 
-                onBlur={(e) => handleBlur('seat', e)}
-                className={`text-xs md:text-sm font-bold text-black/80 dark:text-white/80 block ${textEditableClass}`}
-              >
-                {transit.seat}
-              </span>
+              {isEditMode ? (
+                <input
+                  type="text"
+                  value={transit.seat}
+                  onChange={(e) => onUpdate(transit.id, 'seat', e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full"
+                  placeholder="Car 0, 00A"
+                />
+              ) : (
+                <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 block">
+                  {transit.seat}
+                </span>
+              )}
             </div>
             <div>
               <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5">BOOKING REF</span>
-              <span 
-                contentEditable={isEditMode} 
-                suppressContentEditableWarning 
-                onBlur={(e) => handleBlur('bookingRef', e)}
-                className={`text-xs md:text-sm font-bold text-black/80 dark:text-white/80 tracking-wider block ${textEditableClass}`}
-              >
-                {transit.bookingRef}
-              </span>
+              {isEditMode ? (
+                <input
+                  type="text"
+                  value={transit.bookingRef}
+                  onChange={(e) => onUpdate(transit.id, 'bookingRef', e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
+                  placeholder="TRN-000"
+                />
+              ) : (
+                <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 tracking-wider block">
+                  {transit.bookingRef}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -330,8 +403,8 @@ export function TransitCard({
       {/* Delete button in edit mode */}
       {isEditMode && (
         <button 
-          onClick={() => onDelete(transit.id)}
-          className="absolute bottom-2 right-2 p-1 text-red-500 hover:text-red-700 transition-colors"
+          onClick={(e) => { e.stopPropagation(); onDelete(transit.id); }}
+          className="absolute bottom-2 right-2 p-1 text-red-500 hover:text-red-700 transition-colors z-10"
           title="Delete Transit"
         >
           <Trash2 className="w-3.5 h-3.5" />

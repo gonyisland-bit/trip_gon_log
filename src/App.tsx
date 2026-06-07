@@ -106,6 +106,36 @@ function App() {
   const [pendingNavigation, setPendingNavigation] = useState<{ view: string; tripId: number | null } | null>(null);
   const detailSaveRef = useRef<(() => Promise<void>) | null>(null);
 
+  const handleSaveAndNavigate = async () => {
+    setShowUnsavedModal(false);
+    if (detailSaveRef.current) {
+      await detailSaveRef.current();
+    }
+    if (pendingNavigation) {
+      const { view, tripId } = pendingNavigation;
+      setPendingNavigation(null);
+      setIsDetailEditing(false);
+      setTimeout(() => {
+        navigateTo(view, tripId);
+      }, 100);
+    }
+  };
+
+  const handleDiscardAndNavigate = () => {
+    setShowUnsavedModal(false);
+    setIsDetailEditing(false);
+    if (pendingNavigation) {
+      const { view, tripId } = pendingNavigation;
+      setPendingNavigation(null);
+      navigateTo(view, tripId);
+    }
+  };
+
+  const handleCancelUnsavedModal = () => {
+    setShowUnsavedModal(false);
+    setPendingNavigation(null);
+  };
+
   // activeTrip: strictly match activeTripId. Do not automatically fall back to trips[0]
   // to avoid rendering one trip's map with another trip's details during sync.
   const activeTrip = trips.find(t => String(t.id) === String(activeTripId)) 
@@ -933,6 +963,38 @@ function App() {
     }
   }, [currentView, activeTrip, isLoggedIn, plans]);
 
+  // Keyboard shortcut listener for SaveComplete and UnsavedChanges modals
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore key events when typing in inputs, textareas, or contenteditables
+      if (
+        document.activeElement?.tagName === 'INPUT' ||
+        document.activeElement?.tagName === 'TEXTAREA' ||
+        document.activeElement?.getAttribute('contenteditable') === 'true'
+      ) {
+        return;
+      }
+
+      if (showSaveCompleteModal) {
+        if (e.key === 'Enter' || e.key === 'Escape') {
+          e.preventDefault();
+          setShowSaveCompleteModal(false);
+        }
+      } else if (showUnsavedModal) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleSaveAndNavigate();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          handleCancelUnsavedModal();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showSaveCompleteModal, showUnsavedModal, pendingNavigation]);
+
   const activeFlights = flightsByTrip[activeTripId || 0] || [];
   const activeStays = staysByTrip[activeTripId || 0] || [];
   const activeTransits = transitByTrip[activeTripId || 0] || [];
@@ -1149,11 +1211,7 @@ function App() {
               <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-4">
                 <Check className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-black uppercase tracking-widest mb-2">저장 완료</h3>
-              <p className="text-xs text-black/55 dark:text-white/55 mb-6 font-medium leading-relaxed">
-                여정 상세 정보가 성공적으로 <br />
-                Firestore 클라우드에 영구 저장되었습니다.
-              </p>
+              <h3 className="text-base font-black uppercase tracking-widest mb-6">Saved</h3>
               <button
                 onClick={() => setShowSaveCompleteModal(false)}
                 className="w-full py-2.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-black uppercase tracking-widest rounded-none transition-all"
@@ -1171,50 +1229,24 @@ function App() {
               <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4 animate-bounce">
                 <AlertTriangle className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-black uppercase tracking-widest mb-2">저장되지 않은 변경 사항</h3>
-              <p className="text-xs text-black/55 dark:text-white/55 mb-6 font-medium leading-relaxed">
-                수정 중인 내용이 있습니다. <br />
-                저장하지 않고 이동하면 모든 수정사항이 손실됩니다.
-              </p>
+              <h3 className="text-sm font-black tracking-tight mb-6 leading-relaxed">
+                저장되지 않은 변경 사항이 있습니다.<br />저장하고 이동하시겠습니까?
+              </h3>
               <div className="flex flex-col gap-2">
                 <button
-                  onClick={async () => {
-                    setShowUnsavedModal(false);
-                    if (detailSaveRef.current) {
-                      await detailSaveRef.current();
-                    }
-                    if (pendingNavigation) {
-                      const { view, tripId } = pendingNavigation;
-                      setPendingNavigation(null);
-                      setIsDetailEditing(false);
-                      setTimeout(() => {
-                        navigateTo(view, tripId);
-                      }, 100);
-                    }
-                  }}
+                  onClick={handleSaveAndNavigate}
                   className="w-full py-2.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-black uppercase tracking-widest rounded-none transition-all flex items-center justify-center gap-1.5"
                 >
                   저장하고 이동
                 </button>
                 <button
-                  onClick={() => {
-                    setShowUnsavedModal(false);
-                    setIsDetailEditing(false);
-                    if (pendingNavigation) {
-                      const { view, tripId } = pendingNavigation;
-                      setPendingNavigation(null);
-                      navigateTo(view, tripId);
-                    }
-                  }}
+                  onClick={handleDiscardAndNavigate}
                   className="w-full py-2.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[10px] font-black uppercase tracking-widest rounded-none transition-all"
                 >
                   저장하지 않고 이동
                 </button>
                 <button
-                  onClick={() => {
-                    setShowUnsavedModal(false);
-                    setPendingNavigation(null);
-                  }}
+                  onClick={handleCancelUnsavedModal}
                   className="w-full py-2.5 text-black/45 dark:text-white/45 hover:text-black dark:hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors mt-1"
                 >
                   취소

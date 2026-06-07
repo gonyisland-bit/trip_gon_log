@@ -231,6 +231,22 @@ function parseTimeToMinutes(timeStr: string): number {
   return hours * 60 + minutes;
 }
 
+function timeStrTo24h(timeStr: string): string {
+  if (!timeStr) return '00:00';
+  const minutes = parseTimeToMinutes(timeStr);
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+function time24hTo12h(val24h: string): string {
+  if (!val24h) return '12:00 AM';
+  const parts = val24h.split(':');
+  const h24 = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  return minutesToTimeStr(h24 * 60 + m);
+}
+
 // Autocomplete Input component using google.maps.places.Autocomplete widget
 interface PlaceAutocompleteInputProps {
   value: string;
@@ -338,6 +354,7 @@ export function JourneyDetailPage({
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [isGalleryDragActive, setIsGalleryDragActive] = useState(false);
   const [saving, setSaving] = useState(false);
   const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
 
@@ -1094,19 +1111,45 @@ export function JourneyDetailPage({
     setDraftFlights(prev => prev.filter(f => f.id !== id));
   };
   const handleAddFlight = (title: string) => {
+    const outbound = draftFlights.find(f => f.title.toUpperCase().includes('OUTBOUND') || f.fromCode !== 'ICN');
+    
+    let defaultFrom = 'ICN';
+    let defaultTo = 'KIX';
+    let defaultFromTerminal = 'TERMINAL T1';
+    let defaultToTerminal = 'TERMINAL T1';
+    let defaultPnr = '000000';
+
+    if (title.toUpperCase().includes('INBOUND') && outbound) {
+      defaultFrom = outbound.toCode || 'KIX';
+      defaultTo = outbound.fromCode || 'ICN';
+      defaultFromTerminal = outbound.toTerminal || 'TERMINAL T1';
+      defaultToTerminal = outbound.fromTerminal || 'TERMINAL T1';
+      defaultPnr = outbound.pnr || '000000';
+    } else if (title.toUpperCase().includes('OUTBOUND') && draftFlights.length > 0) {
+      const inbound = draftFlights.find(f => f.title.toUpperCase().includes('INBOUND'));
+      if (inbound) {
+        defaultFrom = inbound.toCode || 'ICN';
+        defaultTo = inbound.fromCode || 'KIX';
+        defaultFromTerminal = inbound.toTerminal || 'TERMINAL T1';
+        defaultToTerminal = inbound.fromTerminal || 'TERMINAL T1';
+        defaultPnr = inbound.pnr || '000000';
+      }
+    }
+
     const newFlight: FlightItem = {
       id: Date.now(),
       title: title,
       date: 'YYYY.MM.DD',
-      fromCode: 'ICN',
-      fromTerminal: 'TERMINAL T1',
+      fromCode: defaultFrom,
+      fromTerminal: defaultFromTerminal,
       fromTime: '08:00 AM',
-      toCode: 'KIX',
-      toTerminal: 'TERMINAL T1',
+      toCode: defaultTo,
+      toTerminal: defaultToTerminal,
       toTime: '10:00 AM',
       flightNo: 'KE000',
       seat: '00A',
-      pnr: '000000',
+      pnr: defaultPnr,
+      tripId: trip.id
     };
     setDraftFlights(prev => [...prev, newFlight]);
   };
@@ -1152,48 +1195,61 @@ export function JourneyDetailPage({
   };
 
   // Gallery actions with image compression + EXIF metadata extraction
-  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processGalleryFiles = async (files: FileList | File[]) => {
     const user = auth.currentUser;
-    if (!user) return alert("로그인 상태에서만 업로드할 수 있습니다.");
+    if (!user) {
+      alert("로그인 상태에서만 업로드할 수 있습니다.");
+      return;
+    }
 
     setUploadingImage(true);
     try {
-      // 1. Extract EXIF BEFORE compressing (canvas strips metadata)
-      const exif = await readExif(file);
-      let exifDate: string | undefined;
-      let exifPlace: string | undefined;
+      const newEntries: (string | { url: string; date?: string; place?: string })[] = [];
 
-      if (exif.dateTime) {
-        // Format YYYY:MM:DD HH:MM:SS → YYYY.MM.DD
-        exifDate = exif.dateTime.slice(0, 10).replace(/:/g, '.');
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (!file.type.startsWith('image/')) {
+          continue;
+        }
+
+        // 1. Extract EXIF BEFORE compressing (canvas strips metadata)
+        const exif = await readExif(file);
+        let exifDate: string | undefined;
+        let exifPlace: string | undefined;
+
+        if (exif.dateTime) {
+          // Format YYYY:MM:DD HH:MM:SS → YYYY.MM.DD
+          exifDate = exif.dateTime.slice(0, 10).replace(/:/g, '.');
+        }
+        if (exif.latitude !== undefined && exif.longitude !== undefined) {
+          try {
+            const addr = await fetchAddressFromCoords(exif.latitude, exif.longitude);
+            if (addr) exifPlace = addr;
+          } catch (_) {/* silently ignore geocoding errors */}
+        }
+
+        // 2. Compress and upload
+        const compressedBlob = await compressImage(file);
+        const storageRef = ref(storage, `users/public/gallery/${Date.now()}_${file.name}`);
+        await uploadBytes(storageRef, compressedBlob);
+        const url = await getDownloadURL(storageRef);
+
+        // 3. Build GalleryImageMeta if we have metadata
+        const newEntry = (exifDate || exifPlace)
+          ? { url, date: exifDate, place: exifPlace }
+          : url;
+        
+        newEntries.push(newEntry);
       }
-      if (exif.latitude !== undefined && exif.longitude !== undefined) {
-        try {
-          const addr = await fetchAddressFromCoords(exif.latitude, exif.longitude);
-          if (addr) exifPlace = addr;
-        } catch (_) {/* silently ignore geocoding errors */}
-      }
 
-      // 2. Compress and upload
-      const compressedBlob = await compressImage(file);
-      const storageRef = ref(storage, `users/public/gallery/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, compressedBlob);
-      const url = await getDownloadURL(storageRef);
+      if (newEntries.length === 0) return;
 
-      // 3. Build GalleryImageMeta if we have metadata
-      const newEntry = (exifDate || exifPlace)
-        ? { url, date: exifDate, place: exifPlace }
-        : url;
-      
       if (isEditing && draftTrip) {
         const currentGallery = draftTrip.gallery || [];
-        setDraftTrip({ ...draftTrip, gallery: [...currentGallery, newEntry] });
+        setDraftTrip({ ...draftTrip, gallery: [...currentGallery, ...newEntries] });
       } else {
         const currentGallery = trip.gallery || [];
-        const updatedGallery = [...currentGallery, newEntry];
+        const updatedGallery = [...currentGallery, ...newEntries];
         await onSave(
           trip.id,
           { ...trip, gallery: updatedGallery },
@@ -1209,6 +1265,49 @@ export function JourneyDetailPage({
     } finally {
       setUploadingImage(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      await processGalleryFiles(e.target.files);
+    }
+  };
+
+  const handleGalleryDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isLoggedIn) {
+      setIsGalleryDragActive(true);
+    }
+  };
+
+  const handleGalleryDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isLoggedIn) {
+      setIsGalleryDragActive(true);
+    }
+  };
+
+  const handleGalleryDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsGalleryDragActive(false);
+  };
+
+  const handleGalleryDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsGalleryDragActive(false);
+
+    if (isLoggedIn && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const filesArray = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+      if (filesArray.length > 0) {
+        await processGalleryFiles(filesArray);
+      } else {
+        alert("이미지 파일만 업로드할 수 있습니다.");
+      }
     }
   };
 
@@ -1628,11 +1727,14 @@ export function JourneyDetailPage({
                               {isEditing ? (
                                 <div className="flex flex-col gap-1 w-full" onClick={(e) => e.stopPropagation()}>
                                   <input
-                                    type="text"
-                                    value={item.time}
-                                    onChange={(e) => updateTimelineItem(item.id, 'time', e.target.value)}
+                                    type="time"
+                                    value={timeStrTo24h(item.time)}
+                                    onChange={(e) => {
+                                      const val24h = e.target.value;
+                                      if (!val24h) return;
+                                      updateTimelineItem(item.id, 'time', time24hTo12h(val24h));
+                                    }}
                                     className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-[9px] md:text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full text-center animate-in fade-in duration-300"
-                                    placeholder="Time"
                                   />
                                   <select
                                     value={item.date}
@@ -2200,7 +2302,27 @@ export function JourneyDetailPage({
 
           {/* GALLERY TAB */}
           {activeTab === 'gallery' && (
-            <div className="p-4 md:p-6 animate-in fade-in duration-300 flex flex-col h-auto">
+            <div 
+              onDragEnter={handleGalleryDragEnter}
+              onDragOver={handleGalleryDragOver}
+              onDragLeave={handleGalleryDragLeave}
+              onDrop={handleGalleryDrop}
+              className="relative p-4 md:p-6 animate-in fade-in duration-300 flex flex-col h-auto min-h-[300px]"
+            >
+              {/* Drag & Drop Visual Overlay */}
+              {isGalleryDragActive && isLoggedIn && (
+                <div className="absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm z-30 flex flex-col items-center justify-center border-4 border-dashed border-red-600 m-2 transition-all">
+                  <div className="text-white flex flex-col items-center gap-3">
+                    <Plus className="w-12 h-12 animate-bounce text-red-500" />
+                    <p className="text-sm md:text-base font-black tracking-widest uppercase text-center">
+                      Drop images here to add to gallery
+                    </p>
+                    <p className="text-xs text-white/60">
+                      이미지를 여기에 놓으면 갤러리에 즉시 추가됩니다
+                    </p>
+                  </div>
+                </div>
+              )}
               
               {/* Add Gallery Image Area */}
               {isLoggedIn && (
