@@ -1828,7 +1828,7 @@ export function JourneyDetailPage({
         {/* Tab Contents */}
         <div 
           ref={tabContentRef}
-          className="flex-grow flex flex-col relative overflow-y-visible md:overflow-y-auto overflow-x-hidden w-full h-auto md:h-full"
+          className="flex-grow flex flex-col relative overflow-y-auto overflow-x-hidden w-full h-full"
         >
           
           {/* TIMELINE TAB */}
@@ -2670,7 +2670,7 @@ export function JourneyDetailPage({
                   }
 
                   return (
-                    <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 pb-8">
+                    <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 pb-24">
                       {/* Navigation bar for Detail view - Compact & Space-optimized */}
                       <div className="flex justify-between items-center py-1 mb-1 text-[10px] md:text-xs">
                         <button
@@ -2692,12 +2692,12 @@ export function JourneyDetailPage({
                         </button>
                       </div>
 
-                      {/* Large image area */}
-                      <div className="relative group w-full bg-black/5 dark:bg-white/5 p-2 border border-black/10 dark:border-white/10 flex items-center justify-center">
+                      {/* Large image area - Clean borderless layout */}
+                      <div className="relative group w-full my-2 flex items-center justify-center">
                         <img 
                           src={activeGalleryPhotoUrl} 
                           alt="Selected Detail"
-                          className="max-h-[50vh] object-contain mx-auto shadow-md"
+                          className="max-h-[45vh] object-contain mx-auto shadow-sm"
                         />
                         
                         {/* Map Pin Toggle & Delete buttons for Detail View (Gallery images only) */}
@@ -2736,20 +2736,23 @@ export function JourneyDetailPage({
                         )}
                       </div>
 
-                      {/* Info & Memo area */}
-                      <div className="bg-black/3 dark:bg-white/3 border border-black/10 dark:border-white/10 p-4 flex flex-col gap-3">
-                        <div className="flex flex-wrap gap-2 text-[10px] md:text-xs font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
+                      {/* Divider Line */}
+                      <div className="w-full h-px bg-black/10 dark:bg-white/10 my-4" />
+
+                      {/* Info & Memo area - Transparent & Borderless */}
+                      <div className="px-1 flex flex-col gap-3">
+                        <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[10px] md:text-xs font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
                           {meta.date && (
-                            <span className="bg-black/5 dark:bg-white/5 px-2 py-1 text-amber-600 dark:text-amber-300">
+                            <span className="text-amber-600 dark:text-amber-400">
                               📅 {meta.date.replace(/\./g, '/')}
                             </span>
                           )}
                           {meta.place && (
-                            <span className="bg-black/5 dark:bg-white/5 px-2 py-1 text-amber-600 dark:text-amber-300">
+                            <span className="text-amber-600 dark:text-amber-400">
                               📍 {meta.place}
                             </span>
                           )}
-                          <span className="bg-black/5 dark:bg-white/5 px-2 py-1">
+                          <span>
                             🏷️ {isTimelinePhoto ? 'Timeline Attached' : 'Gallery Collection'}
                           </span>
                         </div>
