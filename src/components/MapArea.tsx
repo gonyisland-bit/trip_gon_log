@@ -45,6 +45,10 @@ export function MapArea({
   const [mapReady, setMapReady] = useState(false);
   const [isInteractive, setIsInteractive] = useState(false);
 
+  // Animation references for flight travel visualization
+  const animMarkerRef = useRef<any>(null);
+  const animFrameIdRef = useRef<number | null>(null);
+
   // POI Features
   const [poiItems, setPoiItems] = useState<any[]>([]);
   const [poiLoading, setPoiLoading] = useState(false);
@@ -426,6 +430,99 @@ export function MapArea({
       poiMarkersRef.current.push(marker);
     });
   }, [poiItems, showConvenience, showSupermarket, showStation, mapReady, activeTab, expandedItemId]);
+
+  // ─── Effect 3d: Flight route plane animation ──────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    const L = (window as any).L;
+    if (!L) return;
+
+    // stop existing animation
+    if (animFrameIdRef.current !== null) {
+      cancelAnimationFrame(animFrameIdRef.current);
+      animFrameIdRef.current = null;
+    }
+    if (animMarkerRef.current) {
+      try {
+        map.removeLayer(animMarkerRef.current);
+      } catch (_) {}
+      animMarkerRef.current = null;
+    }
+
+    if (activeTab === 'flights' && expandedItemId !== null) {
+      // Find depart and arrive points (f.id * 10 & f.id * 10 + 1)
+      const fromPoint = mapPoints.find(p => p.id === expandedItemId * 10);
+      const toPoint = mapPoints.find(p => p.id === expandedItemId * 10 + 1);
+
+      if (fromPoint && toPoint && fromPoint.lat && fromPoint.lng && toPoint.lat && toPoint.lng) {
+        const startLat = Number(fromPoint.lat);
+        const startLng = Number(fromPoint.lng);
+        const endLat = Number(toPoint.lat);
+        const endLng = Number(toPoint.lng);
+
+        if (!isNaN(startLat) && !isNaN(startLng) && !isNaN(endLat) && !isNaN(endLng)) {
+          // Calculate heading angle
+          const dy = endLat - startLat;
+          const dx = endLng - startLng;
+          const angle = Math.atan2(dx, dy) * 180 / Math.PI;
+
+          // Rotated plane emoji icon
+          const planeIconHtml = `
+            <div class="animated-plane-wrapper" style="transform: rotate(${angle}deg); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
+              <span style="font-size: 26px; line-height: 1; filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.45)); display: inline-block;">✈️</span>
+            </div>
+          `;
+
+          const planeIcon = L.divIcon({
+            className: 'custom-animated-plane-icon',
+            html: planeIconHtml,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+          });
+
+          const animMarker = L.marker([startLat, startLng], { icon: planeIcon, zIndexOffset: 3000 }).addTo(map);
+          animMarkerRef.current = animMarker;
+
+          const duration = 3000; // 3 seconds flight cycle
+          let startTime: number | null = null;
+
+          const animate = (timestamp: number) => {
+            if (!startTime) startTime = timestamp;
+            let elapsed = timestamp - startTime;
+            let progress = elapsed / duration;
+
+            if (progress >= 1) {
+              startTime = timestamp; // Loop back
+              progress = 0;
+            }
+
+            // Interpolated position
+            const currentLat = startLat + (endLat - startLat) * progress;
+            const currentLng = startLng + (endLng - startLng) * progress;
+
+            animMarker.setLatLng([currentLat, currentLng]);
+            animFrameIdRef.current = requestAnimationFrame(animate);
+          };
+
+          animFrameIdRef.current = requestAnimationFrame(animate);
+        }
+      }
+    }
+
+    return () => {
+      if (animFrameIdRef.current !== null) {
+        cancelAnimationFrame(animFrameIdRef.current);
+        animFrameIdRef.current = null;
+      }
+      if (animMarkerRef.current && mapRef.current) {
+        try {
+          mapRef.current.removeLayer(animMarkerRef.current);
+        } catch (_) {}
+        animMarkerRef.current = null;
+      }
+    };
+  }, [activeTab, expandedItemId, mapPoints, mapReady]);
 
   // ─── Effect 4: Map click → open Google Maps ────────────────────────────────
   useEffect(() => {

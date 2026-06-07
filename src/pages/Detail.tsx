@@ -2655,7 +2655,7 @@ export function JourneyDetailPage({
                   }
 
                   return (
-                    <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 pb-24 md:pb-32">
                       {/* Navigation bar for Detail view */}
                       <div className="flex justify-between items-center pb-2 border-b border-black/5 dark:border-white/5">
                         <button
@@ -2682,7 +2682,7 @@ export function JourneyDetailPage({
                         <img 
                           src={activeGalleryPhotoUrl} 
                           alt="Selected Detail"
-                          className="max-h-[60vh] object-contain mx-auto shadow-md"
+                          className="max-h-[50vh] object-contain mx-auto shadow-md"
                         />
                         
                         {/* Map Pin Toggle & Delete buttons for Detail View (Gallery images only) */}
