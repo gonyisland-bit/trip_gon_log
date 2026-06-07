@@ -90,6 +90,8 @@ export interface StayItem {
   memo: string;
   confNo: string;
   img: string;
+  lat?: number;
+  lng?: number;
 }
 
 export interface TransitItem {

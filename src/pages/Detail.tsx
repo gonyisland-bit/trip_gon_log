@@ -399,12 +399,23 @@ export function JourneyDetailPage({
     }
   }, [isEditing]);
 
-  // Geocode stay addresses
+  // Geocode stay addresses & restore from DB
   useEffect(() => {
     if (activeTab === 'stays') {
       const staysToUse = isEditing ? draftStays : stays;
       staysToUse.forEach(async (stay) => {
-        if (stay.address && !stayCoords[stay.id]) {
+        // If DB has coordinates, restore immediately
+        if (stay.lat !== undefined && stay.lng !== undefined && stay.lat !== null && stay.lng !== null) {
+          setStayCoords(prev => {
+            if (prev[stay.id] && prev[stay.id].lat === stay.lat && prev[stay.id].lng === stay.lng) {
+              return prev;
+            }
+            return {
+              ...prev,
+              [stay.id]: { lat: stay.lat!, lng: stay.lng! }
+            };
+          });
+        } else if (stay.address && !stayCoords[stay.id] && stay.address !== '숙소 주소를 입력하세요') {
           try {
             const coords = await fetchCoordinates(stay.address);
             if (coords) {
@@ -1247,7 +1258,12 @@ export function JourneyDetailPage({
     setDraftStays(prev => prev.map(s => s.id === id ? { ...s, [field]: val } : s));
   };
   const updateStayPlace = (id: number, address: string, coords: { lat: number; lng: number } | null) => {
-    setDraftStays(prev => prev.map(s => s.id === id ? { ...s, address } : s));
+    setDraftStays(prev => prev.map(s => s.id === id ? { 
+      ...s, 
+      address,
+      lat: coords ? coords.lat : undefined,
+      lng: coords ? coords.lng : undefined
+    } : s));
     if (coords) {
       setStayCoords(prev => ({
         ...prev,
@@ -1335,9 +1351,12 @@ export function JourneyDetailPage({
         const url = await getDownloadURL(storageRef);
 
         // 3. Build GalleryImageMeta
+        const defaultDate = generatedDates[0] || '';
+        const finalDate = (exifDate && generatedDates.includes(exifDate)) ? exifDate : defaultDate;
+
         const newEntry = {
           url,
-          date: exifDate || '',
+          date: finalDate,
           time: exifTime || '12:00 PM',
           place: exifPlace || '',
           lat: exif.latitude !== undefined ? exif.latitude : null,
