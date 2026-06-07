@@ -11,6 +11,7 @@ interface TransitCardProps {
   onDelete: (id: number) => void;
   isActive?: boolean;
   onClick?: () => void;
+  onFocusPlace?: (type: 'depart' | 'arrive' | 'boarding') => void;
 }
 
 export function TransitCard({
@@ -20,6 +21,7 @@ export function TransitCard({
   onDelete,
   isActive = false,
   onClick,
+  onFocusPlace,
 }: TransitCardProps) {
   const textEditableClass = isEditMode 
     ? 'outline-dashed outline-1 outline-red-500/40 hover:bg-black/5 dark:hover:bg-white/5 cursor-text transition-all rounded px-1' 
@@ -268,32 +270,47 @@ export function TransitCard({
           <div className="mt-4 pt-4 border-t border-black/15 dark:border-white/15 space-y-3 text-xs md:text-sm animate-in slide-in-from-top duration-200">
             {transit.departPlace && (
               <div 
-                onClick={(e) => handlePlaceLinkClick(e, transit.departPlace!)}
-                className="flex items-center gap-2 text-black/80 dark:text-white/80 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                onClick={(e) => { e.stopPropagation(); onFocusPlace?.('depart'); }}
+                className="flex items-center gap-2 text-black/80 dark:text-white/80 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer group/row"
               >
-                <MapPin className="w-3.5 h-3.5 shrink-0 text-black/50 dark:text-white/50" />
+                <MapPin className="w-3.5 h-3.5 shrink-0 text-black/50 dark:text-white/50 group-hover/row:text-red-500" />
                 <span className="font-bold shrink-0 text-[10px] tracking-widest uppercase opacity-60">DEPART:</span>
-                <span className="underline decoration-dotted cursor-pointer">{transit.departPlace}</span>
+                <span 
+                  onClick={(e) => { e.stopPropagation(); handlePlaceLinkClick(e, transit.departPlace!); }}
+                  className="underline decoration-dotted cursor-pointer ml-1 hover:text-red-600 dark:hover:text-red-300"
+                >
+                  {transit.departPlace}
+                </span>
               </div>
             )}
             {transit.arrivePlace && (
               <div 
-                onClick={(e) => handlePlaceLinkClick(e, transit.arrivePlace!)}
-                className="flex items-center gap-2 text-black/80 dark:text-white/80 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                onClick={(e) => { e.stopPropagation(); onFocusPlace?.('arrive'); }}
+                className="flex items-center gap-2 text-black/80 dark:text-white/80 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer group/row"
               >
-                <MapPin className="w-3.5 h-3.5 shrink-0 text-black/50 dark:text-white/50" />
+                <MapPin className="w-3.5 h-3.5 shrink-0 text-black/50 dark:text-white/50 group-hover/row:text-red-500" />
                 <span className="font-bold shrink-0 text-[10px] tracking-widest uppercase opacity-60">ARRIVE:</span>
-                <span className="underline decoration-dotted cursor-pointer">{transit.arrivePlace}</span>
+                <span 
+                  onClick={(e) => { e.stopPropagation(); handlePlaceLinkClick(e, transit.arrivePlace!); }}
+                  className="underline decoration-dotted cursor-pointer ml-1 hover:text-red-600 dark:hover:text-red-300"
+                >
+                  {transit.arrivePlace}
+                </span>
               </div>
             )}
             {transit.boardingPlace && (
               <div 
-                onClick={(e) => handlePlaceLinkClick(e, transit.boardingPlace!)}
-                className="flex items-center gap-2 text-black/80 dark:text-white/80 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                onClick={(e) => { e.stopPropagation(); onFocusPlace?.('boarding'); }}
+                className="flex items-center gap-2 text-black/80 dark:text-white/80 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer group/row"
               >
-                <MapPin className="w-3.5 h-3.5 shrink-0 text-red-500 dark:text-red-400" />
+                <MapPin className="w-3.5 h-3.5 shrink-0 text-red-500 dark:text-red-400 group-hover/row:text-red-600" />
                 <span className="font-bold shrink-0 text-[10px] tracking-widest uppercase opacity-60">BOARDING AT:</span>
-                <span className="underline decoration-dotted cursor-pointer">{transit.boardingPlace}</span>
+                <span 
+                  onClick={(e) => { e.stopPropagation(); handlePlaceLinkClick(e, transit.boardingPlace!); }}
+                  className="underline decoration-dotted cursor-pointer ml-1 hover:text-red-600 dark:hover:text-red-300"
+                >
+                  {transit.boardingPlace}
+                </span>
               </div>
             )}
             {transit.boardingImg && (

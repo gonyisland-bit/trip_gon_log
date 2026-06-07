@@ -11,6 +11,7 @@ interface MapAreaProps {
   selectedDate: string;
   isDarkMode: boolean;
   activeTab?: string;
+  transitFocusType?: 'depart' | 'arrive' | 'boarding' | null;
 }
 
 export function MapArea({
@@ -22,6 +23,7 @@ export function MapArea({
   selectedDate,
   isDarkMode,
   activeTab,
+  transitFocusType,
 }: MapAreaProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -175,13 +177,17 @@ export function MapArea({
       });
 
       const transPolylines: any[] = [];
-      Object.values(transitGroups).forEach(group => {
+      Object.entries(transitGroups).forEach(([tIdStr, group]) => {
+        const tId = Number(tIdStr);
+        const isActiveTrans = expandedItemId !== null && tId === expandedItemId;
         if (group.depart && group.arrive) {
           const poly = L.polyline([group.depart, group.arrive], {
-            color: isDarkMode ? '#f59e0b' : '#d97706',
-            weight: 3,
+            color: isActiveTrans
+              ? (isDarkMode ? '#f59e0b' : '#d97706')
+              : (isDarkMode ? '#9ca3af' : '#6b7280'),
+            weight: isActiveTrans ? 4.5 : 2,
             dashArray: '4, 6',
-            opacity: 0.85
+            opacity: isActiveTrans ? 0.95 : 0.2
           });
           transPolylines.push(poly);
         }
@@ -211,6 +217,8 @@ export function MapArea({
       
       const isTransitActive = activeTab === 'transit' ? (item.transitId === expandedItemId) : (expandedItemId === item.id);
       const isActive = !!isTransitActive;
+      // In transit mode, fade out pins that don't belong to the expanded transit
+      const isTransitFaded = activeTab === 'transit' && expandedItemId !== null && !isTransitActive;
       
       let pinColor = '#dc2626';
       let pinTextPrefix = '';
@@ -228,7 +236,7 @@ export function MapArea({
       }
 
       const htmlContent = `
-        <div class="pin-wrapper">
+        <div class="pin-wrapper" style="opacity: ${isTransitFaded ? '0.25' : '1'}; transition: opacity 0.3s;">
           <div class="leaflet-pin${isActive ? ' active-pin' : ''}" style="background-color: ${pinColor}; ${isActive ? `box-shadow: 0 0 0 5px ${pinColor}40, 0 3px 10px rgba(0,0,0,0.4);` : ''}">${isActive ? '<div class="pin-inner-dot"></div>' : ''}</div>
           <div class="pin-label${isActive ? ' pin-label-active' : ''}">${pinTextPrefix}${item.place}</div>
         </div>
@@ -260,9 +268,19 @@ export function MapArea({
     if (expandedItemId !== null) {
       let activeMarker: any = null;
       if (activeTab === 'transit') {
-        activeMarker = markersRef.current[expandedItemId * 10 + 2] 
-                    || markersRef.current[expandedItemId * 10] 
-                    || markersRef.current[expandedItemId * 10 + 1];
+        // If a specific focus type is specified, target that pin
+        if (transitFocusType === 'depart') {
+          activeMarker = markersRef.current[expandedItemId * 10];
+        } else if (transitFocusType === 'arrive') {
+          activeMarker = markersRef.current[expandedItemId * 10 + 1];
+        } else if (transitFocusType === 'boarding') {
+          activeMarker = markersRef.current[expandedItemId * 10 + 2];
+        } else {
+          // Default: boarding > depart > arrive
+          activeMarker = markersRef.current[expandedItemId * 10 + 2] 
+                      || markersRef.current[expandedItemId * 10] 
+                      || markersRef.current[expandedItemId * 10 + 1];
+        }
       } else {
         activeMarker = markersRef.current[expandedItemId];
       }
@@ -273,7 +291,7 @@ export function MapArea({
       }
     }
 
-  }, [mapPoints, expandedItemId, isDarkMode, mapReady, isInteractive, activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mapPoints, expandedItemId, isDarkMode, mapReady, isInteractive, activeTab, transitFocusType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Effect 4: Map click → open Google Maps ────────────────────────────────
   useEffect(() => {

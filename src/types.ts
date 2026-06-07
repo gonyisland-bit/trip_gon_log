@@ -12,6 +12,13 @@ export interface TripDate {
   weather: WeatherInfo | null;
 }
 
+export interface GalleryImageMeta {
+  url: string;
+  date?: string;
+  place?: string;
+  imgNote?: string;
+}
+
 export interface Trip {
   id: number;
   title: string;
@@ -22,7 +29,7 @@ export interface Trip {
   locationStr: string;
   lat?: number;
   lng?: number;
-  gallery?: string[];
+  gallery?: (string | GalleryImageMeta)[];
   deletedAt?: number | null; // Soft-delete timestamp (null = active)
 }
 

@@ -21,6 +21,8 @@ import {
   TransitItem 
 } from '../types';
 import { fetchCoordinates, fetchPlacePredictions, fetchCoordinatesByPlaceId } from '../utils/googleMapsHelper';
+import { fetchAddressFromCoords } from '../utils/googleMapsHelper';
+import { readExif } from '../utils/exifHelper';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, storage, db } from '../firebase';
 import { compressImage } from '../utils/imageHelper';
@@ -343,6 +345,7 @@ export function JourneyDetailPage({
   const [selectedItemIds, setSelectedItemIds] = useState<number[]>([]);
   const [hiddenMapItemIds, setHiddenMapItemIds] = useState<number[]>([]);
   const [stayCoords, setStayCoords] = useState<{ [stayId: number]: { lat: number; lng: number } }>({});
+  const [transitFocusType, setTransitFocusType] = useState<'depart' | 'arrive' | 'boarding' | null>(null);
 
   const tripToUse = isEditing ? draftTrip : trip;
   const generatedDates = generateDateList(tripToUse?.date || '');
@@ -1148,7 +1151,7 @@ export function JourneyDetailPage({
     setDraftTransits(prev => [...prev, newTransit]);
   };
 
-  // Gallery actions with image compression
+  // Gallery actions with image compression + EXIF metadata extraction
   const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1158,18 +1161,39 @@ export function JourneyDetailPage({
 
     setUploadingImage(true);
     try {
+      // 1. Extract EXIF BEFORE compressing (canvas strips metadata)
+      const exif = await readExif(file);
+      let exifDate: string | undefined;
+      let exifPlace: string | undefined;
+
+      if (exif.dateTime) {
+        // Format YYYY:MM:DD HH:MM:SS → YYYY.MM.DD
+        exifDate = exif.dateTime.slice(0, 10).replace(/:/g, '.');
+      }
+      if (exif.latitude !== undefined && exif.longitude !== undefined) {
+        try {
+          const addr = await fetchAddressFromCoords(exif.latitude, exif.longitude);
+          if (addr) exifPlace = addr;
+        } catch (_) {/* silently ignore geocoding errors */}
+      }
+
+      // 2. Compress and upload
       const compressedBlob = await compressImage(file);
       const storageRef = ref(storage, `users/public/gallery/${Date.now()}_${file.name}`);
       await uploadBytes(storageRef, compressedBlob);
       const url = await getDownloadURL(storageRef);
+
+      // 3. Build GalleryImageMeta if we have metadata
+      const newEntry = (exifDate || exifPlace)
+        ? { url, date: exifDate, place: exifPlace }
+        : url;
       
       if (isEditing && draftTrip) {
         const currentGallery = draftTrip.gallery || [];
-        setDraftTrip({ ...draftTrip, gallery: [...currentGallery, url] });
+        setDraftTrip({ ...draftTrip, gallery: [...currentGallery, newEntry] });
       } else {
         const currentGallery = trip.gallery || [];
-        const updatedGallery = [...currentGallery, url];
-        // If not in editing mode, write straight to public trip metadata in Firestore
+        const updatedGallery = [...currentGallery, newEntry];
         await onSave(
           trip.id,
           { ...trip, gallery: updatedGallery },
@@ -1185,6 +1209,19 @@ export function JourneyDetailPage({
     } finally {
       setUploadingImage(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  // Update imgNote on a gallery (non-timeline) image
+  const handleUpdateGalleryImageNote = (imageUrl: string, newNote: string) => {
+    const updateGallery = (gallery: (string | any)[]): (string | any)[] =>
+      gallery.map(item => {
+        if (typeof item === 'string') return item === imageUrl ? { url: item, imgNote: newNote } : item;
+        return item.url === imageUrl ? { ...item, imgNote: newNote } : item;
+      });
+
+    if (isEditing && draftTrip) {
+      setDraftTrip({ ...draftTrip, gallery: updateGallery(draftTrip.gallery || []) });
     }
   };
 
@@ -1210,7 +1247,11 @@ export function JourneyDetailPage({
   };
 
   // Separate gallery: metadata gallery (from trip.gallery) and timeline images (from timeline items)
-  const galleryMetaImages = tripToUse?.gallery || [];
+  // Normalize gallery entries: string → { url } object
+  const rawGalleryEntries = tripToUse?.gallery || [];
+  const galleryMetaImages: { url: string; date?: string; place?: string; imgNote?: string }[] = rawGalleryEntries.map(entry =>
+    typeof entry === 'string' ? { url: entry } : entry as any
+  );
   const timelineImages = baseTimeline
     .filter(item => item.img)
     .map(item => ({
@@ -1222,8 +1263,8 @@ export function JourneyDetailPage({
       type: 'timeline' as const,
     }));
 
-  // Combined LightboxImageMeta array: gallery photos first (no date/place), then timeline photos with metadata
-  const galleryMetaMetas: LightboxImageMeta[] = galleryMetaImages.map(url => ({ url, type: 'gallery' as const }));
+  // Combined LightboxImageMeta array: gallery photos first, then timeline photos
+  const galleryMetaMetas: LightboxImageMeta[] = galleryMetaImages.map(g => ({ url: g.url, type: 'gallery' as const }));
   const timelineMetas: LightboxImageMeta[] = timelineImages.map(t => ({
     url: t.url,
     place: t.place,
@@ -1246,7 +1287,7 @@ export function JourneyDetailPage({
     <main className="animate-in slide-in-from-right-8 duration-500 flex flex-col md:flex-row h-auto md:h-[calc(100vh-73px)] w-full overflow-y-visible md:overflow-hidden">
       
       {/* Left: Map & Info Section */}
-      <section className="w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-colors duration-300 h-[48vh] md:h-full shrink-0">
+      <section className={`w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-colors duration-300 ${isEditing ? 'h-[65vh]' : 'h-[48vh]'} md:h-full shrink-0`}>
         <div className="p-4 md:p-8 border-b border-black/20 dark:border-white/20 z-10 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0">
           
           {/* Back to hub button */}
@@ -1386,6 +1427,7 @@ export function JourneyDetailPage({
             selectedDate={selectedDate}
             isDarkMode={isDarkMode}
             activeTab={activeTab}
+            transitFocusType={transitFocusType}
           />
         </ErrorBoundary>
       </section>
@@ -1575,7 +1617,7 @@ export function JourneyDetailPage({
                               </div>
                             )}
                             {/* Time */}
-                            <div className={`shrink-0 text-[10px] md:text-xs font-bold tracking-widest mt-1 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60'} ${isEditing ? 'w-36 md:w-44 flex flex-col gap-1' : 'w-16 md:w-24 flex flex-col gap-1.5'}`}>
+                            <div className={`shrink-0 text-[10px] md:text-xs font-bold tracking-widest mt-1 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60'} ${isEditing ? 'w-20 md:w-44 flex flex-col gap-1' : 'w-16 md:w-24 flex flex-col gap-1.5'}`}>
                               <div>
                                 {isEditing ? (
                                   <input
@@ -1761,6 +1803,8 @@ export function JourneyDetailPage({
                                 }}
                               >
                                 <img src={item.img} alt={item.place} className={`w-full h-full object-cover transition-all ${isActive ? 'grayscale-0' : 'grayscale group-hover:grayscale-0'}`} />
+                                {/* Red dot badge: mark as timeline-attached photo */}
+                                <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-600 rounded-full border border-white dark:border-black shadow z-10" />
                                 <ImageEditOverlay 
                                   isEditMode={isEditing} 
                                   onImageUploaded={(url, gps) => {
@@ -2113,6 +2157,11 @@ export function JourneyDetailPage({
                               isActive={expandedItemId === transit.id}
                               onClick={() => {
                                 setExpandedItemId(prev => prev === transit.id ? null : transit.id);
+                                setTransitFocusType(null);
+                              }}
+                              onFocusPlace={(type) => {
+                                setExpandedItemId(transit.id);
+                                setTransitFocusType(type);
                               }}
                             />
                           </div>
@@ -2186,33 +2235,76 @@ export function JourneyDetailPage({
                     <span className="text-[9px] uppercase font-black tracking-widest text-black/40 dark:text-white/40 shrink-0">Gallery Photos</span>
                     <div className="h-px flex-grow bg-black/10 dark:bg-white/10" />
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4 mb-8">
-                    {galleryMetaImages.map((imgUrl, idx) => (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5 mb-8">
+                    {galleryMetaImages.map((imgMeta, idx) => (
                       <div 
-                        key={`meta-${imgUrl}-${idx}`}
-                        className="group/gallery relative aspect-[4/3] overflow-hidden border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 cursor-pointer shadow-sm"
-                        onClick={() => {
-                          setLightboxIndex(idx);
-                          setIsLightboxOpen(true);
-                        }}
+                        key={`meta-${imgMeta.url}-${idx}`}
+                        className="flex flex-col group/gallery"
                       >
-                        <img 
-                          src={imgUrl} 
-                          alt={`Gallery ${idx + 1}`} 
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover/gallery:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover/gallery:bg-black/10 transition-colors pointer-events-none" />
-                        
-                        {/* Delete image button */}
-                        {isLoggedIn && (
-                          <button
-                            onClick={(e) => handleRemoveGalleryImage(imgUrl, e)}
-                            className="absolute top-2 right-2 p-1.5 bg-black/75 hover:bg-red-600 text-white transition-colors opacity-0 group-hover/gallery:opacity-100 z-10 rounded-sm"
-                            title="Remove Image"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
+                        {/* Film-photo styled clickable image */}
+                        <div
+                          className="relative overflow-hidden border border-black/10 dark:border-white/10 cursor-pointer aspect-[4/3]"
+                          onClick={() => {
+                            setLightboxIndex(idx);
+                            setIsLightboxOpen(true);
+                          }}
+                        >
+                          <img 
+                            src={imgMeta.url} 
+                            alt={`Gallery ${idx + 1}`} 
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover/gallery:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover/gallery:bg-black/10 transition-colors pointer-events-none" />
+                          
+                          {/* EXIF metadata overlay (top-left) */}
+                          {(imgMeta.date || imgMeta.place) && (
+                            <div className="absolute top-2 left-2 flex flex-col gap-0.5 z-10 pointer-events-none">
+                              {imgMeta.date && (
+                                <div className="bg-black/60 backdrop-blur-sm px-1.5 py-0.5">
+                                  <span className="text-[8px] text-amber-300 font-mono font-bold tracking-widest leading-none">
+                                    {imgMeta.date.replace(/\./g, '/')}
+                                  </span>
+                                </div>
+                              )}
+                              {imgMeta.place && (
+                                <div className="bg-black/60 backdrop-blur-sm px-1.5 py-0.5">
+                                  <span className="text-[8px] text-amber-300 font-mono font-bold tracking-widest leading-none truncate block max-w-[160px]">
+                                    📍 {imgMeta.place}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Delete image button */}
+                          {isLoggedIn && (
+                            <button
+                              onClick={(e) => handleRemoveGalleryImage(imgMeta.url, e)}
+                              className="absolute top-2 right-2 p-1.5 bg-black/75 hover:bg-red-600 text-white transition-colors opacity-0 group-hover/gallery:opacity-100 z-10 rounded-sm"
+                              title="Remove Image"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Photo note / description area below image */}
+                        <div className="bg-black/3 dark:bg-white/3 border border-t-0 border-black/10 dark:border-white/10 px-3 py-2">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={imgMeta.imgNote || ''}
+                              onChange={(e) => handleUpdateGalleryImageNote(imgMeta.url, e.target.value)}
+                              placeholder="사진 설명 추가..."
+                              className="w-full bg-transparent outline-none text-[10px] text-black/70 dark:text-white/70 placeholder-black/25 dark:placeholder-white/25"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          ) : imgMeta.imgNote ? (
+                            <p className="text-[10px] text-black/60 dark:text-white/60 italic leading-relaxed">{imgMeta.imgNote}</p>
+                          ) : (
+                            <p className="text-[10px] text-black/20 dark:text-white/20 italic">메모 없음</p>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -2260,6 +2352,12 @@ export function JourneyDetailPage({
                                 </span>
                               </div>
                             )}
+                          </div>
+                          {/* TIMELINE badge overlay (top-right) */}
+                          <div className="absolute top-2 right-2 z-10 pointer-events-none">
+                            <span className="bg-red-600/85 backdrop-blur-sm text-white text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 leading-none">
+                              🗓️ TIMELINE
+                            </span>
                           </div>
                           <div className="absolute inset-0 bg-black/0 group-hover/gallery:bg-black/10 transition-colors pointer-events-none" />
                         </div>

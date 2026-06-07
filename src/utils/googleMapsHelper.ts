@@ -285,3 +285,32 @@ export async function fetchCoordinatesByPlaceId(placeId: string): Promise<Coordi
   return null;
 }
 
+/**
+ * 구글 Geocoding API를 사용하여 위경도 좌표를 주소/지명으로 변환(역지오코딩)합니다.
+ */
+export async function fetchAddressFromCoords(lat: number, lng: number): Promise<string | null> {
+  try {
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_API_KEY}&language=ko`
+    );
+    const data = await response.json();
+    if (data.status === 'OK' && data.results && data.results.length > 0) {
+      const result = data.results[0];
+      const comps = result.address_components;
+      const locality = comps.find((c: any) => c.types.includes('locality'));
+      const sublocality = comps.find((c: any) => c.types.includes('sublocality_level_1') || c.types.includes('sublocality'));
+      const pointOfInterest = comps.find((c: any) => c.types.includes('point_of_interest') || c.types.includes('establishment'));
+      
+      if (pointOfInterest) return pointOfInterest.long_name;
+      if (sublocality && locality) return `${locality.long_name} ${sublocality.long_name}`;
+      if (locality) return locality.long_name;
+      
+      const cleanAddress = result.formatted_address.replace("대한민국 ", "");
+      return cleanAddress;
+    }
+  } catch (error) {
+    console.error('Failed to fetch address from coordinates:', error);
+  }
+  return null;
+}
+
