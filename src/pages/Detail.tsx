@@ -392,6 +392,15 @@ export function JourneyDetailPage({
   const tripToUse = isEditing ? draftTrip : trip;
   const generatedDates = generateDateList(tripToUse?.date || '');
   const [airportGeocodedCoords, setAirportGeocodedCoords] = useState<{ [code: string]: { lat: number; lng: number } }>({});
+  const tabContentRef = useRef<HTMLDivElement | null>(null);
+
+  // Scroll window and tab container to top when switching tabs
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+    if (tabContentRef.current) {
+      tabContentRef.current.scrollTop = 0;
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     if (!isEditing) {
@@ -857,6 +866,25 @@ export function JourneyDetailPage({
       }
     });
 
+    const timelinePhotoPoints: any[] = [];
+    currentTimeline.forEach((item, idx) => {
+      if (item.img && item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) {
+        const dayIndex = item.date ? generatedDates.indexOf(item.date) + 1 : 0;
+        timelinePhotoPoints.push({
+          id: 600000 + idx, // unique ID offset for timeline photo pins
+          place: item.place || '일정 사진 위치',
+          lat: Number(item.lat),
+          lng: Number(item.lng),
+          time: item.time || '12:00 PM',
+          date: item.date || '',
+          memo: item.imgNote || item.memo || '일정 사진',
+          isPhoto: true,
+          photoUrl: item.img,
+          dayIndex
+        });
+      }
+    });
+
     if (activeTab === 'timeline') {
       const timelinePoints = currentTimeline
         .filter(item => !item.excludeFromMap)
@@ -889,7 +917,8 @@ export function JourneyDetailPage({
       });
       return combined;
     } else if (activeTab === 'gallery') {
-      const visiblePhotoPoints = photoPoints.filter(p => {
+      const allPhotoPoints = [...photoPoints, ...timelinePhotoPoints];
+      const visiblePhotoPoints = allPhotoPoints.filter(p => {
         if (selectedDate === 'ALL') return true;
         return p.date === selectedDate;
       });
@@ -1473,7 +1502,7 @@ export function JourneyDetailPage({
   // Separate gallery: metadata gallery (from trip.gallery) and timeline images (from timeline items)
   // Normalize gallery entries: string → { url } object
   const rawGalleryEntries = tripToUse?.gallery || [];
-  const galleryMetaImages: { url: string; date?: string; place?: string; imgNote?: string }[] = rawGalleryEntries.map(entry =>
+  const galleryMetaImages: { url: string; date?: string; place?: string; imgNote?: string; lat?: number | null; lng?: number | null }[] = rawGalleryEntries.map(entry =>
     typeof entry === 'string' ? { url: entry } : entry as any
   );
   const timelineImages = baseTimeline
@@ -1697,7 +1726,10 @@ export function JourneyDetailPage({
         </div>
 
         {/* Tab Contents */}
-        <div className="flex-grow flex flex-col relative overflow-y-visible md:overflow-y-auto overflow-x-hidden w-full h-auto md:h-full">
+        <div 
+          ref={tabContentRef}
+          className="flex-grow flex flex-col relative overflow-y-visible md:overflow-y-auto overflow-x-hidden w-full h-auto md:h-full"
+        >
           
           {/* TIMELINE TAB */}
           {activeTab === 'timeline' && (

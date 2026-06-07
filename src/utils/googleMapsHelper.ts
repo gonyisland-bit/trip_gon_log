@@ -287,8 +287,10 @@ export async function fetchCoordinatesByPlaceId(placeId: string): Promise<Coordi
 
 /**
  * 구글 Geocoding API를 사용하여 위경도 좌표를 주소/지명으로 변환(역지오코딩)합니다.
+ * 실패 시 Nominatim (OpenStreetMap) API를 폴백으로 사용합니다.
  */
 export async function fetchAddressFromCoords(lat: number, lng: number): Promise<string | null> {
+  // 1. 구글 역지오코딩 시도
   try {
     const response = await fetch(
       `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_API_KEY}&language=ko`
@@ -307,10 +309,40 @@ export async function fetchAddressFromCoords(lat: number, lng: number): Promise<
       
       const cleanAddress = result.formatted_address.replace("대한민국 ", "");
       return cleanAddress;
+    } else {
+      console.warn('Google Reverse Geocoding failed:', data.status || 'No status');
     }
   } catch (error) {
-    console.error('Failed to fetch address from coordinates:', error);
+    console.error('Failed to fetch address from Google coordinates, trying Nominatim fallback:', error);
   }
+
+  // 2. Nominatim (OpenStreetMap) 역지오코딩 폴백 시도
+  try {
+    console.log(`[Reverse Geocoding] Fallback to Nominatim for coordinates: ${lat}, ${lng}`);
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ko`,
+      {
+        headers: {
+          'User-Agent': 'TripgonLog/1.0'
+        }
+      }
+    );
+    const data = await response.json();
+    if (data && data.display_name) {
+      const address = data.display_name;
+      const parts = address.split(',').map((p: string) => p.trim());
+      const cleanParts = parts.filter((p: string) => 
+        !p.match(/^\d{5}$/) && // 우편번호 제외
+        p !== '대한민국'
+      );
+      const shortAddress = cleanParts.slice(0, 2).join(' ');
+      console.log(`[Reverse Geocoding] Nominatim successfully resolved:`, shortAddress);
+      return shortAddress || address;
+    }
+  } catch (error) {
+    console.error('[Reverse Geocoding] Nominatim fetch failed:', error);
+  }
+
   return null;
 }
 
