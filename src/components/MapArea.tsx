@@ -341,12 +341,11 @@ export function MapArea({
     const query = `
       [out:json][timeout:15];
       (
-        node["shop"="convenience"](around:1000, ${lat}, ${lng});
-        node["shop"="supermarket"](around:1000, ${lat}, ${lng});
-        node["railway"="station"](around:1000, ${lat}, ${lng});
-        node["public_transport"="station"](around:1000, ${lat}, ${lng});
+        nwr["shop"~"convenience|supermarket|grocery|department_store|mall"](around:1500, ${lat}, ${lng});
+        nwr["railway"~"station|subway|subway_entrance|tram_stop"](around:1500, ${lat}, ${lng});
+        nwr["public_transport"~"station|stop_position|platform"](around:1500, ${lat}, ${lng});
       );
-      out body 30;
+      out center 50;
     `;
 
     fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`)
@@ -354,18 +353,35 @@ export function MapArea({
       .then(data => {
         if (isMounted && data && data.elements) {
           const items = data.elements.map((el: any) => {
+            const itemLat = el.lat ?? el.center?.lat;
+            const itemLng = el.lon ?? el.center?.lon;
+            if (!itemLat || !itemLng) return null;
+
             let type = 'convenience';
-            if (el.tags?.shop === 'supermarket') type = 'supermarket';
-            else if (el.tags?.railway === 'station' || el.tags?.public_transport === 'station') type = 'station';
+            const shopTag = el.tags?.shop || '';
+            const railwayTag = el.tags?.railway || '';
+            const transportTag = el.tags?.public_transport || '';
+
+            if (shopTag === 'supermarket' || shopTag === 'grocery' || shopTag === 'department_store' || shopTag === 'mall') {
+              type = 'supermarket';
+            } else if (
+              railwayTag === 'station' || 
+              railwayTag === 'subway' || 
+              railwayTag === 'subway_entrance' || 
+              railwayTag === 'tram_stop' ||
+              transportTag === 'station'
+            ) {
+              type = 'station';
+            }
 
             return {
               id: el.id,
-              lat: el.lat,
-              lng: el.lon,
+              lat: itemLat,
+              lng: itemLng,
               name: el.tags?.name || el.tags?.['name:ko'] || el.tags?.['name:en'] || (type === 'convenience' ? '편의점' : type === 'supermarket' ? '마켓' : '역'),
               type
             };
-          });
+          }).filter(Boolean);
           setPoiItems(items);
         }
       })
@@ -427,6 +443,29 @@ export function MapArea({
       });
 
       const marker = L.marker([poi.lat, poi.lng], { icon, zIndexOffset: 500 }).addTo(map);
+      
+      // Bind details popup
+      marker.bindPopup(`
+        <div style="font-family: sans-serif; font-size: 11px; padding: 4px; color: #111; min-width: 140px;">
+          <strong style="font-size: 12px; display: block; margin-bottom: 2px;">${poi.name}</strong>
+          <span style="color: #666; font-size: 9px; display: block; margin-bottom: 6px;">📍 Double click to view on Google Maps</span>
+          <button 
+            style="background: #e11d48; color: #fff; border: none; padding: 5px 8px; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 2px; width: 100%; transition: background 0.2s;"
+            onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(poi.name)}', '_blank')"
+            onmouseover="this.style.background='#be123c'"
+            onmouseout="this.style.background='#e11d48'"
+          >
+            Google Maps 이동
+          </button>
+        </div>
+      `, { closeButton: false });
+
+      // Double click listener to navigate to Google Maps
+      marker.on('dblclick', (e: any) => {
+        L.DomEvent.stopPropagation(e);
+        window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(poi.name)}`, '_blank');
+      });
+
       poiMarkersRef.current.push(marker);
     });
   }, [poiItems, showConvenience, showSupermarket, showStation, mapReady, activeTab, expandedItemId]);

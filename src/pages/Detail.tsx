@@ -2670,7 +2670,7 @@ export function JourneyDetailPage({
                   }
 
                   return (
-                    <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 pb-24 md:pb-32">
+                    <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 pb-8">
                       {/* Navigation bar for Detail view - Compact & Space-optimized */}
                       <div className="flex justify-between items-center py-1 mb-1 text-[10px] md:text-xs">
                         <button
@@ -3068,7 +3068,7 @@ export function JourneyDetailPage({
           )}
 
           {/* Footer inside Detail scroll container */}
-          <div className="w-full shrink-0 pb-16 pt-8 mt-auto border-t border-black/5 dark:border-white/5">
+          <div className="w-full shrink-0 pb-16 pt-8 mt-16 border-t border-black/5 dark:border-white/5">
             <Footer />
           </div>
         </div>
