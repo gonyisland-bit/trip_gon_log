@@ -20,6 +20,7 @@ export interface GalleryImageMeta {
   imgNote?: string;
   lat?: number | null;
   lng?: number | null;
+  excludeFromMap?: boolean;
 }
 
 export interface Trip {

@@ -850,6 +850,7 @@ export function JourneyDetailPage({
     const photoPoints: any[] = [];
     galleryMetaImages.forEach((imgMeta, idx) => {
       if (imgMeta.lat !== undefined && imgMeta.lng !== undefined && imgMeta.lat !== null && imgMeta.lng !== null) {
+        if (imgMeta.excludeFromMap) return;
         const dayIndex = imgMeta.date ? generatedDates.indexOf(imgMeta.date) + 1 : 0;
         photoPoints.push({
           id: 500000 + idx, // unique ID offset for photo pins
@@ -1482,12 +1483,41 @@ export function JourneyDetailPage({
     e.stopPropagation();
     if (!window.confirm("이 이미지를 갤러리에서 삭제하시겠습니까?")) return;
 
+    const filterGallery = (gallery: (string | any)[]) =>
+      gallery.filter(item => {
+        const itemUrl = typeof item === 'string' ? item : item.url;
+        return itemUrl !== imageUrl;
+      });
+
     if (isEditing && draftTrip) {
       const currentGallery = draftTrip.gallery || [];
-      setDraftTrip({ ...draftTrip, gallery: currentGallery.filter(url => url !== imageUrl) });
+      setDraftTrip({ ...draftTrip, gallery: filterGallery(currentGallery) });
     } else {
       const currentGallery = trip.gallery || [];
-      const updatedGallery = currentGallery.filter(url => url !== imageUrl);
+      const updatedGallery = filterGallery(currentGallery);
+      await onSave(
+        trip.id,
+        { ...trip, gallery: updatedGallery },
+        baseTimeline,
+        flights,
+        stays,
+        transits
+      );
+    }
+  };
+
+  const handleToggleGalleryImagePin = async (imageUrl: string, exclude: boolean) => {
+    const updateGallery = (gallery: (string | any)[]): (string | any)[] =>
+      gallery.map(item => {
+        if (typeof item === 'string') return { url: item, excludeFromMap: exclude };
+        return item.url === imageUrl ? { ...item, excludeFromMap: exclude } : item;
+      });
+
+    if (isEditing && draftTrip) {
+      setDraftTrip({ ...draftTrip, gallery: updateGallery(draftTrip.gallery || []) });
+    } else {
+      const currentGallery = trip.gallery || [];
+      const updatedGallery = updateGallery(currentGallery);
       await onSave(
         trip.id,
         { ...trip, gallery: updatedGallery },
@@ -1502,7 +1532,7 @@ export function JourneyDetailPage({
   // Separate gallery: metadata gallery (from trip.gallery) and timeline images (from timeline items)
   // Normalize gallery entries: string → { url } object
   const rawGalleryEntries = tripToUse?.gallery || [];
-  const galleryMetaImages: { url: string; date?: string; place?: string; imgNote?: string; lat?: number | null; lng?: number | null }[] = rawGalleryEntries.map(entry =>
+  const galleryMetaImages: { url: string; date?: string; place?: string; imgNote?: string; lat?: number | null; lng?: number | null; excludeFromMap?: boolean }[] = rawGalleryEntries.map(entry =>
     typeof entry === 'string' ? { url: entry } : entry as any
   );
   const timelineImages = baseTimeline
@@ -2644,6 +2674,24 @@ export function JourneyDetailPage({
                             <Maximize2 className="w-3.5 h-3.5" />
                           </button>
                           
+                          {/* Map Pin Toggle Button (only if coords exist) */}
+                          {imgMeta.lat !== undefined && imgMeta.lng !== undefined && imgMeta.lat !== null && imgMeta.lng !== null && (
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const newExclude = !imgMeta.excludeFromMap;
+                                await handleToggleGalleryImagePin(imgMeta.url, newExclude);
+                                if (!newExclude) {
+                                  setExpandedItemId(500000 + idx);
+                                }
+                              }}
+                              className={`absolute top-2 ${isLoggedIn ? 'right-9' : 'right-2'} p-1.5 transition-colors z-10 rounded-sm ${!imgMeta.excludeFromMap ? 'bg-orange-500 hover:bg-orange-600 text-white opacity-100' : 'bg-black/75 hover:bg-black text-white/50 hover:text-white opacity-0 group-hover/gallery:opacity-100 focus:opacity-100'}`}
+                              title={imgMeta.excludeFromMap ? "지도에 핀 표시하기" : "지도에서 핀 숨기기"}
+                            >
+                              <MapPin className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+
                           {/* Delete image button */}
                           {isLoggedIn && (
                             <button
