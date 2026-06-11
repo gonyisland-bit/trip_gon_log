@@ -349,6 +349,27 @@ function PlaceAutocompleteInput({
   );
 }
 
+// Date range picker parsing and formatting helpers
+const parseDateRange = (dateStr: string) => {
+  if (!dateStr || !dateStr.includes('-')) return { start: '', end: '' };
+  const parts = dateStr.split('-').map(p => p.trim());
+  if (parts.length < 2) return { start: '', end: '' };
+  
+  const formatToInputDate = (d: string, yearFallback?: string) => {
+    let normalized = d.replace(/\./g, '-');
+    if (normalized.length === 5 && yearFallback) {
+      normalized = `${yearFallback}-${normalized}`;
+    }
+    return normalized;
+  };
+
+  const startRaw = parts[0];
+  const startYear = startRaw.slice(0, 4);
+  const start = formatToInputDate(startRaw);
+  const end = formatToInputDate(parts[1], startYear);
+  return { start, end };
+};
+
 export function JourneyDetailPage({
   isLoggedIn,
   trip,
@@ -407,6 +428,7 @@ export function JourneyDetailPage({
 
   const tripToUse = isEditing ? draftTrip : trip;
   const generatedDates = generateDateList(tripToUse?.date || '');
+  const { start: minDate, end: maxDate } = parseDateRange(tripToUse?.date || '');
   const [airportGeocodedCoords, setAirportGeocodedCoords] = useState<{ [code: string]: { lat: number; lng: number } }>({});
   const tabContentRef = useRef<HTMLDivElement | null>(null);
 
@@ -594,26 +616,7 @@ export function JourneyDetailPage({
     }
   }, [trip, timelineData, generatedDates, isLoggedIn]);
 
-  // Date range picker parsing and formatting helpers
-  const parseDateRange = (dateStr: string) => {
-    if (!dateStr || !dateStr.includes('-')) return { start: '', end: '' };
-    const parts = dateStr.split('-').map(p => p.trim());
-    if (parts.length < 2) return { start: '', end: '' };
-    
-    const formatToInputDate = (d: string, yearFallback?: string) => {
-      let normalized = d.replace(/\./g, '-');
-      if (normalized.length === 5 && yearFallback) {
-        normalized = `${yearFallback}-${normalized}`;
-      }
-      return normalized;
-    };
 
-    const startRaw = parts[0];
-    const startYear = startRaw.slice(0, 4);
-    const start = formatToInputDate(startRaw);
-    const end = formatToInputDate(parts[1], startYear);
-    return { start, end };
-  };
 
   const handleDateChange = (type: 'start' | 'end', val: string) => {
     if (!draftTrip) return;
@@ -1768,10 +1771,10 @@ export function JourneyDetailPage({
   // galleryMetaImages, timelineImages, galleryAllMeta, galleryAllUnique variables are now declared at the top of the component.
 
   return (
-    <main className="animate-in slide-in-from-right-8 duration-500 flex flex-col md:flex-row h-auto md:h-[calc(100vh-73px)] w-full overflow-y-visible md:overflow-hidden">
+    <main className="animate-in slide-in-from-right-8 duration-500 flex flex-col md:flex-row h-[calc(100dvh-73px)] w-full overflow-hidden">
       
       {/* Left: Map & Info Section */}
-      <section className={`w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-colors duration-300 ${isEditing ? 'h-[70vh]' : 'h-[58vh]'} md:h-full shrink-0`}>
+      <section className={`w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-colors duration-300 ${isEditing ? 'h-[42vh] md:h-full' : 'h-[38vh] md:h-full'} shrink-0`}>
         <div className="p-3 md:py-4 md:px-6 border-b border-black/20 dark:border-white/20 z-10 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0">
           
           {/* Back to hub & Metadata row */}
@@ -1971,7 +1974,7 @@ export function JourneyDetailPage({
       </section>
       
       {/* Right: Record / Tabs Section */}
-      <section className="w-full md:w-1/2 flex flex-col bg-[#F9F8F6] dark:bg-[#111111] transition-colors duration-300 flex-grow h-auto md:h-full md:overflow-hidden">
+      <section className="w-full md:w-1/2 flex flex-col bg-[#F9F8F6] dark:bg-[#111111] transition-colors duration-300 flex-grow h-1/2 md:h-full overflow-hidden">
         
         {/* Tab Headers */}
         <div className="flex overflow-x-auto hide-scrollbar flex-nowrap border-b border-black/20 dark:border-white/20 bg-[#F9F8F6] dark:bg-[#111111] sticky top-0 z-30 transition-colors shrink-0 w-full">
@@ -2147,7 +2150,7 @@ export function JourneyDetailPage({
                     const showDivider = selectedDate === 'ALL' && (idx === 0 || currentTimeline[idx - 1].date !== item.date);
                     const dayIndex = item.date ? generatedDates.indexOf(item.date) + 1 : 0;
                     const isExcluded = !!item.excludeFromMap;
-                    const dayColor = selectedDate === 'ALL' && dayIndex > 0 ? dayColors[(dayIndex - 1) % dayColors.length] : undefined;
+                    const dayColor = dayIndex > 0 ? dayColors[(dayIndex - 1) % dayColors.length] : undefined;
                     return (
                       <div key={item.id} className="w-full flex flex-col">
                         {showDivider && (
@@ -2172,7 +2175,7 @@ export function JourneyDetailPage({
                         )}
                         <div 
                           ref={el => { itemRefs.current[item.id] = el; }} 
-                          className={`flex flex-col border-b border-black/10 dark:border-white/10 transition-all w-full ${isActive ? 'bg-red-500/[0.02] dark:bg-red-500/[0.02] border-l-2 border-l-red-600 dark:border-l-red-400' : 'border-l-2 border-l-transparent'} ${isEditing ? 'cursor-grab active:cursor-grabbing' : ''} ${isExcluded ? 'opacity-60' : 'opacity-100'} ${collapsedDays.includes(item.date || '') ? 'hidden' : ''}`}
+                          className={`flex flex-col border-b border-black/10 dark:border-white/10 transition-all w-full ${isActive ? 'bg-red-500/[0.02] dark:bg-red-500/[0.02] border-l-2 border-l-red-600 dark:border-l-red-400' : 'border-l-2 border-l-transparent'} ${isEditing ? 'cursor-grab active:cursor-grabbing' : ''} ${collapsedDays.includes(item.date || '') && selectedDate === 'ALL' ? 'hidden' : ''}`}
                           draggable={isEditing}
                           onDragStart={() => setDraggedItemId(item.id)}
                           onDragOver={(e) => e.preventDefault()}
@@ -2666,6 +2669,8 @@ export function JourneyDetailPage({
                               onUpdate={updateFlight} 
                               onDelete={deleteFlight} 
                               isActive={expandedItemId === flight.id}
+                              minDate={minDate}
+                              maxDate={maxDate}
                               onClick={() => {
                                 setExpandedItemId(prev => prev === flight.id ? null : flight.id);
                               }}
@@ -2723,6 +2728,8 @@ export function JourneyDetailPage({
                       onSelectPlace={updateStayPlace}
                       onDelete={deleteStay} 
                       isActive={expandedItemId === stay.id}
+                      minDate={minDate}
+                      maxDate={maxDate}
                       onClick={() => {
                         setExpandedItemId(prev => prev === stay.id ? null : stay.id);
                       }}
@@ -2814,6 +2821,8 @@ export function JourneyDetailPage({
                               onUpdate={updateTransit} 
                               onDelete={deleteTransit} 
                               isActive={expandedItemId === transit.id}
+                              minDate={minDate}
+                              maxDate={maxDate}
                               onClick={() => {
                                 setExpandedItemId(prev => prev === transit.id ? null : transit.id);
                                 setTransitFocusType(null);
@@ -2942,7 +2951,7 @@ export function JourneyDetailPage({
                     <span className="text-[9px] uppercase font-black tracking-widest text-black/40 dark:text-white/40 shrink-0">Gallery Photos</span>
                     <div className="h-px flex-grow bg-black/10 dark:bg-white/10" />
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5 mb-8">
+                  <div className="grid grid-cols-2 gap-3 md:gap-5 mb-8">
                     {galleryMetaImages.map((imgMeta, idx) => {
                       const isPhotoActive = expandedItemId === (500000 + idx);
                       return (
@@ -3066,7 +3075,7 @@ export function JourneyDetailPage({
                     <span className="text-[9px] uppercase font-black tracking-widest text-black/40 dark:text-white/40 shrink-0">Timeline Photos</span>
                     <div className="h-px flex-grow bg-black/10 dark:bg-white/10" />
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5 pb-12">
+                  <div className="grid grid-cols-2 gap-3 md:gap-5 pb-12">
                     {timelineImages.map((imgItem, idx) => {
                       const isPhotoActive = expandedItemId === (600000000 + imgItem.itemId);
                       

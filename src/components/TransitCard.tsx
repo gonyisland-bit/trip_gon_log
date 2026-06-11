@@ -12,6 +12,8 @@ interface TransitCardProps {
   isActive?: boolean;
   onClick?: () => void;
   onFocusPlace?: (type: 'depart' | 'arrive' | 'boarding') => void;
+  minDate?: string;
+  maxDate?: string;
 }
 
 // Time conversion helpers
@@ -67,6 +69,8 @@ export function TransitCard({
   isActive = false,
   onClick,
   onFocusPlace,
+  minDate,
+  maxDate,
 }: TransitCardProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [isDetailExpanded, setIsDetailExpanded] = useState(false);
@@ -153,6 +157,8 @@ export function TransitCard({
             <input
               type="date"
               value={transit.date ? transit.date.replace(/\./g, '-') : ''}
+              min={minDate}
+              max={maxDate}
               onChange={(e) => onUpdate(transit.id, 'date', e.target.value.replace(/-/g, '.'))}
               onClick={(e) => e.stopPropagation()}
               className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 text-right"

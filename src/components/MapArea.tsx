@@ -827,26 +827,6 @@ export function MapArea({
   }, [mapReady, animKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Effect 4: Map click → open Google Maps ────────────────────────────────
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    const onMapClick = () => {
-      if (isEditMode) return;
-      const valid = mapPoints.filter(p =>
-        p.lat !== undefined && p.lng !== undefined &&
-        !isNaN(Number(p.lat)) && !isNaN(Number(p.lng))
-      );
-      const q = valid.length > 0
-        ? valid.map(c => c.place).join(' to ')
-        : (trip.locationStr || trip.title || '');
-      if (!q) return;
-      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank');
-    };
-    map.off('click');
-    map.on('click', onMapClick);
-    return () => { map.off('click', onMapClick); };
-  }, [mapPoints, trip, isEditMode]);
-
   // Zoom helpers
   const zoomIn = () => { if (mapRef.current) mapRef.current.zoomIn(); };
   const zoomOut = () => { if (mapRef.current) mapRef.current.zoomOut(); };

@@ -12,6 +12,8 @@ interface StayCardProps {
   onDelete: (id: number) => void;
   isActive?: boolean;
   onClick?: () => void;
+  minDate?: string;
+  maxDate?: string;
 }
 
 // "YYYY.MM.DD - YYYY.MM.DD (N Nights)" -> { checkIn: "YYYY-MM-DD", checkOut: "YYYY-MM-DD" }
@@ -59,6 +61,8 @@ export function StayCard({
   onDelete,
   isActive,
   onClick,
+  minDate,
+  maxDate,
 }: StayCardProps) {
   const { checkIn, checkOut } = parseDateRange(stay.dateRange);
 
@@ -162,6 +166,8 @@ export function StayCard({
                   <input
                     type="date"
                     value={checkIn}
+                    min={minDate}
+                    max={maxDate}
                     onChange={(e) => handleCheckInChange(e.target.value)}
                     className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full md:w-32"
                   />
@@ -171,6 +177,8 @@ export function StayCard({
                   <input
                     type="date"
                     value={checkOut}
+                    min={minDate}
+                    max={maxDate}
                     onChange={(e) => handleCheckOutChange(e.target.value)}
                     className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full md:w-32"
                   />

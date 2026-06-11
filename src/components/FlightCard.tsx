@@ -9,6 +9,8 @@ interface FlightCardProps {
   onDelete: (id: number) => void;
   isActive?: boolean;
   onClick?: () => void;
+  minDate?: string;
+  maxDate?: string;
 }
 
 // Common Airport suggestions helper list
@@ -83,6 +85,8 @@ export function FlightCard({
   onDelete,
   isActive,
   onClick,
+  minDate,
+  maxDate,
 }: FlightCardProps) {
   const [activeSearchField, setActiveSearchField] = useState<'from' | 'to' | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -151,6 +155,8 @@ export function FlightCard({
           <input
             type="date"
             value={flight.date ? flight.date.replace(/\./g, '-') : ''}
+            min={minDate}
+            max={maxDate}
             onChange={(e) => onUpdate(flight.id, 'date', e.target.value.replace(/-/g, '.'))}
             onClick={(e) => e.stopPropagation()}
             className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 text-right"
