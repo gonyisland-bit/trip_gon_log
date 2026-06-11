@@ -21,6 +21,7 @@ export function PlaceAutocompleteInput({
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
   const [localValue, setLocalValue] = useState(value);
+  const hasSelectedRef = useRef(false);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -54,6 +55,7 @@ export function PlaceAutocompleteInput({
           const lng = place.geometry.location.lng();
           const name = place.name || place.formatted_address || '';
           const address = place.formatted_address || name;
+          hasSelectedRef.current = true; // Mark selection in progress to prevent blur race condition
           setLocalValue(address);
           onSelectPlaceRef.current(name, { lat, lng }, address);
         }
@@ -74,8 +76,16 @@ export function PlaceAutocompleteInput({
   }, [value]);
 
   const handleBlur = () => {
-    onChange(localValue);
-    if (onBlur) onBlur();
+    // Delay the blur action slightly to allow the place_changed listener to run first
+    setTimeout(() => {
+      if (hasSelectedRef.current) {
+        hasSelectedRef.current = false; // Reset the flag
+        if (onBlur) onBlur();
+      } else {
+        onChange(localValue);
+        if (onBlur) onBlur();
+      }
+    }, 250);
   };
 
   return (

@@ -607,6 +607,7 @@ export function JourneyDetailPage({
 
   // Auto-healing date mismatch in Firestore on page load
   useEffect(() => {
+    if (isEditing) return; // Skip auto-healing when editing to prevent auto-saves during editing
     if (!isLoggedIn || !trip || !timelineData || generatedDates.length === 0) return;
     const rawTimeline = Object.entries(timelineData).flatMap(([d, list]) => 
       (list || []).map(item => ({ ...item, date: item.date || d }))
@@ -625,7 +626,7 @@ export function JourneyDetailPage({
         .then(() => console.log("Auto-healed timeline dates saved to Firestore."))
         .catch(err => console.error("Failed to auto-heal timeline dates in Firestore:", err));
     }
-  }, [trip, timelineData, generatedDates, isLoggedIn]);
+  }, [trip, timelineData, generatedDates, isLoggedIn, isEditing]);
 
 
 
