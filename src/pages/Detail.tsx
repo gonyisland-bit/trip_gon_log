@@ -1146,7 +1146,8 @@ export function JourneyDetailPage({
             time: t.time || '',
             memo: `${t.title || 'Transit'} - Departure from ${t.departPlace || ''}`,
             type: 'transit_depart',
-            transitId: t.id
+            transitId: t.id,
+            transitType: t.transitType || 'train'
           });
         }
         if (t.arriveLat !== undefined && t.arriveLng !== undefined) {
@@ -1158,7 +1159,8 @@ export function JourneyDetailPage({
             time: '',
             memo: `${t.title || 'Transit'} - Arrival at ${t.arrivePlace || ''}`,
             type: 'transit_arrive',
-            transitId: t.id
+            transitId: t.id,
+            transitType: t.transitType || 'train'
           });
         }
         if (t.boardingLat !== undefined && t.boardingLng !== undefined) {
@@ -1170,7 +1172,8 @@ export function JourneyDetailPage({
             time: '',
             memo: `${t.title || 'Transit'} - Boarding point at ${t.boardingPlace || ''}`,
             type: 'transit_boarding',
-            transitId: t.id
+            transitId: t.id,
+            transitType: t.transitType || 'train'
           });
         }
       });
@@ -1548,17 +1551,24 @@ export function JourneyDetailPage({
   const deleteTransit = (id: number) => {
     setDraftTransits(prev => prev.filter(t => t.id !== id));
   };
-  const handleAddTransit = () => {
+  const handleAddTransit = (type: 'train' | 'bus' | 'taxi') => {
+    const ticketType = type === 'train' ? 'TRAIN TICKET' : type === 'bus' ? 'BUS TICKET' : 'TAXI TICKET';
+    const title = type === 'train' ? 'Train' : type === 'bus' ? 'Bus' : 'Taxi';
+    const route = type === 'taxi' ? '출발지 → 도착지' : '출발역 → 도착역';
+    const bookingRef = type === 'train' ? 'TRN-000' : type === 'bus' ? 'BUS-000' : 'TX-000';
+    const seat = type === 'taxi' ? 'N/A' : 'Car 0, 00A';
+
     const newTransit: TransitItem = {
       id: Date.now(),
-      ticketType: 'TRAIN TICKET',
-      transitType: 'train',
+      ticketType,
+      transitType: type,
       date: 'YYYY.MM.DD',
-      title: '열차/이동 수단 이름',
-      route: '출발지 → 도착지',
+      title,
+      route,
       time: '12:00 PM',
-      seat: 'Car 0, 00A',
-      bookingRef: 'TRN-000',
+      seat,
+      bookingRef,
+      memo: '',
     };
     setDraftTransits(prev => [...prev, newTransit]);
   };
@@ -2736,14 +2746,23 @@ export function JourneyDetailPage({
           {activeTab === 'transit' && (
             <div className="p-4 md:p-6 animate-in fade-in duration-300">
               {(() => {
-                const transitList = isEditing ? draftTransits : transits;
-                if (transitList.length === 0) {
+                const rawTransitList = isEditing ? draftTransits : transits;
+                if (rawTransitList.length === 0) {
                   return (
                     <div className="text-center py-12 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
                       등록된 교통편이 없습니다.
                     </div>
                   );
                 }
+
+                const transitList = [...rawTransitList].sort((a, b) => {
+                  const dateA = a.date || '';
+                  const dateB = b.date || '';
+                  if (dateA !== dateB) {
+                    return dateA.localeCompare(dateB);
+                  }
+                  return parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time);
+                });
 
                 const trains = transitList.filter(t => t.transitType === 'train' || (!t.transitType || (t.transitType !== 'bus' && t.transitType !== 'taxi')));
                 const buses = transitList.filter(t => t.transitType === 'bus');
@@ -2796,13 +2815,28 @@ export function JourneyDetailPage({
 
               {/* Add Transit control */}
               {isEditing && (
-                <div className="flex justify-center mt-6">
-                  <button 
-                    onClick={handleAddTransit} 
-                    className="text-[10px] md:text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-6 py-2.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" /> Add Transit Ticket
-                  </button>
+                <div className="flex flex-col items-center mt-6 gap-2">
+                  <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-black tracking-widest">Add Transit Ticket (교통 티켓 추가)</span>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <button 
+                      onClick={() => handleAddTransit('train')} 
+                      className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Train
+                    </button>
+                    <button 
+                      onClick={() => handleAddTransit('bus')} 
+                      className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Bus
+                    </button>
+                    <button 
+                      onClick={() => handleAddTransit('taxi')} 
+                      className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Taxi
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

@@ -201,14 +201,23 @@ export function MapArea({
       Object.entries(transitGroups).forEach(([tIdStr, group]) => {
         const tId = Number(tIdStr);
         const isActiveTrans = expandedItemId !== null && tId === expandedItemId;
+        
+        // Find the transit type for this group
+        const transit = transits.find(t => t.id === tId);
+        const tType = transit?.transitType || 'train';
+        let pathColor = '#4f46e5'; // Train: Indigo
+        if (tType === 'bus') {
+          pathColor = '#10b981'; // Bus: Green
+        } else if (tType === 'taxi') {
+          pathColor = '#f59e0b'; // Taxi: Yellow
+        }
+
         if (group.depart && group.arrive) {
           const poly = L.polyline([group.depart, group.arrive], {
-            color: isActiveTrans
-              ? (isDarkMode ? '#f59e0b' : '#d97706')
-              : (isDarkMode ? '#9ca3af' : '#6b7280'),
-            weight: isActiveTrans ? 4.5 : 2,
+            color: pathColor,
+            weight: isActiveTrans ? 5 : 3,
             dashArray: '4, 6',
-            opacity: isActiveTrans ? 0.95 : 0.2
+            opacity: isActiveTrans ? 0.95 : 0.65
           });
           transPolylines.push(poly);
         }
@@ -242,14 +251,20 @@ export function MapArea({
       let pinColor = '#dc2626';
       let pinTextPrefix = '';
       if (activeTab === 'transit') {
+        const tType = item.transitType || 'train';
+        if (tType === 'bus') {
+          pinColor = '#10b981'; // Green
+        } else if (tType === 'taxi') {
+          pinColor = '#f59e0b'; // Amber/Yellow
+        } else {
+          pinColor = '#4f46e5'; // Indigo/Blue
+        }
+        
         if (item.type === 'transit_depart') {
-          pinColor = '#3b82f6';
           pinTextPrefix = '🛫 ';
         } else if (item.type === 'transit_arrive') {
-          pinColor = '#10b981';
           pinTextPrefix = '🛬 ';
         } else if (item.type === 'transit_boarding') {
-          pinColor = '#f59e0b';
           pinTextPrefix = '🎫 ';
         }
       } else if (item.isPhoto) {

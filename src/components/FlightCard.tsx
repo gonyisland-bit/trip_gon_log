@@ -133,7 +133,7 @@ export function FlightCard({
       </div>
       
       {/* Card Body */}
-      <div className="p-4 md:p-6 flex flex-row items-center">
+      <div className="p-4 md:p-6 flex flex-col sm:flex-row sm:items-center">
         {/* Left Side: Route and Airport Codes */}
         <div className="flex-grow flex items-center justify-around pr-4 relative">
           
@@ -387,12 +387,13 @@ export function FlightCard({
           </div>
         </div>
         
-        {/* Vertical Dashed Divider */}
-        <div className="border-l border-dashed border-black/20 dark:border-white/20 h-16 self-stretch"></div>
+        {/* Dividers: vertical on desktop, horizontal on mobile */}
+        <div className="hidden sm:block border-l border-dashed border-black/20 dark:border-white/20 h-16 self-stretch"></div>
+        <div className="block sm:hidden border-t border-dashed border-black/20 dark:border-white/20 w-full my-3"></div>
         
         {/* Right Side: Seat & PNR */}
-        <div className="w-24 md:w-36 pl-4 flex flex-col justify-center shrink-0">
-          <div className="mb-3">
+        <div className="w-full sm:w-24 md:w-36 sm:pl-4 flex flex-row sm:flex-col justify-between sm:justify-center mt-1 sm:mt-0 gap-4 sm:gap-0 shrink-0">
+          <div className="flex-1 sm:flex-none sm:mb-3">
             <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5">SEAT</span>
             {isEditMode ? (
               <input
@@ -405,11 +406,11 @@ export function FlightCard({
               />
             ) : (
               <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 block">
-                {flight.seat}
+                {flight.seat || 'N/A'}
               </span>
             )}
           </div>
-          <div>
+          <div className="flex-1 sm:flex-none">
             <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5">PNR</span>
             {isEditMode ? (
               <input
@@ -422,7 +423,7 @@ export function FlightCard({
               />
             ) : (
               <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 tracking-wide block">
-                {flight.pnr}
+                {flight.pnr || 'N/A'}
               </span>
             )}
           </div>

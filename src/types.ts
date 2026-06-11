@@ -35,6 +35,7 @@ export interface Trip {
   lng?: number;
   gallery?: (string | GalleryImageMeta)[];
   deletedAt?: number | null; // Soft-delete timestamp (null = active)
+  displayOrder?: number;
 }
 
 export interface Plan extends Trip {}
@@ -117,5 +118,7 @@ export interface TransitItem {
   boardingLng?: number;
   boardingImg?: string | null;
   tripId?: number;
+  memo?: string;
+  displayOrder?: number;
 }
 

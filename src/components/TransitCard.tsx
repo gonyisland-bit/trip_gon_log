@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Train, Bus, Car, Trash2, Image as ImageIcon, MapPin } from 'lucide-react';
 import { TransitItem } from '../types';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
@@ -68,6 +68,7 @@ export function TransitCard({
   onClick,
   onFocusPlace,
 }: TransitCardProps) {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const handlePlaceLinkClick = (e: React.MouseEvent, placeName: string) => {
     e.stopPropagation();
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -178,7 +179,7 @@ export function TransitCard({
                 value={timeStrTo24h(transit.time)}
                 onChange={(e) => onUpdate(transit.id, 'time', time24hTo12h(e.target.value))}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none font-bold text-2xl md:text-3xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full max-w-[144px] min-w-0 mt-3 text-center"
+                className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-lg md:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full max-w-[160px] min-w-0 mt-3 text-center"
               />
             ) : (
               <div className="text-2xl md:text-4xl font-black mt-4 tracking-tighter leading-none">
@@ -226,201 +227,220 @@ export function TransitCard({
           </div>
         </div>
 
-        {/* Edit mode: Transit Type, Autocompletes, Boarding Image */}
-        {isEditMode && (
-          <div className="mt-6 pt-6 border-t border-black/10 dark:border-white/10 space-y-4">
-            {/* Transit Type Selector */}
-            <div>
-              <label className="text-[9px] text-black/40 dark:text-white/40 uppercase font-black tracking-widest block mb-2">Transit Type (교통 종류)</label>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onUpdate(transit.id, 'transitType', 'train');
-                    onUpdate(transit.id, 'ticketType', 'TRAIN TICKET');
-                  }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider border transition-all ${
-                    transit.transitType === 'train' || (!transit.transitType || (transit.transitType !== 'bus' && transit.transitType !== 'taxi'))
-                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                      : 'bg-transparent text-black/60 dark:text-white/60 border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5'
-                  }`}
-                >
-                  <Train className="w-3.5 h-3.5" /> Train
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onUpdate(transit.id, 'transitType', 'bus');
-                    onUpdate(transit.id, 'ticketType', 'BUS TICKET');
-                  }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider border transition-all ${
-                    transit.transitType === 'bus'
-                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                      : 'bg-transparent text-black/60 dark:text-white/60 border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5'
-                  }`}
-                >
-                  <Bus className="w-3.5 h-3.5" /> Bus
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onUpdate(transit.id, 'transitType', 'taxi');
-                    onUpdate(transit.id, 'ticketType', 'TAXI TICKET');
-                  }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider border transition-all ${
-                    transit.transitType === 'taxi'
-                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                      : 'bg-transparent text-black/60 dark:text-white/60 border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5'
-                  }`}
-                >
-                  <Car className="w-3.5 h-3.5" /> Taxi
-                </button>
+        {/* Expanded details section (Shown if active or in edit mode) */}
+        {(isEditMode || isActive) && (
+          <div className="mt-4 pt-4 border-t border-black/15 dark:border-white/15 space-y-4 text-xs md:text-sm animate-in slide-in-from-top duration-200">
+            {/* Transit Type Selector - Only shown in edit mode */}
+            {isEditMode && (
+              <div>
+                <label className="text-[9px] text-black/40 dark:text-white/40 uppercase font-black tracking-widest block mb-2">Transit Type (교통 종류)</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onUpdate(transit.id, 'transitType', 'train');
+                      onUpdate(transit.id, 'ticketType', 'TRAIN TICKET');
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider border transition-all ${
+                      transit.transitType === 'train' || (!transit.transitType || (transit.transitType !== 'bus' && transit.transitType !== 'taxi'))
+                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                        : 'bg-transparent text-black/60 dark:text-white/60 border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <Train className="w-3.5 h-3.5" /> Train
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onUpdate(transit.id, 'transitType', 'bus');
+                      onUpdate(transit.id, 'ticketType', 'BUS TICKET');
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider border transition-all ${
+                      transit.transitType === 'bus'
+                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                        : 'bg-transparent text-black/60 dark:text-white/60 border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <Bus className="w-3.5 h-3.5" /> Bus
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onUpdate(transit.id, 'transitType', 'taxi');
+                      onUpdate(transit.id, 'ticketType', 'TAXI TICKET');
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider border transition-all ${
+                      transit.transitType === 'taxi'
+                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                        : 'bg-transparent text-black/60 dark:text-white/60 border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <Car className="w-3.5 h-3.5" /> Taxi
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Departure Autocomplete */}
-            <div>
-              <label className="text-[9px] text-black/40 dark:text-white/40 uppercase font-black tracking-widest block mb-1">Departure Place (출발 장소)</label>
-              <PlaceAutocompleteInput
-                value={transit.departPlace || ''}
-                onChange={(val) => {
-                  onUpdate(transit.id, 'departPlace', val);
-                  const newRoute = `${val} → ${transit.arrivePlace || ''}`;
-                  onUpdate(transit.id, 'route', newRoute);
-                }}
-                onSelectPlace={(name, coords) => {
-                  onUpdate(transit.id, 'departPlace', name);
-                  const newRoute = `${name} → ${transit.arrivePlace || ''}`;
-                  onUpdate(transit.id, 'route', newRoute);
-                  if (coords) {
-                    onUpdate(transit.id, 'departLat', coords.lat);
-                    onUpdate(transit.id, 'departLng', coords.lng);
-                  }
-                }}
-                className="w-full bg-transparent border-b border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none py-1 text-xs md:text-sm text-black dark:text-white"
-                placeholder="Search departure terminal/station..."
-              />
-            </div>
-
-            {/* Arrival Autocomplete */}
-            <div>
-              <label className="text-[9px] text-black/40 dark:text-white/40 uppercase font-black tracking-widest block mb-1">Arrival Place (도착 장소)</label>
-              <PlaceAutocompleteInput
-                value={transit.arrivePlace || ''}
-                onChange={(val) => {
-                  onUpdate(transit.id, 'arrivePlace', val);
-                  const newRoute = `${transit.departPlace || ''} → ${val}`;
-                  onUpdate(transit.id, 'route', newRoute);
-                }}
-                onSelectPlace={(name, coords) => {
-                  onUpdate(transit.id, 'arrivePlace', name);
-                  const newRoute = `${transit.departPlace || ''} → ${name}`;
-                  onUpdate(transit.id, 'route', newRoute);
-                  if (coords) {
-                    onUpdate(transit.id, 'arriveLat', coords.lat);
-                    onUpdate(transit.id, 'arriveLng', coords.lng);
-                  }
-                }}
-                className="w-full bg-transparent border-b border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none py-1 text-xs md:text-sm text-black dark:text-white"
-                placeholder="Search arrival terminal/station..."
-              />
-            </div>
-
-            {/* Boarding Autocomplete */}
-            <div>
-              <label className="text-[9px] text-black/40 dark:text-white/40 uppercase font-black tracking-widest block mb-1">Boarding Place (타는 곳/플랫폼)</label>
-              <PlaceAutocompleteInput
-                value={transit.boardingPlace || ''}
-                onChange={(val) => onUpdate(transit.id, 'boardingPlace', val)}
-                onSelectPlace={(name, coords) => {
-                  onUpdate(transit.id, 'boardingPlace', name);
-                  if (coords) {
-                    onUpdate(transit.id, 'boardingLat', coords.lat);
-                    onUpdate(transit.id, 'boardingLng', coords.lng);
-                  }
-                }}
-                className="w-full bg-transparent border-b border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none py-1 text-xs md:text-sm text-black dark:text-white"
-                placeholder="Search boarding location..."
-              />
-            </div>
-
-            {/* Boarding Image */}
-            <div>
-              <label className="text-[9px] text-black/40 dark:text-white/40 uppercase font-black tracking-widest block mb-1">Boarding Place Photo (타는 곳 참고 사진)</label>
-              <div className="relative w-full h-40 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 overflow-hidden group flex items-center justify-center">
-                {transit.boardingImg ? (
-                  <img src={transit.boardingImg} className="w-full h-full object-cover" alt="Boarding reference" />
+            {/* Departure Place */}
+            {(isEditMode || transit.departPlace) && (
+              <div className="flex flex-col gap-1">
+                <span className="font-bold shrink-0 text-[10px] tracking-widest uppercase opacity-60 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-black/50 dark:text-white/50" /> DEPART:
+                </span>
+                {isEditMode ? (
+                  <PlaceAutocompleteInput
+                    value={transit.departPlace || ''}
+                    onChange={(val) => {
+                      onUpdate(transit.id, 'departPlace', val);
+                      const newRoute = `${val} → ${transit.arrivePlace || ''}`;
+                      onUpdate(transit.id, 'route', newRoute);
+                    }}
+                    onSelectPlace={(name, coords) => {
+                      onUpdate(transit.id, 'departPlace', name);
+                      const newRoute = `${name} → ${transit.arrivePlace || ''}`;
+                      onUpdate(transit.id, 'route', newRoute);
+                      if (coords) {
+                        onUpdate(transit.id, 'departLat', coords.lat);
+                        onUpdate(transit.id, 'departLng', coords.lng);
+                      }
+                    }}
+                    className="w-full bg-transparent border-b border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none py-1 text-xs md:text-sm text-black dark:text-white"
+                    placeholder="Search departure terminal/station..."
+                  />
                 ) : (
-                  <div className="flex flex-col items-center gap-1 text-black/30 dark:text-white/30">
-                    <ImageIcon className="w-8 h-8 opacity-40" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">No Photo Added</span>
-                  </div>
+                  <span 
+                    onClick={(e) => { e.stopPropagation(); handlePlaceLinkClick(e, transit.departPlace!); }}
+                    className="underline decoration-dotted cursor-pointer hover:text-red-600 dark:hover:text-red-300 ml-5 block w-fit"
+                  >
+                    {transit.departPlace}
+                  </span>
                 )}
-                <ImageEditOverlay
-                  isEditMode={isEditMode}
-                  onImageUploaded={(url) => onUpdate(transit.id, 'boardingImg', url)}
-                />
               </div>
-            </div>
-          </div>
-        )}
+            )}
 
-        {/* View mode details (Shown if expanded) */}
-        {!isEditMode && isActive && (
-          <div className="mt-4 pt-4 border-t border-black/15 dark:border-white/15 space-y-3 text-xs md:text-sm animate-in slide-in-from-top duration-200">
-            {transit.departPlace && (
-              <div 
-                onClick={(e) => { e.stopPropagation(); onFocusPlace?.('depart'); }}
-                className="flex items-center gap-2 text-black/80 dark:text-white/80 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer group/row"
-              >
-                <MapPin className="w-3.5 h-3.5 shrink-0 text-black/50 dark:text-white/50 group-hover/row:text-red-500" />
-                <span className="font-bold shrink-0 text-[10px] tracking-widest uppercase opacity-60">DEPART:</span>
-                <span 
-                  onClick={(e) => { e.stopPropagation(); handlePlaceLinkClick(e, transit.departPlace!); }}
-                  className="underline decoration-dotted cursor-pointer ml-1 hover:text-red-600 dark:hover:text-red-300"
-                >
-                  {transit.departPlace}
+            {/* Arrival Place */}
+            {(isEditMode || transit.arrivePlace) && (
+              <div className="flex flex-col gap-1">
+                <span className="font-bold shrink-0 text-[10px] tracking-widest uppercase opacity-60 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-black/50 dark:text-white/50" /> ARRIVE:
                 </span>
+                {isEditMode ? (
+                  <PlaceAutocompleteInput
+                    value={transit.arrivePlace || ''}
+                    onChange={(val) => {
+                      onUpdate(transit.id, 'arrivePlace', val);
+                      const newRoute = `${transit.departPlace || ''} → ${val}`;
+                      onUpdate(transit.id, 'route', newRoute);
+                    }}
+                    onSelectPlace={(name, coords) => {
+                      onUpdate(transit.id, 'arrivePlace', name);
+                      const newRoute = `${transit.departPlace || ''} → ${name}`;
+                      onUpdate(transit.id, 'route', newRoute);
+                      if (coords) {
+                        onUpdate(transit.id, 'arriveLat', coords.lat);
+                        onUpdate(transit.id, 'arriveLng', coords.lng);
+                      }
+                    }}
+                    className="w-full bg-transparent border-b border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none py-1 text-xs md:text-sm text-black dark:text-white"
+                    placeholder="Search arrival terminal/station..."
+                  />
+                ) : (
+                  <span 
+                    onClick={(e) => { e.stopPropagation(); handlePlaceLinkClick(e, transit.arrivePlace!); }}
+                    className="underline decoration-dotted cursor-pointer hover:text-red-600 dark:hover:text-red-300 ml-5 block w-fit"
+                  >
+                    {transit.arrivePlace}
+                  </span>
+                )}
               </div>
             )}
-            {transit.arrivePlace && (
-              <div 
-                onClick={(e) => { e.stopPropagation(); onFocusPlace?.('arrive'); }}
-                className="flex items-center gap-2 text-black/80 dark:text-white/80 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer group/row"
-              >
-                <MapPin className="w-3.5 h-3.5 shrink-0 text-black/50 dark:text-white/50 group-hover/row:text-red-500" />
-                <span className="font-bold shrink-0 text-[10px] tracking-widest uppercase opacity-60">ARRIVE:</span>
-                <span 
-                  onClick={(e) => { e.stopPropagation(); handlePlaceLinkClick(e, transit.arrivePlace!); }}
-                  className="underline decoration-dotted cursor-pointer ml-1 hover:text-red-600 dark:hover:text-red-300"
-                >
-                  {transit.arrivePlace}
+
+            {/* Boarding Place */}
+            {(isEditMode || transit.boardingPlace) && (
+              <div className="flex flex-col gap-1">
+                <span className="font-bold shrink-0 text-[10px] tracking-widest uppercase opacity-60 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-red-500 dark:text-red-400 animate-pulse" /> BOARDING AT:
                 </span>
+                {isEditMode ? (
+                  <PlaceAutocompleteInput
+                    value={transit.boardingPlace || ''}
+                    onChange={(val) => onUpdate(transit.id, 'boardingPlace', val)}
+                    onSelectPlace={(name, coords) => {
+                      onUpdate(transit.id, 'boardingPlace', name);
+                      if (coords) {
+                        onUpdate(transit.id, 'boardingLat', coords.lat);
+                        onUpdate(transit.id, 'boardingLng', coords.lng);
+                      }
+                    }}
+                    className="w-full bg-transparent border-b border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none py-1 text-xs md:text-sm text-black dark:text-white"
+                    placeholder="Search boarding location..."
+                  />
+                ) : (
+                  <span 
+                    onClick={(e) => { e.stopPropagation(); handlePlaceLinkClick(e, transit.boardingPlace!); }}
+                    className="underline decoration-dotted cursor-pointer hover:text-red-600 dark:hover:text-red-300 ml-5 block w-fit"
+                  >
+                    {transit.boardingPlace}
+                  </span>
+                )}
               </div>
             )}
-            {transit.boardingPlace && (
-              <div 
-                onClick={(e) => { e.stopPropagation(); onFocusPlace?.('boarding'); }}
-                className="flex items-center gap-2 text-black/80 dark:text-white/80 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer group/row"
-              >
-                <MapPin className="w-3.5 h-3.5 shrink-0 text-red-500 dark:text-red-400 group-hover/row:text-red-600" />
-                <span className="font-bold shrink-0 text-[10px] tracking-widest uppercase opacity-60">BOARDING AT:</span>
-                <span 
-                  onClick={(e) => { e.stopPropagation(); handlePlaceLinkClick(e, transit.boardingPlace!); }}
-                  className="underline decoration-dotted cursor-pointer ml-1 hover:text-red-600 dark:hover:text-red-300"
-                >
-                  {transit.boardingPlace}
+
+            {/* Memo Field */}
+            {(isEditMode || transit.memo) && (
+              <div className="flex flex-col gap-1">
+                <span className="font-bold shrink-0 text-[10px] tracking-widest uppercase opacity-60 block">
+                  MEMO:
                 </span>
+                {isEditMode ? (
+                  <input
+                    type="text"
+                    value={transit.memo || ''}
+                    onChange={(e) => onUpdate(transit.id, 'memo', e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-transparent border-b border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none py-1 text-xs md:text-sm text-black dark:text-white w-full"
+                    placeholder="Enter notes (platform, transfer directions, etc.)..."
+                  />
+                ) : (
+                  <span className="ml-5 block text-xs opacity-80">{transit.memo}</span>
+                )}
               </div>
             )}
-            {transit.boardingImg && (
-              <div className="mt-2">
-                <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-1">Boarding Place Reference Photo</span>
-                <img 
-                  src={transit.boardingImg} 
-                  alt="Boarding point reference" 
-                  className="w-full max-h-48 object-cover border border-black/10 dark:border-white/10"
-                />
+
+            {/* Boarding Image Thumbnail */}
+            {(isEditMode || transit.boardingImg) && (
+              <div className="flex flex-col gap-1">
+                <span className="font-bold shrink-0 text-[10px] tracking-widest uppercase opacity-60 block">Boarding Photo:</span>
+                <div className="flex items-center gap-3 ml-5 mt-1">
+                  <div className="relative w-20 h-20 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 overflow-hidden group flex items-center justify-center shrink-0">
+                    {transit.boardingImg ? (
+                      <img 
+                        src={transit.boardingImg} 
+                        className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" 
+                        alt="Boarding reference" 
+                        onClick={(e) => { if (!isEditMode) { e.stopPropagation(); setLightboxOpen(true); } }}
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-black/30 dark:text-white/30 text-[8px] text-center p-1">
+                        <ImageIcon className="w-4 h-4 opacity-40 mb-0.5" />
+                        <span>NO PHOTO</span>
+                      </div>
+                    )}
+                    {isEditMode && (
+                      <ImageEditOverlay
+                        isEditMode={isEditMode}
+                        onImageUploaded={(url) => onUpdate(transit.id, 'boardingImg', url)}
+                        hasImage={!!transit.boardingImg}
+                        onImageRemoved={() => onUpdate(transit.id, 'boardingImg', null)}
+                      />
+                    )}
+                  </div>
+                  {isEditMode ? (
+                    <span className="text-[9px] text-black/40 dark:text-white/40 italic">Drag & Drop or click overlay to add photo</span>
+                  ) : (
+                    <span className="text-[9px] text-black/40 dark:text-white/40 italic">Click image to enlarge</span>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -436,6 +456,26 @@ export function TransitCard({
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
+      )}
+
+      {/* Lightbox Modal for enlarged image */}
+      {lightboxOpen && (
+        <div 
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 cursor-zoom-out animate-in fade-in duration-200"
+          onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}
+        >
+          <img 
+            src={transit.boardingImg || ''} 
+            alt="Boarding point reference full size" 
+            className="max-w-full max-h-[90vh] object-contain shadow-2xl border border-white/10"
+          />
+          <button 
+            className="absolute top-4 right-4 text-white hover:text-red-500 font-bold text-lg p-2"
+            onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}
+          >
+            ✕
+          </button>
+        </div>
       )}
     </div>
   );

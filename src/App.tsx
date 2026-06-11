@@ -255,7 +255,7 @@ function App() {
       snapshot.forEach(doc => {
         list.push(doc.data() as Trip);
       });
-      setTrips(list.sort((a, b) => a.id - b.id));
+      setTrips(list.sort((a, b) => (a.displayOrder ?? a.id) - (b.displayOrder ?? b.id)));
       setTripsLoaded(true);
       setDbError(null);
     }, (err) => {
@@ -269,7 +269,7 @@ function App() {
       snapshot.forEach(doc => {
         list.push(doc.data() as Plan);
       });
-      setPlans(list.sort((a, b) => a.id - b.id));
+      setPlans(list.sort((a, b) => (a.displayOrder ?? a.id) - (b.displayOrder ?? b.id)));
       setPlansLoaded(true);
       setDbError(null);
     }, (err) => {
@@ -528,6 +528,115 @@ function App() {
     } catch (err: any) {
       console.error("Error moving plan to archive:", err);
       alert("아카이브로 이동하는 데 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+    }
+  };
+
+  const handleMoveToPlans = async (trip: Trip) => {
+    if (!isLoggedIn) return alert("로그인 후 이용 가능합니다.");
+
+    const tripRef = doc(db, 'users', 'public', 'trips', String(trip.id));
+    const planRef = doc(db, 'users', 'public', 'plans', String(trip.id));
+
+    const newPlan: Plan = { 
+      ...trip, 
+      title: trip.title.endsWith(' (Plan)') ? trip.title : `${trip.title} (Plan)`, 
+      tags: [...trip.tags.filter(t => t !== 'Archived'), 'Plan'] 
+    };
+
+    try {
+      const batch = writeBatch(db);
+      batch.delete(tripRef);
+      batch.set(planRef, newPlan);
+      await batch.commit();
+    } catch (err: any) {
+      console.error("Error moving trip to plans:", err);
+      alert("계획으로 이동하는 데 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+    }
+  };
+
+  const handleCloneJourney = async (tripId: number) => {
+    if (!isLoggedIn) return alert("로그인 후 이용 가능합니다.");
+    const oldTrip = trips.find(t => t.id === tripId);
+    const oldPlan = plans.find(p => p.id === tripId);
+    const oldJourney = oldTrip || oldPlan;
+    if (!oldJourney) return alert("여정을 찾을 수 없습니다.");
+
+    const newId = Date.now();
+    const isPlan = !!oldPlan;
+    const collectionName = isPlan ? 'plans' : 'trips';
+
+    const clonedJourney = {
+      ...oldJourney,
+      id: newId,
+      title: `${oldJourney.title} (복제)`,
+      displayOrder: (oldJourney.displayOrder ?? 0) + 1,
+    };
+
+    try {
+      const uid = 'public';
+      
+      // Parallelize fetching child items from Firestore
+      const [timelineSnap, flightsSnap, staysSnap, transitsSnap] = await Promise.all([
+        getDocs(query(collection(db, 'users', uid, 'timeline'), where('tripId', '==', tripId))),
+        getDocs(query(collection(db, 'users', uid, 'flights'), where('tripId', '==', tripId))),
+        getDocs(query(collection(db, 'users', uid, 'stays'), where('tripId', '==', tripId))),
+        getDocs(query(collection(db, 'users', uid, 'transits'), where('tripId', '==', tripId)))
+      ]);
+
+      const batch = writeBatch(db);
+
+      // 1. Write the cloned main document
+      batch.set(doc(db, 'users', uid, collectionName, String(newId)), cleanForFirestore(clonedJourney));
+
+      // 2. Clone timeline items
+      timelineSnap.forEach(dSnap => {
+        const item = dSnap.data();
+        const newSubId = Date.now() + Math.floor(Math.random() * 100000);
+        batch.set(doc(db, 'users', uid, 'timeline', String(newSubId)), cleanForFirestore({
+          ...item,
+          id: newSubId,
+          tripId: newId
+        }));
+      });
+
+      // 3. Clone flights
+      flightsSnap.forEach(dSnap => {
+        const item = dSnap.data();
+        const newSubId = Date.now() + Math.floor(Math.random() * 100000);
+        batch.set(doc(db, 'users', uid, 'flights', String(newSubId)), cleanForFirestore({
+          ...item,
+          id: newSubId,
+          tripId: newId
+        }));
+      });
+
+      // 4. Clone stays
+      staysSnap.forEach(dSnap => {
+        const item = dSnap.data();
+        const newSubId = Date.now() + Math.floor(Math.random() * 100000);
+        batch.set(doc(db, 'users', uid, 'stays', String(newSubId)), cleanForFirestore({
+          ...item,
+          id: newSubId,
+          tripId: newId
+        }));
+      });
+
+      // 5. Clone transits
+      transitsSnap.forEach(dSnap => {
+        const item = dSnap.data();
+        const newSubId = Date.now() + Math.floor(Math.random() * 100000);
+        batch.set(doc(db, 'users', uid, 'transits', String(newSubId)), cleanForFirestore({
+          ...item,
+          id: newSubId,
+          tripId: newId
+        }));
+      });
+
+      await batch.commit();
+      alert("여정이 성공적으로 복제되었습니다.");
+    } catch (err: any) {
+      console.error("Error cloning journey:", err);
+      alert("여정 복제에 실패했습니다.");
     }
   };
 
@@ -1079,6 +1188,9 @@ function App() {
               trips={trips} 
               plans={plans} 
               handleMoveToArchive={handleMoveToArchive}
+              onMoveToPlans={handleMoveToPlans}
+              onCloneTrip={handleCloneJourney}
+              onClonePlan={handleCloneJourney}
               homeTitle={homeTitle}
               homeSubtitle={homeSubtitle}
               heroJourneyIds={heroJourneyIds}
@@ -1112,6 +1224,16 @@ function App() {
               isLoggedIn={isLoggedIn}
               onDeleteTrip={handleDeleteJourney}
               onEditTrip={(id) => setEditingTripId(id)}
+              onCloneTrip={handleCloneJourney}
+              onMoveToPlans={handleMoveToPlans}
+              onReorderTrips={async (orderedIds) => {
+                if (!isLoggedIn) return;
+                const batch = writeBatch(db);
+                orderedIds.forEach((id, idx) => {
+                  batch.update(doc(db, 'users', 'public', 'trips', String(id)), { displayOrder: idx });
+                });
+                await batch.commit();
+              }}
               initialTagFilter={selectedTagFilter}
             />
           )}
@@ -1124,6 +1246,15 @@ function App() {
               isLoggedIn={isLoggedIn}
               onDeletePlan={handleDeleteJourney}
               onEditPlan={(id) => setEditingTripId(id)}
+              onClonePlan={handleCloneJourney}
+              onReorderPlans={async (orderedIds) => {
+                if (!isLoggedIn) return;
+                const batch = writeBatch(db);
+                orderedIds.forEach((id, idx) => {
+                  batch.update(doc(db, 'users', 'public', 'plans', String(id)), { displayOrder: idx });
+                });
+                await batch.commit();
+              }}
               initialTagFilter={selectedTagFilter}
             />
           )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Edit2, Trash2, GripVertical } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Edit2, Trash2, GripVertical, Copy, ArrowUp } from 'lucide-react';
 import { Trip, Plan } from '../types';
 
 interface HomePageProps {
@@ -7,6 +7,9 @@ interface HomePageProps {
   trips: Trip[];
   plans: Plan[];
   handleMoveToArchive: (plan: Plan) => void;
+  onMoveToPlans?: (trip: Trip) => void;
+  onCloneTrip?: (id: number) => void;
+  onClonePlan?: (id: number) => void;
   homeTitle: string;
   homeSubtitle: string;
   heroJourneyIds?: number[];
@@ -23,10 +26,16 @@ export function JourneyCardMenu({
   onEdit,
   onDelete,
   isLoggedIn,
+  onClone,
+  onMove,
+  moveLabel,
 }: {
   onEdit?: () => void;
   onDelete?: () => void;
   isLoggedIn: boolean;
+  onClone?: () => void;
+  onMove?: () => void;
+  moveLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -62,6 +71,22 @@ export function JourneyCardMenu({
               <Edit2 className="w-3 h-3" /> 수정
             </button>
           )}
+          {onClone && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onClone(); setOpen(false); }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+            >
+              <Copy className="w-3 h-3" /> 복제
+            </button>
+          )}
+          {onMove && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onMove(); setOpen(false); }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+            >
+              <ArrowUp className="w-3 h-3" /> {moveLabel || '이동'}
+            </button>
+          )}
           {onDelete && (
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(); setOpen(false); }}
@@ -89,6 +114,9 @@ export function HomePage({
   onDeleteTrip,
   onReorderTrips,
   onReorderPlans,
+  onMoveToPlans,
+  onCloneTrip,
+  onClonePlan,
   isLoggedIn = false,
 }: HomePageProps) {
   const [activeFilter, setActiveFilter] = useState('All');
@@ -266,6 +294,9 @@ export function HomePage({
                   isLoggedIn={isLoggedIn}
                   onEdit={onEditTrip ? () => onEditTrip(plan.id) : undefined}
                   onDelete={onDeleteTrip ? () => onDeleteTrip(plan.id) : undefined}
+                  onClone={onClonePlan ? () => onClonePlan(plan.id) : undefined}
+                  onMove={() => handleMoveToArchive(plan)}
+                  moveLabel="아카이브로 이동"
                 />
               </div>
             ))}
@@ -342,6 +373,9 @@ export function HomePage({
                 isLoggedIn={isLoggedIn}
                 onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
                 onDelete={onDeleteTrip ? () => onDeleteTrip(trip.id) : undefined}
+                onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
+                onMove={onMoveToPlans ? () => onMoveToPlans(trip) : undefined}
+                moveLabel="계획으로 이동"
               />
             </div>
           ))}

@@ -5,6 +5,8 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebase';
 import { compressImage } from '../utils/imageHelper';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
+import { ImageEditOverlay } from './ImageEditOverlay';
+
 
 interface EditTripModalProps {
   isOpen: boolean;
@@ -354,12 +356,22 @@ export function EditTripModal({
               </button>
             </div>
             
-            {/* Image Preview */}
-            {imgUrl && (
-              <div className="mt-2 border border-black/10 dark:border-white/10 aspect-[16/9] overflow-hidden bg-black/5">
-                <img src={imgUrl} alt="Cover Preview" className="w-full h-full object-cover" />
-              </div>
-            )}
+             {/* Image Preview */}
+             <div className="mt-2 border border-black/10 dark:border-white/10 aspect-[16/9] overflow-hidden bg-black/5 relative group flex items-center justify-center">
+               {imgUrl ? (
+                 <img src={imgUrl} alt="Cover Preview" className="w-full h-full object-cover" />
+               ) : (
+                 <div className="text-black/45 dark:text-white/45 text-[10px] font-bold uppercase tracking-widest text-center flex flex-col items-center justify-center p-4">
+                   이미지를 드래그 앤 드롭하거나<br />위의 Upload 버튼을 눌러주세요
+                 </div>
+               )}
+               <ImageEditOverlay
+                 isEditMode={isLoggedIn}
+                 onImageUploaded={(url) => setImgUrl(url)}
+                 hasImage={!!imgUrl}
+                 onImageRemoved={() => setImgUrl('')}
+               />
+             </div>
           </div>
 
           {/* Action Buttons */}
