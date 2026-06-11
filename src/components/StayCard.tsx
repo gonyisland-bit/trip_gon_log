@@ -18,6 +18,7 @@ interface StayCardProps {
   onClick?: () => void;
   minDate?: string;
   maxDate?: string;
+  onOpenMapConfirm?: (placeName: string, url: string) => void;
 }
 
 // "YYYY.MM.DD - YYYY.MM.DD (N Nights)" -> { checkIn: "YYYY-MM-DD", checkOut: "YYYY-MM-DD" }
@@ -67,6 +68,7 @@ export function StayCard({
   onClick,
   minDate,
   maxDate,
+  onOpenMapConfirm,
 }: StayCardProps) {
   const { checkIn, checkOut } = parseDateRange(stay.dateRange);
 
@@ -317,15 +319,21 @@ export function StayCard({
               />
             </div>
           ) : (
-            <a
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stay.address)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="block hover:underline hover:text-red-600 transition-colors font-medium underline decoration-dotted decoration-black/30 dark:decoration-white/30"
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stay.address)}`;
+                if (onOpenMapConfirm) {
+                  onOpenMapConfirm(stay.address, url);
+                } else {
+                  window.open(url, '_blank');
+                }
+              }}
+              className="block text-left hover:underline hover:text-red-600 transition-colors font-medium underline decoration-dotted decoration-black/30 dark:decoration-white/30 bg-transparent border-none p-0 cursor-pointer text-black dark:text-white"
             >
               {stay.address}
-            </a>
+            </button>
           )}
         </div>
         

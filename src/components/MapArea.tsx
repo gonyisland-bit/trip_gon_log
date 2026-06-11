@@ -133,6 +133,13 @@ export function MapArea({
       : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
     tileLayerRef.current = L.tileLayer(tileUrl, { maxZoom: 20, zIndex: 1 }).addTo(map);
 
+    // Add 1km scale control
+    L.control.scale({
+      metric: true,
+      imperial: false,
+      position: 'bottomleft'
+    }).addTo(map);
+
     // Fix blank tile edge after layout settles
     setTimeout(() => { if (mapRef.current) mapRef.current.invalidateSize(); }, 200);
 
@@ -429,7 +436,8 @@ export function MapArea({
 
         if (activeMarker) {
           const latLng = activeMarker.getLatLng();
-          map.setView(latLng, Math.max(map.getZoom(), 14), { animate: true });
+          const targetZoom = (activeTab === 'timeline' || activeTab === 'stays') ? 15 : 14;
+          map.setView(latLng, Math.max(map.getZoom(), targetZoom), { animate: true });
         } else if (activeTab === 'flights' || (activeTab === 'transit' && !transitFocusType)) {
           const fromPoint = mapPoints.find(p => p.id === expandedItemId * 10);
           const toPoint = mapPoints.find(p => p.id === expandedItemId * 10 + 1);

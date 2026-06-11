@@ -11,6 +11,7 @@ interface FlightCardProps {
   onClick?: () => void;
   minDate?: string;
   maxDate?: string;
+  onOpenMapConfirm?: (placeName: string, url: string) => void;
 }
 
 // Common Airport suggestions helper list
@@ -87,6 +88,7 @@ export function FlightCard({
   onClick,
   minDate,
   maxDate,
+  onOpenMapConfirm,
 }: FlightCardProps) {
   const [activeSearchField, setActiveSearchField] = useState<'from' | 'to' | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -225,15 +227,22 @@ export function FlightCard({
                 )}
               </div>
             ) : (
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(flight.fromCode + " Airport")}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="text-2xl md:text-4xl font-black tracking-tighter block leading-none hover:underline hover:text-red-600 transition-colors"
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const placeName = `${flight.fromCode} Airport`;
+                  const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(placeName)}`;
+                  if (onOpenMapConfirm) {
+                    onOpenMapConfirm(placeName, url);
+                  } else {
+                    window.open(url, '_blank');
+                  }
+                }}
+                className="text-2xl md:text-4xl font-black tracking-tighter block leading-none hover:underline hover:text-red-600 transition-colors bg-transparent border-none p-0 cursor-pointer text-black dark:text-white"
               >
                 {flight.fromCode}
-              </a>
+              </button>
             )}
 
             {isEditMode ? (
@@ -419,15 +428,22 @@ export function FlightCard({
                 )}
               </div>
             ) : (
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(flight.toCode + " Airport")}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="text-2xl md:text-4xl font-black tracking-tighter block leading-none hover:underline hover:text-red-600 transition-colors"
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const placeName = `${flight.toCode} Airport`;
+                  const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(placeName)}`;
+                  if (onOpenMapConfirm) {
+                    onOpenMapConfirm(placeName, url);
+                  } else {
+                    window.open(url, '_blank');
+                  }
+                }}
+                className="text-2xl md:text-4xl font-black tracking-tighter block leading-none hover:underline hover:text-red-600 transition-colors bg-transparent border-none p-0 cursor-pointer text-black dark:text-white"
               >
                 {flight.toCode}
-              </a>
+              </button>
             )}
 
             {isEditMode ? (

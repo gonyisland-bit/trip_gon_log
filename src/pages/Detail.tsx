@@ -401,6 +401,7 @@ export function JourneyDetailPage({
   const [draftStays, setDraftStays] = useState<StayItem[]>([]);
   const [draftTransits, setDraftTransits] = useState<TransitItem[]>([]);
   const [transitSortType, setTransitSortType] = useState<'time' | 'type'>('time');
+  const [mapConfirm, setMapConfirm] = useState<{ placeName: string; url: string } | null>(null);
 
   // Lightbox & Gallery state
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -441,6 +442,16 @@ export function JourneyDetailPage({
       tabContentRef.current.scrollTop = 0;
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMapConfirm(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     if (!isEditing) {
@@ -1770,187 +1781,192 @@ export function JourneyDetailPage({
 
   // galleryMetaImages, timelineImages, galleryAllMeta, galleryAllUnique variables are now declared at the top of the component.
 
+  // Render Info Header helper function to avoid duplicating code between desktop and mobile layouts
+  const renderInfoHeader = (isMobile: boolean) => (
+    <div className={`p-3 md:py-4 md:px-6 border-b border-black/20 dark:border-white/20 z-10 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0 ${isMobile ? 'block md:hidden' : 'hidden md:block'}`}>
+      
+      {/* Back to hub & Metadata row */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+        <button
+          onClick={() => {
+            const isPlan = trip?.tags.includes('Plan') || trip?.title.includes('(Plan)');
+            onNavigate(isPlan ? 'plan' : 'archive');
+          }}
+          className="flex items-center gap-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+          title="Go back to Hub"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" /> Back to { (trip?.tags.includes('Plan') || trip?.title.includes('(Plan)')) ? 'Plans' : 'Archive' }
+        </button>
+        
+        <div className="flex items-center space-x-2 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-black/40 dark:text-white/40 transition-colors">
+          {isEditing && draftTrip ? (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="flex items-center gap-1">
+                <input
+                  type="date"
+                  value={parseDateRange(draftTrip.date).start}
+                  onChange={(e) => handleDateChange('start', e.target.value)}
+                  className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-[9px] md:text-[10px] text-black dark:text-white rounded-none border border-black/10 dark:border-white/10"
+                />
+                <span>—</span>
+                <input
+                  type="date"
+                  value={parseDateRange(draftTrip.date).end}
+                  onChange={(e) => handleDateChange('end', e.target.value)}
+                  className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-[9px] md:text-[10px] text-black dark:text-white rounded-none border border-black/10 dark:border-white/10"
+                />
+              </div>
+              <span>—</span>
+              <div className="w-32 md:w-40">
+                <PlaceAutocompleteInput
+                  value={draftTrip.locationStr}
+                  onChange={(val) => setDraftTrip({ ...draftTrip, locationStr: val })}
+                  onSelectPlace={(name, coords) => {
+                    setDraftTrip(prev => {
+                      if (!prev) return null;
+                      return {
+                        ...prev,
+                        locationStr: name,
+                        lat: coords?.lat ?? prev.lat,
+                        lng: coords?.lng ?? prev.lng
+                      };
+                    });
+                  }}
+                  className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[9px] md:text-[10px] text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
+                  placeholder="Default Map City"
+                />
+              </div>
+            </div>
+          ) : (
+            <>
+              <span>{trip.date}</span>
+              <span>—</span>
+              <span>{trip.locationStr}</span>
+            </>
+          )}
+        </div>
+      </div>
+      
+      {/* Journey Title & Edit controls row */}
+      <div className="flex justify-between items-center gap-4">
+        <div className="flex-grow">
+          {isEditing && draftTrip ? (
+            <input
+              type="text"
+              value={draftTrip.title}
+              onChange={(e) => setDraftTrip({ ...draftTrip, title: e.target.value })}
+              className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter uppercase leading-none bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 p-1.5 outline-none w-full text-black dark:text-white"
+              placeholder="JOURNEY TITLE"
+            />
+          ) : (
+            <h1 
+              className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter uppercase leading-none break-keep"
+              style={{ wordBreak: 'keep-all' }}
+            >
+              {(trip.title || '').replace(' (Plan)', '')}
+            </h1>
+          )}
+        </div>
+        
+        {isLoggedIn && (
+          <div className="shrink-0 flex items-center gap-1.5">
+            {isEditing ? (
+              <>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="px-2.5 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all flex items-center gap-1 disabled:opacity-50 cursor-pointer"
+                >
+                  {saving && <Loader2 className="w-3 h-3 animate-spin" />}
+                  Save
+                </button>
+                <button
+                  onClick={handleCancel}
+                  className="px-2.5 py-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all text-black/60 dark:text-white/60 cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={handleStartEditing}
+                className="px-2.5 py-1.5 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-[9px] font-black uppercase tracking-widest rounded-sm transition-all cursor-pointer"
+              >
+                Edit Journey
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+      
+      {/* Tags row */}
+      {isEditing && draftTrip ? (
+        <div className="mt-2 flex flex-wrap gap-1.5 items-center">
+          {(draftTrip.tags || []).filter(t => t !== 'Personal').map(tag => (
+            <span
+              key={tag}
+              className="text-[8px] md:text-[9px] font-bold border border-orange-500/50 dark:border-orange-400/50 px-2.5 py-0.5 uppercase rounded-full flex items-center gap-1 bg-orange-500/5 dark:bg-orange-400/5 text-orange-600 dark:text-orange-400 shadow-sm"
+            >
+              #{tag}
+              <button
+                type="button"
+                onClick={() => {
+                  const updatedTags = draftTrip.tags.filter(t => t !== tag);
+                  setDraftTrip({ ...draftTrip, tags: updatedTags });
+                }}
+                className="hover:text-red-500 transition-colors font-bold text-[9px] px-0.5 shrink-0 cursor-pointer"
+                title="태그 삭제"
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+          <input
+            type="text"
+            placeholder="+ Tag"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                const val = e.currentTarget.value.trim().replace(/#/g, '');
+                if (val && !draftTrip.tags.includes(val)) {
+                  const updatedTags = [...draftTrip.tags, val];
+                  setDraftTrip({ ...draftTrip, tags: updatedTags });
+                  e.currentTarget.value = '';
+                }
+              }
+            }}
+            className="text-[8px] md:text-[9px] font-bold border border-black/20 dark:border-white/20 px-2.5 py-0.5 rounded-full bg-transparent outline-none w-16 focus:w-24 focus:border-orange-500 transition-all duration-200 text-black dark:text-white"
+          />
+        </div>
+      ) : (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {(tripToUse?.tags || []).filter(t => t !== 'Personal').map(tag => {
+            const isPlan = trip?.tags.includes('Plan') || trip?.title.includes('(Plan)');
+            return (
+              <button
+                key={tag}
+                onClick={() => onNavigate(isPlan ? 'plan' : 'archive', null, true, tag)}
+                className="text-[8px] md:text-[9px] font-bold border border-black/20 dark:border-white/20 px-2 py-0.5 uppercase rounded-full hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black hover:border-black dark:hover:border-white transition-all duration-200 cursor-pointer shadow-sm"
+              >
+                #{tag}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <main className="animate-in slide-in-from-right-8 duration-500 flex flex-col md:flex-row md:h-[calc(100dvh-73px)] h-auto w-full md:overflow-hidden overflow-visible">
       
       {/* Left: Map & Info Section */}
       <section className="w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-colors duration-300 md:h-full max-md:contents shrink-0">
-        <div className="p-3 md:py-4 md:px-6 border-b border-black/20 dark:border-white/20 z-10 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0">
-          
-          {/* Back to hub & Metadata row */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-            <button
-              onClick={() => {
-                const isPlan = trip?.tags.includes('Plan') || trip?.title.includes('(Plan)');
-                onNavigate(isPlan ? 'plan' : 'archive');
-              }}
-              className="flex items-center gap-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors"
-              title="Go back to Hub"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" /> Back to { (trip?.tags.includes('Plan') || trip?.title.includes('(Plan)')) ? 'Plans' : 'Archive' }
-            </button>
-            
-            <div className="flex items-center space-x-2 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-black/40 dark:text-white/40 transition-colors">
-              {isEditing && draftTrip ? (
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <div className="flex items-center gap-1">
-                    <input
-                      type="date"
-                      value={parseDateRange(draftTrip.date).start}
-                      onChange={(e) => handleDateChange('start', e.target.value)}
-                      className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-[9px] md:text-[10px] text-black dark:text-white rounded-none border border-black/10 dark:border-white/10"
-                    />
-                    <span>—</span>
-                    <input
-                      type="date"
-                      value={parseDateRange(draftTrip.date).end}
-                      onChange={(e) => handleDateChange('end', e.target.value)}
-                      className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-[9px] md:text-[10px] text-black dark:text-white rounded-none border border-black/10 dark:border-white/10"
-                    />
-                  </div>
-                  <span>—</span>
-                  <div className="w-32 md:w-40">
-                    <PlaceAutocompleteInput
-                      value={draftTrip.locationStr}
-                      onChange={(val) => setDraftTrip({ ...draftTrip, locationStr: val })}
-                      onSelectPlace={(name, coords) => {
-                        setDraftTrip(prev => {
-                          if (!prev) return null;
-                          return {
-                            ...prev,
-                            locationStr: name,
-                            lat: coords?.lat ?? prev.lat,
-                            lng: coords?.lng ?? prev.lng
-                          };
-                        });
-                      }}
-                      className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[9px] md:text-[10px] text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
-                      placeholder="Default Map City"
-                    />
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <span>{trip.date}</span>
-                  <span>—</span>
-                  <span>{trip.locationStr}</span>
-                </>
-              )}
-            </div>
-          </div>
-          
-          {/* Journey Title & Edit controls row */}
-          <div className="flex justify-between items-center gap-4">
-            <div className="flex-grow">
-              {isEditing && draftTrip ? (
-                <input
-                  type="text"
-                  value={draftTrip.title}
-                  onChange={(e) => setDraftTrip({ ...draftTrip, title: e.target.value })}
-                  className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter uppercase leading-none bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 p-1.5 outline-none w-full text-black dark:text-white"
-                  placeholder="JOURNEY TITLE"
-                />
-              ) : (
-                <h1 
-                  className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter uppercase leading-none break-keep"
-                  style={{ wordBreak: 'keep-all' }}
-                >
-                  {(trip.title || '').replace(' (Plan)', '')}
-                </h1>
-              )}
-            </div>
-            
-            {isLoggedIn && (
-              <div className="shrink-0 flex items-center gap-1.5">
-                {isEditing ? (
-                  <>
-                    <button
-                      onClick={handleSave}
-                      disabled={saving}
-                      className="px-2.5 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all flex items-center gap-1 disabled:opacity-50"
-                    >
-                      {saving && <Loader2 className="w-3 h-3 animate-spin" />}
-                      Save
-                    </button>
-                    <button
-                      onClick={handleCancel}
-                      className="px-2.5 py-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all text-black/60 dark:text-white/60"
-                    >
-                      Cancel
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={handleStartEditing}
-                    className="px-2.5 py-1.5 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-[9px] font-black uppercase tracking-widest rounded-sm transition-all"
-                  >
-                    Edit Journey
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-          
-          {/* Tags row */}
-          {isEditing && draftTrip ? (
-            <div className="mt-2 flex flex-wrap gap-1.5 items-center">
-              {(draftTrip.tags || []).filter(t => t !== 'Personal').map(tag => (
-                <span
-                  key={tag}
-                  className="text-[8px] md:text-[9px] font-bold border border-orange-500/50 dark:border-orange-400/50 px-2.5 py-0.5 uppercase rounded-full flex items-center gap-1 bg-orange-500/5 dark:bg-orange-400/5 text-orange-600 dark:text-orange-400 shadow-sm"
-                >
-                  #{tag}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const updatedTags = draftTrip.tags.filter(t => t !== tag);
-                      setDraftTrip({ ...draftTrip, tags: updatedTags });
-                    }}
-                    className="hover:text-red-500 transition-colors font-bold text-[9px] px-0.5 shrink-0"
-                    title="태그 삭제"
-                  >
-                    ✕
-                  </button>
-                </span>
-              ))}
-              <input
-                type="text"
-                placeholder="+ Tag"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const val = e.currentTarget.value.trim().replace(/#/g, '');
-                    if (val && !draftTrip.tags.includes(val)) {
-                      const updatedTags = [...draftTrip.tags, val];
-                      setDraftTrip({ ...draftTrip, tags: updatedTags });
-                      e.currentTarget.value = '';
-                    }
-                  }
-                }}
-                className="text-[8px] md:text-[9px] font-bold border border-black/20 dark:border-white/20 px-2.5 py-0.5 rounded-full bg-transparent outline-none w-16 focus:w-24 focus:border-orange-500 transition-all duration-200 text-black dark:text-white"
-              />
-            </div>
-          ) : (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {(tripToUse?.tags || []).filter(t => t !== 'Personal').map(tag => {
-                const isPlan = trip?.tags.includes('Plan') || trip?.title.includes('(Plan)');
-                return (
-                  <button
-                    key={tag}
-                    onClick={() => onNavigate(isPlan ? 'plan' : 'archive', null, true, tag)}
-                    className="text-[8px] md:text-[9px] font-bold border border-black/20 dark:border-white/20 px-2 py-0.5 uppercase rounded-full hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black hover:border-black dark:hover:border-white transition-all duration-200 cursor-pointer shadow-sm"
-                  >
-                    #{tag}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        {renderInfoHeader(false)}
         
         {/* Dynamic Map Area */}
-        <div className="w-full relative md:pb-6 flex flex-col max-md:sticky max-md:top-[73px] max-md:z-20 max-md:h-[48dvh] max-md:border-b max-md:border-black/20 max-md:dark:border-white/20 flex-grow">
+        <div className="w-full relative md:pb-6 flex flex-col max-md:sticky max-md:top-[73px] max-md:z-20 max-md:h-[35dvh] max-md:border-b max-md:border-black/20 max-md:dark:border-white/20 flex-grow">
           <ErrorBoundary fallback={
             <div className="flex-grow flex flex-col items-center justify-center bg-[#EAE8E3] dark:bg-[#1A1A1A] text-black/40 dark:text-white/40 p-6 relative h-full w-full">
               <span className="text-[10px] uppercase tracking-widest font-bold z-10 mb-2">Map Temporary Unavailable</span>
@@ -1977,7 +1993,7 @@ export function JourneyDetailPage({
       <section className="w-full md:w-1/2 flex flex-col bg-[#F9F8F6] dark:bg-[#111111] transition-colors duration-300 flex-grow max-md:contents md:h-full overflow-hidden">
         
         {/* Tab Headers */}
-        <div className="flex overflow-x-auto hide-scrollbar flex-nowrap border-b border-black/20 dark:border-white/20 bg-[#F9F8F6] dark:bg-[#111111] sticky md:top-0 max-md:top-[calc(73px+48dvh)] z-30 transition-colors shrink-0 w-full">
+        <div className="flex overflow-x-auto hide-scrollbar flex-nowrap border-b border-black/20 dark:border-white/20 bg-[#F9F8F6] dark:bg-[#111111] sticky md:top-0 max-md:top-[calc(73px+35dvh)] z-30 transition-colors shrink-0 w-full">
           {[ 
             { id: 'timeline', label: 'Timeline', icon: Clock }, 
             { id: 'flights', label: 'Flights', icon: Plane }, 
@@ -2001,6 +2017,7 @@ export function JourneyDetailPage({
           ref={tabContentRef}
           className="flex-grow flex flex-col relative md:overflow-y-auto overflow-x-hidden w-full md:h-full h-auto bg-[#F9F8F6] dark:bg-[#111111]"
         >
+          {renderInfoHeader(true)}
           
           {/* TIMELINE TAB */}
           {activeTab === 'timeline' && (
@@ -2504,16 +2521,18 @@ export function JourneyDetailPage({
                                 ) : (
                                   <span className="flex-grow text-black/80 dark:text-white/80 font-medium break-words">
                                     {item.location ? (
-                                      <a
-                                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-red-600 dark:text-red-400 hover:underline inline-flex items-center gap-1"
-                                        onClick={(e) => e.stopPropagation()}
+                                      <button
+                                        type="button"
+                                        className="text-red-600 dark:text-red-400 hover:underline inline-flex items-center gap-1 text-left cursor-pointer"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location || '')}`;
+                                          setMapConfirm({ placeName: item.location || '', url });
+                                        }}
                                       >
                                         {item.location}
                                         <ExternalLink className="w-3 h-3 shrink-0" />
-                                      </a>
+                                      </button>
                                     ) : (
                                       '위치 정보 없음'
                                     )}
@@ -2671,6 +2690,7 @@ export function JourneyDetailPage({
                               isActive={expandedItemId === flight.id}
                               minDate={minDate}
                               maxDate={maxDate}
+                              onOpenMapConfirm={(placeName, url) => setMapConfirm({ placeName, url })}
                               onClick={() => {
                                 setExpandedItemId(prev => prev === flight.id ? null : flight.id);
                               }}
@@ -2730,6 +2750,7 @@ export function JourneyDetailPage({
                       isActive={expandedItemId === stay.id}
                       minDate={minDate}
                       maxDate={maxDate}
+                      onOpenMapConfirm={(placeName, url) => setMapConfirm({ placeName, url })}
                       onClick={() => {
                         setExpandedItemId(prev => prev === stay.id ? null : stay.id);
                       }}
@@ -2823,6 +2844,7 @@ export function JourneyDetailPage({
                               isActive={expandedItemId === transit.id}
                               minDate={minDate}
                               maxDate={maxDate}
+                              onOpenMapConfirm={(placeName, url) => setMapConfirm({ placeName, url })}
                               onClick={() => {
                                 setExpandedItemId(prev => prev === transit.id ? null : transit.id);
                                 setTransitFocusType(null);
@@ -3194,6 +3216,44 @@ export function JourneyDetailPage({
         onClose={() => setIsLightboxOpen(false)}
         onNavigate={(idx) => setLightboxIndex(idx)}
       />
+
+      {/* Google Maps Confirmation Modal */}
+      {mapConfirm && (
+        <div 
+          onClick={() => setMapConfirm(null)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#F9F8F6] dark:bg-[#161616] border border-black/20 dark:border-white/20 p-6 md:p-8 w-full max-w-sm text-center shadow-2xl rounded-none text-black dark:text-white"
+          >
+            <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto mb-4">
+              <Map className="w-6 h-6" />
+            </div>
+            <h3 className="text-xs font-black uppercase tracking-widest text-black/50 dark:text-white/50 mb-2">구글 지도 이동</h3>
+            <p className="text-sm font-black tracking-tight mb-6 leading-relaxed break-keep" style={{ wordBreak: 'keep-all' }}>
+              '{mapConfirm.placeName}' 위치를 확인하기 위해 구글 지도로 이동하시겠습니까?
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => {
+                  window.open(mapConfirm.url, '_blank');
+                  setMapConfirm(null);
+                }}
+                className="w-full py-2.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-black uppercase tracking-widest rounded-none transition-all cursor-pointer"
+              >
+                이동
+              </button>
+              <button
+                onClick={() => setMapConfirm(null)}
+                className="w-full py-2.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[10px] font-black uppercase tracking-widest rounded-none transition-all cursor-pointer"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

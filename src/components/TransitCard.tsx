@@ -14,6 +14,7 @@ interface TransitCardProps {
   onFocusPlace?: (type: 'depart' | 'arrive' | 'boarding') => void;
   minDate?: string;
   maxDate?: string;
+  onOpenMapConfirm?: (placeName: string, url: string) => void;
 }
 
 // Time conversion helpers
@@ -71,6 +72,7 @@ export function TransitCard({
   onFocusPlace,
   minDate,
   maxDate,
+  onOpenMapConfirm,
 }: TransitCardProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [isDetailExpanded, setIsDetailExpanded] = useState(false);
@@ -91,18 +93,22 @@ export function TransitCard({
 
   const handlePlaceLinkClick = (e: React.MouseEvent, placeName: string) => {
     e.stopPropagation();
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    const url = isMobile
-      ? `comgooglemaps://?q=${encodeURIComponent(placeName)}`
-      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(placeName)}`;
-    
-    if (isMobile) {
-      window.location.href = url;
-      setTimeout(() => {
-        window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(placeName)}`, '_blank');
-      }, 500);
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(placeName)}`;
+    if (onOpenMapConfirm) {
+      onOpenMapConfirm(placeName, url);
     } else {
-      window.open(url, '_blank');
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      const mobileUrl = isMobile
+        ? `comgooglemaps://?q=${encodeURIComponent(placeName)}`
+        : url;
+      if (isMobile) {
+        window.location.href = mobileUrl;
+        setTimeout(() => {
+          window.open(url, '_blank');
+        }, 500);
+      } else {
+        window.open(url, '_blank');
+      }
     }
   };
 

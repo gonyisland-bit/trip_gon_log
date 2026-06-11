@@ -303,4 +303,33 @@
   color: #ffffff;
 }
 
+/* Premium Leaflet Scale Control styling */
+.leaflet-bottom.leaflet-left .leaflet-control-scale {
+  margin-bottom: 56px !important;
+  margin-left: 16px !important;
+}
+
+.leaflet-control-scale-line {
+  background: rgba(249, 248, 246, 0.9) !important;
+  color: #111111 !important;
+  border: 1.5px solid #111111 !important;
+  border-top: none !important;
+  font-family: 'Outfit', 'Inter', sans-serif !important;
+  font-size: 8px !important;
+  font-weight: 800 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  padding: 1px 4px !important;
+  height: auto !important;
+  line-height: 1.2 !important;
+}
+
+.dark .leaflet-control-scale-line {
+  background: rgba(26, 26, 26, 0.9) !important;
+  color: #ffffff !important;
+  border: 1.5px solid #ffffff !important;
+  border-top: none !important;
+}
+
 
