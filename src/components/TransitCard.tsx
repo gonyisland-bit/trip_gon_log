@@ -240,7 +240,7 @@ export function TransitCard({
                 value={timeStrTo24h(transit.time)}
                 onChange={(e) => onUpdate(transit.id, 'time', time24hTo12h(e.target.value))}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-2 pr-8 py-0.5 outline-none font-black text-2xl md:text-4xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full max-w-[230px] min-w-0 mt-4 text-center tracking-tighter"
+                className="bg-[#EAE8E3] dark:bg-white/10 px-2 pl-[22%] pr-10 py-0.5 outline-none font-black text-2xl md:text-4xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full max-w-[320px] min-w-0 mt-4 text-left tracking-tighter"
               />
             ) : (
               <div className="text-2xl md:text-4xl font-black mt-4 tracking-tighter leading-none">

@@ -133,9 +133,9 @@ export function FlightCard({
       </div>
       
       {/* Card Body */}
-      <div className="p-4 md:p-6 flex flex-col sm:flex-row sm:items-center">
+      <div className="p-4 md:p-6 flex flex-col sm:flex-row sm:items-center min-w-0 w-full">
         {/* Left Side: Route and Airport Codes */}
-        <div className="flex-grow flex items-center justify-around pr-4 relative">
+        <div className="flex-grow flex items-center justify-around pr-4 relative min-w-0">
           
           {/* Departure */}
           <div className="text-center relative">
@@ -156,7 +156,7 @@ export function FlightCard({
                   }}
                   onBlur={() => setTimeout(() => setActiveSearchField(null), 250)}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none font-black text-lg md:text-2xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-16"
+                  className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none font-black text-lg md:text-2xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-14"
                   placeholder="DEP"
                 />
                 
@@ -213,7 +213,7 @@ export function FlightCard({
                 value={timeStrTo24h(flight.fromTime)}
                 onChange={(e) => onUpdate(flight.id, 'fromTime', time24hTo12h(e.target.value))}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-[9px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-24 mt-1"
+                className="bg-[#EAE8E3] dark:bg-white/10 px-1 pl-5 pr-6 py-0.5 outline-none text-[9px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-left w-28 mt-1"
               />
             ) : (
               <span className="text-xs md:text-sm font-bold mt-2 block">
@@ -250,14 +250,14 @@ export function FlightCard({
               <Plane className="w-4 h-4 text-black/40 dark:text-white/40 rotate-90" />
             )}
             
-            <div className="h-[1px] w-12 md:w-24 bg-black/20 dark:bg-white/20 my-1 relative flex items-center justify-center">
+            <div className="h-[1px] w-8 sm:w-10 md:w-16 bg-black/20 dark:bg-white/20 my-1 relative flex items-center justify-center">
               {isEditMode ? (
                 <input
                   type="text"
                   value={flight.flightNo}
                   onChange={(e) => onUpdate(flight.id, 'flightNo', e.target.value)}
                   onClick={(e) => e.stopPropagation()}
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1a1a1a] px-1.5 text-[9px] md:text-[10px] font-bold text-black/60 dark:text-white/60 tracking-wider text-center w-14 outline-none border border-black/10 dark:border-white/10 rounded-sm z-10"
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1a1a1a] px-1.5 text-[9px] md:text-[10px] font-bold text-black/60 dark:text-white/60 tracking-wider text-center w-12 outline-none border border-black/10 dark:border-white/10 rounded-sm z-10"
                   placeholder="KE000"
                 />
               ) : (
@@ -320,7 +320,7 @@ export function FlightCard({
                   }}
                   onBlur={() => setTimeout(() => setActiveSearchField(null), 250)}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none font-black text-lg md:text-2xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-16"
+                  className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none font-black text-lg md:text-2xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-14"
                   placeholder="ARR"
                 />
                 
@@ -377,7 +377,7 @@ export function FlightCard({
                 value={timeStrTo24h(flight.toTime)}
                 onChange={(e) => onUpdate(flight.id, 'toTime', time24hTo12h(e.target.value))}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-[9px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-24 mt-1"
+                className="bg-[#EAE8E3] dark:bg-white/10 px-1 pl-5 pr-6 py-0.5 outline-none text-[9px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-left w-28 mt-1"
               />
             ) : (
               <span className="text-xs md:text-sm font-bold mt-2 block">
@@ -392,7 +392,7 @@ export function FlightCard({
         <div className="block sm:hidden border-t border-dashed border-black/20 dark:border-white/20 w-full my-3"></div>
         
         {/* Right Side: Seat & PNR */}
-        <div className="w-full sm:w-24 md:w-36 sm:pl-4 flex flex-row sm:flex-col justify-between sm:justify-center mt-1 sm:mt-0 gap-4 sm:gap-0 shrink-0">
+        <div className="w-full sm:w-20 md:w-24 sm:pl-3 flex flex-row sm:flex-col justify-between sm:justify-center mt-1 sm:mt-0 gap-4 sm:gap-0 shrink-0">
           <div className="flex-1 sm:flex-none sm:mb-3">
             <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5">SEAT</span>
             {isEditMode ? (

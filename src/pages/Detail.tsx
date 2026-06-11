@@ -1183,7 +1183,7 @@ export function JourneyDetailPage({
     // Check if it's a gallery photo click or timeline photo click from the map
     if (targetId >= 500000 && targetId < 600000) {
       setActiveTab('gallery');
-    } else if (targetId >= 600000) {
+    } else if (targetId >= 600000 && targetId < 700000) {
       setActiveTab('gallery');
     }
 
@@ -2356,14 +2356,16 @@ export function JourneyDetailPage({
                                 onClick={(e) => {
                                   if (!isEditing) {
                                     e.stopPropagation();
-                                    const imgIdx = galleryAllUnique.indexOf(item.img!);
-                                    if (imgIdx !== -1) {
-                                      setLightboxIndex(imgIdx);
-                                      setIsLightboxOpen(true);
-                                    } else {
-                                      // Fallback
-                                      setLightboxIndex(0);
-                                      setIsLightboxOpen(true);
+                                    setActiveTab('gallery');
+                                    const tImgIdx = timelineImages.findIndex(img => img.url === item.img);
+                                    if (tImgIdx !== -1) {
+                                      setExpandedItemId(600000 + tImgIdx);
+                                      setTimeout(() => {
+                                        const el = itemRefs.current[600000 + tImgIdx];
+                                        if (el) {
+                                          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        }
+                                      }, 300);
                                     }
                                   }
                                 }}
