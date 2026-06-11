@@ -255,7 +255,7 @@ export function TransitCard({
                   type="time"
                   value={timeStrTo24h(transit.time)}
                   onChange={(e) => onUpdate(transit.id, 'time', time24hTo12h(e.target.value))}
-                  className="bg-[#EAE8E3] dark:bg-white/10 px-2 py-0.5 outline-none font-black text-xl md:text-2xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-28 md:w-32 text-center [&::-webkit-calendar-picker-indicator]:hidden"
+                  className="bg-[#EAE8E3] dark:bg-white/10 px-2 py-0.5 outline-none font-black text-xl md:text-2xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 md:w-40 text-center [&::-webkit-calendar-picker-indicator]:hidden"
                 />
                 <button
                   type="button"
