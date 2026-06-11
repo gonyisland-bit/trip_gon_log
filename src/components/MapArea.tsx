@@ -51,6 +51,7 @@ export function MapArea({
   const lastExpandedItemIdRef = useRef<number | null>(null);
   const lastTransitFocusTypeRef = useRef<'depart' | 'arrive' | 'boarding' | null | undefined>(null);
   const lastActiveCoordsRef = useRef<string>('');
+  const lastSelectedDateRef = useRef<string>('');
 
   // Animation references for flight travel visualization
   const animMarkerRef = useRef<any>(null);
@@ -394,14 +395,16 @@ export function MapArea({
     
     currentCoordsStr = activePointsList.map(c => `${c.lat},${c.lng}`).join('|');
     const coordsChanged = lastActiveCoordsRef.current !== currentCoordsStr;
+    const dateChanged = lastSelectedDateRef.current !== selectedDate;
 
-    const shouldPanZoom = tabChanged || itemIdChanged || focusTypeChanged || coordsChanged;
+    const shouldPanZoom = tabChanged || itemIdChanged || focusTypeChanged || coordsChanged || dateChanged;
 
     // Update refs
     lastTabRef.current = activeTab;
     lastExpandedItemIdRef.current = expandedItemId;
     lastTransitFocusTypeRef.current = transitFocusType;
     lastActiveCoordsRef.current = currentCoordsStr;
+    lastSelectedDateRef.current = selectedDate;
 
     if (shouldPanZoom) {
       if (expandedItemId === null && coords.length > 0 && (!isInteractive || !hasFitRef.current || isGalleryTab)) {
@@ -453,9 +456,9 @@ export function MapArea({
       }
     }
 
-  }, [mapPoints, expandedItemId, isDarkMode, mapReady, isInteractive, activeTab, transitFocusType, transits]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mapPoints, expandedItemId, isDarkMode, mapReady, isInteractive, activeTab, transitFocusType, transits, selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Effect 3b: OSM Overpass API POIs Fetcher ──────────────────────────────
+  // ─── Effect 3b: Google Places POIs Fetcher ──────────────────────────────────
   useEffect(() => {
     if (activeTab !== 'stays') {
       setPoiItems([]);
@@ -495,11 +498,11 @@ export function MapArea({
       ? [
           { id: 900001, lat: lat + 0.0018, lng: lng + 0.0015, name: 'Lawson (ローソン)', type: 'convenience' },
           { id: 900002, lat: lat - 0.0012, lng: lng - 0.0018, name: '7-Eleven (セブン-イレブン)', type: 'convenience' },
-          { id: 900003, lat: lat + 0.0009, lng: lng - 0.0022, name: 'FamilyMart (ファミリーマート)', type: 'convenience' },
-          { id: 900004, lat: lat + 0.0025, lng: lng - 0.0011, name: 'Fresco Supermarket (フレスコ)', type: 'supermarket' },
+          { id: 900003, lat: lat + 0.0009, lng: lng - 0.0022, name: 'FamilyMart (ファミリー마ート)', type: 'convenience' },
+          { id: 900004, lat: lat + 0.0025, lng: lng - 0.0011, name: 'Fresco Supermarket (フ레스コ)', type: 'supermarket' },
           { id: 900005, lat: lat - 0.0019, lng: lng + 0.0010, name: 'Life Supermarket (ライフ)', type: 'supermarket' },
-          { id: 900006, lat: lat - 0.0028, lng: lng + 0.0022, name: 'Subway Station (地下鉄駅)', type: 'station' },
-          { id: 900007, lat: lat + 0.0022, lng: lng - 0.0020, name: 'JR Station (JR駅)', type: 'station' }
+          { id: 900006, lat: lat - 0.0028, lng: lng + 0.0022, name: 'Subway Station (지하철역)', type: 'station' },
+          { id: 900007, lat: lat + 0.0022, lng: lng - 0.0020, name: 'JR Station (JR역)', type: 'station' }
         ]
       : isKorea
       ? [
@@ -527,83 +530,79 @@ export function MapArea({
     let isMounted = true;
     setPoiLoading(true);
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      controller.abort();
-    }, 3500); // 3.5 seconds timeout
-
-    const query = `
-      [out:json][timeout:15];
-      (
-        nwr["shop"~"convenience|supermarket|grocery|department_store|mall"](around:1500, ${lat}, ${lng});
-        nwr["railway"~"station|subway|subway_entrance|tram_stop"](around:1500, ${lat}, ${lng});
-        nwr["public_transport"~"station|stop_position|platform"](around:1500, ${lat}, ${lng});
-      );
-      out center 50;
-    `;
-
-    fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`, { signal: controller.signal })
-      .then(res => res.json())
-      .then(data => {
-        clearTimeout(timeoutId);
-        if (isMounted) {
-          let items: any[] = [];
-          if (data && data.elements) {
-            items = data.elements.map((el: any) => {
-              const itemLat = el.lat ?? el.center?.lat;
-              const itemLng = el.lon ?? el.center?.lon;
-              if (!itemLat || !itemLng) return null;
-
-              let type = 'convenience';
-              const shopTag = el.tags?.shop || '';
-              const railwayTag = el.tags?.railway || '';
-              const transportTag = el.tags?.public_transport || '';
-
-              if (shopTag === 'supermarket' || shopTag === 'grocery' || shopTag === 'department_store' || shopTag === 'mall') {
-                type = 'supermarket';
-              } else if (
-                railwayTag === 'station' || 
-                railwayTag === 'subway' || 
-                railwayTag === 'subway_entrance' || 
-                railwayTag === 'tram_stop' ||
-                transportTag === 'station'
-              ) {
-                type = 'station';
+    const google = (window as any).google;
+    if (google && google.maps && google.maps.places && containerRef.current) {
+      try {
+        const service = new google.maps.places.PlacesService(containerRef.current);
+        
+        const searchType = (googleType, poiType) => {
+          return new Promise((resolve) => {
+            service.nearbySearch(
+              {
+                location: new google.maps.LatLng(lat, lng),
+                radius: 1500,
+                type: googleType
+              },
+              (results, status) => {
+                if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+                  const mapped = results.slice(0, 15).map((place) => ({
+                    id: place.place_id || `${poiType}-${Math.random()}`,
+                    lat: place.geometry.location.lat(),
+                    lng: place.geometry.location.lng(),
+                    name: place.name || '',
+                    type: poiType
+                  }));
+                  resolve(mapped);
+                } else {
+                  resolve([]);
+                }
               }
+            );
+          });
+        };
 
-              return {
-                id: el.id,
-                lat: itemLat,
-                lng: itemLng,
-                name: el.tags?.name || el.tags?.['name:ko'] || el.tags?.['name:en'] || (type === 'convenience' ? '편의점' : type === 'supermarket' ? '마켓' : '역'),
-                type
-              };
-            }).filter(Boolean);
-          }
+        Promise.all([
+          searchType('convenience_store', 'convenience'),
+          searchType('supermarket', 'supermarket'),
+          searchType('subway_station', 'station'),
+          searchType('train_station', 'station')
+        ]).then((resultsArray) => {
+          if (!isMounted) return;
+          const allPois = resultsArray.flat();
+          // Filter duplicates by id
+          const uniquePoisMap = {};
+          allPois.forEach(p => {
+            uniquePoisMap[p.id] = p;
+          });
+          const uniquePois = Object.values(uniquePoisMap);
 
-          // ONLY merge mock fallbacks if OSM returned absolutely 0 results
-          // If OSM returned real local shops, show ONLY real shops for strict regional accuracy.
-          if (items.length === 0) {
-            setPoiItems(fallbackPois);
+          if (uniquePois.length > 0) {
+            setPoiItems(uniquePois);
           } else {
-            setPoiItems(items);
+            setPoiItems(fallbackPois);
           }
-        }
-      })
-      .catch(err => {
-        clearTimeout(timeoutId);
-        console.error("Overpass API failed or timed out, keeping fallback POIs:", err);
-      })
-      .finally(() => {
-        if (isMounted) setPoiLoading(false);
-      });
+          setPoiLoading(false);
+        }).catch((err) => {
+          console.error("Google PlacesService failed, keeping fallback POIs:", err);
+          if (isMounted) {
+            setPoiItems(fallbackPois);
+            setPoiLoading(false);
+          }
+        });
+      } catch (err) {
+        console.error("Failed to initialize PlacesService:", err);
+        setPoiItems(fallbackPois);
+        setPoiLoading(false);
+      }
+    } else {
+      setPoiItems(fallbackPois);
+      setPoiLoading(false);
+    }
 
     return () => {
       isMounted = false;
-      controller.abort();
-      clearTimeout(timeoutId);
     };
-  }, [expandedItemId, activeTab, mapPoints, trip.lat, trip.lng]);
+  }, [expandedItemId, activeTab, mapPoints, trip.lat, trip.lng, trip.locationStr]);
 
   // ─── Effect 3c: Render POI markers on map ──────────────────────────────────
   useEffect(() => {
