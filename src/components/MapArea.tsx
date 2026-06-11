@@ -379,7 +379,7 @@ export function MapArea({
       }
     }
 
-  }, [mapPoints, expandedItemId, isDarkMode, mapReady, isInteractive, activeTab, transitFocusType]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mapPoints, expandedItemId, isDarkMode, mapReady, isInteractive, activeTab, transitFocusType, transits]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Effect 3b: OSM Overpass API POIs Fetcher ──────────────────────────────
   useEffect(() => {
@@ -694,7 +694,7 @@ export function MapArea({
         animMarkerRef.current = null;
       }
     };
-  }, [activeTab, expandedItemId, mapPoints, mapReady]);
+  }, [activeTab, expandedItemId, mapPoints, mapReady, transits]);
 
   // ─── Effect 4: Map click → open Google Maps ────────────────────────────────
   useEffect(() => {

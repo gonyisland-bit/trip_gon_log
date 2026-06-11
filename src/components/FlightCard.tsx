@@ -213,7 +213,7 @@ export function FlightCard({
                 value={timeStrTo24h(flight.fromTime)}
                 onChange={(e) => onUpdate(flight.id, 'fromTime', time24hTo12h(e.target.value))}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-1 pl-3.5 pr-8 py-0.5 outline-none text-[9px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-left w-36 mt-1"
+                className="bg-[#EAE8E3] dark:bg-white/10 px-1 pl-2 pr-[22px] py-0.5 outline-none text-[9px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-left w-[115px] min-w-[115px] mt-1"
               />
             ) : (
               <span className="text-xs md:text-sm font-bold mt-2 block">
@@ -377,7 +377,7 @@ export function FlightCard({
                 value={timeStrTo24h(flight.toTime)}
                 onChange={(e) => onUpdate(flight.id, 'toTime', time24hTo12h(e.target.value))}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-1 pl-3.5 pr-8 py-0.5 outline-none text-[9px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-left w-36 mt-1"
+                className="bg-[#EAE8E3] dark:bg-white/10 px-1 pl-2 pr-[22px] py-0.5 outline-none text-[9px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-left w-[115px] min-w-[115px] mt-1"
               />
             ) : (
               <span className="text-xs md:text-sm font-bold mt-2 block">
