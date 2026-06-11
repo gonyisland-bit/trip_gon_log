@@ -105,7 +105,7 @@ export function TransitCard({
             const typeUpper = (transit.ticketType || '').toUpperCase();
             if (typeUpper.includes('BUS')) return <Bus className="w-3.5 h-3.5 animate-in fade-in duration-300" />;
             if (typeUpper.includes('TAXI') || typeUpper.includes('CAR')) return <Car className="w-3.5 h-3.5 animate-in fade-in duration-300" />;
-            return <Train className="w-3.5 h-3.5 animate-in fade-in duration-300" />;
+            return <Train className="w-[21px] h-[21px] animate-in fade-in duration-300" />;
           })()}
           {isEditMode ? (
             <select
@@ -240,7 +240,7 @@ export function TransitCard({
                 value={timeStrTo24h(transit.time)}
                 onChange={(e) => onUpdate(transit.id, 'time', time24hTo12h(e.target.value))}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-2 pl-[22%] pr-10 py-0.5 outline-none font-black text-2xl md:text-4xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full max-w-[320px] min-w-0 mt-4 text-left tracking-tighter"
+                className="bg-[#EAE8E3] dark:bg-white/10 px-2 pl-4 pr-14 py-0.5 outline-none font-black text-2xl md:text-4xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full max-w-[320px] min-w-0 mt-4 text-left tracking-tighter"
               />
             ) : (
               <div className="text-2xl md:text-4xl font-black mt-4 tracking-tighter leading-none">

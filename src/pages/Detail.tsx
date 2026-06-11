@@ -374,6 +374,7 @@ export function JourneyDetailPage({
   const [draftFlights, setDraftFlights] = useState<FlightItem[]>([]);
   const [draftStays, setDraftStays] = useState<StayItem[]>([]);
   const [draftTransits, setDraftTransits] = useState<TransitItem[]>([]);
+  const [transitSortType, setTransitSortType] = useState<'time' | 'type'>('time');
 
   // Lightbox & Gallery state
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -1358,9 +1359,22 @@ export function JourneyDetailPage({
 
   const handleAddTimelineItem = (date: string) => {
     const newId = Date.now();
+
+    // 해당 날짜의 기존 일정 중에서 가장 늦은 시간 계산하여 10분 뒤로 기본 지정
+    const sameDateItems = (isEditing ? draftTimeline : baseTimeline).filter(item => item.date === date);
+    let defaultTime = '12:00 PM';
+    if (sameDateItems.length > 0) {
+      const sortedTimes = sameDateItems
+        .map(item => parseTimeToMinutes(item.time))
+        .sort((a, b) => b - a); // 내림차순 정렬
+      const maxMinutes = sortedTimes[0];
+      const newMinutes = Math.min(1439, maxMinutes + 10);
+      defaultTime = minutesToTimeStr(newMinutes);
+    }
+
     const newItem: TimelineItem = {
       id: newId,
-      time: '12:00 PM',
+      time: defaultTime,
       type: 'activity',
       place: '새로운 장소',
       cost: '-',
@@ -2728,6 +2742,22 @@ export function JourneyDetailPage({
           {/* TRANSIT TAB */}
           {activeTab === 'transit' && (
             <div className="p-4 md:p-6 animate-in fade-in duration-300">
+              {/* Sort Type Control */}
+              <div className="flex justify-end gap-2 mb-4 text-[9px] md:text-[10px] font-bold uppercase tracking-widest select-none">
+                <button 
+                  onClick={() => setTransitSortType('time')} 
+                  className={`px-2.5 py-1 border transition-colors rounded-sm ${transitSortType === 'time' ? 'bg-black text-[#F9F8F6] dark:bg-white dark:text-black border-black dark:border-white' : 'border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'}`}
+                >
+                  탑승시간순
+                </button>
+                <button 
+                  onClick={() => setTransitSortType('type')} 
+                  className={`px-2.5 py-1 border transition-colors rounded-sm ${transitSortType === 'type' ? 'bg-black text-[#F9F8F6] dark:bg-white dark:text-black border-black dark:border-white' : 'border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'}`}
+                >
+                  탑승종류순
+                </button>
+              </div>
+
               {(() => {
                 const rawTransitList = isEditing ? draftTransits : transits;
                 if (rawTransitList.length === 0) {
@@ -2738,25 +2768,33 @@ export function JourneyDetailPage({
                   );
                 }
 
-                const transitList = [...rawTransitList].sort((a, b) => {
-                  const dateA = a.date || '';
-                  const dateB = b.date || '';
-                  if (dateA !== dateB) {
-                    return dateA.localeCompare(dateB);
-                  }
-                  return parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time);
-                });
+                // YYYY.MM.DD 기본값인 티켓은 정렬 시 맨 하단으로 미는 정렬 헬퍼
+                const sortTransits = (list: TransitItem[]) => {
+                  return [...list].sort((a, b) => {
+                    const isBasicA = !a.date || a.date === 'YYYY.MM.DD';
+                    const isBasicB = !b.date || b.date === 'YYYY.MM.DD';
+                    if (isBasicA && !isBasicB) return 1;
+                    if (!isBasicA && isBasicB) return -1;
+                    if (isBasicA && isBasicB) return a.id - b.id; // 생성순 (ID)
 
-                const trains = transitList.filter(t => t.transitType === 'train' || (!t.transitType || (t.transitType !== 'bus' && t.transitType !== 'taxi')));
-                const buses = transitList.filter(t => t.transitType === 'bus');
-                const taxis = transitList.filter(t => t.transitType === 'taxi');
+                    const dateA = a.date || '';
+                    const dateB = b.date || '';
+                    if (dateA !== dateB) {
+                      return dateA.localeCompare(dateB);
+                    }
+                    return parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time);
+                  });
+                };
+
+                const transitList = sortTransits(rawTransitList);
 
                 const renderGroup = (items: TransitItem[], label: string, IconComponent: any) => {
                   if (items.length === 0) return null;
+                  const isTrain = IconComponent === Train;
                   return (
                     <div className="mb-8 last:mb-0">
                       <div className="flex items-center gap-2 mb-4">
-                        <IconComponent className="w-4 h-4 text-black/55 dark:text-white/55" />
+                        <IconComponent className={`${isTrain ? 'w-6 h-6' : 'w-4 h-4'} text-black/55 dark:text-white/55`} />
                         <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-black/55 dark:text-white/55">
                           {label} ({items.length})
                         </span>
@@ -2787,13 +2825,26 @@ export function JourneyDetailPage({
                   );
                 };
 
-                return (
-                  <div className="flex flex-col text-left">
-                    {renderGroup(trains, 'Train Tickets', Train)}
-                    {renderGroup(buses, 'Bus Tickets', Bus)}
-                    {renderGroup(taxis, 'Taxi/Car Tickets', Car)}
-                  </div>
-                );
+                if (transitSortType === 'time') {
+                  // 탑승시간순 정렬: Train/Bus/Taxi 묶지 않고 시간순으로 정렬된 전체 리스트를 하나의 그룹으로 렌더링
+                  return (
+                    <div className="flex flex-col text-left">
+                      {renderGroup(transitList, 'Transit Schedule', Train)}
+                    </div>
+                  );
+                } else {
+                  // 탑승종류순 정렬: 기존과 같이 Train / Bus / Taxi 분류
+                  const trains = transitList.filter(t => t.transitType === 'train' || (!t.transitType || (t.transitType !== 'bus' && t.transitType !== 'taxi')));
+                  const buses = transitList.filter(t => t.transitType === 'bus');
+                  const taxis = transitList.filter(t => t.transitType === 'taxi');
+                  return (
+                    <div className="flex flex-col text-left">
+                      {renderGroup(trains, 'Train Tickets', Train)}
+                      {renderGroup(buses, 'Bus Tickets', Bus)}
+                      {renderGroup(taxis, 'Taxi/Car Tickets', Car)}
+                    </div>
+                  );
+                }
               })()}
 
               {/* Add Transit control */}
