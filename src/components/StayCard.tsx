@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Bed, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Bed, Trash2, ImagePlus, Loader2, X } from 'lucide-react';
 import { StayItem } from '../types';
 import { ImageEditOverlay } from './ImageEditOverlay';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage, auth } from '../firebase';
+import { compressImage } from '../utils/imageHelper';
+import { Lightbox } from './Lightbox';
 
 interface StayCardProps {
   stay: StayItem;
   isEditMode: boolean;
-  onUpdate: (id: number, field: keyof StayItem, val: string) => void;
+  onUpdate: (id: number, field: keyof StayItem, val: any) => void;
   onSelectPlace?: (id: number, address: string, coords: { lat: number; lng: number } | null) => void;
   onDelete: (id: number) => void;
   isActive?: boolean;
@@ -72,6 +76,13 @@ export function StayCard({
   const [localConfNo, setLocalConfNo] = useState(stay.confNo);
   const [localMemo, setLocalMemo] = useState(stay.memo);
 
+  // Additional images & Lightbox states
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     setLocalStatus(stay.status);
   }, [stay.status]);
@@ -87,6 +98,80 @@ export function StayCard({
   useEffect(() => {
     setLocalMemo(stay.memo);
   }, [stay.memo]);
+
+  const uploadAdditionalImage = async (file: File) => {
+    const user = auth.currentUser;
+    if (!user) {
+      alert("이미지를 업로드하려면 로그인이 필요합니다.");
+      return;
+    }
+    setUploadingImage(true);
+    try {
+      const compressedBlob = await compressImage(file);
+      const storagePath = `users/public/images/stays/${Date.now()}_${file.name}`;
+      const imageRef = ref(storage, storagePath);
+      await uploadBytes(imageRef, compressedBlob);
+      const downloadUrl = await getDownloadURL(imageRef);
+      
+      const currentList = stay.additionalImages || [];
+      const newList = [...currentList, downloadUrl];
+      onUpdate(stay.id, 'additionalImages', newList);
+    } catch (error) {
+      console.error("Additional image upload failed:", error);
+      alert("이미지 업로드에 실패했습니다.");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      for (const file of files) {
+        if (file.type.startsWith('image/')) {
+          await uploadAdditionalImage(file);
+        }
+      }
+    }
+  };
+
+  const removeAdditionalImage = (e: React.MouseEvent, indexToRemove: number) => {
+    e.stopPropagation();
+    if (confirm("이 이미지를 삭제하시겠습니까?")) {
+      const currentList = stay.additionalImages || [];
+      const newList = currentList.filter((_, idx) => idx !== indexToRemove);
+      onUpdate(stay.id, 'additionalImages', newList);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isEditMode) {
+      setIsDragOver(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    if (!isEditMode) return;
+    if (e.dataTransfer.files) {
+      const files = Array.from(e.dataTransfer.files);
+      for (const file of files) {
+        if (file.type.startsWith('image/')) {
+          await uploadAdditionalImage(file);
+        }
+      }
+    }
+  };
 
   const handleCheckInChange = (newCheckIn: string) => {
     const newRange = formatDateRange(newCheckIn, checkOut);
@@ -232,28 +317,116 @@ export function StayCard({
               />
             </div>
           ) : (
-            <span className="block">{stay.address}</span>
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stay.address)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="block hover:underline hover:text-red-600 transition-colors font-medium underline decoration-dotted decoration-black/30 dark:decoration-white/30"
+            >
+              {stay.address}
+            </a>
           )}
         </div>
         
-        {/* Memo Box */}
-        <div className="bg-[#EAE8E3]/35 dark:bg-white/5 p-3 md:p-4 text-xs md:text-sm border border-black/5 dark:border-white/5">
-          <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-1">MEMO</span>
-          {isEditMode ? (
-            <textarea
-              value={localMemo}
-              onChange={(e) => setLocalMemo(e.target.value)}
-              onBlur={() => onUpdate(stay.id, 'memo', localMemo)}
+        {/* Accordion Area (Memo & Additional Images) - Only shown if isActive is true */}
+        {isActive && (
+          <div className="mt-4 pt-4 border-t border-black/10 dark:border-white/10 space-y-4">
+            {/* Memo Box */}
+            <div className="bg-[#EAE8E3]/35 dark:bg-white/5 p-3 md:p-4 text-xs md:text-sm border border-black/5 dark:border-white/5">
+              <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-1">MEMO</span>
+              {isEditMode ? (
+                <textarea
+                  value={localMemo}
+                  onChange={(e) => setLocalMemo(e.target.value)}
+                  onBlur={() => onUpdate(stay.id, 'memo', localMemo)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-[#EAE8E3] dark:bg-white/10 p-1.5 outline-none text-xs md:text-sm text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full resize-none h-16"
+                  placeholder="Enter details, room info, etc..."
+                />
+              ) : (
+                <p className="text-black/80 dark:text-white/80 leading-relaxed whitespace-pre-wrap">
+                  {stay.memo}
+                </p>
+              )}
+            </div>
+
+            {/* Additional Images Grid & Drag Drop Upload Zone */}
+            <div 
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
               onClick={(e) => e.stopPropagation()}
-              className="bg-[#EAE8E3] dark:bg-white/10 p-1.5 outline-none text-xs md:text-sm text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full resize-none h-16"
-              placeholder="Enter details, room info, etc..."
-            />
-          ) : (
-            <p className="text-black/80 dark:text-white/80 leading-relaxed whitespace-pre-wrap">
-              {stay.memo}
-            </p>
-          )}
-        </div>
+              className={`p-3 border transition-all duration-200 ${
+                isDragOver 
+                  ? 'border-dashed border-red-500 bg-red-500/[0.03]' 
+                  : 'border-black/5 dark:border-white/5 bg-[#EAE8E3]/25 dark:bg-white/[0.02]'
+              }`}
+            >
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block">
+                  Additional Photos
+                </span>
+                {isEditMode && (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-1 text-[9px] font-bold text-red-600 hover:text-red-700 transition-colors"
+                  >
+                    <ImagePlus className="w-3.5 h-3.5" />
+                    ADD PHOTO
+                  </button>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                />
+              </div>
+
+              {/* Grid of thumbnails */}
+              <div className="flex flex-wrap gap-2.5">
+                {(stay.additionalImages || []).map((imgUrl, idx) => (
+                  <div key={idx} className="relative w-16 h-16 border border-black/10 dark:border-white/10 overflow-hidden group/thumb">
+                    <img
+                      src={imgUrl}
+                      alt={`Additional ${idx + 1}`}
+                      onClick={() => {
+                        setLightboxIndex(idx);
+                        setLightboxOpen(true);
+                      }}
+                      className="w-full h-full object-cover cursor-pointer hover:opacity-85 transition-opacity"
+                    />
+                    {isEditMode && (
+                      <button
+                        onClick={(e) => removeAdditionalImage(e, idx)}
+                        className="absolute top-0.5 right-0.5 p-0.5 bg-black/70 hover:bg-red-600 text-white rounded-sm transition-colors opacity-0 group-hover/thumb:opacity-100"
+                        title="Delete image"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+
+                {uploadingImage && (
+                  <div className="w-16 h-16 border border-black/10 dark:border-white/10 flex items-center justify-center bg-black/5 dark:bg-white/5">
+                    <Loader2 className="w-4 h-4 animate-spin text-red-600" />
+                  </div>
+                )}
+
+                {!(stay.additionalImages?.length) && !uploadingImage && (
+                  <span className="text-[10px] text-black/30 dark:text-white/30 italic py-2">
+                    {isEditMode ? "Drag and drop photos here or click Add Photo" : "No additional photos"}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       
       {/* Delete button in edit mode */}
@@ -265,6 +438,17 @@ export function StayCard({
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
+      )}
+
+      {/* Lightbox for additional images */}
+      {lightboxOpen && (
+        <Lightbox
+          isOpen={lightboxOpen}
+          images={(stay.additionalImages || []).map(url => ({ url }))}
+          currentIndex={lightboxIndex}
+          onClose={() => setLightboxOpen(false)}
+          onNavigate={(idx) => setLightboxIndex(idx)}
+        />
       )}
     </div>
   );

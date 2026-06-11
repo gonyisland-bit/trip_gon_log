@@ -1479,7 +1479,7 @@ export function JourneyDetailPage({
     setDraftFlights(prev => [...prev, newFlight]);
   };
 
-  const updateStay = (id: number, field: keyof StayItem, val: string) => {
+  const updateStay = (id: number, field: keyof StayItem, val: any) => {
     setDraftStays(prev => prev.map(s => s.id === id ? { ...s, [field]: val } : s));
   };
   const updateStayPlace = (id: number, address: string, coords: { lat: number; lng: number } | null) => {
@@ -1771,10 +1771,10 @@ export function JourneyDetailPage({
   // galleryMetaImages, timelineImages, galleryAllMeta, galleryAllUnique variables are now declared at the top of the component.
 
   return (
-    <main className="animate-in slide-in-from-right-8 duration-500 flex flex-col md:flex-row h-[calc(100dvh-73px)] w-full overflow-hidden">
+    <main className="animate-in slide-in-from-right-8 duration-500 flex flex-col md:flex-row md:h-[calc(100dvh-73px)] h-auto w-full md:overflow-hidden overflow-visible">
       
       {/* Left: Map & Info Section */}
-      <section className={`w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-colors duration-300 ${isEditing ? 'h-[42vh] md:h-full' : 'h-[38vh] md:h-full'} shrink-0`}>
+      <section className="w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-colors duration-300 md:h-full max-md:contents shrink-0">
         <div className="p-3 md:py-4 md:px-6 border-b border-black/20 dark:border-white/20 z-10 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0">
           
           {/* Back to hub & Metadata row */}
@@ -1950,7 +1950,7 @@ export function JourneyDetailPage({
         </div>
         
         {/* Dynamic Map Area */}
-        <div className="flex-grow w-full relative md:pb-6 flex flex-col">
+        <div className="w-full relative md:pb-6 flex flex-col max-md:sticky max-md:top-[73px] max-md:z-20 max-md:h-[48dvh] max-md:border-b max-md:border-black/20 max-md:dark:border-white/20 flex-grow">
           <ErrorBoundary fallback={
             <div className="flex-grow flex flex-col items-center justify-center bg-[#EAE8E3] dark:bg-[#1A1A1A] text-black/40 dark:text-white/40 p-6 relative h-full w-full">
               <span className="text-[10px] uppercase tracking-widest font-bold z-10 mb-2">Map Temporary Unavailable</span>
@@ -1974,10 +1974,10 @@ export function JourneyDetailPage({
       </section>
       
       {/* Right: Record / Tabs Section */}
-      <section className="w-full md:w-1/2 flex flex-col bg-[#F9F8F6] dark:bg-[#111111] transition-colors duration-300 flex-grow h-1/2 md:h-full overflow-hidden">
+      <section className="w-full md:w-1/2 flex flex-col bg-[#F9F8F6] dark:bg-[#111111] transition-colors duration-300 flex-grow max-md:contents md:h-full overflow-hidden">
         
         {/* Tab Headers */}
-        <div className="flex overflow-x-auto hide-scrollbar flex-nowrap border-b border-black/20 dark:border-white/20 bg-[#F9F8F6] dark:bg-[#111111] sticky top-0 z-30 transition-colors shrink-0 w-full">
+        <div className="flex overflow-x-auto hide-scrollbar flex-nowrap border-b border-black/20 dark:border-white/20 bg-[#F9F8F6] dark:bg-[#111111] sticky md:top-0 max-md:top-[calc(73px+48dvh)] z-30 transition-colors shrink-0 w-full">
           {[ 
             { id: 'timeline', label: 'Timeline', icon: Clock }, 
             { id: 'flights', label: 'Flights', icon: Plane }, 
@@ -1999,7 +1999,7 @@ export function JourneyDetailPage({
         {/* Tab Contents */}
         <div 
           ref={tabContentRef}
-          className="flex-grow flex flex-col relative overflow-y-auto overflow-x-hidden w-full h-full"
+          className="flex-grow flex flex-col relative md:overflow-y-auto overflow-x-hidden w-full md:h-full h-auto bg-[#F9F8F6] dark:bg-[#111111]"
         >
           
           {/* TIMELINE TAB */}

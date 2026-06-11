@@ -95,6 +95,7 @@ export interface StayItem {
   img: string;
   lat?: number;
   lng?: number;
+  additionalImages?: string[];
 }
 
 export interface TransitItem {

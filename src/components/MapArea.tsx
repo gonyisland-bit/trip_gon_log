@@ -328,7 +328,7 @@ export function MapArea({
       } else if (item.isPhoto) {
         pinColor = '#f97316';
         pinTextPrefix = '📷 ';
-      } else if (selectedDate === 'ALL') {
+      } else {
         const dayIndex = item.dayIndex || 0;
         const colorIndex = (dayIndex ? dayIndex - 1 : 0) % dayColors.length;
         pinColor = dayColors[colorIndex];
@@ -407,9 +407,11 @@ export function MapArea({
     lastSelectedDateRef.current = selectedDate;
 
     if (shouldPanZoom) {
+      const isMobile = window.innerWidth < 768;
+
       if (expandedItemId === null && coords.length > 0 && (!isInteractive || !hasFitRef.current || isGalleryTab)) {
         const bounds = L.latLngBounds(coords);
-        map.fitBounds(bounds, { padding: [48, 48], maxZoom: 15 });
+        map.fitBounds(bounds, { padding: isMobile ? [25, 25] : [48, 48], maxZoom: isMobile ? 13 : 15 });
         hasFitRef.current = true;
       }
 
@@ -440,11 +442,13 @@ export function MapArea({
             const endLat = Number(toPoint.lat);
             const endLng = Number(toPoint.lng);
             const bounds = L.latLngBounds([[startLat, startLng], [endLat, endLng]]);
-            // Increased bottom padding to prevent bottom overlay from cutting off locations
+            
+            const padTopLeft: [number, number] = isMobile ? [30, 30] : [60, 60];
+            const padBotRight: [number, number] = isMobile ? [30, 65] : [60, 130];
             map.fitBounds(bounds, { 
-              paddingTopLeft: [60, 60], 
-              paddingBottomRight: [60, 130], 
-              maxZoom: 15, 
+              paddingTopLeft: padTopLeft, 
+              paddingBottomRight: padBotRight, 
+              maxZoom: isMobile ? 13 : 15, 
               animate: true 
             });
           } else if (hasFrom) {
@@ -841,6 +845,38 @@ export function MapArea({
 
   const isStayTab = activeTab === 'stays';
 
+  // Get active location string (city, country or place name)
+  const activeLocationName = (() => {
+    if (expandedItemId !== null) {
+      let activeItem: any = null;
+      if (activeTab === 'transit') {
+        const departItem = mapPoints.find(item => (item as any).transitId === expandedItemId && item.type === 'transit_depart');
+        const arriveItem = mapPoints.find(item => (item as any).transitId === expandedItemId && item.type === 'transit_arrive');
+        if (transitFocusType === 'arrive') {
+          activeItem = arriveItem;
+        } else {
+          activeItem = departItem || arriveItem;
+        }
+      } else if (activeTab === 'flights') {
+        const departItem = mapPoints.find(item => item.id === expandedItemId * 10);
+        const arriveItem = mapPoints.find(item => item.id === expandedItemId * 10 + 1);
+        activeItem = departItem || arriveItem;
+      } else {
+        activeItem = mapPoints.find(item => item.id === expandedItemId);
+      }
+      
+      if (activeItem) {
+        const nameSource = activeItem.place || activeItem.location || '';
+        const parts = nameSource.split(',').map((s: string) => s.trim()).filter(Boolean);
+        if (parts.length >= 2) {
+          return parts.slice(-2).join(', ');
+        }
+        return nameSource || trip.locationStr;
+      }
+    }
+    return trip.locationStr;
+  })();
+
   return (
     <div className="flex-grow relative bg-[#EAE8E3] dark:bg-[#1A1A1A] overflow-hidden transition-colors duration-300">
       {/* Leaflet map container */}
@@ -927,14 +963,13 @@ export function MapArea({
       )}
 
       {/* ── Status Bar & Interaction Toggles ── */}
-      <div className="absolute bottom-4 left-4 right-4 md:bottom-6 md:left-6 md:right-6 flex justify-between items-end z-20 pointer-events-none">
-        <div className="bg-[#F9F8F6]/95 dark:bg-[#111111]/95 backdrop-blur border border-black/20 dark:border-white/20 px-2 py-1.5 md:px-3 md:py-2 text-[9px] md:text-[10px] uppercase font-bold tracking-widest flex items-center gap-1.5 transition-colors pointer-events-auto">
-          <MapPin className="w-3 h-3 md:w-4 md:h-4 text-red-600 dark:text-red-400" />
-          <span className="hidden sm:inline">{trip.locationStr} : </span>
-          {selectedDate === 'ALL' ? 'Overall Routes' : 'Daily Route'}
+      <div className="absolute bottom-4 left-4 right-4 md:bottom-6 md:left-6 md:right-6 flex justify-between items-end z-20 pointer-events-none gap-2">
+        <div className="bg-[#F9F8F6]/95 dark:bg-[#111111]/95 backdrop-blur border border-black/20 dark:border-white/20 px-2.5 py-1.5 md:px-3 md:py-2 text-[9px] md:text-[10px] uppercase font-bold tracking-widest flex items-center gap-1.5 transition-colors pointer-events-auto max-w-[60%] truncate">
+          <MapPin className="w-3 h-3 md:w-4 md:h-4 text-red-600 dark:text-red-400 shrink-0" />
+          <span className="truncate">{activeLocationName}</span>
         </div>
 
-        <div className="pointer-events-auto">
+        <div className="pointer-events-auto shrink-0">
           <button
             onClick={() => setIsInteractive(!isInteractive)}
             className={`px-3 py-1.5 md:px-4 md:py-2 text-[9px] md:text-[10px] uppercase font-black tracking-widest border transition-all rounded-sm flex items-center gap-1.5 shadow-md ${
@@ -943,7 +978,7 @@ export function MapArea({
                 : 'bg-[#F9F8F6]/95 dark:bg-[#111111]/95 text-black dark:text-white border-black/20 dark:border-white/20 hover:bg-white dark:hover:bg-[#222]'
             }`}
           >
-            {isInteractive ? '🔒 LOCK MAP' : '🔓 UNLOCK MAP (ZOOM/DRAG)'}
+            {isInteractive ? '🔒 LOCK' : '🔓 UNLOCK'}
           </button>
         </div>
       </div>

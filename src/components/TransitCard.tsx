@@ -250,8 +250,28 @@ export function TransitCard({
                 </div>
               </div>
             ) : (
-              <p className="text-xs md:text-sm text-black/50 dark:text-white/50 mt-1 block">
-                {transit.route}
+              <p className="text-xs md:text-sm text-black/50 dark:text-white/50 mt-1 block flex flex-wrap items-center gap-1">
+                {transit.departPlace ? (
+                  <span 
+                    onClick={(e) => handlePlaceLinkClick(e, transit.departPlace!)}
+                    className="hover:underline hover:text-red-600 transition-colors cursor-pointer font-medium underline decoration-dotted decoration-black/30 dark:decoration-white/30"
+                  >
+                    {transit.departPlace}
+                  </span>
+                ) : (
+                  <span>출발지</span>
+                )}
+                <span className="mx-1 opacity-60">→</span>
+                {transit.arrivePlace ? (
+                  <span 
+                    onClick={(e) => handlePlaceLinkClick(e, transit.arrivePlace!)}
+                    className="hover:underline hover:text-red-600 transition-colors cursor-pointer font-medium underline decoration-dotted decoration-black/30 dark:decoration-white/30"
+                  >
+                    {transit.arrivePlace}
+                  </span>
+                ) : (
+                  <span>도착지</span>
+                )}
               </p>
             )}
             {isEditMode ? (

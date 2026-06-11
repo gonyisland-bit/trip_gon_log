@@ -225,9 +225,15 @@ export function FlightCard({
                 )}
               </div>
             ) : (
-              <span className="text-2xl md:text-4xl font-black tracking-tighter block leading-none">
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(flight.fromCode + " Airport")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-2xl md:text-4xl font-black tracking-tighter block leading-none hover:underline hover:text-red-600 transition-colors"
+              >
                 {flight.fromCode}
-              </span>
+              </a>
             )}
 
             {isEditMode ? (
@@ -413,9 +419,15 @@ export function FlightCard({
                 )}
               </div>
             ) : (
-              <span className="text-2xl md:text-4xl font-black tracking-tighter block leading-none">
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(flight.toCode + " Airport")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-2xl md:text-4xl font-black tracking-tighter block leading-none hover:underline hover:text-red-600 transition-colors"
+              >
                 {flight.toCode}
-              </span>
+              </a>
             )}
 
             {isEditMode ? (
