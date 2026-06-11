@@ -382,7 +382,6 @@ export function JourneyDetailPage({
   const [isGalleryDragActive, setIsGalleryDragActive] = useState(false);
   const [saving, setSaving] = useState(false);
   const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
-  const [activeGalleryPhotoUrl, setActiveGalleryPhotoUrl] = useState<string | null>(null);
 
   // Multi-select & map visibilities state
   const [selectedItemIds, setSelectedItemIds] = useState<number[]>([]);
@@ -903,6 +902,7 @@ export function JourneyDetailPage({
         memo: item.memo,
         imgNote: item.imgNote || '',
         type: 'timeline' as const,
+        itemId: item.id,
       }));
   }, [baseTimeline]);
 
@@ -959,20 +959,7 @@ export function JourneyDetailPage({
     return points;
   }, [baseTimeline, generatedDates]);
 
-  // Escape key hotkey to return to gallery grid from detail view
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (!isLightboxOpen && activeGalleryPhotoUrl) {
-          setActiveGalleryPhotoUrl(null);
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isLightboxOpen, activeGalleryPhotoUrl]);
+
 
   const filteredTimeline = selectedDate === 'ALL'
     ? baseTimeline
@@ -1163,19 +1150,7 @@ export function JourneyDetailPage({
             transitType: t.transitType || 'train'
           });
         }
-        if (t.boardingLat !== undefined && t.boardingLng !== undefined) {
-          transitPoints.push({
-            id: t.id * 10 + 2,
-            place: t.boardingPlace || 'Boarding Place',
-            lat: t.boardingLat,
-            lng: t.boardingLng,
-            time: '',
-            memo: `${t.title || 'Transit'} - Boarding point at ${t.boardingPlace || ''}`,
-            type: 'transit_boarding',
-            transitId: t.id,
-            transitType: t.transitType || 'train'
-          });
-        }
+
       });
       return transitPoints;
     }
@@ -1207,19 +1182,9 @@ export function JourneyDetailPage({
 
     // Check if it's a gallery photo click or timeline photo click from the map
     if (targetId >= 500000 && targetId < 600000) {
-      const idx = targetId - 500000;
-      const targetPhoto = galleryMetaImages[idx];
-      if (targetPhoto) {
-        setActiveGalleryPhotoUrl(targetPhoto.url);
-        setActiveTab('gallery');
-      }
+      setActiveTab('gallery');
     } else if (targetId >= 600000) {
-      const idx = targetId - 600000;
-      const targetPhoto = timelinePhotoPoints[idx];
-      if (targetPhoto) {
-        setActiveGalleryPhotoUrl(targetPhoto.photoUrl);
-        setActiveTab('gallery');
-      }
+      setActiveTab('gallery');
     }
 
     setExpandedItemId(prevId => prevId === targetId ? null : targetId);
@@ -1228,6 +1193,22 @@ export function JourneyDetailPage({
         itemRefs.current[targetId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 100);
     }
+  };
+
+  const handleJumpToTimelineItem = (itemId: number, date: string) => {
+    setActiveTab('timeline');
+    if (date) {
+      setSelectedDate(date);
+    } else {
+      setSelectedDate('ALL');
+    }
+    setExpandedItemId(itemId);
+    setTimeout(() => {
+      const el = itemRefs.current[itemId];
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 300);
   };
 
   const handleAddTimelineItemRelativeTo = (relativeId: number, position: 'above' | 'below') => {
@@ -2845,441 +2826,290 @@ export function JourneyDetailPage({
           {/* GALLERY TAB */}
           {activeTab === 'gallery' && (
             <div 
-              onDragEnter={handleGalleryDragEnter}
+              className="p-4 md:p-6 relative min-h-[400px] animate-in fade-in duration-300"
               onDragOver={handleGalleryDragOver}
               onDragLeave={handleGalleryDragLeave}
               onDrop={handleGalleryDrop}
-              className="relative p-4 md:p-6 animate-in fade-in duration-300 flex flex-col h-auto min-h-[300px]"
             >
-              {activeGalleryPhotoUrl ? (
-                // ─── Photo Detail View (Single view inside right layout) ───
-                (() => {
-                  // Find meta in galleryMetaImages or timelineImages
-                  const isGalleryPhoto = galleryMetaImages.some(g => g.url === activeGalleryPhotoUrl);
-                  const isTimelinePhoto = timelineImages.some(t => t.url === activeGalleryPhotoUrl);
-                  
-                  let meta: any = null;
-                  let idx = -1;
-                  
-                  if (isGalleryPhoto) {
-                    idx = galleryMetaImages.findIndex(g => g.url === activeGalleryPhotoUrl);
-                    meta = galleryMetaImages[idx];
-                  } else if (isTimelinePhoto) {
-                    idx = timelineImages.findIndex(t => t.url === activeGalleryPhotoUrl);
-                    meta = timelineImages[idx];
-                  }
+              {/* Drag & Drop Visual Overlay */}
+              {isGalleryDragActive && isLoggedIn && (
+                <div className="absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm z-30 flex flex-col items-center justify-center border-4 border-dashed border-red-600 m-2 transition-all">
+                  <div className="text-white flex flex-col items-center gap-3">
+                    <Plus className="w-12 h-12 animate-bounce text-red-500" />
+                    <p className="text-sm md:text-base font-black tracking-widest uppercase text-center">
+                      Drop images here to add to gallery
+                    </p>
+                    <p className="text-xs text-white/60">
+                      이미지를 여기에 놓으면 갤러리에 즉시 추가됩니다
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Add Gallery Image Area */}
+              {isLoggedIn && (
+                <div className="mb-6 flex justify-center">
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    ref={fileInputRef}
+                    onChange={handleGalleryUpload}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImage}
+                    className="text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-6 py-2.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {uploadingImage ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Uploading Image...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4" />
+                        Add Gallery Image
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
 
-                  if (!meta) {
-                    return (
-                      <div className="text-center py-12">
-                        <p className="text-xs text-black/40 dark:text-white/40 font-bold uppercase tracking-widest">사진 정보를 찾을 수 없습니다.</p>
-                        <button 
-                          onClick={() => setActiveGalleryPhotoUrl(null)}
-                          className="mt-4 text-xs font-bold underline text-red-600 dark:text-red-400"
+              {/* ── Section: Gallery Photos ── */}
+              {galleryMetaImages.length > 0 && (
+                <>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-px flex-grow bg-black/10 dark:bg-white/10" />
+                    <span className="text-[9px] uppercase font-black tracking-widest text-black/40 dark:text-white/40 shrink-0">Gallery Photos</span>
+                    <div className="h-px flex-grow bg-black/10 dark:bg-white/10" />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5 mb-8">
+                    {galleryMetaImages.map((imgMeta, idx) => {
+                      const isPhotoActive = expandedItemId === (500000 + idx);
+                      return (
+                        <div 
+                          ref={el => { itemRefs.current[500000 + idx] = el; }}
+                          key={`meta-${imgMeta.url}-${idx}`}
+                          className="flex flex-col group/gallery"
                         >
-                          목록으로 돌아가기
-                        </button>
-                      </div>
-                    );
-                  }
+                          {/* Film-photo styled clickable image */}
+                          <div
+                            className={`relative overflow-hidden border transition-all duration-300 cursor-pointer aspect-[4/3] group ${isPhotoActive ? 'border-orange-500 scale-[1.02] shadow-md ring-2 ring-orange-500/30' : 'border-black/10 dark:border-white/10'}`}
+                            onClick={() => {
+                              // 1번 터치: 핀 강조 및 줌
+                              setExpandedItemId(500000 + idx);
+                            }}
+                            onDoubleClick={() => {
+                              // 2번 터치(더블 탭): 전체 화면 라이트박스 바로 진입
+                              const globalIdx = galleryAllMeta.findIndex(m => m.url === imgMeta.url);
+                              setLightboxIndex(globalIdx !== -1 ? globalIdx : 0);
+                              setIsLightboxOpen(true);
+                            }}
+                          >
+                            <img 
+                              src={imgMeta.url} 
+                              alt={`Gallery ${idx + 1}`} 
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover/gallery:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover/gallery:bg-black/10 transition-colors pointer-events-none" />
 
-                  return (
-                    <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 pb-24">
-                      {/* Navigation bar for Detail view - Compact & Space-optimized */}
-                      <div className="flex justify-between items-center py-1 mb-1 text-[10px] md:text-xs">
-                        <button
-                          onClick={() => setActiveGalleryPhotoUrl(null)}
-                          className="font-bold opacity-60 hover:opacity-100 hover:text-red-600 transition-all flex items-center gap-1"
-                        >
-                          ← BACK (ESC)
-                        </button>
-                        
-                        <button
-                          onClick={() => {
-                            const globalIdx = galleryAllUnique.indexOf(activeGalleryPhotoUrl);
-                            setLightboxIndex(globalIdx !== -1 ? globalIdx : 0);
-                            setIsLightboxOpen(true);
-                          }}
-                          className="font-bold opacity-60 hover:opacity-100 transition-all flex items-center gap-1"
-                        >
-                          <Maximize2 className="w-3.5 h-3.5" /> FULLSCREEN
-                        </button>
-                      </div>
-
-                      {/* Large image area - Clean borderless layout */}
-                      <div className="relative group w-full my-2 flex items-center justify-center">
-                        <img 
-                          src={activeGalleryPhotoUrl} 
-                          alt="Selected Detail"
-                          className="max-h-[45vh] object-contain mx-auto shadow-sm"
-                        />
-                        
-                        {/* Map Pin Toggle & Delete buttons for Detail View (Gallery images only) */}
-                        {isGalleryPhoto && (
-                          <div className="absolute top-4 right-4 flex gap-2">
-                            {meta.lat !== undefined && meta.lng !== undefined && meta.lat !== null && meta.lng !== null && (
+                            {/* Maximize / Expand button to trigger lightbox (bottom-right) */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const globalIdx = galleryAllMeta.findIndex(m => m.url === imgMeta.url);
+                                setLightboxIndex(globalIdx !== -1 ? globalIdx : 0);
+                                setIsLightboxOpen(true);
+                              }}
+                              className="absolute bottom-2 right-2 p-1.5 bg-black/75 hover:bg-black text-white transition-colors z-10 rounded-sm opacity-0 group-hover/gallery:opacity-100 focus:opacity-100"
+                              title="전체화면"
+                            >
+                              <Maximize2 className="w-3.5 h-3.5" />
+                            </button>
+                            
+                            {/* Map Pin Toggle Button (only if coords exist) */}
+                            {imgMeta.lat !== undefined && imgMeta.lng !== undefined && imgMeta.lat !== null && imgMeta.lng !== null && (
                               <button
                                 onClick={async (e) => {
                                   e.stopPropagation();
-                                  const newExclude = !meta.excludeFromMap;
-                                  await handleToggleGalleryImagePin(meta.url, newExclude);
+                                  const newExclude = !imgMeta.excludeFromMap;
+                                  await handleToggleGalleryImagePin(imgMeta.url, newExclude);
                                   if (!newExclude) {
                                     setExpandedItemId(500000 + idx);
                                   }
                                 }}
-                                className={`p-2 transition-colors rounded-sm shadow-md border border-white/15 ${!meta.excludeFromMap ? 'bg-orange-500 hover:bg-orange-600 text-white' : 'bg-black/75 hover:bg-black text-white/50 hover:text-white'}`}
-                                title={meta.excludeFromMap ? "지도에 핀 표시하기" : "지도에서 핀 숨기기"}
+                                className={`absolute top-2 ${isLoggedIn ? 'right-9' : 'right-2'} p-1.5 transition-colors z-10 rounded-sm ${!imgMeta.excludeFromMap ? 'bg-orange-500 hover:bg-orange-600 text-white opacity-100' : 'bg-black/75 hover:bg-black text-white/50 hover:text-white opacity-0 group-hover/gallery:opacity-100 focus:opacity-100'}`}
+                                title={imgMeta.excludeFromMap ? "지도에 핀 표시하기" : "지도에서 핀 숨기기"}
                               >
-                                <MapPin className="w-4 h-4" />
+                                <MapPin className="w-3.5 h-3.5" />
                               </button>
                             )}
+
+                            {/* Delete image button */}
                             {isLoggedIn && (
                               <button
                                 onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRemoveGalleryImage(meta.url, e);
-                                  setActiveGalleryPhotoUrl(null); // return to list after delete
+                                  e.stopPropagation(); // Avoid triggering map focus
+                                  handleRemoveGalleryImage(imgMeta.url, e);
                                 }}
-                                className="p-2 bg-black/75 hover:bg-red-600 text-white transition-colors rounded-sm shadow-md border border-white/15"
+                                className="absolute top-2 right-2 p-1.5 bg-black/75 hover:bg-red-600 text-white transition-colors opacity-0 group-hover/gallery:opacity-100 z-10 rounded-sm"
                                 title="Remove Image"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             )}
                           </div>
-                        )}
-                      </div>
 
-                      {/* Divider Line */}
-                      <div className="w-full h-px bg-black/10 dark:bg-white/10 mt-6 mb-4" />
-
-                      {/* Info & Memo area - Transparent & Borderless */}
-                      <div className="px-1 flex flex-col gap-3">
-                        <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-[10px] md:text-xs font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
-                          {meta.date && (
-                            <span className="text-amber-600 dark:text-amber-400">
-                              📅 {meta.date.replace(/\./g, '/')}
-                            </span>
-                          )}
-                          {meta.place && (
-                            <span className="text-amber-600 dark:text-amber-400">
-                              📍 {meta.place}
-                            </span>
-                          )}
-                          <span>
-                            🏷️ {isTimelinePhoto ? 'Timeline Attached' : 'Gallery Collection'}
-                          </span>
-                        </div>
-
-                        {/* Description editing / showing */}
-                        {isGalleryPhoto ? (
-                          <div className="flex flex-col gap-1.5">
-                            <span className="text-[9px] uppercase font-black tracking-widest text-black/40 dark:text-white/40">Photo Note</span>
-                            {isEditing ? (
-                              <textarea
-                                value={meta.imgNote || ''}
-                                onChange={(e) => handleUpdateGalleryImageNote(meta.url, e.target.value)}
-                                placeholder="사진 설명 추가..."
-                                className="w-full bg-white dark:bg-black border border-black/10 dark:border-white/10 p-2.5 outline-none text-xs text-black dark:text-white placeholder-black/25 dark:placeholder-white/25 min-h-[60px] resize-none"
-                              />
-                            ) : meta.imgNote ? (
-                              <p className="text-xs text-black/70 dark:text-white/70 italic leading-relaxed whitespace-pre-wrap">{meta.imgNote}</p>
-                            ) : (
-                              <p className="text-xs text-black/30 dark:text-white/30 italic">설명 없음</p>
-                            )}
-                          </div>
-                        ) : (
-                          // Timeline photo: Show read-only timeline memo & notes
-                          <div className="flex flex-col gap-2">
-                            {meta.memo && (
-                              <div className="flex flex-col gap-1">
-                                <span className="text-[9px] uppercase font-black tracking-widest text-black/40 dark:text-white/40">Timeline Memo</span>
-                                <p className="text-xs text-black/80 dark:text-white/80 font-medium leading-relaxed">{meta.memo}</p>
-                              </div>
-                            )}
-                            {meta.imgNote && (
-                              <div className="flex flex-col gap-1">
-                                <span className="text-[9px] uppercase font-black tracking-widest text-black/40 dark:text-white/40">Photo Note</span>
-                                <p className="text-xs text-black/75 dark:text-white/75 italic leading-relaxed">{meta.imgNote}</p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })()
-              ) : (
-                // ─── Photo List Grid View (Default) ───
-                <>
-                  {/* Drag & Drop Visual Overlay */}
-                  {isGalleryDragActive && isLoggedIn && (
-                    <div className="absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm z-30 flex flex-col items-center justify-center border-4 border-dashed border-red-600 m-2 transition-all">
-                      <div className="text-white flex flex-col items-center gap-3">
-                        <Plus className="w-12 h-12 animate-bounce text-red-500" />
-                        <p className="text-sm md:text-base font-black tracking-widest uppercase text-center">
-                          Drop images here to add to gallery
-                        </p>
-                        <p className="text-xs text-white/60">
-                          이미지를 여기에 놓으면 갤러리에 즉시 추가됩니다
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Add Gallery Image Area */}
-                  {isLoggedIn && (
-                    <div className="mb-6 flex justify-center">
-                      <input 
-                        type="file" 
-                        accept="image/*"
-                        ref={fileInputRef}
-                        onChange={handleGalleryUpload}
-                        className="hidden"
-                      />
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploadingImage}
-                        className="text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-6 py-2.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all flex items-center gap-2 disabled:opacity-50"
-                      >
-                        {uploadingImage ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Uploading Image...
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="w-4 h-4" />
-                            Add Gallery Image
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )}
-
-                  {/* ── Section: Gallery Photos ── */}
-                  {galleryMetaImages.length > 0 && (
-                    <>
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="h-px flex-grow bg-black/10 dark:bg-white/10" />
-                        <span className="text-[9px] uppercase font-black tracking-widest text-black/40 dark:text-white/40 shrink-0">Gallery Photos</span>
-                        <div className="h-px flex-grow bg-black/10 dark:bg-white/10" />
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5 mb-8">
-                        {galleryMetaImages.map((imgMeta, idx) => {
-                          const isPhotoActive = expandedItemId === (500000 + idx);
-                          return (
-                            <div 
-                              key={`meta-${imgMeta.url}-${idx}`}
-                              className="flex flex-col group/gallery"
-                            >
-                              {/* Film-photo styled clickable image */}
-                              <div
-                                className={`relative overflow-hidden border transition-all duration-300 cursor-pointer aspect-[4/3] group ${isPhotoActive ? 'border-orange-500 scale-[1.02] shadow-md ring-2 ring-orange-500/30' : 'border-black/10 dark:border-white/10'}`}
-                                onClick={() => {
-                                  // 1번 터치: 핀 강조 및 줌
-                                  setExpandedItemId(500000 + idx);
-                                }}
-                                onDoubleClick={() => {
-                                  // 2번 터치(더블 탭): 우측 상세 뷰로 크게 보기
-                                  setActiveGalleryPhotoUrl(imgMeta.url);
-                                }}
-                              >
-                                <img 
-                                  src={imgMeta.url} 
-                                  alt={`Gallery ${idx + 1}`} 
-                                  className="w-full h-full object-cover transition-transform duration-500 group-hover/gallery:scale-105"
-                                />
-                                <div className="absolute inset-0 bg-black/0 group-hover/gallery:bg-black/10 transition-colors pointer-events-none" />
-                                
-                                {/* EXIF metadata overlay (top-left) */}
-                                <div className="absolute top-2 left-2 flex flex-col gap-0.5 z-10 pointer-events-none">
-                                  <div className="bg-black/60 backdrop-blur-sm px-1.5 py-0.5">
-                                    <span className="text-[8px] text-amber-300 font-mono font-bold tracking-widest leading-none">
-                                      {(imgMeta.date || generatedDates[0] || trip.date?.split(' ~ ')[0] || '').replace(/\./g, '/')}
-                                    </span>
-                                  </div>
-                                  {imgMeta.place && (
-                                    <div className="bg-black/60 backdrop-blur-sm px-1.5 py-0.5">
-                                      <span className="text-[8px] text-amber-300 font-mono font-bold tracking-widest leading-none truncate block max-w-[160px]">
-                                        📍 {imgMeta.place}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Maximize / Expand button to trigger details view (bottom-right) */}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setActiveGalleryPhotoUrl(imgMeta.url);
-                                  }}
-                                  className="absolute bottom-2 right-2 p-1.5 bg-black/75 hover:bg-black text-white transition-colors z-10 rounded-sm opacity-0 group-hover/gallery:opacity-100 focus:opacity-100"
-                                  title="Expand Photo to Detail View"
-                                >
-                                  <Maximize2 className="w-3.5 h-3.5" />
-                                </button>
-                                
-                                {/* Map Pin Toggle Button (only if coords exist) */}
-                                {imgMeta.lat !== undefined && imgMeta.lng !== undefined && imgMeta.lat !== null && imgMeta.lng !== null && (
-                                  <button
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      const newExclude = !imgMeta.excludeFromMap;
-                                      await handleToggleGalleryImagePin(imgMeta.url, newExclude);
-                                      if (!newExclude) {
-                                        setExpandedItemId(500000 + idx);
-                                      }
-                                    }}
-                                    className={`absolute top-2 ${isLoggedIn ? 'right-9' : 'right-2'} p-1.5 transition-colors z-10 rounded-sm ${!imgMeta.excludeFromMap ? 'bg-orange-500 hover:bg-orange-600 text-white opacity-100' : 'bg-black/75 hover:bg-black text-white/50 hover:text-white opacity-0 group-hover/gallery:opacity-100 focus:opacity-100'}`}
-                                    title={imgMeta.excludeFromMap ? "지도에 핀 표시하기" : "지도에서 핀 숨기기"}
-                                  >
-                                    <MapPin className="w-3.5 h-3.5" />
-                                  </button>
-                                )}
-
-                                {/* Delete image button */}
-                                {isLoggedIn && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation(); // Avoid triggering map focus
-                                      handleRemoveGalleryImage(imgMeta.url, e);
-                                    }}
-                                    className="absolute top-2 right-2 p-1.5 bg-black/75 hover:bg-red-600 text-white transition-colors opacity-0 group-hover/gallery:opacity-100 z-10 rounded-sm"
-                                    title="Remove Image"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                )}
-                              </div>
-
-                              {/* Photo note / description area below image */}
-                              <div className="bg-black/3 dark:bg-white/3 border border-t-0 border-black/10 dark:border-white/10 px-3 py-2">
-                                {isEditing ? (
-                                  <input
-                                    type="text"
-                                    value={imgMeta.imgNote || ''}
-                                    onChange={(e) => handleUpdateGalleryImageNote(imgMeta.url, e.target.value)}
-                                    placeholder="사진 설명 추가..."
-                                    className="w-full bg-transparent outline-none text-[10px] text-black/70 dark:text-white/70 placeholder-black/25 dark:placeholder-white/25"
-                                    onClick={(e) => e.stopPropagation()}
-                                  />
-                                ) : imgMeta.imgNote ? (
-                                  <p className="text-[10px] text-black/60 dark:text-white/60 italic leading-relaxed">{imgMeta.imgNote}</p>
-                                ) : (
-                                  <p className="text-[10px] text-black/20 dark:text-white/20 italic">메모 없음</p>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </>
-                  )}
-
-                  {/* ── Section: Timeline Photos ── */}
-                  {timelineImages.length > 0 && (
-                    <>
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="h-px flex-grow bg-black/10 dark:bg-white/10" />
-                        <span className="text-[9px] uppercase font-black tracking-widest text-black/40 dark:text-white/40 shrink-0">Timeline Photos</span>
-                        <div className="h-px flex-grow bg-black/10 dark:bg-white/10" />
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5 pb-12">
-                        {timelineImages.map((imgItem, idx) => {
-                          const photoInGalleryIdx = galleryMetaImages.findIndex(g => g.url === imgItem.url);
-                          // We map timeline photo pins to 600000 + idx
-                          const isPhotoActive = expandedItemId === (600000 + idx);
-                          
-                          return (
-                            <div key={`timeline-${imgItem.url}-${idx}`} className="flex flex-col group/gallery">
-                              {/* Film-photo styled image */}
-                              <div
-                                className={`relative overflow-hidden border transition-all duration-300 cursor-pointer aspect-[4/3] group ${isPhotoActive ? 'border-orange-500 scale-[1.02] shadow-md ring-2 ring-orange-500/30' : 'border-black/10 dark:border-white/10'}`}
-                                onClick={() => {
-                                  // 1번 터치: 핀 강조 및 줌
-                                  setExpandedItemId(600000 + idx);
-                                }}
-                                onDoubleClick={() => {
-                                  // 2번 터치(더블 탭): 우측 상세 뷰로 크게 보기
-                                  setActiveGalleryPhotoUrl(imgItem.url);
-                                }}
-                              >
-                                <img
-                                  src={imgItem.url}
-                                  alt={imgItem.place}
-                                  className="w-full h-full object-cover transition-transform duration-500 group-hover/gallery:scale-105"
-                                />
-                                {/* Film stamp overlay (top-left) */}
-                                <div className="absolute top-2 left-2 flex flex-col gap-0.5 z-10 pointer-events-none">
-                                  {imgItem.date && (
-                                    <div className="bg-black/60 backdrop-blur-sm px-1.5 py-0.5">
-                                      <span className="text-[8px] text-amber-300 font-mono font-bold tracking-widest leading-none">
-                                        {imgItem.date.replace(/\./g, '/')}
-                                      </span>
-                                    </div>
-                                  )}
-                                  {imgItem.place && (
-                                    <div className="bg-black/60 backdrop-blur-sm px-1.5 py-0.5">
-                                      <span className="text-[8px] text-amber-300 font-mono font-bold tracking-widest leading-none truncate block max-w-[160px]">
-                                        📍 {imgItem.place}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                                {/* TIMELINE badge overlay (top-right) */}
-                                <div className="absolute top-2 right-2 z-10 pointer-events-none">
-                                  <span className="bg-red-600/85 backdrop-blur-sm text-white text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 leading-none">
-                                    🗓️ TIMELINE
+                          {/* Photo note / description area below image */}
+                          <div className="bg-black/3 dark:bg-white/3 border border-t-0 border-black/10 dark:border-white/10 px-3 py-2 flex flex-col gap-1">
+                            {(imgMeta.date || imgMeta.place) && (
+                              <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[8px] font-bold uppercase tracking-wider text-black/55 dark:text-white/55 mb-0.5">
+                                {imgMeta.date && (
+                                  <span className="text-amber-600 dark:text-amber-400">
+                                    📅 {imgMeta.date}
                                   </span>
-                                </div>
-
-                                {/* Maximize / Expand button to trigger details view (bottom-right) */}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setActiveGalleryPhotoUrl(imgItem.url);
-                                  }}
-                                  className="absolute bottom-2 right-2 p-1.5 bg-black/75 hover:bg-black text-white transition-colors z-10 rounded-sm opacity-0 group-hover/gallery:opacity-100 focus:opacity-100"
-                                  title="Expand Photo to Detail View"
-                                >
-                                  <Maximize2 className="w-3.5 h-3.5" />
-                                </button>
-
-                                <div className="absolute inset-0 bg-black/0 group-hover/gallery:bg-black/10 transition-colors pointer-events-none" />
-                              </div>
-
-                              {/* Memo & note section below the image */}
-                              <div className="bg-black/3 dark:bg-white/3 border border-t-0 border-black/10 dark:border-white/10 px-3 py-2 flex flex-col gap-1">
-                                {imgItem.memo && (
-                                  <p className="text-[10px] text-black/70 dark:text-white/70 font-medium leading-relaxed">
-                                    {imgItem.memo}
-                                  </p>
                                 )}
-                                {imgItem.imgNote && (
-                                  <p className="text-[10px] text-black/50 dark:text-white/50 italic leading-relaxed border-t border-black/5 dark:border-white/5 pt-1">
-                                    {imgItem.imgNote}
-                                  </p>
-                                )}
-                                {!imgItem.memo && !imgItem.imgNote && (
-                                  <p className="text-[10px] text-black/30 dark:text-white/30 italic">
-                                    메모 없음
-                                  </p>
+                                {imgMeta.place && (
+                                  <span className="text-amber-600 dark:text-amber-400">
+                                    📍 {imgMeta.place}
+                                  </span>
                                 )}
                               </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </>
-                  )}
-
-                  {galleryMetaImages.length === 0 && timelineImages.length === 0 && (
-                    <div className="text-center py-16 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
-                      등록된 갤러리 사진이 없습니다.
-                    </div>
-                  )}
+                            )}
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={imgMeta.imgNote || ''}
+                                onChange={(e) => handleUpdateGalleryImageNote(imgMeta.url, e.target.value)}
+                                placeholder="사진 설명 추가..."
+                                className="w-full bg-transparent outline-none text-[10px] text-black/70 dark:text-white/70 placeholder-black/25 dark:placeholder-white/25 mt-0.5"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            ) : imgMeta.imgNote ? (
+                              <p className="text-[10px] text-black/60 dark:text-white/60 italic leading-relaxed">{imgMeta.imgNote}</p>
+                            ) : (
+                              <p className="text-[10px] text-black/20 dark:text-white/20 italic">메모 없음</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </>
+              )}
+
+              {/* ── Section: Timeline Photos ── */}
+              {timelineImages.length > 0 && (
+                <>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-px flex-grow bg-black/10 dark:bg-white/10" />
+                    <span className="text-[9px] uppercase font-black tracking-widest text-black/40 dark:text-white/40 shrink-0">Timeline Photos</span>
+                    <div className="h-px flex-grow bg-black/10 dark:bg-white/10" />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5 pb-12">
+                    {timelineImages.map((imgItem, idx) => {
+                      const isPhotoActive = expandedItemId === (600000 + idx);
+                      
+                      return (
+                        <div 
+                          ref={el => { itemRefs.current[600000 + idx] = el; }}
+                          key={`timeline-${imgItem.url}-${idx}`} 
+                          className="flex flex-col group/gallery"
+                        >
+                          {/* Film-photo styled image */}
+                          <div
+                            className={`relative overflow-hidden border transition-all duration-300 cursor-pointer aspect-[4/3] group ${isPhotoActive ? 'border-orange-500 scale-[1.02] shadow-md ring-2 ring-orange-500/30' : 'border-black/10 dark:border-white/10'}`}
+                            onClick={() => {
+                              // 1번 터치: 핀 강조 및 줌
+                              setExpandedItemId(600000 + idx);
+                            }}
+                            onDoubleClick={() => {
+                              // 2번 터치(더블 탭): 전체 화면 라이트박스 바로 진입
+                              const globalIdx = galleryAllMeta.findIndex(m => m.url === imgItem.url);
+                              setLightboxIndex(globalIdx !== -1 ? globalIdx : 0);
+                              setIsLightboxOpen(true);
+                            }}
+                          >
+                            <img
+                              src={imgItem.url}
+                              alt={imgItem.place}
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover/gallery:scale-105"
+                            />
+                            
+                            {/* RED POINT icon to navigate to timeline (top-right) */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleJumpToTimelineItem(imgItem.itemId, imgItem.date);
+                              }}
+                              className="absolute top-2 right-2 z-10 w-5 h-5 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center text-white border border-white/20 shadow-md transition-all hover:scale-110 active:scale-95 animate-in fade-in duration-300"
+                              title="일정으로 이동"
+                            >
+                              <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping absolute" />
+                              <span className="w-1.5 h-1.5 bg-white rounded-full relative" />
+                            </button>
+
+                            {/* Maximize / Expand button to trigger lightbox (bottom-right) */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const globalIdx = galleryAllMeta.findIndex(m => m.url === imgItem.url);
+                                setLightboxIndex(globalIdx !== -1 ? globalIdx : 0);
+                                setIsLightboxOpen(true);
+                              }}
+                              className="absolute bottom-2 right-2 p-1.5 bg-black/75 hover:bg-black text-white transition-colors z-10 rounded-sm opacity-0 group-hover/gallery:opacity-100 focus:opacity-100"
+                              title="전체화면"
+                            >
+                              <Maximize2 className="w-3.5 h-3.5" />
+                            </button>
+
+                            <div className="absolute inset-0 bg-black/0 group-hover/gallery:bg-black/10 transition-colors pointer-events-none" />
+                          </div>
+
+                          {/* Memo & note section below the image */}
+                          <div className="bg-black/3 dark:bg-white/3 border border-t-0 border-black/10 dark:border-white/10 px-3 py-2 flex flex-col gap-1">
+                            {(imgItem.date || imgItem.place) && (
+                              <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[8px] font-bold uppercase tracking-wider text-black/55 dark:text-white/55 mb-0.5">
+                                {imgItem.date && (
+                                  <span className="text-amber-600 dark:text-amber-400">
+                                    📅 {imgItem.date}
+                                  </span>
+                                )}
+                                {imgItem.place && (
+                                  <span className="text-amber-600 dark:text-amber-400">
+                                    📍 {imgItem.place}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            {imgItem.memo && (
+                              <p className="text-[10px] text-black/70 dark:text-white/70 font-medium leading-relaxed mt-0.5">
+                                {imgItem.memo}
+                              </p>
+                            )}
+                            {imgItem.imgNote && (
+                              <p className="text-[10px] text-black/50 dark:text-white/50 italic leading-relaxed border-t border-black/5 dark:border-white/5 pt-1 mt-0.5">
+                                {imgItem.imgNote}
+                              </p>
+                            )}
+                            {!imgItem.memo && !imgItem.imgNote && (
+                              <p className="text-[10px] text-black/20 dark:text-white/20 italic">
+                                메모 없음
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {galleryMetaImages.length === 0 && timelineImages.length === 0 && (
+                <div className="text-center py-16 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
+                  등록된 갤러리 사진이 없습니다.
+                </div>
               )}
             </div>
           )}

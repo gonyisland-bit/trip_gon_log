@@ -88,7 +88,7 @@ export function TransitCard({
 
   return (
     <div 
-      onClick={!isEditMode ? onClick : undefined}
+      onClick={onClick}
       className={`border border-black/10 dark:border-white/10 bg-white dark:bg-[#1a1a1a] mb-6 font-sans text-black dark:text-white relative shadow-sm transition-all duration-300 ${
         !isEditMode ? 'cursor-pointer hover:shadow-md hover:border-black/20 dark:hover:border-white/20' : ''
       } ${isActive && !isEditMode ? 'ring-1 ring-red-500/50 dark:ring-red-400/50 shadow-md' : ''}`}
@@ -179,7 +179,7 @@ export function TransitCard({
                 value={timeStrTo24h(transit.time)}
                 onChange={(e) => onUpdate(transit.id, 'time', time24hTo12h(e.target.value))}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-lg md:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full max-w-[160px] min-w-0 mt-3 text-center"
+                className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-black text-2xl md:text-4xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full max-w-[200px] min-w-0 mt-4 text-center tracking-tighter"
               />
             ) : (
               <div className="text-2xl md:text-4xl font-black mt-4 tracking-tighter leading-none">
@@ -227,8 +227,8 @@ export function TransitCard({
           </div>
         </div>
 
-        {/* Expanded details section (Shown if active or in edit mode) */}
-        {(isEditMode || isActive) && (
+        {/* Expanded details section (Shown if active) */}
+        {isActive && (
           <div className="mt-4 pt-4 border-t border-black/15 dark:border-white/15 space-y-4 text-xs md:text-sm animate-in slide-in-from-top duration-200">
             {/* Transit Type Selector - Only shown in edit mode */}
             {isEditMode && (
@@ -355,36 +355,7 @@ export function TransitCard({
               </div>
             )}
 
-            {/* Boarding Place */}
-            {(isEditMode || transit.boardingPlace) && (
-              <div className="flex flex-col gap-1">
-                <span className="font-bold shrink-0 text-[10px] tracking-widest uppercase opacity-60 flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-red-500 dark:text-red-400 animate-pulse" /> BOARDING AT:
-                </span>
-                {isEditMode ? (
-                  <PlaceAutocompleteInput
-                    value={transit.boardingPlace || ''}
-                    onChange={(val) => onUpdate(transit.id, 'boardingPlace', val)}
-                    onSelectPlace={(name, coords) => {
-                      onUpdate(transit.id, 'boardingPlace', name);
-                      if (coords) {
-                        onUpdate(transit.id, 'boardingLat', coords.lat);
-                        onUpdate(transit.id, 'boardingLng', coords.lng);
-                      }
-                    }}
-                    className="w-full bg-transparent border-b border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none py-1 text-xs md:text-sm text-black dark:text-white"
-                    placeholder="Search boarding location..."
-                  />
-                ) : (
-                  <span 
-                    onClick={(e) => { e.stopPropagation(); handlePlaceLinkClick(e, transit.boardingPlace!); }}
-                    className="underline decoration-dotted cursor-pointer hover:text-red-600 dark:hover:text-red-300 ml-5 block w-fit"
-                  >
-                    {transit.boardingPlace}
-                  </span>
-                )}
-              </div>
-            )}
+
 
             {/* Memo Field */}
             {(isEditMode || transit.memo) && (

@@ -47,6 +47,11 @@ export function MapArea({
   const [mapReady, setMapReady] = useState(false);
   const [isInteractive, setIsInteractive] = useState(false);
 
+  const lastTabRef = useRef<string | undefined>(undefined);
+  const lastExpandedItemIdRef = useRef<number | null>(null);
+  const lastTransitFocusTypeRef = useRef<'depart' | 'arrive' | 'boarding' | null | undefined>(null);
+  const lastActiveCoordsRef = useRef<string>('');
+
   // Animation references for flight travel visualization
   const animMarkerRef = useRef<any>(null);
   const animFrameIdRef = useRef<number | null>(null);
@@ -264,8 +269,6 @@ export function MapArea({
           pinTextPrefix = '🛫 ';
         } else if (item.type === 'transit_arrive') {
           pinTextPrefix = '🛬 ';
-        } else if (item.type === 'transit_boarding') {
-          pinTextPrefix = '🎫 ';
         }
       } else if (item.isPhoto) {
         pinColor = '#f97316';
@@ -301,42 +304,76 @@ export function MapArea({
       markersRef.current[item.id] = marker;
     });
 
-    if (coords.length > 0 && (!isInteractive || !hasFitRef.current || isGalleryTab)) {
-      const bounds = L.latLngBounds(coords);
-      map.fitBounds(bounds, { padding: [48, 48], maxZoom: 15 });
-      hasFitRef.current = true;
-    }
-
+    // Jitter prevention check
+    const tabChanged = lastTabRef.current !== activeTab;
+    const itemIdChanged = lastExpandedItemIdRef.current !== expandedItemId;
+    const focusTypeChanged = lastTransitFocusTypeRef.current !== transitFocusType;
+    
+    let currentCoordsStr = '';
+    const activePointsList: { lat: number; lng: number }[] = [];
+    
     if (expandedItemId !== null) {
-      let activeMarker: any = null;
       if (activeTab === 'transit') {
-        if (transitFocusType === 'depart') {
-          activeMarker = markersRef.current[expandedItemId * 10];
-        } else if (transitFocusType === 'arrive') {
-          activeMarker = markersRef.current[expandedItemId * 10 + 1];
-        } else if (transitFocusType === 'boarding') {
-          activeMarker = markersRef.current[expandedItemId * 10 + 2];
-        } else {
-          activeMarker = null;
-        }
-      } else {
-        activeMarker = markersRef.current[expandedItemId];
-      }
-
-      if (activeMarker) {
-        const latLng = activeMarker.getLatLng();
-        map.setView(latLng, Math.max(map.getZoom(), 14), { animate: true });
-      } else if (activeTab === 'flights' || (activeTab === 'transit' && !transitFocusType)) {
+        let p: any = null;
+        if (transitFocusType === 'depart') p = mapPoints.find(item => item.id === expandedItemId * 10);
+        else if (transitFocusType === 'arrive') p = mapPoints.find(item => item.id === expandedItemId * 10 + 1);
+        if (p && p.lat && p.lng) activePointsList.push({ lat: Number(p.lat), lng: Number(p.lng) });
+      } else if (activeTab === 'flights') {
         const fromPoint = mapPoints.find(p => p.id === expandedItemId * 10);
         const toPoint = mapPoints.find(p => p.id === expandedItemId * 10 + 1);
-        if (fromPoint && toPoint && fromPoint.lat && fromPoint.lng && toPoint.lat && toPoint.lng) {
-          const startLat = Number(fromPoint.lat);
-          const startLng = Number(fromPoint.lng);
-          const endLat = Number(toPoint.lat);
-          const endLng = Number(toPoint.lng);
-          if (!isNaN(startLat) && !isNaN(startLng) && !isNaN(endLat) && !isNaN(endLng)) {
-            const bounds = L.latLngBounds([[startLat, startLng], [endLat, endLng]]);
-            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15, animate: true });
+        if (fromPoint && fromPoint.lat && fromPoint.lng) activePointsList.push({ lat: Number(fromPoint.lat), lng: Number(fromPoint.lng) });
+        if (toPoint && toPoint.lat && toPoint.lng) activePointsList.push({ lat: Number(toPoint.lat), lng: Number(toPoint.lng) });
+      } else {
+        const p = mapPoints.find(item => item.id === expandedItemId);
+        if (p && p.lat && p.lng) activePointsList.push({ lat: Number(p.lat), lng: Number(p.lng) });
+      }
+    }
+    
+    currentCoordsStr = activePointsList.map(c => `${c.lat},${c.lng}`).join('|');
+    const coordsChanged = lastActiveCoordsRef.current !== currentCoordsStr;
+
+    const shouldPanZoom = tabChanged || itemIdChanged || focusTypeChanged || coordsChanged;
+
+    // Update refs
+    lastTabRef.current = activeTab;
+    lastExpandedItemIdRef.current = expandedItemId;
+    lastTransitFocusTypeRef.current = transitFocusType;
+    lastActiveCoordsRef.current = currentCoordsStr;
+
+    if (shouldPanZoom) {
+      if (coords.length > 0 && (!isInteractive || !hasFitRef.current || isGalleryTab)) {
+        const bounds = L.latLngBounds(coords);
+        map.fitBounds(bounds, { padding: [48, 48], maxZoom: 15 });
+        hasFitRef.current = true;
+      }
+
+      if (expandedItemId !== null) {
+        let activeMarker: any = null;
+        if (activeTab === 'transit') {
+          if (transitFocusType === 'depart') {
+            activeMarker = markersRef.current[expandedItemId * 10];
+          } else if (transitFocusType === 'arrive') {
+            activeMarker = markersRef.current[expandedItemId * 10 + 1];
+          }
+        } else {
+          activeMarker = markersRef.current[expandedItemId];
+        }
+
+        if (activeMarker) {
+          const latLng = activeMarker.getLatLng();
+          map.setView(latLng, Math.max(map.getZoom(), 14), { animate: true });
+        } else if (activeTab === 'flights' || (activeTab === 'transit' && !transitFocusType)) {
+          const fromPoint = mapPoints.find(p => p.id === expandedItemId * 10);
+          const toPoint = mapPoints.find(p => p.id === expandedItemId * 10 + 1);
+          if (fromPoint && toPoint && fromPoint.lat && fromPoint.lng && toPoint.lat && toPoint.lng) {
+            const startLat = Number(fromPoint.lat);
+            const startLng = Number(fromPoint.lng);
+            const endLat = Number(toPoint.lat);
+            const endLng = Number(toPoint.lng);
+            if (!isNaN(startLat) && !isNaN(startLng) && !isNaN(endLat) && !isNaN(endLng)) {
+              const bounds = L.latLngBounds([[startLat, startLng], [endLat, endLng]]);
+              map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15, animate: true });
+            }
           }
         }
       }
