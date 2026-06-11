@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { MapPin, Plus, Minus, Store, ShoppingBag, Train, Loader2 } from 'lucide-react';
+import { MapPin, Plus, Minus, Store, ShoppingBag, Train, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Trip, TimelineItem, TransitItem } from '../types';
 
 const dayColors = [
@@ -94,6 +94,7 @@ export function MapArea({
   const [showConvenience, setShowConvenience] = useState(false);
   const [showSupermarket, setShowSupermarket] = useState(false);
   const [showStation, setShowStation] = useState(false);
+  const [isPoiExpanded, setIsPoiExpanded] = useState(true);
   const poiMarkersRef = useRef<any[]>([]);
 
   // ─── Effect 1: Initialize Leaflet map (once per trip.id) ───────────────────
@@ -265,13 +266,34 @@ export function MapArea({
         polylineRef.current = fGroup;
       }
     } else {
-      if (coords.length > 1) {
-        polylineRef.current = L.polyline(coords, {
-          color: isDarkMode ? '#f87171' : '#dc2626',
-          weight: 2.5,
-          dashArray: '6, 5',
-          opacity: 0.75,
-        }).addTo(map);
+      // Group points by dayIndex to color daily paths differently
+      const dayGroups: { [day: number]: [number, number][] } = {};
+      valid.forEach((p: any) => {
+        const day = p.dayIndex || 1;
+        if (!dayGroups[day]) {
+          dayGroups[day] = [];
+        }
+        dayGroups[day].push([Number(p.lat), Number(p.lng)]);
+      });
+
+      const polys: any[] = [];
+      Object.entries(dayGroups).forEach(([dayStr, points]) => {
+        const day = Number(dayStr);
+        if (points.length > 1) {
+          const colorIndex = (day - 1) % dayColors.length;
+          const color = dayColors[colorIndex];
+          const poly = L.polyline(points, {
+            color: color,
+            weight: 2.5,
+            dashArray: '6, 5',
+            opacity: 0.75,
+          });
+          polys.push(poly);
+        }
+      });
+
+      if (polys.length > 0) {
+        polylineRef.current = L.featureGroup(polys).addTo(map);
       }
     }
 
@@ -406,15 +428,26 @@ export function MapArea({
         } else if (activeTab === 'flights' || (activeTab === 'transit' && !transitFocusType)) {
           const fromPoint = mapPoints.find(p => p.id === expandedItemId * 10);
           const toPoint = mapPoints.find(p => p.id === expandedItemId * 10 + 1);
-          if (fromPoint && toPoint && fromPoint.lat && fromPoint.lng && toPoint.lat && toPoint.lng) {
+          const hasFrom = fromPoint && fromPoint.lat !== undefined && fromPoint.lng !== undefined && !isNaN(Number(fromPoint.lat)) && !isNaN(Number(fromPoint.lng));
+          const hasTo = toPoint && toPoint.lat !== undefined && toPoint.lng !== undefined && !isNaN(Number(toPoint.lat)) && !isNaN(Number(toPoint.lng));
+          
+          if (hasFrom && hasTo) {
             const startLat = Number(fromPoint.lat);
             const startLng = Number(fromPoint.lng);
             const endLat = Number(toPoint.lat);
             const endLng = Number(toPoint.lng);
-            if (!isNaN(startLat) && !isNaN(startLng) && !isNaN(endLat) && !isNaN(endLng)) {
-              const bounds = L.latLngBounds([[startLat, startLng], [endLat, endLng]]);
-              map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15, animate: true });
-            }
+            const bounds = L.latLngBounds([[startLat, startLng], [endLat, endLng]]);
+            // Increased bottom padding to prevent bottom overlay from cutting off locations
+            map.fitBounds(bounds, { 
+              paddingTopLeft: [60, 60], 
+              paddingBottomRight: [60, 130], 
+              maxZoom: 15, 
+              animate: true 
+            });
+          } else if (hasFrom) {
+            map.setView([Number(fromPoint.lat), Number(fromPoint.lng)], 14, { animate: true });
+          } else if (hasTo) {
+            map.setView([Number(toPoint.lat), Number(toPoint.lng)], 14, { animate: true });
           }
         }
       }
@@ -454,16 +487,39 @@ export function MapArea({
       return;
     }
 
-    // Define rich set of generic fallback POIs representing typical amenities globally
-    const fallbackPois = [
-      { id: 900001, lat: lat + 0.0021, lng: lng + 0.0019, name: '편의점 (Convenience Store)', type: 'convenience' },
-      { id: 900002, lat: lat - 0.0015, lng: lng - 0.0024, name: '편의점 (Convenience Store)', type: 'convenience' },
-      { id: 900003, lat: lat + 0.0011, lng: lng - 0.0032, name: '편의점 (Convenience Store)', type: 'convenience' },
-      { id: 900004, lat: lat + 0.0031, lng: lng - 0.0013, name: '슈퍼마켓 (Supermarket)', type: 'supermarket' },
-      { id: 900005, lat: lat - 0.0022, lng: lng + 0.0012, name: '슈퍼마켓 (Supermarket)', type: 'supermarket' },
-      { id: 900006, lat: lat - 0.0034, lng: lng + 0.0029, name: '지하철역 (Subway Station)', type: 'station' },
-      { id: 900007, lat: lat + 0.0028, lng: lng - 0.0027, name: '지하철역 (Subway Station)', type: 'station' }
-    ];
+    // Define localized fallback POIs representing typical amenities depending on country
+    const isJapan = (lat > 30 && lat < 46 && lng > 128 && lng < 146) || (trip.locationStr || '').toLowerCase().includes('japan') || (trip.locationStr || '').toLowerCase().includes('일본') || (trip.locationStr || '').toLowerCase().includes('kyoto') || (trip.locationStr || '').toLowerCase().includes('tokyo') || (trip.locationStr || '').toLowerCase().includes('osaka');
+    const isKorea = (lat > 33 && lat < 39 && lng > 124 && lng < 131) || (trip.locationStr || '').toLowerCase().includes('korea') || (trip.locationStr || '').toLowerCase().includes('한국') || (trip.locationStr || '').toLowerCase().includes('seoul');
+
+    const fallbackPois = isJapan
+      ? [
+          { id: 900001, lat: lat + 0.0018, lng: lng + 0.0015, name: 'Lawson (ローソン)', type: 'convenience' },
+          { id: 900002, lat: lat - 0.0012, lng: lng - 0.0018, name: '7-Eleven (セブン-イレブン)', type: 'convenience' },
+          { id: 900003, lat: lat + 0.0009, lng: lng - 0.0022, name: 'FamilyMart (ファミリーマート)', type: 'convenience' },
+          { id: 900004, lat: lat + 0.0025, lng: lng - 0.0011, name: 'Fresco Supermarket (フレスコ)', type: 'supermarket' },
+          { id: 900005, lat: lat - 0.0019, lng: lng + 0.0010, name: 'Life Supermarket (ライフ)', type: 'supermarket' },
+          { id: 900006, lat: lat - 0.0028, lng: lng + 0.0022, name: 'Subway Station (地下鉄駅)', type: 'station' },
+          { id: 900007, lat: lat + 0.0022, lng: lng - 0.0020, name: 'JR Station (JR駅)', type: 'station' }
+        ]
+      : isKorea
+      ? [
+          { id: 900001, lat: lat + 0.0018, lng: lng + 0.0015, name: 'GS25 편의점', type: 'convenience' },
+          { id: 900002, lat: lat - 0.0012, lng: lng - 0.0018, name: 'CU 편의점', type: 'convenience' },
+          { id: 900003, lat: lat + 0.0009, lng: lng - 0.0022, name: '세븐일레븐 편의점', type: 'convenience' },
+          { id: 900004, lat: lat + 0.0025, lng: lng - 0.0011, name: '이마트 에브리데이', type: 'supermarket' },
+          { id: 900005, lat: lat - 0.0019, lng: lng + 0.0010, name: '홈플러스 익스프레스', type: 'supermarket' },
+          { id: 900006, lat: lat - 0.0028, lng: lng + 0.0022, name: '지하철역', type: 'station' },
+          { id: 900007, lat: lat + 0.0022, lng: lng - 0.0020, name: '버스 정류장', type: 'station' }
+        ]
+      : [
+          { id: 900001, lat: lat + 0.0018, lng: lng + 0.0015, name: 'Convenience Store', type: 'convenience' },
+          { id: 900002, lat: lat - 0.0012, lng: lng - 0.0018, name: 'Convenience Store', type: 'convenience' },
+          { id: 900003, lat: lat + 0.0009, lng: lng - 0.0022, name: 'Convenience Store', type: 'convenience' },
+          { id: 900004, lat: lat + 0.0025, lng: lng - 0.0011, name: 'Supermarket', type: 'supermarket' },
+          { id: 900005, lat: lat - 0.0019, lng: lng + 0.0010, name: 'Grocery Store', type: 'supermarket' },
+          { id: 900006, lat: lat - 0.0028, lng: lng + 0.0022, name: 'Subway Station', type: 'station' },
+          { id: 900007, lat: lat + 0.0022, lng: lng - 0.0020, name: 'Bus Station', type: 'station' }
+        ];
 
     // Synchronously preload fallback POIs so toggling shows pins immediately
     setPoiItems(fallbackPois);
@@ -560,7 +616,7 @@ export function MapArea({
     poiMarkersRef.current.forEach(m => map.removeLayer(m));
     poiMarkersRef.current = [];
 
-    if (activeTab !== 'stays' || expandedItemId === null) return;
+    if (activeTab !== 'stays') return;
 
     poiItems.forEach(poi => {
       const isVisible = 
@@ -799,46 +855,59 @@ export function MapArea({
 
       {/* ── Nearby POI Toggles Overlay (Stays tab only) ── */}
       {isStayTab && (
-        <div className="absolute top-4 left-4 md:top-6 md:left-6 flex flex-col gap-2 z-20 bg-[#F9F8F6]/95 dark:bg-[#111111]/95 backdrop-blur border border-black/20 dark:border-white/20 p-2.5 shadow-md">
-          <div className="flex items-center gap-1.5 mb-1">
-            <span className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-black/50 dark:text-white/50">Nearby Amenities</span>
-            {poiLoading && <Loader2 className="w-3 h-3 text-red-600 animate-spin" />}
+        <div className="absolute top-4 left-4 md:top-6 md:left-6 flex flex-col gap-2 z-20 bg-[#F9F8F6]/95 dark:bg-[#111111]/95 backdrop-blur border border-black/20 dark:border-white/20 p-2.5 shadow-md transition-all duration-300">
+          <div 
+            onClick={() => setIsPoiExpanded(!isPoiExpanded)}
+            className="flex items-center justify-between gap-3 cursor-pointer select-none"
+          >
+            <div className="flex items-center gap-1.5">
+              <span className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-black/50 dark:text-white/50">Nearby Amenities</span>
+              {poiLoading && <Loader2 className="w-3 h-3 text-red-600 animate-spin" />}
+            </div>
+            {isPoiExpanded ? (
+              <ChevronUp className="w-3.5 h-3.5 text-black/50 dark:text-white/50" />
+            ) : (
+              <ChevronDown className="w-3.5 h-3.5 text-black/50 dark:text-white/50" />
+            )}
           </div>
-          <div className="flex flex-col gap-1.5">
-            <button
-              onClick={() => setShowConvenience(!showConvenience)}
-              className={`flex items-center gap-2 px-2.5 py-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-all border ${
-                showConvenience 
-                  ? 'bg-blue-600 border-blue-600 text-white shadow-sm' 
-                  : 'bg-transparent border-black/10 dark:border-white/10 text-black/75 dark:text-white/75 hover:bg-black/5 dark:hover:bg-white/5'
-              }`}
-            >
-              <Store className="w-3.5 h-3.5" />
-              <span>Convenience ({poiItems.filter(p => p.type === 'convenience').length})</span>
-            </button>
-            <button
-              onClick={() => setShowSupermarket(!showSupermarket)}
-              className={`flex items-center gap-2 px-2.5 py-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-all border ${
-                showSupermarket 
-                  ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
-                  : 'bg-transparent border-black/10 dark:border-white/10 text-black/75 dark:text-white/75 hover:bg-black/5 dark:hover:bg-white/5'
-              }`}
-            >
-              <ShoppingBag className="w-3.5 h-3.5" />
-              <span>Supermarket ({poiItems.filter(p => p.type === 'supermarket').length})</span>
-            </button>
-            <button
-              onClick={() => setShowStation(!showStation)}
-              className={`flex items-center gap-2 px-2.5 py-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-all border ${
-                showStation 
-                  ? 'bg-purple-600 border-purple-600 text-white shadow-sm' 
-                  : 'bg-transparent border-black/10 dark:border-white/10 text-black/75 dark:text-white/75 hover:bg-black/5 dark:hover:bg-white/5'
-              }`}
-            >
-              <Train className="w-3.5 h-3.5" />
-              <span>Stations ({poiItems.filter(p => p.type === 'station').length})</span>
-            </button>
-          </div>
+          
+          {isPoiExpanded && (
+            <div className="flex flex-col gap-1.5 mt-1.5 animate-in slide-in-from-top-2 duration-200">
+              <button
+                onClick={() => setShowConvenience(!showConvenience)}
+                className={`flex items-center gap-2 px-2.5 py-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-all border ${
+                  showConvenience 
+                    ? 'bg-blue-600 border-blue-600 text-white shadow-sm' 
+                    : 'bg-transparent border-black/10 dark:border-white/10 text-black/75 dark:text-white/75 hover:bg-black/5 dark:hover:bg-white/5'
+                }`}
+              >
+                <Store className="w-3.5 h-3.5" />
+                <span>Convenience ({poiItems.filter(p => p.type === 'convenience').length})</span>
+              </button>
+              <button
+                onClick={() => setShowSupermarket(!showSupermarket)}
+                className={`flex items-center gap-2 px-2.5 py-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-all border ${
+                  showSupermarket 
+                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
+                    : 'bg-transparent border-black/10 dark:border-white/10 text-black/75 dark:text-white/75 hover:bg-black/5 dark:hover:bg-white/5'
+                }`}
+              >
+                <ShoppingBag className="w-3.5 h-3.5" />
+                <span>Supermarket ({poiItems.filter(p => p.type === 'supermarket').length})</span>
+              </button>
+              <button
+                onClick={() => setShowStation(!showStation)}
+                className={`flex items-center gap-2 px-2.5 py-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-all border ${
+                  showStation 
+                    ? 'bg-purple-600 border-purple-600 text-white shadow-sm' 
+                    : 'bg-transparent border-black/10 dark:border-white/10 text-black/75 dark:text-white/75 hover:bg-black/5 dark:hover:bg-white/5'
+                }`}
+              >
+                <Train className="w-3.5 h-3.5" />
+                <span>Stations ({poiItems.filter(p => p.type === 'station').length})</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 

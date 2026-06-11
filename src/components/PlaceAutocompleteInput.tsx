@@ -28,6 +28,11 @@ export function PlaceAutocompleteInput({
     }
   };
 
+  const onSelectPlaceRef = useRef(onSelectPlace);
+  useEffect(() => {
+    onSelectPlaceRef.current = onSelectPlace;
+  }, [onSelectPlace]);
+
   useEffect(() => {
     const google = (window as any).google;
     if (!google || !google.maps || !google.maps.places || !inputRef.current) {
@@ -47,7 +52,7 @@ export function PlaceAutocompleteInput({
           const lng = place.geometry.location.lng();
           const name = place.name || place.formatted_address || '';
           const address = place.formatted_address || name;
-          onSelectPlace(name, { lat, lng }, address);
+          onSelectPlaceRef.current(name, { lat, lng }, address);
         }
       } catch (err) {
         console.error("Autocomplete select failed:", err);
@@ -59,7 +64,7 @@ export function PlaceAutocompleteInput({
         google.maps.event.removeListener(listener);
       }
     };
-  }, [onSelectPlace]);
+  }, []);
 
   useEffect(() => {
     if (inputRef.current && value !== undefined && inputRef.current.value !== value) {
