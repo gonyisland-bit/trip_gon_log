@@ -7,7 +7,7 @@ import { ImageEditOverlay } from './ImageEditOverlay';
 interface TransitCardProps {
   transit: TransitItem;
   isEditMode: boolean;
-  onUpdate: (id: number, field: keyof TransitItem, val: any) => void;
+  onUpdate: (id: number, fieldOrFields: keyof TransitItem | Partial<TransitItem>, val?: any) => void;
   onDelete: (id: number) => void;
   isActive?: boolean;
   onClick?: () => void;
@@ -105,7 +105,7 @@ export function TransitCard({
             const typeUpper = (transit.ticketType || '').toUpperCase();
             if (typeUpper.includes('BUS')) return <Bus className="w-3.5 h-3.5 animate-in fade-in duration-300" />;
             if (typeUpper.includes('TAXI') || typeUpper.includes('CAR')) return <Car className="w-3.5 h-3.5 animate-in fade-in duration-300" />;
-            return <Train className="w-[21px] h-[21px] animate-in fade-in duration-300" />;
+            return <Train className="w-3.5 h-3.5 animate-in fade-in duration-300" />;
           })()}
           {isEditMode ? (
             <select
@@ -188,18 +188,17 @@ export function TransitCard({
                   <PlaceAutocompleteInput
                     value={transit.departPlace || ''}
                     onChange={(val) => {
-                      onUpdate(transit.id, 'departPlace', val);
-                      const newRoute = `${val} → ${transit.arrivePlace || ''}`;
-                      onUpdate(transit.id, 'route', newRoute);
+                      onUpdate(transit.id, {
+                        departPlace: val,
+                        route: `${val} → ${transit.arrivePlace || ''}`
+                      });
                     }}
                     onSelectPlace={(name, coords) => {
-                      onUpdate(transit.id, 'departPlace', name);
-                      const newRoute = `${name} → ${transit.arrivePlace || ''}`;
-                      onUpdate(transit.id, 'route', newRoute);
-                      if (coords) {
-                        onUpdate(transit.id, 'departLat', coords.lat);
-                        onUpdate(transit.id, 'departLng', coords.lng);
-                      }
+                      onUpdate(transit.id, {
+                        departPlace: name,
+                        route: `${name} → ${transit.arrivePlace || ''}`,
+                        ...(coords ? { departLat: coords.lat, departLng: coords.lng } : {})
+                      });
                     }}
                     className="w-full bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm"
                     placeholder="Departure terminal/station..."
@@ -211,18 +210,17 @@ export function TransitCard({
                   <PlaceAutocompleteInput
                     value={transit.arrivePlace || ''}
                     onChange={(val) => {
-                      onUpdate(transit.id, 'arrivePlace', val);
-                      const newRoute = `${transit.departPlace || ''} → ${val}`;
-                      onUpdate(transit.id, 'route', newRoute);
+                      onUpdate(transit.id, {
+                        arrivePlace: val,
+                        route: `${transit.departPlace || ''} → ${val}`
+                      });
                     }}
                     onSelectPlace={(name, coords) => {
-                      onUpdate(transit.id, 'arrivePlace', name);
-                      const newRoute = `${transit.departPlace || ''} → ${name}`;
-                      onUpdate(transit.id, 'route', newRoute);
-                      if (coords) {
-                        onUpdate(transit.id, 'arriveLat', coords.lat);
-                        onUpdate(transit.id, 'arriveLng', coords.lng);
-                      }
+                      onUpdate(transit.id, {
+                        arrivePlace: name,
+                        route: `${transit.departPlace || ''} → ${name}`,
+                        ...(coords ? { arriveLat: coords.lat, arriveLng: coords.lng } : {})
+                      });
                     }}
                     className="w-full bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm"
                     placeholder="Arrival terminal/station..."

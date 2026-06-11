@@ -635,8 +635,8 @@ export function MapArea({
               height = 40;
             } else {
               src = '/train.png';
-              width = 20;
-              height = 50;
+              width = 40;
+              height = 100;
             }
           }
 

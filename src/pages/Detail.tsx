@@ -1524,18 +1524,38 @@ export function JourneyDetailPage({
     setDraftStays(prev => [...prev, newStay]);
   };
 
-  const updateTransit = (id: number, field: keyof TransitItem, val: any) => {
+  const updateTransit = (id: number, fieldOrFields: keyof TransitItem | Partial<TransitItem>, val?: any) => {
     setDraftTransits(prev => prev.map(t => {
       if (t.id === id) {
-        const updated = { ...t, [field]: val };
-        if (field === 'ticketType') {
-          const typeUpper = (val || '').toUpperCase();
-          if (typeUpper.includes('BUS')) {
-            updated.transitType = 'bus';
-          } else if (typeUpper.includes('TAXI') || typeUpper.includes('CAR')) {
-            updated.transitType = 'taxi';
-          } else {
-            updated.transitType = 'train';
+        let updated = { ...t };
+        if (typeof fieldOrFields === 'object') {
+          updated = { ...updated, ...fieldOrFields };
+        } else {
+          updated = { ...updated, [fieldOrFields]: val };
+        }
+        
+        // Sync ticketType and transitType
+        if (typeof fieldOrFields === 'string') {
+          if (fieldOrFields === 'ticketType') {
+            const typeUpper = (val || '').toUpperCase();
+            if (typeUpper.includes('BUS')) {
+              updated.transitType = 'bus';
+            } else if (typeUpper.includes('TAXI') || typeUpper.includes('CAR')) {
+              updated.transitType = 'taxi';
+            } else {
+              updated.transitType = 'train';
+            }
+          }
+        } else {
+          if ('ticketType' in fieldOrFields) {
+            const typeUpper = (fieldOrFields.ticketType || '').toUpperCase();
+            if (typeUpper.includes('BUS')) {
+              updated.transitType = 'bus';
+            } else if (typeUpper.includes('TAXI') || typeUpper.includes('CAR')) {
+              updated.transitType = 'taxi';
+            } else {
+              updated.transitType = 'train';
+            }
           }
         }
         return updated;
@@ -2790,11 +2810,10 @@ export function JourneyDetailPage({
 
                 const renderGroup = (items: TransitItem[], label: string, IconComponent: any) => {
                   if (items.length === 0) return null;
-                  const isTrain = IconComponent === Train;
                   return (
                     <div className="mb-8 last:mb-0">
                       <div className="flex items-center gap-2 mb-4">
-                        <IconComponent className={`${isTrain ? 'w-6 h-6' : 'w-4 h-4'} text-black/55 dark:text-white/55`} />
+                        <IconComponent className="w-4 h-4 text-black/55 dark:text-white/55" />
                         <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-black/55 dark:text-white/55">
                           {label} ({items.length})
                         </span>
