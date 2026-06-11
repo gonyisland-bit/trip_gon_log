@@ -535,7 +535,7 @@ export function MapArea({
       try {
         const service = new google.maps.places.PlacesService(containerRef.current);
         
-        const searchType = (googleType, poiType) => {
+        const searchType = (googleType: string, poiType: string): Promise<any[]> => {
           return new Promise((resolve) => {
             service.nearbySearch(
               {
@@ -543,9 +543,9 @@ export function MapArea({
                 radius: 1500,
                 type: googleType
               },
-              (results, status) => {
+              (results: any, status: any) => {
                 if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-                  const mapped = results.slice(0, 15).map((place) => ({
+                  const mapped = results.slice(0, 15).map((place: any) => ({
                     id: place.place_id || `${poiType}-${Math.random()}`,
                     lat: place.geometry.location.lat(),
                     lng: place.geometry.location.lng(),
@@ -570,8 +570,8 @@ export function MapArea({
           if (!isMounted) return;
           const allPois = resultsArray.flat();
           // Filter duplicates by id
-          const uniquePoisMap = {};
-          allPois.forEach(p => {
+          const uniquePoisMap: { [id: string]: any } = {};
+          allPois.forEach((p: any) => {
             uniquePoisMap[p.id] = p;
           });
           const uniquePois = Object.values(uniquePoisMap);
