@@ -533,7 +533,8 @@ export function MapArea({
     const google = (window as any).google;
     if (google && google.maps && google.maps.places && containerRef.current) {
       try {
-        const service = new google.maps.places.PlacesService(containerRef.current);
+        const dummyDiv = document.createElement('div');
+        const service = new google.maps.places.PlacesService(dummyDiv);
         
         const searchType = (googleType: string, poiType: string): Promise<any[]> => {
           return new Promise((resolve) => {
@@ -545,13 +546,16 @@ export function MapArea({
               },
               (results: any, status: any) => {
                 if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-                  const mapped = results.slice(0, 15).map((place: any) => ({
-                    id: place.place_id || `${poiType}-${Math.random()}`,
-                    lat: place.geometry.location.lat(),
-                    lng: place.geometry.location.lng(),
-                    name: place.name || '',
-                    type: poiType
-                  }));
+                  const mapped = results.slice(0, 15).map((place: any) => {
+                    if (!place.geometry || !place.geometry.location) return null;
+                    return {
+                      id: place.place_id || `${poiType}-${Math.random()}`,
+                      lat: place.geometry.location.lat(),
+                      lng: place.geometry.location.lng(),
+                      name: place.name || '',
+                      type: poiType
+                    };
+                  }).filter(Boolean);
                   resolve(mapped);
                 } else {
                   resolve([]);
@@ -651,14 +655,17 @@ export function MapArea({
 
       const marker = L.marker([poi.lat, poi.lng], { icon, zIndexOffset: 500 }).addTo(map);
       
-      // Bind details popup
+      // Bind details popup safely by pre-encoding the URL to prevent inline onclick quotes SyntaxError
+      const googleSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(poi.name)}`.replace(/'/g, "%27");
+      const safePoiName = (poi.name || '').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+      
       marker.bindPopup(`
         <div style="font-family: sans-serif; font-size: 11px; padding: 4px; color: #111; min-width: 140px;">
-          <strong style="font-size: 12px; display: block; margin-bottom: 2px;">${poi.name}</strong>
+          <strong style="font-size: 12px; display: block; margin-bottom: 2px;">${safePoiName}</strong>
           <span style="color: #666; font-size: 9px; display: block; margin-bottom: 6px;">📍 Double click to view on Google Maps</span>
           <button 
             style="background: #e11d48; color: #fff; border: none; padding: 5px 8px; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 2px; width: 100%; transition: background 0.2s;"
-            onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(poi.name)}', '_blank')"
+            onclick="window.open('${googleSearchUrl}', '_blank')"
             onmouseover="this.style.background='#be123c'"
             onmouseout="this.style.background='#e11d48'"
           >
