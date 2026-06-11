@@ -302,9 +302,7 @@ export function MapArea({
         } else if (transitFocusType === 'boarding') {
           activeMarker = markersRef.current[expandedItemId * 10 + 2];
         } else {
-          activeMarker = markersRef.current[expandedItemId * 10 + 2] 
-                      || markersRef.current[expandedItemId * 10] 
-                      || markersRef.current[expandedItemId * 10 + 1];
+          activeMarker = null;
         }
       } else {
         activeMarker = markersRef.current[expandedItemId];
@@ -313,6 +311,19 @@ export function MapArea({
       if (activeMarker) {
         const latLng = activeMarker.getLatLng();
         map.setView(latLng, Math.max(map.getZoom(), 14), { animate: true });
+      } else if (activeTab === 'flights' || (activeTab === 'transit' && !transitFocusType)) {
+        const fromPoint = mapPoints.find(p => p.id === expandedItemId * 10);
+        const toPoint = mapPoints.find(p => p.id === expandedItemId * 10 + 1);
+        if (fromPoint && toPoint && fromPoint.lat && fromPoint.lng && toPoint.lat && toPoint.lng) {
+          const startLat = Number(fromPoint.lat);
+          const startLng = Number(fromPoint.lng);
+          const endLat = Number(toPoint.lat);
+          const endLng = Number(toPoint.lng);
+          if (!isNaN(startLat) && !isNaN(startLng) && !isNaN(endLat) && !isNaN(endLng)) {
+            const bounds = L.latLngBounds([[startLat, startLng], [endLat, endLng]]);
+            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15, animate: true });
+          }
+        }
       }
     }
 

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
-  Clock, Plane, Bed, Train, Bus, User, Edit2, Trash2, 
+  Clock, Plane, Bed, Train, Bus, Car, User, Edit2, Trash2, 
   Image as ImageIcon, ChevronUp, ChevronDown, MapPin, Map, Plus, Loader2, Search, ArrowLeft,
   ExternalLink, MapPinOff, Maximize2, Star, ChevronLeft, ChevronRight, ArrowUp, ArrowDown
 } from 'lucide-react';
@@ -1526,8 +1526,24 @@ export function JourneyDetailPage({
     setDraftStays(prev => [...prev, newStay]);
   };
 
-  const updateTransit = (id: number, field: keyof TransitItem, val: string) => {
-    setDraftTransits(prev => prev.map(t => t.id === id ? { ...t, [field]: val } : t));
+  const updateTransit = (id: number, field: keyof TransitItem, val: any) => {
+    setDraftTransits(prev => prev.map(t => {
+      if (t.id === id) {
+        const updated = { ...t, [field]: val };
+        if (field === 'ticketType') {
+          const typeUpper = (val || '').toUpperCase();
+          if (typeUpper.includes('BUS')) {
+            updated.transitType = 'bus';
+          } else if (typeUpper.includes('TAXI') || typeUpper.includes('CAR')) {
+            updated.transitType = 'taxi';
+          } else {
+            updated.transitType = 'train';
+          }
+        }
+        return updated;
+      }
+      return t;
+    }));
   };
   const deleteTransit = (id: number) => {
     setDraftTransits(prev => prev.filter(t => t.id !== id));
@@ -1536,6 +1552,7 @@ export function JourneyDetailPage({
     const newTransit: TransitItem = {
       id: Date.now(),
       ticketType: 'TRAIN TICKET',
+      transitType: 'train',
       date: 'YYYY.MM.DD',
       title: '열차/이동 수단 이름',
       route: '출발지 → 도착지',
@@ -1905,7 +1922,7 @@ export function JourneyDetailPage({
       <section className="w-full md:w-1/2 flex flex-col bg-[#F9F8F6] dark:bg-[#111111] transition-colors duration-300 flex-grow h-auto md:h-full md:overflow-hidden">
         
         {/* Tab Headers */}
-        <div className="flex border-b border-black/20 dark:border-white/20 bg-[#F9F8F6] dark:bg-[#111111] sticky top-0 z-30 overflow-x-auto hide-scrollbar transition-colors shrink-0 w-full">
+        <div className="flex border-b border-black/20 dark:border-white/20 bg-[#F9F8F6] dark:bg-[#111111] sticky top-0 z-30 transition-colors shrink-0 w-full">
           {[ 
             { id: 'timeline', label: 'Timeline', icon: Clock }, 
             { id: 'flights', label: 'Flights', icon: Plane }, 
@@ -1916,9 +1933,10 @@ export function JourneyDetailPage({
             <button 
               key={tab.id} 
               onClick={() => { setActiveTab(tab.id as TabType); setExpandedItemId(null); }} 
-              className={`flex-1 min-w-max py-3 px-4 md:py-4 flex items-center justify-center space-x-1.5 md:space-x-2 text-[10px] md:text-xs font-bold uppercase tracking-widest border-r border-black/20 dark:border-white/20 last:border-r-0 transition-colors whitespace-nowrap ${activeTab === tab.id ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white'}`}
+              className={`flex-1 min-w-0 py-2.5 px-0.5 sm:px-2 md:py-4 md:px-4 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 md:gap-2 text-[8px] sm:text-[10px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest border-r border-black/20 dark:border-white/20 last:border-r-0 transition-colors whitespace-nowrap ${activeTab === tab.id ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white'}`}
             >
-              <tab.icon className="w-3 h-3 md:w-4 md:h-4" /> <span>{tab.label}</span>
+              <tab.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 shrink-0" /> 
+              <span className="text-center truncate sm:overflow-visible">{tab.label}</span>
             </button>
           ))}
         </div>
@@ -2727,8 +2745,9 @@ export function JourneyDetailPage({
                   );
                 }
 
-                const trains = transitList.filter(t => t.transitType !== 'bus');
+                const trains = transitList.filter(t => t.transitType === 'train' || (!t.transitType || (t.transitType !== 'bus' && t.transitType !== 'taxi')));
                 const buses = transitList.filter(t => t.transitType === 'bus');
+                const taxis = transitList.filter(t => t.transitType === 'taxi');
 
                 const renderGroup = (items: TransitItem[], label: string, IconComponent: any) => {
                   if (items.length === 0) return null;
@@ -2767,9 +2786,10 @@ export function JourneyDetailPage({
                 };
 
                 return (
-                  <div className="flex flex-col">
+                  <div className="flex flex-col text-left">
                     {renderGroup(trains, 'Train Tickets', Train)}
                     {renderGroup(buses, 'Bus Tickets', Bus)}
+                    {renderGroup(taxis, 'Taxi/Car Tickets', Car)}
                   </div>
                 );
               })()}

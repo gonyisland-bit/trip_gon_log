@@ -1,5 +1,5 @@
 import React from 'react';
-import { Train, Bus, Trash2, Image as ImageIcon, MapPin } from 'lucide-react';
+import { Train, Bus, Car, Trash2, Image as ImageIcon, MapPin } from 'lucide-react';
 import { TransitItem } from '../types';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { ImageEditOverlay } from './ImageEditOverlay';
@@ -95,22 +95,36 @@ export function TransitCard({
       {/* Header bar */}
       <div className="bg-[#EAE8E3]/50 dark:bg-white/10 px-4 py-2 border-b border-black/10 dark:border-white/10 flex justify-between items-center text-[10px] md:text-xs font-bold tracking-widest text-black/60 dark:text-white/60 gap-4">
         <div className="flex items-center gap-2">
-          {transit.transitType === 'bus' ? (
-            <Bus className="w-3.5 h-3.5 animate-in fade-in duration-300" />
-          ) : (
-            <Train className="w-3.5 h-3.5 animate-in fade-in duration-300" />
-          )}
+          {(() => {
+            const typeUpper = (transit.ticketType || '').toUpperCase();
+            if (typeUpper.includes('BUS')) return <Bus className="w-3.5 h-3.5 animate-in fade-in duration-300" />;
+            if (typeUpper.includes('TAXI') || typeUpper.includes('CAR')) return <Car className="w-3.5 h-3.5 animate-in fade-in duration-300" />;
+            return <Train className="w-3.5 h-3.5 animate-in fade-in duration-300" />;
+          })()}
           {isEditMode ? (
-            <input
-              type="text"
-              value={transit.ticketType || (transit.transitType === 'bus' ? 'BUS TICKET' : 'TRAIN TICKET')}
-              onChange={(e) => onUpdate(transit.id, 'ticketType', e.target.value)}
+            <select
+              value={transit.ticketType || 'TRAIN TICKET'}
+              onChange={(e) => {
+                const val = e.target.value;
+                onUpdate(transit.id, 'ticketType', val);
+                const typeUpper = val.toUpperCase();
+                if (typeUpper.includes('BUS')) {
+                  onUpdate(transit.id, 'transitType', 'bus');
+                } else if (typeUpper.includes('TAXI') || typeUpper.includes('CAR')) {
+                  onUpdate(transit.id, 'transitType', 'taxi');
+                } else {
+                  onUpdate(transit.id, 'transitType', 'train');
+                }
+              }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm uppercase w-32"
-              placeholder="TICKET TYPE"
-            />
+              className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm uppercase w-32 cursor-pointer"
+            >
+              <option value="TRAIN TICKET">TRAIN TICKET</option>
+              <option value="BUS TICKET">BUS TICKET</option>
+              <option value="TAXI TICKET">TAXI TICKET</option>
+            </select>
           ) : (
-            <span className="uppercase">{transit.ticketType || (transit.transitType === 'bus' ? 'BUS TICKET' : 'TRAIN TICKET')}</span>
+            <span className="uppercase">{transit.ticketType || 'TRAIN TICKET'}</span>
           )}
         </div>
         {isEditMode ? (
@@ -226,7 +240,7 @@ export function TransitCard({
                     onUpdate(transit.id, 'ticketType', 'TRAIN TICKET');
                   }}
                   className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider border transition-all ${
-                    transit.transitType !== 'bus'
+                    transit.transitType === 'train' || (!transit.transitType || (transit.transitType !== 'bus' && transit.transitType !== 'taxi'))
                       ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
                       : 'bg-transparent text-black/60 dark:text-white/60 border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5'
                   }`}
@@ -246,6 +260,20 @@ export function TransitCard({
                   }`}
                 >
                   <Bus className="w-3.5 h-3.5" /> Bus
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onUpdate(transit.id, 'transitType', 'taxi');
+                    onUpdate(transit.id, 'ticketType', 'TAXI TICKET');
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider border transition-all ${
+                    transit.transitType === 'taxi'
+                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                      : 'bg-transparent text-black/60 dark:text-white/60 border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5'
+                  }`}
+                >
+                  <Car className="w-3.5 h-3.5" /> Taxi
                 </button>
               </div>
             </div>

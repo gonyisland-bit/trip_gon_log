@@ -105,7 +105,7 @@ export interface TransitItem {
   time: string;
   seat: string;
   bookingRef: string;
-  transitType?: 'train' | 'bus';
+  transitType?: 'train' | 'bus' | 'taxi';
   departPlace?: string;
   departLat?: number;
   departLng?: number;
