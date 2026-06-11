@@ -2974,7 +2974,7 @@ export function JourneyDetailPage({
                                 setLightboxIndex(globalIdx !== -1 ? globalIdx : 0);
                                 setIsLightboxOpen(true);
                               }}
-                              className="absolute bottom-2 right-2 p-1.5 bg-black/75 hover:bg-black text-white transition-colors z-10 rounded-sm opacity-0 group-hover/gallery:opacity-100 focus:opacity-100"
+                              className={`absolute bottom-2 right-2 p-1.5 bg-black/75 hover:bg-black text-white transition-colors z-10 rounded-sm ${isPhotoActive ? 'opacity-100' : 'opacity-0 group-hover/gallery:opacity-100 focus:opacity-100'}`}
                               title="전체화면"
                             >
                               <Maximize2 className="w-3.5 h-3.5" />
@@ -2991,7 +2991,7 @@ export function JourneyDetailPage({
                                     setExpandedItemId(500000 + idx);
                                   }
                                 }}
-                                className={`absolute top-2 ${isLoggedIn ? 'right-9' : 'right-2'} p-1.5 transition-colors z-10 rounded-sm ${!imgMeta.excludeFromMap ? 'bg-orange-500 hover:bg-orange-600 text-white opacity-100' : 'bg-black/75 hover:bg-black text-white/50 hover:text-white opacity-0 group-hover/gallery:opacity-100 focus:opacity-100'}`}
+                                className={`absolute top-2 ${isLoggedIn ? 'right-9' : 'right-2'} p-1.5 transition-colors z-10 rounded-sm ${!imgMeta.excludeFromMap ? 'bg-orange-500 hover:bg-orange-600 text-white opacity-100' : (isPhotoActive ? 'bg-black/75 hover:bg-black text-white/50 hover:text-white opacity-100' : 'bg-black/75 hover:bg-black text-white/50 hover:text-white opacity-0 group-hover/gallery:opacity-100 focus:opacity-100')}`}
                                 title={imgMeta.excludeFromMap ? "지도에 핀 표시하기" : "지도에서 핀 숨기기"}
                               >
                                 <MapPin className="w-3.5 h-3.5" />
@@ -3005,7 +3005,7 @@ export function JourneyDetailPage({
                                   e.stopPropagation(); // Avoid triggering map focus
                                   handleRemoveGalleryImage(imgMeta.url, e);
                                 }}
-                                className="absolute top-2 right-2 p-1.5 bg-black/75 hover:bg-red-600 text-white transition-colors opacity-0 group-hover/gallery:opacity-100 z-10 rounded-sm"
+                                className={`absolute top-2 right-2 p-1.5 bg-black/75 hover:bg-red-600 text-white transition-colors z-10 rounded-sm ${isPhotoActive ? 'opacity-100' : 'opacity-0 group-hover/gallery:opacity-100'}`}
                                 title="Remove Image"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -3111,7 +3111,7 @@ export function JourneyDetailPage({
                                 setLightboxIndex(globalIdx !== -1 ? globalIdx : 0);
                                 setIsLightboxOpen(true);
                               }}
-                              className="absolute bottom-2 right-2 p-1.5 bg-black/75 hover:bg-black text-white transition-colors z-10 rounded-sm opacity-0 group-hover/gallery:opacity-100 focus:opacity-100"
+                              className={`absolute bottom-2 right-2 p-1.5 bg-black/75 hover:bg-black text-white transition-colors z-10 rounded-sm ${isPhotoActive ? 'opacity-100' : 'opacity-0 group-hover/gallery:opacity-100 focus:opacity-100'}`}
                               title="전체화면"
                             >
                               <Maximize2 className="w-3.5 h-3.5" />
