@@ -909,6 +909,8 @@ export function JourneyDetailPage({
         imgNote: item.imgNote || '',
         type: 'timeline' as const,
         itemId: item.id,
+        lat: item.lat,
+        lng: item.lng,
       }));
   }, [baseTimeline]);
 
@@ -1887,20 +1889,61 @@ export function JourneyDetailPage({
           </div>
           
           {/* Tags row */}
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {(tripToUse?.tags || []).filter(t => t !== 'Personal').map(tag => {
-              const isPlan = trip?.tags.includes('Plan') || trip?.title.includes('(Plan)');
-              return (
-                <button
+          {isEditing && draftTrip ? (
+            <div className="mt-2 flex flex-wrap gap-1.5 items-center">
+              {(draftTrip.tags || []).filter(t => t !== 'Personal').map(tag => (
+                <span
                   key={tag}
-                  onClick={() => onNavigate(isPlan ? 'plan' : 'archive', null, true, tag)}
-                  className="text-[8px] md:text-[9px] font-bold border border-black/20 dark:border-white/20 px-2 py-0.5 uppercase rounded-full hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black hover:border-black dark:hover:border-white transition-all duration-200 cursor-pointer shadow-sm"
+                  className="text-[8px] md:text-[9px] font-bold border border-orange-500/50 dark:border-orange-400/50 px-2.5 py-0.5 uppercase rounded-full flex items-center gap-1 bg-orange-500/5 dark:bg-orange-400/5 text-orange-600 dark:text-orange-400 shadow-sm"
                 >
                   #{tag}
-                </button>
-              );
-            })}
-          </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updatedTags = draftTrip.tags.filter(t => t !== tag);
+                      setDraftTrip({ ...draftTrip, tags: updatedTags });
+                    }}
+                    className="hover:text-red-500 transition-colors font-bold text-[9px] px-0.5 shrink-0"
+                    title="태그 삭제"
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+              <input
+                type="text"
+                placeholder="+ Tag"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const val = e.currentTarget.value.trim().replace(/#/g, '');
+                    if (val && !draftTrip.tags.includes(val)) {
+                      const updatedTags = [...draftTrip.tags, val];
+                      setDraftTrip({ ...draftTrip, tags: updatedTags });
+                      e.currentTarget.value = '';
+                    }
+                  }
+                }}
+                className="text-[8px] md:text-[9px] font-bold border border-black/20 dark:border-white/20 px-2.5 py-0.5 rounded-full bg-transparent outline-none w-16 focus:w-24 focus:border-orange-500 transition-all duration-200 text-black dark:text-white"
+              />
+            </div>
+          ) : (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {(tripToUse?.tags || []).filter(t => t !== 'Personal').map(tag => {
+                const isPlan = trip?.tags.includes('Plan') || trip?.title.includes('(Plan)');
+                return (
+                  <button
+                    key={tag}
+                    onClick={() => onNavigate(isPlan ? 'plan' : 'archive', null, true, tag)}
+                    className="text-[8px] md:text-[9px] font-bold border border-black/20 dark:border-white/20 px-2 py-0.5 uppercase rounded-full hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black hover:border-black dark:hover:border-white transition-all duration-200 cursor-pointer shadow-sm"
+                  >
+                    #{tag}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
         
         {/* Dynamic Map Area */}
@@ -1931,7 +1974,7 @@ export function JourneyDetailPage({
       <section className="w-full md:w-1/2 flex flex-col bg-[#F9F8F6] dark:bg-[#111111] transition-colors duration-300 flex-grow h-auto md:h-full md:overflow-hidden">
         
         {/* Tab Headers */}
-        <div className="flex border-b border-black/20 dark:border-white/20 bg-[#F9F8F6] dark:bg-[#111111] sticky top-0 z-30 transition-colors shrink-0 w-full">
+        <div className="flex overflow-x-auto hide-scrollbar flex-nowrap border-b border-black/20 dark:border-white/20 bg-[#F9F8F6] dark:bg-[#111111] sticky top-0 z-30 transition-colors shrink-0 w-full">
           {[ 
             { id: 'timeline', label: 'Timeline', icon: Clock }, 
             { id: 'flights', label: 'Flights', icon: Plane }, 
@@ -1942,7 +1985,7 @@ export function JourneyDetailPage({
             <button 
               key={tab.id} 
               onClick={() => { setActiveTab(tab.id as TabType); setExpandedItemId(null); }} 
-              className={`flex-1 min-w-0 py-2.5 px-0.5 sm:px-2 md:py-4 md:px-4 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 md:gap-2 text-[8px] sm:text-[10px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest border-r border-black/20 dark:border-white/20 last:border-r-0 transition-colors whitespace-nowrap ${activeTab === tab.id ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white'}`}
+              className={`flex-1 min-w-[75px] sm:min-w-0 py-2.5 px-0.5 sm:px-2 md:py-4 md:px-4 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 md:gap-2 text-[8px] sm:text-[10px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest border-r border-black/20 dark:border-white/20 last:border-r-0 transition-colors whitespace-nowrap ${activeTab === tab.id ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white'}`}
             >
               <tab.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 shrink-0" /> 
               <span className="text-center truncate sm:overflow-visible">{tab.label}</span>
@@ -2255,54 +2298,16 @@ export function JourneyDetailPage({
                           <div className="flex-grow pr-2 md:pr-4 min-w-0">
                             <div className={`font-bold tracking-tight text-sm md:text-base flex items-center gap-2 flex-wrap ${isActive ? 'text-red-600 dark:text-red-400' : ''}`}>
                               {isEditing ? (
-                                <div className="w-full relative" onClick={(e) => e.stopPropagation()}>
-                                  <div className="flex items-center gap-1.5 w-full relative">
-                                    <input
-                                      id={`title-input-${item.id}`}
-                                      type="text"
-                                      value={item.place}
-                                      onChange={(e) => updateTimelineItem(item.id, 'place', e.target.value)}
-                                      onFocus={() => setActivePlaceInputId(item.id)}
-                                      onBlur={() => {
-                                        setTimeout(() => setActivePlaceInputId(null), 250);
-                                      }}
-                                      className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-sm md:text-base text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
-                                      placeholder="일정 이름"
-                                    />
-                                    <button 
-                                      type="button"
-                                      onClick={() => toggleFrequentPlace(item)}
-                                      className="p-1 hover:text-yellow-500 text-black/30 dark:text-white/30 transition-colors shrink-0"
-                                      title={isFrequent(item.place) ? "자주 가는 장소 등록 해제" : "자주 가는 장소로 등록"}
-                                    >
-                                      <Star className={`w-3.5 h-3.5 ${isFrequent(item.place) ? 'fill-yellow-400 text-yellow-500' : ''}`} />
-                                    </button>
-                                  </div>
-
-                                  {/* Frequent Places Auto-complete Dropdown */}
-                                  {activePlaceInputId === item.id && frequentPlaces.length > 0 && (
-                                    <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-[#222222] border border-black/20 dark:border-white/20 shadow-xl z-50 max-h-40 overflow-y-auto rounded-none" onClick={(e) => e.stopPropagation()}>
-                                      <div className="px-2 py-1 text-[8px] font-bold text-black/40 dark:text-white/40 border-b border-black/5 dark:border-white/5 uppercase tracking-widest">
-                                        자주 사용하는 장소
-                                      </div>
-                                      {frequentPlaces
-                                        .filter(fp => fp.place.toLowerCase().includes((item.place || '').toLowerCase()))
-                                        .map((fp, idx) => (
-                                          <div 
-                                            key={idx}
-                                            onMouseDown={() => handleSelectFrequent(item, fp)}
-                                            className="px-2.5 py-2 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer text-left border-b border-black/5 dark:border-white/5 last:border-b-0 text-xs font-bold text-black dark:text-white"
-                                          >
-                                            <div className="font-bold flex items-center gap-1.5">
-                                              <MapPin className="w-3 h-3 text-red-500" />
-                                              {fp.place}
-                                            </div>
-                                            {fp.location && <div className="text-[10px] text-black/50 dark:text-white/50 truncate pl-4.5">{fp.location}</div>}
-                                          </div>
-                                        ))}
-                                    </div>
-                                  )}
-                                </div>
+                                <TimelineItemPlaceInput
+                                  itemId={item.id}
+                                  initialValue={item.place}
+                                  onUpdatePlace={(id, val) => updateTimelineItem(id, 'place', val)}
+                                  frequentPlaces={frequentPlaces}
+                                  onSelectFrequent={handleSelectFrequent}
+                                  toggleFrequentPlace={toggleFrequentPlace}
+                                  isFrequent={isFrequent}
+                                  item={item}
+                                />
                               ) : (
                                 <span>{item.place}</span>
                               )}
@@ -2953,12 +2958,6 @@ export function JourneyDetailPage({
                               // 1번 터치: 핀 강조 및 줌
                               setExpandedItemId(500000 + idx);
                             }}
-                            onDoubleClick={() => {
-                              // 2번 터치(더블 탭): 전체 화면 라이트박스 바로 진입
-                              const globalIdx = galleryAllMeta.findIndex(m => m.url === imgMeta.url);
-                              setLightboxIndex(globalIdx !== -1 ? globalIdx : 0);
-                              setIsLightboxOpen(true);
-                            }}
                           >
                             <img 
                               src={imgMeta.url} 
@@ -3030,20 +3029,27 @@ export function JourneyDetailPage({
                                 )}
                               </div>
                             )}
-                            {isEditing ? (
-                              <input
-                                type="text"
-                                value={imgMeta.imgNote || ''}
-                                onChange={(e) => handleUpdateGalleryImageNote(imgMeta.url, e.target.value)}
-                                placeholder="사진 설명 추가..."
-                                className="w-full bg-transparent outline-none text-[10px] text-black/70 dark:text-white/70 placeholder-black/25 dark:placeholder-white/25 mt-0.5"
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                            ) : imgMeta.imgNote ? (
-                              <p className="text-[10px] text-black/60 dark:text-white/60 italic leading-relaxed">{imgMeta.imgNote}</p>
-                            ) : (
-                              <p className="text-[10px] text-black/20 dark:text-white/20 italic">메모 없음</p>
-                            )}
+                            <div className="flex items-center justify-between gap-2 w-full">
+                              <div className="flex-1 min-w-0">
+                                {isEditing ? (
+                                  <input
+                                    type="text"
+                                    value={imgMeta.imgNote || ''}
+                                    onChange={(e) => handleUpdateGalleryImageNote(imgMeta.url, e.target.value)}
+                                    placeholder="사진 설명 추가..."
+                                    className="w-full bg-transparent outline-none text-[10px] text-black/70 dark:text-white/70 placeholder-black/25 dark:placeholder-white/25 mt-0.5"
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                ) : imgMeta.imgNote ? (
+                                  <p className="text-[10px] text-black/60 dark:text-white/60 italic leading-relaxed truncate">{imgMeta.imgNote}</p>
+                                ) : (
+                                  <p className="text-[10px] text-black/20 dark:text-white/20 italic">메모 없음</p>
+                                )}
+                              </div>
+                              {imgMeta.lat !== undefined && imgMeta.lng !== undefined && imgMeta.lat !== null && imgMeta.lng !== null && (
+                                <MapPin className="w-3 h-3 text-orange-500 shrink-0" />
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
@@ -3076,12 +3082,6 @@ export function JourneyDetailPage({
                             onClick={() => {
                               // 1번 터치: 핀 강조 및 줌
                               setExpandedItemId(600000000 + imgItem.itemId);
-                            }}
-                            onDoubleClick={() => {
-                              // 2번 터치(더블 탭): 전체 화면 라이트박스 바로 진입
-                              const globalIdx = galleryAllMeta.findIndex(m => m.url === imgItem.url);
-                              setLightboxIndex(globalIdx !== -1 ? globalIdx : 0);
-                              setIsLightboxOpen(true);
                             }}
                           >
                             <img
@@ -3136,21 +3136,22 @@ export function JourneyDetailPage({
                                 )}
                               </div>
                             )}
-                            {imgItem.memo && (
-                              <p className="text-[10px] text-black/70 dark:text-white/70 font-medium leading-relaxed mt-0.5">
-                                {imgItem.memo}
-                              </p>
-                            )}
-                            {imgItem.imgNote && (
-                              <p className="text-[10px] text-black/50 dark:text-white/50 italic leading-relaxed border-t border-black/5 dark:border-white/5 pt-1 mt-0.5">
-                                {imgItem.imgNote}
-                              </p>
-                            )}
-                            {!imgItem.memo && !imgItem.imgNote && (
-                              <p className="text-[10px] text-black/20 dark:text-white/20 italic">
-                                메모 없음
-                              </p>
-                            )}
+                            <div className="flex items-center justify-between gap-2 w-full">
+                              <div className="flex-1 min-w-0">
+                                {imgItem.memo && (
+                                  <p className="text-[10px] text-black/70 dark:text-white/70 font-medium leading-relaxed mt-0.5">{imgItem.memo}</p>
+                                )}
+                                {imgItem.imgNote && (
+                                  <p className="text-[10px] text-black/50 dark:text-white/50 italic leading-relaxed border-t border-black/5 dark:border-white/5 pt-1 mt-0.5 truncate">{imgItem.imgNote}</p>
+                                )}
+                                {!imgItem.memo && !imgItem.imgNote && (
+                                  <p className="text-[10px] text-black/20 dark:text-white/20 italic">메모 없음</p>
+                                )}
+                              </div>
+                              {imgItem.lat !== undefined && imgItem.lng !== undefined && imgItem.lat !== null && imgItem.lng !== null && (
+                                <MapPin className="w-3 h-3 text-orange-500 shrink-0" />
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
@@ -3185,5 +3186,96 @@ export function JourneyDetailPage({
         onNavigate={(idx) => setLightboxIndex(idx)}
       />
     </main>
+  );
+}
+
+interface TimelineItemPlaceInputProps {
+  itemId: number;
+  initialValue: string;
+  onUpdatePlace: (id: number, val: string) => void;
+  frequentPlaces: any[];
+  onSelectFrequent: (item: any, fp: any) => void;
+  toggleFrequentPlace: (item: any) => void;
+  isFrequent: (place: string) => boolean;
+  item: any;
+}
+
+function TimelineItemPlaceInput({
+  itemId,
+  initialValue,
+  onUpdatePlace,
+  frequentPlaces,
+  onSelectFrequent,
+  toggleFrequentPlace,
+  isFrequent,
+  item,
+}: TimelineItemPlaceInputProps) {
+  const [localVal, setLocalVal] = useState(initialValue);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  useEffect(() => {
+    setLocalVal(initialValue);
+  }, [initialValue]);
+
+  const handleBlur = () => {
+    onUpdatePlace(itemId, localVal);
+    setTimeout(() => setShowDropdown(false), 250);
+  };
+
+  const handleSelect = (fp: any) => {
+    setLocalVal(fp.place);
+    onSelectFrequent(item, fp);
+    setShowDropdown(false);
+  };
+
+  const filteredFrequent = frequentPlaces.filter(fp =>
+    fp.place.toLowerCase().includes(localVal.toLowerCase())
+  );
+
+  return (
+    <div className="w-full relative" onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center gap-1.5 w-full relative">
+        <input
+          id={`title-input-${itemId}`}
+          type="text"
+          value={localVal}
+          onChange={(e) => setLocalVal(e.target.value)}
+          onFocus={() => setShowDropdown(true)}
+          onBlur={handleBlur}
+          className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-sm md:text-base text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
+          placeholder="일정 이름"
+        />
+        <button 
+          type="button"
+          onClick={() => toggleFrequentPlace(item)}
+          className="p-1 hover:text-yellow-500 text-black/30 dark:text-white/30 transition-colors shrink-0"
+          title={isFrequent(localVal) ? "자주 가는 장소 등록 해제" : "자주 가는 장소로 등록"}
+        >
+          <Star className={`w-3.5 h-3.5 ${isFrequent(localVal) ? 'fill-yellow-400 text-yellow-500' : ''}`} />
+        </button>
+      </div>
+
+      {/* Frequent Places Auto-complete Dropdown */}
+      {showDropdown && filteredFrequent.length > 0 && (
+        <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-[#222222] border border-black/20 dark:border-white/20 shadow-xl z-50 max-h-40 overflow-y-auto rounded-none" onClick={(e) => e.stopPropagation()}>
+          <div className="px-2 py-1 text-[8px] font-bold text-black/40 dark:text-white/40 border-b border-black/5 dark:border-white/5 uppercase tracking-widest">
+            자주 사용하는 장소
+          </div>
+          {filteredFrequent.map((fp, idx) => (
+            <div 
+              key={idx}
+              onMouseDown={() => handleSelect(fp)}
+              className="px-2.5 py-2 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer text-left border-b border-black/5 dark:border-white/5 last:border-b-0 text-xs font-bold text-black dark:text-white"
+            >
+              <div className="font-bold flex items-center gap-1.5">
+                <MapPin className="w-3 h-3 text-red-500" />
+                {fp.place}
+              </div>
+              {fp.location && <div className="text-[10px] text-black/50 dark:text-white/50 truncate pl-4.5">{fp.location}</div>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

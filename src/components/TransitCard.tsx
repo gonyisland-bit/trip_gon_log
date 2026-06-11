@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Train, Bus, Car, Trash2, Image as ImageIcon, MapPin, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 import { TransitItem } from '../types';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
@@ -71,6 +71,20 @@ export function TransitCard({
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [isDetailExpanded, setIsDetailExpanded] = useState(false);
   const timeRef = useRef<HTMLInputElement>(null);
+
+  // Local state to prevent typing lag
+  const [localTitle, setLocalTitle] = useState(transit.title);
+  const [localSeat, setLocalSeat] = useState(transit.seat);
+  const [localBookingRef, setLocalBookingRef] = useState(transit.bookingRef);
+  const [localMemo, setLocalMemo] = useState(transit.memo || '');
+
+  useEffect(() => {
+    setLocalTitle(transit.title);
+    setLocalSeat(transit.seat);
+    setLocalBookingRef(transit.bookingRef);
+    setLocalMemo(transit.memo || '');
+  }, [transit]);
+
   const handlePlaceLinkClick = (e: React.MouseEvent, placeName: string) => {
     e.stopPropagation();
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -171,8 +185,9 @@ export function TransitCard({
             {isEditMode ? (
               <input
                 type="text"
-                value={transit.title}
-                onChange={(e) => onUpdate(transit.id, 'title', e.target.value)}
+                value={localTitle}
+                onChange={(e) => setLocalTitle(e.target.value)}
+                onBlur={() => onUpdate(transit.id, 'title', localTitle)}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none font-black text-lg md:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
                 placeholder="TRANSIT TITLE"
@@ -271,8 +286,9 @@ export function TransitCard({
               {isEditMode ? (
                 <input
                   type="text"
-                  value={transit.seat}
-                  onChange={(e) => onUpdate(transit.id, 'seat', e.target.value)}
+                  value={localSeat}
+                  onChange={(e) => setLocalSeat(e.target.value)}
+                  onBlur={() => onUpdate(transit.id, 'seat', localSeat)}
                   onClick={(e) => e.stopPropagation()}
                   className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full"
                   placeholder="Car 0, 00A"
@@ -288,8 +304,9 @@ export function TransitCard({
               {isEditMode ? (
                 <input
                   type="text"
-                  value={transit.bookingRef}
-                  onChange={(e) => onUpdate(transit.id, 'bookingRef', e.target.value)}
+                  value={localBookingRef}
+                  onChange={(e) => setLocalBookingRef(e.target.value)}
+                  onBlur={() => onUpdate(transit.id, 'bookingRef', localBookingRef)}
                   onClick={(e) => e.stopPropagation()}
                   className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
                   placeholder="TRN-000"
@@ -365,8 +382,9 @@ export function TransitCard({
                 {isEditMode ? (
                   <input
                     type="text"
-                    value={transit.memo || ''}
-                    onChange={(e) => onUpdate(transit.id, 'memo', e.target.value)}
+                    value={localMemo}
+                    onChange={(e) => setLocalMemo(e.target.value)}
+                    onBlur={() => onUpdate(transit.id, 'memo', localMemo)}
                     onClick={(e) => e.stopPropagation()}
                     className="bg-transparent border-b border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none py-1 text-xs md:text-sm text-black dark:text-white w-full"
                     placeholder="Enter notes (platform, transfer directions, etc.)..."

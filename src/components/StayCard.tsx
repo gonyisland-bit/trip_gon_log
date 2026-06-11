@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bed, Trash2 } from 'lucide-react';
 import { StayItem } from '../types';
 import { ImageEditOverlay } from './ImageEditOverlay';
@@ -62,6 +62,28 @@ export function StayCard({
 }: StayCardProps) {
   const { checkIn, checkOut } = parseDateRange(stay.dateRange);
 
+  // Local state to prevent typing lag
+  const [localStatus, setLocalStatus] = useState(stay.status);
+  const [localTitle, setLocalTitle] = useState(stay.title);
+  const [localConfNo, setLocalConfNo] = useState(stay.confNo);
+  const [localMemo, setLocalMemo] = useState(stay.memo);
+
+  useEffect(() => {
+    setLocalStatus(stay.status);
+  }, [stay.status]);
+
+  useEffect(() => {
+    setLocalTitle(stay.title);
+  }, [stay.title]);
+
+  useEffect(() => {
+    setLocalConfNo(stay.confNo);
+  }, [stay.confNo]);
+
+  useEffect(() => {
+    setLocalMemo(stay.memo);
+  }, [stay.memo]);
+
   const handleCheckInChange = (newCheckIn: string) => {
     const newRange = formatDateRange(newCheckIn, checkOut);
     onUpdate(stay.id, 'dateRange', newRange);
@@ -100,8 +122,9 @@ export function StayCard({
           {isEditMode ? (
             <input
               type="text"
-              value={stay.status}
-              onChange={(e) => onUpdate(stay.id, 'status', e.target.value)}
+              value={localStatus}
+              onChange={(e) => setLocalStatus(e.target.value)}
+              onBlur={() => onUpdate(stay.id, 'status', localStatus)}
               onClick={(e) => e.stopPropagation()}
               className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-[9px] md:text-[10px] text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 uppercase text-center"
               placeholder="STATUS"
@@ -119,8 +142,9 @@ export function StayCard({
             {isEditMode ? (
               <input
                 type="text"
-                value={stay.title}
-                onChange={(e) => onUpdate(stay.id, 'title', e.target.value)}
+                value={localTitle}
+                onChange={(e) => setLocalTitle(e.target.value)}
+                onBlur={() => onUpdate(stay.id, 'title', localTitle)}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none font-black text-lg md:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
                 placeholder="STAY TITLE"
@@ -166,8 +190,9 @@ export function StayCard({
             {isEditMode ? (
               <input
                 type="text"
-                value={stay.confNo}
-                onChange={(e) => onUpdate(stay.id, 'confNo', e.target.value)}
+                value={localConfNo}
+                onChange={(e) => setLocalConfNo(e.target.value)}
+                onBlur={() => onUpdate(stay.id, 'confNo', localConfNo)}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-28 text-right uppercase"
                 placeholder="HTL-0000"
@@ -208,8 +233,9 @@ export function StayCard({
           <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-1">MEMO</span>
           {isEditMode ? (
             <textarea
-              value={stay.memo}
-              onChange={(e) => onUpdate(stay.id, 'memo', e.target.value)}
+              value={localMemo}
+              onChange={(e) => setLocalMemo(e.target.value)}
+              onBlur={() => onUpdate(stay.id, 'memo', localMemo)}
               onClick={(e) => e.stopPropagation()}
               className="bg-[#EAE8E3] dark:bg-white/10 p-1.5 outline-none text-xs md:text-sm text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full resize-none h-16"
               placeholder="Enter details, room info, etc..."

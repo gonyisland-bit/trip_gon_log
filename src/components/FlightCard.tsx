@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Plane, Trash2, RefreshCw, Clock } from 'lucide-react';
 import { FlightItem } from '../types';
 
@@ -89,6 +89,31 @@ export function FlightCard({
   const fromTimeRef = useRef<HTMLInputElement>(null);
   const toTimeRef = useRef<HTMLInputElement>(null);
 
+  // Local state to prevent typing lag
+  const [localTitle, setLocalTitle] = useState(flight.title);
+  const [localFromCode, setLocalFromCode] = useState(flight.fromCode);
+  const [localFromTerminal, setLocalFromTerminal] = useState(flight.fromTerminal);
+  const [localFlightNo, setLocalFlightNo] = useState(flight.flightNo);
+  const [localLayoverCode, setLocalLayoverCode] = useState(flight.layoverCode || '');
+  const [localLayoverTime, setLocalLayoverTime] = useState(flight.layoverTime || '');
+  const [localToCode, setLocalToCode] = useState(flight.toCode);
+  const [localToTerminal, setLocalToTerminal] = useState(flight.toTerminal);
+  const [localSeat, setLocalSeat] = useState(flight.seat);
+  const [localPnr, setLocalPnr] = useState(flight.pnr);
+
+  useEffect(() => {
+    setLocalTitle(flight.title);
+    setLocalFromCode(flight.fromCode);
+    setLocalFromTerminal(flight.fromTerminal);
+    setLocalFlightNo(flight.flightNo);
+    setLocalLayoverCode(flight.layoverCode || '');
+    setLocalLayoverTime(flight.layoverTime || '');
+    setLocalToCode(flight.toCode);
+    setLocalToTerminal(flight.toTerminal);
+    setLocalSeat(flight.seat);
+    setLocalPnr(flight.pnr);
+  }, [flight]);
+
   const filteredSuggestions = searchQuery.trim()
     ? airportSuggestions.filter(s =>
         s.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -112,8 +137,9 @@ export function FlightCard({
         {isEditMode ? (
           <input
             type="text"
-            value={flight.title}
-            onChange={(e) => onUpdate(flight.id, 'title', e.target.value)}
+            value={localTitle}
+            onChange={(e) => setLocalTitle(e.target.value)}
+            onBlur={() => onUpdate(flight.id, 'title', localTitle)}
             onClick={(e) => e.stopPropagation()}
             className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm uppercase w-40"
             placeholder="FLIGHT TITLE"
@@ -146,17 +172,20 @@ export function FlightCard({
                 <input
                   type="text"
                   maxLength={5}
-                  value={flight.fromCode}
+                  value={localFromCode}
                   onChange={(e) => {
                     const val = e.target.value.toUpperCase();
-                    onUpdate(flight.id, 'fromCode', val);
+                    setLocalFromCode(val);
                     setSearchQuery(val);
                   }}
                   onFocus={() => {
                     setActiveSearchField('from');
-                    setSearchQuery(flight.fromCode);
+                    setSearchQuery(localFromCode);
                   }}
-                  onBlur={() => setTimeout(() => setActiveSearchField(null), 250)}
+                  onBlur={() => {
+                    onUpdate(flight.id, 'fromCode', localFromCode);
+                    setTimeout(() => setActiveSearchField(null), 250);
+                  }}
                   onClick={(e) => e.stopPropagation()}
                   className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none font-black text-lg md:text-2xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-14"
                   placeholder="DEP"
@@ -170,10 +199,11 @@ export function FlightCard({
                         key={s.code}
                         type="button"
                         onMouseDown={() => {
+                          setLocalFromCode(s.code);
                           onUpdate(flight.id, 'fromCode', s.code);
-                          if (!flight.fromTerminal || flight.fromTerminal.toUpperCase().includes('TERMINAL')) {
-                            onUpdate(flight.id, 'fromTerminal', s.code === 'ICN' ? 'TERMINAL T1' : 'TERMINAL T1');
-                          }
+                          const newTerminal = s.code === 'ICN' ? 'TERMINAL T1' : 'TERMINAL T1';
+                          setLocalFromTerminal(newTerminal);
+                          onUpdate(flight.id, 'fromTerminal', newTerminal);
                           setActiveSearchField(null);
                         }}
                         className="w-full px-2.5 py-1.5 text-[10px] hover:bg-black/5 dark:hover:bg-white/5 flex flex-col border-b border-black/5 dark:border-white/5 last:border-0 text-black dark:text-white"
@@ -197,8 +227,9 @@ export function FlightCard({
             {isEditMode ? (
               <input
                 type="text"
-                value={flight.fromTerminal}
-                onChange={(e) => onUpdate(flight.id, 'fromTerminal', e.target.value)}
+                value={localFromTerminal}
+                onChange={(e) => setLocalFromTerminal(e.target.value)}
+                onBlur={() => onUpdate(flight.id, 'fromTerminal', localFromTerminal)}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-[8px] md:text-[10px] font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-20 mt-1 uppercase"
                 placeholder="TERMINAL"
@@ -272,8 +303,9 @@ export function FlightCard({
               {isEditMode ? (
                 <input
                   type="text"
-                  value={flight.flightNo}
-                  onChange={(e) => onUpdate(flight.id, 'flightNo', e.target.value)}
+                  value={localFlightNo}
+                  onChange={(e) => setLocalFlightNo(e.target.value)}
+                  onBlur={() => onUpdate(flight.id, 'flightNo', localFlightNo)}
                   onClick={(e) => e.stopPropagation()}
                   className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1a1a1a] px-1.5 text-[9px] md:text-[10px] font-bold text-black/60 dark:text-white/60 tracking-wider text-center w-12 outline-none border border-black/10 dark:border-white/10 rounded-sm z-10"
                   placeholder="KE000"
@@ -294,16 +326,18 @@ export function FlightCard({
                     <input
                       type="text"
                       maxLength={5}
-                      value={flight.layoverCode || ''}
-                      onChange={(e) => onUpdate(flight.id, 'layoverCode', e.target.value.toUpperCase())}
+                      value={localLayoverCode}
+                      onChange={(e) => setLocalLayoverCode(e.target.value.toUpperCase())}
+                      onBlur={() => onUpdate(flight.id, 'layoverCode', localLayoverCode)}
                       className="bg-[#EAE8E3] dark:bg-white/10 px-0.5 py-0.5 outline-none font-bold text-[8px] md:text-[9px] text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-8 uppercase text-center"
                       placeholder="LAY"
                     />
                     <span className="opacity-50 text-[8px] ml-0.5">시간:</span>
                     <input
                       type="text"
-                      value={flight.layoverTime || ''}
-                      onChange={(e) => onUpdate(flight.id, 'layoverTime', e.target.value)}
+                      value={localLayoverTime}
+                      onChange={(e) => setLocalLayoverTime(e.target.value)}
+                      onBlur={() => onUpdate(flight.id, 'layoverTime', localLayoverTime)}
                       className="bg-[#EAE8E3] dark:bg-white/10 px-0.5 py-0.5 outline-none font-bold text-[8px] md:text-[9px] text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-10 text-center"
                       placeholder="1h"
                     />
@@ -326,17 +360,20 @@ export function FlightCard({
                 <input
                   type="text"
                   maxLength={5}
-                  value={flight.toCode}
+                  value={localToCode}
                   onChange={(e) => {
                     const val = e.target.value.toUpperCase();
-                    onUpdate(flight.id, 'toCode', val);
+                    setLocalToCode(val);
                     setSearchQuery(val);
                   }}
                   onFocus={() => {
                     setActiveSearchField('to');
-                    setSearchQuery(flight.toCode);
+                    setSearchQuery(localToCode);
                   }}
-                  onBlur={() => setTimeout(() => setActiveSearchField(null), 250)}
+                  onBlur={() => {
+                    onUpdate(flight.id, 'toCode', localToCode);
+                    setTimeout(() => setActiveSearchField(null), 250);
+                  }}
                   onClick={(e) => e.stopPropagation()}
                   className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none font-black text-lg md:text-2xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-14"
                   placeholder="ARR"
@@ -350,10 +387,11 @@ export function FlightCard({
                         key={s.code}
                         type="button"
                         onMouseDown={() => {
+                          setLocalToCode(s.code);
                           onUpdate(flight.id, 'toCode', s.code);
-                          if (!flight.toTerminal || flight.toTerminal.toUpperCase().includes('TERMINAL')) {
-                            onUpdate(flight.id, 'toTerminal', s.code === 'ICN' ? 'TERMINAL T1' : 'TERMINAL T1');
-                          }
+                          const newTerminal = s.code === 'ICN' ? 'TERMINAL T1' : 'TERMINAL T1';
+                          setLocalToTerminal(newTerminal);
+                          onUpdate(flight.id, 'toTerminal', newTerminal);
                           setActiveSearchField(null);
                         }}
                         className="w-full px-2.5 py-1.5 text-[10px] hover:bg-black/5 dark:hover:bg-white/5 flex flex-col border-b border-black/5 dark:border-white/5 last:border-0 text-black dark:text-white"
@@ -377,8 +415,9 @@ export function FlightCard({
             {isEditMode ? (
               <input
                 type="text"
-                value={flight.toTerminal}
-                onChange={(e) => onUpdate(flight.id, 'toTerminal', e.target.value)}
+                value={localToTerminal}
+                onChange={(e) => setLocalToTerminal(e.target.value)}
+                onBlur={() => onUpdate(flight.id, 'toTerminal', localToTerminal)}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-[8px] md:text-[10px] font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-20 mt-1 uppercase"
                 placeholder="TERMINAL"
@@ -432,8 +471,9 @@ export function FlightCard({
             {isEditMode ? (
               <input
                 type="text"
-                value={flight.seat}
-                onChange={(e) => onUpdate(flight.id, 'seat', e.target.value)}
+                value={localSeat}
+                onChange={(e) => setLocalSeat(e.target.value)}
+                onBlur={() => onUpdate(flight.id, 'seat', localSeat)}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full"
                 placeholder="00A"
@@ -449,8 +489,9 @@ export function FlightCard({
             {isEditMode ? (
               <input
                 type="text"
-                value={flight.pnr}
-                onChange={(e) => onUpdate(flight.id, 'pnr', e.target.value)}
+                value={localPnr}
+                onChange={(e) => setLocalPnr(e.target.value)}
+                onBlur={() => onUpdate(flight.id, 'pnr', localPnr)}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full"
                 placeholder="XXXXXX"

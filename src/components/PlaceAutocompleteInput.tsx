@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
 
 interface PlaceAutocompleteInputProps {
@@ -20,11 +20,13 @@ export function PlaceAutocompleteInput({
 }: PlaceAutocompleteInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
+  const [localValue, setLocalValue] = useState(value);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       e.stopPropagation();
+      onChange(localValue);
     }
   };
 
@@ -52,6 +54,7 @@ export function PlaceAutocompleteInput({
           const lng = place.geometry.location.lng();
           const name = place.name || place.formatted_address || '';
           const address = place.formatted_address || name;
+          setLocalValue(address);
           onSelectPlaceRef.current(name, { lat, lng }, address);
         }
       } catch (err) {
@@ -67,10 +70,13 @@ export function PlaceAutocompleteInput({
   }, []);
 
   useEffect(() => {
-    if (inputRef.current && value !== undefined && inputRef.current.value !== value) {
-      inputRef.current.value = value;
-    }
+    setLocalValue(value);
   }, [value]);
+
+  const handleBlur = () => {
+    onChange(localValue);
+    if (onBlur) onBlur();
+  };
 
   return (
     <div className="relative w-full">
@@ -78,8 +84,9 @@ export function PlaceAutocompleteInput({
         <input
           ref={inputRef}
           type="text"
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           className={className}
           placeholder={placeholder}

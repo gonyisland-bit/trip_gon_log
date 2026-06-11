@@ -655,24 +655,53 @@ export function MapArea({
 
       const marker = L.marker([poi.lat, poi.lng], { icon, zIndexOffset: 500 }).addTo(map);
       
-      // Bind details popup safely by pre-encoding the URL to prevent inline onclick quotes SyntaxError
-      const googleSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(poi.name)}`.replace(/'/g, "%27");
-      const safePoiName = (poi.name || '').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+      const googleSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(poi.name)}`;
       
-      marker.bindPopup(`
-        <div style="font-family: sans-serif; font-size: 11px; padding: 4px; color: #111; min-width: 140px;">
-          <strong style="font-size: 12px; display: block; margin-bottom: 2px;">${safePoiName}</strong>
-          <span style="color: #666; font-size: 9px; display: block; margin-bottom: 6px;">📍 Double click to view on Google Maps</span>
-          <button 
-            style="background: #e11d48; color: #fff; border: none; padding: 5px 8px; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 2px; width: 100%; transition: background 0.2s;"
-            onclick="window.open('${googleSearchUrl}', '_blank')"
-            onmouseover="this.style.background='#be123c'"
-            onmouseout="this.style.background='#e11d48'"
-          >
-            Google Maps 이동
-          </button>
-        </div>
-      `, { closeButton: false });
+      const popupContainer = document.createElement('div');
+      popupContainer.style.fontFamily = 'sans-serif';
+      popupContainer.style.fontSize = '11px';
+      popupContainer.style.padding = '4px';
+      popupContainer.style.color = '#111';
+      popupContainer.style.minWidth = '140px';
+
+      const title = document.createElement('strong');
+      title.style.fontSize = '12px';
+      title.style.display = 'block';
+      title.style.marginBottom = '2px';
+      title.textContent = poi.name || '';
+      popupContainer.appendChild(title);
+
+      const subText = document.createElement('span');
+      subText.style.color = '#666';
+      subText.style.fontSize = '9px';
+      subText.style.display = 'block';
+      subText.style.marginBottom = '6px';
+      subText.textContent = '📍 Double click to view on Google Maps';
+      popupContainer.appendChild(subText);
+
+      const button = document.createElement('button');
+      button.style.background = '#e11d48';
+      button.style.color = '#fff';
+      button.style.border = 'none';
+      button.style.padding = '5px 8px';
+      button.style.fontSize = '10px';
+      button.style.fontWeight = 'bold';
+      button.style.cursor = 'pointer';
+      button.style.borderRadius = '2px';
+      button.style.width = '100%';
+      button.style.transition = 'background 0.2s';
+      button.textContent = 'Google Maps 이동';
+
+      button.onmouseover = () => { button.style.background = '#be123c'; };
+      button.onmouseout = () => { button.style.background = '#e11d48'; };
+      
+      button.addEventListener('click', (e) => {
+        e.stopPropagation();
+        window.open(googleSearchUrl, '_blank');
+      });
+      popupContainer.appendChild(button);
+
+      marker.bindPopup(popupContainer, { closeButton: false });
 
       // Double click listener to navigate to Google Maps
       marker.on('dblclick', (e: any) => {

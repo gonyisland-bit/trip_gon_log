@@ -1173,7 +1173,7 @@ function App() {
         {/* Marquee Banner */}
         {marqueeShow && (
           <div className="w-full bg-[#EAE8E3] dark:bg-[#161616] border-b border-black/10 dark:border-white/10 py-2 overflow-hidden flex items-center shrink-0">
-            <div className="animate-marquee text-[10px] md:text-xs font-black tracking-widest uppercase text-red-600 dark:text-red-400" style={{ '--marquee-speed': `${marqueeSpeed / 1.5}s` } as React.CSSProperties}>
+            <div className="animate-marquee text-[10px] md:text-xs font-black tracking-widest uppercase text-red-600 dark:text-red-400" style={{ '--marquee-speed': `${(marqueeSpeed / 1.5) * 1.43}s` } as React.CSSProperties}>
               <span>{displayMarqueeText}&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;</span>
               <span>{displayMarqueeText}&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;</span>
             </div>
