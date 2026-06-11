@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Train, Bus, Car, Trash2, Image as ImageIcon, MapPin } from 'lucide-react';
+import { Train, Bus, Car, Trash2, Image as ImageIcon, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
 import { TransitItem } from '../types';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { ImageEditOverlay } from './ImageEditOverlay';
@@ -69,6 +69,7 @@ export function TransitCard({
   onFocusPlace,
 }: TransitCardProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [isDetailExpanded, setIsDetailExpanded] = useState(false);
   const handlePlaceLinkClick = (e: React.MouseEvent, placeName: string) => {
     e.stopPropagation();
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -89,9 +90,13 @@ export function TransitCard({
   return (
     <div 
       onClick={onClick}
-      className={`border border-black/10 dark:border-white/10 bg-white dark:bg-[#1a1a1a] mb-6 font-sans text-black dark:text-white relative shadow-sm transition-all duration-300 ${
-        !isEditMode ? 'cursor-pointer hover:shadow-md hover:border-black/20 dark:hover:border-white/20' : ''
-      } ${isActive && !isEditMode ? 'ring-1 ring-red-500/50 dark:ring-red-400/50 shadow-md' : ''}`}
+      className={`border mb-6 font-sans text-black dark:text-white relative shadow-sm transition-all duration-300 ${
+        !isEditMode ? 'cursor-pointer hover:shadow-md' : ''
+      } ${
+        isActive 
+          ? 'border-red-600 dark:border-red-400 ring-1 ring-red-600/30 bg-red-500/[0.01] dark:bg-red-400/[0.01] shadow-md' 
+          : 'border-black/10 dark:border-white/10 bg-white dark:bg-[#1a1a1a]'
+      }`}
     >
       {/* Header bar */}
       <div className="bg-[#EAE8E3]/50 dark:bg-white/10 px-4 py-2 border-b border-black/10 dark:border-white/10 flex justify-between items-center text-[10px] md:text-xs font-bold tracking-widest text-black/60 dark:text-white/60 gap-4">
@@ -128,17 +133,34 @@ export function TransitCard({
             <span className="uppercase">{transit.ticketType || 'TRAIN TICKET'}</span>
           )}
         </div>
-        {isEditMode ? (
-          <input
-            type="date"
-            value={transit.date ? transit.date.replace(/\./g, '-') : ''}
-            onChange={(e) => onUpdate(transit.id, 'date', e.target.value.replace(/-/g, '.'))}
-            onClick={(e) => e.stopPropagation()}
-            className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 text-right"
-          />
-        ) : (
-          <span>{transit.date}</span>
-        )}
+        <div className="flex items-center gap-2">
+          {isEditMode ? (
+            <input
+              type="date"
+              value={transit.date ? transit.date.replace(/\./g, '-') : ''}
+              onChange={(e) => onUpdate(transit.id, 'date', e.target.value.replace(/-/g, '.'))}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 text-right"
+            />
+          ) : (
+            <span>{transit.date}</span>
+          )}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsDetailExpanded(!isDetailExpanded);
+            }}
+            className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded transition-colors ml-1"
+            title={isDetailExpanded ? "상세 닫기" : "상세 열기"}
+          >
+            {isDetailExpanded ? (
+              <ChevronUp className="w-3.5 h-3.5 opacity-70" />
+            ) : (
+              <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+            )}
+          </button>
+        </div>
       </div>
       
       {/* Card Body */}
@@ -160,14 +182,53 @@ export function TransitCard({
               </h3>
             )}
             {isEditMode ? (
-              <input
-                type="text"
-                value={transit.route}
-                onChange={(e) => onUpdate(transit.id, 'route', e.target.value)}
-                onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs md:text-sm text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full mt-1.5"
-                placeholder="Route (e.g. City A → City B)"
-              />
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2 w-full relative" onClick={(e) => e.stopPropagation()}>
+                <div className="flex-1 min-w-0 relative">
+                  <span className="text-[8px] uppercase font-bold tracking-widest opacity-40 block mb-0.5">DEPART</span>
+                  <PlaceAutocompleteInput
+                    value={transit.departPlace || ''}
+                    onChange={(val) => {
+                      onUpdate(transit.id, 'departPlace', val);
+                      const newRoute = `${val} → ${transit.arrivePlace || ''}`;
+                      onUpdate(transit.id, 'route', newRoute);
+                    }}
+                    onSelectPlace={(name, coords) => {
+                      onUpdate(transit.id, 'departPlace', name);
+                      const newRoute = `${name} → ${transit.arrivePlace || ''}`;
+                      onUpdate(transit.id, 'route', newRoute);
+                      if (coords) {
+                        onUpdate(transit.id, 'departLat', coords.lat);
+                        onUpdate(transit.id, 'departLng', coords.lng);
+                      }
+                    }}
+                    className="w-full bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm"
+                    placeholder="Departure terminal/station..."
+                  />
+                </div>
+                <span className="text-black/40 dark:text-white/40 self-end mb-1.5 hidden sm:inline">→</span>
+                <div className="flex-1 min-w-0 relative">
+                  <span className="text-[8px] uppercase font-bold tracking-widest opacity-40 block mb-0.5">ARRIVE</span>
+                  <PlaceAutocompleteInput
+                    value={transit.arrivePlace || ''}
+                    onChange={(val) => {
+                      onUpdate(transit.id, 'arrivePlace', val);
+                      const newRoute = `${transit.departPlace || ''} → ${val}`;
+                      onUpdate(transit.id, 'route', newRoute);
+                    }}
+                    onSelectPlace={(name, coords) => {
+                      onUpdate(transit.id, 'arrivePlace', name);
+                      const newRoute = `${transit.departPlace || ''} → ${name}`;
+                      onUpdate(transit.id, 'route', newRoute);
+                      if (coords) {
+                        onUpdate(transit.id, 'arriveLat', coords.lat);
+                        onUpdate(transit.id, 'arriveLng', coords.lng);
+                      }
+                    }}
+                    className="w-full bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm"
+                    placeholder="Arrival terminal/station..."
+                  />
+                </div>
+              </div>
             ) : (
               <p className="text-xs md:text-sm text-black/50 dark:text-white/50 mt-1 block">
                 {transit.route}
@@ -179,7 +240,7 @@ export function TransitCard({
                 value={timeStrTo24h(transit.time)}
                 onChange={(e) => onUpdate(transit.id, 'time', time24hTo12h(e.target.value))}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-black text-2xl md:text-4xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full max-w-[200px] min-w-0 mt-4 text-center tracking-tighter"
+                className="bg-[#EAE8E3] dark:bg-white/10 px-2 pr-8 py-0.5 outline-none font-black text-2xl md:text-4xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full max-w-[230px] min-w-0 mt-4 text-center tracking-tighter"
               />
             ) : (
               <div className="text-2xl md:text-4xl font-black mt-4 tracking-tighter leading-none">
@@ -226,10 +287,9 @@ export function TransitCard({
             </div>
           </div>
         </div>
-
         {/* Expanded details section (Shown if active) */}
-        {isActive && (
-          <div className="mt-4 pt-4 border-t border-black/15 dark:border-white/15 space-y-4 text-xs md:text-sm animate-in slide-in-from-top duration-200">
+        {isDetailExpanded && (
+          <div className="mt-4 pt-4 border-t border-black/15 dark:border-white/15 space-y-4 text-xs md:text-sm animate-in slide-in-from-top duration-200" onClick={(e) => e.stopPropagation()}>
             {/* Transit Type Selector - Only shown in edit mode */}
             {isEditMode && (
               <div>
@@ -280,82 +340,6 @@ export function TransitCard({
                 </div>
               </div>
             )}
-
-            {/* Departure Place */}
-            {(isEditMode || transit.departPlace) && (
-              <div className="flex flex-col gap-1">
-                <span className="font-bold shrink-0 text-[10px] tracking-widest uppercase opacity-60 flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-black/50 dark:text-white/50" /> DEPART:
-                </span>
-                {isEditMode ? (
-                  <PlaceAutocompleteInput
-                    value={transit.departPlace || ''}
-                    onChange={(val) => {
-                      onUpdate(transit.id, 'departPlace', val);
-                      const newRoute = `${val} → ${transit.arrivePlace || ''}`;
-                      onUpdate(transit.id, 'route', newRoute);
-                    }}
-                    onSelectPlace={(name, coords) => {
-                      onUpdate(transit.id, 'departPlace', name);
-                      const newRoute = `${name} → ${transit.arrivePlace || ''}`;
-                      onUpdate(transit.id, 'route', newRoute);
-                      if (coords) {
-                        onUpdate(transit.id, 'departLat', coords.lat);
-                        onUpdate(transit.id, 'departLng', coords.lng);
-                      }
-                    }}
-                    className="w-full bg-transparent border-b border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none py-1 text-xs md:text-sm text-black dark:text-white"
-                    placeholder="Search departure terminal/station..."
-                  />
-                ) : (
-                  <span 
-                    onClick={(e) => { e.stopPropagation(); handlePlaceLinkClick(e, transit.departPlace!); }}
-                    className="underline decoration-dotted cursor-pointer hover:text-red-600 dark:hover:text-red-300 ml-5 block w-fit"
-                  >
-                    {transit.departPlace}
-                  </span>
-                )}
-              </div>
-            )}
-
-            {/* Arrival Place */}
-            {(isEditMode || transit.arrivePlace) && (
-              <div className="flex flex-col gap-1">
-                <span className="font-bold shrink-0 text-[10px] tracking-widest uppercase opacity-60 flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-black/50 dark:text-white/50" /> ARRIVE:
-                </span>
-                {isEditMode ? (
-                  <PlaceAutocompleteInput
-                    value={transit.arrivePlace || ''}
-                    onChange={(val) => {
-                      onUpdate(transit.id, 'arrivePlace', val);
-                      const newRoute = `${transit.departPlace || ''} → ${val}`;
-                      onUpdate(transit.id, 'route', newRoute);
-                    }}
-                    onSelectPlace={(name, coords) => {
-                      onUpdate(transit.id, 'arrivePlace', name);
-                      const newRoute = `${transit.departPlace || ''} → ${name}`;
-                      onUpdate(transit.id, 'route', newRoute);
-                      if (coords) {
-                        onUpdate(transit.id, 'arriveLat', coords.lat);
-                        onUpdate(transit.id, 'arriveLng', coords.lng);
-                      }
-                    }}
-                    className="w-full bg-transparent border-b border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none py-1 text-xs md:text-sm text-black dark:text-white"
-                    placeholder="Search arrival terminal/station..."
-                  />
-                ) : (
-                  <span 
-                    onClick={(e) => { e.stopPropagation(); handlePlaceLinkClick(e, transit.arrivePlace!); }}
-                    className="underline decoration-dotted cursor-pointer hover:text-red-600 dark:hover:text-red-300 ml-5 block w-fit"
-                  >
-                    {transit.arrivePlace}
-                  </span>
-                )}
-              </div>
-            )}
-
-
 
             {/* Memo Field */}
             {(isEditMode || transit.memo) && (

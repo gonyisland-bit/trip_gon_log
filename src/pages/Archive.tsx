@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, GripVertical } from 'lucide-react';
+import { Plus, GripVertical, ChevronDown } from 'lucide-react';
 import { Trip } from '../types';
 import { JourneyCardMenu } from './Home';
 
@@ -37,6 +37,7 @@ export function ArchiveHubPage({
   initialTagFilter,
 }: ArchiveHubPageProps) {
   const [activeFilter, setActiveFilter] = useState(initialTagFilter || 'All');
+  const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
   const [sortBy, setSortBy] = useState<'user' | 'date' | 'place'>('user');
   const [draggedTripId, setDraggedTripId] = useState<number | null>(null);
   const [localTrips, setLocalTrips] = useState<Trip[]>(trips);
@@ -102,27 +103,46 @@ export function ArchiveHubPage({
 
   return (
     <main className="animate-in fade-in duration-500 min-h-screen w-full">
-      <div className="p-6 md:px-12 md:py-16 border-b border-black/20 dark:border-white/20 bg-[#EAE8E3]/30 dark:bg-[#1a1a1a]/30 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+      <div className="p-6 md:px-12 md:py-12 border-b border-black/20 dark:border-white/20 bg-[#EAE8E3]/30 dark:bg-[#1a1a1a]/30 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
         <div className="flex-1">
-          <h1 className="text-3xl sm:text-4xl md:text-6xl font-black tracking-tighter uppercase mb-4 sm:mb-6 break-keep" style={{ wordBreak: 'keep-all' }}>Journeys Archive</h1>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tighter uppercase mb-2 sm:mb-3 break-keep" style={{ wordBreak: 'keep-all' }}>Journeys Archive</h1>
           <p className="max-w-xl text-xs sm:text-sm leading-relaxed opacity-70 break-keep">모든 여행의 감각적인 기록들입니다. 다녀온 곳을 회고하고 기록을 엑셀로 추출할 수 있습니다.</p>
           
           {/* Active Filter and Sorting Layout */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-6">
-            <div className="flex flex-wrap gap-2">
-              {filters.map(f => (
-                <button 
-                  key={f} 
-                  onClick={() => setActiveFilter(f)}
-                  className={`text-[10px] px-3 py-1.5 uppercase font-bold tracking-widest border transition-colors shrink-0 ${
-                    activeFilter === f 
-                    ? 'border-black bg-black text-white dark:border-white dark:bg-white dark:text-black' 
-                    : 'border-black/20 text-black/50 hover:border-black/50 dark:border-white/20 dark:text-white/50 dark:hover:border-white/50'
-                  }`}
-                >
-                  {f}
-                </button>
-              ))}
+            {/* Tag Filter Dropdown */}
+            <div className="relative inline-block text-left z-20">
+              <button 
+                onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}
+                className="text-[10px] px-3 py-1.5 uppercase font-bold tracking-widest border border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-transparent text-black dark:text-white transition-colors flex items-center gap-1.5 rounded-sm"
+              >
+                <span>Tag Filter: {activeFilter}</span>
+                <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isTagDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {isTagDropdownOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setIsTagDropdownOpen(false)} />
+                  <div className="absolute left-0 mt-1 w-48 bg-white dark:bg-[#1a1a1a] border border-black/10 dark:border-white/10 shadow-xl z-20 max-h-60 overflow-y-auto rounded-sm py-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                    {filters.map(f => (
+                      <button
+                        key={f}
+                        onClick={() => {
+                          setActiveFilter(f);
+                          setIsTagDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-[10px] uppercase font-bold tracking-widest transition-colors ${
+                          activeFilter === f 
+                            ? 'bg-black text-white dark:bg-white dark:text-black' 
+                            : 'text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5'
+                        }`}
+                      >
+                        {f}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
@@ -140,8 +160,8 @@ export function ArchiveHubPage({
           </div>
         </div>
         {isLoggedIn && (
-          <button onClick={onAddArchive} className="flex items-center justify-center gap-2 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors shrink-0 w-auto">
-            <Plus className="w-3 h-3 md:w-4 md:h-4" /> Add Archive
+          <button onClick={onAddArchive} className="flex items-center justify-center gap-1.5 text-[9px] sm:text-[10px] md:text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-3 py-1.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors shrink-0 w-auto">
+            <Plus className="w-3.5 h-3.5" /> Add Archive
           </button>
         )}
       </div>
