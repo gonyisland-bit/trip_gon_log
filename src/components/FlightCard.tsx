@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Plane, Trash2, RefreshCw } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Plane, Trash2, RefreshCw, Clock } from 'lucide-react';
 import { FlightItem } from '../types';
 
 interface FlightCardProps {
@@ -86,6 +86,8 @@ export function FlightCard({
 }: FlightCardProps) {
   const [activeSearchField, setActiveSearchField] = useState<'from' | 'to' | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const fromTimeRef = useRef<HTMLInputElement>(null);
+  const toTimeRef = useRef<HTMLInputElement>(null);
 
   const filteredSuggestions = searchQuery.trim()
     ? airportSuggestions.filter(s =>
@@ -208,13 +210,29 @@ export function FlightCard({
             )}
 
             {isEditMode ? (
-              <input
-                type="time"
-                value={timeStrTo24h(flight.fromTime)}
-                onChange={(e) => onUpdate(flight.id, 'fromTime', time24hTo12h(e.target.value))}
-                onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-1 pl-2 pr-[22px] py-0.5 outline-none text-[9px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-left w-[115px] min-w-[115px] mt-1"
-              />
+              <div className="flex items-center justify-center gap-1 mt-1.5" onClick={(e) => e.stopPropagation()}>
+                <input
+                  ref={fromTimeRef}
+                  type="time"
+                  value={timeStrTo24h(flight.fromTime)}
+                  onChange={(e) => onUpdate(flight.id, 'fromTime', time24hTo12h(e.target.value))}
+                  className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-[9px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-[72px] [&::-webkit-calendar-picker-indicator]:hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      fromTimeRef.current?.showPicker();
+                    } catch (err) {
+                      console.warn(err);
+                    }
+                  }}
+                  className="p-1 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-[#EAE8E3] dark:bg-white/10 cursor-pointer flex items-center justify-center"
+                  title="시간 선택"
+                >
+                  <Clock className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
+                </button>
+              </div>
             ) : (
               <span className="text-xs md:text-sm font-bold mt-2 block">
                 {flight.fromTime}
@@ -372,13 +390,29 @@ export function FlightCard({
             )}
 
             {isEditMode ? (
-              <input
-                type="time"
-                value={timeStrTo24h(flight.toTime)}
-                onChange={(e) => onUpdate(flight.id, 'toTime', time24hTo12h(e.target.value))}
-                onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-1 pl-2 pr-[22px] py-0.5 outline-none text-[9px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-left w-[115px] min-w-[115px] mt-1"
-              />
+              <div className="flex items-center justify-center gap-1 mt-1.5" onClick={(e) => e.stopPropagation()}>
+                <input
+                  ref={toTimeRef}
+                  type="time"
+                  value={timeStrTo24h(flight.toTime)}
+                  onChange={(e) => onUpdate(flight.id, 'toTime', time24hTo12h(e.target.value))}
+                  className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-[9px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-[72px] [&::-webkit-calendar-picker-indicator]:hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      toTimeRef.current?.showPicker();
+                    } catch (err) {
+                      console.warn(err);
+                    }
+                  }}
+                  className="p-1 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-[#EAE8E3] dark:bg-white/10 cursor-pointer flex items-center justify-center"
+                  title="시간 선택"
+                >
+                  <Clock className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
+                </button>
+              </div>
             ) : (
               <span className="text-xs md:text-sm font-bold mt-2 block">
                 {flight.toTime}

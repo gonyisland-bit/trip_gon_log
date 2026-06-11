@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Train, Bus, Car, Trash2, Image as ImageIcon, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Train, Bus, Car, Trash2, Image as ImageIcon, MapPin, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 import { TransitItem } from '../types';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { ImageEditOverlay } from './ImageEditOverlay';
@@ -70,6 +70,7 @@ export function TransitCard({
 }: TransitCardProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [isDetailExpanded, setIsDetailExpanded] = useState(false);
+  const timeRef = useRef<HTMLInputElement>(null);
   const handlePlaceLinkClick = (e: React.MouseEvent, placeName: string) => {
     e.stopPropagation();
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -233,13 +234,29 @@ export function TransitCard({
               </p>
             )}
             {isEditMode ? (
-              <input
-                type="time"
-                value={timeStrTo24h(transit.time)}
-                onChange={(e) => onUpdate(transit.id, 'time', time24hTo12h(e.target.value))}
-                onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-2 pl-3 pr-10 py-0.5 outline-none font-black text-2xl md:text-4xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full max-w-[210px] min-w-[180px] mt-4 text-left tracking-tighter"
-              />
+              <div className="flex items-center gap-1.5 mt-4" onClick={(e) => e.stopPropagation()}>
+                <input
+                  ref={timeRef}
+                  type="time"
+                  value={timeStrTo24h(transit.time)}
+                  onChange={(e) => onUpdate(transit.id, 'time', time24hTo12h(e.target.value))}
+                  className="bg-[#EAE8E3] dark:bg-white/10 px-2 py-0.5 outline-none font-black text-xl md:text-2xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-28 md:w-32 text-center [&::-webkit-calendar-picker-indicator]:hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      timeRef.current?.showPicker();
+                    } catch (err) {
+                      console.warn(err);
+                    }
+                  }}
+                  className="p-1.5 md:p-2 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-[#EAE8E3] dark:bg-white/10 cursor-pointer flex items-center justify-center"
+                  title="시간 선택"
+                >
+                  <Clock className="w-4 h-4 md:w-5 md:h-5 text-black/60 dark:text-white/60" />
+                </button>
+              </div>
             ) : (
               <div className="text-2xl md:text-4xl font-black mt-4 tracking-tighter leading-none">
                 {transit.time}

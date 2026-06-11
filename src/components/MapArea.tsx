@@ -56,6 +56,38 @@ export function MapArea({
   const animMarkerRef = useRef<any>(null);
   const animFrameIdRef = useRef<number | null>(null);
 
+  // Calculate animation key to prevent re-running animation effect on keystrokes
+  const animKey = (() => {
+    if (!mapReady || (activeTab !== 'flights' && activeTab !== 'transit') || expandedItemId === null) {
+      return '';
+    }
+    const fromPoint = mapPoints.find(p => p.id === expandedItemId * 10);
+    const toPoint = mapPoints.find(p => p.id === expandedItemId * 10 + 1);
+    if (!fromPoint || !toPoint || fromPoint.lat === undefined || fromPoint.lng === undefined || toPoint.lat === undefined || toPoint.lng === undefined) {
+      return '';
+    }
+    const startLat = Number(fromPoint.lat);
+    const startLng = Number(fromPoint.lng);
+    const endLat = Number(toPoint.lat);
+    const endLng = Number(toPoint.lng);
+    if (isNaN(startLat) || isNaN(startLng) || isNaN(endLat) || isNaN(endLng)) {
+      return '';
+    }
+    let src = '/airplane.png';
+    if (activeTab === 'transit') {
+      const transit = transits.find(t => t.id === expandedItemId);
+      const ticketType = (transit?.ticketType || '').toUpperCase();
+      if (ticketType.includes('BUS')) {
+        src = '/bus.png';
+      } else if (ticketType.includes('TAXI') || ticketType.includes('CAR')) {
+        src = '/car.png';
+      } else {
+        src = '/train.png';
+      }
+    }
+    return `${activeTab}|${expandedItemId}|${startLat}|${startLng}|${endLat}|${endLng}|${src}`;
+  })();
+
   // POI Features
   const [poiItems, setPoiItems] = useState<any[]>([]);
   const [poiLoading, setPoiLoading] = useState(false);
@@ -314,10 +346,19 @@ export function MapArea({
     
     if (expandedItemId !== null) {
       if (activeTab === 'transit') {
-        let p: any = null;
-        if (transitFocusType === 'depart') p = mapPoints.find(item => item.id === expandedItemId * 10);
-        else if (transitFocusType === 'arrive') p = mapPoints.find(item => item.id === expandedItemId * 10 + 1);
-        if (p && p.lat && p.lng) activePointsList.push({ lat: Number(p.lat), lng: Number(p.lng) });
+        if (transitFocusType === 'depart') {
+          const p = mapPoints.find(item => item.id === expandedItemId * 10);
+          if (p && p.lat && p.lng) activePointsList.push({ lat: Number(p.lat), lng: Number(p.lng) });
+        } else if (transitFocusType === 'arrive') {
+          const p = mapPoints.find(item => item.id === expandedItemId * 10 + 1);
+          if (p && p.lat && p.lng) activePointsList.push({ lat: Number(p.lat), lng: Number(p.lng) });
+        } else {
+          // If transitFocusType is null, include both depart and arrive points for the transit route
+          const pDepart = mapPoints.find(item => item.id === expandedItemId * 10);
+          const pArrive = mapPoints.find(item => item.id === expandedItemId * 10 + 1);
+          if (pDepart && pDepart.lat && pDepart.lng) activePointsList.push({ lat: Number(pDepart.lat), lng: Number(pDepart.lng) });
+          if (pArrive && pArrive.lat && pArrive.lng) activePointsList.push({ lat: Number(pArrive.lat), lng: Number(pArrive.lng) });
+        }
       } else if (activeTab === 'flights') {
         const fromPoint = mapPoints.find(p => p.id === expandedItemId * 10);
         const toPoint = mapPoints.find(p => p.id === expandedItemId * 10 + 1);
@@ -341,7 +382,7 @@ export function MapArea({
     lastActiveCoordsRef.current = currentCoordsStr;
 
     if (shouldPanZoom) {
-      if (coords.length > 0 && (!isInteractive || !hasFitRef.current || isGalleryTab)) {
+      if (expandedItemId === null && coords.length > 0 && (!isInteractive || !hasFitRef.current || isGalleryTab)) {
         const bounds = L.latLngBounds(coords);
         map.fitBounds(bounds, { padding: [48, 48], maxZoom: 15 });
         hasFitRef.current = true;
@@ -584,7 +625,7 @@ export function MapArea({
   // ─── Effect 3d: Flight route plane animation ──────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady) return;
+    if (!map || !mapReady || !animKey) return;
     const L = (window as any).L;
     if (!L) return;
 
@@ -600,85 +641,83 @@ export function MapArea({
       animMarkerRef.current = null;
     }
 
-    if ((activeTab === 'flights' || activeTab === 'transit') && expandedItemId !== null) {
-      // Find depart and arrive points (f.id * 10 & f.id * 10 + 1)
-      const fromPoint = mapPoints.find(p => p.id === expandedItemId * 10);
-      const toPoint = mapPoints.find(p => p.id === expandedItemId * 10 + 1);
+    // Since animKey is verified, we know all points are valid and expandedItemId !== null
+    const fromPoint = mapPoints.find(p => p.id === expandedItemId! * 10);
+    const toPoint = mapPoints.find(p => p.id === expandedItemId! * 10 + 1);
 
-      if (fromPoint && toPoint && fromPoint.lat && fromPoint.lng && toPoint.lat && toPoint.lng) {
-        const startLat = Number(fromPoint.lat);
-        const startLng = Number(fromPoint.lng);
-        const endLat = Number(toPoint.lat);
-        const endLng = Number(toPoint.lng);
+    if (fromPoint && toPoint && fromPoint.lat && fromPoint.lng && toPoint.lat && toPoint.lng) {
+      const startLat = Number(fromPoint.lat);
+      const startLng = Number(fromPoint.lng);
+      const endLat = Number(toPoint.lat);
+      const endLng = Number(toPoint.lng);
 
-        if (!isNaN(startLat) && !isNaN(startLng) && !isNaN(endLat) && !isNaN(endLng)) {
-          // Calculate heading angle
-          const dy = endLat - startLat;
-          const dx = endLng - startLng;
-          const angle = Math.atan2(dx, dy) * 180 / Math.PI;
+      if (!isNaN(startLat) && !isNaN(startLng) && !isNaN(endLat) && !isNaN(endLng)) {
+        // Calculate heading angle
+        const dy = endLat - startLat;
+        const dx = endLng - startLng;
+        const angle = Math.atan2(dx, dy) * 180 / Math.PI;
 
-          // Resolve vehicle icon src and size
-          let src = '/airplane.png';
-          let width = 38;
-          let height = 38;
+        // Resolve vehicle icon src and size
+        let src = '/airplane.png';
+        let width = 38;
+        let height = 38;
 
-          if (activeTab === 'transit') {
-            const transit = transits.find(t => t.id === expandedItemId);
-            const ticketType = (transit?.ticketType || '').toUpperCase();
-            if (ticketType.includes('BUS')) {
-              src = '/bus.png';
-              width = 24;
-              height = 48;
-            } else if (ticketType.includes('TAXI') || ticketType.includes('CAR')) {
-              src = '/car.png';
-              width = 28;
-              height = 40;
-            } else {
-              src = '/train.png';
-              width = 40;
-              height = 100;
-            }
+        if (activeTab === 'transit') {
+          const transit = transits.find(t => t.id === expandedItemId);
+          const ticketType = (transit?.ticketType || '').toUpperCase();
+          if (ticketType.includes('BUS')) {
+            src = '/bus.png';
+            width = 24;
+            height = 48;
+          } else if (ticketType.includes('TAXI') || ticketType.includes('CAR')) {
+            src = '/car.png';
+            width = 28;
+            height = 40;
+          } else {
+            src = '/train.png';
+            width = 40;
+            height = 100;
+          }
+        }
+
+        const vehicleIconHtml = `
+          <div class="animated-vehicle-wrapper" style="transform: rotate(${angle}deg); width: ${width}px; height: ${height}px; display: flex; align-items: center; justify-content: center;">
+            <img src="${src}" style="width: ${width}px; height: ${height}px; object-fit: contain; filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.4));" />
+          </div>
+        `;
+
+        const vehicleIcon = L.divIcon({
+          className: 'custom-animated-vehicle-icon',
+          html: vehicleIconHtml,
+          iconSize: [width, height],
+          iconAnchor: [width / 2, height / 2]
+        });
+
+        const animMarker = L.marker([startLat, startLng], { icon: vehicleIcon, zIndexOffset: 3000 }).addTo(map);
+        animMarkerRef.current = animMarker;
+
+        const duration = 3000; // 3 seconds flight cycle
+        let startTime: number | null = null;
+
+        const animate = (timestamp: number) => {
+          if (!startTime) startTime = timestamp;
+          let elapsed = timestamp - startTime;
+          let progress = elapsed / duration;
+
+          if (progress >= 1) {
+            startTime = timestamp; // Loop back
+            progress = 0;
           }
 
-          const vehicleIconHtml = `
-            <div class="animated-vehicle-wrapper" style="transform: rotate(${angle}deg); width: ${width}px; height: ${height}px; display: flex; align-items: center; justify-content: center;">
-              <img src="${src}" style="width: ${width}px; height: ${height}px; object-fit: contain; filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.4));" />
-            </div>
-          `;
+          // Interpolated position
+          const currentLat = startLat + (endLat - startLat) * progress;
+          const currentLng = startLng + (endLng - startLng) * progress;
 
-          const vehicleIcon = L.divIcon({
-            className: 'custom-animated-vehicle-icon',
-            html: vehicleIconHtml,
-            iconSize: [width, height],
-            iconAnchor: [width / 2, height / 2]
-          });
-
-          const animMarker = L.marker([startLat, startLng], { icon: vehicleIcon, zIndexOffset: 3000 }).addTo(map);
-          animMarkerRef.current = animMarker;
-
-          const duration = 3000; // 3 seconds flight cycle
-          let startTime: number | null = null;
-
-          const animate = (timestamp: number) => {
-            if (!startTime) startTime = timestamp;
-            let elapsed = timestamp - startTime;
-            let progress = elapsed / duration;
-
-            if (progress >= 1) {
-              startTime = timestamp; // Loop back
-              progress = 0;
-            }
-
-            // Interpolated position
-            const currentLat = startLat + (endLat - startLat) * progress;
-            const currentLng = startLng + (endLng - startLng) * progress;
-
-            animMarker.setLatLng([currentLat, currentLng]);
-            animFrameIdRef.current = requestAnimationFrame(animate);
-          };
-
+          animMarker.setLatLng([currentLat, currentLng]);
           animFrameIdRef.current = requestAnimationFrame(animate);
-        }
+        };
+
+        animFrameIdRef.current = requestAnimationFrame(animate);
       }
     }
 
@@ -694,7 +733,7 @@ export function MapArea({
         animMarkerRef.current = null;
       }
     };
-  }, [activeTab, expandedItemId, mapPoints, mapReady, transits]);
+  }, [mapReady, animKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Effect 4: Map click → open Google Maps ────────────────────────────────
   useEffect(() => {

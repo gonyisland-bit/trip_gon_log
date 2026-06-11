@@ -940,11 +940,11 @@ export function JourneyDetailPage({
 
   const timelinePhotoPoints = useMemo(() => {
     const points: any[] = [];
-    baseTimeline.forEach((item, idx) => {
+    baseTimeline.forEach((item) => {
       if (item.img && item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) {
         const dayIndex = item.date ? generatedDates.indexOf(item.date) + 1 : 0;
         points.push({
-          id: 600000 + idx, // unique ID offset for timeline photo pins
+          id: 600000000 + item.id, // unique ID offset for timeline photo pins
           place: item.place || '일정 사진 위치',
           lat: Number(item.lat),
           lng: Number(item.lng),
@@ -1008,25 +1008,6 @@ export function JourneyDetailPage({
       }
     });
 
-    const timelinePhotoPoints: any[] = [];
-    currentTimeline.forEach((item, idx) => {
-      if (item.img && item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) {
-        const dayIndex = item.date ? generatedDates.indexOf(item.date) + 1 : 0;
-        timelinePhotoPoints.push({
-          id: 600000 + idx, // unique ID offset for timeline photo pins
-          place: item.place || '일정 사진 위치',
-          lat: Number(item.lat),
-          lng: Number(item.lng),
-          time: item.time || '12:00 PM',
-          date: item.date || '',
-          memo: item.imgNote || item.memo || '일정 사진',
-          isPhoto: true,
-          photoUrl: item.img,
-          dayIndex
-        });
-      }
-    });
-
     if (activeTab === 'timeline') {
       const timelinePoints = currentTimeline
         .filter(item => !item.excludeFromMap)
@@ -1059,13 +1040,11 @@ export function JourneyDetailPage({
       });
       return combined;
     } else if (activeTab === 'gallery') {
+      // Use the outer timelinePhotoPoints (which contains all photo points unfiltered)
       const allPhotoPoints = [...photoPoints, ...timelinePhotoPoints];
-      const visiblePhotoPoints = allPhotoPoints.filter(p => {
-        if (selectedDate === 'ALL') return true;
-        return p.date === selectedDate;
-      });
+      // Do NOT filter by selectedDate. Keep "View All" on the map consistently.
       // Sort photos by date first, then by time to construct chronological photo paths
-      visiblePhotoPoints.sort((a, b) => {
+      allPhotoPoints.sort((a, b) => {
         const dateA = a.date || '';
         const dateB = b.date || '';
         if (dateA !== dateB) return dateA.localeCompare(dateB);
@@ -1074,7 +1053,7 @@ export function JourneyDetailPage({
         if (timeA !== timeB) return timeA - timeB;
         return a.id - b.id;
       });
-      return visiblePhotoPoints;
+      return allPhotoPoints;
     } else if (activeTab === 'flights') {
       const flightsToUse = isEditing ? draftFlights : flights;
       const flightPoints: any[] = [];
@@ -1184,7 +1163,7 @@ export function JourneyDetailPage({
     // Check if it's a gallery photo click or timeline photo click from the map
     if (targetId >= 500000 && targetId < 600000) {
       setActiveTab('gallery');
-    } else if (targetId >= 600000 && targetId < 700000) {
+    } else if (targetId >= 600000000 && targetId < 700000000) {
       setActiveTab('gallery');
     }
 
@@ -1933,7 +1912,7 @@ export function JourneyDetailPage({
               mapPoints={mapPoints}
               expandedItemId={expandedItemId}
               handleItemToggle={handleItemToggle}
-              selectedDate={selectedDate}
+              selectedDate={activeTab === 'gallery' ? 'ALL' : selectedDate}
               isDarkMode={isDarkMode}
               activeTab={activeTab}
               transitFocusType={transitFocusType}
@@ -2391,16 +2370,13 @@ export function JourneyDetailPage({
                                   if (!isEditing) {
                                     e.stopPropagation();
                                     setActiveTab('gallery');
-                                    const tImgIdx = timelineImages.findIndex(img => img.url === item.img);
-                                    if (tImgIdx !== -1) {
-                                      setExpandedItemId(600000 + tImgIdx);
-                                      setTimeout(() => {
-                                        const el = itemRefs.current[600000 + tImgIdx];
-                                        if (el) {
-                                          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                        }
-                                      }, 300);
-                                    }
+                                    setExpandedItemId(600000000 + item.id);
+                                    setTimeout(() => {
+                                      const el = itemRefs.current[600000000 + item.id];
+                                      if (el) {
+                                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                      }
+                                    }, 300);
                                   }
                                 }}
                               >
@@ -3081,11 +3057,11 @@ export function JourneyDetailPage({
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5 pb-12">
                     {timelineImages.map((imgItem, idx) => {
-                      const isPhotoActive = expandedItemId === (600000 + idx);
+                      const isPhotoActive = expandedItemId === (600000000 + imgItem.itemId);
                       
                       return (
                         <div 
-                          ref={el => { itemRefs.current[600000 + idx] = el; }}
+                          ref={el => { itemRefs.current[600000000 + imgItem.itemId] = el; }}
                           key={`timeline-${imgItem.url}-${idx}`} 
                           className="flex flex-col group/gallery"
                         >
@@ -3094,7 +3070,7 @@ export function JourneyDetailPage({
                             className={`relative overflow-hidden border transition-all duration-300 cursor-pointer aspect-[4/3] group ${isPhotoActive ? 'border-orange-500 scale-[1.02] shadow-md ring-2 ring-orange-500/30' : 'border-black/10 dark:border-white/10'}`}
                             onClick={() => {
                               // 1번 터치: 핀 강조 및 줌
-                              setExpandedItemId(600000 + idx);
+                              setExpandedItemId(600000000 + imgItem.itemId);
                             }}
                             onDoubleClick={() => {
                               // 2번 터치(더블 탭): 전체 화면 라이트박스 바로 진입
