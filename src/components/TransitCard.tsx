@@ -115,12 +115,11 @@ export function TransitCard({
         </div>
         {isEditMode ? (
           <input
-            type="text"
-            value={transit.date}
-            onChange={(e) => onUpdate(transit.id, 'date', e.target.value)}
+            type="date"
+            value={transit.date ? transit.date.replace(/\./g, '-') : ''}
+            onChange={(e) => onUpdate(transit.id, 'date', e.target.value.replace(/-/g, '.'))}
             onClick={(e) => e.stopPropagation()}
             className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 text-right"
-            placeholder="YYYY.MM.DD"
           />
         ) : (
           <span>{transit.date}</span>
@@ -165,7 +164,7 @@ export function TransitCard({
                 value={timeStrTo24h(transit.time)}
                 onChange={(e) => onUpdate(transit.id, 'time', time24hTo12h(e.target.value))}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none font-bold text-2xl md:text-3xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 mt-3 text-center"
+                className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none font-bold text-2xl md:text-3xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full max-w-[144px] min-w-0 mt-3 text-center"
               />
             ) : (
               <div className="text-2xl md:text-4xl font-black mt-4 tracking-tighter leading-none">

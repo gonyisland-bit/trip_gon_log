@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { MapPin, Plus, Minus, Store, ShoppingBag, Train, Loader2 } from 'lucide-react';
-import { Trip, TimelineItem } from '../types';
+import { Trip, TimelineItem, TransitItem } from '../types';
 
 const dayColors = [
   '#dc2626', // Day 1: Red
@@ -23,6 +23,7 @@ interface MapAreaProps {
   isDarkMode: boolean;
   activeTab?: string;
   transitFocusType?: 'depart' | 'arrive' | 'boarding' | null;
+  transits?: TransitItem[];
 }
 
 export function MapArea({
@@ -35,6 +36,7 @@ export function MapArea({
   isDarkMode,
   activeTab,
   transitFocusType,
+  transits = [],
 }: MapAreaProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -535,7 +537,7 @@ export function MapArea({
       animMarkerRef.current = null;
     }
 
-    if (activeTab === 'flights' && expandedItemId !== null) {
+    if ((activeTab === 'flights' || activeTab === 'transit') && expandedItemId !== null) {
       // Find depart and arrive points (f.id * 10 & f.id * 10 + 1)
       const fromPoint = mapPoints.find(p => p.id === expandedItemId * 10);
       const toPoint = mapPoints.find(p => p.id === expandedItemId * 10 + 1);
@@ -552,23 +554,43 @@ export function MapArea({
           const dx = endLng - startLng;
           const angle = Math.atan2(dx, dy) * 180 / Math.PI;
 
-          // SVG airplane path with nose pointing straight up (0 deg / North)
-          const planeIconHtml = `
-            <div class="animated-plane-wrapper" style="transform: rotate(${angle}deg); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
-              <svg viewBox="0 0 512 512" width="26" height="26" fill="#dc2626" style="filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.45));">
-                <path d="M496 384L320 240V96c0-53-43-96-96-96s-96 43-96 96v144L16 384v48l128-48v96l-32 32v32l96-32 96 32v-32l-32-32v-96l128 48v-48z"/>
-              </svg>
+          // Resolve vehicle icon src and size
+          let src = '/airplane.png';
+          let width = 38;
+          let height = 38;
+
+          if (activeTab === 'transit') {
+            const transit = transits.find(t => t.id === expandedItemId);
+            const ticketType = (transit?.ticketType || '').toUpperCase();
+            if (ticketType.includes('BUS')) {
+              src = '/bus.png';
+              width = 24;
+              height = 48;
+            } else if (ticketType.includes('TAXI') || ticketType.includes('CAR')) {
+              src = '/car.png';
+              width = 28;
+              height = 40;
+            } else {
+              src = '/train.png';
+              width = 20;
+              height = 50;
+            }
+          }
+
+          const vehicleIconHtml = `
+            <div class="animated-vehicle-wrapper" style="transform: rotate(${angle}deg); width: ${width}px; height: ${height}px; display: flex; align-items: center; justify-content: center;">
+              <img src="${src}" style="width: ${width}px; height: ${height}px; object-fit: contain; filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.4));" />
             </div>
           `;
 
-          const planeIcon = L.divIcon({
-            className: 'custom-animated-plane-icon',
-            html: planeIconHtml,
-            iconSize: [32, 32],
-            iconAnchor: [16, 16]
+          const vehicleIcon = L.divIcon({
+            className: 'custom-animated-vehicle-icon',
+            html: vehicleIconHtml,
+            iconSize: [width, height],
+            iconAnchor: [width / 2, height / 2]
           });
 
-          const animMarker = L.marker([startLat, startLng], { icon: planeIcon, zIndexOffset: 3000 }).addTo(map);
+          const animMarker = L.marker([startLat, startLng], { icon: vehicleIcon, zIndexOffset: 3000 }).addTo(map);
           animMarkerRef.current = animMarker;
 
           const duration = 3000; // 3 seconds flight cycle

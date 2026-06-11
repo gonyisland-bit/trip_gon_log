@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Temporary agent media/screenshots
+public/media__*
+public/brain_imgs/

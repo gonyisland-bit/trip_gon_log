@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   Clock, Plane, Bed, Train, Bus, User, Edit2, Trash2, 
   Image as ImageIcon, ChevronUp, ChevronDown, MapPin, Map, Plus, Loader2, Search, ArrowLeft,
-  ExternalLink, MapPinOff, Maximize2
+  ExternalLink, MapPinOff, Maximize2, Star, ChevronLeft, ChevronRight, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { MapArea } from '../components/MapArea';
 import { ImageEditOverlay } from '../components/ImageEditOverlay';
@@ -390,6 +390,16 @@ export function JourneyDetailPage({
   const [stayCoords, setStayCoords] = useState<{ [stayId: number]: { lat: number; lng: number } }>({});
   const [transitFocusType, setTransitFocusType] = useState<'depart' | 'arrive' | 'boarding' | null>(null);
 
+  // Frequent places states
+  const [frequentPlaces, setFrequentPlaces] = useState<{place: string, location: string, hours: string, lat: number, lng: number}[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('frequentPlaces') || '[]');
+    } catch (_) {
+      return [];
+    }
+  });
+  const [activePlaceInputId, setActivePlaceInputId] = useState<number | null>(null);
+
   const tripToUse = isEditing ? draftTrip : trip;
   const generatedDates = generateDateList(tripToUse?.date || '');
   const [airportGeocodedCoords, setAirportGeocodedCoords] = useState<{ [code: string]: { lat: number; lng: number } }>({});
@@ -472,6 +482,56 @@ export function JourneyDetailPage({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const itemRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const dateBarRef = useRef<HTMLDivElement>(null);
+  const isDown = useRef(false);
+  const startX = useRef(0);
+  const scrollLeftRef = useRef(0);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!dateBarRef.current) return;
+    isDown.current = true;
+    startX.current = e.pageX - dateBarRef.current.offsetLeft;
+    scrollLeftRef.current = dateBarRef.current.scrollLeft;
+  };
+
+  const handleMouseLeave = () => {
+    isDown.current = false;
+  };
+
+  const handleMouseUp = () => {
+    isDown.current = false;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDown.current || !dateBarRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - dateBarRef.current.offsetLeft;
+    const walk = (x - startX.current) * 1.5;
+    dateBarRef.current.scrollLeft = scrollLeftRef.current - walk;
+  };
+
+  const scrollDays = (direction: 'left' | 'right') => {
+    const container = dateBarRef.current;
+    if (!container) return;
+    const children = Array.from(container.children) as HTMLElement[];
+    if (children.length === 0) return;
+
+    if (direction === 'right') {
+      const nextChild = children.find(child => child.offsetLeft > container.scrollLeft + container.clientWidth - 5);
+      if (nextChild) {
+        container.scrollTo({ left: nextChild.offsetLeft, behavior: 'smooth' });
+      } else {
+        container.scrollBy({ left: container.clientWidth * 0.8, behavior: 'smooth' });
+      }
+    } else {
+      const prevChildren = children.filter(child => child.offsetLeft < container.scrollLeft - 5);
+      if (prevChildren.length > 0) {
+        const prevChild = prevChildren[prevChildren.length - 1];
+        container.scrollTo({ left: prevChild.offsetLeft, behavior: 'smooth' });
+      } else {
+        container.scrollBy({ left: -container.clientWidth * 0.8, behavior: 'smooth' });
+      }
+    }
+  };
 
   // Deep-linking search focus effect
   useEffect(() => {
@@ -1257,6 +1317,43 @@ export function JourneyDetailPage({
     );
   };
 
+  // Frequent places helpers
+  const toggleFrequentPlace = (item: TimelineItem) => {
+    const exists = frequentPlaces.some(p => p.place === item.place);
+    let updated;
+    if (exists) {
+      updated = frequentPlaces.filter(p => p.place !== item.place);
+    } else {
+      updated = [
+        ...frequentPlaces,
+        {
+          place: item.place,
+          location: item.location || '',
+          hours: item.hours || '',
+          lat: item.lat !== undefined ? Number(item.lat) : 0,
+          lng: item.lng !== undefined ? Number(item.lng) : 0
+        }
+      ];
+    }
+    setFrequentPlaces(updated);
+    localStorage.setItem('frequentPlaces', JSON.stringify(updated));
+  };
+
+  const isFrequent = (place: string) => {
+    return frequentPlaces.some(p => p.place === place);
+  };
+
+  const handleSelectFrequent = (item: TimelineItem, fp: typeof frequentPlaces[0]) => {
+    updateTimelineItemFields(item.id, {
+      place: fp.place,
+      location: fp.location || '',
+      hours: fp.hours || '',
+      lat: fp.lat,
+      lng: fp.lng
+    });
+    setActivePlaceInputId(null);
+  };
+
   const handleToggleExcludeFromMap = async (item: TimelineItem) => {
     const newExclude = !item.excludeFromMap;
     if (isEditing) {
@@ -1798,6 +1895,7 @@ export function JourneyDetailPage({
               isDarkMode={isDarkMode}
               activeTab={activeTab}
               transitFocusType={transitFocusType}
+              transits={isEditing ? draftTransits : transits}
             />
           </ErrorBoundary>
         </div>
@@ -1835,10 +1933,23 @@ export function JourneyDetailPage({
           {activeTab === 'timeline' && (
             <div className="animate-in fade-in duration-300 h-auto flex flex-col w-full relative">
               {/* Day filter selector bar */}
-              <div className="relative border-b border-black/20 dark:border-white/20 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0 w-full flex">
+              <div className="relative border-b border-black/20 dark:border-white/20 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0 w-full flex items-center">
+                {/* Scroll buttons for desktop/web */}
+                <button 
+                  onClick={() => scrollDays('left')}
+                  className="absolute left-0 top-0 bottom-0 px-2 bg-gradient-to-r from-[#F9F8F6] via-[#F9F8F6] to-transparent dark:from-[#111111] dark:via-[#111111] z-10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center"
+                  aria-label="Scroll left"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
                 <div 
                   ref={dateBarRef}
-                  className="flex overflow-x-auto hide-scrollbar w-full scroll-smooth"
+                  onMouseDown={handleMouseDown}
+                  onMouseLeave={handleMouseLeave}
+                  onMouseUp={handleMouseUp}
+                  onMouseMove={handleMouseMove}
+                  className="flex overflow-x-auto hide-scrollbar w-full scroll-smooth select-none cursor-grab active:cursor-grabbing px-6"
                 >
                   {dynamicDates.map((d) => (
                     <button 
@@ -1846,6 +1957,7 @@ export function JourneyDetailPage({
                       data-active={selectedDate === d.date}
                       onClick={() => { setSelectedDate(d.date); setExpandedItemId(null); }} 
                       className={`flex-1 min-w-[90px] md:min-w-[110px] py-2.5 md:py-3.5 px-3 md:px-4 flex flex-col items-center justify-center border-r border-black/20 dark:border-white/20 last:border-r-0 transition-all whitespace-nowrap ${selectedDate === d.date ? 'bg-black text-[#F9F8F6] dark:bg-white dark:text-black' : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white'}`}
+                      onMouseDown={(e) => e.stopPropagation()}
                     >
                       <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest opacity-60 mb-0.5">
                         {d.label}
@@ -1854,9 +1966,14 @@ export function JourneyDetailPage({
                     </button>
                   ))}
                 </div>
-                {/* Horizontal scroll indicators */}
-                <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-[#F9F8F6] dark:from-[#111111] to-transparent pointer-events-none opacity-80" />
-                <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-[#F9F8F6] dark:from-[#111111] to-transparent pointer-events-none opacity-80" />
+
+                <button 
+                  onClick={() => scrollDays('right')}
+                  className="absolute right-0 top-0 bottom-0 px-2 bg-gradient-to-l from-[#F9F8F6] via-[#F9F8F6] to-transparent dark:from-[#111111] dark:via-[#111111] z-10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center"
+                  aria-label="Scroll right"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
 
               {!isLoggedIn && (
@@ -1995,9 +2112,9 @@ export function JourneyDetailPage({
                             className="group flex flex-row items-start py-4 px-4 md:py-5 md:px-6 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer relative w-full" 
                             onClick={() => handleItemToggle(item.id)}
                           >
-                            {/* Checkbox for batch select */}
+                            {/* Checkbox for batch select & Delete button */}
                             {isEditing && (
-                              <div className="mr-3 mt-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                              <div className="mr-3 mt-1.5 shrink-0 flex flex-col items-center gap-3" onClick={(e) => e.stopPropagation()}>
                                 <input
                                   type="checkbox"
                                   checked={selectedItemIds.includes(item.id)}
@@ -2010,10 +2127,18 @@ export function JourneyDetailPage({
                                   }}
                                   className="w-4 h-4 rounded border-black/20 dark:border-white/20 text-red-600 focus:ring-red-500 cursor-pointer accent-red-600"
                                 />
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteTimelineItem(item.id)}
+                                  className="text-red-500 hover:text-red-700 p-1 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                                  title="일정 삭제"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
                               </div>
                             )}
                             {/* Time */}
-                            <div className={`shrink-0 text-[10px] md:text-xs font-bold tracking-widest mt-1 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60'} ${isEditing ? 'w-[76px] md:w-28 flex flex-col gap-1' : 'w-16 md:w-24 flex flex-col gap-1.5'}`}>
+                            <div className={`shrink-0 text-[10px] md:text-xs font-bold tracking-widest mt-1 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60'} ${isEditing ? 'w-24 md:w-28 flex flex-col gap-1' : 'w-16 md:w-24 flex flex-col gap-1.5'}`}>
                               {isEditing ? (
                                 <div className="flex flex-col gap-1 w-full" onClick={(e) => e.stopPropagation()}>
                                   <input
@@ -2103,15 +2228,53 @@ export function JourneyDetailPage({
                           <div className="flex-grow pr-2 md:pr-4 min-w-0">
                             <div className={`font-bold tracking-tight text-sm md:text-base flex items-center gap-2 flex-wrap ${isActive ? 'text-red-600 dark:text-red-400' : ''}`}>
                               {isEditing ? (
-                                <div className="w-full" onClick={(e) => e.stopPropagation()}>
-                                  <input
-                                    id={`title-input-${item.id}`}
-                                    type="text"
-                                    value={item.place}
-                                    onChange={(e) => updateTimelineItem(item.id, 'place', e.target.value)}
-                                    className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-sm md:text-base text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
-                                    placeholder="일정 이름"
-                                  />
+                                <div className="w-full relative" onClick={(e) => e.stopPropagation()}>
+                                  <div className="flex items-center gap-1.5 w-full relative">
+                                    <input
+                                      id={`title-input-${item.id}`}
+                                      type="text"
+                                      value={item.place}
+                                      onChange={(e) => updateTimelineItem(item.id, 'place', e.target.value)}
+                                      onFocus={() => setActivePlaceInputId(item.id)}
+                                      onBlur={() => {
+                                        setTimeout(() => setActivePlaceInputId(null), 250);
+                                      }}
+                                      className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-sm md:text-base text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
+                                      placeholder="일정 이름"
+                                    />
+                                    <button 
+                                      type="button"
+                                      onClick={() => toggleFrequentPlace(item)}
+                                      className="p-1 hover:text-yellow-500 text-black/30 dark:text-white/30 transition-colors shrink-0"
+                                      title={isFrequent(item.place) ? "자주 가는 장소 등록 해제" : "자주 가는 장소로 등록"}
+                                    >
+                                      <Star className={`w-3.5 h-3.5 ${isFrequent(item.place) ? 'fill-yellow-400 text-yellow-500' : ''}`} />
+                                    </button>
+                                  </div>
+
+                                  {/* Frequent Places Auto-complete Dropdown */}
+                                  {activePlaceInputId === item.id && frequentPlaces.length > 0 && (
+                                    <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-[#222222] border border-black/20 dark:border-white/20 shadow-xl z-50 max-h-40 overflow-y-auto rounded-none" onClick={(e) => e.stopPropagation()}>
+                                      <div className="px-2 py-1 text-[8px] font-bold text-black/40 dark:text-white/40 border-b border-black/5 dark:border-white/5 uppercase tracking-widest">
+                                        자주 사용하는 장소
+                                      </div>
+                                      {frequentPlaces
+                                        .filter(fp => fp.place.toLowerCase().includes((item.place || '').toLowerCase()))
+                                        .map((fp, idx) => (
+                                          <div 
+                                            key={idx}
+                                            onMouseDown={() => handleSelectFrequent(item, fp)}
+                                            className="px-2.5 py-2 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer text-left border-b border-black/5 dark:border-white/5 last:border-b-0 text-xs font-bold text-black dark:text-white"
+                                          >
+                                            <div className="font-bold flex items-center gap-1.5">
+                                              <MapPin className="w-3 h-3 text-red-500" />
+                                              {fp.place}
+                                            </div>
+                                            {fp.location && <div className="text-[10px] text-black/50 dark:text-white/50 truncate pl-4.5">{fp.location}</div>}
+                                          </div>
+                                        ))}
+                                    </div>
+                                  )}
                                 </div>
                               ) : (
                                 <span>{item.place}</span>
@@ -2122,8 +2285,9 @@ export function JourneyDetailPage({
                             <div className="mt-1">
                               {isEditing ? (
                                 <textarea
-                                  value={item.memo}
-                                  onChange={(e) => updateTimelineItem(item.id, 'memo', e.target.value)}
+                                  key={`memo-${item.id}-${item.memo || ''}`}
+                                  defaultValue={item.memo}
+                                  onBlur={(e) => updateTimelineItem(item.id, 'memo', e.target.value)}
                                   onClick={(e) => e.stopPropagation()}
                                   className="bg-[#EAE8E3] dark:bg-white/10 p-1 outline-none text-xs md:text-sm text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full resize-none"
                                   rows={item.memo ? Math.max(1, item.memo.split('\n').length) : 1}
@@ -2137,27 +2301,20 @@ export function JourneyDetailPage({
 
                             {/* Actions (Edit mode) */}
                             {isEditing && isActive && (
-                              <div className="flex flex-wrap gap-4 mt-3 pt-3 border-t border-black/10 dark:border-white/10 text-[10px] md:text-xs font-bold uppercase tracking-widest" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center gap-3.5 mt-3 pt-3 border-t border-black/10 dark:border-white/10 text-[10px] md:text-xs font-bold uppercase tracking-widest" onClick={(e) => e.stopPropagation()}>
                                  <button 
                                    type="button"
                                    className="flex items-center gap-1 text-black dark:text-white hover:opacity-75 transition-opacity" 
                                    onClick={() => handleAddTimelineItemRelativeTo(item.id, 'above')}
                                  >
-                                   <Plus className="w-3 h-3"/> Add Above
+                                   <ArrowUp className="w-3.5 h-3.5"/> Add
                                  </button>
                                  <button 
                                    type="button"
                                    className="flex items-center gap-1 text-black dark:text-white hover:opacity-75 transition-opacity" 
                                    onClick={() => handleAddTimelineItemRelativeTo(item.id, 'below')}
                                  >
-                                   <Plus className="w-3 h-3"/> Add Below
-                                 </button>
-                                 <button 
-                                   type="button"
-                                   className="flex items-center gap-1 text-red-600 hover:text-red-400 transition-colors ml-auto" 
-                                   onClick={() => handleDeleteTimelineItem(item.id)}
-                                 >
-                                   <Trash2 className="w-3 h-3"/> Delete
+                                   <ArrowDown className="w-3.5 h-3.5"/> Add
                                  </button>
                               </div>
                             )}
@@ -2169,9 +2326,10 @@ export function JourneyDetailPage({
                               <span className="text-[8px] opacity-40 uppercase font-bold tracking-widest">Cost</span>
                               {isEditing ? (
                                 <input
+                                  key={`cost-${item.id}-${item.cost}`}
                                   type="text"
-                                  value={item.cost}
-                                  onChange={(e) => updateTimelineItem(item.id, 'cost', e.target.value)}
+                                  defaultValue={item.cost}
+                                  onBlur={(e) => updateTimelineItem(item.id, 'cost', e.target.value)}
                                   onClick={(e) => e.stopPropagation()}
                                   className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-[9px] md:text-[10px] text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-16"
                                 />
@@ -2334,9 +2492,10 @@ export function JourneyDetailPage({
                                 <Clock className="w-3.5 h-3.5 md:w-4 md:h-4 text-black/60 dark:text-white/60 shrink-0" />
                                 {isEditing ? (
                                   <input
+                                    key={`hours-${item.id}-${item.hours || ''}`}
                                     type="text"
-                                    value={item.hours || ''}
-                                    onChange={(e) => updateTimelineItem(item.id, 'hours', e.target.value)}
+                                    defaultValue={item.hours || ''}
+                                    onBlur={(e) => updateTimelineItem(item.id, 'hours', e.target.value)}
                                     onClick={(e) => e.stopPropagation()}
                                     className="bg-[#EAE8E3] dark:bg-white/10 px-2 py-1 outline-none text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
                                     placeholder="Hours e.g. 09:00 AM - 18:00 PM"
@@ -2354,9 +2513,10 @@ export function JourneyDetailPage({
                                   <ImageIcon className="w-3.5 h-3.5 md:w-4 md:h-4 mt-0.5 text-black/60 dark:text-white/60 shrink-0" />
                                   {isEditing ? (
                                     <input
+                                      key={`imgnote-${item.id}-${item.imgNote || ''}`}
                                       type="text"
-                                      value={item.imgNote || ''}
-                                      onChange={(e) => updateTimelineItem(item.id, 'imgNote', e.target.value)}
+                                      defaultValue={item.imgNote || ''}
+                                      onBlur={(e) => updateTimelineItem(item.id, 'imgNote', e.target.value)}
                                       onClick={(e) => e.stopPropagation()}
                                       className="bg-[#EAE8E3] dark:bg-white/10 px-2 py-1 outline-none text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
                                       placeholder="사진 메모 (갤러리에 표시됩니다)"

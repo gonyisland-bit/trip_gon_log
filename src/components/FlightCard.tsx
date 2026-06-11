@@ -121,12 +121,11 @@ export function FlightCard({
         )}
         {isEditMode ? (
           <input
-            type="text"
-            value={flight.date}
-            onChange={(e) => onUpdate(flight.id, 'date', e.target.value)}
+            type="date"
+            value={flight.date ? flight.date.replace(/\./g, '-') : ''}
+            onChange={(e) => onUpdate(flight.id, 'date', e.target.value.replace(/-/g, '.'))}
             onClick={(e) => e.stopPropagation()}
             className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 text-right"
-            placeholder="YYYY.MM.DD"
           />
         ) : (
           <span>{flight.date}</span>
