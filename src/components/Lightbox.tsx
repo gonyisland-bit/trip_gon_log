@@ -35,6 +35,52 @@ export function Lightbox({
   const dragStart = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const imgRef = useRef<HTMLImageElement>(null);
 
+  // Touch event refs for mobile swiping & panning
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const minSwipeDistance = 50;
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    if (scale <= 1) {
+      touchStartX.current = touch.clientX;
+      touchStartY.current = touch.clientY;
+    } else {
+      setIsDragging(true);
+      dragStart.current = { x: touch.clientX - position.x, y: touch.clientY - position.y };
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || scale <= 1) return;
+    const touch = e.touches[0];
+    setPosition({
+      x: touch.clientX - dragStart.current.x,
+      y: touch.clientY - dragStart.current.y
+    });
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (scale <= 1 && touchStartX.current !== null && touchStartY.current !== null) {
+      const touch = e.changedTouches[0];
+      const distanceX = touch.clientX - touchStartX.current;
+      const distanceY = touch.clientY - touchStartY.current;
+
+      if (Math.abs(distanceX) > Math.abs(distanceY)) {
+        if (Math.abs(distanceX) > minSwipeDistance) {
+          if (distanceX > 0) {
+            handlePrev();
+          } else {
+            handleNext();
+          }
+        }
+      }
+    }
+    setIsDragging(false);
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
+
   const handlePrev = useCallback(() => {
     const nextIndex = (currentIndex - 1 + images.length) % images.length;
     onNavigate(nextIndex);
@@ -145,6 +191,9 @@ export function Lightbox({
       className="fixed inset-0 z-[10000] bg-black flex flex-col select-none animate-in fade-in duration-300"
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
       {/* Top Header controls */}
       <div className="flex justify-between items-center px-4 py-3 md:px-6 md:py-4 text-white z-20 bg-gradient-to-b from-black/80 to-transparent absolute top-0 left-0 right-0 pointer-events-none">
