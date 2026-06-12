@@ -537,21 +537,23 @@ export function FlightCard({
       
       {/* Settlement Section */}
       {(isEditMode || (flight.cost && flight.cost !== '-')) && (
-        <div className="mt-4 pt-3 border-t border-dashed border-black/10 dark:border-white/10 flex flex-wrap items-center justify-between gap-2">
-          <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest">EXPENSE (정산)</span>
-          <SettlementExpenseInput
-            cost={flight.cost}
-            currency={flight.currency}
-            paidBy={flight.paidBy}
-            members={members}
-            isEditMode={isEditMode}
-            onUpdate={(updates) => {
-              if (updates.cost !== undefined) onUpdate(flight.id, 'cost', updates.cost);
-              if (updates.currency !== undefined) onUpdate(flight.id, 'currency', updates.currency);
-              if (updates.paidBy !== undefined) onUpdate(flight.id, 'paidBy', updates.paidBy);
-            }}
-            defaultCurrency={defaultCurrency}
-          />
+        <div className="px-4 pb-4 md:px-6 md:pb-6">
+          <div className={`pt-3 border-t border-dashed border-black/10 dark:border-white/10 flex flex-wrap items-center justify-between gap-2 ${isEditMode ? 'pr-8' : ''}`}>
+            <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest">EXPENSE (정산)</span>
+            <SettlementExpenseInput
+              cost={flight.cost}
+              currency={flight.currency}
+              paidBy={flight.paidBy}
+              members={members}
+              isEditMode={isEditMode}
+              onUpdate={(updates) => {
+                if (updates.cost !== undefined) onUpdate(flight.id, 'cost', updates.cost);
+                if (updates.currency !== undefined) onUpdate(flight.id, 'currency', updates.currency);
+                if (updates.paidBy !== undefined) onUpdate(flight.id, 'paidBy', updates.paidBy);
+              }}
+              defaultCurrency={defaultCurrency}
+            />
+          </div>
         </div>
       )}
       

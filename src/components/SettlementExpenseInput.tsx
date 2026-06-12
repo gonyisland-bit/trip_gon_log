@@ -9,6 +9,7 @@ interface SettlementExpenseInputProps {
   onUpdate: (updates: { cost: string; currency?: string; paidBy?: string }) => void;
   className?: string;
   defaultCurrency?: string;
+  vertical?: boolean;
 }
 
 export const getDefaultCurrencyForLocation = (locationStr: string = ''): string => {
@@ -123,6 +124,7 @@ export function SettlementExpenseInput({
   onUpdate,
   className = '',
   defaultCurrency = 'KRW',
+  vertical = false,
 }: SettlementExpenseInputProps) {
   const activeCurrency = currency || defaultCurrency;
   const displayMembers = members.length > 0 ? members : ['나'];
@@ -141,6 +143,50 @@ export function SettlementExpenseInput({
   };
 
   if (isEditMode) {
+    if (vertical) {
+      return (
+        <div 
+          className={`flex flex-col items-end gap-1 text-[9px] md:text-[10px] font-bold ${className}`}
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center border border-black/10 dark:border-white/10 bg-white dark:bg-black/20 p-0.5 rounded-sm w-20 md:w-24">
+            <input
+              type="text"
+              value={cost}
+              onChange={handleCostChange}
+              placeholder="0"
+              className="w-full bg-transparent outline-none text-[9px] md:text-[10px] font-bold text-right px-0.5 text-black dark:text-white"
+            />
+            <select
+              value={activeCurrency}
+              onChange={handleCurrencyChange}
+              className="bg-transparent outline-none text-[8px] md:text-[9px] font-bold text-black/60 dark:text-white/60 border-l border-black/10 dark:border-white/10 pl-0.5 cursor-pointer shrink-0"
+            >
+              <option value="KRW">₩</option>
+              <option value="USD">$</option>
+              <option value="JPY">¥</option>
+              <option value="EUR">€</option>
+              <option value="CNY">¥</option>
+            </select>
+          </div>
+
+          <select
+            value={paidBy}
+            onChange={handlePaidByChange}
+            className="bg-white dark:bg-[#222] border border-black/10 dark:border-white/10 px-1 py-0.5 text-[8px] md:text-[9px] font-bold text-black/60 dark:text-white/60 rounded-sm cursor-pointer w-20 md:w-24 outline-none"
+          >
+            <option value="">USER</option>
+            {displayMembers.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        </div>
+      );
+    }
+
     return (
       <div 
         className={`flex flex-wrap items-center gap-1.5 text-[10px] md:text-xs font-bold ${className}`}
@@ -173,7 +219,7 @@ export function SettlementExpenseInput({
           onChange={handlePaidByChange}
           className="bg-white dark:bg-[#222] border border-black/10 dark:border-white/10 px-1 py-0.5 text-[9px] md:text-[10px] font-bold text-black/60 dark:text-white/60 rounded-sm cursor-pointer"
         >
-          <option value="">결제자 선택</option>
+          <option value="">USER</option>
           {displayMembers.map((m) => (
             <option key={m} value={m}>
               {m}

@@ -2068,7 +2068,7 @@ export function JourneyDetailPage({
             title="정산 모드"
           >
             <Calculator className="w-3.5 h-3.5" />
-            <span>Settlement</span>
+            <span>Pay</span>
           </button>
 
           {isLoggedIn && (
@@ -2095,7 +2095,7 @@ export function JourneyDetailPage({
                 onClick={handleStartEditing}
                 className="px-2.5 py-1.5 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-[9px] font-black uppercase tracking-widest rounded-sm transition-all cursor-pointer"
               >
-                Edit Journey
+                Edit
               </button>
             )}
           </div>
@@ -2103,124 +2103,126 @@ export function JourneyDetailPage({
       </div>
     </div>
       
-      {/* Tags row */}
-      {isEditing && draftTrip ? (
-        <div className="mt-2 flex flex-wrap gap-1.5 items-center">
-          {(draftTrip.tags || []).filter(t => t !== 'Personal').map(tag => (
-            <span
-              key={tag}
-              className="text-[8px] md:text-[9px] font-bold border border-orange-500/50 dark:border-orange-400/50 px-2.5 py-0.5 uppercase rounded-full flex items-center gap-1 bg-orange-500/5 dark:bg-orange-400/5 text-orange-600 dark:text-orange-400 shadow-sm"
-            >
-              #{tag}
-              <button
-                type="button"
-                onClick={() => {
-                  const updatedTags = draftTrip.tags.filter(t => t !== tag);
-                  setDraftTrip({ ...draftTrip, tags: updatedTags });
-                }}
-                className="hover:text-red-500 transition-colors font-bold text-[9px] px-0.5 shrink-0 cursor-pointer"
-                title="태그 삭제"
-              >
-                ✕
-              </button>
-            </span>
-          ))}
-          <input
-            type="text"
-            placeholder="+ Tag"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                e.stopPropagation();
-                const val = e.currentTarget.value.trim().replace(/#/g, '');
-                if (val && !draftTrip.tags.includes(val)) {
-                  const updatedTags = [...draftTrip.tags, val];
-                  setDraftTrip({ ...draftTrip, tags: updatedTags });
-                  e.currentTarget.value = '';
-                }
-              }
-            }}
-            className="text-[8px] md:text-[9px] font-bold border border-black/20 dark:border-white/20 px-2.5 py-0.5 rounded-full bg-transparent outline-none w-16 focus:w-24 focus:border-orange-500 transition-all duration-200 text-black dark:text-white"
-          />
-        </div>
-      ) : (
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {(tripToUse?.tags || []).filter(t => t !== 'Personal').map(tag => {
-            const isPlan = trip?.tags.includes('Plan') || trip?.title.includes('(Plan)');
-            return (
-              <button
-                key={tag}
-                onClick={() => onNavigate(isPlan ? 'plan' : 'archive', null, true, tag)}
-                className="text-[8px] md:text-[9px] font-bold border border-black/20 dark:border-white/20 px-2 py-0.5 uppercase rounded-full hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black hover:border-black dark:hover:border-white transition-all duration-200 cursor-pointer shadow-sm"
-              >
-                #{tag}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Members row */}
-      <div 
-        className="mt-2.5 flex flex-wrap gap-1.5 items-center text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-black/50 dark:text-white/50"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <span className="opacity-60 flex items-center gap-1">👥 Members:</span>
-        {isEditing && draftTrip ? (
-          <div className="flex flex-wrap gap-1.5 items-center">
-            {(draftTrip.members || []).map(m => (
-              <span key={m} className="px-2 py-0.5 bg-black/5 dark:bg-white/5 border border-red-500/40 dark:border-red-500/40 rounded-sm text-black/75 dark:text-white/75 font-black flex items-center gap-1">
-                {m}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (window.confirm(`정말 '${m}' 인원을 삭제하시겠습니까? 관련 결제 기록의 결제자가 변경될 수 있습니다.`)) {
-                      const newMembers = (draftTrip.members || []).filter(x => x !== m);
-                      setDraftTrip({ ...draftTrip, members: newMembers });
-                    }
-                  }}
-                  className="hover:text-red-500 transition-colors font-bold text-[9px] px-0.5 shrink-0 cursor-pointer text-red-600"
-                  title="인원 삭제"
+      {/* Tags & Members row */}
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-black/50 dark:text-white/50" onClick={(e) => e.stopPropagation()}>
+        {/* Tags sub-group */}
+        <div className="flex flex-wrap gap-1.5 items-center">
+          {isEditing && draftTrip ? (
+            <>
+              {(draftTrip.tags || []).filter(t => t !== 'Personal').map(tag => (
+                <span
+                  key={tag}
+                  className="text-[8px] md:text-[9px] font-bold border border-orange-500/50 dark:border-orange-400/50 px-2.5 py-0.5 uppercase rounded-full flex items-center gap-1 bg-orange-500/5 dark:bg-orange-400/5 text-orange-600 dark:text-orange-400 shadow-sm"
                 >
-                  ✕
-                </button>
-              </span>
-            ))}
-            <input
-              type="text"
-              placeholder="+ Member"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const val = e.currentTarget.value.trim();
-                  if (val) {
-                    if ((draftTrip.members || []).includes(val)) {
-                      alert("이미 등록된 인원입니다.");
-                    } else {
-                      const newMembers = [...(draftTrip.members || []), val];
-                      setDraftTrip({ ...draftTrip, members: newMembers });
+                  #{tag}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updatedTags = draftTrip.tags.filter(t => t !== tag);
+                      setDraftTrip({ ...draftTrip, tags: updatedTags });
+                    }}
+                    className="hover:text-red-500 transition-colors font-bold text-[9px] px-0.5 shrink-0 cursor-pointer"
+                    title="태그 삭제"
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+              <input
+                type="text"
+                placeholder="+ Tag"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const val = e.currentTarget.value.trim().replace(/#/g, '');
+                    if (val && !draftTrip.tags.includes(val)) {
+                      const updatedTags = [...draftTrip.tags, val];
+                      setDraftTrip({ ...draftTrip, tags: updatedTags });
                       e.currentTarget.value = '';
                     }
                   }
-                }
-              }}
-              className="text-[8px] md:text-[9px] font-bold border border-black/20 dark:border-white/20 px-2.5 py-0.5 rounded-full bg-transparent outline-none w-16 focus:w-24 focus:border-orange-500 transition-all duration-200 text-black dark:text-white"
-            />
-          </div>
-        ) : (
-          <>
-            {tripToUse?.members && tripToUse.members.length > 0 ? (
-              tripToUse.members.map(m => (
-                <span key={m} className="px-2 py-0.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm text-black/75 dark:text-white/75 font-black">
+                }}
+                className="text-[8px] md:text-[9px] font-bold border border-black/20 dark:border-white/20 px-2.5 py-0.5 rounded-full bg-transparent outline-none w-16 focus:w-24 focus:border-orange-500 transition-all duration-200 text-black dark:text-white"
+              />
+            </>
+          ) : (
+            (tripToUse?.tags || []).filter(t => t !== 'Personal').map(tag => {
+              const isPlan = trip?.tags.includes('Plan') || trip?.title.includes('(Plan)');
+              return (
+                <button
+                  key={tag}
+                  onClick={() => onNavigate(isPlan ? 'plan' : 'archive', null, true, tag)}
+                  className="text-[8px] md:text-[9px] font-bold border border-black/20 dark:border-white/20 px-2 py-0.5 uppercase rounded-full hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black hover:border-black dark:hover:border-white transition-all duration-200 cursor-pointer shadow-sm"
+                >
+                  #{tag}
+                </button>
+              );
+            })
+          )}
+        </div>
+
+        <span className="text-[9px] md:text-[10px] text-black/20 dark:text-white/20">|</span>
+
+        {/* Members sub-group */}
+        <div className="flex flex-wrap gap-1.5 items-center text-[9px] md:text-[10px] font-bold uppercase tracking-widest">
+          <span className="opacity-60 flex items-center gap-1">👥 Members:</span>
+          {isEditing && draftTrip ? (
+            <div className="flex flex-wrap gap-1.5 items-center">
+              {(draftTrip.members || []).map(m => (
+                <span key={m} className="px-2 py-0.5 bg-black/5 dark:bg-white/5 border border-red-500/40 dark:border-red-500/40 rounded-sm text-black/75 dark:text-white/75 font-black flex items-center gap-1 normal-case">
                   {m}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm(`정말 '${m}' 인원을 삭제하시겠습니까? 관련 결제 기록의 결제자가 변경될 수 있습니다.`)) {
+                        const newMembers = (draftTrip.members || []).filter(x => x !== m);
+                        setDraftTrip({ ...draftTrip, members: newMembers });
+                      }
+                    }}
+                    className="hover:text-red-500 transition-colors font-bold text-[9px] px-0.5 shrink-0 cursor-pointer text-red-600"
+                    title="인원 삭제"
+                  >
+                    ✕
+                  </button>
                 </span>
-              ))
-            ) : (
-              <span className="italic opacity-60">나</span>
-            )}
-          </>
-        )}
+              ))}
+              <input
+                type="text"
+                placeholder="+ Member"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const val = e.currentTarget.value.trim();
+                    if (val) {
+                      if ((draftTrip.members || []).includes(val)) {
+                        alert("이미 등록된 인원입니다.");
+                      } else {
+                        const newMembers = [...(draftTrip.members || []), val];
+                        setDraftTrip({ ...draftTrip, members: newMembers });
+                        e.currentTarget.value = '';
+                      }
+                    }
+                  }
+                }}
+                className="text-[8px] md:text-[9px] font-bold border border-black/20 dark:border-white/20 px-2.5 py-0.5 rounded-full bg-transparent outline-none w-16 focus:w-24 focus:border-orange-500 transition-all duration-200 text-black dark:text-white normal-case"
+              />
+            </div>
+          ) : (
+            <>
+              {tripToUse?.members && tripToUse.members.length > 0 ? (
+                tripToUse.members.map(m => (
+                  <span key={m} className="px-2 py-0.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm text-black/75 dark:text-white/75 font-black normal-case">
+                    {m}
+                  </span>
+                ))
+              ) : (
+                <span className="italic opacity-60 normal-case">나</span>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -2775,7 +2777,7 @@ export function JourneyDetailPage({
 
                           {/* Cost & Image */}
                           <div className="shrink-0 flex flex-col items-end gap-2 ml-2">
-                            <div className="flex items-center gap-1">
+                            <div className={isEditing ? "flex flex-col items-end gap-1" : "flex items-center gap-1"}>
                               <span className="text-[8px] opacity-40 uppercase font-bold tracking-widest">Cost</span>
                               {isEditing ? (
                                 <SettlementExpenseInput
@@ -2784,6 +2786,7 @@ export function JourneyDetailPage({
                                   paidBy={item.paidBy}
                                   members={tripToUse?.members || []}
                                   isEditMode={isEditing}
+                                  vertical={true}
                                   onUpdate={(updates) => {
                                     if (updates.cost !== undefined) updateTimelineItem(item.id, 'cost', updates.cost);
                                     if (updates.currency !== undefined) updateTimelineItem(item.id, 'currency', updates.currency);

@@ -443,7 +443,7 @@ export function StayCard({
 
         {/* Settlement Section */}
         {(isEditMode || (stay.cost && stay.cost !== '-')) && (
-          <div className="mt-4 pt-3 border-t border-dashed border-black/10 dark:border-white/10 flex flex-wrap items-center justify-between gap-2">
+          <div className={`mt-4 pt-3 border-t border-dashed border-black/10 dark:border-white/10 flex flex-wrap items-center justify-between gap-2 ${isEditMode ? 'pr-8' : ''}`}>
             <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest">EXPENSE (정산)</span>
             <SettlementExpenseInput
               cost={stay.cost}
