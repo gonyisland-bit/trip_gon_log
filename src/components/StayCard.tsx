@@ -21,6 +21,7 @@ interface StayCardProps {
   maxDate?: string;
   onOpenMapConfirm?: (placeName: string, url: string) => void;
   members?: string[];
+  defaultCurrency?: string;
 }
 
 // "YYYY.MM.DD - YYYY.MM.DD (N Nights)" -> { checkIn: "YYYY-MM-DD", checkOut: "YYYY-MM-DD" }
@@ -72,6 +73,7 @@ export function StayCard({
   maxDate,
   onOpenMapConfirm,
   members = [],
+  defaultCurrency,
 }: StayCardProps) {
   const { checkIn, checkOut } = parseDateRange(stay.dateRange);
 
@@ -454,6 +456,7 @@ export function StayCard({
                 if (updates.currency !== undefined) onUpdate(stay.id, 'currency', updates.currency);
                 if (updates.paidBy !== undefined) onUpdate(stay.id, 'paidBy', updates.paidBy);
               }}
+              defaultCurrency={defaultCurrency}
             />
           </div>
         )}

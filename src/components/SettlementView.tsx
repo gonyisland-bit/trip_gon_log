@@ -21,6 +21,7 @@ interface SettlementViewProps {
   isEditing: boolean;
   onUpdateMembers: (members: string[]) => void;
   onJumpToItem: (tab: TabType, id: number, date?: string) => void;
+  defaultCurrency?: string;
 }
 
 export function SettlementView({
@@ -32,6 +33,7 @@ export function SettlementView({
   isEditing,
   onUpdateMembers,
   onJumpToItem,
+  defaultCurrency = 'KRW',
 }: SettlementViewProps) {
   const members = trip.members && trip.members.length > 0 ? trip.members : ['나'];
   const [newMemberName, setNewMemberName] = useState('');
@@ -59,7 +61,7 @@ export function SettlementView({
             itemType: 'timeline',
             date,
             cost: item.cost,
-            currency: item.currency || 'KRW',
+            currency: item.currency || defaultCurrency,
             paidBy: item.paidBy || '나',
             rawItem: item,
           });
@@ -76,7 +78,7 @@ export function SettlementView({
           itemType: 'flight',
           date: item.date || '항공일정',
           cost: item.cost,
-          currency: item.currency || 'KRW',
+          currency: item.currency || defaultCurrency,
           paidBy: item.paidBy || '나',
           rawItem: item,
         });
@@ -93,7 +95,7 @@ export function SettlementView({
           itemType: 'stay',
           date: checkInDate || '숙소일정',
           cost: item.cost,
-          currency: item.currency || 'KRW',
+          currency: item.currency || defaultCurrency,
           paidBy: item.paidBy || '나',
           rawItem: item,
         });
@@ -109,7 +111,7 @@ export function SettlementView({
           itemType: 'transit',
           date: item.date || '이동일정',
           cost: item.cost,
-          currency: item.currency || 'KRW',
+          currency: item.currency || defaultCurrency,
           paidBy: item.paidBy || '나',
           rawItem: item,
         });
@@ -118,7 +120,7 @@ export function SettlementView({
 
     // Sort by date chronologically
     return list.sort((a, b) => a.date.localeCompare(b.date));
-  }, [timelineData, flights, stays, transits]);
+  }, [timelineData, flights, stays, transits, defaultCurrency]);
 
   // 2. Parse costs to KRW and accumulate balances
   const parseCostToKRW = (costStr: string, currency: string): number => {

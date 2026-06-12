@@ -17,6 +17,7 @@ interface TransitCardProps {
   maxDate?: string;
   onOpenMapConfirm?: (placeName: string, url: string) => void;
   members?: string[];
+  defaultCurrency?: string;
 }
 
 // Time conversion helpers
@@ -76,6 +77,7 @@ export function TransitCard({
   maxDate,
   onOpenMapConfirm,
   members = [],
+  defaultCurrency,
 }: TransitCardProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [isDetailExpanded, setIsDetailExpanded] = useState(false);
@@ -484,6 +486,7 @@ export function TransitCard({
                 if (updates.currency !== undefined) onUpdate(transit.id, 'currency', updates.currency);
                 if (updates.paidBy !== undefined) onUpdate(transit.id, 'paidBy', updates.paidBy);
               }}
+              defaultCurrency={defaultCurrency}
             />
           </div>
         )}

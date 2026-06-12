@@ -14,6 +14,7 @@ interface FlightCardProps {
   maxDate?: string;
   onOpenMapConfirm?: (placeName: string, url: string) => void;
   members?: string[];
+  defaultCurrency?: string;
 }
 
 // Common Airport suggestions helper list
@@ -92,6 +93,7 @@ export function FlightCard({
   maxDate,
   onOpenMapConfirm,
   members = [],
+  defaultCurrency,
 }: FlightCardProps) {
   const [activeSearchField, setActiveSearchField] = useState<'from' | 'to' | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -548,6 +550,7 @@ export function FlightCard({
               if (updates.currency !== undefined) onUpdate(flight.id, 'currency', updates.currency);
               if (updates.paidBy !== undefined) onUpdate(flight.id, 'paidBy', updates.paidBy);
             }}
+            defaultCurrency={defaultCurrency}
           />
         </div>
       )}

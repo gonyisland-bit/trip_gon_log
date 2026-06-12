@@ -10,7 +10,7 @@ import { ImageEditOverlay } from '../components/ImageEditOverlay';
 import { FlightCard } from '../components/FlightCard';
 import { StayCard } from '../components/StayCard';
 import { TransitCard } from '../components/TransitCard';
-import { SettlementExpenseInput, formatNumberWithCommas } from '../components/SettlementExpenseInput';
+import { SettlementExpenseInput, formatNumberWithCommas, getDefaultCurrencyForLocation } from '../components/SettlementExpenseInput';
 import { SettlementView } from '../components/SettlementView';
 import { Lightbox, LightboxImageMeta } from '../components/Lightbox';
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -438,6 +438,9 @@ export function JourneyDetailPage({
   const [activePlaceInputId, setActivePlaceInputId] = useState<number | null>(null);
 
   const tripToUse = isEditing ? draftTrip : trip;
+  const defaultCurrency = useMemo(() => {
+    return getDefaultCurrencyForLocation(tripToUse?.locationStr);
+  }, [tripToUse?.locationStr]);
   const generatedDates = generateDateList(tripToUse?.date || '');
   const { start: minDate, end: maxDate } = parseDateRange(tripToUse?.date || '');
   const [airportGeocodedCoords, setAirportGeocodedCoords] = useState<{ [code: string]: { lat: number; lng: number } }>({});
@@ -2655,7 +2658,7 @@ export function JourneyDetailPage({
                                 <span className="text-[8.5px] md:text-[9.5px] text-black/40 dark:text-white/40 uppercase font-black tracking-widest block">Expense / Settlement (정산)</span>
                                 <SettlementExpenseInput
                                   cost={item.cost}
-                                  currency={item.currency || 'KRW'}
+                                  currency={item.currency}
                                   paidBy={item.paidBy || ''}
                                   members={tripToUse?.members || []}
                                   isEditMode={isEditing}
@@ -2664,6 +2667,7 @@ export function JourneyDetailPage({
                                     if (updates.currency !== undefined) updateTimelineItem(item.id, 'currency', updates.currency);
                                     if (updates.paidBy !== undefined) updateTimelineItem(item.id, 'paidBy', updates.paidBy);
                                   }}
+                                  defaultCurrency={defaultCurrency}
                                 />
                               </div>
                             )}
@@ -2703,7 +2707,7 @@ export function JourneyDetailPage({
                                 />
                               ) : (
                                 <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest bg-emerald-600/10 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-400 px-2 py-0.5 md:py-1 rounded-sm whitespace-nowrap block">
-                                  {item.cost && item.cost !== '-' ? `${item.cost} ${item.currency || 'KRW'} ${item.paidBy ? `(${item.paidBy})` : ''}` : '-'}
+                                  {item.cost && item.cost !== '-' ? `${item.cost} ${item.currency || defaultCurrency} ${item.paidBy ? `(${item.paidBy})` : ''}` : '-'}
                                 </span>
                               )}
                             </div>
@@ -3028,6 +3032,7 @@ export function JourneyDetailPage({
                                 setExpandedItemId(prev => prev === flight.id ? null : flight.id);
                               }}
                               members={tripToUse?.members || []}
+                              defaultCurrency={defaultCurrency}
                             />
                           </div>
                         );
@@ -3094,6 +3099,7 @@ export function JourneyDetailPage({
                         setExpandedItemId(prev => prev === stay.id ? null : stay.id);
                       }}
                       members={tripToUse?.members || []}
+                      defaultCurrency={defaultCurrency}
                     />
                   </div>
                 ))
@@ -3194,6 +3200,7 @@ export function JourneyDetailPage({
                                 setTransitFocusType(type);
                               }}
                               members={tripToUse?.members || []}
+                              defaultCurrency={defaultCurrency}
                             />
                           </div>
                         ))}
@@ -3562,6 +3569,7 @@ export function JourneyDetailPage({
                   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }, 300);
               }}
+              defaultCurrency={defaultCurrency}
             />
           )}
 
