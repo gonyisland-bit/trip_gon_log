@@ -167,20 +167,24 @@ export function PlanHubPage({
         )}
       </div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-black/20 dark:divide-white/20 border-b border-black/20 dark:border-white/20 w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-6 md:p-12 w-full">
         {filteredPlans.map((plan) => (
           <div 
             key={plan.id} 
-            className={`group cursor-pointer p-6 flex flex-col h-full transition-colors border w-full relative shadow-[0_0_15px_rgba(239,68,68,0.08)] ${
+            className={`group cursor-pointer p-6 flex flex-col h-full transition-all border w-full relative shadow-[0_0_15px_rgba(239,68,68,0.08)] ${
               draggedPlanId === plan.id ? 'opacity-40' : 'opacity-100'
             } ${
               activeCardId === plan.id
-                ? 'border-red-600 dark:border-red-400 bg-red-500/[0.05] dark:bg-red-400/[0.05]'
+                ? 'border-red-600 dark:border-red-400 bg-red-500/[0.05] dark:bg-red-400/[0.05] ring-2 ring-red-600/20 dark:ring-red-400/20 scale-[1.01] shadow-lg'
                 : 'border-red-600/80 dark:border-red-400/80 bg-red-500/[0.02] dark:bg-red-400/[0.02] hover:bg-red-500/[0.04] dark:hover:bg-red-400/[0.04]'
             }`} 
             onClick={(e) => {
               e.stopPropagation();
-              setActiveCardId(plan.id);
+              if (activeCardId === plan.id) {
+                onNavigate('detail', plan.id);
+              } else {
+                setActiveCardId(plan.id);
+              }
             }}
             draggable={isLoggedIn && sortBy === 'user'}
             onDragStart={(e) => handlePlanDragStart(e, plan.id)}
@@ -205,19 +209,6 @@ export function PlanHubPage({
                     : 'opacity-90 group-hover:opacity-100 group-hover:scale-105'
                 }`}
               />
-              {activeCardId === plan.id && (
-                <div
-                  className="absolute inset-0 bg-black/45 backdrop-blur-[2.5px] flex items-center justify-center z-10 animate-in fade-in duration-200"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button
-                    onClick={() => onNavigate('detail', plan.id)}
-                    className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase tracking-widest border border-red-700 shadow-lg transition-transform active:scale-95 cursor-pointer"
-                  >
-                    TRIP
-                  </button>
-                </div>
-              )}
               <JourneyCardMenu
                 isLoggedIn={isLoggedIn}
                 onEdit={onEditPlan ? () => onEditPlan(plan.id) : undefined}
