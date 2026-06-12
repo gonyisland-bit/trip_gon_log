@@ -38,7 +38,7 @@ export interface Trip {
   displayOrder?: number;
   weatherData?: {
     [date: string]: {
-      type: 'sunny' | 'cloudy' | 'rainy' | 'snowy' | '';
+      type: 'sunny' | 'cloudy' | 'overcast' | 'rainy' | 'snowy' | 'stormy' | '';
       temp: string;
     };
   };

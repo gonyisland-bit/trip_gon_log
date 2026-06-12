@@ -3,7 +3,7 @@ import {
   Clock, Plane, Bed, Train, Bus, Car, User, Edit2, Trash2, 
   Image as ImageIcon, ChevronUp, ChevronDown, MapPin, Map, Plus, Loader2, Search, ArrowLeft,
   ExternalLink, MapPinOff, Maximize2, Star, ChevronLeft, ChevronRight, ArrowUp, ArrowDown,
-  Sun, Cloud, CloudRain, Snowflake, ArrowRight
+  Sun, Cloud, Cloudy, CloudRain, Snowflake, CloudLightning, ArrowRight
 } from 'lucide-react';
 import { MapArea } from '../components/MapArea';
 import { ImageEditOverlay } from '../components/ImageEditOverlay';
@@ -1802,7 +1802,7 @@ export function JourneyDetailPage({
     }
   };
 
-  const handleWeatherChange = (date: string, type: 'sunny' | 'cloudy' | 'rainy' | 'snowy' | '', temp: string) => {
+  const handleWeatherChange = (date: string, type: 'sunny' | 'cloudy' | 'overcast' | 'rainy' | 'snowy' | 'stormy' | '', temp: string) => {
     if (!draftTrip) return;
     const currentWeatherData = draftTrip.weatherData || {};
     setDraftTrip({
@@ -2131,13 +2131,33 @@ export function JourneyDetailPage({
                       key={d.id} 
                       data-active={selectedDate === d.date}
                       onClick={() => { setSelectedDate(d.date); setExpandedItemId(null); }} 
-                      className={`flex-1 min-w-[90px] md:min-w-[110px] py-2.5 md:py-3.5 px-3 md:px-4 flex flex-col items-center justify-center border-r border-black/20 dark:border-white/20 last:border-r-0 transition-all whitespace-nowrap ${selectedDate === d.date ? 'bg-black text-[#F9F8F6] dark:bg-white dark:text-black' : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white'}`}
+                      className={`flex-1 min-w-[95px] md:min-w-[115px] py-2 px-3 md:px-4 flex flex-col items-center justify-center border-r border-black/20 dark:border-white/20 last:border-r-0 transition-all whitespace-nowrap ${selectedDate === d.date ? 'bg-black text-[#F9F8F6] dark:bg-white dark:text-black' : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white'}`}
                       onMouseDown={(e) => e.stopPropagation()}
                     >
                       <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest opacity-60 mb-0.5">
                         {d.label}
                       </span>
                       <span className="text-[11px] md:text-xs font-black tracking-tighter">{d.date === 'ALL' ? 'VIEW ALL' : d.date.slice(5).replace('.', '/')}</span>
+                      
+                      {d.date !== 'ALL' && tripToUse?.weatherData?.[d.date] && (() => {
+                        const wInfo = tripToUse.weatherData[d.date];
+                        if (!wInfo || (!wInfo.type && !wInfo.temp)) return null;
+                        return (
+                          <div className="mt-1 flex items-center gap-1">
+                            {wInfo.type === 'sunny' && <Sun className="w-3 h-3 text-amber-500 shrink-0" />}
+                            {wInfo.type === 'cloudy' && <Cloud className="w-3 h-3 text-blue-400 shrink-0" />}
+                            {wInfo.type === 'overcast' && <Cloudy className="w-3 h-3 text-slate-400 shrink-0" />}
+                            {wInfo.type === 'rainy' && <CloudRain className="w-3 h-3 text-indigo-400 shrink-0" />}
+                            {wInfo.type === 'snowy' && <Snowflake className="w-3 h-3 text-sky-400 shrink-0" />}
+                            {wInfo.type === 'stormy' && <CloudLightning className="w-3 h-3 text-red-500 shrink-0" />}
+                            {wInfo.temp && (
+                              <span className={`text-[8px] font-bold font-mono ${selectedDate === d.date ? 'text-[#F9F8F6]/75 dark:text-black/75' : 'text-black/60 dark:text-white/60'}`}>
+                                {wInfo.temp}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </button>
                   ))}
                 </div>
@@ -2249,7 +2269,7 @@ export function JourneyDetailPage({
                 ) : (
                   currentTimeline.map((item, idx) => {
                     const isActive = expandedItemId === item.id;
-                    const showDivider = selectedDate === 'ALL' && (idx === 0 || currentTimeline[idx - 1].date !== item.date);
+                    const showDivider = (selectedDate === 'ALL' && (idx === 0 || currentTimeline[idx - 1].date !== item.date)) || (selectedDate !== 'ALL' && idx === 0);
                     const dayIndex = item.date ? generatedDates.indexOf(item.date) + 1 : 0;
                     const isExcluded = !!item.excludeFromMap;
                     const dayColor = dayIndex > 0 ? dayColors[(dayIndex - 1) % dayColors.length] : undefined;
@@ -2274,37 +2294,59 @@ export function JourneyDetailPage({
                               <span>Day {dayIndex} — {item.date}</span>
                               {isEditing ? (
                                 <div className="flex items-center gap-1 ml-2" onClick={(e) => e.stopPropagation()}>
+                                  {/* Sunny */}
                                   <button
                                     type="button"
                                     onClick={() => handleWeatherChange(item.date || '', 'sunny', weatherInfo?.temp || '')}
                                     className={`p-0.5 rounded transition-colors ${weatherInfo?.type === 'sunny' ? 'bg-orange-500 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
-                                    title="Sunny"
+                                    title="Sunny (해)"
                                   >
                                     <Sun className="w-3.5 h-3.5" />
                                   </button>
+                                  {/* Overcast */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleWeatherChange(item.date || '', 'overcast', weatherInfo?.temp || '')}
+                                    className={`p-0.5 rounded transition-colors ${weatherInfo?.type === 'overcast' ? 'bg-slate-400 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                    title="Overcast (흐림)"
+                                  >
+                                    <Cloudy className="w-3.5 h-3.5" />
+                                  </button>
+                                  {/* Cloudy */}
                                   <button
                                     type="button"
                                     onClick={() => handleWeatherChange(item.date || '', 'cloudy', weatherInfo?.temp || '')}
                                     className={`p-0.5 rounded transition-colors ${weatherInfo?.type === 'cloudy' ? 'bg-blue-400 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
-                                    title="Cloudy"
+                                    title="Cloudy (구름)"
                                   >
                                     <Cloud className="w-3.5 h-3.5" />
                                   </button>
+                                  {/* Rainy */}
                                   <button
                                     type="button"
                                     onClick={() => handleWeatherChange(item.date || '', 'rainy', weatherInfo?.temp || '')}
                                     className={`p-0.5 rounded transition-colors ${weatherInfo?.type === 'rainy' ? 'bg-indigo-400 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
-                                    title="Rainy"
+                                    title="Rainy (비)"
                                   >
                                     <CloudRain className="w-3.5 h-3.5" />
                                   </button>
+                                  {/* Snowy */}
                                   <button
                                     type="button"
                                     onClick={() => handleWeatherChange(item.date || '', 'snowy', weatherInfo?.temp || '')}
                                     className={`p-0.5 rounded transition-colors ${weatherInfo?.type === 'snowy' ? 'bg-sky-400 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
-                                    title="Snowy"
+                                    title="Snowy (눈)"
                                   >
                                     <Snowflake className="w-3.5 h-3.5" />
+                                  </button>
+                                  {/* Stormy */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleWeatherChange(item.date || '', 'stormy', weatherInfo?.temp || '')}
+                                    className={`p-0.5 rounded transition-colors ${weatherInfo?.type === 'stormy' ? 'bg-red-500 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                    title="Stormy (태풍)"
+                                  >
+                                    <CloudLightning className="w-3.5 h-3.5" />
                                   </button>
                                   {weatherInfo?.type && (
                                     <button
@@ -2317,19 +2359,21 @@ export function JourneyDetailPage({
                                   )}
                                   <input
                                     type="text"
-                                    placeholder="Temp"
+                                    placeholder="15°/25°"
                                     value={weatherInfo?.temp || ''}
                                     onChange={(e) => handleWeatherChange(item.date || '', weatherInfo?.type || '', e.target.value)}
-                                    className="w-12 bg-white dark:bg-black/20 border border-black/10 dark:border-white/10 px-1 py-0.5 text-[9px] text-center font-bold outline-none text-black dark:text-white rounded-sm"
+                                    className="w-16 bg-white dark:bg-black/20 border border-black/10 dark:border-white/10 px-1 py-0.5 text-[9px] text-center font-bold outline-none text-black dark:text-white rounded-sm"
                                   />
                                 </div>
                               ) : (
                                 weatherInfo && (weatherInfo.type || weatherInfo.temp) && (
                                   <div className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 text-[9px] font-bold text-orange-500 dark:text-orange-400 normal-case ml-2 font-mono">
                                     {weatherInfo.type === 'sunny' && <Sun className="w-3 h-3 text-amber-500 shrink-0" />}
+                                    {weatherInfo.type === 'overcast' && <Cloudy className="w-3 h-3 text-slate-400 shrink-0" />}
                                     {weatherInfo.type === 'cloudy' && <Cloud className="w-3 h-3 text-blue-400 shrink-0" />}
                                     {weatherInfo.type === 'rainy' && <CloudRain className="w-3 h-3 text-indigo-400 shrink-0" />}
                                     {weatherInfo.type === 'snowy' && <Snowflake className="w-3 h-3 text-sky-400 shrink-0" />}
+                                    {weatherInfo.type === 'stormy' && <CloudLightning className="w-3 h-3 text-red-500 shrink-0" />}
                                     {weatherInfo.temp && <span className="text-black/60 dark:text-white/60">{weatherInfo.temp}</span>}
                                   </div>
                                 )
