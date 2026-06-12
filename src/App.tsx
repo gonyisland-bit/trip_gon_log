@@ -116,7 +116,7 @@ function App() {
       setPendingNavigation(null);
       setIsDetailEditing(false);
       setTimeout(() => {
-        navigateTo(view, tripId);
+        navigateTo(view, tripId, true, null, true);
       }, 100);
     }
   };
@@ -127,7 +127,7 @@ function App() {
     if (pendingNavigation) {
       const { view, tripId } = pendingNavigation;
       setPendingNavigation(null);
-      navigateTo(view, tripId);
+      navigateTo(view, tripId, true, null, true);
     }
   };
 
@@ -464,8 +464,8 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [isDetailEditing, currentView, activeTripId]);
 
-  const navigateTo = (view: string, tripId: number | null = null, pushHistory = true, tagFilter: string | null = null) => {
-    if (isDetailEditing && (view !== 'detail' || (tripId !== null && tripId !== activeTripId))) {
+  const navigateTo = (view: string, tripId: number | null = null, pushHistory = true, tagFilter: string | null = null, force = false) => {
+    if (!force && isDetailEditing && (view !== 'detail' || (tripId !== null && tripId !== activeTripId))) {
       setPendingNavigation({ view, tripId });
       setShowUnsavedModal(true);
       return;

@@ -41,6 +41,7 @@ export function ArchiveHubPage({
   const [sortBy, setSortBy] = useState<'user' | 'date' | 'place'>('user');
   const [draggedTripId, setDraggedTripId] = useState<number | null>(null);
   const [localTrips, setLocalTrips] = useState<Trip[]>(trips);
+  const [activeCardId, setActiveCardId] = useState<number | null>(null);
 
   useEffect(() => {
     setLocalTrips(trips);
@@ -102,7 +103,7 @@ export function ArchiveHubPage({
   };
 
   return (
-    <main className="animate-in fade-in duration-500 min-h-screen w-full">
+    <main onClick={() => setActiveCardId(null)} className="animate-in fade-in duration-500 min-h-screen w-full">
       <div className="p-6 md:px-12 md:py-12 border-b border-black/20 dark:border-white/20 bg-[#EAE8E3]/30 dark:bg-[#1a1a1a]/30 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
         <div className="flex-1">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tighter uppercase mb-2 sm:mb-3 break-keep" style={{ wordBreak: 'keep-all' }}>Journeys Archive</h1>
@@ -170,8 +171,17 @@ export function ArchiveHubPage({
         {filteredTrips.map((trip) => (
           <div 
             key={trip.id} 
-            className={`group cursor-pointer p-6 flex flex-col h-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-b sm:border-b-0 border-black/20 dark:border-white/20 w-full relative ${draggedTripId === trip.id ? 'opacity-40' : 'opacity-100'}`} 
-            onClick={() => onNavigate('detail', trip.id)}
+            className={`group cursor-pointer p-6 flex flex-col h-full transition-colors border-b sm:border-b-0 border-black/20 dark:border-white/20 w-full relative ${
+              draggedTripId === trip.id ? 'opacity-40' : 'opacity-100'
+            } ${
+              activeCardId === trip.id
+                ? 'bg-black/5 dark:bg-white/5 border border-black dark:border-white ring-1 ring-black/10 dark:ring-white/10'
+                : 'hover:bg-black/5 dark:hover:bg-white/5'
+            }`} 
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveCardId(trip.id);
+            }}
             draggable={isLoggedIn && sortBy === 'user'}
             onDragStart={(e) => handleTripDragStart(e, trip.id)}
             onDragOver={(e) => handleTripDragOver(e, trip.id)}
@@ -186,7 +196,28 @@ export function ArchiveHubPage({
             )}
 
             <div className="aspect-[3/4] w-full overflow-hidden mb-4 border border-black/10 dark:border-white/10 relative bg-black/5">
-              <img src={trip.img} alt={trip.title} className="absolute inset-0 w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 pointer-events-none" />
+              <img
+                src={trip.img}
+                alt={trip.title}
+                className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none ${
+                  activeCardId === trip.id
+                    ? 'grayscale-0 opacity-100 scale-105'
+                    : 'grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105'
+                }`}
+              />
+              {activeCardId === trip.id && (
+                <div
+                  className="absolute inset-0 bg-black/45 backdrop-blur-[2.5px] flex items-center justify-center z-10 animate-in fade-in duration-200"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    onClick={() => onNavigate('detail', trip.id)}
+                    className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase tracking-widest border border-red-700 shadow-lg transition-transform active:scale-95 cursor-pointer"
+                  >
+                    TRIP
+                  </button>
+                </div>
+              )}
               <JourneyCardMenu
                 isLoggedIn={isLoggedIn}
                 onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}

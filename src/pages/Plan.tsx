@@ -41,6 +41,7 @@ export function PlanHubPage({
   const [sortBy, setSortBy] = useState<'user' | 'date' | 'place'>('user');
   const [draggedPlanId, setDraggedPlanId] = useState<number | null>(null);
   const [localPlans, setLocalPlans] = useState<Plan[]>(plans);
+  const [activeCardId, setActiveCardId] = useState<number | null>(null);
 
   useEffect(() => {
     setLocalPlans(plans);
@@ -102,7 +103,7 @@ export function PlanHubPage({
   };
 
   return (
-    <main className="animate-in fade-in duration-500 min-h-screen w-full">
+    <main onClick={() => setActiveCardId(null)} className="animate-in fade-in duration-500 min-h-screen w-full">
       <div className="p-6 md:px-12 md:py-12 border-b border-black/20 dark:border-white/20 bg-[#EAE8E3]/30 dark:bg-[#1a1a1a]/30 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
         <div className="flex-1">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tighter uppercase mb-2 sm:mb-3 break-keep" style={{ wordBreak: 'keep-all' }}>Upcoming Plans</h1>
@@ -170,8 +171,17 @@ export function PlanHubPage({
         {filteredPlans.map((plan) => (
           <div 
             key={plan.id} 
-            className={`group cursor-pointer p-6 flex flex-col h-full hover:bg-red-500/[0.04] dark:hover:bg-red-400/[0.04] transition-colors border border-red-600/80 dark:border-red-400/80 bg-red-500/[0.02] dark:bg-red-400/[0.02] w-full relative shadow-[0_0_15px_rgba(239,68,68,0.08)] ${draggedPlanId === plan.id ? 'opacity-40' : 'opacity-100'}`} 
-            onClick={() => onNavigate('detail', plan.id)}
+            className={`group cursor-pointer p-6 flex flex-col h-full transition-colors border w-full relative shadow-[0_0_15px_rgba(239,68,68,0.08)] ${
+              draggedPlanId === plan.id ? 'opacity-40' : 'opacity-100'
+            } ${
+              activeCardId === plan.id
+                ? 'border-red-600 dark:border-red-400 bg-red-500/[0.05] dark:bg-red-400/[0.05]'
+                : 'border-red-600/80 dark:border-red-400/80 bg-red-500/[0.02] dark:bg-red-400/[0.02] hover:bg-red-500/[0.04] dark:hover:bg-red-400/[0.04]'
+            }`} 
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveCardId(plan.id);
+            }}
             draggable={isLoggedIn && sortBy === 'user'}
             onDragStart={(e) => handlePlanDragStart(e, plan.id)}
             onDragOver={(e) => handlePlanDragOver(e, plan.id)}
@@ -186,7 +196,28 @@ export function PlanHubPage({
             )}
 
             <div className="aspect-[3/4] w-full overflow-hidden mb-4 border border-black/10 dark:border-white/10 relative bg-black/5">
-              <img src={plan.img} alt={plan.title} className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500 pointer-events-none" />
+              <img
+                src={plan.img}
+                alt={plan.title}
+                className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none ${
+                  activeCardId === plan.id
+                    ? 'opacity-100 scale-105'
+                    : 'opacity-90 group-hover:opacity-100 group-hover:scale-105'
+                }`}
+              />
+              {activeCardId === plan.id && (
+                <div
+                  className="absolute inset-0 bg-black/45 backdrop-blur-[2.5px] flex items-center justify-center z-10 animate-in fade-in duration-200"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    onClick={() => onNavigate('detail', plan.id)}
+                    className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase tracking-widest border border-red-700 shadow-lg transition-transform active:scale-95 cursor-pointer"
+                  >
+                    TRIP
+                  </button>
+                </div>
+              )}
               <JourneyCardMenu
                 isLoggedIn={isLoggedIn}
                 onEdit={onEditPlan ? () => onEditPlan(plan.id) : undefined}

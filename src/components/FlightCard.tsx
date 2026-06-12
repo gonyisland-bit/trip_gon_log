@@ -100,6 +100,12 @@ export function FlightCard({
     return match ? parseInt(match[0], 10) : 1;
   };
 
+  const formatTerminal = (term: string) => {
+    if (!term) return '';
+    const match = String(term).match(/\d+/);
+    return match ? `TER ${match[0]}` : term;
+  };
+
   // Local state to prevent typing lag
   const [localTitle, setLocalTitle] = useState(flight.title);
   const [localFromCode, setLocalFromCode] = useState(flight.fromCode);
@@ -212,7 +218,7 @@ export function FlightCard({
                           onUpdate(flight.id, 'fromCode', s.code);
                           const newTerminalNum = s.code === 'ICN' ? 1 : 1;
                           setLocalFromTerminal(newTerminalNum);
-                          onUpdate(flight.id, 'fromTerminal', `TERMINAL T${newTerminalNum}`);
+                          onUpdate(flight.id, 'fromTerminal', `TER ${newTerminalNum}`);
                           setActiveSearchField(null);
                         }}
                         className="w-full px-2.5 py-1.5 text-[10px] hover:bg-black/5 dark:hover:bg-white/5 flex flex-col border-b border-black/5 dark:border-white/5 last:border-0 text-black dark:text-white"
@@ -247,20 +253,23 @@ export function FlightCard({
             )}
 
             {isEditMode ? (
-              <input
-                type="number"
-                min={1}
-                max={9}
+              <select
                 value={localFromTerminal}
-                onChange={(e) => setLocalFromTerminal(parseInt(e.target.value, 10) || 1)}
-                onBlur={() => onUpdate(flight.id, 'fromTerminal', `TERMINAL T${localFromTerminal}`)}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10) || 1;
+                  setLocalFromTerminal(val);
+                  onUpdate(flight.id, 'fromTerminal', `TER ${val}`);
+                }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-[8px] md:text-[10px] font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-14 mt-1"
-                placeholder="1"
-              />
+                className="bg-[#EAE8E3] dark:bg-[#1a1a1a] px-1 py-0.5 outline-none text-[8px] md:text-[10px] font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-14 mt-1 cursor-pointer"
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                  <option key={num} value={num} className="bg-[#EAE8E3] dark:bg-[#1a1a1a]">TER {num}</option>
+                ))}
+              </select>
             ) : (
               <span className="text-[9px] md:text-[10px] text-black/50 dark:text-white/50 mt-1.5 uppercase font-bold block">
-                {flight.fromTerminal}
+                {formatTerminal(flight.fromTerminal)}
               </span>
             )}
 
@@ -389,7 +398,7 @@ export function FlightCard({
                           onUpdate(flight.id, 'toCode', s.code);
                           const newTerminalNum = s.code === 'ICN' ? 1 : 1;
                           setLocalToTerminal(newTerminalNum);
-                          onUpdate(flight.id, 'toTerminal', `TERMINAL T${newTerminalNum}`);
+                          onUpdate(flight.id, 'toTerminal', `TER ${newTerminalNum}`);
                           setActiveSearchField(null);
                         }}
                         className="w-full px-2.5 py-1.5 text-[10px] hover:bg-black/5 dark:hover:bg-white/5 flex flex-col border-b border-black/5 dark:border-white/5 last:border-0 text-black dark:text-white"
@@ -424,20 +433,23 @@ export function FlightCard({
             )}
 
             {isEditMode ? (
-              <input
-                type="number"
-                min={1}
-                max={9}
+              <select
                 value={localToTerminal}
-                onChange={(e) => setLocalToTerminal(parseInt(e.target.value, 10) || 1)}
-                onBlur={() => onUpdate(flight.id, 'toTerminal', `TERMINAL T${localToTerminal}`)}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10) || 1;
+                  setLocalToTerminal(val);
+                  onUpdate(flight.id, 'toTerminal', `TER ${val}`);
+                }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-[8px] md:text-[10px] font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-14 mt-1"
-                placeholder="1"
-              />
+                className="bg-[#EAE8E3] dark:bg-[#1a1a1a] px-1 py-0.5 outline-none text-[8px] md:text-[10px] font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-14 mt-1 cursor-pointer"
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                  <option key={num} value={num} className="bg-[#EAE8E3] dark:bg-[#1a1a1a]">TER {num}</option>
+                ))}
+              </select>
             ) : (
               <span className="text-[9px] md:text-[10px] text-black/50 dark:text-white/50 mt-1.5 uppercase font-bold block">
-                {flight.toTerminal}
+                {formatTerminal(flight.toTerminal)}
               </span>
             )}
 

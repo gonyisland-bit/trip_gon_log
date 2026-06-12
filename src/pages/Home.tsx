@@ -122,6 +122,7 @@ export function HomePage({
   const [activeFilter, setActiveFilter] = useState('All');
   const [heroSlide, setHeroSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [activeCardId, setActiveCardId] = useState<number | null>(null);
 
   // Drag-reorder state for archive cards
   const [draggedTripId, setDraggedTripId] = useState<number | null>(null);
@@ -187,7 +188,7 @@ export function HomePage({
   };
 
   return (
-    <main className="animate-in fade-in duration-700 w-full">
+    <main onClick={() => setActiveCardId(null)} className="animate-in fade-in duration-700 w-full">
 
       {/* ===== Hero Section ===== */}
       <section className="relative w-full h-[60vh] md:h-[80vh] overflow-hidden group border-b border-black/20 dark:border-white/20">
@@ -279,11 +280,39 @@ export function HomePage({
             {localPlans.slice(0, 4).map((plan) => (
               <div
                 key={plan.id}
-                className="group cursor-pointer p-6 flex flex-col h-full hover:bg-red-500/[0.04] dark:hover:bg-red-400/[0.04] transition-colors border border-red-600/80 dark:border-red-400/80 bg-red-500/[0.02] dark:bg-red-400/[0.02] w-full relative shadow-[0_0_15px_rgba(239,68,68,0.08)]"
-                onClick={() => onNavigate('detail', plan.id)}
+                className={`group cursor-pointer p-6 flex flex-col h-full transition-colors border w-full relative shadow-[0_0_15px_rgba(239,68,68,0.08)] ${
+                  activeCardId === plan.id
+                    ? 'border-red-600 dark:border-red-400 bg-red-500/[0.05] dark:bg-red-400/[0.05]'
+                    : 'border-red-600/80 dark:border-red-400/80 bg-red-500/[0.02] dark:bg-red-400/[0.02] hover:bg-red-500/[0.04] dark:hover:bg-red-400/[0.04]'
+                }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveCardId(plan.id);
+                }}
               >
                 <div className="aspect-[3/4] w-full overflow-hidden mb-4 border border-black/10 dark:border-white/10 relative bg-black/5">
-                  <img src={plan.img} alt={plan.title} className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500" />
+                  <img
+                    src={plan.img}
+                    alt={plan.title}
+                    className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none ${
+                      activeCardId === plan.id
+                        ? 'opacity-100 scale-105'
+                        : 'opacity-90 group-hover:opacity-100 group-hover:scale-105'
+                    }`}
+                  />
+                  {activeCardId === plan.id && (
+                    <div
+                      className="absolute inset-0 bg-black/45 backdrop-blur-[2.5px] flex items-center justify-center z-10 animate-in fade-in duration-200"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        onClick={() => onNavigate('detail', plan.id)}
+                        className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase tracking-widest border border-red-700 shadow-lg transition-transform active:scale-95 cursor-pointer"
+                      >
+                        TRIP
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className="mt-auto">
                   <div className="text-xs tracking-widest text-black/50 dark:text-white/50 mb-1 break-words">{plan.date}</div>
@@ -336,8 +365,17 @@ export function HomePage({
           {filteredTrips.slice(0, 4).map((trip) => (
             <div
               key={trip.id}
-              className={`group cursor-pointer p-6 flex flex-col h-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors relative w-full ${draggedTripId === trip.id ? 'opacity-40' : 'opacity-100'}`}
-              onClick={() => onNavigate('detail', trip.id)}
+              className={`group cursor-pointer p-6 flex flex-col h-full transition-colors relative w-full ${
+                draggedTripId === trip.id ? 'opacity-40' : 'opacity-100'
+              } ${
+                activeCardId === trip.id
+                  ? 'bg-black/5 dark:bg-white/5 border border-black dark:border-white ring-1 ring-black/10 dark:ring-white/10'
+                  : 'hover:bg-black/5 dark:hover:bg-white/5'
+              }`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveCardId(trip.id);
+              }}
               draggable={isLoggedIn}
               onDragStart={(e) => handleTripDragStart(e, trip.id)}
               onDragOver={(e) => handleTripDragOver(e, trip.id)}
@@ -351,12 +389,29 @@ export function HomePage({
                 </div>
               )}
 
-              <div className="aspect-[3/4] w-full overflow-hidden mb-4 border border-black/10 dark:border-white/10 relative">
+              <div className="aspect-[3/4] w-full overflow-hidden mb-4 border border-black/10 dark:border-white/10 relative bg-black/5">
                 <img
                   src={trip.img}
                   alt={trip.title}
-                  className="absolute inset-0 w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700"
+                  className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none ${
+                    activeCardId === trip.id
+                      ? 'grayscale-0 opacity-100 scale-105'
+                      : 'grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105'
+                  }`}
                 />
+                {activeCardId === trip.id && (
+                  <div
+                    className="absolute inset-0 bg-black/45 backdrop-blur-[2.5px] flex items-center justify-center z-10 animate-in fade-in duration-200"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      onClick={() => onNavigate('detail', trip.id)}
+                      className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase tracking-widest border border-red-700 shadow-lg transition-transform active:scale-95 cursor-pointer"
+                    >
+                      TRIP
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="mt-auto">
                 <div className="flex flex-wrap gap-1 mb-2">
