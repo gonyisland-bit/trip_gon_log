@@ -421,49 +421,16 @@ export function SettlementView({
             <span className="text-[9px] uppercase tracking-widest opacity-60 font-black text-black/60 dark:text-white/60">Receipt / 정산 결과</span>
             <h1 className="text-base md:text-lg font-black text-black dark:text-white mt-1">✈️ {trip.title || '여행'}</h1>
             <p className="text-[9px] text-black/55 dark:text-white/55 mt-1">
-              기간: {trip.date || '여정 일정'} · 인원: {members.join(', ')}
+              기간: {trip.date || '여정 일정'}
             </p>
             <p className="text-[8px] text-black/35 dark:text-white/35 mt-0.5">일시: {new Date().toLocaleString('ko-KR')}</p>
-          </div>
-        )}
-
-        {/* 1. Member Settings Panel - Hidden when capturing */}
-        {!isCapturing && (
-          <div className="bg-white dark:bg-[#1a1a1a] border border-black/10 dark:border-white/10 p-3 shadow-sm flex flex-wrap items-center gap-3">
-            <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-black/55 dark:text-white/55 flex items-center gap-1 shrink-0">
-              👥 참석 인원 ({members.length}명)
-            </span>
-            <div className="flex flex-wrap gap-1.5 items-center flex-1 min-w-[200px]">
-              {members.map(m => (
-                <span key={m} className="inline-flex items-center gap-1 px-2 py-0.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-xs font-bold rounded-sm">
-                  {m}
-                  {isEditing && !isCapturing && (
-                    <button onClick={() => handleRemoveMember(m)} className="text-red-500 hover:text-red-700 transition-colors ml-0.5" title="인원 삭제">✕</button>
-                  )}
-                </span>
-              ))}
-              {isEditing && !isCapturing && (
-                <div className="flex items-center gap-1 ml-auto">
-                  <input type="text" placeholder="이름 추가..." value={newMemberName} onChange={e => setNewMemberName(e.target.value)}
-                    className="bg-[#EAE8E3] dark:bg-white/10 px-2 py-0.5 outline-none text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-28"
-                    onKeyDown={e => {
-                      if (e.nativeEvent.isComposing) return;
-                      if (e.key === 'Enter') handleAddMember();
-                    }}
-                  />
-                  <button onClick={handleAddMember} className="bg-black text-white dark:bg-white dark:text-black px-2 py-0.5 text-xs font-black uppercase tracking-widest rounded-sm hover:opacity-85 transition-opacity flex items-center gap-0.5 shrink-0">
-                    <Plus className="w-3.5 h-3.5" /> 추가
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
         )}
 
         {/* 2. Total Summary Panel - Receipt Styled */}
         <div className="border-t border-b border-dashed border-black/20 dark:border-white/20 py-4 my-1 grid grid-cols-3 gap-2 text-center">
           <div className="flex flex-col justify-center">
-            <span className="text-[8px] md:text-[9px] uppercase font-bold tracking-widest text-black/45 dark:text-white/45 block mb-1">총 지출 (Total)</span>
+            <span className="text-[8px] md:text-[9px] uppercase font-black tracking-widest text-black/50 dark:text-white/50 block mb-1">TOTAL PAYMENT</span>
             <span className="text-sm md:text-base lg:text-lg font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap px-1">₩{totalExpenseKRW.toLocaleString()}</span>
           </div>
           <div className="border-l border-r border-black/10 dark:border-white/10 flex flex-col justify-center">
@@ -778,7 +745,7 @@ export function SettlementView({
         {/* 개인별 지출 현황 */}
         <div className="flex flex-col gap-2.5">
           <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-black/55 dark:text-white/55 border-b border-dashed border-black/10 dark:border-white/10 pb-1.5 flex items-center gap-1">
-            👤 개인별 지출 현황 (Individual Stats)
+            👤 개인별 (INDIVIDUAL)
           </span>
           <div className="flex flex-col gap-2">
             {members.map(name => {
@@ -802,7 +769,7 @@ export function SettlementView({
         {/* 추천 송금 */}
         <div className="flex flex-col gap-2.5">
           <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-emerald-800 dark:text-emerald-400 border-b border-dashed border-emerald-500/20 pb-1.5 flex items-center gap-1">
-            <Coins className="w-3.5 h-3.5 text-emerald-600" /> 💸 추천 송금 (Settlement Guide)
+            <Coins className="w-3.5 h-3.5 text-emerald-600" /> 💸 송금 (SEND)
           </span>
           {transfers.length === 0 ? (
             <div className="text-center py-4 text-[10px] text-black/40 dark:text-white/40 font-bold border border-dashed border-black/10 dark:border-white/10">
