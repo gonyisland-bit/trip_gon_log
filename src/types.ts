@@ -36,6 +36,12 @@ export interface Trip {
   gallery?: (string | GalleryImageMeta)[];
   deletedAt?: number | null; // Soft-delete timestamp (null = active)
   displayOrder?: number;
+  weatherData?: {
+    [date: string]: {
+      type: 'sunny' | 'cloudy' | 'rainy' | 'snowy' | '';
+      temp: string;
+    };
+  };
 }
 
 export interface Plan extends Trip {}

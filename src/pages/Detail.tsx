@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   Clock, Plane, Bed, Train, Bus, Car, User, Edit2, Trash2, 
   Image as ImageIcon, ChevronUp, ChevronDown, MapPin, Map, Plus, Loader2, Search, ArrowLeft,
-  ExternalLink, MapPinOff, Maximize2, Star, ChevronLeft, ChevronRight, ArrowUp, ArrowDown
+  ExternalLink, MapPinOff, Maximize2, Star, ChevronLeft, ChevronRight, ArrowUp, ArrowDown,
+  Sun, Cloud, CloudRain, Snowflake, ArrowRight
 } from 'lucide-react';
 import { MapArea } from '../components/MapArea';
 import { ImageEditOverlay } from '../components/ImageEditOverlay';
@@ -1801,6 +1802,18 @@ export function JourneyDetailPage({
     }
   };
 
+  const handleWeatherChange = (date: string, type: 'sunny' | 'cloudy' | 'rainy' | 'snowy' | '', temp: string) => {
+    if (!draftTrip) return;
+    const currentWeatherData = draftTrip.weatherData || {};
+    setDraftTrip({
+      ...draftTrip,
+      weatherData: {
+        ...currentWeatherData,
+        [date]: { type, temp }
+      }
+    });
+  };
+
   const handleRemoveGalleryImage = async (imageUrl: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!window.confirm("이 이미지를 갤러리에서 삭제하시겠습니까?")) return;
@@ -2240,6 +2253,7 @@ export function JourneyDetailPage({
                     const dayIndex = item.date ? generatedDates.indexOf(item.date) + 1 : 0;
                     const isExcluded = !!item.excludeFromMap;
                     const dayColor = dayIndex > 0 ? dayColors[(dayIndex - 1) % dayColors.length] : undefined;
+                    const weatherInfo = tripToUse?.weatherData?.[item.date || ''];
                     return (
                       <div key={item.id} className="w-full flex flex-col">
                         {showDivider && (
@@ -2254,10 +2268,74 @@ export function JourneyDetailPage({
                                 setCollapsedDays(prev => [...prev, dVal]);
                               }
                             }}
-                            className="bg-[#EAE8E3]/60 dark:bg-white/5 py-2.5 px-4 md:px-6 border-b border-t border-black/10 dark:border-white/10 text-[10px] md:text-xs font-bold uppercase tracking-widest text-black/60 dark:text-white/60 flex items-center justify-between cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors select-none"
+                            className="bg-[#EAE8E3]/60 dark:bg-white/5 py-1.5 md:py-2 px-4 md:px-6 border-b border-t border-black/10 dark:border-white/10 text-[10px] md:text-xs font-bold uppercase tracking-widest text-black/60 dark:text-white/60 flex items-center justify-between cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors select-none"
                           >
-                            <span>Day {dayIndex} — {item.date}</span>
-                            <span className="text-[8px] md:text-[9px] font-black text-black/40 dark:text-white/40 flex items-center gap-1">
+                            <div className="flex flex-wrap items-center gap-3">
+                              <span>Day {dayIndex} — {item.date}</span>
+                              {isEditing ? (
+                                <div className="flex items-center gap-1 ml-2" onClick={(e) => e.stopPropagation()}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleWeatherChange(item.date || '', 'sunny', weatherInfo?.temp || '')}
+                                    className={`p-0.5 rounded transition-colors ${weatherInfo?.type === 'sunny' ? 'bg-orange-500 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                    title="Sunny"
+                                  >
+                                    <Sun className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleWeatherChange(item.date || '', 'cloudy', weatherInfo?.temp || '')}
+                                    className={`p-0.5 rounded transition-colors ${weatherInfo?.type === 'cloudy' ? 'bg-blue-400 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                    title="Cloudy"
+                                  >
+                                    <Cloud className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleWeatherChange(item.date || '', 'rainy', weatherInfo?.temp || '')}
+                                    className={`p-0.5 rounded transition-colors ${weatherInfo?.type === 'rainy' ? 'bg-indigo-400 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                    title="Rainy"
+                                  >
+                                    <CloudRain className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleWeatherChange(item.date || '', 'snowy', weatherInfo?.temp || '')}
+                                    className={`p-0.5 rounded transition-colors ${weatherInfo?.type === 'snowy' ? 'bg-sky-400 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                    title="Snowy"
+                                  >
+                                    <Snowflake className="w-3.5 h-3.5" />
+                                  </button>
+                                  {weatherInfo?.type && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleWeatherChange(item.date || '', '', '')}
+                                      className="text-[8px] font-bold text-red-500 dark:text-red-400 hover:underline px-0.5"
+                                    >
+                                      CLEAR
+                                    </button>
+                                  )}
+                                  <input
+                                    type="text"
+                                    placeholder="Temp"
+                                    value={weatherInfo?.temp || ''}
+                                    onChange={(e) => handleWeatherChange(item.date || '', weatherInfo?.type || '', e.target.value)}
+                                    className="w-12 bg-white dark:bg-black/20 border border-black/10 dark:border-white/10 px-1 py-0.5 text-[9px] text-center font-bold outline-none text-black dark:text-white rounded-sm"
+                                  />
+                                </div>
+                              ) : (
+                                weatherInfo && (weatherInfo.type || weatherInfo.temp) && (
+                                  <div className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 text-[9px] font-bold text-orange-500 dark:text-orange-400 normal-case ml-2 font-mono">
+                                    {weatherInfo.type === 'sunny' && <Sun className="w-3 h-3 text-amber-500 shrink-0" />}
+                                    {weatherInfo.type === 'cloudy' && <Cloud className="w-3 h-3 text-blue-400 shrink-0" />}
+                                    {weatherInfo.type === 'rainy' && <CloudRain className="w-3 h-3 text-indigo-400 shrink-0" />}
+                                    {weatherInfo.type === 'snowy' && <Snowflake className="w-3 h-3 text-sky-400 shrink-0" />}
+                                    {weatherInfo.temp && <span className="text-black/60 dark:text-white/60">{weatherInfo.temp}</span>}
+                                  </div>
+                                )
+                              )}
+                            </div>
+                            <span className="text-[8px] md:text-[9px] font-black text-black/40 dark:text-white/40 flex items-center gap-1 shrink-0">
                               {collapsedDays.includes(item.date || '') ? '▼ EXPAND' : '▲ COLLAPSE'}
                             </span>
                           </div>
@@ -3035,21 +3113,6 @@ export function JourneyDetailPage({
                       className="w-full h-full object-cover transition-transform duration-500 group-hover/gallery:scale-105"
                     />
 
-                    {/* RED POINT icon to navigate to timeline (only for timeline type) */}
-                    {imgItem.type === 'timeline' && (imgItem as any).itemId !== undefined && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleJumpToTimelineItem((imgItem as any).itemId, imgItem.date);
-                        }}
-                        className="absolute top-2 left-2 z-10 w-5 h-5 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center text-white border border-white/20 shadow-md transition-all hover:scale-110 active:scale-95 animate-in fade-in duration-300"
-                        title="일정으로 이동"
-                      >
-                        <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping absolute" />
-                        <span className="w-1.5 h-1.5 bg-white rounded-full relative" />
-                      </button>
-                    )}
-
                     {/* Delete image button (only for gallery type) */}
                     {isLoggedIn && imgItem.type === 'gallery' && (
                       <button
@@ -3143,9 +3206,23 @@ export function JourneyDetailPage({
                           <p className="text-[10px] text-black/20 dark:text-white/20 italic">메모 없음</p>
                         )}
                       </div>
-                      {imgItem.lat !== undefined && imgItem.lng !== undefined && imgItem.lat !== null && imgItem.lng !== null && (
-                        <MapPin className="w-3 h-3 text-orange-500 shrink-0" />
-                      )}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {imgItem.lat !== undefined && imgItem.lng !== undefined && imgItem.lat !== null && imgItem.lng !== null && (
+                          <MapPin className="w-3 h-3 text-orange-500" />
+                        )}
+                        {imgItem.type === 'timeline' && (imgItem as any).itemId !== undefined && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleJumpToTimelineItem((imgItem as any).itemId, imgItem.date);
+                            }}
+                            className="p-0.5 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
+                            title="일정으로 이동"
+                          >
+                            <ArrowRight className="w-3 h-3 animate-pulse" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -3154,7 +3231,7 @@ export function JourneyDetailPage({
 
             return (
               <div 
-                className="p-4 md:p-6 relative min-h-[400px] animate-in fade-in duration-300"
+                className="pt-2 px-4 pb-4 md:pt-3 md:px-6 md:pb-6 relative min-h-[400px] animate-in fade-in duration-300"
                 onDragOver={handleGalleryDragOver}
                 onDragLeave={handleGalleryDragLeave}
                 onDrop={handleGalleryDrop}
@@ -3176,37 +3253,18 @@ export function JourneyDetailPage({
                 
                 {/* Add Gallery Image Area */}
                 {isLoggedIn && (
-                  <div className="mb-6 flex justify-center">
-                    <input 
-                      type="file" 
-                      accept="image/*"
-                      ref={fileInputRef}
-                      onChange={handleGalleryUpload}
-                      className="hidden"
-                    />
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploadingImage}
-                      className="text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-6 py-2.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all flex items-center gap-2 disabled:opacity-50"
-                    >
-                      {uploadingImage ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Uploading Image...
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="w-4 h-4" />
-                          Add Gallery Image
-                        </>
-                      )}
-                    </button>
-                  </div>
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    ref={fileInputRef}
+                    onChange={handleGalleryUpload}
+                    className="hidden"
+                  />
                 )}
 
                 {/* Gallery View Mode Toggle */}
                 {allGalleryImages.length > 0 && (
-                  <div className="flex justify-end mb-6">
+                  <div className="flex justify-end mb-3">
                     <div className="flex rounded-none border border-black/10 dark:border-white/10 p-0.5 bg-black/5 dark:bg-white/5">
                       <button
                         onClick={() => setGalleryViewMode('grid')}
@@ -3216,7 +3274,7 @@ export function JourneyDetailPage({
                             : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
                         }`}
                       >
-                        Timeline Grid
+                        TIME
                       </button>
                       <button
                         onClick={() => setGalleryViewMode('accordion')}
@@ -3226,7 +3284,7 @@ export function JourneyDetailPage({
                             : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
                         }`}
                       >
-                        Accordion by Date
+                        DATE
                       </button>
                     </div>
                   </div>
