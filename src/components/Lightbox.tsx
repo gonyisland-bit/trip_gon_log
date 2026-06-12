@@ -40,6 +40,25 @@ export function Lightbox({
   const touchStartY = useRef<number | null>(null);
   const minSwipeDistance = 50;
 
+  const limitPosition = (x: number, y: number, currentScale: number) => {
+    if (!imgRef.current || !imgRef.current.parentElement) return { x, y };
+    const img = imgRef.current;
+    const container = img.parentElement as HTMLElement;
+    
+    const w = img.clientWidth;
+    const h = img.clientHeight;
+    const cw = container.clientWidth;
+    const ch = container.clientHeight;
+    
+    const maxDeltaX = Math.max(0, (w * currentScale - cw) / 2);
+    const maxDeltaY = Math.max(0, (h * currentScale - ch) / 2);
+    
+    return {
+      x: Math.max(-maxDeltaX, Math.min(maxDeltaX, x)),
+      y: Math.max(-maxDeltaY, Math.min(maxDeltaY, y))
+    };
+  };
+
   const handleTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0];
     if (scale <= 1) {
@@ -54,10 +73,9 @@ export function Lightbox({
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging || scale <= 1) return;
     const touch = e.touches[0];
-    setPosition({
-      x: touch.clientX - dragStart.current.x,
-      y: touch.clientY - dragStart.current.y
-    });
+    const newX = touch.clientX - dragStart.current.x;
+    const newY = touch.clientY - dragStart.current.y;
+    setPosition(limitPosition(newX, newY, scale));
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
@@ -118,6 +136,11 @@ export function Lightbox({
     setNextLoaded(false);
   }, [currentIndex]);
 
+  // Limit position on scale change
+  useEffect(() => {
+    setPosition(prev => limitPosition(prev.x, prev.y, scale));
+  }, [scale]);
+
   if (!isOpen || images.length === 0) return null;
 
   const currentMeta = images[currentIndex];
@@ -166,10 +189,9 @@ export function Lightbox({
   function handleMouseMove(e: React.MouseEvent) {
     if (!isDragging || scale <= 1) return;
     e.preventDefault();
-    setPosition({
-      x: e.clientX - dragStart.current.x,
-      y: e.clientY - dragStart.current.y
-    });
+    const newX = e.clientX - dragStart.current.x;
+    const newY = e.clientY - dragStart.current.y;
+    setPosition(limitPosition(newX, newY, scale));
   }
 
   function handleMouseUp() {
@@ -297,7 +319,7 @@ export function Lightbox({
               onDoubleClick={handleDoubleClick}
               data-pin-nopin="true"
               style={{
-                maxHeight: '78vh',
+                maxHeight: '72vh',
                 maxWidth: '90vw',
                 objectFit: 'contain',
                 userSelect: 'none',
@@ -375,7 +397,7 @@ export function Lightbox({
 
       {/* Bottom captions panel (place, memo, imgNote) - Fixed height/area layout */}
       {showLog && (
-        <div className="relative z-20 bg-black/90 border-t border-white/10 px-6 py-4 md:px-10 flex flex-col items-center justify-center gap-1 shrink-0 h-24 md:h-28 text-center w-full">
+        <div className="relative z-20 bg-black/90 border-t border-white/10 px-4 py-2.5 md:px-8 md:py-3 flex flex-col items-center justify-center gap-0.5 shrink-0 h-16 md:h-20 text-center w-full">
           {currentMeta.place ? (
             <div className="text-white font-bold text-xs md:text-sm tracking-wide truncate max-w-2xl uppercase">
               {currentMeta.place}
