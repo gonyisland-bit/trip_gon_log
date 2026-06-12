@@ -6,6 +6,7 @@ import {
 import { Trip, TimelineItem, FlightItem, StayItem, TransitItem, TabType, CustomExpenseItem } from '../types';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, storage } from '../firebase';
+import html2canvas from 'html2canvas';
 
 const EXCHANGE_RATES: { [currency: string]: number } = {
   KRW: 1,
@@ -88,13 +89,18 @@ export function SettlementView({
   const [expandedRowKey, setExpandedRowKey] = useState<string | null>(null);
   // Custom expense add form
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newItem, setNewItem] = useState({ name: '', date: '', cost: '', currency: defaultCurrency, paidBy: '' });
+  const [newItem, setNewItem] = useState({ name: '', date: '', cost: '', currency: defaultCurrency, paidBy: members[0] || '나' });
   // File upload state
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeUploadKey, setActiveUploadKey] = useState<string | null>(null);
   // Lightbox for attachments
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+
+  // Print/Capture states
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [capturedImg, setCapturedImg] = useState<string | null>(null);
+  const printRef = useRef<HTMLDivElement>(null);
 
   // --- Collect all expense items ---
   const expenseItems = React.useMemo(() => {
@@ -238,7 +244,7 @@ export function SettlementView({
       attachments: [],
     };
     onUpdateCustomExpenses?.([...customExpenses, item]);
-    setNewItem({ name: '', date: '', cost: '', currency: defaultCurrency, paidBy: '' });
+    setNewItem({ name: '', date: '', cost: '', currency: defaultCurrency, paidBy: members[0] || '나' });
     setShowAddForm(false);
   };
 
@@ -289,6 +295,58 @@ export function SettlementView({
     onUpdateCustomExpenses?.(updated);
   };
 
+  const handleCapture = async () => {
+    setIsCapturing(true);
+    setTimeout(async () => {
+      if (printRef.current) {
+        try {
+          const canvas = await html2canvas(printRef.current, {
+            useCORS: true,
+            backgroundColor: document.documentElement.classList.contains('dark') ? '#121212' : '#ffffff',
+            scale: 2,
+          });
+          const imgData = canvas.toDataURL('image/png');
+          setCapturedImg(imgData);
+        } catch (err) {
+          console.error('Capture failed:', err);
+          alert('이미지 생성에 실패했습니다.');
+        } finally {
+          setIsCapturing(false);
+        }
+      }
+    }, 150);
+  };
+
+  const handleSaveImage = () => {
+    if (!capturedImg) return;
+    const link = document.createElement('a');
+    link.href = capturedImg;
+    link.download = `${trip.title || 'trip'}_정산결과.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleShareImage = async () => {
+    if (!capturedImg) return;
+    try {
+      const response = await fetch(capturedImg);
+      const blob = await response.blob();
+      const file = new File([blob], `${trip.title || 'trip'}_정산결과.png`, { type: 'image/png' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `${trip.title || '여행'} 정산 결과`,
+          text: '정산 결과 내역입니다.',
+        });
+      } else {
+        alert('이 브라우저에서는 공유 기능을 지원하지 않습니다. 이미지 다운로드를 이용해 주세요.');
+      }
+    } catch (err) {
+      console.error('Share failed:', err);
+    }
+  };
+
   return (
     <div className="p-3 md:p-5 flex flex-col gap-5 text-left text-black dark:text-white max-w-4xl mx-auto w-full animate-in fade-in duration-300">
 
@@ -309,36 +367,87 @@ export function SettlementView({
         </div>
       )}
 
-      {/* 1. Member Settings Panel */}
-      <div className="bg-white dark:bg-[#1a1a1a] border border-black/10 dark:border-white/10 p-4 shadow-sm flex flex-col gap-3">
-        <div className="flex items-center justify-between border-b border-black/5 dark:border-white/5 pb-2">
-          <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-black/55 dark:text-white/55">
-            👥 여정 참석 인원 ({members.length}명)
-          </span>
-          {isEditing && <span className="text-[9px] text-orange-500 font-bold uppercase">편집 중</span>}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {members.map(m => (
-            <span key={m} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-xs font-bold rounded-sm">
-              {m}
-              {isEditing && (
-                <button onClick={() => handleRemoveMember(m)} className="text-red-500 hover:text-red-700 transition-colors" title="인원 삭제">✕</button>
+      {/* Image Share / Download Modal */}
+      {capturedImg && (
+        <div className="fixed inset-0 z-[250] bg-black/80 flex flex-col items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#1a1a1a] p-4 rounded-lg max-w-md w-full flex flex-col gap-3 shadow-xl text-left border border-black/10 dark:border-white/10 animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center border-b pb-2 border-black/5 dark:border-white/10">
+              <span className="text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70">정산표 이미지 저장 및 공유</span>
+              <button onClick={() => setCapturedImg(null)} className="text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white p-1">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="border border-black/10 dark:border-white/10 rounded-sm overflow-hidden max-h-[50vh] overflow-y-auto bg-black/5 dark:bg-black/40">
+              <img src={capturedImg} alt="정산 결과" className="w-full h-auto object-contain" />
+            </div>
+            <p className="text-[9px] text-black/50 dark:text-white/50 text-center leading-relaxed">
+              💡 모바일 기기(카카오톡 등)에서는 이미지를 길게 누르면 저장하거나 공유할 수 있습니다.
+            </p>
+            <div className="flex gap-2 mt-1">
+              <button
+                onClick={handleSaveImage}
+                className="flex-1 bg-black text-white dark:bg-white dark:text-black py-2 rounded-sm text-xs font-black uppercase tracking-widest hover:opacity-85 transition-opacity"
+              >
+                저장 (다운로드)
+              </button>
+              {typeof navigator.share !== 'undefined' && (
+                <button
+                  onClick={handleShareImage}
+                  className="flex-1 bg-emerald-600 text-white py-2 rounded-sm text-xs font-black uppercase tracking-widest hover:opacity-85 transition-opacity"
+                >
+                  보내기 (공유)
+                </button>
               )}
-            </span>
-          ))}
+              <button
+                onClick={() => setCapturedImg(null)}
+                className="flex-1 border border-black/20 dark:border-white/20 py-2 rounded-sm text-xs font-bold hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
         </div>
-        {isEditing && (
-          <div className="flex gap-2 mt-2">
-            <input type="text" placeholder="참석자 이름 입력..." value={newMemberName} onChange={e => setNewMemberName(e.target.value)}
-              className="bg-[#EAE8E3] dark:bg-white/10 px-2.5 py-1 outline-none text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-44"
-              onKeyDown={e => { if (e.key === 'Enter') handleAddMember(); }}
-            />
-            <button onClick={handleAddMember} className="bg-black text-white dark:bg-white dark:text-black px-3.5 py-1 text-xs font-black uppercase tracking-widest rounded-sm hover:opacity-85 transition-opacity flex items-center gap-1">
-              <UserPlus className="w-3.5 h-3.5" /> 추가
-            </button>
+      )}
+
+      {/* Capture Area Ref */}
+      <div ref={printRef} className="bg-transparent flex flex-col gap-5 w-full">
+        {isCapturing && (
+          <div className="text-center pb-4 border-b border-black/10 dark:border-white/10 mb-2">
+            <h1 className="text-base font-black text-black dark:text-white flex items-center justify-center gap-1">✈️ {trip.title || '여행'} 정산 결과</h1>
+            <p className="text-[9px] text-black/50 dark:text-white/50 mt-1">인원: {members.join(', ')} · 일시: {new Date().toLocaleDateString()}</p>
           </div>
         )}
-      </div>
+
+        {/* 1. Member Settings Panel */}
+        <div className="bg-white dark:bg-[#1a1a1a] border border-black/10 dark:border-white/10 p-3 shadow-sm flex flex-wrap items-center gap-3">
+          <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-black/55 dark:text-white/55 flex items-center gap-1 shrink-0">
+            👥 참석 인원 ({members.length}명)
+          </span>
+          <div className="flex flex-wrap gap-1.5 items-center flex-1 min-w-[200px]">
+            {members.map(m => (
+              <span key={m} className="inline-flex items-center gap-1 px-2 py-0.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-xs font-bold rounded-sm">
+                {m}
+                {isEditing && !isCapturing && (
+                  <button onClick={() => handleRemoveMember(m)} className="text-red-500 hover:text-red-700 transition-colors ml-0.5" title="인원 삭제">✕</button>
+                )}
+              </span>
+            ))}
+            {isEditing && !isCapturing && (
+              <div className="flex items-center gap-1 ml-auto">
+                <input type="text" placeholder="이름 추가..." value={newMemberName} onChange={e => setNewMemberName(e.target.value)}
+                  className="bg-[#EAE8E3] dark:bg-white/10 px-2 py-0.5 outline-none text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-28"
+                  onKeyDown={e => {
+                    if (e.nativeEvent.isComposing) return;
+                    if (e.key === 'Enter') handleAddMember();
+                  }}
+                />
+                <button onClick={handleAddMember} className="bg-black text-white dark:bg-white dark:text-black px-2 py-0.5 text-xs font-black uppercase tracking-widest rounded-sm hover:opacity-85 transition-opacity flex items-center gap-0.5 shrink-0">
+                  <Plus className="w-3.5 h-3.5" /> 추가
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
 
       {/* 2. Total Summary Panel */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -366,18 +475,32 @@ export function SettlementView({
             📋 결제 기록 ({expenseItems.length}건)
           </span>
           <div className="flex items-center gap-2">
-            <span className="text-[8px] text-black/30 dark:text-white/30 font-bold uppercase hidden sm:block">1번 클릭:활성 · 2번 클릭:이동</span>
-            <button
-              onClick={() => setShowAddForm(v => !v)}
-              className="flex items-center gap-1 px-2 py-1 bg-emerald-600 text-white text-[9px] font-black uppercase tracking-widest rounded-sm hover:opacity-85 transition-opacity"
-            >
-              <Plus className="w-3 h-3" /> 직접 추가
-            </button>
+            {!isCapturing && (
+              <span className="text-[8px] text-black/30 dark:text-white/30 font-bold uppercase hidden sm:block">1번 클릭:활성 · 2번 클릭:이동</span>
+            )}
+            {!isCapturing && (
+              <div className="flex gap-1.5">
+                <button
+                  onClick={handleCapture}
+                  className="flex items-center gap-1 px-2 py-1 bg-black text-white dark:bg-white dark:text-black text-[9px] font-black uppercase tracking-widest rounded-sm hover:opacity-85 transition-opacity"
+                >
+                  📸 이미지 저장/공유
+                </button>
+                {isEditing && (
+                  <button
+                    onClick={() => setShowAddForm(v => !v)}
+                    className="flex items-center gap-1 px-2 py-1 bg-emerald-600 text-white text-[9px] font-black uppercase tracking-widest rounded-sm hover:opacity-85 transition-opacity"
+                  >
+                    <Plus className="w-3 h-3" /> 직접 추가
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Add custom expense form */}
-        {showAddForm && (
+        {showAddForm && isEditing && !isCapturing && (
           <div className="px-3 py-3 border-b border-black/10 dark:border-white/10 bg-emerald-500/5 flex flex-wrap gap-2 items-end">
             <div className="flex flex-col gap-0.5">
               <label className="text-[8px] font-black uppercase tracking-widest text-black/40 dark:text-white/40">날짜</label>
@@ -411,9 +534,8 @@ export function SettlementView({
             </div>
             <div className="flex flex-col gap-0.5">
               <label className="text-[8px] font-black uppercase tracking-widest text-black/40 dark:text-white/40">결제자</label>
-              <select value={newItem.paidBy} onChange={e => setNewItem(v => ({ ...v, paidBy: e.target.value }))}
+              <select value={newItem.paidBy || members[0]} onChange={e => setNewItem(v => ({ ...v, paidBy: e.target.value }))}
                 className="bg-white dark:bg-[#222] border border-black/10 dark:border-white/10 px-1.5 py-1 text-[10px] font-bold text-black dark:text-white outline-none rounded-sm cursor-pointer">
-                <option value="">USER</option>
                 {members.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
@@ -441,7 +563,7 @@ export function SettlementView({
                 <tr className="bg-black/5 dark:bg-white/5 border-b border-black/10 dark:border-white/10 uppercase text-[7px] md:text-[8px] font-black tracking-widest text-black/50 dark:text-white/50">
                   <th className="py-2 px-1.5 whitespace-nowrap">DAY</th>
                   <th className="py-2 px-1.5">ITEM</th>
-                  <th className="py-2 px-1.5 whitespace-nowrap">USER</th>
+                  <th className="py-2 px-1.5 whitespace-nowrap">결제자</th>
                   <th className="py-2 px-1.5 text-right whitespace-nowrap">PAY</th>
                   <th className="py-2 px-1.5 text-right whitespace-nowrap">PAY(₩)</th>
                   <th className="py-2 px-1.5 text-center whitespace-nowrap">📎</th>
@@ -489,7 +611,7 @@ export function SettlementView({
                               <ChevronRight className="w-3.5 h-3.5 text-emerald-500 shrink-0 animate-pulse" />
                             )}
                             {/* Delete button for custom items */}
-                            {item.itemType === 'custom' && (
+                            {isEditing && !isCapturing && item.itemType === 'custom' && (
                               <button
                                 onClick={e => { e.stopPropagation(); handleDeleteCustom(item.id as string); }}
                                 className="ml-1 text-red-400 hover:text-red-600 transition-colors shrink-0"
@@ -502,23 +624,22 @@ export function SettlementView({
                         </td>
                         {/* USER */}
                         <td className="py-2 px-1.5 whitespace-nowrap" onClick={() => handleRowClick(rowKey, item)}>
-                          {isEditing && onUpdateExpense && item.itemType !== 'custom' ? (
+                          {isEditing && !isCapturing && onUpdateExpense && item.itemType !== 'custom' ? (
                             <select
-                              value={item.paidBy}
+                              value={item.paidBy || members[0]}
                               onChange={e => { e.stopPropagation(); onUpdateExpense(item.itemType as any, item.id as number, 'paidBy', e.target.value); }}
                               onClick={e => e.stopPropagation()}
                               className="bg-transparent border border-black/10 dark:border-white/10 px-1 py-0.5 text-[9px] font-bold text-black dark:text-white rounded-sm cursor-pointer outline-none bg-white dark:bg-[#222] max-w-[60px]"
                             >
-                              <option value="">USER</option>
                               {members.map(m => <option key={m} value={m}>{m}</option>)}
                             </select>
                           ) : (
-                            <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 cursor-pointer">{item.paidBy || '-'}</span>
+                            <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 cursor-pointer">{item.paidBy || members[0] || '나'}</span>
                           )}
                         </td>
                         {/* PAY */}
                         <td className="py-2 px-1.5 text-right font-mono font-bold whitespace-nowrap cursor-pointer" onClick={() => handleRowClick(rowKey, item)}>
-                          {isEditing && onUpdateExpense && item.itemType !== 'custom' ? (
+                          {isEditing && !isCapturing && onUpdateExpense && item.itemType !== 'custom' ? (
                             <div className="inline-flex items-center border border-black/10 dark:border-white/10 bg-white dark:bg-black/20 p-0.5 rounded-sm" onClick={e => e.stopPropagation()}>
                               <input
                                 type="text" value={item.cost}
@@ -567,28 +688,30 @@ export function SettlementView({
                                   <Paperclip className="w-3 h-3" /> 첨부파일 (영수증 / 예약확인서)
                                 </span>
                                 {/* Upload button */}
-                                <div>
-                                  <input
-                                    type="file"
-                                    multiple
-                                    accept="image/*,.pdf"
-                                    className="hidden"
-                                    ref={fileInputRef}
-                                    onChange={e => { if (activeUploadKey) handleAttachmentUpload(activeUploadKey, e.target.files); if (fileInputRef.current) fileInputRef.current.value = ''; }}
-                                  />
-                                  <button
-                                    onClick={() => { setActiveUploadKey(customItem.id); fileInputRef.current?.click(); }}
-                                    disabled={uploadingKey === customItem.id}
-                                    className="flex items-center gap-1 px-2 py-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-[9px] font-black uppercase tracking-widest rounded-sm hover:bg-black/10 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
-                                  >
-                                    {uploadingKey === customItem.id ? (
-                                      <Loader2 className="w-3 h-3 animate-spin" />
-                                    ) : (
-                                      <Plus className="w-3 h-3" />
-                                    )}
-                                    파일 추가
-                                  </button>
-                                </div>
+                                {isEditing && !isCapturing && (
+                                  <div>
+                                    <input
+                                      type="file"
+                                      multiple
+                                      accept="image/*,.pdf"
+                                      className="hidden"
+                                      ref={fileInputRef}
+                                      onChange={e => { if (activeUploadKey) handleAttachmentUpload(activeUploadKey, e.target.files); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                                    />
+                                    <button
+                                      onClick={() => { setActiveUploadKey(customItem.id); fileInputRef.current?.click(); }}
+                                      disabled={uploadingKey === customItem.id}
+                                      className="flex items-center gap-1 px-2 py-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-[9px] font-black uppercase tracking-widest rounded-sm hover:bg-black/10 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
+                                    >
+                                      {uploadingKey === customItem.id ? (
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                      ) : (
+                                        <Plus className="w-3 h-3" />
+                                      )}
+                                      파일 추가
+                                    </button>
+                                  </div>
+                                )}
                               </div>
 
                               {/* Attachment thumbnails */}
@@ -614,13 +737,15 @@ export function SettlementView({
                                         </button>
                                       )}
                                       {/* Delete button on hover */}
-                                      <button
-                                        onClick={() => handleDeleteAttachment(customItem.id, url)}
-                                        className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[8px]"
-                                        title="첨부파일 삭제"
-                                      >
-                                        ×
-                                      </button>
+                                      {isEditing && !isCapturing && (
+                                        <button
+                                          onClick={() => handleDeleteAttachment(customItem.id, url)}
+                                          className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[8px]"
+                                          title="첨부파일 삭제"
+                                        >
+                                          ×
+                                        </button>
+                                      )}
                                     </div>
                                   ))}
                                 </div>
@@ -686,6 +811,7 @@ export function SettlementView({
         </div>
       </div>
 
+      </div> {/* printRef closing */}
     </div>
   );
 }

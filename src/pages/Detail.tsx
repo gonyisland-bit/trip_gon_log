@@ -2191,6 +2191,7 @@ export function JourneyDetailPage({
                 type="text"
                 placeholder="+ Member"
                 onKeyDown={(e) => {
+                  if (e.nativeEvent.isComposing) return;
                   if (e.key === 'Enter') {
                     e.preventDefault();
                     e.stopPropagation();
@@ -2206,7 +2207,7 @@ export function JourneyDetailPage({
                     }
                   }
                 }}
-                className="text-[8px] md:text-[9px] font-bold border border-black/20 dark:border-white/20 px-2.5 py-0.5 rounded-full bg-transparent outline-none w-16 focus:w-24 focus:border-orange-500 transition-all duration-200 text-black dark:text-white normal-case"
+                className="text-[8px] md:text-[9px] font-bold border border-black/20 dark:border-white/20 px-2 py-0.5 rounded-full bg-transparent outline-none w-20 focus:w-28 focus:border-orange-500 transition-all duration-200 text-black dark:text-white normal-case"
               />
             </div>
           ) : (

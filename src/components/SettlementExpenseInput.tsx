@@ -172,11 +172,10 @@ export function SettlementExpenseInput({
           </div>
 
           <select
-            value={paidBy}
+            value={paidBy || displayMembers[0]}
             onChange={handlePaidByChange}
             className="bg-white dark:bg-[#222] border border-black/10 dark:border-white/10 px-1 py-0.5 text-[8px] md:text-[9px] font-bold text-black/60 dark:text-white/60 rounded-sm cursor-pointer w-20 md:w-24 outline-none"
           >
-            <option value="">USER</option>
             {displayMembers.map((m) => (
               <option key={m} value={m}>
                 {m}
@@ -215,11 +214,10 @@ export function SettlementExpenseInput({
         </div>
 
         <select
-          value={paidBy}
+          value={paidBy || displayMembers[0]}
           onChange={handlePaidByChange}
           className="bg-white dark:bg-[#222] border border-black/10 dark:border-white/10 px-1 py-0.5 text-[9px] md:text-[10px] font-bold text-black/60 dark:text-white/60 rounded-sm cursor-pointer"
         >
-          <option value="">USER</option>
           {displayMembers.map((m) => (
             <option key={m} value={m}>
               {m}

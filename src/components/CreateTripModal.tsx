@@ -308,6 +308,7 @@ export function CreateTripModal({
                 value={memberInput}
                 onChange={(e) => setMemberInput(e.target.value)}
                 onKeyDown={(e) => {
+                  if (e.nativeEvent.isComposing) return;
                   if (e.key === 'Enter') {
                     e.preventDefault();
                     e.stopPropagation();
