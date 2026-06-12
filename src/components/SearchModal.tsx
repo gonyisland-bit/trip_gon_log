@@ -219,7 +219,7 @@ export function SearchModal({
       case 'plan':
         return <span className="bg-teal-500/10 text-teal-600 dark:text-teal-400 text-[8px] font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Plan</span>;
       case 'timeline':
-        return <span className="bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[8px] font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Timeline</span>;
+        return <span className="bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[8px] font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Log</span>;
       case 'flight':
         return <span className="bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[8px] font-bold px-1.5 py-0.5 rounded tracking-wider uppercase shrink-0">Flight</span>;
       case 'stay':

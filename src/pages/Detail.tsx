@@ -2264,7 +2264,7 @@ export function JourneyDetailPage({
         {/* Tab Headers */}
         <div className="flex overflow-x-auto hide-scrollbar flex-nowrap border-b border-black/20 dark:border-white/20 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0 w-full">
           {[ 
-            { id: 'timeline', label: 'Timeline', icon: Clock }, 
+            { id: 'timeline', label: 'Log', icon: Clock }, 
             { id: 'flights', label: 'Flights', icon: Plane }, 
             { id: 'stays', label: 'Stays', icon: Bed }, 
             { id: 'transit', label: 'Transit', icon: Train },
@@ -2288,7 +2288,7 @@ export function JourneyDetailPage({
         >
           {renderInfoHeader(true)}
           
-          {/* TIMELINE TAB */}
+          {/* LOG TAB */}
           {activeTab === 'timeline' && (
             <div className="animate-in fade-in duration-300 h-auto flex flex-col w-full relative">
               {/* Day filter selector bar */}
@@ -2321,8 +2321,16 @@ export function JourneyDetailPage({
                       <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest opacity-60 mb-0.5">
                         {d.label}
                       </span>
-                      <span className="text-[11px] md:text-xs font-black tracking-tighter">{d.date === 'ALL' ? 'VIEW ALL' : d.date.slice(5).replace('.', '/')}</span>
-                      
+                      <span className="text-[11px] md:text-xs font-black tracking-tighter">
+                        {d.date === 'ALL' ? 'VIEW ALL' : d.date.slice(5).replace('.', '/')}
+                      </span>
+                      {d.date !== 'ALL' && (() => {
+                        try {
+                          const [y, mo, day] = d.date.split('.');
+                          const dow = new Date(Number(y), Number(mo) - 1, Number(day)).toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+                          return <span className={`text-[8px] font-bold mt-0.5 ${selectedDate === d.date ? 'opacity-70' : 'opacity-40'}`}>{dow}</span>;
+                        } catch { return null; }
+                      })()}
                       {d.date !== 'ALL' && tripToUse?.weatherData?.[d.date] && (() => {
                         const wInfo = tripToUse.weatherData[d.date];
                         if (!wInfo || (!wInfo.type && !wInfo.temp)) return null;
