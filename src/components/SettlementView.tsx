@@ -7,6 +7,7 @@ import { Trip, TimelineItem, FlightItem, StayItem, TransitItem, TabType, CustomE
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, storage } from '../firebase';
 import html2canvas from 'html2canvas';
+import { createPortal } from 'react-dom';
 
 const EXCHANGE_RATES: { [currency: string]: number } = {
   KRW: 1,
@@ -350,10 +351,10 @@ export function SettlementView({
   return (
     <div className="p-3 md:p-5 flex flex-col gap-5 text-left text-black dark:text-white max-w-4xl mx-auto w-full animate-in fade-in duration-300">
 
-      {/* Lightbox for attachments */}
-      {lightboxUrl && (
+      {/* Lightbox for attachments (Rendered in Portal) */}
+      {lightboxUrl && createPortal(
         <div
-          className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[100000] bg-black/90 flex items-center justify-center p-4"
           onClick={() => setLightboxUrl(null)}
         >
           <button className="absolute top-4 right-4 text-white/70 hover:text-white p-2" onClick={() => setLightboxUrl(null)}>
@@ -364,12 +365,13 @@ export function SettlementView({
           ) : (
             <img src={lightboxUrl} className="max-w-full max-h-[90vh] object-contain" onClick={e => e.stopPropagation()} />
           )}
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Image Share / Download Modal */}
-      {capturedImg && (
-        <div className="fixed inset-0 z-[250] bg-black/80 flex flex-col items-center justify-center p-4">
+      {/* Image Share / Download Modal (Rendered in Portal) */}
+      {capturedImg && createPortal(
+        <div className="fixed inset-0 z-[100000] bg-black/80 flex flex-col items-center justify-center p-4">
           <div className="bg-white dark:bg-[#1a1a1a] p-4 rounded-lg max-w-md w-full flex flex-col gap-3 shadow-xl text-left border border-black/10 dark:border-white/10 animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center border-b pb-2 border-black/5 dark:border-white/10">
               <span className="text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70">정산표 이미지 저장 및 공유</span>
@@ -406,67 +408,75 @@ export function SettlementView({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Capture Area Ref */}
-      <div ref={printRef} className="bg-transparent flex flex-col gap-5 w-full">
+      <div ref={printRef} className="bg-white dark:bg-[#121212] p-5 md:p-6 shadow-sm border border-black/5 dark:border-white/5 flex flex-col gap-5 w-full font-sans">
+        
+        {/* Receipt Header shown when capturing */}
         {isCapturing && (
-          <div className="text-center pb-4 border-b border-black/10 dark:border-white/10 mb-2">
-            <h1 className="text-base font-black text-black dark:text-white flex items-center justify-center gap-1">✈️ {trip.title || '여행'} 정산 결과</h1>
-            <p className="text-[9px] text-black/50 dark:text-white/50 mt-1">인원: {members.join(', ')} · 일시: {new Date().toLocaleDateString()}</p>
+          <div className="text-center pb-4 border-b border-dashed border-black/25 dark:border-white/25 mb-2">
+            <span className="text-[9px] uppercase tracking-widest opacity-60 font-black text-black/60 dark:text-white/60">Receipt / 정산 결과</span>
+            <h1 className="text-base md:text-lg font-black text-black dark:text-white mt-1">✈️ {trip.title || '여행'}</h1>
+            <p className="text-[9px] text-black/55 dark:text-white/55 mt-1">
+              기간: {trip.date || '여정 일정'} · 인원: {members.join(', ')}
+            </p>
+            <p className="text-[8px] text-black/35 dark:text-white/35 mt-0.5">일시: {new Date().toLocaleString('ko-KR')}</p>
           </div>
         )}
 
-        {/* 1. Member Settings Panel */}
-        <div className="bg-white dark:bg-[#1a1a1a] border border-black/10 dark:border-white/10 p-3 shadow-sm flex flex-wrap items-center gap-3">
-          <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-black/55 dark:text-white/55 flex items-center gap-1 shrink-0">
-            👥 참석 인원 ({members.length}명)
-          </span>
-          <div className="flex flex-wrap gap-1.5 items-center flex-1 min-w-[200px]">
-            {members.map(m => (
-              <span key={m} className="inline-flex items-center gap-1 px-2 py-0.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-xs font-bold rounded-sm">
-                {m}
-                {isEditing && !isCapturing && (
-                  <button onClick={() => handleRemoveMember(m)} className="text-red-500 hover:text-red-700 transition-colors ml-0.5" title="인원 삭제">✕</button>
-                )}
-              </span>
-            ))}
-            {isEditing && !isCapturing && (
-              <div className="flex items-center gap-1 ml-auto">
-                <input type="text" placeholder="이름 추가..." value={newMemberName} onChange={e => setNewMemberName(e.target.value)}
-                  className="bg-[#EAE8E3] dark:bg-white/10 px-2 py-0.5 outline-none text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-28"
-                  onKeyDown={e => {
-                    if (e.nativeEvent.isComposing) return;
-                    if (e.key === 'Enter') handleAddMember();
-                  }}
-                />
-                <button onClick={handleAddMember} className="bg-black text-white dark:bg-white dark:text-black px-2 py-0.5 text-xs font-black uppercase tracking-widest rounded-sm hover:opacity-85 transition-opacity flex items-center gap-0.5 shrink-0">
-                  <Plus className="w-3.5 h-3.5" /> 추가
-                </button>
-              </div>
-            )}
+        {/* 1. Member Settings Panel - Hidden when capturing */}
+        {!isCapturing && (
+          <div className="bg-white dark:bg-[#1a1a1a] border border-black/10 dark:border-white/10 p-3 shadow-sm flex flex-wrap items-center gap-3">
+            <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-black/55 dark:text-white/55 flex items-center gap-1 shrink-0">
+              👥 참석 인원 ({members.length}명)
+            </span>
+            <div className="flex flex-wrap gap-1.5 items-center flex-1 min-w-[200px]">
+              {members.map(m => (
+                <span key={m} className="inline-flex items-center gap-1 px-2 py-0.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-xs font-bold rounded-sm">
+                  {m}
+                  {isEditing && !isCapturing && (
+                    <button onClick={() => handleRemoveMember(m)} className="text-red-500 hover:text-red-700 transition-colors ml-0.5" title="인원 삭제">✕</button>
+                  )}
+                </span>
+              ))}
+              {isEditing && !isCapturing && (
+                <div className="flex items-center gap-1 ml-auto">
+                  <input type="text" placeholder="이름 추가..." value={newMemberName} onChange={e => setNewMemberName(e.target.value)}
+                    className="bg-[#EAE8E3] dark:bg-white/10 px-2 py-0.5 outline-none text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-28"
+                    onKeyDown={e => {
+                      if (e.nativeEvent.isComposing) return;
+                      if (e.key === 'Enter') handleAddMember();
+                    }}
+                  />
+                  <button onClick={handleAddMember} className="bg-black text-white dark:bg-white dark:text-black px-2 py-0.5 text-xs font-black uppercase tracking-widest rounded-sm hover:opacity-85 transition-opacity flex items-center gap-0.5 shrink-0">
+                    <Plus className="w-3.5 h-3.5" /> 추가
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 2. Total Summary Panel - Receipt Styled */}
+        <div className="border-t border-b border-dashed border-black/20 dark:border-white/20 py-4 my-1 grid grid-cols-3 gap-2 text-center">
+          <div className="flex flex-col justify-center">
+            <span className="text-[8px] md:text-[9px] uppercase font-bold tracking-widest text-black/45 dark:text-white/45 block mb-1">총 지출 (Total)</span>
+            <span className="text-sm md:text-base lg:text-lg font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap px-1">₩{totalExpenseKRW.toLocaleString()}</span>
+          </div>
+          <div className="border-l border-r border-black/10 dark:border-white/10 flex flex-col justify-center">
+            <span className="text-[8px] md:text-[9px] uppercase font-bold tracking-widest text-black/45 dark:text-white/45 block mb-1">1인당 균등</span>
+            <span className="text-sm md:text-base lg:text-lg font-black text-black dark:text-white whitespace-nowrap px-1">₩{sharePerPerson.toLocaleString()}</span>
+          </div>
+          <div className="flex flex-col justify-center">
+            <span className="text-[8px] md:text-[9px] uppercase font-bold tracking-widest text-black/45 dark:text-white/45 block mb-1">환율 기준</span>
+            <span className="text-[8px] md:text-[9.5px] font-bold text-black/60 dark:text-white/60 leading-tight">
+              USD 1,380 · JPY 9.0<br/>EUR 1,480 · CNY 190
+            </span>
           </div>
         </div>
-
-      {/* 2. Total Summary Panel */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="bg-emerald-500/5 dark:bg-emerald-400/5 border border-emerald-500/20 p-4 flex flex-col justify-center">
-          <span className="text-[8px] md:text-[9px] uppercase font-bold tracking-widest text-emerald-600 dark:text-emerald-400 block mb-1">총 지출 (Total)</span>
-          <span className="text-xl md:text-2xl font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap">₩{totalExpenseKRW.toLocaleString()}</span>
-        </div>
-        <div className="bg-white dark:bg-[#1a1a1a] border border-black/10 dark:border-white/10 p-4 flex flex-col justify-center">
-          <span className="text-[8px] md:text-[9px] uppercase font-bold tracking-widest text-black/45 dark:text-white/45 block mb-1">1인당 ({members.length}명 균등)</span>
-          <span className="text-lg md:text-xl font-black whitespace-nowrap">₩{sharePerPerson.toLocaleString()}</span>
-        </div>
-        <div className="bg-white dark:bg-[#1a1a1a] border border-black/10 dark:border-white/10 p-3 flex flex-col justify-center text-[10px] leading-relaxed text-black/50 dark:text-white/50">
-          <span className="font-bold text-black/70 dark:text-white/70 uppercase text-[8px] tracking-wider mb-1 flex items-center gap-1">
-            <AlertCircle className="w-3 h-3 text-orange-500" /> 환율 기준
-          </span>
-          <div className="text-[9px]">USD 1,380 · JPY 9.0 · EUR 1,480 · CNY 190 (₩)</div>
-          <div className="text-[8px] opacity-60 mt-0.5">※ 여정 기간 기준 일괄 적용</div>
-        </div>
-      </div>
 
       {/* 3. Expense Ledger */}
       <div className="bg-white dark:bg-[#1a1a1a] border border-black/10 dark:border-white/10 shadow-sm overflow-hidden">
@@ -581,10 +591,10 @@ export function SettlementView({
                   return (
                     <React.Fragment key={rowKey}>
                       <tr
-                        className={`border-b border-black/5 dark:border-white/5 transition-colors ${
+                        className={`border-b border-dashed border-black/10 dark:border-white/10 transition-colors ${
                           isSelected
-                            ? 'bg-emerald-500/8 dark:bg-emerald-400/8'
-                            : 'hover:bg-black/3 dark:hover:bg-white/3'
+                            ? 'bg-orange-500/15 dark:bg-orange-400/20 text-orange-600 dark:text-orange-400 font-bold border-l-2 border-orange-500'
+                            : 'hover:bg-black/2 dark:hover:bg-white/2'
                         }`}
                       >
                         {/* DAY */}
@@ -763,23 +773,24 @@ export function SettlementView({
         )}
       </div>
 
-      {/* 4. Split Balance Breakdown */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div className="bg-white dark:bg-[#1a1a1a] border border-black/10 dark:border-white/10 p-4 shadow-sm flex flex-col gap-3">
-          <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-black/55 dark:text-white/55 border-b border-black/5 dark:border-white/5 pb-2">
-            👤 개인별 지출 현황
+      {/* 4. Split Balance Breakdown - Receipt Styled */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 border-t border-dashed border-black/20 dark:border-white/20 pt-4">
+        {/* 개인별 지출 현황 */}
+        <div className="flex flex-col gap-2.5">
+          <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-black/55 dark:text-white/55 border-b border-dashed border-black/10 dark:border-white/10 pb-1.5 flex items-center gap-1">
+            👤 개인별 지출 현황 (Individual Stats)
           </span>
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-2">
             {members.map(name => {
               const paid = memberPaidStats[name] || 0;
               const balance = memberBalances[name] || 0;
               return (
-                <div key={name} className="flex justify-between items-center text-xs">
+                <div key={name} className="flex justify-between items-center text-[11px] leading-relaxed">
                   <div className="flex flex-col">
-                    <span className="font-bold">{name}</span>
-                    <span className="text-[10px] text-black/40 dark:text-white/40 whitespace-nowrap">결제: ₩{paid.toLocaleString()}</span>
+                    <span className="font-bold text-black/85 dark:text-white/85">{name}</span>
+                    <span className="text-[9px] text-black/45 dark:text-white/45">지불액: ₩{paid.toLocaleString()}</span>
                   </div>
-                  <span className={`font-mono font-black text-sm whitespace-nowrap ${balance > 0 ? 'text-emerald-600 dark:text-emerald-400' : balance < 0 ? 'text-red-500 dark:text-red-400' : ''}`}>
+                  <span className={`font-mono font-bold text-xs whitespace-nowrap ${balance > 0 ? 'text-emerald-600 dark:text-emerald-400' : balance < 0 ? 'text-red-500 dark:text-red-400' : ''}`}>
                     {balance > 0 ? `+₩${balance.toLocaleString()}` : balance < 0 ? `-₩${Math.abs(balance).toLocaleString()}` : '₩0'}
                   </span>
                 </div>
@@ -788,22 +799,25 @@ export function SettlementView({
           </div>
         </div>
 
-        <div className="bg-[#10b981]/5 border border-[#10b981]/20 p-4 shadow-sm flex flex-col gap-3">
-          <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-emerald-800 dark:text-emerald-400 border-b border-[#10b981]/10 pb-2 flex items-center gap-1.5">
-            <Coins className="w-4 h-4 text-emerald-600" /> 💸 추천 송금 (정산 가이드)
+        {/* 추천 송금 */}
+        <div className="flex flex-col gap-2.5">
+          <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-emerald-800 dark:text-emerald-400 border-b border-dashed border-emerald-500/20 pb-1.5 flex items-center gap-1">
+            <Coins className="w-3.5 h-3.5 text-emerald-600" /> 💸 추천 송금 (Settlement Guide)
           </span>
           {transfers.length === 0 ? (
-            <div className="text-center py-6 text-xs text-black/40 dark:text-white/40 font-bold">송금할 내역이 없습니다. 정산 완료!</div>
+            <div className="text-center py-4 text-[10px] text-black/40 dark:text-white/40 font-bold border border-dashed border-black/10 dark:border-white/10">
+              송금할 내역이 없습니다. 정산 완료!
+            </div>
           ) : (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
               {transfers.map((tr, idx) => (
-                <div key={idx} className="flex items-center justify-between bg-white dark:bg-[#1a1a1a] border border-black/5 dark:border-white/5 px-3 py-2.5 text-xs rounded-sm shadow-sm">
-                  <div className="flex items-center gap-2 font-bold">
+                <div key={idx} className="flex items-center justify-between border border-dashed border-black/15 dark:border-white/15 px-2.5 py-2 text-[11px] rounded-sm bg-black/[0.01] dark:bg-white/[0.01] shadow-inner">
+                  <div className="flex items-center gap-1.5 font-bold text-black/85 dark:text-white/85">
                     <span className="text-red-500 dark:text-red-400">{tr.from}</span>
-                    <ArrowRight className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
+                    <ArrowRight className="w-3 h-3 text-black/35 dark:text-white/35" />
                     <span className="text-emerald-600 dark:text-emerald-400">{tr.to}</span>
                   </div>
-                  <span className="font-mono font-black text-black dark:text-white whitespace-nowrap">₩{tr.amount.toLocaleString()}</span>
+                  <span className="font-mono font-bold text-black dark:text-white whitespace-nowrap">₩{tr.amount.toLocaleString()}</span>
                 </div>
               ))}
             </div>
