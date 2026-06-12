@@ -26,3 +26,4 @@ dist-ssr
 # Temporary agent media/screenshots
 public/media__*
 public/brain_imgs/
+.vercel

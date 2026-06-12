@@ -3668,6 +3668,17 @@ export function JourneyDetailPage({
               }}
               defaultCurrency={defaultCurrency}
               onUpdateExpense={updateExpenseItem}
+              onUpdateCustomExpenses={(items) => {
+                if (isEditing && draftTrip) {
+                  setDraftTrip({ ...draftTrip, customExpenses: items });
+                } else if (trip) {
+                  // Save immediately even outside editing mode
+                  const updated = { ...tripToUse!, customExpenses: items };
+                  const uid = auth.currentUser?.uid || 'public';
+                  setDoc(doc(db, 'users', uid, 'trips', String(trip.id)), { customExpenses: items }, { merge: true })
+                    .catch(e => console.error('Failed to save custom expenses:', e));
+                }
+              }}
             />
           )}
 

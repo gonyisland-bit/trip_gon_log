@@ -43,6 +43,17 @@ export interface Trip {
     };
   };
   members?: string[];
+  customExpenses?: CustomExpenseItem[];
+}
+
+export interface CustomExpenseItem {
+  id: string;
+  name: string;
+  date: string;        // YYYY.MM.DD format
+  cost: string;
+  currency: string;
+  paidBy: string;
+  attachments?: string[]; // Firebase Storage URLs (images or PDFs)
 }
 
 export interface Plan extends Trip {}
