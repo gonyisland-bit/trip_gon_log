@@ -33,6 +33,8 @@ export function EditTripModal({
   const [imgUrl, setImgUrl] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
+  const [members, setMembers] = useState<string[]>([]);
+  const [memberInput, setMemberInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   
@@ -48,6 +50,8 @@ export function EditTripModal({
       setImgUrl(trip.img);
       setTags(trip.tags || []);
       setTagInput('');
+      setMembers(trip.members || []);
+      setMemberInput('');
     }
   }, [isOpen, trip]);
 
@@ -135,6 +139,7 @@ export function EditTripModal({
         lng: lng !== undefined ? lng : trip.lng,
         img: imgUrl,
         tags,
+        members,
       });
       onClose();
     } catch (err) {
@@ -318,6 +323,80 @@ export function EditTripModal({
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Members (참석 인원) */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+              Trip Members (참석 인원)
+            </label>
+            <div className="flex flex-wrap gap-1.5 mb-1.5">
+              {members.length === 0 ? (
+                <span className="text-[10px] text-black/30 dark:text-white/30 italic">설정된 인원이 없습니다.</span>
+              ) : (
+                members.map(m => (
+                  <span 
+                    key={m} 
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-xs font-bold rounded-sm"
+                  >
+                    {m}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm(`정말 '${m}' 인원을 삭제하시겠습니까?`)) {
+                          setMembers(prev => prev.filter(x => x !== m));
+                        }
+                      }}
+                      className="text-red-500 hover:text-red-700 transition-colors"
+                      title="인원 삭제"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))
+              )}
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={memberInput}
+                onChange={(e) => setMemberInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const cleanName = memberInput.trim();
+                    if (cleanName) {
+                      if (members.includes(cleanName)) {
+                        alert("이미 등록된 인원입니다.");
+                      } else {
+                        setMembers(prev => [...prev, cleanName]);
+                        setMemberInput('');
+                      }
+                    }
+                  }
+                }}
+                placeholder="참석자 이름 입력 후 Enter..."
+                className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-bold text-black dark:text-white outline-none flex-grow focus:border-red-600 dark:focus:border-red-400 transition-colors"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const cleanName = memberInput.trim();
+                  if (cleanName) {
+                    if (members.includes(cleanName)) {
+                      alert("이미 등록된 인원입니다.");
+                    } else {
+                      setMembers(prev => [...prev, cleanName]);
+                      setMemberInput('');
+                    }
+                  }
+                }}
+                className="px-3 bg-black text-white dark:bg-white dark:text-black text-[10px] font-black uppercase tracking-widest hover:opacity-80 transition-opacity shrink-0"
+              >
+                추가
+              </button>
+            </div>
           </div>
 
           {/* Cover Image */}

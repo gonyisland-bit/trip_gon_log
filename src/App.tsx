@@ -758,7 +758,7 @@ function App() {
     setIsCreateModalOpen(true);
   };
 
-  const handleCreateJourney = async (title: string, dateRange: string, location: string, tags: string[], lat?: number, lng?: number) => {
+  const handleCreateJourney = async (title: string, dateRange: string, location: string, tags: string[], lat?: number, lng?: number, members?: string[]) => {
     const user = auth.currentUser;
     if (!user) return;
 
@@ -780,7 +780,8 @@ function App() {
       locationStr: location,
       lat,
       lng,
-      gallery: []
+      gallery: [],
+      members: members || []
     };
 
     try {

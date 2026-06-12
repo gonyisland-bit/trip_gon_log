@@ -6,7 +6,7 @@ import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 interface CreateTripModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (title: string, dateRange: string, location: string, tags: string[], lat?: number, lng?: number) => void;
+  onCreate: (title: string, dateRange: string, location: string, tags: string[], lat?: number, lng?: number, members?: string[]) => void;
   existingTags: string[];
 }
 
@@ -24,6 +24,8 @@ export function CreateTripModal({
   const [lng, setLng] = useState<number | undefined>(undefined);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
+  const [members, setMembers] = useState<string[]>([]);
+  const [memberInput, setMemberInput] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -36,6 +38,8 @@ export function CreateTripModal({
       setLng(undefined);
       setTags([]);
       setTagInput('');
+      setMembers([]);
+      setMemberInput('');
       setError('');
     }
   }, [isOpen]);
@@ -90,7 +94,8 @@ export function CreateTripModal({
       location.trim(),
       tags.length > 0 ? tags : ['Personal'],
       lat,
-      lng
+      lng,
+      members
     );
     onClose();
   };
@@ -269,6 +274,75 @@ export function CreateTripModal({
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Members (참석 인원) */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest text-black/50 dark:text-white/50">
+              Trip Members (참석 인원)
+            </label>
+            <div className="flex flex-wrap gap-1.5 mb-1.5">
+              {members.length === 0 ? (
+                <span className="text-[10px] text-black/30 dark:text-white/30 italic">설정된 인원이 없습니다.</span>
+              ) : (
+                members.map(m => (
+                  <span 
+                    key={m} 
+                    className="flex items-center gap-1.5 bg-white dark:bg-[#151515] text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border border-black/15 dark:border-white/15 text-black dark:text-white shadow-xs"
+                  >
+                    {m}
+                    <button
+                      type="button"
+                      onClick={() => setMembers(prev => prev.filter(x => x !== m))}
+                      className="text-black/45 dark:text-white/45 hover:text-red-500 transition-colors text-xs leading-none"
+                    >
+                      &times;
+                    </button>
+                  </span>
+                ))
+              )}
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={memberInput}
+                onChange={(e) => setMemberInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const cleanName = memberInput.trim();
+                    if (cleanName) {
+                      if (members.includes(cleanName)) {
+                        alert("이미 등록된 인원입니다.");
+                      } else {
+                        setMembers(prev => [...prev, cleanName]);
+                        setMemberInput('');
+                      }
+                    }
+                  }
+                }}
+                placeholder="참석자 이름 입력 후 Enter..."
+                className="w-full px-4 py-2 text-xs md:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none text-black dark:text-white"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const cleanName = memberInput.trim();
+                  if (cleanName) {
+                    if (members.includes(cleanName)) {
+                      alert("이미 등록된 인원입니다.");
+                    } else {
+                      setMembers(prev => [...prev, cleanName]);
+                      setMemberInput('');
+                    }
+                  }
+                }}
+                className="px-3 bg-black text-white dark:bg-white dark:text-black text-[10px] font-black uppercase tracking-widest hover:opacity-80 transition-opacity shrink-0"
+              >
+                추가
+              </button>
+            </div>
           </div>
 
           <button 

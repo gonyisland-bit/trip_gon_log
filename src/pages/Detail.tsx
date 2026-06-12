@@ -2142,6 +2142,20 @@ export function JourneyDetailPage({
           })}
         </div>
       )}
+
+      {/* Members row */}
+      <div className="mt-2.5 flex flex-wrap gap-1.5 items-center text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-black/50 dark:text-white/50">
+        <span className="opacity-60 flex items-center gap-1">👥 Members:</span>
+        {tripToUse?.members && tripToUse.members.length > 0 ? (
+          tripToUse.members.map(m => (
+            <span key={m} className="px-2 py-0.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm text-black/75 dark:text-white/75 font-black">
+              {m}
+            </span>
+          ))
+        ) : (
+          <span className="italic opacity-60">나</span>
+        )}
+      </div>
     </div>
   );
 
