@@ -3,6 +3,7 @@ import { Train, Bus, Car, Trash2, Image as ImageIcon, MapPin, ChevronDown, Chevr
 import { TransitItem } from '../types';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { ImageEditOverlay } from './ImageEditOverlay';
+import { SettlementExpenseInput } from './SettlementExpenseInput';
 
 interface TransitCardProps {
   transit: TransitItem;
@@ -15,6 +16,7 @@ interface TransitCardProps {
   minDate?: string;
   maxDate?: string;
   onOpenMapConfirm?: (placeName: string, url: string) => void;
+  members?: string[];
 }
 
 // Time conversion helpers
@@ -73,6 +75,7 @@ export function TransitCard({
   minDate,
   maxDate,
   onOpenMapConfirm,
+  members = [],
 }: TransitCardProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [isDetailExpanded, setIsDetailExpanded] = useState(false);
@@ -463,6 +466,25 @@ export function TransitCard({
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Settlement Section */}
+        {(isEditMode || (transit.cost && transit.cost !== '-')) && (
+          <div className="mt-4 pt-3 border-t border-dashed border-black/10 dark:border-white/10 flex flex-wrap items-center justify-between gap-2">
+            <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest">EXPENSE (정산)</span>
+            <SettlementExpenseInput
+              cost={transit.cost}
+              currency={transit.currency}
+              paidBy={transit.paidBy}
+              members={members}
+              isEditMode={isEditMode}
+              onUpdate={(updates) => {
+                if (updates.cost !== undefined) onUpdate(transit.id, 'cost', updates.cost);
+                if (updates.currency !== undefined) onUpdate(transit.id, 'currency', updates.currency);
+                if (updates.paidBy !== undefined) onUpdate(transit.id, 'paidBy', updates.paidBy);
+              }}
+            />
           </div>
         )}
       </div>

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Plane, Trash2, RefreshCw, Clock } from 'lucide-react';
 import { FlightItem } from '../types';
+import { SettlementExpenseInput } from './SettlementExpenseInput';
 
 interface FlightCardProps {
   flight: FlightItem;
@@ -12,6 +13,7 @@ interface FlightCardProps {
   minDate?: string;
   maxDate?: string;
   onOpenMapConfirm?: (placeName: string, url: string) => void;
+  members?: string[];
 }
 
 // Common Airport suggestions helper list
@@ -89,6 +91,7 @@ export function FlightCard({
   minDate,
   maxDate,
   onOpenMapConfirm,
+  members = [],
 }: FlightCardProps) {
   const [activeSearchField, setActiveSearchField] = useState<'from' | 'to' | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -529,6 +532,25 @@ export function FlightCard({
           </div>
         </div>
       </div>
+      
+      {/* Settlement Section */}
+      {(isEditMode || (flight.cost && flight.cost !== '-')) && (
+        <div className="mt-4 pt-3 border-t border-dashed border-black/10 dark:border-white/10 flex flex-wrap items-center justify-between gap-2">
+          <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest">EXPENSE (정산)</span>
+          <SettlementExpenseInput
+            cost={flight.cost}
+            currency={flight.currency}
+            paidBy={flight.paidBy}
+            members={members}
+            isEditMode={isEditMode}
+            onUpdate={(updates) => {
+              if (updates.cost !== undefined) onUpdate(flight.id, 'cost', updates.cost);
+              if (updates.currency !== undefined) onUpdate(flight.id, 'currency', updates.currency);
+              if (updates.paidBy !== undefined) onUpdate(flight.id, 'paidBy', updates.paidBy);
+            }}
+          />
+        </div>
+      )}
       
       {/* Delete button in edit mode */}
       {isEditMode && (

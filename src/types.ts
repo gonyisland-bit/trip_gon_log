@@ -42,6 +42,7 @@ export interface Trip {
       temp: string;
     };
   };
+  members?: string[];
 }
 
 export interface Plan extends Trip {}
@@ -66,6 +67,8 @@ export interface TimelineItem {
   tripId?: number;
   excludeFromMap?: boolean;
   originDate?: string;
+  paidBy?: string;
+  currency?: string;
 }
 
 export interface TimelineData {
@@ -88,6 +91,9 @@ export interface FlightItem {
   layoverCode?: string;
   layoverTime?: string;
   tripId?: number;
+  cost?: string;
+  paidBy?: string;
+  currency?: string;
 }
 
 export interface StayItem {
@@ -102,6 +108,9 @@ export interface StayItem {
   lat?: number;
   lng?: number;
   additionalImages?: string[];
+  cost?: string;
+  paidBy?: string;
+  currency?: string;
 }
 
 export interface TransitItem {
@@ -127,5 +136,11 @@ export interface TransitItem {
   tripId?: number;
   memo?: string;
   displayOrder?: number;
+  cost?: string;
+  paidBy?: string;
+  currency?: string;
 }
+
+export type TabType = 'timeline' | 'flights' | 'stays' | 'transit' | 'gallery' | 'settlement';
+
 

@@ -7,6 +7,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../firebase';
 import { compressImage } from '../utils/imageHelper';
 import { Lightbox } from './Lightbox';
+import { SettlementExpenseInput } from './SettlementExpenseInput';
 
 interface StayCardProps {
   stay: StayItem;
@@ -19,6 +20,7 @@ interface StayCardProps {
   minDate?: string;
   maxDate?: string;
   onOpenMapConfirm?: (placeName: string, url: string) => void;
+  members?: string[];
 }
 
 // "YYYY.MM.DD - YYYY.MM.DD (N Nights)" -> { checkIn: "YYYY-MM-DD", checkOut: "YYYY-MM-DD" }
@@ -69,6 +71,7 @@ export function StayCard({
   minDate,
   maxDate,
   onOpenMapConfirm,
+  members = [],
 }: StayCardProps) {
   const { checkIn, checkOut } = parseDateRange(stay.dateRange);
 
@@ -433,6 +436,25 @@ export function StayCard({
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Settlement Section */}
+        {(isEditMode || (stay.cost && stay.cost !== '-')) && (
+          <div className="mt-4 pt-3 border-t border-dashed border-black/10 dark:border-white/10 flex flex-wrap items-center justify-between gap-2">
+            <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest">EXPENSE (정산)</span>
+            <SettlementExpenseInput
+              cost={stay.cost}
+              currency={stay.currency}
+              paidBy={stay.paidBy}
+              members={members}
+              isEditMode={isEditMode}
+              onUpdate={(updates) => {
+                if (updates.cost !== undefined) onUpdate(stay.id, 'cost', updates.cost);
+                if (updates.currency !== undefined) onUpdate(stay.id, 'currency', updates.currency);
+                if (updates.paidBy !== undefined) onUpdate(stay.id, 'paidBy', updates.paidBy);
+              }}
+            />
           </div>
         )}
       </div>

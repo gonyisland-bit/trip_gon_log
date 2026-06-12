@@ -3,13 +3,15 @@ import {
   Clock, Plane, Bed, Train, Bus, Car, User, Edit2, Trash2, 
   Image as ImageIcon, ChevronUp, ChevronDown, MapPin, Map, Plus, Loader2, Search, ArrowLeft,
   ExternalLink, MapPinOff, Maximize2, Star, ChevronLeft, ChevronRight, ArrowUp, ArrowDown,
-  Sun, Cloud, Cloudy, CloudRain, Snowflake, CloudLightning, ArrowRight
+  Sun, Cloud, Cloudy, CloudRain, Snowflake, CloudLightning, ArrowRight, Calculator
 } from 'lucide-react';
 import { MapArea } from '../components/MapArea';
 import { ImageEditOverlay } from '../components/ImageEditOverlay';
 import { FlightCard } from '../components/FlightCard';
 import { StayCard } from '../components/StayCard';
 import { TransitCard } from '../components/TransitCard';
+import { SettlementExpenseInput, formatNumberWithCommas } from '../components/SettlementExpenseInput';
+import { SettlementView } from '../components/SettlementView';
 import { Lightbox, LightboxImageMeta } from '../components/Lightbox';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { Footer } from '../components/Footer';
@@ -19,7 +21,8 @@ import {
   TimelineData, 
   FlightItem, 
   StayItem, 
-  TransitItem 
+  TransitItem,
+  TabType
 } from '../types';
 import { fetchCoordinates, fetchPlacePredictions, fetchCoordinatesByPlaceId } from '../utils/googleMapsHelper';
 import { fetchAddressFromCoords } from '../utils/googleMapsHelper';
@@ -66,7 +69,7 @@ interface JourneyDetailPageProps {
   saveRef?: React.MutableRefObject<(() => Promise<void>) | null>;
 }
 
-type TabType = 'timeline' | 'flights' | 'stays' | 'transit' | 'gallery';
+
 
 const airportCoords: { [code: string]: { lat: number; lng: number } } = {
   ICN: { lat: 37.4602, lng: 126.4407 },
@@ -413,6 +416,10 @@ export function JourneyDetailPage({
   const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
   const [galleryViewMode, setGalleryViewMode] = useState<'grid' | 'accordion'>('grid');
   const [collapsedGalleryDays, setCollapsedGalleryDays] = useState<string[]>([]);
+  
+  // Autosave state
+  const [showAutosaveModal, setShowAutosaveModal] = useState(false);
+  const autosaveTimerRef = useRef<any>(null);
 
   // Multi-select & map visibilities state
   const [selectedItemIds, setSelectedItemIds] = useState<number[]>([]);
@@ -877,6 +884,70 @@ export function JourneyDetailPage({
     }
   }, [handleSave, saveRef]);
 
+  const triggerAutosave = async () => {
+    if (!trip || !draftTrip) return;
+    try {
+      const resolvedTimeline = await Promise.all(
+        draftTimeline.map(async (item) => {
+          if (
+            (item.lat === undefined || item.lng === undefined || item.lat === null || item.lng === null) &&
+            item.location && item.location.trim() !== ''
+          ) {
+            try {
+              const coords = await fetchCoordinates(item.location);
+              if (coords) {
+                return { ...item, lat: coords.lat, lng: coords.lng };
+              }
+            } catch (e) {
+              console.error(`Geocoding failed for ${item.location} during autosave:`, e);
+            }
+          }
+          return item;
+        })
+      );
+
+      await onSave(
+        trip.id,
+        draftTrip,
+        resolvedTimeline,
+        draftFlights,
+        draftStays,
+        draftTransits
+      );
+
+      setShowAutosaveModal(true);
+      setTimeout(() => {
+        setShowAutosaveModal(false);
+      }, 3000);
+    } catch (e) {
+      console.error("Autosave failed:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (!isEditing) {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+      return;
+    }
+
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+    }
+
+    autosaveTimerRef.current = setTimeout(() => {
+      triggerAutosave();
+    }, 5 * 60 * 1000);
+
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+      }
+    };
+  }, [isEditing, draftTrip, draftTimeline, draftFlights, draftStays, draftTransits]);
+
 
 
   const dynamicDates = [
@@ -906,6 +977,16 @@ export function JourneyDetailPage({
     }
     return rawTimeline;
   })();
+
+  const groupedTimelineData = useMemo(() => {
+    const map: { [date: string]: TimelineItem[] } = {};
+    baseTimeline.forEach(item => {
+      const d = item.date || 'No Date';
+      if (!map[d]) map[d] = [];
+      map[d].push(item);
+    });
+    return map;
+  }, [baseTimeline]);
 
   // Separate gallery: metadata gallery (from trip.gallery) and timeline images (from timeline items)
   // Normalize gallery entries: string → { url } object
@@ -1953,18 +2034,35 @@ export function JourneyDetailPage({
           )}
         </div>
         
-        {isLoggedIn && (
-          <div className="shrink-0 flex items-center gap-1.5">
-            {isEditing ? (
-              <>
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="px-2.5 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all flex items-center gap-1 disabled:opacity-50 cursor-pointer"
-                >
-                  {saving && <Loader2 className="w-3 h-3 animate-spin" />}
-                  Save
-                </button>
+        <div className="shrink-0 flex items-center gap-1.5">
+          <button
+            onClick={() => {
+              setActiveTab(prev => prev === 'settlement' ? 'timeline' : 'settlement');
+              setExpandedItemId(null);
+            }}
+            className={`px-2.5 py-1.5 border rounded-sm transition-all flex items-center gap-1 text-[9px] font-black uppercase tracking-widest cursor-pointer ${
+              activeTab === 'settlement'
+                ? 'bg-emerald-600 text-white border-emerald-600 dark:bg-emerald-500 dark:border-emerald-500 shadow-sm'
+                : 'border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'
+            }`}
+            title="정산 모드"
+          >
+            <Calculator className="w-3.5 h-3.5" />
+            <span>Settlement</span>
+          </button>
+
+          {isLoggedIn && (
+            <div className="flex items-center gap-1.5">
+              {isEditing ? (
+                <>
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="px-2.5 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all flex items-center gap-1 disabled:opacity-50 cursor-pointer"
+                  >
+                    {saving && <Loader2 className="w-3 h-3 animate-spin" />}
+                    Save
+                  </button>
                 <button
                   onClick={handleCancel}
                   className="px-2.5 py-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all text-black/60 dark:text-white/60 cursor-pointer"
@@ -1983,6 +2081,7 @@ export function JourneyDetailPage({
           </div>
         )}
       </div>
+    </div>
       
       {/* Tags row */}
       {isEditing && draftTrip ? (
@@ -2388,7 +2487,14 @@ export function JourneyDetailPage({
                           ref={el => { itemRefs.current[item.id] = el; }} 
                           className={`flex flex-col border-b border-black/10 dark:border-white/10 transition-all w-full ${isActive ? 'bg-red-500/[0.02] dark:bg-red-500/[0.02] border-l-2 border-l-red-600 dark:border-l-red-400' : 'border-l-2 border-l-transparent'} ${isEditing ? 'cursor-grab active:cursor-grabbing' : ''} ${collapsedDays.includes(item.date || '') && selectedDate === 'ALL' ? 'hidden' : ''}`}
                           draggable={isEditing}
-                          onDragStart={() => setDraggedItemId(item.id)}
+                          onDragStart={(e) => {
+                            const target = e.target as HTMLElement;
+                            if (target.closest('input, textarea, select, button')) {
+                              e.preventDefault();
+                              return;
+                            }
+                            setDraggedItemId(item.id);
+                          }}
                           onDragOver={(e) => e.preventDefault()}
                           onDrop={() => handleDropTimelineItem(item.id)}
                         >
@@ -2531,9 +2637,8 @@ export function JourneyDetailPage({
                             <div className="mt-1">
                               {isEditing ? (
                                 <textarea
-                                  key={`memo-${item.id}-${item.memo || ''}`}
-                                  defaultValue={item.memo}
-                                  onBlur={(e) => updateTimelineItem(item.id, 'memo', e.target.value)}
+                                  value={item.memo || ''}
+                                  onChange={(e) => updateTimelineItem(item.id, 'memo', e.target.value)}
                                   onClick={(e) => e.stopPropagation()}
                                   className="bg-[#EAE8E3] dark:bg-white/10 p-1 outline-none text-xs md:text-sm text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full resize-none"
                                   rows={item.memo ? Math.max(1, item.memo.split('\n').length) : 1}
@@ -2544,6 +2649,24 @@ export function JourneyDetailPage({
                               )}
                             </div>
 
+                            {/* Settlement/Expense Editor (Shown when expanded/active) */}
+                            {isActive && (
+                              <div className="mt-3 pt-3 border-t border-black/10 dark:border-white/10 flex flex-col gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                <span className="text-[8.5px] md:text-[9.5px] text-black/40 dark:text-white/40 uppercase font-black tracking-widest block">Expense / Settlement (정산)</span>
+                                <SettlementExpenseInput
+                                  cost={item.cost}
+                                  currency={item.currency || 'KRW'}
+                                  paidBy={item.paidBy || ''}
+                                  members={tripToUse?.members || []}
+                                  isEditMode={isEditing}
+                                  onUpdate={(updates) => {
+                                    if (updates.cost !== undefined) updateTimelineItem(item.id, 'cost', updates.cost);
+                                    if (updates.currency !== undefined) updateTimelineItem(item.id, 'currency', updates.currency);
+                                    if (updates.paidBy !== undefined) updateTimelineItem(item.id, 'paidBy', updates.paidBy);
+                                  }}
+                                />
+                              </div>
+                            )}
 
                             {/* Actions (Edit mode) */}
                             {isEditing && isActive && (
@@ -2572,16 +2695,15 @@ export function JourneyDetailPage({
                               <span className="text-[8px] opacity-40 uppercase font-bold tracking-widest">Cost</span>
                               {isEditing ? (
                                 <input
-                                  key={`cost-${item.id}-${item.cost}`}
                                   type="text"
-                                  defaultValue={item.cost}
-                                  onBlur={(e) => updateTimelineItem(item.id, 'cost', e.target.value)}
+                                  value={item.cost || ''}
+                                  onChange={(e) => updateTimelineItem(item.id, 'cost', formatNumberWithCommas(e.target.value))}
                                   onClick={(e) => e.stopPropagation()}
                                   className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-[9px] md:text-[10px] text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-16"
                                 />
                               ) : (
-                                <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest bg-black/10 dark:bg-white/10 px-2 py-0.5 md:py-1 rounded-sm whitespace-nowrap block">
-                                  {item.cost}
+                                <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest bg-emerald-600/10 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-400 px-2 py-0.5 md:py-1 rounded-sm whitespace-nowrap block">
+                                  {item.cost && item.cost !== '-' ? `${item.cost} ${item.currency || 'KRW'} ${item.paidBy ? `(${item.paidBy})` : ''}` : '-'}
                                 </span>
                               )}
                             </div>
@@ -2905,6 +3027,7 @@ export function JourneyDetailPage({
                               onClick={() => {
                                 setExpandedItemId(prev => prev === flight.id ? null : flight.id);
                               }}
+                              members={tripToUse?.members || []}
                             />
                           </div>
                         );
@@ -2970,6 +3093,7 @@ export function JourneyDetailPage({
                       onClick={() => {
                         setExpandedItemId(prev => prev === stay.id ? null : stay.id);
                       }}
+                      members={tripToUse?.members || []}
                     />
                   </div>
                 ))
@@ -3069,6 +3193,7 @@ export function JourneyDetailPage({
                                 setExpandedItemId(transit.id);
                                 setTransitFocusType(type);
                               }}
+                              members={tripToUse?.members || []}
                             />
                           </div>
                         ))}
@@ -3412,8 +3537,36 @@ export function JourneyDetailPage({
             );
           })()}
 
+          {/* SETTLEMENT TAB */}
+          {activeTab === 'settlement' && (
+            <SettlementView
+              trip={tripToUse!}
+              timelineData={groupedTimelineData}
+              flights={isEditing ? draftFlights : flights}
+              stays={isEditing ? draftStays : stays}
+              transits={isEditing ? draftTransits : transits}
+              isEditing={isEditing}
+              onUpdateMembers={(newMembers) => {
+                if (isEditing && draftTrip) {
+                  setDraftTrip({ ...draftTrip, members: newMembers });
+                }
+              }}
+              onJumpToItem={(itemType, id, date) => {
+                setActiveTab(itemType);
+                setExpandedItemId(id);
+                if (date) {
+                  setSelectedDate(date);
+                }
+                setTimeout(() => {
+                  const el = itemRefs.current[id];
+                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
+              }}
+            />
+          )}
+
           {/* Footer inside Detail scroll container */}
-          {activeTab !== 'gallery' && (
+          {activeTab !== 'gallery' && activeTab !== 'settlement' && (
             <div className="w-full shrink-0 pb-16 pt-8 mt-16 border-t border-black/5 dark:border-white/5">
               <Footer />
             </div>
@@ -3429,6 +3582,14 @@ export function JourneyDetailPage({
         onClose={() => setIsLightboxOpen(false)}
         onNavigate={(idx) => setLightboxIndex(idx)}
       />
+
+      {/* Autosave Feedback Toast Modal */}
+      {showAutosaveModal && (
+        <div className="fixed bottom-6 right-6 z-50 bg-emerald-600 text-white px-5 py-3 shadow-2xl border border-emerald-500/20 rounded-sm font-bold text-xs uppercase tracking-wider flex items-center gap-2 animate-bounce animate-in slide-in-from-bottom-5 duration-300">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          <span>자동 저장되었습니다. (Autosaved)</span>
+        </div>
+      )}
 
       {/* Google Maps Confirmation Modal */}
       {mapConfirm && (
