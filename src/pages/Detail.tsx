@@ -1723,6 +1723,23 @@ export function JourneyDetailPage({
   const deleteTransit = (id: number) => {
     setDraftTransits(prev => prev.filter(t => t.id !== id));
   };
+
+  const updateExpenseItem = (
+    itemType: 'timeline' | 'flight' | 'stay' | 'transit',
+    id: number,
+    field: 'cost' | 'currency' | 'paidBy',
+    value: any
+  ) => {
+    if (itemType === 'timeline') {
+      updateTimelineItem(id, field, value);
+    } else if (itemType === 'flight') {
+      updateFlight(id, field as any, value);
+    } else if (itemType === 'stay') {
+      updateStay(id, field as any, value);
+    } else if (itemType === 'transit') {
+      updateTransit(id, field, value);
+    }
+  };
   const handleAddTransit = (type: 'train' | 'bus' | 'taxi') => {
     const ticketType = type === 'train' ? 'TRAIN TICKET' : type === 'bus' ? 'BUS TICKET' : 'TAXI TICKET';
     const title = type === 'train' ? 'Train' : type === 'bus' ? 'Bus' : 'Taxi';
@@ -2144,16 +2161,65 @@ export function JourneyDetailPage({
       )}
 
       {/* Members row */}
-      <div className="mt-2.5 flex flex-wrap gap-1.5 items-center text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-black/50 dark:text-white/50">
+      <div 
+        className="mt-2.5 flex flex-wrap gap-1.5 items-center text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-black/50 dark:text-white/50"
+        onClick={(e) => e.stopPropagation()}
+      >
         <span className="opacity-60 flex items-center gap-1">👥 Members:</span>
-        {tripToUse?.members && tripToUse.members.length > 0 ? (
-          tripToUse.members.map(m => (
-            <span key={m} className="px-2 py-0.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm text-black/75 dark:text-white/75 font-black">
-              {m}
-            </span>
-          ))
+        {isEditing && draftTrip ? (
+          <div className="flex flex-wrap gap-1.5 items-center">
+            {(draftTrip.members || []).map(m => (
+              <span key={m} className="px-2 py-0.5 bg-black/5 dark:bg-white/5 border border-red-500/40 dark:border-red-500/40 rounded-sm text-black/75 dark:text-white/75 font-black flex items-center gap-1">
+                {m}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm(`정말 '${m}' 인원을 삭제하시겠습니까? 관련 결제 기록의 결제자가 변경될 수 있습니다.`)) {
+                      const newMembers = (draftTrip.members || []).filter(x => x !== m);
+                      setDraftTrip({ ...draftTrip, members: newMembers });
+                    }
+                  }}
+                  className="hover:text-red-500 transition-colors font-bold text-[9px] px-0.5 shrink-0 cursor-pointer text-red-600"
+                  title="인원 삭제"
+                >
+                  ✕
+                </button>
+              </span>
+            ))}
+            <input
+              type="text"
+              placeholder="+ Member"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const val = e.currentTarget.value.trim();
+                  if (val) {
+                    if ((draftTrip.members || []).includes(val)) {
+                      alert("이미 등록된 인원입니다.");
+                    } else {
+                      const newMembers = [...(draftTrip.members || []), val];
+                      setDraftTrip({ ...draftTrip, members: newMembers });
+                      e.currentTarget.value = '';
+                    }
+                  }
+                }
+              }}
+              className="text-[8px] md:text-[9px] font-bold border border-black/20 dark:border-white/20 px-2.5 py-0.5 rounded-full bg-transparent outline-none w-16 focus:w-24 focus:border-orange-500 transition-all duration-200 text-black dark:text-white"
+            />
+          </div>
         ) : (
-          <span className="italic opacity-60">나</span>
+          <>
+            {tripToUse?.members && tripToUse.members.length > 0 ? (
+              tripToUse.members.map(m => (
+                <span key={m} className="px-2 py-0.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm text-black/75 dark:text-white/75 font-black">
+                  {m}
+                </span>
+              ))
+            ) : (
+              <span className="italic opacity-60">나</span>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -2712,12 +2778,18 @@ export function JourneyDetailPage({
                             <div className="flex items-center gap-1">
                               <span className="text-[8px] opacity-40 uppercase font-bold tracking-widest">Cost</span>
                               {isEditing ? (
-                                <input
-                                  type="text"
-                                  value={item.cost || ''}
-                                  onChange={(e) => updateTimelineItem(item.id, 'cost', formatNumberWithCommas(e.target.value))}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-[9px] md:text-[10px] text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-16"
+                                <SettlementExpenseInput
+                                  cost={item.cost}
+                                  currency={item.currency}
+                                  paidBy={item.paidBy}
+                                  members={tripToUse?.members || []}
+                                  isEditMode={isEditing}
+                                  onUpdate={(updates) => {
+                                    if (updates.cost !== undefined) updateTimelineItem(item.id, 'cost', updates.cost);
+                                    if (updates.currency !== undefined) updateTimelineItem(item.id, 'currency', updates.currency);
+                                    if (updates.paidBy !== undefined) updateTimelineItem(item.id, 'paidBy', updates.paidBy);
+                                  }}
+                                  defaultCurrency={defaultCurrency}
                                 />
                               ) : (
                                 <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest bg-emerald-600/10 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-400 px-2 py-0.5 md:py-1 rounded-sm whitespace-nowrap block">
@@ -3584,6 +3656,7 @@ export function JourneyDetailPage({
                 }, 300);
               }}
               defaultCurrency={defaultCurrency}
+              onUpdateExpense={updateExpenseItem}
             />
           )}
 

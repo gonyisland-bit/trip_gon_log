@@ -12,6 +12,22 @@ const EXCHANGE_RATES: { [currency: string]: number } = {
   CNY: 190,  // 1 CNY = 190 KRW
 };
 
+const CURRENCY_SYMBOLS: { [key: string]: string } = {
+  KRW: '₩',
+  USD: '$',
+  JPY: '¥',
+  EUR: '€',
+  CNY: '¥',
+};
+
+const formatNumberWithCommas = (val: string): string => {
+  const clean = val.replace(/[^0-9.]/g, '');
+  const parts = clean.split('.');
+  if (parts.length > 2) return clean;
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return parts.join('.');
+};
+
 interface SettlementViewProps {
   trip: Trip;
   timelineData: { [date: string]: TimelineItem[] };
@@ -22,6 +38,7 @@ interface SettlementViewProps {
   onUpdateMembers: (members: string[]) => void;
   onJumpToItem: (tab: TabType, id: number, date?: string) => void;
   defaultCurrency?: string;
+  onUpdateExpense?: (itemType: 'timeline' | 'flight' | 'stay' | 'transit', id: number, field: 'cost' | 'currency' | 'paidBy', value: any) => void;
 }
 
 export function SettlementView({
@@ -34,6 +51,7 @@ export function SettlementView({
   onUpdateMembers,
   onJumpToItem,
   defaultCurrency = 'KRW',
+  onUpdateExpense,
 }: SettlementViewProps) {
   const members = trip.members && trip.members.length > 0 ? trip.members : ['나'];
   const [newMemberName, setNewMemberName] = useState('');
@@ -341,24 +359,61 @@ export function SettlementView({
                       key={`${item.itemType}-${item.id}-${idx}`}
                       className="border-b border-black/5 dark:border-white/5 last:border-b-0 hover:bg-black/3 dark:hover:bg-white/3 transition-colors"
                     >
-                      <td className="py-3.5 px-4 font-bold text-black/60 dark:text-white/60">
+                      <td className="py-3.5 px-4 font-bold text-black/60 dark:text-white/60 whitespace-nowrap">
                         {item.date}
                       </td>
-                      <td className="py-3.5 px-4">
-                        <div className="font-bold flex items-center gap-1.5">
-                          <span className="text-[9px] uppercase tracking-wider bg-black/10 dark:bg-white/10 px-1 py-0.5 rounded-sm">
+                      <td className="py-3.5 px-4 max-w-[180px] md:max-w-xs truncate">
+                        <div className="font-bold flex items-center gap-1.5 truncate">
+                          <span className="text-[9px] uppercase tracking-wider bg-black/10 dark:bg-white/10 px-1 py-0.5 rounded-sm shrink-0">
                             {item.itemType}
                           </span>
-                          <span className="truncate max-w-[200px] md:max-w-xs">{item.name}</span>
+                          <span className="truncate" title={item.name}>{item.name}</span>
                         </div>
                       </td>
-                      <td className="py-3.5 px-4 font-bold text-emerald-600 dark:text-emerald-400">
-                        {item.paidBy}
+                      <td className="py-3.5 px-4 font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                        {isEditing && onUpdateExpense ? (
+                          <select
+                            value={item.paidBy}
+                            onChange={(e) => onUpdateExpense(item.itemType, item.id, 'paidBy', e.target.value)}
+                            className="bg-transparent border border-black/10 dark:border-white/10 px-1 py-0.5 text-xs font-bold text-black dark:text-white rounded-sm cursor-pointer outline-none bg-white dark:bg-[#222]"
+                          >
+                            <option value="">결제자 선택</option>
+                            {members.map((m) => (
+                              <option key={m} value={m}>
+                                {m}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          item.paidBy
+                        )}
                       </td>
-                      <td className="py-3.5 px-4 text-right font-mono font-bold">
-                        {item.cost} {item.currency}
+                      <td className="py-3.5 px-4 text-right font-mono font-bold whitespace-nowrap">
+                        {isEditing && onUpdateExpense ? (
+                          <div className="inline-flex items-center border border-black/10 dark:border-white/10 bg-white dark:bg-black/20 p-0.5 rounded-sm">
+                            <input
+                              type="text"
+                              value={item.cost}
+                              onChange={(e) => onUpdateExpense(item.itemType, item.id, 'cost', formatNumberWithCommas(e.target.value))}
+                              className="w-14 md:w-20 bg-transparent outline-none text-[10px] md:text-xs font-bold text-right px-1 text-black dark:text-white"
+                            />
+                            <select
+                              value={item.currency}
+                              onChange={(e) => onUpdateExpense(item.itemType, item.id, 'currency', e.target.value)}
+                              className="bg-transparent outline-none text-[9px] md:text-[10px] font-bold text-black/60 dark:text-white/60 pl-1 cursor-pointer"
+                            >
+                              <option value="KRW">₩</option>
+                              <option value="USD">$</option>
+                              <option value="JPY">¥</option>
+                              <option value="EUR">€</option>
+                              <option value="CNY">¥</option>
+                            </select>
+                          </div>
+                        ) : (
+                          `${CURRENCY_SYMBOLS[item.currency] || item.currency} ${item.cost}`
+                        )}
                       </td>
-                      <td className="py-3.5 px-4 text-right font-mono font-black text-black dark:text-white">
+                      <td className="py-3.5 px-4 text-right font-mono font-black text-black dark:text-white whitespace-nowrap">
                         ₩ {krwAmount.toLocaleString()}
                       </td>
                       <td className="py-3.5 px-4 text-center">

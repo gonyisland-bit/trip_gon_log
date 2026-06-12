@@ -1,7 +1,7 @@
 {
   "name": "trip_gon_log",
   "private": true,
-  "version": "0.2f",
+  "version": "0.3a",
   "type": "module",
   "scripts": {
     "dev": "vite",
