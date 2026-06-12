@@ -1960,14 +1960,14 @@ export function JourneyDetailPage({
   );
 
   return (
-    <main className="animate-in slide-in-from-right-8 duration-500 flex flex-col md:flex-row md:h-[calc(100dvh-73px)] h-auto w-full md:overflow-hidden overflow-visible">
+    <main className="animate-in slide-in-from-right-8 duration-500 flex flex-col md:flex-row h-full w-full overflow-hidden">
       
       {/* Left: Map & Info Section */}
-      <section className="w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-colors duration-300 md:h-full max-md:contents shrink-0">
+      <section className="w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-colors duration-300 md:h-full max-md:h-[35dvh] shrink-0">
         {renderInfoHeader(false)}
         
         {/* Dynamic Map Area */}
-        <div className="w-full relative md:pb-6 flex flex-col max-md:sticky max-md:top-[73px] max-md:z-20 max-md:h-[35dvh] max-md:border-b max-md:border-black/20 max-md:dark:border-white/20 flex-grow">
+        <div className="w-full relative md:pb-6 flex flex-col flex-grow h-full">
           <ErrorBoundary fallback={
             <div className="flex-grow flex flex-col items-center justify-center bg-[#EAE8E3] dark:bg-[#1A1A1A] text-black/40 dark:text-white/40 p-6 relative h-full w-full">
               <span className="text-[10px] uppercase tracking-widest font-bold z-10 mb-2">Map Temporary Unavailable</span>
@@ -1991,10 +1991,10 @@ export function JourneyDetailPage({
       </section>
       
       {/* Right: Record / Tabs Section */}
-      <section className="w-full md:w-1/2 flex flex-col bg-[#F9F8F6] dark:bg-[#111111] transition-colors duration-300 flex-grow max-md:contents md:h-full overflow-hidden">
+      <section className="w-full md:w-1/2 flex flex-col bg-[#F9F8F6] dark:bg-[#111111] transition-colors duration-300 flex-grow md:h-full overflow-hidden">
         
         {/* Tab Headers */}
-        <div className="flex overflow-x-auto hide-scrollbar flex-nowrap border-b border-black/20 dark:border-white/20 bg-[#F9F8F6] dark:bg-[#111111] sticky md:top-0 max-md:top-[calc(73px+35dvh)] z-30 transition-colors shrink-0 w-full">
+        <div className="flex overflow-x-auto hide-scrollbar flex-nowrap border-b border-black/20 dark:border-white/20 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0 w-full">
           {[ 
             { id: 'timeline', label: 'Timeline', icon: Clock }, 
             { id: 'flights', label: 'Flights', icon: Plane }, 
@@ -2016,7 +2016,7 @@ export function JourneyDetailPage({
         {/* Tab Contents */}
         <div 
           ref={tabContentRef}
-          className="flex-grow flex flex-col relative md:overflow-y-auto overflow-x-hidden w-full md:h-full h-auto bg-[#F9F8F6] dark:bg-[#111111]"
+          className="flex-grow flex flex-col relative overflow-y-auto overflow-x-hidden w-full h-full bg-[#F9F8F6] dark:bg-[#111111]"
         >
           {renderInfoHeader(true)}
           
@@ -3236,15 +3236,15 @@ export function JourneyDetailPage({
               '{mapConfirm.placeName}' 위치를 확인하기 위해 구글 지도로 이동하시겠습니까?
             </p>
             <div className="flex flex-col gap-2">
-              <button
-                onClick={() => {
-                  window.open(mapConfirm.url, '_blank');
-                  setMapConfirm(null);
-                }}
-                className="w-full py-2.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-black uppercase tracking-widest rounded-none transition-all cursor-pointer"
+              <a
+                href={mapConfirm.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMapConfirm(null)}
+                className="w-full py-2.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-black uppercase tracking-widest rounded-none transition-all cursor-pointer block text-center"
               >
                 이동
-              </button>
+              </a>
               <button
                 onClick={() => setMapConfirm(null)}
                 className="w-full py-2.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[10px] font-black uppercase tracking-widest rounded-none transition-all cursor-pointer"

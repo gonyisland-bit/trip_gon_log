@@ -1141,7 +1141,7 @@ function App() {
 
   return (
     <div className={`${isDarkMode ? 'dark' : ''} overflow-x-hidden w-full`}>
-      <div className="min-h-screen bg-[#F9F8F6] text-[#111111] dark:bg-[#111111] dark:text-[#F9F8F6] font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 w-full overflow-x-hidden">
+      <div className={`min-h-screen bg-[#F9F8F6] text-[#111111] dark:bg-[#111111] dark:text-[#F9F8F6] font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 w-full overflow-x-hidden flex flex-col ${currentView === 'detail' ? 'h-screen overflow-hidden' : ''}`}>
         
         {/* Firebase Error/Status Banners */}
         {dbError && (
@@ -1181,7 +1181,7 @@ function App() {
         )}
 
         {/* View Routing */}
-        <div className="w-full">
+        <div className={`w-full flex-grow ${currentView === 'detail' ? 'overflow-hidden flex flex-col' : ''}`}>
           {currentView === 'home' && (
             <HomePage 
               onNavigate={navigateTo} 

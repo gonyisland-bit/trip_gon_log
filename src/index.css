@@ -269,37 +269,37 @@
 }
 
 .poi-pin {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  border: 1.5px solid white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  border: 1px solid white;
+  box-shadow: 0 1.5px 3px rgba(0,0,0,0.3);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 9px;
 }
 
 .poi-label {
   background: rgba(249,248,246,0.95);
-  border: 1.5px solid #111111;
+  border: 1px solid #111111;
   color: #111111;
-  font-size: 8px;
+  font-size: 7.5px;
   font-weight: 900;
-  padding: 1.5px 4.5px;
+  padding: 1px 3.5px;
   border-radius: 0px;
-  margin-top: 3.5px;
+  margin-top: 2px;
   white-space: nowrap;
   box-shadow: 0 1px 3px rgba(0,0,0,0.15);
   font-family: inherit;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  transform: scale(0.95);
+  transform: scale(0.9);
 }
 
 .dark .poi-label {
   background: rgba(22,22,22,0.95);
-  border: 1.5px solid #ffffff;
+  border: 1px solid #ffffff;
   color: #ffffff;
 }
 
