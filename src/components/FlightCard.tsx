@@ -95,27 +95,28 @@ export function FlightCard({
   const fromTimeRef = useRef<HTMLInputElement>(null);
   const toTimeRef = useRef<HTMLInputElement>(null);
 
+  const getTerminalNumber = (term: string) => {
+    const match = String(term).match(/\d+/);
+    return match ? parseInt(match[0], 10) : 1;
+  };
+
   // Local state to prevent typing lag
   const [localTitle, setLocalTitle] = useState(flight.title);
   const [localFromCode, setLocalFromCode] = useState(flight.fromCode);
-  const [localFromTerminal, setLocalFromTerminal] = useState(flight.fromTerminal);
+  const [localFromTerminal, setLocalFromTerminal] = useState(getTerminalNumber(flight.fromTerminal));
   const [localFlightNo, setLocalFlightNo] = useState(flight.flightNo);
-  const [localLayoverCode, setLocalLayoverCode] = useState(flight.layoverCode || '');
-  const [localLayoverTime, setLocalLayoverTime] = useState(flight.layoverTime || '');
   const [localToCode, setLocalToCode] = useState(flight.toCode);
-  const [localToTerminal, setLocalToTerminal] = useState(flight.toTerminal);
+  const [localToTerminal, setLocalToTerminal] = useState(getTerminalNumber(flight.toTerminal));
   const [localSeat, setLocalSeat] = useState(flight.seat);
   const [localPnr, setLocalPnr] = useState(flight.pnr);
 
   useEffect(() => {
     setLocalTitle(flight.title);
     setLocalFromCode(flight.fromCode);
-    setLocalFromTerminal(flight.fromTerminal);
+    setLocalFromTerminal(getTerminalNumber(flight.fromTerminal));
     setLocalFlightNo(flight.flightNo);
-    setLocalLayoverCode(flight.layoverCode || '');
-    setLocalLayoverTime(flight.layoverTime || '');
     setLocalToCode(flight.toCode);
-    setLocalToTerminal(flight.toTerminal);
+    setLocalToTerminal(getTerminalNumber(flight.toTerminal));
     setLocalSeat(flight.seat);
     setLocalPnr(flight.pnr);
   }, [flight]);
@@ -144,7 +145,7 @@ export function FlightCard({
           <input
             type="text"
             value={localTitle}
-            onChange={(e) => setLocalTitle(e.target.value)}
+            onChange={(e) => setLocalTitle(e.target.value.toUpperCase())}
             onBlur={() => onUpdate(flight.id, 'title', localTitle)}
             onClick={(e) => e.stopPropagation()}
             className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm uppercase w-40"
@@ -169,7 +170,7 @@ export function FlightCard({
       </div>
       
       {/* Card Body */}
-      <div className="p-4 md:p-6 flex flex-col sm:flex-row sm:items-center min-w-0 w-full">
+      <div className="p-4 md:p-6 flex flex-col md:flex-row md:items-center min-w-0 w-full">
         {/* Left Side: Route and Airport Codes */}
         <div className="flex-grow flex items-center justify-around pr-4 relative min-w-0">
           
@@ -209,9 +210,9 @@ export function FlightCard({
                         onMouseDown={() => {
                           setLocalFromCode(s.code);
                           onUpdate(flight.id, 'fromCode', s.code);
-                          const newTerminal = s.code === 'ICN' ? 'TERMINAL T1' : 'TERMINAL T1';
-                          setLocalFromTerminal(newTerminal);
-                          onUpdate(flight.id, 'fromTerminal', newTerminal);
+                          const newTerminalNum = s.code === 'ICN' ? 1 : 1;
+                          setLocalFromTerminal(newTerminalNum);
+                          onUpdate(flight.id, 'fromTerminal', `TERMINAL T${newTerminalNum}`);
                           setActiveSearchField(null);
                         }}
                         className="w-full px-2.5 py-1.5 text-[10px] hover:bg-black/5 dark:hover:bg-white/5 flex flex-col border-b border-black/5 dark:border-white/5 last:border-0 text-black dark:text-white"
@@ -247,13 +248,15 @@ export function FlightCard({
 
             {isEditMode ? (
               <input
-                type="text"
+                type="number"
+                min={1}
+                max={9}
                 value={localFromTerminal}
-                onChange={(e) => setLocalFromTerminal(e.target.value)}
-                onBlur={() => onUpdate(flight.id, 'fromTerminal', localFromTerminal)}
+                onChange={(e) => setLocalFromTerminal(parseInt(e.target.value, 10) || 1)}
+                onBlur={() => onUpdate(flight.id, 'fromTerminal', `TERMINAL T${localFromTerminal}`)}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-[8px] md:text-[10px] font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-20 mt-1 uppercase"
-                placeholder="TERMINAL"
+                className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-[8px] md:text-[10px] font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-14 mt-1"
+                placeholder="1"
               />
             ) : (
               <span className="text-[9px] md:text-[10px] text-black/50 dark:text-white/50 mt-1.5 uppercase font-bold block">
@@ -293,7 +296,7 @@ export function FlightCard({
           </div>
           
           {/* Connection Line & Flight Number & Swap Button */}
-          <div className="flex flex-col items-center mx-2 shrink-0 relative">
+          <div className="flex flex-col items-center mx-3 sm:mx-6 shrink-0 relative">
             {isEditMode ? (
               <button
                 type="button"
@@ -320,15 +323,15 @@ export function FlightCard({
               <Plane className="w-4 h-4 text-black/40 dark:text-white/40 rotate-90" />
             )}
             
-            <div className="h-[1px] w-8 sm:w-10 md:w-16 bg-black/20 dark:bg-white/20 my-1 relative flex items-center justify-center">
+            <div className="h-[1px] w-12 sm:w-16 md:w-24 bg-black/20 dark:bg-white/20 my-1 relative flex items-center justify-center">
               {isEditMode ? (
                 <input
                   type="text"
                   value={localFlightNo}
-                  onChange={(e) => setLocalFlightNo(e.target.value)}
+                  onChange={(e) => setLocalFlightNo(e.target.value.toUpperCase())}
                   onBlur={() => onUpdate(flight.id, 'flightNo', localFlightNo)}
                   onClick={(e) => e.stopPropagation()}
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1a1a1a] px-1.5 text-[9px] md:text-[10px] font-bold text-black/60 dark:text-white/60 tracking-wider text-center w-12 outline-none border border-black/10 dark:border-white/10 rounded-sm z-10"
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1a1a1a] px-1 text-[9px] md:text-[10px] font-bold text-black/60 dark:text-white/60 tracking-wider text-center w-16 outline-none border border-black/10 dark:border-white/10 rounded-sm z-10 uppercase"
                   placeholder="KE000"
                 />
               ) : (
@@ -338,38 +341,12 @@ export function FlightCard({
               )}
             </div>
             
-            {/* Layover Info */}
-            {(flight.layoverCode || isEditMode) && (
+            {/* Layover Info (Display only if exists in database; edit is managed as separate ticket cards) */}
+            {!isEditMode && flight.layoverCode && (
               <div className="text-[9px] md:text-[10px] font-bold text-red-600 dark:text-red-400 mt-1.5 flex items-center gap-1">
-                {isEditMode ? (
-                  <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
-                    <span className="opacity-50 text-[8px]">경유:</span>
-                    <input
-                      type="text"
-                      maxLength={5}
-                      value={localLayoverCode}
-                      onChange={(e) => setLocalLayoverCode(e.target.value.toUpperCase())}
-                      onBlur={() => onUpdate(flight.id, 'layoverCode', localLayoverCode)}
-                      className="bg-[#EAE8E3] dark:bg-white/10 px-0.5 py-0.5 outline-none font-bold text-[8px] md:text-[9px] text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-8 uppercase text-center"
-                      placeholder="LAY"
-                    />
-                    <span className="opacity-50 text-[8px] ml-0.5">시간:</span>
-                    <input
-                      type="text"
-                      value={localLayoverTime}
-                      onChange={(e) => setLocalLayoverTime(e.target.value)}
-                      onBlur={() => onUpdate(flight.id, 'layoverTime', localLayoverTime)}
-                      className="bg-[#EAE8E3] dark:bg-white/10 px-0.5 py-0.5 outline-none font-bold text-[8px] md:text-[9px] text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-10 text-center"
-                      placeholder="1h"
-                    />
-                  </div>
-                ) : (
-                  flight.layoverCode && (
-                    <span>
-                      경유: {flight.layoverCode} {flight.layoverTime ? `(${flight.layoverTime})` : ''}
-                    </span>
-                  )
-                )}
+                <span>
+                  경유: {flight.layoverCode} {flight.layoverTime ? `(${flight.layoverTime})` : ''}
+                </span>
               </div>
             )}
           </div>
@@ -410,9 +387,9 @@ export function FlightCard({
                         onMouseDown={() => {
                           setLocalToCode(s.code);
                           onUpdate(flight.id, 'toCode', s.code);
-                          const newTerminal = s.code === 'ICN' ? 'TERMINAL T1' : 'TERMINAL T1';
-                          setLocalToTerminal(newTerminal);
-                          onUpdate(flight.id, 'toTerminal', newTerminal);
+                          const newTerminalNum = s.code === 'ICN' ? 1 : 1;
+                          setLocalToTerminal(newTerminalNum);
+                          onUpdate(flight.id, 'toTerminal', `TERMINAL T${newTerminalNum}`);
                           setActiveSearchField(null);
                         }}
                         className="w-full px-2.5 py-1.5 text-[10px] hover:bg-black/5 dark:hover:bg-white/5 flex flex-col border-b border-black/5 dark:border-white/5 last:border-0 text-black dark:text-white"
@@ -448,13 +425,15 @@ export function FlightCard({
 
             {isEditMode ? (
               <input
-                type="text"
+                type="number"
+                min={1}
+                max={9}
                 value={localToTerminal}
-                onChange={(e) => setLocalToTerminal(e.target.value)}
-                onBlur={() => onUpdate(flight.id, 'toTerminal', localToTerminal)}
+                onChange={(e) => setLocalToTerminal(parseInt(e.target.value, 10) || 1)}
+                onBlur={() => onUpdate(flight.id, 'toTerminal', `TERMINAL T${localToTerminal}`)}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-[8px] md:text-[10px] font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-20 mt-1 uppercase"
-                placeholder="TERMINAL"
+                className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-[8px] md:text-[10px] font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-14 mt-1"
+                placeholder="1"
               />
             ) : (
               <span className="text-[9px] md:text-[10px] text-black/50 dark:text-white/50 mt-1.5 uppercase font-bold block">
@@ -495,43 +474,43 @@ export function FlightCard({
         </div>
         
         {/* Dividers: vertical on desktop, horizontal on mobile */}
-        <div className="hidden sm:block border-l border-dashed border-black/20 dark:border-white/20 h-16 self-stretch"></div>
-        <div className="block sm:hidden border-t border-dashed border-black/20 dark:border-white/20 w-full my-3"></div>
+        <div className="hidden md:block border-l border-dashed border-black/20 dark:border-white/20 h-16 self-stretch"></div>
+        <div className="block md:hidden border-t border-dashed border-black/20 dark:border-white/20 w-full my-3"></div>
         
         {/* Right Side: Seat & PNR */}
-        <div className="w-full sm:w-20 md:w-24 sm:pl-3 flex flex-row sm:flex-col justify-between sm:justify-center mt-1 sm:mt-0 gap-4 sm:gap-0 shrink-0">
-          <div className="flex-1 sm:flex-none sm:mb-3">
+        <div className="w-full md:w-28 md:pl-4 flex flex-row md:flex-col justify-between md:justify-center mt-3 md:mt-0 gap-4 md:gap-0 shrink-0">
+          <div className="flex-1 md:flex-none md:mb-3">
             <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5">SEAT</span>
             {isEditMode ? (
               <input
                 type="text"
                 value={localSeat}
-                onChange={(e) => setLocalSeat(e.target.value)}
+                onChange={(e) => setLocalSeat(e.target.value.toUpperCase())}
                 onBlur={() => onUpdate(flight.id, 'seat', localSeat)}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full"
+                className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
                 placeholder="00A"
               />
             ) : (
-              <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 block">
+              <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 block uppercase">
                 {flight.seat || 'N/A'}
               </span>
             )}
           </div>
-          <div className="flex-1 sm:flex-none">
+          <div className="flex-1 md:flex-none">
             <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5">PNR</span>
             {isEditMode ? (
               <input
                 type="text"
                 value={localPnr}
-                onChange={(e) => setLocalPnr(e.target.value)}
+                onChange={(e) => setLocalPnr(e.target.value.toUpperCase())}
                 onBlur={() => onUpdate(flight.id, 'pnr', localPnr)}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full"
+                className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
                 placeholder="XXXXXX"
               />
             ) : (
-              <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 tracking-wide block">
+              <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 tracking-wide block uppercase">
                 {flight.pnr || 'N/A'}
               </span>
             )}

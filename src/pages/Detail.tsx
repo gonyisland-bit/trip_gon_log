@@ -1448,13 +1448,13 @@ export function JourneyDetailPage({
     setDraftFlights(prev => prev.filter(f => f.id !== id));
   };
   const handleAddFlight = (title: string) => {
-    const outbound = draftFlights.find(f => f.title.toUpperCase().includes('OUTBOUND') || f.fromCode !== 'ICN');
-    
     let defaultFrom = 'ICN';
     let defaultTo = 'KIX';
     let defaultFromTerminal = 'TERMINAL T1';
     let defaultToTerminal = 'TERMINAL T1';
     let defaultPnr = '000000';
+
+    const outbound = draftFlights.find(f => f.title.toUpperCase().includes('OUTBOUND') || f.fromCode !== 'ICN');
 
     if (title.toUpperCase().includes('INBOUND') && outbound) {
       defaultFrom = outbound.toCode || 'KIX';
@@ -1471,6 +1471,19 @@ export function JourneyDetailPage({
         defaultToTerminal = inbound.fromTerminal || 'TERMINAL T1';
         defaultPnr = inbound.pnr || '000000';
       }
+    } else if (title.toUpperCase().includes('LAYOVER') && draftFlights.length > 0) {
+      // Chaining layover flight
+      const sortedExisting = [...draftFlights].sort((a, b) => {
+        const dComp = (a.date || '').localeCompare(b.date || '');
+        if (dComp !== 0) return dComp;
+        return (a.fromTime || '').localeCompare(b.fromTime || '');
+      });
+      const lastFlight = sortedExisting[sortedExisting.length - 1];
+      defaultFrom = lastFlight.toCode || 'ICN';
+      defaultTo = lastFlight.fromCode || 'ICN';
+      defaultFromTerminal = lastFlight.toTerminal || 'TERMINAL T1';
+      defaultToTerminal = lastFlight.fromTerminal || 'TERMINAL T1';
+      defaultPnr = lastFlight.pnr || '000000';
     }
 
     const newFlight: FlightItem = {
@@ -2646,9 +2659,26 @@ export function JourneyDetailPage({
                   return (a.fromTime || '').localeCompare(b.fromTime || '');
                 });
 
-                const outbound = sorted.filter(f => f.title.toUpperCase().includes('OUTBOUND'));
-                const inbound = sorted.filter(f => f.title.toUpperCase().includes('INBOUND'));
-                const other = sorted.filter(f => !f.title.toUpperCase().includes('OUTBOUND') && !f.title.toUpperCase().includes('INBOUND'));
+                const getFlightGroup = (f: FlightItem): 'outbound' | 'inbound' => {
+                  const fTitle = f.title.toUpperCase();
+                  if (fTitle.includes('OUTBOUND')) return 'outbound';
+                  if (fTitle.includes('INBOUND')) return 'inbound';
+                  
+                  if (minDate && maxDate && f.date && f.date !== 'YYYY.MM.DD') {
+                    const startMs = new Date(minDate).getTime();
+                    const endMs = new Date(maxDate).getTime();
+                    const fDateStr = f.date.replace(/\./g, '-');
+                    const fMs = new Date(fDateStr).getTime();
+                    if (!isNaN(startMs) && !isNaN(endMs) && !isNaN(fMs)) {
+                      const midMs = (startMs + endMs) / 2;
+                      return fMs <= midMs ? 'outbound' : 'inbound';
+                    }
+                  }
+                  return 'outbound';
+                };
+
+                const outbound = sorted.filter(f => getFlightGroup(f) === 'outbound');
+                const inbound = sorted.filter(f => getFlightGroup(f) === 'inbound');
 
                 const renderGroup = (groupFlights: FlightItem[], groupLabel: string) => {
                   if (groupFlights.length === 0) return null;
@@ -2707,7 +2737,6 @@ export function JourneyDetailPage({
                   <div className="flex flex-col">
                     {renderGroup(outbound, 'Outbound Flights')}
                     {renderGroup(inbound, 'Inbound Flights')}
-                    {renderGroup(other, 'Other Flights')}
                   </div>
                 );
               })()}
@@ -2720,6 +2749,12 @@ export function JourneyDetailPage({
                     className="text-[10px] md:text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5"
                   >
                     <Plus className="w-3.5 h-3.5" /> Outbound Flight
+                  </button>
+                  <button 
+                    onClick={() => handleAddFlight('LAYOVER FLIGHT')} 
+                    className="text-[10px] md:text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Layover Flight
                   </button>
                   <button 
                     onClick={() => handleAddFlight('INBOUND FLIGHT')} 
