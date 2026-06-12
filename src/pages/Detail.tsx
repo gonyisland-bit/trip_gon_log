@@ -2744,7 +2744,7 @@ export function JourneyDetailPage({
                             </div>
 
                             {/* Settlement/Expense Editor (Shown when expanded/active) */}
-                            {isActive && (
+                            {isActive && !isEditing && (
                               <div className="mt-3 pt-3 border-t border-black/10 dark:border-white/10 flex flex-col gap-1.5" onClick={(e) => e.stopPropagation()}>
                                 <span className="text-[8.5px] md:text-[9.5px] text-black/40 dark:text-white/40 uppercase font-black tracking-widest block">Expense / Settlement (정산)</span>
                                 <SettlementExpenseInput
@@ -2978,27 +2978,6 @@ export function JourneyDetailPage({
                                 )}
                               </div>
 
-                              {/* Photo Note Input (only shown if photo exists) */}
-                              {item.img && (
-                                <div className="flex items-start gap-3">
-                                  <ImageIcon className="w-3.5 h-3.5 md:w-4 md:h-4 mt-0.5 text-black/60 dark:text-white/60 shrink-0" />
-                                  {isEditing ? (
-                                    <input
-                                      key={`imgnote-${item.id}-${item.imgNote || ''}`}
-                                      type="text"
-                                      defaultValue={item.imgNote || ''}
-                                      onBlur={(e) => updateTimelineItem(item.id, 'imgNote', e.target.value)}
-                                      onClick={(e) => e.stopPropagation()}
-                                      className="bg-[#EAE8E3] dark:bg-white/10 px-2 py-1 outline-none text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
-                                      placeholder="사진 메모 (갤러리에 표시됩니다)"
-                                    />
-                                  ) : (
-                                    <span className="flex-grow text-black/60 dark:text-white/60 italic break-words">
-                                      {item.imgNote || '사진 메모 없음'}
-                                    </span>
-                                  )}
-                                </div>
-                              )}
                             </div>
                           </div>
                         )}
