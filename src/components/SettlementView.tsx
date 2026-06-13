@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { 
   UserPlus, Coins, ArrowRight, AlertCircle, Plus, Trash2,
-  ChevronRight, ChevronDown, Paperclip, Loader2, X, ExternalLink
+  ChevronRight, ChevronDown, Paperclip, Loader2, X, ExternalLink, Share2, Download
 } from 'lucide-react';
 import { Trip, TimelineItem, FlightItem, StayItem, TransitItem, TabType, CustomExpenseItem } from '../types';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -372,37 +372,46 @@ export function SettlementView({
       {/* Image Share / Download Modal (Rendered in Portal) */}
       {capturedImg && createPortal(
         <div className="fixed inset-0 z-[100000] bg-black/80 flex flex-col items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#1a1a1a] p-4 rounded-lg max-w-md w-full flex flex-col gap-3 shadow-xl text-left border border-black/10 dark:border-white/10 animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center border-b pb-2 border-black/5 dark:border-white/10">
-              <span className="text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70">정산표 이미지 저장 및 공유</span>
-              <button onClick={() => setCapturedImg(null)} className="text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white p-1">
+          <div className="bg-white dark:bg-[#1a1a1a] p-5 rounded-lg max-w-2xl w-full flex flex-col gap-4 shadow-xl text-left border border-black/10 dark:border-white/10 animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center border-b pb-2.5 border-black/5 dark:border-white/10">
+              <span className="text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70 flex items-center gap-1.5">
+                <Coins className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-500" />
+                정산표 이미지 저장 및 공유
+              </span>
+              <button onClick={() => setCapturedImg(null)} className="text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white p-1 transition-colors cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="border border-black/10 dark:border-white/10 rounded-sm overflow-hidden max-h-[50vh] overflow-y-auto bg-black/5 dark:bg-black/40">
-              <img src={capturedImg} alt="정산 결과" className="w-full h-auto object-contain" />
+            
+            {/* Extended height photo viewer area */}
+            <div className="border border-black/10 dark:border-white/10 rounded-sm overflow-hidden max-h-[75vh] overflow-y-auto bg-black/5 dark:bg-black/40 flex justify-center p-2">
+              <img src={capturedImg} alt="정산 결과" className="max-w-full h-auto object-contain max-h-[70vh] shadow-md bg-white" />
             </div>
+            
             <p className="text-[9px] text-black/50 dark:text-white/50 text-center leading-relaxed">
               💡 모바일 기기(카카오톡 등)에서는 이미지를 길게 누르면 저장하거나 공유할 수 있습니다.
             </p>
-            <div className="flex gap-2 mt-1">
+            
+            <div className="flex gap-2">
               <button
                 onClick={handleSaveImage}
-                className="flex-1 bg-black text-white dark:bg-white dark:text-black py-2 rounded-sm text-xs font-black uppercase tracking-widest hover:opacity-85 transition-opacity"
+                className="flex-1 bg-black text-white dark:bg-white dark:text-black py-2.5 rounded-sm text-xs font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center justify-center gap-1.5 cursor-pointer"
               >
+                <Download className="w-3.5 h-3.5" />
                 저장 (다운로드)
               </button>
               {typeof navigator.share !== 'undefined' && (
                 <button
                   onClick={handleShareImage}
-                  className="flex-1 bg-emerald-600 text-white py-2 rounded-sm text-xs font-black uppercase tracking-widest hover:opacity-85 transition-opacity"
+                  className="flex-1 bg-emerald-600 text-white py-2.5 rounded-sm text-xs font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center justify-center gap-1.5 cursor-pointer"
                 >
+                  <Share2 className="w-3.5 h-3.5" />
                   보내기 (공유)
                 </button>
               )}
               <button
                 onClick={() => setCapturedImg(null)}
-                className="flex-1 border border-black/20 dark:border-white/20 py-2 rounded-sm text-xs font-bold hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                className="flex-1 border border-black/20 dark:border-white/20 py-2.5 rounded-sm text-xs font-bold hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
               >
                 닫기
               </button>
@@ -459,9 +468,10 @@ export function SettlementView({
               <div className="flex gap-1.5">
                 <button
                   onClick={handleCapture}
-                  className="flex items-center gap-1 px-2 py-1 bg-black text-white dark:bg-white dark:text-black text-[9px] font-black uppercase tracking-widest rounded-sm hover:opacity-85 transition-opacity"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-[9px] font-black uppercase tracking-widest rounded-sm transition-all cursor-pointer"
                 >
-                  📸 이미지 저장/공유
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>EXPORT</span>
                 </button>
                 {isEditing && (
                   <button

@@ -152,6 +152,6 @@ export interface TransitItem {
   currency?: string;
 }
 
-export type TabType = 'timeline' | 'flights' | 'stays' | 'transit' | 'gallery' | 'settlement';
+export type TabType = 'summary' | 'timeline' | 'flights' | 'stays' | 'transit' | 'gallery' | 'settlement';
 
 

@@ -3,7 +3,7 @@ import {
   Clock, Plane, Bed, Train, Bus, Car, User, Edit2, Trash2, 
   Image as ImageIcon, ChevronUp, ChevronDown, MapPin, Map, Plus, Loader2, Search, ArrowLeft,
   ExternalLink, MapPinOff, Maximize2, Star, ChevronLeft, ChevronRight, ArrowUp, ArrowDown,
-  Sun, Cloud, Cloudy, CloudRain, Snowflake, CloudLightning, ArrowRight, Calculator
+  Sun, Cloud, Cloudy, CloudRain, Snowflake, CloudLightning, ArrowRight, Calculator, FileText
 } from 'lucide-react';
 import { MapArea } from '../components/MapArea';
 import { ImageEditOverlay } from '../components/ImageEditOverlay';
@@ -12,6 +12,7 @@ import { StayCard } from '../components/StayCard';
 import { TransitCard } from '../components/TransitCard';
 import { SettlementExpenseInput, formatNumberWithCommas, getDefaultCurrencyForLocation } from '../components/SettlementExpenseInput';
 import { SettlementView } from '../components/SettlementView';
+import { SummaryView } from '../components/SummaryView';
 import { Lightbox, LightboxImageMeta } from '../components/Lightbox';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { Footer } from '../components/Footer';
@@ -392,7 +393,7 @@ export function JourneyDetailPage({
   saveRef,
 }: JourneyDetailPageProps) {
   // All hooks must be called before conditional return
-  const [activeTab, setActiveTab] = useState<TabType>('timeline');
+  const [activeTab, setActiveTab] = useState<TabType>('summary');
   const [selectedDate, setSelectedDate] = useState<string>('ALL');
   const [collapsedDays, setCollapsedDays] = useState<string[]>([]);
   const [expandedItemId, setExpandedItemId] = useState<number | null>(null);
@@ -2057,6 +2058,22 @@ export function JourneyDetailPage({
         <div className="shrink-0 flex items-center gap-1.5">
           <button
             onClick={() => {
+              setActiveTab(prev => prev === 'summary' ? 'timeline' : 'summary');
+              setExpandedItemId(null);
+            }}
+            className={`px-2.5 py-1.5 border rounded-sm transition-all flex items-center gap-1 text-[9px] font-black uppercase tracking-widest cursor-pointer ${
+              activeTab === 'summary'
+                ? 'bg-amber-600 text-white border-amber-600 dark:bg-amber-500 dark:border-amber-500 shadow-sm'
+                : 'border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'
+            }`}
+            title="여정 요약"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>Summary</span>
+          </button>
+
+          <button
+            onClick={() => {
               setActiveTab(prev => prev === 'settlement' ? 'timeline' : 'settlement');
               setExpandedItemId(null);
             }}
@@ -2235,28 +2252,40 @@ export function JourneyDetailPage({
       <section className="w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-colors duration-300 md:h-full max-md:h-[35dvh] shrink-0">
         {renderInfoHeader(false)}
         
-        {/* Dynamic Map Area */}
-        <div className="w-full relative md:pb-6 flex flex-col flex-grow h-full">
-          <ErrorBoundary fallback={
-            <div className="flex-grow flex flex-col items-center justify-center bg-[#EAE8E3] dark:bg-[#1A1A1A] text-black/40 dark:text-white/40 p-6 relative h-full w-full">
-              <span className="text-[10px] uppercase tracking-widest font-bold z-10 mb-2">Map Temporary Unavailable</span>
-              <img src={tripToUse?.mapImg || 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1600&auto=format&fit=crop'} className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none" />
-            </div>
-          }>
-            <MapArea 
+        {/* Dynamic Map Area or Summary View */}
+        <div className="w-full relative md:pb-6 flex flex-col flex-grow h-full overflow-hidden">
+          {activeTab === 'summary' ? (
+            <SummaryView 
               trip={tripToUse!}
-              isEditMode={isEditing}
-              mapPoints={mapPoints}
-              expandedItemId={expandedItemId}
-              handleItemToggle={handleItemToggle}
-              selectedDate={activeTab === 'gallery' ? 'ALL' : selectedDate}
-              isDarkMode={isDarkMode}
-              activeTab={activeTab}
-              transitFocusType={transitFocusType}
+              timelineData={timelineData}
+              flights={isEditing ? draftFlights : flights}
+              stays={isEditing ? draftStays : stays}
               transits={isEditing ? draftTransits : transits}
+              defaultCurrency={getDefaultCurrencyForLocation(tripToUse?.locationStr || '')}
             />
-          </ErrorBoundary>
+          ) : (
+            <ErrorBoundary fallback={
+              <div className="flex-grow flex flex-col items-center justify-center bg-[#EAE8E3] dark:bg-[#1A1A1A] text-black/40 dark:text-white/40 p-6 relative h-full w-full">
+                <span className="text-[10px] uppercase tracking-widest font-bold z-10 mb-2">Map Temporary Unavailable</span>
+                <img src={tripToUse?.mapImg || 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1600&auto=format&fit=crop'} className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none" />
+              </div>
+            }>
+              <MapArea 
+                trip={tripToUse!}
+                isEditMode={isEditing}
+                mapPoints={mapPoints}
+                expandedItemId={expandedItemId}
+                handleItemToggle={handleItemToggle}
+                selectedDate={activeTab === 'gallery' ? 'ALL' : selectedDate}
+                isDarkMode={isDarkMode}
+                activeTab={activeTab}
+                transitFocusType={transitFocusType}
+                transits={isEditing ? draftTransits : transits}
+              />
+            </ErrorBoundary>
+          )}
         </div>
+
       </section>
       
       {/* Right: Record / Tabs Section */}
@@ -2288,9 +2317,19 @@ export function JourneyDetailPage({
           className="flex-grow flex flex-col relative overflow-y-auto overflow-x-hidden w-full h-full bg-[#F9F8F6] dark:bg-[#111111]"
         >
           {renderInfoHeader(true)}
+          {/* SUMMARY TAB PLACEHOLDER */}
+          {activeTab === 'summary' && (
+            <div className="flex-grow flex flex-col items-center justify-center text-center p-8 text-black/30 dark:text-white/30 font-bold uppercase tracking-widest text-[10px] min-h-[450px] animate-in fade-in duration-300">
+              <div className="border border-dashed border-black/20 dark:border-white/20 p-8 flex flex-col items-center gap-3.5 max-w-[280px]">
+                <FileText className="w-8 h-8 opacity-65 text-amber-600 dark:text-amber-500 animate-pulse" />
+                <p className="leading-relaxed">Select a tab above to view detail logs, flights, stays, transit, or gallery.</p>
+              </div>
+            </div>
+          )}
           
           {/* LOG TAB */}
           {activeTab === 'timeline' && (
+
             <div className="animate-in fade-in duration-300 h-auto flex flex-col w-full relative">
               {/* Day filter selector bar */}
               <div className="relative border-b border-black/20 dark:border-white/20 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0 w-full flex items-center">
@@ -3463,18 +3502,33 @@ export function JourneyDetailPage({
                         {imgItem.lat !== undefined && imgItem.lng !== undefined && imgItem.lat !== null && imgItem.lng !== null && (
                           <MapPin className="w-3 h-3 text-orange-500" />
                         )}
-                        {imgItem.type === 'timeline' && (imgItem as any).itemId !== undefined && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleJumpToTimelineItem((imgItem as any).itemId, imgItem.date);
-                            }}
-                            className="p-0.5 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
-                            title="일정으로 이동"
-                          >
-                            <ArrowRight className="w-3 h-3 animate-pulse" />
-                          </button>
-                        )}
+                        {(() => {
+                          let targetItemId = imgItem.type === 'timeline' ? (imgItem as any).itemId : undefined;
+                          const targetDate = imgItem.date || '';
+                          
+                          if (imgItem.type === 'gallery' && targetDate) {
+                            const itemsForDate = timelineData[targetDate] || [];
+                            if (itemsForDate.length > 0) {
+                              targetItemId = itemsForDate[0].id;
+                            }
+                          }
+                          
+                          if (targetItemId !== undefined) {
+                            return (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleJumpToTimelineItem(targetItemId, targetDate);
+                                }}
+                                className="p-0.5 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors cursor-pointer"
+                                title="일정으로 이동"
+                              >
+                                <ArrowRight className="w-3 h-3 animate-pulse" />
+                              </button>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                     </div>
                   </div>
