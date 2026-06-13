@@ -2252,38 +2252,46 @@ export function JourneyDetailPage({
       <section className="w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-colors duration-300 md:h-full max-md:h-[35dvh] shrink-0">
         {renderInfoHeader(false)}
         
-        {/* Dynamic Map Area or Summary View */}
+        {/* Dynamic Map Area */}
         <div className="w-full relative md:pb-6 flex flex-col flex-grow h-full overflow-hidden">
-          {activeTab === 'summary' ? (
-            <SummaryView 
-              trip={tripToUse!}
-              timelineData={timelineData}
-              flights={isEditing ? draftFlights : flights}
-              stays={isEditing ? draftStays : stays}
-              transits={isEditing ? draftTransits : transits}
-              defaultCurrency={getDefaultCurrencyForLocation(tripToUse?.locationStr || '')}
-            />
-          ) : (
-            <ErrorBoundary fallback={
-              <div className="flex-grow flex flex-col items-center justify-center bg-[#EAE8E3] dark:bg-[#1A1A1A] text-black/40 dark:text-white/40 p-6 relative h-full w-full">
-                <span className="text-[10px] uppercase tracking-widest font-bold z-10 mb-2">Map Temporary Unavailable</span>
-                <img src={tripToUse?.mapImg || 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1600&auto=format&fit=crop'} className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none" />
+          {/* Magazine Cover Typography Overlay */}
+          {(() => {
+            const loc = tripToUse?.locationStr || '';
+            const parts = loc.split(',').map(p => p.trim());
+            const country = parts.length >= 2 ? parts[parts.length - 1] : 'TRAVEL';
+            const city = parts.length >= 2 ? parts[0] : (loc || 'JOURNEY');
+            
+            return (
+              <div className="absolute top-8 left-8 z-[20] flex flex-col pointer-events-none select-none text-black dark:text-white drop-shadow-md">
+                <span className="text-[10px] md:text-[11px] font-black tracking-[0.4em] uppercase text-black/50 dark:text-white/50 mb-1 leading-none">
+                  {country}
+                </span>
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-tighter leading-none border-b-2 border-amber-600 pb-1.5 max-w-[260px] md:max-w-[340px] break-all">
+                  {city}
+                </h2>
               </div>
-            }>
-              <MapArea 
-                trip={tripToUse!}
-                isEditMode={isEditing}
-                mapPoints={mapPoints}
-                expandedItemId={expandedItemId}
-                handleItemToggle={handleItemToggle}
-                selectedDate={activeTab === 'gallery' ? 'ALL' : selectedDate}
-                isDarkMode={isDarkMode}
-                activeTab={activeTab}
-                transitFocusType={transitFocusType}
-                transits={isEditing ? draftTransits : transits}
-              />
-            </ErrorBoundary>
-          )}
+            );
+          })()}
+
+          <ErrorBoundary fallback={
+            <div className="flex-grow flex flex-col items-center justify-center bg-[#EAE8E3] dark:bg-[#1A1A1A] text-black/40 dark:text-white/40 p-6 relative h-full w-full">
+              <span className="text-[10px] uppercase tracking-widest font-bold z-10 mb-2">Map Temporary Unavailable</span>
+              <img src={tripToUse?.mapImg || 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1600&auto=format&fit=crop'} className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none" />
+            </div>
+          }>
+            <MapArea 
+              trip={tripToUse!}
+              isEditMode={isEditing}
+              mapPoints={mapPoints}
+              expandedItemId={expandedItemId}
+              handleItemToggle={handleItemToggle}
+              selectedDate={activeTab === 'gallery' ? 'ALL' : selectedDate}
+              isDarkMode={isDarkMode}
+              activeTab={activeTab}
+              transitFocusType={transitFocusType}
+              transits={isEditing ? draftTransits : transits}
+            />
+          </ErrorBoundary>
         </div>
 
       </section>
@@ -2317,14 +2325,16 @@ export function JourneyDetailPage({
           className="flex-grow flex flex-col relative overflow-y-auto overflow-x-hidden w-full h-full bg-[#F9F8F6] dark:bg-[#111111]"
         >
           {renderInfoHeader(true)}
-          {/* SUMMARY TAB PLACEHOLDER */}
+          {/* SUMMARY TAB */}
           {activeTab === 'summary' && (
-            <div className="flex-grow flex flex-col items-center justify-center text-center p-8 text-black/30 dark:text-white/30 font-bold uppercase tracking-widest text-[10px] min-h-[450px] animate-in fade-in duration-300">
-              <div className="border border-dashed border-black/20 dark:border-white/20 p-8 flex flex-col items-center gap-3.5 max-w-[280px]">
-                <FileText className="w-8 h-8 opacity-65 text-amber-600 dark:text-amber-500 animate-pulse" />
-                <p className="leading-relaxed">Select a tab above to view detail logs, flights, stays, transit, or gallery.</p>
-              </div>
-            </div>
+            <SummaryView 
+              trip={tripToUse!}
+              timelineData={timelineData}
+              flights={isEditing ? draftFlights : flights}
+              stays={isEditing ? draftStays : stays}
+              transits={isEditing ? draftTransits : transits}
+              defaultCurrency={getDefaultCurrencyForLocation(tripToUse?.locationStr || '')}
+            />
           )}
           
           {/* LOG TAB */}
