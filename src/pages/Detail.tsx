@@ -1300,6 +1300,21 @@ export function JourneyDetailPage({
       });
       return transitPoints;
     }
+    // summary 탭: 타임라인 전체 좌표를 마커로 전달해 지도에 도시 핀이 찍히도록
+    if (activeTab === 'summary') {
+      const allTimelinePoints = baseTimeline
+        .filter(item => item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null && !item.excludeFromMap)
+        .map(item => {
+          const dayIndex = item.date ? generatedDates.indexOf(item.date) + 1 : 0;
+          return {
+            ...item,
+            lat: Number(item.lat),
+            lng: Number(item.lng),
+            dayIndex
+          };
+        });
+      return allTimelinePoints;
+    }
     return [];
   })();
 
@@ -3720,7 +3735,9 @@ export function JourneyDetailPage({
                     {allGalleryImages.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
                   </div>
                 )}
-              </div>
+              {/* Gallery footer */}
+              <Footer className="mt-4" />
+            </div>
             );
           })()}
 
@@ -3766,9 +3783,9 @@ export function JourneyDetailPage({
           )}
 
           {/* Footer inside Detail scroll container */}
-          {activeTab !== 'settlement' && (
+          {activeTab !== 'settlement' && activeTab !== 'gallery' && (
             <div className="w-full shrink-0">
-              <Footer className={activeTab === 'gallery' ? 'mt-4' : 'mt-12'} />
+              <Footer className="mt-12" />
             </div>
           )}
         </div>
