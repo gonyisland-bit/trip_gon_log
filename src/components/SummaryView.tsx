@@ -236,13 +236,13 @@ export function SummaryView({
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-600/30 via-transparent to-amber-600/30" />
           
           {/* Header Section (Title & Export Button Inline) */}
-          <div className="flex justify-between items-start pb-5 border-b border-dashed border-black/25 dark:border-white/25">
-            <div className="flex flex-col text-left">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 pb-5 border-b border-dashed border-black/25 dark:border-white/25">
+            <div className="flex flex-col text-left min-w-0 flex-grow">
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 dark:text-amber-500 mb-1 flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5" />
                 MEMORANDUM OF TRAVEL
               </span>
-              <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tighter leading-tight max-w-[450px] truncate">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-black uppercase tracking-tighter leading-tight break-words">
                 {trip.title ? trip.title.replace(' (Plan)', '') : 'MY TRIP'}
               </h2>
             </div>
@@ -250,7 +250,7 @@ export function SummaryView({
               <button
                 id="capture-exclude-btn"
                 onClick={handleCapture}
-                className="flex items-center gap-1.5 px-3 py-1.5 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-[9px] font-black uppercase tracking-widest rounded-sm transition-all shadow-sm shrink-0 cursor-pointer"
+                className="flex items-center justify-center gap-1.5 px-3 py-1.5 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-[9px] font-black uppercase tracking-widest rounded-sm transition-all shadow-sm shrink-0 cursor-pointer self-start sm:self-auto"
               >
                 <Share2 className="w-3.5 h-3.5" />
                 <span>EXPORT</span>
@@ -292,12 +292,28 @@ export function SummaryView({
             <span className="text-[9.5px] font-black uppercase tracking-widest text-black/45 dark:text-white/45 flex items-center gap-1">
               <Bed className="w-3.5 h-3.5 text-black/60 dark:text-white/60" /> ACCOMMODATIONS
             </span>
-            <div className="pl-2.5 border-l-2 border-amber-600/30 flex flex-col gap-2.5 text-xs md:text-sm">
+            <div className="pl-2.5 border-l-2 border-amber-600/30 flex flex-col gap-3.5">
               {stays.length > 0 ? (
                 stays.map((s, idx) => (
-                  <div key={idx} className="flex flex-col">
-                    <span className="font-black text-black/80 dark:text-white/80">{s.title}</span>
-                    <span className="text-[10px] text-black/50 dark:text-white/50 mt-0.5">{s.dateRange || '날짜 미지정'}</span>
+                  <div key={idx} className="flex flex-col gap-1 border-b border-dashed border-black/5 dark:border-white/5 pb-2.5 last:border-b-0 last:pb-0">
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="font-black text-xs md:text-sm text-black/80 dark:text-white/80 leading-tight">{s.title}</span>
+                      {s.cost && (
+                        <span className="text-[9px] md:text-[10px] font-mono font-bold bg-amber-600/10 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-sm shrink-0">
+                          {CURRENCY_SYMBOLS[s.currency || 'KRW'] || s.currency} {parseFloat(s.cost).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[9px] md:text-[10px] text-black/55 dark:text-white/55 font-medium leading-none">
+                      <span className="flex items-center gap-1">🕒 {s.dateRange || '날짜 미지정'}</span>
+                      {s.address && <span className="flex items-center gap-1">📍 {s.address}</span>}
+                      {s.confNo && <span className="text-black/40 dark:text-white/40"># {s.confNo}</span>}
+                    </div>
+                    {s.memo && (
+                      <p className="text-[9.5px] md:text-[10.5px] text-black/50 dark:text-white/50 italic pl-2 border-l border-black/10 dark:border-white/10 mt-1 leading-relaxed">
+                        {s.memo}
+                      </p>
+                    )}
                   </div>
                 ))
               ) : (
@@ -382,11 +398,13 @@ export function SummaryView({
               <div className="grid grid-cols-2 gap-2 pl-2.5 text-xs">
                 {weatherList.map((w, idx) => {
                   const info = getWeatherInfo(w.type);
+                  const day = getDayOfWeek(w.date);
+                  const dateLabel = `${w.date.replace(/^\d{4}\./, '')}${day ? ` (${day})` : ''}`;
                   return (
                     <div key={idx} className="flex items-center gap-1.5 bg-black/3 dark:bg-white/3 border border-black/5 dark:border-white/5 p-1.5 rounded-sm">
                       <span className="text-sm shrink-0">{info.icon}</span>
                       <div className="flex flex-col min-w-0">
-                        <span className="text-[8px] font-black uppercase tracking-wider text-black/40 dark:text-white/40 truncate">{w.date.replace(/^\d{4}\./, '')}</span>
+                        <span className="text-[8px] font-black uppercase tracking-wider text-black/40 dark:text-white/40 truncate">{dateLabel}</span>
                         <span className="font-black truncate text-[10px]">{info.label} {w.temp && `(${w.temp})`}</span>
                       </div>
                     </div>

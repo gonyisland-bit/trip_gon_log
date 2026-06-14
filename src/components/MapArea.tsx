@@ -319,7 +319,12 @@ export function MapArea({
       
       let pinColor = '#dc2626';
       let pinTextPrefix = '';
-      if (activeTab === 'transit') {
+      const isSummaryMode = activeTab === 'summary';
+
+      if (isSummaryMode) {
+        pinColor = '#d97706'; // Gold/Amber highlight for summary mode
+        pinTextPrefix = '📍 ';
+      } else if (activeTab === 'transit') {
         const tType = item.transitType || 'train';
         if (tType === 'bus') {
           pinColor = '#10b981'; // Green
@@ -348,8 +353,8 @@ export function MapArea({
 
       const htmlContent = `
         <div class="pin-wrapper" style="opacity: ${isTransitFaded ? '0.25' : '1'}; transition: opacity 0.3s;">
-          <div class="leaflet-pin${isActive ? ' active-pin' : ''}" style="background-color: ${pinColor}; ${isActive ? `box-shadow: 0 0 0 5px ${pinColor}40, 0 3px 10px rgba(0,0,0,0.4);` : ''}">${isActive ? '<div class="pin-inner-dot"></div>' : ''}</div>
-          <div class="pin-label${isActive ? ' pin-label-active' : ''}">${pinTextPrefix}${item.place}</div>
+          <div class="leaflet-pin${isActive || isSummaryMode ? ' active-pin' : ''}" style="background-color: ${pinColor}; ${isActive || isSummaryMode ? `box-shadow: 0 0 0 5px ${pinColor}40, 0 3px 10px rgba(0,0,0,0.4);` : ''}">${isActive || isSummaryMode ? '<div class="pin-inner-dot"></div>' : ''}</div>
+          <div class="pin-label${isActive || isSummaryMode ? ' pin-label-active' : ''}">${pinTextPrefix}${item.place}</div>
         </div>
       `;
 
@@ -419,25 +424,45 @@ export function MapArea({
       const isMobile = window.innerWidth < 768;
 
       if (activeTab === 'summary') {
-        const lat = typeof trip.lat === 'number' && !isNaN(trip.lat) ? trip.lat : 35.0116;
-        const lng = typeof trip.lng === 'number' && !isNaN(trip.lng) ? trip.lng : 135.7681;
-        map.setView([lat, lng], 7, { animate: true });
+        const locLower = (trip.locationStr || '').toLowerCase();
+        let center: [number, number] | null = null;
+        let zoom = 6;
+        
+        if (locLower.includes('japan') || locLower.includes('일본')) {
+          center = [36.2048, 138.2529];
+          zoom = 5.5;
+        } else if (locLower.includes('korea') || locLower.includes('한국') || locLower.includes('대한민국') || locLower.includes('seoul') || locLower.includes('서울')) {
+          center = [35.9077, 127.7669];
+          zoom = 7;
+        } else if (locLower.includes('vietnam') || locLower.includes('베트남')) {
+          center = [14.0583, 108.2772];
+          zoom = 5.5;
+        } else if (locLower.includes('taiwan') || locLower.includes('대만') || locLower.includes('taipei') || locLower.includes('타이페이')) {
+          center = [23.6978, 120.9605];
+          zoom = 7.5;
+        } else if (locLower.includes('thailand') || locLower.includes('태국') || locLower.includes('bangkok') || locLower.includes('방콕')) {
+          center = [15.8700, 100.9925];
+          zoom = 5.5;
+        }
+        
+        if (center) {
+          map.setView(center, zoom, { animate: true });
+        } else if (coords.length > 0) {
+          const bounds = L.latLngBounds(coords);
+          map.fitBounds(bounds, { padding: [40, 40], maxZoom: 6 });
+        } else {
+          const lat = typeof trip.lat === 'number' && !isNaN(trip.lat) ? trip.lat : 35.0116;
+          const lng = typeof trip.lng === 'number' && !isNaN(trip.lng) ? trip.lng : 135.7681;
+          map.setView([lat, lng], 6, { animate: true });
+        }
         
         if (summaryCircleRef.current) {
           map.removeLayer(summaryCircleRef.current);
+          summaryCircleRef.current = null;
         }
-        
-        summaryCircleRef.current = L.circle([lat, lng], {
-          radius: 80000,
-          color: '#d97706',
-          fillColor: '#d97706',
-          fillOpacity: 0.2,
-          weight: 2
-        }).addTo(map);
-        return;
       }
 
-      if (expandedItemId === null && coords.length > 0 && (!isInteractive || !hasFitRef.current || isGalleryTab)) {
+      if (activeTab !== 'summary' && expandedItemId === null && coords.length > 0 && (!isInteractive || !hasFitRef.current || isGalleryTab)) {
         const bounds = L.latLngBounds(coords);
         map.fitBounds(bounds, { padding: isMobile ? [25, 25] : [48, 48], maxZoom: isMobile ? 13 : 15 });
         hasFitRef.current = true;

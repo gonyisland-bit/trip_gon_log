@@ -2599,13 +2599,52 @@ export function JourneyDetailPage({
                                       CLEAR
                                     </button>
                                   )}
-                                  <input
-                                    type="text"
-                                    placeholder="15°/25°"
-                                    value={weatherInfo?.temp || ''}
-                                    onChange={(e) => handleWeatherChange(item.date || '', weatherInfo?.type || '', e.target.value)}
-                                    className="w-16 bg-white dark:bg-black/20 border border-black/10 dark:border-white/10 px-1 py-0.5 text-[9px] text-center font-bold outline-none text-black dark:text-white rounded-sm"
-                                  />
+                                  {(() => {
+                                    const parseMinMaxTemp = (tempStr: string) => {
+                                      if (!tempStr) return { min: '', max: '' };
+                                      const parts = tempStr.split('/');
+                                      if (parts.length === 2) {
+                                        const minVal = parts[0].replace(/[^0-9-]/g, '');
+                                        const maxVal = parts[1].replace(/[^0-9-]/g, '');
+                                        return { min: minVal, max: maxVal };
+                                      }
+                                      const cleanVal = tempStr.replace(/[^0-9-]/g, '');
+                                      if (tempStr.startsWith('/')) {
+                                        return { min: '', max: cleanVal };
+                                      }
+                                      return { min: cleanVal, max: '' };
+                                    };
+                                    const { min, max } = parseMinMaxTemp(weatherInfo?.temp || '');
+                                    return (
+                                      <div className="flex items-center gap-0.5 ml-1">
+                                        <input
+                                          type="number"
+                                          placeholder="Min"
+                                          value={min}
+                                          onChange={(e) => {
+                                            const minNum = e.target.value;
+                                            const newTemp = (minNum || max) ? `${minNum ? minNum + '°' : ''}/${max ? max + '°' : ''}` : '';
+                                            handleWeatherChange(item.date || '', weatherInfo?.type || '', newTemp);
+                                          }}
+                                          className="w-8 md:w-9 bg-white dark:bg-black/20 border border-black/10 dark:border-white/10 px-0.5 py-0.5 text-[9px] text-center font-bold outline-none text-black dark:text-white rounded-sm [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:margin-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:margin-0 [&::-webkit-inner-spin-button]:appearance-none"
+                                          onClick={(e) => e.stopPropagation()}
+                                        />
+                                        <span className="text-[8px] text-black/45 dark:text-white/45 font-bold">/</span>
+                                        <input
+                                          type="number"
+                                          placeholder="Max"
+                                          value={max}
+                                          onChange={(e) => {
+                                            const maxNum = e.target.value;
+                                            const newTemp = (min || maxNum) ? `${min ? min + '°' : ''}/${maxNum ? maxNum + '°' : ''}` : '';
+                                            handleWeatherChange(item.date || '', weatherInfo?.type || '', newTemp);
+                                          }}
+                                          className="w-8 md:w-9 bg-white dark:bg-black/20 border border-black/10 dark:border-white/10 px-0.5 py-0.5 text-[9px] text-center font-bold outline-none text-black dark:text-white rounded-sm [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:margin-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:margin-0 [&::-webkit-inner-spin-button]:appearance-none"
+                                          onClick={(e) => e.stopPropagation()}
+                                        />
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                               ) : (
                                 weatherInfo && (weatherInfo.type || weatherInfo.temp) && (
@@ -3729,7 +3768,7 @@ export function JourneyDetailPage({
           {/* Footer inside Detail scroll container */}
           {activeTab !== 'settlement' && (
             <div className="w-full shrink-0">
-              <Footer />
+              <Footer className={activeTab === 'gallery' ? 'mt-4' : 'mt-12'} />
             </div>
           )}
         </div>
