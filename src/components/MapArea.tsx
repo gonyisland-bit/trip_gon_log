@@ -44,6 +44,7 @@ export function MapArea({
   const polylineRef = useRef<any>(null);
   const tileLayerRef = useRef<any>(null);
   const hasFitRef = useRef(false);
+  const summaryCircleRef = useRef<any>(null);
   const [mapReady, setMapReady] = useState(false);
   const [isInteractive, setIsInteractive] = useState(false);
 
@@ -210,6 +211,7 @@ export function MapArea({
     Object.values(markersRef.current).forEach((m: any) => map.removeLayer(m));
     markersRef.current = {};
     if (polylineRef.current) { map.removeLayer(polylineRef.current); polylineRef.current = null; }
+    if (summaryCircleRef.current) { map.removeLayer(summaryCircleRef.current); summaryCircleRef.current = null; }
 
     const valid = mapPoints.filter(p =>
       p.lat !== undefined && p.lng !== undefined &&
@@ -415,6 +417,25 @@ export function MapArea({
 
     if (shouldPanZoom) {
       const isMobile = window.innerWidth < 768;
+
+      if (activeTab === 'summary') {
+        const lat = typeof trip.lat === 'number' && !isNaN(trip.lat) ? trip.lat : 35.0116;
+        const lng = typeof trip.lng === 'number' && !isNaN(trip.lng) ? trip.lng : 135.7681;
+        map.setView([lat, lng], 7, { animate: true });
+        
+        if (summaryCircleRef.current) {
+          map.removeLayer(summaryCircleRef.current);
+        }
+        
+        summaryCircleRef.current = L.circle([lat, lng], {
+          radius: 80000,
+          color: '#d97706',
+          fillColor: '#d97706',
+          fillOpacity: 0.2,
+          weight: 2
+        }).addTo(map);
+        return;
+      }
 
       if (expandedItemId === null && coords.length > 0 && (!isInteractive || !hasFitRef.current || isGalleryTab)) {
         const bounds = L.latLngBounds(coords);

@@ -3727,7 +3727,7 @@ export function JourneyDetailPage({
           )}
 
           {/* Footer inside Detail scroll container */}
-          {activeTab !== 'gallery' && activeTab !== 'settlement' && (
+          {activeTab !== 'settlement' && (
             <div className="w-full shrink-0">
               <Footer />
             </div>
