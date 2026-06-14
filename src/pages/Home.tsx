@@ -241,22 +241,17 @@ export function HomePage({
 
       {/* ===== Hero Section ===== */}
       <section className="relative w-full h-[60vh] md:h-[80vh] overflow-hidden group border-b border-black/20 dark:border-white/20">
-        {/* Background image */}
-        {currentHero && (
+        {/* Background style */}
+        {currentHero && currentHero.img ? (
           <img
             key={currentHero.id}
-            src={currentHero.img || "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=2400&auto=format&fit=crop"}
+            src={currentHero.img}
             alt={currentHero.title || "Hero Trip"}
             className={`absolute inset-0 w-full h-full object-cover transition-all duration-[2000ms] ${isTransitioning ? 'opacity-0 scale-110' : 'opacity-100 scale-100 group-hover:scale-105'}`}
             style={{ transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
           />
-        )}
-        {!currentHero && (
-          <img
-            src="https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=2400&auto=format&fit=crop"
-            alt="Hero"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+        ) : (
+          <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#EAE8E3] via-[#F4F3EF] to-[#D5D3CC] dark:from-[#0E0E0E] dark:via-[#161616] dark:to-[#0A0A0A]" />
         )}
         <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 md:via-black/40 to-transparent pointer-events-none" />
         {currentHero && (

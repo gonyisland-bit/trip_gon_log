@@ -186,6 +186,9 @@
 .animate-marquee {
   display: inline-flex;
   white-space: nowrap;
+  min-width: 100%;
+  flex-shrink: 0;
+  will-change: transform;
   animation: marquee var(--marquee-speed, 30s) linear infinite;
 }
 

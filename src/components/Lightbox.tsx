@@ -34,6 +34,18 @@ export function Lightbox({
   const [nextLoaded, setNextLoaded] = useState<boolean>(false);
   const dragStart = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const imgRef = useRef<HTMLImageElement>(null);
+  const activeThumbnailRef = useRef<HTMLButtonElement>(null);
+
+  // Auto-scroll active thumbnail to center
+  useEffect(() => {
+    if (activeThumbnailRef.current) {
+      activeThumbnailRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center'
+      });
+    }
+  }, [currentIndex]);
 
   // Touch event refs for mobile swiping & panning
   const touchStartX = useRef<number | null>(null);
@@ -368,13 +380,14 @@ export function Lightbox({
 
       {/* Bottom Thumbnails Strip */}
       {images.length > 1 && (
-        <div className="w-full bg-black/40 py-2 border-t border-white/5 flex justify-center items-center overflow-x-auto hide-scrollbar z-20 shrink-0">
-          <div className="flex gap-2 px-4">
+        <div className="w-full bg-black/40 py-2 border-t border-white/5 overflow-x-auto hide-scrollbar z-20 shrink-0 flex justify-start">
+          <div className="flex gap-2 px-4 mx-auto w-max min-w-full justify-center">
             {images.map((img, idx) => {
               const isActive = idx === currentIndex;
               return (
                 <button
                   key={idx}
+                  ref={isActive ? activeThumbnailRef : null}
                   onClick={() => onNavigate(idx)}
                   className={`relative overflow-hidden transition-all duration-300 focus:outline-none shrink-0 ${
                     isActive 

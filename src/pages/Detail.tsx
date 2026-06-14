@@ -3,7 +3,7 @@ import {
   Clock, Plane, Bed, Train, Bus, Car, User, Edit2, Trash2, 
   Image as ImageIcon, ChevronUp, ChevronDown, MapPin, Map, Plus, Loader2, Search, ArrowLeft,
   ExternalLink, MapPinOff, Maximize2, Star, ChevronLeft, ChevronRight, ArrowUp, ArrowDown,
-  Sun, Cloud, Cloudy, CloudRain, Snowflake, CloudLightning, ArrowRight, Calculator, FileText
+  Sun, Cloud, Cloudy, CloudRain, Snowflake, CloudLightning, ArrowRight, Calculator, FileText, Share2
 } from 'lucide-react';
 import { MapArea } from '../components/MapArea';
 import { ImageEditOverlay } from '../components/ImageEditOverlay';
@@ -407,6 +407,19 @@ export function JourneyDetailPage({
   const [draftTransits, setDraftTransits] = useState<TransitItem[]>([]);
   const [transitSortType, setTransitSortType] = useState<'time' | 'type'>('time');
   const [mapConfirm, setMapConfirm] = useState<{ placeName: string; url: string } | null>(null);
+
+  const handleCopyShareLink = () => {
+    if (!trip) return;
+    const shareUrl = `${window.location.origin}?id=${trip.id}&share=true`;
+    navigator.clipboard.writeText(shareUrl)
+      .then(() => {
+        alert("공유 전용 링크가 클립보드에 복사되었습니다.");
+      })
+      .catch((err) => {
+        console.error("공유 링크 복사 실패:", err);
+        alert("링크 복사에 실패했습니다.");
+      });
+  };
 
   // Lightbox & Gallery state
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -2151,6 +2164,15 @@ export function JourneyDetailPage({
             <span>Pay</span>
           </button>
 
+          <button
+            onClick={handleCopyShareLink}
+            className="px-2.5 py-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all text-black/60 dark:text-white/60 cursor-pointer flex items-center gap-1"
+            title="공유 링크 복사"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+            <span>Share</span>
+          </button>
+
           {isLoggedIn && (
             <div className="flex items-center gap-1.5">
               {isEditing ? (
@@ -3794,6 +3816,7 @@ export function JourneyDetailPage({
           {/* SETTLEMENT TAB */}
           {activeTab === 'settlement' && (
             <SettlementView
+              isLoggedIn={isLoggedIn}
               trip={tripToUse!}
               timelineData={groupedTimelineData}
               flights={isEditing ? draftFlights : flights}

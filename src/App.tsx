@@ -71,6 +71,9 @@ function App() {
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+  const [isShareMode, setIsShareMode] = useState<boolean>(false);
+  const [showSplash, setShowSplash] = useState<boolean>(true);
+  const [fadeSplash, setFadeSplash] = useState<boolean>(false);
   const [isManageModalOpen, setIsManageModalOpen] = useState<boolean>(false);
   const [createModalType, setCreateModalType] = useState<'archive' | 'plan'>('archive');
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
@@ -145,10 +148,10 @@ function App() {
     || undefined;
 
   const displayMarqueeText = useMemo(() => {
+    let text = "";
     if (marqueeOverrideText) {
-      return `${marqueeOverrideText}   ★   ${marqueeOverrideText}   ★   ${marqueeOverrideText}   ★   `;
-    }
-    if (currentView === 'detail' && activeTrip) {
+      text = marqueeOverrideText;
+    } else if (currentView === 'detail' && activeTrip) {
       const tagsStr = (activeTrip.tags || [])
         .filter(t => t !== 'Plan' && t !== 'Personal')
         .map(t => `#${t}`)
@@ -170,17 +173,16 @@ function App() {
         .map(s => s.title)
         .join(', ');
 
-      let text = `✈️ ${title} • 📍 ${location} • 📅 ${duration}`;
+      text = `✈️ ${title} • 📍 ${location} • 📅 ${duration}`;
       if (flightInfo) text += ` • 🛫 ${flightInfo}`;
       if (stayInfo) text += ` • 🏨 ${stayInfo}`;
       if (tagsStr) text += ` • ${tagsStr.toUpperCase()}`;
-
-      return `${text}   ★   ${text}   ★   ${text}   ★   `;
+    } else {
+      text = marqueeMessage || '';
     }
-    
-    // Repeat default message to keep it seamless
-    const baseMsg = marqueeMessage || '';
-    return `${baseMsg}   ★   ${baseMsg}   ★   ${baseMsg}   ★   `;
+
+    const repeated = Array(6).fill(text).join('   ★   ');
+    return `${repeated}   ★   `;
   }, [marqueeOverrideText, currentView, activeTrip, marqueeMessage, flightsByTrip, staysByTrip]);
 
   // Sync activeTripId with trips[0]?.id if it is null and trips have loaded
@@ -410,23 +412,31 @@ function App() {
     }
   }, [isLoggedIn, trips.length, plans.length]);
 
-  // Sync state with browser History API on initial load
+  // Sync state with browser History API and parse share param on initial load
   useEffect(() => {
     const path = window.location.pathname;
     const params = new URLSearchParams(window.location.search);
     const idParam = params.get('id');
+    const shareParam = params.get('share');
 
     let initialView = 'home';
     let initialTripId: number | null = null;
+    const isShare = shareParam === 'true';
 
-    if (path === '/archive') {
-      initialView = 'archive';
-    } else if (path === '/plan') {
-      initialView = 'plan';
-    } else if (path === '/detail' || idParam) {
+    if (isShare && idParam) {
       initialView = 'detail';
-      if (idParam) {
-        initialTripId = Number(idParam);
+      initialTripId = Number(idParam);
+      setIsShareMode(true);
+    } else {
+      if (path === '/archive') {
+        initialView = 'archive';
+      } else if (path === '/plan') {
+        initialView = 'plan';
+      } else if (path === '/detail' || idParam) {
+        initialView = 'detail';
+        if (idParam) {
+          initialTripId = Number(idParam);
+        }
       }
     }
 
@@ -434,7 +444,21 @@ function App() {
       setActiveTripId(initialTripId);
     }
     setCurrentView(initialView);
-    window.history.replaceState({ view: initialView, tripId: initialTripId }, '', window.location.pathname + window.location.search);
+    window.history.replaceState({ view: initialView, tripId: initialTripId, isShare }, '', window.location.pathname + window.location.search);
+
+    // Splash screen timers
+    const fadeTimer = setTimeout(() => {
+      setFadeSplash(true);
+    }, 1200);
+
+    const removeTimer = setTimeout(() => {
+      setShowSplash(false);
+    }, 1500);
+
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(removeTimer);
+    };
   }, []);
 
   // Listen to popstate events for browser back/forward navigation
@@ -452,6 +476,9 @@ function App() {
         setShowUnsavedModal(true);
         return;
       }
+
+      const params = new URLSearchParams(window.location.search);
+      setIsShareMode(params.get('share') === 'true');
 
       if (state && state.view) {
         if (state.tripId) {
@@ -474,6 +501,10 @@ function App() {
       return;
     }
 
+    if (view !== 'detail') {
+      setIsShareMode(false);
+    }
+
     if (tripId) setActiveTripId(tripId);
     setCurrentView(view);
     setSelectedTagFilter(tagFilter);
@@ -484,7 +515,8 @@ function App() {
       else if (view === 'plan') path = '/plan';
       else if (view === 'detail') {
         const idToUse = tripId || activeTripId;
-        path = idToUse ? `/detail?id=${idToUse}` : '/detail';
+        const isShare = (view === 'detail' && (tripId === activeTripId || tripId === null || tripId === idToUse)) ? isShareMode : false;
+        path = idToUse ? `/detail?id=${idToUse}${isShare ? '&share=true' : ''}` : '/detail';
       }
       window.history.pushState({ view, tripId: tripId || activeTripId }, '', path);
     }
@@ -1177,131 +1209,157 @@ function App() {
         {/* Marquee Banner */}
         {marqueeShow && (
           <div className="w-full bg-[#EAE8E3] dark:bg-[#161616] border-b border-black/10 dark:border-white/10 py-2 overflow-hidden flex items-center shrink-0">
-            <div className="animate-marquee text-[10px] md:text-xs font-black tracking-widest uppercase text-red-600 dark:text-red-400" style={{ '--marquee-speed': `${(marqueeSpeed / 1.5) * 1.43}s` } as React.CSSProperties}>
-              <span>{displayMarqueeText}&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;</span>
-              <span>{displayMarqueeText}&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;</span>
+            <div 
+              key={displayMarqueeText}
+              className="animate-marquee text-[10px] md:text-xs font-black tracking-widest uppercase text-red-600 dark:text-red-400" 
+              style={{ '--marquee-speed': `${(marqueeSpeed / 1.5) * 1.43}s` } as React.CSSProperties}
+            >
+              <span>{displayMarqueeText}</span>
+              <span>{displayMarqueeText}</span>
             </div>
           </div>
         )}
 
         {/* View Routing */}
         <div className={`w-full flex-grow ${currentView === 'detail' ? 'overflow-hidden flex flex-col' : ''}`}>
-          {currentView === 'home' && (
-            <HomePage 
-              onNavigate={navigateTo} 
-              trips={trips} 
-              plans={plans} 
-              handleMoveToArchive={handleMoveToArchive}
-              onMoveToPlans={handleMoveToPlans}
-              onCloneTrip={handleCloneJourney}
-              onClonePlan={handleCloneJourney}
-              homeTitle={homeTitle}
-              homeSubtitle={homeSubtitle}
-              heroJourneyIds={heroJourneyIds}
-              heroAutoSlide={heroAutoSlide}
-              onEditTrip={(id) => setEditingTripId(id)}
-              onDeleteTrip={(id) => handleDeleteJourney(id)}
-              onReorderTrips={async (orderedIds) => {
-                if (!isLoggedIn) return;
-                const batch = writeBatch(db);
-                orderedIds.forEach((id, idx) => {
-                  batch.update(doc(db, 'users', 'public', 'trips', String(id)), { displayOrder: idx });
-                });
-                await batch.commit();
-              }}
-              onReorderPlans={async (orderedIds) => {
-                if (!isLoggedIn) return;
-                const batch = writeBatch(db);
-                orderedIds.forEach((id, idx) => {
-                  batch.update(doc(db, 'users', 'public', 'plans', String(id)), { displayOrder: idx });
-                });
-                await batch.commit();
-              }}
-              isLoggedIn={isLoggedIn}
-            />
-          )}
-          {currentView === 'archive' && (
-            <ArchiveHubPage 
-              trips={trips} 
-              onNavigate={navigateTo} 
-              onAddArchive={handleAddArchive}
-              isLoggedIn={isLoggedIn}
-              onDeleteTrip={handleDeleteJourney}
-              onEditTrip={(id) => setEditingTripId(id)}
-              onCloneTrip={handleCloneJourney}
-              onMoveToPlans={handleMoveToPlans}
-              onReorderTrips={async (orderedIds) => {
-                if (!isLoggedIn) return;
-                const batch = writeBatch(db);
-                orderedIds.forEach((id, idx) => {
-                  batch.update(doc(db, 'users', 'public', 'trips', String(id)), { displayOrder: idx });
-                });
-                await batch.commit();
-              }}
-              initialTagFilter={selectedTagFilter}
-            />
-          )}
-          {currentView === 'plan' && (
-            <PlanHubPage 
-              plans={plans} 
-              onNavigate={navigateTo} 
-              onAddPlan={handleAddPlan}
-              handleMoveToArchive={handleMoveToArchive}
-              isLoggedIn={isLoggedIn}
-              onDeletePlan={handleDeleteJourney}
-              onEditPlan={(id) => setEditingTripId(id)}
-              onClonePlan={handleCloneJourney}
-              onReorderPlans={async (orderedIds) => {
-                if (!isLoggedIn) return;
-                const batch = writeBatch(db);
-                orderedIds.forEach((id, idx) => {
-                  batch.update(doc(db, 'users', 'public', 'plans', String(id)), { displayOrder: idx });
-                });
-                await batch.commit();
-              }}
-              initialTagFilter={selectedTagFilter}
-            />
-          )}
-          {currentView === 'detail' && (
-            activeTrip ? (() => {
-              const activeTimelineData: TimelineData = {};
-              Object.entries(timelineData).forEach(([date, items]) => {
-                const filtered = items.filter(item => Number(item.tripId) === Number(activeTrip.id));
-                if (filtered.length > 0) {
-                  activeTimelineData[date] = filtered;
-                }
-              });
-
-              return (
-                <ErrorBoundary>
-                  <JourneyDetailPage 
-                    isLoggedIn={isLoggedIn} 
-                    trip={activeTrip}
-                    timelineData={activeTimelineData}
-                    flights={activeFlights}
-                    stays={activeStays}
-                    transits={activeTransits}
-                    onSave={handleSaveJourneyDetails}
-                    onDelete={handleDeleteJourney}
-                    isDarkMode={isDarkMode}
-                    onNavigate={navigateTo}
-                    searchFocusItemId={searchFocusItemId}
-                    searchFocusTab={searchFocusTab}
-                    onClearSearchFocus={() => {
-                      setSearchFocusItemId(null);
-                      setSearchFocusTab(null);
-                    }}
-                    onEditModeChange={setIsDetailEditing}
-                    saveRef={detailSaveRef}
-                  />
-                </ErrorBoundary>
-              );
-            })() : (
-              <div className="min-h-[60vh] flex flex-col items-center justify-center bg-[#F9F8F6] dark:bg-[#111111] transition-colors w-full">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black dark:border-white mb-2"></div>
-                <span className="text-[10px] uppercase tracking-widest font-bold text-black/40 dark:text-white/40">Loading Journey Data...</span>
+          {!isLoggedIn && !isShareMode ? (
+            <div className="min-h-[60vh] md:min-h-[70vh] flex flex-col items-center justify-center p-8 bg-[#F4F3EF] dark:bg-[#0E0E0E] transition-colors text-center w-full">
+              <div className="max-w-md flex flex-col items-center gap-5">
+                <h2 className="text-xl md:text-2xl font-black tracking-widest uppercase text-black dark:text-white">
+                  Access Restricted
+                </h2>
+                <p className="text-xs md:text-sm text-black/60 dark:text-white/60 font-medium leading-relaxed break-keep">
+                  TRIPGON LOG 서비스는 로그인 후 이용 가능합니다.<br />
+                  여정을 기록하고 탐색하려면 로그인해 주세요.
+                </p>
+                <button
+                  onClick={() => { setAuthModalMode('login'); setIsAuthModalOpen(true); }}
+                  className="px-6 py-2.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] md:text-xs font-black uppercase tracking-widest rounded-sm transition-all shadow-md cursor-pointer mt-2"
+                >
+                  Sign In to Account
+                </button>
               </div>
-            )
+            </div>
+          ) : (
+            <>
+              {currentView === 'home' && (
+                <HomePage 
+                  onNavigate={navigateTo} 
+                  trips={trips} 
+                  plans={plans} 
+                  handleMoveToArchive={handleMoveToArchive}
+                  onMoveToPlans={handleMoveToPlans}
+                  onCloneTrip={handleCloneJourney}
+                  onClonePlan={handleCloneJourney}
+                  homeTitle={homeTitle}
+                  homeSubtitle={homeSubtitle}
+                  heroJourneyIds={heroJourneyIds}
+                  heroAutoSlide={heroAutoSlide}
+                  onEditTrip={(id) => setEditingTripId(id)}
+                  onDeleteTrip={(id) => handleDeleteJourney(id)}
+                  onReorderTrips={async (orderedIds) => {
+                    if (!isLoggedIn) return;
+                    const batch = writeBatch(db);
+                    orderedIds.forEach((id, idx) => {
+                      batch.update(doc(db, 'users', 'public', 'trips', String(id)), { displayOrder: idx });
+                    });
+                    await batch.commit();
+                  }}
+                  onReorderPlans={async (orderedIds) => {
+                    if (!isLoggedIn) return;
+                    const batch = writeBatch(db);
+                    orderedIds.forEach((id, idx) => {
+                      batch.update(doc(db, 'users', 'public', 'plans', String(id)), { displayOrder: idx });
+                    });
+                    await batch.commit();
+                  }}
+                  isLoggedIn={isLoggedIn}
+                />
+              )}
+              {currentView === 'archive' && (
+                <ArchiveHubPage 
+                  trips={trips} 
+                  onNavigate={navigateTo} 
+                  onAddArchive={handleAddArchive}
+                  isLoggedIn={isLoggedIn}
+                  onDeleteTrip={handleDeleteJourney}
+                  onEditTrip={(id) => setEditingTripId(id)}
+                  onCloneTrip={handleCloneJourney}
+                  onMoveToPlans={handleMoveToPlans}
+                  onReorderTrips={async (orderedIds) => {
+                    if (!isLoggedIn) return;
+                    const batch = writeBatch(db);
+                    orderedIds.forEach((id, idx) => {
+                      batch.update(doc(db, 'users', 'public', 'trips', String(id)), { displayOrder: idx });
+                    });
+                    await batch.commit();
+                  }}
+                  initialTagFilter={selectedTagFilter}
+                />
+              )}
+              {currentView === 'plan' && (
+                <PlanHubPage 
+                  plans={plans} 
+                  onNavigate={navigateTo} 
+                  onAddPlan={handleAddPlan}
+                  handleMoveToArchive={handleMoveToArchive}
+                  isLoggedIn={isLoggedIn}
+                  onDeletePlan={handleDeleteJourney}
+                  onEditPlan={(id) => setEditingTripId(id)}
+                  onClonePlan={handleCloneJourney}
+                  onReorderPlans={async (orderedIds) => {
+                    if (!isLoggedIn) return;
+                    const batch = writeBatch(db);
+                    orderedIds.forEach((id, idx) => {
+                      batch.update(doc(db, 'users', 'public', 'plans', String(id)), { displayOrder: idx });
+                    });
+                    await batch.commit();
+                  }}
+                  initialTagFilter={selectedTagFilter}
+                />
+              )}
+              {currentView === 'detail' && (
+                activeTrip ? (() => {
+                  const activeTimelineData: TimelineData = {};
+                  Object.entries(timelineData).forEach(([date, items]) => {
+                    const filtered = items.filter(item => Number(item.tripId) === Number(activeTrip.id));
+                    if (filtered.length > 0) {
+                      activeTimelineData[date] = filtered;
+                    }
+                  });
+
+                  return (
+                    <ErrorBoundary>
+                      <JourneyDetailPage 
+                        isLoggedIn={isLoggedIn} 
+                        trip={activeTrip}
+                        timelineData={activeTimelineData}
+                        flights={activeFlights}
+                        stays={activeStays}
+                        transits={activeTransits}
+                        onSave={handleSaveJourneyDetails}
+                        onDelete={handleDeleteJourney}
+                        isDarkMode={isDarkMode}
+                        onNavigate={navigateTo}
+                        searchFocusItemId={searchFocusItemId}
+                        searchFocusTab={searchFocusTab}
+                        onClearSearchFocus={() => {
+                          setSearchFocusItemId(null);
+                          setSearchFocusTab(null);
+                        }}
+                        onEditModeChange={setIsDetailEditing}
+                        saveRef={detailSaveRef}
+                      />
+                    </ErrorBoundary>
+                  );
+                })() : (
+                  <div className="min-h-[60vh] flex flex-col items-center justify-center bg-[#F9F8F6] dark:bg-[#111111] transition-colors w-full">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black dark:border-white mb-2"></div>
+                    <span className="text-[10px] uppercase tracking-widest font-bold text-black/40 dark:text-white/40">Loading Journey Data...</span>
+                  </div>
+                )
+              )}
+            </>
           )}
         </div>
         
@@ -1418,6 +1476,23 @@ function App() {
           </div>
         )}
       </div>
+
+      {/* Splash Screen */}
+      {showSplash && (
+        <div className={`fixed inset-0 z-[99999] flex flex-col justify-between items-center bg-[#F4F3EF] dark:bg-[#0E0E0E] transition-opacity duration-300 ${fadeSplash ? 'opacity-0' : 'opacity-100'}`}>
+          <div /> {/* Top spacing */}
+          <div className="flex flex-col items-center">
+            <h1 className="text-4xl sm:text-6xl md:text-8xl font-black tracking-tighter uppercase text-black dark:text-white select-none">
+              tripgon log
+            </h1>
+          </div>
+          <div className="pb-8">
+            <span className="text-[10px] md:text-xs font-bold tracking-widest text-black/40 dark:text-white/40 uppercase">
+              v1.0.0
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -65,6 +65,7 @@ interface SettlementViewProps {
   defaultCurrency?: string;
   onUpdateExpense?: (itemType: 'timeline' | 'flight' | 'stay' | 'transit', id: number, field: string, value: any) => void;
   onUpdateCustomExpenses?: (items: CustomExpenseItem[]) => void;
+  isLoggedIn: boolean;
 }
 
 export function SettlementView({
@@ -79,6 +80,7 @@ export function SettlementView({
   defaultCurrency = 'KRW',
   onUpdateExpense,
   onUpdateCustomExpenses,
+  isLoggedIn,
 }: SettlementViewProps) {
   const members = trip.members && trip.members.length > 0 ? trip.members : ['나'];
   const customExpenses: CustomExpenseItem[] = trip.customExpenses || [];
@@ -508,7 +510,7 @@ export function SettlementView({
                   <Share2 className="w-3.5 h-3.5" />
                   <span>EXPORT</span>
                 </button>
-                {isEditing && (
+                {isEditing && isLoggedIn && (
                   <button
                     onClick={() => setShowAddForm(v => !v)}
                     className="flex items-center gap-1 px-2 py-1 bg-emerald-600 text-white text-[9px] font-black uppercase tracking-widest rounded-sm hover:opacity-85 transition-opacity"
@@ -522,7 +524,7 @@ export function SettlementView({
         </div>
 
         {/* Add custom expense form */}
-        {showAddForm && isEditing && !isCapturing && (
+        {showAddForm && isEditing && isLoggedIn && !isCapturing && (
           <div className="px-3 py-3 border-b border-black/10 dark:border-white/10 bg-emerald-500/5 flex flex-wrap gap-2 items-end">
             <div className="flex flex-col gap-0.5">
               <label className="text-[8px] font-black uppercase tracking-widest text-black/40 dark:text-white/40">날짜</label>
