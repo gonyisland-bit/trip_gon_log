@@ -1983,6 +1983,54 @@ export function JourneyDetailPage({
 
   // galleryMetaImages, timelineImages, galleryAllMeta, galleryAllUnique variables are now declared at the top of the component.
 
+  // Format destinations dynamically: e.g. "Osaka, Kyoto, Japan" -> "JAPAN (OSAKA, KYOTO)"
+  const formatDestinations = (locStr?: string) => {
+    if (!locStr) return 'NO DESTINATIONS SPECIFIED';
+    
+    const countries = [
+      'japan', 'korea', 'vietnam', 'taiwan', 'thailand', 'singapore', 'usa', 'france', 'italy', 'uk', 'germany', 'spain', 'china',
+      '대한민국', '한국', '일본', '베트남', '대만', '태국', '싱가포르', '미국', '프랑스', '이탈리아', '영국', '독일', '스페인', '중국'
+    ];
+    
+    const parts = locStr.split(',').map(p => p.trim());
+    const groups: { country: string; cities: string[] }[] = [];
+    let currentCities: string[] = [];
+    
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      const lowerPart = part.toLowerCase();
+      
+      if (countries.includes(lowerPart)) {
+        groups.push({
+          country: part.toUpperCase(),
+          cities: currentCities.map(c => c.toUpperCase())
+        });
+        currentCities = [];
+      } else {
+        currentCities.push(part);
+      }
+    }
+    
+    if (currentCities.length > 0) {
+      groups.push({
+        country: '',
+        cities: currentCities.map(c => c.toUpperCase())
+      });
+    }
+    
+    const formattedGroups = groups.map(g => {
+      if (g.country) {
+        if (g.cities.length > 0) {
+          return `${g.country} (${g.cities.join(', ')})`;
+        }
+        return g.country;
+      }
+      return g.cities.join(', ');
+    });
+    
+    return formattedGroups.join(' · ');
+  };
+
   // Render Info Header helper function to avoid duplicating code between desktop and mobile layouts
   const renderInfoHeader = (isMobile: boolean) => (
     <div className={`p-3 md:py-4 md:px-6 border-b border-black/20 dark:border-white/20 z-10 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0 ${isMobile ? 'block md:hidden' : 'hidden md:block'}`}>
@@ -2043,7 +2091,7 @@ export function JourneyDetailPage({
             <>
               <span>{trip.date}</span>
               <span>—</span>
-              <span>{trip.locationStr}</span>
+              <span>{formatDestinations(trip.locationStr)}</span>
             </>
           )}
         </div>

@@ -122,24 +122,52 @@ export function SummaryView({
 
   const { days: totalDays, formatted: formattedDateRange } = parseDateStr(trip.date);
 
-  // Format destinations as a single bold line: COUNTRY, CITY · COUNTRY, CITY
+  // Format destinations dynamically: e.g. "Osaka, Kyoto, Japan" -> "JAPAN (OSAKA, KYOTO)"
   const formatDestinations = (locStr?: string) => {
     if (!locStr) return 'NO DESTINATIONS SPECIFIED';
+    
+    const countries = [
+      'japan', 'korea', 'vietnam', 'taiwan', 'thailand', 'singapore', 'usa', 'france', 'italy', 'uk', 'germany', 'spain', 'china',
+      '대한민국', '한국', '일본', '베트남', '대만', '태국', '싱가포르', '미국', '프랑스', '이탈리아', '영국', '독일', '스페인', '중국'
+    ];
+    
     const parts = locStr.split(',').map(p => p.trim());
-    if (parts.length >= 2) {
-      const pairs: string[] = [];
-      for (let i = 0; i < parts.length; i += 2) {
-        const city = parts[i];
-        const country = parts[i + 1];
-        if (country) {
-          pairs.push(`${country.toUpperCase()}, ${city.toUpperCase()}`);
-        } else {
-          pairs.push(city.toUpperCase());
-        }
+    const groups: { country: string; cities: string[] }[] = [];
+    let currentCities: string[] = [];
+    
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      const lowerPart = part.toLowerCase();
+      
+      if (countries.includes(lowerPart)) {
+        groups.push({
+          country: part.toUpperCase(),
+          cities: currentCities.map(c => c.toUpperCase())
+        });
+        currentCities = [];
+      } else {
+        currentCities.push(part);
       }
-      return pairs.join(' · ');
     }
-    return locStr.toUpperCase();
+    
+    if (currentCities.length > 0) {
+      groups.push({
+        country: '',
+        cities: currentCities.map(c => c.toUpperCase())
+      });
+    }
+    
+    const formattedGroups = groups.map(g => {
+      if (g.country) {
+        if (g.cities.length > 0) {
+          return `${g.country} (${g.cities.join(', ')})`;
+        }
+        return g.country;
+      }
+      return g.cities.join(', ');
+    });
+    
+    return formattedGroups.join(' · ');
   };
 
   // 2. Weather Summary
