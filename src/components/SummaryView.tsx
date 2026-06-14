@@ -40,12 +40,38 @@ export function SummaryView({
   const [capturedImg, setCapturedImg] = useState<string | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
+  // Safe date parser helper to prevent browser-specific bugs (e.g. Safari parsing dash format or timezone offset issues)
+  const parseDateParts = (dateStr: string): Date | null => {
+    if (!dateStr) return null;
+    
+    // Match YYYY.MM.DD or YYYY-MM-DD or YYYY/MM/DD
+    const match = dateStr.match(/(\d{4})[-./](\d{1,2})[-./](\d{1,2})/);
+    if (match) {
+      const year = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10) - 1;
+      const day = parseInt(match[3], 10);
+      return new Date(year, month, day);
+    }
+    
+    // Match YY.MM.DD or YY-MM-DD or YY/MM/DD (2-digit year)
+    const match2 = dateStr.match(/(\d{2})[-./](\d{1,2})[-./](\d{1,2})/);
+    if (match2) {
+      let year = parseInt(match2[1], 10);
+      year += year < 50 ? 2000 : 1900;
+      const month = parseInt(match2[2], 10) - 1;
+      const day = parseInt(match2[3], 10);
+      return new Date(year, month, day);
+    }
+    
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
   // Get day of week string
   const getDayOfWeek = (dateStr: string) => {
     if (!dateStr) return '';
-    const cleanStr = dateStr.trim().replace(/\./g, '-');
-    const date = new Date(cleanStr);
-    if (isNaN(date.getTime())) return '';
+    const date = parseDateParts(dateStr);
+    if (!date) return '';
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return days[date.getDay()];
   };
@@ -65,13 +91,11 @@ export function SummaryView({
     const startDaySuffix = startDay ? ` (${startDay})` : '';
     const endDaySuffix = endDay ? ` (${endDay})` : '';
 
-    const startStr = parts[0].replace(/\./g, '-');
-    const endStr = parts[1].replace(/\./g, '-');
-    const startDate = new Date(startStr);
-    const endDate = new Date(endStr);
+    const startDate = parseDateParts(parts[0]);
+    const endDate = parseDateParts(parts[1]);
     
     let diffDays = 1;
-    if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+    if (startDate && endDate) {
       const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
       diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
     }

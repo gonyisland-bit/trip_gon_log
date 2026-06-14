@@ -16,23 +16,46 @@ interface ArchiveHubPageProps {
   initialTagFilter?: string | null;
 }
 
+function parseDateParts(dateStr: string): Date | null {
+  if (!dateStr) return null;
+  
+  // Match YYYY.MM.DD or YYYY-MM-DD or YYYY/MM/DD
+  const match = dateStr.match(/(\d{4})[-./](\d{1,2})[-./](\d{1,2})/);
+  if (match) {
+    const year = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10) - 1;
+    const day = parseInt(match[3], 10);
+    return new Date(year, month, day);
+  }
+  
+  // Match YY.MM.DD or YY-MM-DD or YY/MM/DD (2-digit year)
+  const match2 = dateStr.match(/(\d{2})[-./](\d{1,2})[-./](\d{1,2})/);
+  if (match2) {
+    let year = parseInt(match2[1], 10);
+    year += year < 50 ? 2000 : 1900;
+    const month = parseInt(match2[2], 10) - 1;
+    const day = parseInt(match2[3], 10);
+    return new Date(year, month, day);
+  }
+  
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 function getTripStartDate(dateRangeStr: string): Date {
   if (!dateRangeStr) return new Date(0);
   const parts = dateRangeStr.split(' - ');
-  const startStr = parts[0].trim().replace(/\./g, '-');
-  const d = new Date(startStr);
-  return isNaN(d.getTime()) ? new Date(0) : d;
+  const d = parseDateParts(parts[0].trim());
+  return d || new Date(0);
 }
 
 function calculateDays(dateRangeStr: string): number {
   if (!dateRangeStr) return 0;
   const parts = dateRangeStr.split(/\s*[-—–]\s*/);
   if (parts.length < 2) return 1;
-  const startStr = parts[0].trim().replace(/\./g, '-');
-  const endStr = parts[1].trim().replace(/\./g, '-');
-  const startDate = new Date(startStr);
-  const endDate = new Date(endStr);
-  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return 1;
+  const startDate = parseDateParts(parts[0].trim());
+  const endDate = parseDateParts(parts[1].trim());
+  if (!startDate || !endDate) return 1;
   const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 }
