@@ -2050,19 +2050,19 @@ export function JourneyDetailPage({
       </div>
       
       {/* Journey Title & Edit controls row */}
-      <div className="flex justify-between items-center gap-4">
-        <div className="flex-grow">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mt-2">
+        <div className="flex-grow w-full">
           {isEditing && draftTrip ? (
             <input
               type="text"
               value={draftTrip.title}
               onChange={(e) => setDraftTrip({ ...draftTrip, title: e.target.value })}
-              className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter uppercase leading-none bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 p-1.5 outline-none w-full text-black dark:text-white"
+              className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black tracking-tighter uppercase leading-none bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 p-2 outline-none w-full text-black dark:text-white rounded-none"
               placeholder="JOURNEY TITLE"
             />
           ) : (
             <h1 
-              className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter uppercase leading-none break-keep"
+              className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter uppercase leading-tight break-keep"
               style={{ wordBreak: 'keep-all' }}
             >
               {(trip.title || '').replace(' (Plan)', '')}
@@ -2070,7 +2070,7 @@ export function JourneyDetailPage({
           )}
         </div>
         
-        <div className="shrink-0 flex items-center gap-1.5">
+        <div className="shrink-0 flex flex-wrap items-center gap-1.5 w-full lg:w-auto justify-start lg:justify-end">
           <button
             onClick={() => {
               setActiveTab(prev => prev === 'summary' ? 'timeline' : 'summary');
