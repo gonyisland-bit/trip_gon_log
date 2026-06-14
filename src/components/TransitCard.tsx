@@ -1,9 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Train, Bus, Car, Trash2, Image as ImageIcon, MapPin, ChevronDown, ChevronUp, Clock } from 'lucide-react';
+import { Train, Bus, Car, Trash2, Image as ImageIcon, MapPin, ChevronDown, ChevronUp, Clock, Paperclip, Loader2, X, ExternalLink } from 'lucide-react';
 import { TransitItem } from '../types';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { ImageEditOverlay } from './ImageEditOverlay';
 import { SettlementExpenseInput } from './SettlementExpenseInput';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage, auth } from '../firebase';
+import { Lightbox } from './Lightbox';
 
 interface TransitCardProps {
   transit: TransitItem;
@@ -88,6 +91,55 @@ export function TransitCard({
   const [localSeat, setLocalSeat] = useState(transit.seat);
   const [localBookingRef, setLocalBookingRef] = useState(transit.bookingRef);
   const [localMemo, setLocalMemo] = useState(transit.memo || '');
+
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [attachmentLightboxOpen, setAttachmentLightboxOpen] = useState(false);
+  const [attachmentLightboxIndex, setAttachmentLightboxIndex] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadFile = async (file: File) => {
+    const user = auth.currentUser;
+    if (!user) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+    setUploadingAttachment(true);
+    try {
+      const storagePath = `users/public/transits/${transit.id}/${Date.now()}_${file.name}`;
+      const storageRef = ref(storage, storagePath);
+      await uploadBytes(storageRef, file);
+      const downloadUrl = await getDownloadURL(storageRef);
+      
+      const currentList = transit.attachments || [];
+      const newList = [...currentList, downloadUrl];
+      onUpdate(transit.id, 'attachments', newList);
+    } catch (error) {
+      console.error("Transit attachment upload failed:", error);
+      alert("파일 업로드에 실패했습니다.");
+    } finally {
+      setUploadingAttachment(false);
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      for (const file of files) {
+        await uploadFile(file);
+      }
+    }
+  };
+
+  const removeAttachment = (e: React.MouseEvent, indexToRemove: number) => {
+    e.stopPropagation();
+    if (confirm("이 첨부파일을 삭제하시겠습니까?")) {
+      const currentList = transit.attachments || [];
+      const newList = currentList.filter((_, idx) => idx !== indexToRemove);
+      onUpdate(transit.id, 'attachments', newList);
+    }
+  };
+
+  const isPdf = (url: string) => url?.toLowerCase().includes('.pdf') || url?.toLowerCase().includes('application%2Fpdf');
 
   useEffect(() => {
     setLocalTitle(transit.title);
@@ -492,6 +544,92 @@ export function TransitCard({
         )}
       </div>
       
+      {/* Attachments Section */}
+      <div className="px-4 pb-4 md:px-6 md:pb-6" onClick={(e) => e.stopPropagation()}>
+        <div className="pt-3 border-t border-dashed border-black/10 dark:border-white/10">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest flex items-center gap-1">
+              <Paperclip className="w-3 h-3" /> ATTACHMENTS (첨부파일)
+            </span>
+            {isEditMode && (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAttachment}
+                  className="text-[9px] md:text-[10px] bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 px-2 py-1 hover:bg-black/10 dark:hover:bg-white/10 transition-colors font-bold uppercase rounded-sm flex items-center gap-1 cursor-pointer text-black dark:text-white"
+                >
+                  {uploadingAttachment ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin text-red-600" />
+                      <span>UPLOADING...</span>
+                    </>
+                  ) : (
+                    <span>ADD FILE</span>
+                  )}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={handleFileChange}
+                  accept="image/*,application/pdf"
+                  multiple
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Attachment List */}
+          {(!transit.attachments || transit.attachments.length === 0) ? (
+            <div className="text-[9px] text-black/30 dark:text-white/30 italic py-1">
+              첨부된 파일이 없습니다.
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {transit.attachments.map((url, idx) => {
+                const pdfMode = isPdf(url);
+                return (
+                  <div key={idx} className="relative group">
+                    {pdfMode ? (
+                      <button
+                        type="button"
+                        onClick={() => window.open(url, '_blank')}
+                        className="w-12 h-12 md:w-16 md:h-16 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex flex-col items-center justify-center text-red-500 dark:text-red-400 hover:opacity-80 transition-opacity rounded-sm cursor-pointer"
+                      >
+                        <ExternalLink className="w-4 h-4 mb-1" />
+                        <span className="text-[8px] font-bold">PDF</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAttachmentLightboxIndex(idx);
+                          setAttachmentLightboxOpen(true);
+                        }}
+                        className="w-12 h-12 md:w-16 md:h-16 rounded-sm overflow-hidden border border-black/10 dark:border-white/10 hover:opacity-80 transition-opacity cursor-pointer"
+                      >
+                        <img src={url} alt={`attachment-${idx}`} className="w-full h-full object-cover" />
+                      </button>
+                    )}
+                    {isEditMode && (
+                      <button
+                        type="button"
+                        onClick={(e) => removeAttachment(e, idx)}
+                        className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[8px] cursor-pointer"
+                        title="첨부파일 삭제"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Delete button in edit mode */}
       {isEditMode && (
         <button 
@@ -521,6 +659,17 @@ export function TransitCard({
             ✕
           </button>
         </div>
+      )}
+
+      {/* Lightbox for Image Attachments */}
+      {attachmentLightboxOpen && (
+        <Lightbox
+          isOpen={attachmentLightboxOpen}
+          images={(transit.attachments || []).map(url => ({ url }))}
+          currentIndex={attachmentLightboxIndex}
+          onClose={() => setAttachmentLightboxOpen(false)}
+          onNavigate={(idx) => setAttachmentLightboxIndex(idx)}
+        />
       )}
     </div>
   );

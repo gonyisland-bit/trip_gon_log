@@ -250,12 +250,7 @@
   animation-duration: 700ms;
 }
 
-/* Dark mode Leaflet tile brightness & contrast enhancement for CartoDB Positron (Inverted Dark Theme) */
-.dark #leaflet-map .leaflet-tile,
-.dark #leaflet-map .leaflet-tile-pane,
-.dark #leaflet-map .leaflet-tile-container {
-  filter: invert(100%) hue-rotate(180deg) brightness(70%) contrast(115%) saturate(60%) !important;
-}
+/* Dark mode Leaflet tile styling - CartoDB Dark Matter handles dark theme natively */
 
 /* POI Pin Marker & Label Styles */
 .custom-poi-pin-icon {

@@ -105,6 +105,7 @@ export interface FlightItem {
   cost?: string;
   paidBy?: string;
   currency?: string;
+  attachments?: string[];
 }
 
 export interface StayItem {
@@ -150,6 +151,7 @@ export interface TransitItem {
   cost?: string;
   paidBy?: string;
   currency?: string;
+  attachments?: string[];
 }
 
 export type TabType = 'summary' | 'timeline' | 'flights' | 'stays' | 'transit' | 'gallery' | 'settlement';

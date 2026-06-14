@@ -63,7 +63,7 @@ interface SettlementViewProps {
   onUpdateMembers: (members: string[]) => void;
   onJumpToItem: (tab: TabType, id: number, date?: string) => void;
   defaultCurrency?: string;
-  onUpdateExpense?: (itemType: 'timeline' | 'flight' | 'stay' | 'transit', id: number, field: 'cost' | 'currency' | 'paidBy', value: any) => void;
+  onUpdateExpense?: (itemType: 'timeline' | 'flight' | 'stay' | 'transit', id: number, field: string, value: any) => void;
   onUpdateCustomExpenses?: (items: CustomExpenseItem[]) => void;
 }
 
@@ -256,27 +256,56 @@ export function SettlementView({
   };
 
   // --- Attachment upload ---
-  const handleAttachmentUpload = async (customId: string, files: FileList | null) => {
+  const getAttachmentsOfItem = (item: any): string[] => {
+    if (!item) return [];
+    if (item.itemType === 'custom') {
+      return item.rawItem?.attachments || [];
+    }
+    if (item.itemType === 'flight' || item.itemType === 'transit') {
+      return item.rawItem?.attachments || [];
+    }
+    if (item.itemType === 'stay') {
+      return item.rawItem?.additionalImages || item.rawItem?.attachments || [];
+    }
+    if (item.itemType === 'timeline') {
+      return item.rawItem?.attachments || (item.rawItem?.img ? [item.rawItem.img] : []);
+    }
+    return [];
+  };
+
+  const handleAttachmentUpload = async (rowKey: string, files: FileList | null) => {
     if (!files || files.length === 0) return;
     const user = auth.currentUser;
     if (!user) { alert("로그인이 필요합니다."); return; }
-    setUploadingKey(customId);
+    
+    // Find the item matching this rowKey
+    const matchedItem = expenseItems.find(it => `${it.itemType}-${it.id}` === rowKey.split('-').slice(0, 2).join('-'));
+    if (!matchedItem) return;
+
+    setUploadingKey(rowKey);
     try {
       const urls: string[] = [];
       for (const file of Array.from(files)) {
-        const storagePath = `users/public/settlements/${trip.id}/${customId}/${Date.now()}_${file.name}`;
+        const storagePath = `users/public/settlements/${trip.id}/${matchedItem.itemType}/${matchedItem.id}/${Date.now()}_${file.name}`;
         const storageRef = ref(storage, storagePath);
         await uploadBytes(storageRef, file);
         const url = await getDownloadURL(storageRef);
         urls.push(url);
       }
-      const updated = customExpenses.map(c => {
-        if (c.id === customId) {
-          return { ...c, attachments: [...(c.attachments || []), ...urls] };
-        }
-        return c;
-      });
-      onUpdateCustomExpenses?.(updated);
+
+      if (matchedItem.itemType === 'custom') {
+        const updated = customExpenses.map(c => {
+          if (c.id === matchedItem.id) {
+            return { ...c, attachments: [...(c.attachments || []), ...urls] };
+          }
+          return c;
+        });
+        onUpdateCustomExpenses?.(updated);
+      } else {
+        const currentList = getAttachmentsOfItem(matchedItem);
+        const newList = [...currentList, ...urls];
+        onUpdateExpense?.(matchedItem.itemType, matchedItem.id as number, 'attachments', newList);
+      }
     } catch (e) {
       console.error('Attachment upload failed:', e);
       alert('파일 업로드에 실패했습니다.');
@@ -286,14 +315,20 @@ export function SettlementView({
     }
   };
 
-  const handleDeleteAttachment = (customId: string, url: string) => {
-    const updated = customExpenses.map(c => {
-      if (c.id === customId) {
-        return { ...c, attachments: (c.attachments || []).filter(a => a !== url) };
-      }
-      return c;
-    });
-    onUpdateCustomExpenses?.(updated);
+  const handleDeleteAttachmentWrapper = (item: any, url: string) => {
+    if (item.itemType === 'custom') {
+      const updated = customExpenses.map(c => {
+        if (c.id === item.id) {
+          return { ...c, attachments: (c.attachments || []).filter(a => a !== url) };
+        }
+        return c;
+      });
+      onUpdateCustomExpenses?.(updated);
+    } else {
+      const currentList = getAttachmentsOfItem(item);
+      const newList = currentList.filter(a => a !== url);
+      onUpdateExpense?.(item.itemType, item.id as number, 'attachments', newList);
+    }
   };
 
   const handleCapture = async () => {
@@ -653,7 +688,7 @@ export function SettlementView({
                         </td>
                         {/* Accordion toggle (attachment) */}
                         <td className="py-2 px-1.5 text-center">
-                          {item.itemType === 'custom' && (
+                          {getAttachmentsOfItem(item).length > 0 ? (
                             <button
                               onClick={e => { e.stopPropagation(); setExpandedRowKey(prev => prev === rowKey ? null : rowKey); }}
                               className={`p-1 rounded transition-colors ${isExpanded ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10' : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'}`}
@@ -661,12 +696,22 @@ export function SettlementView({
                             >
                               {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <Paperclip className="w-3.5 h-3.5" />}
                             </button>
+                          ) : (
+                            isEditing && !isCapturing && (item.itemType === 'custom' || item.itemType === 'flight' || item.itemType === 'transit') ? (
+                              <button
+                                onClick={e => { e.stopPropagation(); setExpandedRowKey(prev => prev === rowKey ? null : rowKey); }}
+                                className={`p-1 rounded transition-colors ${isExpanded ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10' : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white opacity-40'}`}
+                                title="첨부파일 추가"
+                              >
+                                {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <Paperclip className="w-3.5 h-3.5" />}
+                              </button>
+                            ) : null
                           )}
                         </td>
                       </tr>
 
-                      {/* Accordion: Attachments for custom items */}
-                      {isExpanded && customItem && (
+                      {/* Accordion: Attachments for all items */}
+                      {isExpanded && (
                         <tr className="border-b border-black/5 dark:border-white/5">
                           <td colSpan={6} className="px-3 py-3 bg-black/2 dark:bg-white/2">
                             <div className="flex flex-col gap-2">
@@ -675,7 +720,7 @@ export function SettlementView({
                                   <Paperclip className="w-3 h-3" /> 첨부파일 (영수증 / 예약확인서)
                                 </span>
                                 {/* Upload button */}
-                                {isEditing && !isCapturing && (
+                                {isEditing && !isCapturing && (item.itemType === 'custom' || item.itemType === 'flight' || item.itemType === 'transit') && (
                                   <div>
                                     <input
                                       type="file"
@@ -686,12 +731,12 @@ export function SettlementView({
                                       onChange={e => { if (activeUploadKey) handleAttachmentUpload(activeUploadKey, e.target.files); if (fileInputRef.current) fileInputRef.current.value = ''; }}
                                     />
                                     <button
-                                      onClick={() => { setActiveUploadKey(customItem.id); fileInputRef.current?.click(); }}
-                                      disabled={uploadingKey === customItem.id}
+                                      onClick={() => { setActiveUploadKey(rowKey); fileInputRef.current?.click(); }}
+                                      disabled={uploadingKey === rowKey}
                                       className="flex items-center gap-1 px-2 py-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-[9px] font-black uppercase tracking-widest rounded-sm hover:bg-black/10 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
                                     >
-                                      {uploadingKey === customItem.id ? (
-                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                      {uploadingKey === rowKey ? (
+                                        <Loader2 className="w-3 h-3 animate-spin text-red-600" />
                                       ) : (
                                         <Plus className="w-3 h-3" />
                                       )}
@@ -702,13 +747,13 @@ export function SettlementView({
                               </div>
 
                               {/* Attachment thumbnails */}
-                              {attachments.length === 0 ? (
+                              {getAttachmentsOfItem(item).length === 0 ? (
                                 <div className="text-[9px] text-black/30 dark:text-white/30 italic py-2">
                                   첨부된 파일이 없습니다.
                                 </div>
                               ) : (
                                 <div className="flex flex-wrap gap-2 mt-1">
-                                  {attachments.map((url, aIdx) => (
+                                  {getAttachmentsOfItem(item).map((url, aIdx) => (
                                     <div key={aIdx} className="relative group">
                                       {isPdf(url) ? (
                                         <button
@@ -724,9 +769,9 @@ export function SettlementView({
                                         </button>
                                       )}
                                       {/* Delete button on hover */}
-                                      {isEditing && !isCapturing && (
+                                      {isEditing && !isCapturing && (item.itemType === 'custom' || item.itemType === 'flight' || item.itemType === 'transit') && (
                                         <button
-                                          onClick={() => handleDeleteAttachment(customItem.id, url)}
+                                          onClick={() => handleDeleteAttachmentWrapper(item, url)}
                                           className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[8px]"
                                           title="첨부파일 삭제"
                                         >

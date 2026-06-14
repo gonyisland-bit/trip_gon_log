@@ -1743,17 +1743,17 @@ export function JourneyDetailPage({
   const updateExpenseItem = (
     itemType: 'timeline' | 'flight' | 'stay' | 'transit',
     id: number,
-    field: 'cost' | 'currency' | 'paidBy',
+    field: string,
     value: any
   ) => {
     if (itemType === 'timeline') {
-      updateTimelineItem(id, field, value);
+      updateTimelineItem(id, field as any, value);
     } else if (itemType === 'flight') {
       updateFlight(id, field as any, value);
     } else if (itemType === 'stay') {
       updateStay(id, field as any, value);
     } else if (itemType === 'transit') {
-      updateTransit(id, field, value);
+      updateTransit(id, field as any, value);
     }
   };
   const handleAddTransit = (type: 'train' | 'bus' | 'taxi') => {
