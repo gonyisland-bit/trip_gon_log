@@ -3735,6 +3735,10 @@ export function JourneyDetailPage({
                     {allGalleryImages.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
                   </div>
                 )}
+              {/* Gallery footer */}
+              <div className="w-full shrink-0 mt-12">
+                <Footer className="mt-0" />
+              </div>
             </div>
             );
           })()}
@@ -3781,7 +3785,7 @@ export function JourneyDetailPage({
           )}
 
           {/* Footer inside Detail scroll container */}
-          {activeTab !== 'settlement' && (
+          {activeTab !== 'settlement' && activeTab !== 'gallery' && (
             <div className="w-full shrink-0">
               <Footer className="mt-12" />
             </div>

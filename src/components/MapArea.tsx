@@ -40,7 +40,7 @@ export function MapArea({
 }: MapAreaProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
-  const markersRef = useRef<{ [id: number]: any }>({});
+  const markersRef = useRef<{ [id: string | number]: any }>({});
   const polylineRef = useRef<any>(null);
   const tileLayerRef = useRef<any>(null);
   const hasFitRef = useRef(false);
@@ -308,6 +308,85 @@ export function MapArea({
           polylineRef.current = L.featureGroup(polys).addTo(map);
         }
       }
+    }
+
+    // If in Summary mode, render only city pulse ring markers (no pins, no labels)
+    if (isSummaryMode) {
+      // Group coordinates by rounding to 1 decimal place (~11km) to represent "cities"
+      const cityMap = new Map<string, { lat: number; lng: number }>();
+      valid.forEach(p => {
+        const lat = Number(p.lat);
+        const lng = Number(p.lng);
+        const key = `${lat.toFixed(1)},${lng.toFixed(1)}`;
+        if (!cityMap.has(key)) {
+          cityMap.set(key, { lat, lng });
+        }
+      });
+
+      cityMap.forEach(({ lat, lng }, key) => {
+        const htmlContent = `
+          <div class="summary-city-pulse" style="width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; pointer-events: none; position: relative;">
+            <div class="city-core" style="width: 12px; height: 12px; background-color: #d97706; border: 2px solid #ffffff; border-radius: 50%; box-shadow: 0 0 8px rgba(217,119,6,0.6); position: relative; z-index: 2;"></div>
+            <div class="city-ring" style="position: absolute; width: 70px; height: 70px; border: 2px solid #d97706; border-radius: 50%; background-color: rgba(217, 119, 6, 0.12); animation: cityPulse 2.5s infinite ease-out; z-index: 1;"></div>
+          </div>
+        `;
+
+        const icon = L.divIcon({
+          className: 'custom-leaflet-summary-city-icon',
+          html: htmlContent,
+          iconSize: [70, 70],
+          iconAnchor: [35, 35],
+        });
+
+        const marker = L.marker([lat, lng], { icon, zIndexOffset: 800 }).addTo(map);
+        markersRef.current[`city-${key}`] = marker;
+      });
+      
+      // Jitter prevention check for tab change metadata
+      const tabChanged = lastTabRef.current !== activeTab;
+      if (tabChanged && lastTabRef.current === 'summary') {
+        hasFitRef.current = false;
+      }
+      lastTabRef.current = activeTab;
+      lastExpandedItemIdRef.current = expandedItemId;
+      lastTransitFocusTypeRef.current = transitFocusType;
+      lastActiveCoordsRef.current = '';
+      lastSelectedDateRef.current = selectedDate;
+
+      // Ensure view is fitted
+      const coords: [number, number][] = valid.map(p => [Number(p.lat), Number(p.lng)]);
+      const locLower = (trip.locationStr || '').toLowerCase();
+      let center: [number, number] | null = null;
+      let zoom = 6;
+      
+      if (locLower.includes('japan') || locLower.includes('일본')) {
+        center = [36.2048, 138.2529];
+        zoom = 5.5;
+      } else if (locLower.includes('korea') || locLower.includes('한국') || locLower.includes('대한민국') || locLower.includes('seoul') || locLower.includes('서울')) {
+        center = [35.9077, 127.7669];
+        zoom = 7;
+      } else if (locLower.includes('vietnam') || locLower.includes('베트남')) {
+        center = [14.0583, 108.2772];
+        zoom = 5.5;
+      } else if (locLower.includes('taiwan') || locLower.includes('대만') || locLower.includes('taipei') || locLower.includes('타이페이')) {
+        center = [23.6978, 120.9605];
+        zoom = 7.5;
+      } else if (locLower.includes('thailand') || locLower.includes('태국') || locLower.includes('bangkok') || locLower.includes('방콕')) {
+        center = [15.8700, 100.9925];
+        zoom = 5.5;
+      }
+      
+      if (center) {
+        map.setView(center, zoom, { animate: true });
+      } else if (coords.length > 0) {
+        const bounds = L.latLngBounds(coords);
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 6 });
+      } else {
+        const lat = typeof trip.lat === 'number' && !isNaN(trip.lat) ? trip.lat : 35.0116;
+        const lng = typeof trip.lng === 'number' && !isNaN(trip.lng) ? trip.lng : 135.7681;
+        map.setView([lat, lng], 6, { animate: true });
+      }
+      return;
     }
 
     // Draw markers ON TOP of polyline
