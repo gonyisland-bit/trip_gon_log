@@ -187,10 +187,10 @@ export function SummaryView({
   };
 
   return (
-    <div className="flex-grow flex flex-col h-full overflow-hidden bg-[#F9F8F6] dark:bg-[#111111] transition-colors duration-300">
+    <div className="p-3 md:p-5 flex flex-col gap-5 text-left text-black dark:text-white max-w-4xl mx-auto w-full animate-in fade-in duration-300">
       
       {/* 1. Header Toolbar */}
-      <div className="px-4 py-3 border-b border-black/10 dark:border-white/10 flex items-center justify-between bg-white dark:bg-[#161616] shrink-0">
+      <div className="w-full flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3 mb-2 shrink-0">
         <div className="flex items-center gap-2">
           <FileText className="w-4 h-4 text-amber-600 dark:text-amber-500" />
           <span className="text-xs font-black uppercase tracking-widest text-black/70 dark:text-white/70">
@@ -200,16 +200,16 @@ export function SummaryView({
         {!isCapturing && (
           <button
             onClick={handleCapture}
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-[9px] font-black uppercase tracking-widest rounded-sm transition-all shadow-sm cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-[9px] font-black uppercase tracking-widest rounded-sm transition-all shadow-sm cursor-pointer"
           >
-            <Share2 className="w-3 h-3" />
+            <Share2 className="w-3.5 h-3.5" />
             <span>EXPORT</span>
           </button>
         )}
       </div>
 
-      {/* 2. Main Scrollable Receipt Area */}
-      <div className="flex-grow overflow-y-auto p-4 md:p-6 flex flex-col items-center">
+      {/* 2. Main Receipt Area */}
+      <div className="w-full flex flex-col items-center">
         <div 
           ref={printRef}
           className="w-full max-w-lg bg-[#FCFAF6] dark:bg-[#161616] border border-black/10 dark:border-white/10 p-6 md:p-8 flex flex-col gap-6 text-black dark:text-white font-sans relative shadow-sm"

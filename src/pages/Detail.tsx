@@ -2254,15 +2254,15 @@ export function JourneyDetailPage({
         
         {/* Dynamic Map Area */}
         <div className="w-full relative md:pb-6 flex flex-col flex-grow h-full overflow-hidden">
-          {/* Magazine Cover Typography Overlay */}
-          {(() => {
+          {/* Magazine Cover Typography Overlay (Only in Summary tab) */}
+          {activeTab === 'summary' && (() => {
             const loc = tripToUse?.locationStr || '';
             const parts = loc.split(',').map(p => p.trim());
             const country = parts.length >= 2 ? parts[parts.length - 1] : 'TRAVEL';
             const city = parts.length >= 2 ? parts[0] : (loc || 'JOURNEY');
             
             return (
-              <div className="absolute top-8 left-8 z-[20] flex flex-col pointer-events-none select-none text-black dark:text-white drop-shadow-md">
+              <div className="absolute top-8 left-8 z-[20] flex flex-col pointer-events-none select-none text-black dark:text-white drop-shadow-md animate-in fade-in duration-300">
                 <span className="text-[10px] md:text-[11px] font-black tracking-[0.4em] uppercase text-black/50 dark:text-white/50 mb-1 leading-none">
                   {country}
                 </span>
