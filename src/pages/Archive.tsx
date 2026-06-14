@@ -16,11 +16,13 @@ interface ArchiveHubPageProps {
   initialTagFilter?: string | null;
 }
 
-function parseDateParts(dateStr: string): Date | null {
+function parseDateParts(dateStr: string, defaultYear?: number): Date | null {
   if (!dateStr) return null;
   
+  const clean = dateStr.trim();
+  
   // Match YYYY.MM.DD or YYYY-MM-DD or YYYY/MM/DD
-  const match = dateStr.match(/(\d{4})[-./](\d{1,2})[-./](\d{1,2})/);
+  const match = clean.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})/);
   if (match) {
     const year = parseInt(match[1], 10);
     const month = parseInt(match[2], 10) - 1;
@@ -29,7 +31,7 @@ function parseDateParts(dateStr: string): Date | null {
   }
   
   // Match YY.MM.DD or YY-MM-DD or YY/MM/DD (2-digit year)
-  const match2 = dateStr.match(/(\d{2})[-./](\d{1,2})[-./](\d{1,2})/);
+  const match2 = clean.match(/^(\d{2})[-./](\d{1,2})[-./](\d{1,2})/);
   if (match2) {
     let year = parseInt(match2[1], 10);
     year += year < 50 ? 2000 : 1900;
@@ -37,8 +39,17 @@ function parseDateParts(dateStr: string): Date | null {
     const day = parseInt(match2[3], 10);
     return new Date(year, month, day);
   }
+
+  // Match MM.DD (no year, e.g. "06.04")
+  const matchMD = clean.match(/^(\d{1,2})[-./](\d{1,2})/);
+  if (matchMD) {
+    const year = defaultYear || new Date().getFullYear();
+    const month = parseInt(matchMD[1], 10) - 1;
+    const day = parseInt(matchMD[2], 10);
+    return new Date(year, month, day);
+  }
   
-  const d = new Date(dateStr);
+  const d = new Date(clean);
   return isNaN(d.getTime()) ? null : d;
 }
 
@@ -54,7 +65,8 @@ function calculateDays(dateRangeStr: string): number {
   const parts = dateRangeStr.split(/\s*[-—–]\s*/);
   if (parts.length < 2) return 1;
   const startDate = parseDateParts(parts[0].trim());
-  const endDate = parseDateParts(parts[1].trim());
+  const defaultYear = startDate ? startDate.getFullYear() : undefined;
+  const endDate = parseDateParts(parts[1].trim(), defaultYear);
   if (!startDate || !endDate) return 1;
   const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;

@@ -41,11 +41,13 @@ export function SummaryView({
   const printRef = useRef<HTMLDivElement>(null);
 
   // Safe date parser helper to prevent browser-specific bugs (e.g. Safari parsing dash format or timezone offset issues)
-  const parseDateParts = (dateStr: string): Date | null => {
+  const parseDateParts = (dateStr: string, defaultYear?: number): Date | null => {
     if (!dateStr) return null;
     
+    const clean = dateStr.trim();
+    
     // Match YYYY.MM.DD or YYYY-MM-DD or YYYY/MM/DD
-    const match = dateStr.match(/(\d{4})[-./](\d{1,2})[-./](\d{1,2})/);
+    const match = clean.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})/);
     if (match) {
       const year = parseInt(match[1], 10);
       const month = parseInt(match[2], 10) - 1;
@@ -54,7 +56,7 @@ export function SummaryView({
     }
     
     // Match YY.MM.DD or YY-MM-DD or YY/MM/DD (2-digit year)
-    const match2 = dateStr.match(/(\d{2})[-./](\d{1,2})[-./](\d{1,2})/);
+    const match2 = clean.match(/^(\d{2})[-./](\d{1,2})[-./](\d{1,2})/);
     if (match2) {
       let year = parseInt(match2[1], 10);
       year += year < 50 ? 2000 : 1900;
@@ -62,15 +64,24 @@ export function SummaryView({
       const day = parseInt(match2[3], 10);
       return new Date(year, month, day);
     }
+
+    // Match MM.DD (no year, e.g. "06.04")
+    const matchMD = clean.match(/^(\d{1,2})[-./](\d{1,2})/);
+    if (matchMD) {
+      const year = defaultYear || new Date().getFullYear();
+      const month = parseInt(matchMD[1], 10) - 1;
+      const day = parseInt(matchMD[2], 10);
+      return new Date(year, month, day);
+    }
     
-    const d = new Date(dateStr);
+    const d = new Date(clean);
     return isNaN(d.getTime()) ? null : d;
   };
 
   // Get day of week string
-  const getDayOfWeek = (dateStr: string) => {
+  const getDayOfWeek = (dateStr: string, defaultYear?: number) => {
     if (!dateStr) return '';
-    const date = parseDateParts(dateStr);
+    const date = parseDateParts(dateStr, defaultYear);
     if (!date) return '';
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return days[date.getDay()];
@@ -86,13 +97,14 @@ export function SummaryView({
       return { start: dateStr, end: dateStr, days: 1, formatted: `${dateStr}${daySuffix}` };
     }
     
-    const startDay = getDayOfWeek(parts[0]);
-    const endDay = getDayOfWeek(parts[1]);
+    const startDate = parseDateParts(parts[0]);
+    const defaultYear = startDate ? startDate.getFullYear() : undefined;
+    const endDate = parseDateParts(parts[1], defaultYear);
+
+    const startDay = getDayOfWeek(parts[0], defaultYear);
+    const endDay = getDayOfWeek(parts[1], defaultYear);
     const startDaySuffix = startDay ? ` (${startDay})` : '';
     const endDaySuffix = endDay ? ` (${endDay})` : '';
-
-    const startDate = parseDateParts(parts[0]);
-    const endDate = parseDateParts(parts[1]);
     
     let diffDays = 1;
     if (startDate && endDate) {
@@ -343,7 +355,7 @@ export function SummaryView({
                       <span className="font-black text-xs md:text-sm text-black/80 dark:text-white/80 leading-tight">{s.title}</span>
                       {s.cost && (
                         <span className="text-[9px] md:text-[10px] font-mono font-bold bg-amber-600/10 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-sm shrink-0">
-                          {CURRENCY_SYMBOLS[s.currency || 'KRW'] || s.currency} {parseFloat(s.cost).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                          {CURRENCY_SYMBOLS[s.currency || 'KRW'] || s.currency} {parseCost(s.cost).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                         </span>
                       )}
                     </div>
