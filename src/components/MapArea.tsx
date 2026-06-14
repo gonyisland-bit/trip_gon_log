@@ -355,36 +355,14 @@ export function MapArea({
 
       // Ensure view is fitted
       const coords: [number, number][] = valid.map(p => [Number(p.lat), Number(p.lng)]);
-      const locLower = (trip.locationStr || '').toLowerCase();
-      let center: [number, number] | null = null;
-      let zoom = 6;
       
-      if (locLower.includes('japan') || locLower.includes('일본')) {
-        center = [36.2048, 138.2529];
-        zoom = 5.5;
-      } else if (locLower.includes('korea') || locLower.includes('한국') || locLower.includes('대한민국') || locLower.includes('seoul') || locLower.includes('서울')) {
-        center = [35.9077, 127.7669];
-        zoom = 7;
-      } else if (locLower.includes('vietnam') || locLower.includes('베트남')) {
-        center = [14.0583, 108.2772];
-        zoom = 5.5;
-      } else if (locLower.includes('taiwan') || locLower.includes('대만') || locLower.includes('taipei') || locLower.includes('타이페이')) {
-        center = [23.6978, 120.9605];
-        zoom = 7.5;
-      } else if (locLower.includes('thailand') || locLower.includes('태국') || locLower.includes('bangkok') || locLower.includes('방콕')) {
-        center = [15.8700, 100.9925];
-        zoom = 5.5;
-      }
-      
-      if (center) {
-        map.setView(center, zoom, { animate: true });
-      } else if (coords.length > 0) {
+      if (coords.length > 0) {
         const bounds = L.latLngBounds(coords);
-        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 6 });
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 10, animate: true });
       } else {
         const lat = typeof trip.lat === 'number' && !isNaN(trip.lat) ? trip.lat : 35.0116;
         const lng = typeof trip.lng === 'number' && !isNaN(trip.lng) ? trip.lng : 135.7681;
-        map.setView([lat, lng], 6, { animate: true });
+        map.setView([lat, lng], 10, { animate: true });
       }
       return;
     }
@@ -519,36 +497,13 @@ export function MapArea({
       const isMobile = window.innerWidth < 768;
 
       if (activeTab === 'summary') {
-        const locLower = (trip.locationStr || '').toLowerCase();
-        let center: [number, number] | null = null;
-        let zoom = 6;
-        
-        if (locLower.includes('japan') || locLower.includes('일본')) {
-          center = [36.2048, 138.2529];
-          zoom = 5.5;
-        } else if (locLower.includes('korea') || locLower.includes('한국') || locLower.includes('대한민국') || locLower.includes('seoul') || locLower.includes('서울')) {
-          center = [35.9077, 127.7669];
-          zoom = 7;
-        } else if (locLower.includes('vietnam') || locLower.includes('베트남')) {
-          center = [14.0583, 108.2772];
-          zoom = 5.5;
-        } else if (locLower.includes('taiwan') || locLower.includes('대만') || locLower.includes('taipei') || locLower.includes('타이페이')) {
-          center = [23.6978, 120.9605];
-          zoom = 7.5;
-        } else if (locLower.includes('thailand') || locLower.includes('태국') || locLower.includes('bangkok') || locLower.includes('방콕')) {
-          center = [15.8700, 100.9925];
-          zoom = 5.5;
-        }
-        
-        if (center) {
-          map.setView(center, zoom, { animate: true });
-        } else if (coords.length > 0) {
+        if (coords.length > 0) {
           const bounds = L.latLngBounds(coords);
-          map.fitBounds(bounds, { padding: [40, 40], maxZoom: 6 });
+          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 10, animate: true });
         } else {
           const lat = typeof trip.lat === 'number' && !isNaN(trip.lat) ? trip.lat : 35.0116;
           const lng = typeof trip.lng === 'number' && !isNaN(trip.lng) ? trip.lng : 135.7681;
-          map.setView([lat, lng], 6, { animate: true });
+          map.setView([lat, lng], 10, { animate: true });
         }
         
         if (summaryCircleRef.current) {
