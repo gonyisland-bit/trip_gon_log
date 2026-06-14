@@ -252,7 +252,7 @@
 
 /* Dark mode Leaflet tile brightness & contrast enhancement for CartoDB Dark Matter */
 .dark #leaflet-map .leaflet-tile-container {
-  filter: brightness(0.7) contrast(2.6) saturate(1.6);
+  /* filter removed to prevent tiles from rendering pitch black */
 }
 
 /* POI Pin Marker & Label Styles */
