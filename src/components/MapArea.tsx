@@ -129,9 +129,7 @@ export function MapArea({
 
     mapRef.current = map;
 
-    const tileUrl = isDarkMode
-      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-      : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+    const tileUrl = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
     tileLayerRef.current = L.tileLayer(tileUrl, { maxZoom: 20, zIndex: 1 }).addTo(map);
 
     // Add 1km scale control
@@ -181,19 +179,13 @@ export function MapArea({
   }, [isInteractive, mapReady]);
 
   // ─── Effect 2: Leaflet redraw helper on dark-mode toggle ───────────────────
+  // ─── Effect 2: Redraw overlays to ensure correct layering ───────────────────
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
-    const L = (window as any).L;
-    if (!L) return;
 
-    if (tileLayerRef.current) map.removeLayer(tileLayerRef.current);
-
-    const tileUrl = isDarkMode
-      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-      : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-
-    tileLayerRef.current = L.tileLayer(tileUrl, { maxZoom: 20, zIndex: 1 }).addTo(map);
+    // We no longer recreate the tileLayer since we use a static 'light_all' tileset
+    // and rely on CSS filters for dark mode. This yields instantaneous theme transition!
 
     // Redraw polyline to bring to front and align layers
     if (polylineRef.current?.bringToFront) polylineRef.current.bringToFront();
