@@ -219,6 +219,7 @@ export function MapArea({
     );
 
     const isGalleryTab = activeTab === 'gallery';
+    const isSummaryMode = activeTab === 'summary';
     if (valid.length === 0) {
       if (!hasFitRef.current || isGalleryTab) {
         const lat = typeof trip.lat === 'number' && !isNaN(trip.lat) ? trip.lat : 35.0116;
@@ -230,80 +231,82 @@ export function MapArea({
 
     const coords: [number, number][] = valid.map(p => [Number(p.lat), Number(p.lng)]);
 
-    if (activeTab === 'transit') {
-      const transitGroups: { [transitId: number]: { depart?: [number, number]; arrive?: [number, number] } } = {};
-      valid.forEach((p: any) => {
-        if (p.transitId) {
-          if (!transitGroups[p.transitId]) {
-            transitGroups[p.transitId] = {};
+    if (!isSummaryMode) {
+      if (activeTab === 'transit') {
+        const transitGroups: { [transitId: number]: { depart?: [number, number]; arrive?: [number, number] } } = {};
+        valid.forEach((p: any) => {
+          if (p.transitId) {
+            if (!transitGroups[p.transitId]) {
+              transitGroups[p.transitId] = {};
+            }
+            if (p.type === 'transit_depart') {
+              transitGroups[p.transitId].depart = [Number(p.lat), Number(p.lng)];
+            } else if (p.type === 'transit_arrive') {
+              transitGroups[p.transitId].arrive = [Number(p.lat), Number(p.lng)];
+            }
           }
-          if (p.type === 'transit_depart') {
-            transitGroups[p.transitId].depart = [Number(p.lat), Number(p.lng)];
-          } else if (p.type === 'transit_arrive') {
-            transitGroups[p.transitId].arrive = [Number(p.lat), Number(p.lng)];
+        });
+
+        const transPolylines: any[] = [];
+        Object.entries(transitGroups).forEach(([tIdStr, group]) => {
+          const tId = Number(tIdStr);
+          const isActiveTrans = expandedItemId !== null && tId === expandedItemId;
+          
+          // Find the transit type for this group
+          const transit = transits.find(t => t.id === tId);
+          const tType = transit?.transitType || 'train';
+          let pathColor = '#4f46e5'; // Train: Indigo
+          if (tType === 'bus') {
+            pathColor = '#10b981'; // Bus: Green
+          } else if (tType === 'taxi') {
+            pathColor = '#f59e0b'; // Taxi: Yellow
           }
-        }
-      });
 
-      const transPolylines: any[] = [];
-      Object.entries(transitGroups).forEach(([tIdStr, group]) => {
-        const tId = Number(tIdStr);
-        const isActiveTrans = expandedItemId !== null && tId === expandedItemId;
-        
-        // Find the transit type for this group
-        const transit = transits.find(t => t.id === tId);
-        const tType = transit?.transitType || 'train';
-        let pathColor = '#4f46e5'; // Train: Indigo
-        if (tType === 'bus') {
-          pathColor = '#10b981'; // Bus: Green
-        } else if (tType === 'taxi') {
-          pathColor = '#f59e0b'; // Taxi: Yellow
-        }
+          if (group.depart && group.arrive) {
+            const poly = L.polyline([group.depart, group.arrive], {
+              color: pathColor,
+              weight: isActiveTrans ? 5 : 3,
+              dashArray: '4, 6',
+              opacity: isActiveTrans ? 0.95 : 0.65
+            });
+            transPolylines.push(poly);
+          }
+        });
 
-        if (group.depart && group.arrive) {
-          const poly = L.polyline([group.depart, group.arrive], {
-            color: pathColor,
-            weight: isActiveTrans ? 5 : 3,
-            dashArray: '4, 6',
-            opacity: isActiveTrans ? 0.95 : 0.65
-          });
-          transPolylines.push(poly);
+        if (transPolylines.length > 0) {
+          const fGroup = L.featureGroup(transPolylines).addTo(map);
+          polylineRef.current = fGroup;
         }
-      });
+      } else {
+        // Group points by dayIndex to color daily paths differently
+        const dayGroups: { [day: number]: [number, number][] } = {};
+        valid.forEach((p: any) => {
+          const day = p.dayIndex || 1;
+          if (!dayGroups[day]) {
+            dayGroups[day] = [];
+          }
+          dayGroups[day].push([Number(p.lat), Number(p.lng)]);
+        });
 
-      if (transPolylines.length > 0) {
-        const fGroup = L.featureGroup(transPolylines).addTo(map);
-        polylineRef.current = fGroup;
-      }
-    } else {
-      // Group points by dayIndex to color daily paths differently
-      const dayGroups: { [day: number]: [number, number][] } = {};
-      valid.forEach((p: any) => {
-        const day = p.dayIndex || 1;
-        if (!dayGroups[day]) {
-          dayGroups[day] = [];
+        const polys: any[] = [];
+        Object.entries(dayGroups).forEach(([dayStr, points]) => {
+          const day = Number(dayStr);
+          if (points.length > 1) {
+            const colorIndex = (day - 1) % dayColors.length;
+            const color = dayColors[colorIndex];
+            const poly = L.polyline(points, {
+              color: color,
+              weight: 2.5,
+              dashArray: '6, 5',
+              opacity: 0.75,
+            });
+            polys.push(poly);
+          }
+        });
+
+        if (polys.length > 0) {
+          polylineRef.current = L.featureGroup(polys).addTo(map);
         }
-        dayGroups[day].push([Number(p.lat), Number(p.lng)]);
-      });
-
-      const polys: any[] = [];
-      Object.entries(dayGroups).forEach(([dayStr, points]) => {
-        const day = Number(dayStr);
-        if (points.length > 1) {
-          const colorIndex = (day - 1) % dayColors.length;
-          const color = dayColors[colorIndex];
-          const poly = L.polyline(points, {
-            color: color,
-            weight: 2.5,
-            dashArray: '6, 5',
-            opacity: 0.75,
-          });
-          polys.push(poly);
-        }
-      });
-
-      if (polys.length > 0) {
-        polylineRef.current = L.featureGroup(polys).addTo(map);
       }
     }
 
@@ -319,7 +322,6 @@ export function MapArea({
       
       let pinColor = '#dc2626';
       let pinTextPrefix = '';
-      const isSummaryMode = activeTab === 'summary';
 
       if (isSummaryMode) {
         pinColor = '#d97706'; // Gold/Amber highlight for summary mode
@@ -351,18 +353,29 @@ export function MapArea({
         }
       }
 
-      const htmlContent = `
-        <div class="pin-wrapper" style="opacity: ${isTransitFaded ? '0.25' : '1'}; transition: opacity 0.3s;">
-          <div class="leaflet-pin${isActive || isSummaryMode ? ' active-pin' : ''}" style="background-color: ${pinColor}; ${isActive || isSummaryMode ? `box-shadow: 0 0 0 5px ${pinColor}40, 0 3px 10px rgba(0,0,0,0.4);` : ''}">${isActive || isSummaryMode ? '<div class="pin-inner-dot"></div>' : ''}</div>
-          <div class="pin-label${isActive || isSummaryMode ? ' pin-label-active' : ''}">${pinTextPrefix}${item.place}</div>
-        </div>
-      `;
+      let htmlContent = '';
+      if (isSummaryMode) {
+        htmlContent = `
+          <div class="pin-wrapper" style="transition: opacity 0.3s;">
+            <div class="pin-label pin-label-active font-black tracking-tight" style="background-color: rgba(217, 119, 6, 0.15); border: 1.5px solid #d97706; color: #d97706; padding: 4px 8px; border-radius: 9999px; white-space: nowrap; box-shadow: 0 2px 8px rgba(217, 119, 6, 0.2); font-size: 11px;">
+              ✨ ${item.place}
+            </div>
+          </div>
+        `;
+      } else {
+        htmlContent = `
+          <div class="pin-wrapper" style="opacity: ${isTransitFaded ? '0.25' : '1'}; transition: opacity 0.3s;">
+            <div class="leaflet-pin${isActive ? ' active-pin' : ''}" style="background-color: ${pinColor}; ${isActive ? `box-shadow: 0 0 0 5px ${pinColor}40, 0 3px 10px rgba(0,0,0,0.4);` : ''}">${isActive ? '<div class="pin-inner-dot"></div>' : ''}</div>
+            <div class="pin-label${isActive ? ' pin-label-active' : ''}">${pinTextPrefix}${item.place}</div>
+          </div>
+        `;
+      }
 
       const icon = L.divIcon({
         className: 'custom-leaflet-pin-icon',
         html: htmlContent,
-        iconSize: [140, 60],
-        iconAnchor: [70, isActive ? 12 : 9],
+        iconSize: isSummaryMode ? [120, 35] : [140, 60],
+        iconAnchor: isSummaryMode ? [60, 17] : [70, isActive ? 12 : 9],
       });
 
       const marker = L.marker([lat, lng], { icon, zIndexOffset: 1000 }).addTo(map);
@@ -375,6 +388,9 @@ export function MapArea({
 
     // Jitter prevention check
     const tabChanged = lastTabRef.current !== activeTab;
+    if (tabChanged && lastTabRef.current === 'summary') {
+      hasFitRef.current = false;
+    }
     const itemIdChanged = lastExpandedItemIdRef.current !== expandedItemId;
     const focusTypeChanged = lastTransitFocusTypeRef.current !== transitFocusType;
     

@@ -21,6 +21,19 @@ interface HomePageProps {
   isLoggedIn?: boolean;
 }
 
+function calculateDays(dateRangeStr: string): number {
+  if (!dateRangeStr) return 0;
+  const parts = dateRangeStr.split(/\s*[-—–]\s*/);
+  if (parts.length < 2) return 1;
+  const startStr = parts[0].trim().replace(/\./g, '-');
+  const endStr = parts[1].trim().replace(/\./g, '-');
+  const startDate = new Date(startStr);
+  const endDate = new Date(endStr);
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return 1;
+  const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+}
+
 // Journey card hamburger menu
 export function JourneyCardMenu({
   onEdit,
@@ -401,7 +414,10 @@ export function HomePage({
                     <span key={tag} className="text-[9px] uppercase font-bold tracking-widest bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded-sm text-black/60 dark:text-white/60">{tag}</span>
                   ))}
                 </div>
-                <div className="text-xs tracking-widest text-black/50 dark:text-white/50 mb-1 transition-colors break-words">{trip.date}</div>
+                <div className="text-xs tracking-widest text-black/50 dark:text-white/50 mb-1 transition-colors break-words">
+                  {trip.date}
+                  {calculateDays(trip.date) > 0 && ` · ${calculateDays(trip.date)} DAYS`}
+                </div>
                 <div className="font-bold tracking-tight uppercase text-sm break-words">{trip.title}</div>
               </div>
 

@@ -53,7 +53,7 @@ export function SummaryView({
   // 1. Parse date and calculate duration with day of week
   const parseDateStr = (dateStr: string) => {
     if (!dateStr) return { start: '', end: '', days: 0, formatted: '' };
-    const parts = dateStr.split('—').map(p => p.trim());
+    const parts = dateStr.split(/\s*[-—–]\s*/).map(p => p.trim());
     if (parts.length < 2) {
       const day = getDayOfWeek(dateStr);
       const daySuffix = day ? ` (${day})` : '';

@@ -24,6 +24,19 @@ function getTripStartDate(dateRangeStr: string): Date {
   return isNaN(d.getTime()) ? new Date(0) : d;
 }
 
+function calculateDays(dateRangeStr: string): number {
+  if (!dateRangeStr) return 0;
+  const parts = dateRangeStr.split(/\s*[-—–]\s*/);
+  if (parts.length < 2) return 1;
+  const startStr = parts[0].trim().replace(/\./g, '-');
+  const endStr = parts[1].trim().replace(/\./g, '-');
+  const startDate = new Date(startStr);
+  const endDate = new Date(endStr);
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return 1;
+  const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+}
+
 export function ArchiveHubPage({
   trips,
   onNavigate,
@@ -224,7 +237,10 @@ export function ArchiveHubPage({
                   <span key={tag} className="text-[9px] uppercase font-bold tracking-widest text-black/40 dark:text-white/40">#{tag}</span>
                 ))}
               </div>
-              <div className="text-[10px] tracking-widest text-black/55 dark:text-white/55 mb-1 transition-colors break-words">{trip.date}</div>
+              <div className="text-[10px] tracking-widest text-black/55 dark:text-white/55 mb-1 transition-colors break-words">
+                {trip.date}
+                {calculateDays(trip.date) > 0 && ` · ${calculateDays(trip.date)} DAYS`}
+              </div>
               <div className="font-bold tracking-tight uppercase text-sm break-words">
                 {trip.title}
               </div>
