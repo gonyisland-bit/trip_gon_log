@@ -130,7 +130,7 @@ export function MapArea({
     mapRef.current = map;
 
     const tileUrl = isDarkMode
-      ? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+      ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
       : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
     tileLayerRef.current = L.tileLayer(tileUrl, { maxZoom: 20, zIndex: 1 }).addTo(map);
 
@@ -191,7 +191,7 @@ export function MapArea({
     if (tileLayerRef.current) map.removeLayer(tileLayerRef.current);
 
     const tileUrl = isDarkMode
-      ? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+      ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
       : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
 
     tileLayerRef.current = L.tileLayer(tileUrl, { maxZoom: 20, zIndex: 1 }).addTo(map);
@@ -515,7 +515,7 @@ export function MapArea({
 
       if (activeTab !== 'summary' && expandedItemId === null && coords.length > 0 && (!isInteractive || !hasFitRef.current || isGalleryTab)) {
         const bounds = L.latLngBounds(coords);
-        map.fitBounds(bounds, { padding: isMobile ? [25, 25] : [48, 48], maxZoom: isMobile ? 13 : 15 });
+        map.fitBounds(bounds, { padding: isMobile ? [15, 15] : [48, 48], maxZoom: isMobile ? 15 : 15 });
         hasFitRef.current = true;
       }
 
@@ -548,12 +548,12 @@ export function MapArea({
             const endLng = Number(toPoint.lng);
             const bounds = L.latLngBounds([[startLat, startLng], [endLat, endLng]]);
             
-            const padTopLeft: [number, number] = isMobile ? [30, 30] : [60, 60];
-            const padBotRight: [number, number] = isMobile ? [30, 65] : [60, 130];
+            const padTopLeft: [number, number] = isMobile ? [15, 15] : [60, 60];
+            const padBotRight: [number, number] = isMobile ? [15, 30] : [60, 130];
             map.fitBounds(bounds, { 
               paddingTopLeft: padTopLeft, 
               paddingBottomRight: padBotRight, 
-              maxZoom: isMobile ? 13 : 15, 
+              maxZoom: isMobile ? 15 : 15, 
               animate: true 
             });
           } else if (hasFrom) {

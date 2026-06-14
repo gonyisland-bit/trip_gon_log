@@ -62,7 +62,9 @@ function cleanForFirestore(obj: any): any {
 
 function App() {
   const [currentView, setCurrentView] = useState<string>('home'); 
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    return localStorage.getItem('isDarkMode') === 'true';
+  });
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [showSettings, setShowSettings] = useState<boolean>(false);
   
@@ -192,13 +194,14 @@ function App() {
     if (!isLoggedIn) setIsEditMode(false);
   }, [isLoggedIn]);
 
-  // Sync isDarkMode to html element classlist for Tailwind dark: modifiers
+  // Sync isDarkMode to html element classlist for Tailwind dark: modifiers and save to localStorage
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
+    localStorage.setItem('isDarkMode', isDarkMode.toString());
   }, [isDarkMode]);
 
   // Firestore seeding script (stores all mock data under 'public')
