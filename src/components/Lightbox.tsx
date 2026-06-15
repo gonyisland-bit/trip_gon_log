@@ -36,29 +36,51 @@ export function Lightbox({
   const imgRef = useRef<HTMLImageElement>(null);
   const activeThumbnailRef = useRef<HTMLButtonElement>(null);
   const thumbnailsContainerRef = useRef<HTMLDivElement>(null);
+  const thumbnailsInnerRef = useRef<HTMLDivElement>(null);
+  const isFirstScrollRef = useRef(true);
+
+  // Reset first-scroll flag when lightbox opens
+  useEffect(() => {
+    if (isOpen) {
+      isFirstScrollRef.current = true;
+    }
+  }, [isOpen]);
 
   // Auto-scroll active thumbnail to center
-  // Runs after the CSS transition (300ms) completes so getBoundingClientRect() is accurate
   useEffect(() => {
     if (!isOpen) return;
+
+    // Wait for CSS transition (300ms) on thumbnail size to finish
     const timer = setTimeout(() => {
       const container = thumbnailsContainerRef.current;
+      const inner = thumbnailsInnerRef.current;
       const activeBtn = activeThumbnailRef.current;
-      if (!container || !activeBtn) return;
+      if (!container || !inner || !activeBtn) return;
 
-      // Use getBoundingClientRect for pixel-perfect positions after transition
-      const containerRect = container.getBoundingClientRect();
+      const containerWidth = container.clientWidth;
+
+      // Set side padding on the inner strip so any item can be centered
+      const halfContainer = Math.floor(containerWidth / 2);
+      inner.style.paddingLeft = `${halfContainer}px`;
+      inner.style.paddingRight = `${halfContainer}px`;
+
+      // Compute center of the active button relative to inner strip origin (after padding)
+      const innerRect = inner.getBoundingClientRect();
       const btnRect = activeBtn.getBoundingClientRect();
+      const btnCenterInInner = (btnRect.left - innerRect.left) + btnRect.width / 2;
 
-      // Compute how much we need to scroll so the button is centered in the container
-      const btnCenterRelativeToContainer = (btnRect.left - containerRect.left) + container.scrollLeft + btnRect.width / 2;
-      const targetScrollLeft = btnCenterRelativeToContainer - containerRect.width / 2;
+      // scrollLeft such that btnCenter sits at containerWidth/2
+      const targetScrollLeft = btnCenterInInner - containerWidth / 2;
 
-      container.scrollTo({
-        left: targetScrollLeft,
-        behavior: 'smooth'
-      });
-    }, 350); // Wait for transition-all duration-300 to finish
+      // Jump instantly on first open, smooth on navigation
+      if (isFirstScrollRef.current) {
+        container.scrollLeft = targetScrollLeft;
+        isFirstScrollRef.current = false;
+      } else {
+        container.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
+      }
+    }, 320);
+
     return () => clearTimeout(timer);
   }, [currentIndex, isOpen]);
 
@@ -395,8 +417,8 @@ export function Lightbox({
 
       {/* Bottom Thumbnails Strip */}
       {images.length > 1 && (
-        <div ref={thumbnailsContainerRef} className="w-full bg-black/40 py-2 border-t border-white/5 overflow-x-auto hide-scrollbar z-20 shrink-0 flex justify-start">
-          <div className="flex gap-2 px-4 mx-auto w-max min-w-full justify-center relative">
+        <div ref={thumbnailsContainerRef} className="w-full bg-black/40 py-2 border-t border-white/5 overflow-x-auto hide-scrollbar z-20 shrink-0">
+          <div ref={thumbnailsInnerRef} className="flex gap-2 w-max">
             {images.map((img, idx) => {
               const isActive = idx === currentIndex;
               return (

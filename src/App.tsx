@@ -1488,7 +1488,7 @@ function App() {
           </div>
           <div className="pb-8">
             <span className="text-[10px] md:text-xs font-bold tracking-widest text-black/40 dark:text-white/40 uppercase">
-              v1.0.0
+              v0.3e
             </span>
           </div>
         </div>
