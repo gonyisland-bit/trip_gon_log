@@ -43,8 +43,9 @@ export function Lightbox({
   const slideshowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Transition state for crossfade
-  const [imgVisible, setImgVisible] = useState(true);
+  // True crossfade: old image fades out on top while new is already visible underneath
+  const [fadeOutSrc, setFadeOutSrc] = useState<string | null>(null);
+  const [fadeOutActive, setFadeOutActive] = useState(false);
 
   const dragStart = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const imgRef = useRef<HTMLImageElement>(null);
@@ -119,14 +120,30 @@ export function Lightbox({
     }, 50);
 
     slideshowTimerRef.current = setTimeout(() => {
-      // Crossfade out
-      setImgVisible(false);
+      // Capture old image src BEFORE navigating
+      const oldSrc = images[currentIndex]?.url ?? null;
+
+      // 1. Place old image as an opaque absolute overlay
+      setFadeOutSrc(oldSrc);
+      setFadeOutActive(true);
+
+      // 2. Immediately navigate — new image is now the "current" (fully visible underneath)
+      onNavigate((currentIndex + 1) % images.length);
+
+      // 3. On next two frames (ensure React has painted), start fading out the overlay
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setFadeOutActive(false); // triggers CSS transition opacity 1 → 0
+        });
+      });
+
+      // 4. Clean up overlay after transition finishes
       setTimeout(() => {
-        onNavigate((currentIndex + 1) % images.length);
-        setImgVisible(true);
-      }, 500); // half of fade duration
+        setFadeOutSrc(null);
+        setFadeOutActive(false);
+      }, 900); // slightly longer than CSS transition (700ms)
     }, SLIDESHOW_INTERVAL);
-  }, [currentIndex, images.length, onNavigate, stopSlideshow]);
+  }, [currentIndex, images, onNavigate, stopSlideshow]);
 
   // When slideshow is running and not paused, start a cycle on each index change
   useEffect(() => {
@@ -580,11 +597,9 @@ export function Lightbox({
               transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
               transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
               transformOrigin: 'center center',
-              opacity: imgVisible ? 1 : 0,
-              transitionProperty: isDragging ? 'transform' : 'transform, opacity',
-              transitionDuration: isDragging ? '0ms' : '400ms',
             }}
           >
+            {/* ── New (current) image: always fully visible underneath ── */}
             <img
               ref={imgRef}
               src={currentMeta.url}
@@ -601,6 +616,27 @@ export function Lightbox({
               className="shadow-2xl select-none"
               draggable={false}
             />
+
+            {/* ── Crossfade overlay: old image fades out on top (no black flash) ── */}
+            {fadeOutSrc && (
+              <img
+                src={fadeOutSrc}
+                aria-hidden="true"
+                data-pin-nopin="true"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  opacity: fadeOutActive ? 1 : 0,
+                  transition: 'opacity 700ms ease',
+                  pointerEvents: 'none',
+                  userSelect: 'none',
+                }}
+                draggable={false}
+              />
+            )}
 
             {/* ── Film Date Stamp: bottom-right of image ── */}
             {hasDate && showLog && !isSlideshow && (
