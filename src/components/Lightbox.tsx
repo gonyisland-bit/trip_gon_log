@@ -32,25 +32,36 @@ export function Lightbox({
   const [showLog, setShowLog] = useState<boolean>(true);
   const [prevLoaded, setPrevLoaded] = useState<boolean>(false);
   const [nextLoaded, setNextLoaded] = useState<boolean>(false);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
   const dragStart = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const imgRef = useRef<HTMLImageElement>(null);
   const activeThumbnailRef = useRef<HTMLButtonElement>(null);
   const thumbnailsContainerRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll active thumbnail to center
+  // Sync window width for responsive calculations
   useEffect(() => {
-    if (isOpen && activeThumbnailRef.current && thumbnailsContainerRef.current) {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Auto-scroll active thumbnail to center mathematically
+  useEffect(() => {
+    if (isOpen && thumbnailsContainerRef.current) {
       const timer = setTimeout(() => {
         const container = thumbnailsContainerRef.current;
-        const activeBtn = activeThumbnailRef.current;
-        if (!container || !activeBtn) return;
+        if (!container) return;
 
-        const containerWidth = container.clientWidth;
-        const activeWidth = activeBtn.clientWidth;
-        const activeOffsetLeft = activeBtn.offsetLeft;
+        const isMd = windowWidth >= 768;
+        const wInactive = isMd ? 36 : 28;
+        const wActive = isMd ? 48 : 40;
+        const gap = 8;
+        const padding = 16;
         
-        // Target scroll position to center the active thumbnail
-        const targetScrollLeft = activeOffsetLeft - (containerWidth / 2) + (activeWidth / 2);
+        // Mathematically calculate precise offsets of the active thumbnail
+        const left = padding + currentIndex * (wInactive + gap);
+        const center = left + wActive / 2;
+        const targetScrollLeft = center - container.clientWidth / 2;
         
         container.scrollTo({
           left: targetScrollLeft,
@@ -59,7 +70,7 @@ export function Lightbox({
       }, 50);
       return () => clearTimeout(timer);
     }
-  }, [currentIndex, isOpen]);
+  }, [currentIndex, isOpen, windowWidth]);
 
   // Touch event refs for mobile swiping & panning
   const touchStartX = useRef<number | null>(null);
