@@ -35,17 +35,31 @@ export function Lightbox({
   const dragStart = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const imgRef = useRef<HTMLImageElement>(null);
   const activeThumbnailRef = useRef<HTMLButtonElement>(null);
+  const thumbnailsContainerRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll active thumbnail to center
   useEffect(() => {
-    if (activeThumbnailRef.current) {
-      activeThumbnailRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-        inline: 'center'
-      });
+    if (isOpen && activeThumbnailRef.current && thumbnailsContainerRef.current) {
+      const timer = setTimeout(() => {
+        const container = thumbnailsContainerRef.current;
+        const activeBtn = activeThumbnailRef.current;
+        if (!container || !activeBtn) return;
+
+        const containerWidth = container.clientWidth;
+        const activeWidth = activeBtn.clientWidth;
+        const activeOffsetLeft = activeBtn.offsetLeft;
+        
+        // Target scroll position to center the active thumbnail
+        const targetScrollLeft = activeOffsetLeft - (containerWidth / 2) + (activeWidth / 2);
+        
+        container.scrollTo({
+          left: targetScrollLeft,
+          behavior: 'smooth'
+        });
+      }, 50);
+      return () => clearTimeout(timer);
     }
-  }, [currentIndex]);
+  }, [currentIndex, isOpen]);
 
   // Touch event refs for mobile swiping & panning
   const touchStartX = useRef<number | null>(null);
@@ -380,8 +394,8 @@ export function Lightbox({
 
       {/* Bottom Thumbnails Strip */}
       {images.length > 1 && (
-        <div className="w-full bg-black/40 py-2 border-t border-white/5 overflow-x-auto hide-scrollbar z-20 shrink-0 flex justify-start">
-          <div className="flex gap-2 px-4 mx-auto w-max min-w-full justify-center">
+        <div ref={thumbnailsContainerRef} className="w-full bg-black/40 py-2 border-t border-white/5 overflow-x-auto hide-scrollbar z-20 shrink-0 flex justify-start">
+          <div className="flex gap-2 px-4 mx-auto w-max min-w-full justify-center relative">
             {images.map((img, idx) => {
               const isActive = idx === currentIndex;
               return (

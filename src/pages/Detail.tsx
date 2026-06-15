@@ -284,11 +284,18 @@ function PlaceAutocompleteInput({
 }: PlaceAutocompleteInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
+  const [localVal, setLocalVal] = useState(value);
+  const hasSelectedRef = useRef(false);
+
+  useEffect(() => {
+    setLocalVal(value);
+  }, [value]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       e.stopPropagation();
+      onChange(localVal);
     }
   };
 
@@ -316,6 +323,8 @@ function PlaceAutocompleteInput({
           const lng = place.geometry.location.lng();
           const name = place.name || place.formatted_address || '';
           const address = place.formatted_address || name;
+          hasSelectedRef.current = true; // Mark selection in progress to prevent blur race condition
+          setLocalVal(address);
           onSelectPlaceRef.current(name, { lat, lng }, address);
         }
       } catch (err) {
@@ -330,11 +339,18 @@ function PlaceAutocompleteInput({
     };
   }, []);
 
-  useEffect(() => {
-    if (inputRef.current && value !== undefined && inputRef.current.value !== value) {
-      inputRef.current.value = value;
-    }
-  }, [value]);
+  const handleBlur = () => {
+    // Delay the blur action slightly to allow the place_changed listener to run first
+    setTimeout(() => {
+      if (hasSelectedRef.current) {
+        hasSelectedRef.current = false; // Reset the flag
+        if (onBlur) onBlur();
+      } else {
+        onChange(localVal);
+        if (onBlur) onBlur();
+      }
+    }, 250);
+  };
 
   return (
     <div className="relative w-full">
@@ -342,8 +358,9 @@ function PlaceAutocompleteInput({
         <input
           ref={inputRef}
           type="text"
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
+          value={localVal}
+          onChange={(e) => setLocalVal(e.target.value)}
+          onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           className={className}
           placeholder={placeholder}
@@ -405,6 +422,20 @@ export function JourneyDetailPage({
   const [draftFlights, setDraftFlights] = useState<FlightItem[]>([]);
   const [draftStays, setDraftStays] = useState<StayItem[]>([]);
   const [draftTransits, setDraftTransits] = useState<TransitItem[]>([]);
+  
+  // Refs to always hold the absolute latest draft values (bypasses stale React state closure issues in async callbacks/handlers)
+  const draftTripRef = useRef(draftTrip);
+  const draftTimelineRef = useRef(draftTimeline);
+  const draftFlightsRef = useRef(draftFlights);
+  const draftStaysRef = useRef(draftStays);
+  const draftTransitsRef = useRef(draftTransits);
+
+  useEffect(() => { draftTripRef.current = draftTrip; }, [draftTrip]);
+  useEffect(() => { draftTimelineRef.current = draftTimeline; }, [draftTimeline]);
+  useEffect(() => { draftFlightsRef.current = draftFlights; }, [draftFlights]);
+  useEffect(() => { draftStaysRef.current = draftStays; }, [draftStays]);
+  useEffect(() => { draftTransitsRef.current = draftTransits; }, [draftTransits]);
+
   const [transitSortType, setTransitSortType] = useState<'time' | 'type'>('time');
   const [mapConfirm, setMapConfirm] = useState<{ placeName: string; url: string } | null>(null);
 
@@ -849,12 +880,28 @@ export function JourneyDetailPage({
   };
 
   const handleSave = async () => {
-    if (!trip || !draftTrip) return;
+    if (!trip) return;
+
+    // Force blur active input/textarea to trigger its onChange/composition commit
+    if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) {
+      document.activeElement.blur();
+      // Give React/browser time to trigger events and run state updates
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    if (!draftTripRef.current) return;
+
     setSaving(true);
     try {
+      const latestTrip = draftTripRef.current;
+      const latestTimeline = draftTimelineRef.current;
+      const latestFlights = draftFlightsRef.current;
+      const latestStays = draftStaysRef.current;
+      const latestTransits = draftTransitsRef.current;
+
       // Geocode empty coordinates before saving
       const resolvedTimeline = await Promise.all(
-        draftTimeline.map(async (item) => {
+        latestTimeline.map(async (item) => {
           if (
             (item.lat === undefined || item.lng === undefined || item.lat === null || item.lng === null) &&
             item.location && item.location.trim() !== ''
@@ -877,11 +924,11 @@ export function JourneyDetailPage({
 
       await onSave(
         trip.id,
-        draftTrip,
+        latestTrip,
         resolvedTimeline,
-        draftFlights,
-        draftStays,
-        draftTransits
+        latestFlights,
+        latestStays,
+        latestTransits
       );
       setIsEditing(false);
       onEditModeChange?.(false);
@@ -3079,7 +3126,8 @@ export function JourneyDetailPage({
                                       onBlur={async () => {
                                         // Use a small delay to let onSelectPlace write coords first if a place was selected
                                         setTimeout(async () => {
-                                          const currentItem = (isEditing ? draftTimeline : baseTimeline).find((t: any) => t.id === item.id);
+                                          const latestTimeline = draftTimelineRef.current;
+                                          const currentItem = latestTimeline.find((t: any) => t.id === item.id);
                                           if (!currentItem) return;
 
                                           if (
@@ -3095,7 +3143,7 @@ export function JourneyDetailPage({
                                               });
                                             }
                                           }
-                                        }, 200);
+                                        }, 300);
                                       }}
                                       onSelectPlace={(name, coords, address) => {
                                         // Atomic update: location (name) + lat + lng in one setState
