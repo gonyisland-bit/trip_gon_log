@@ -32,45 +32,35 @@ export function Lightbox({
   const [showLog, setShowLog] = useState<boolean>(true);
   const [prevLoaded, setPrevLoaded] = useState<boolean>(false);
   const [nextLoaded, setNextLoaded] = useState<boolean>(false);
-  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
   const dragStart = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const imgRef = useRef<HTMLImageElement>(null);
   const activeThumbnailRef = useRef<HTMLButtonElement>(null);
   const thumbnailsContainerRef = useRef<HTMLDivElement>(null);
 
-  // Sync window width for responsive calculations
+  // Auto-scroll active thumbnail to center
+  // Runs after the CSS transition (300ms) completes so getBoundingClientRect() is accurate
   useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    if (!isOpen) return;
+    const timer = setTimeout(() => {
+      const container = thumbnailsContainerRef.current;
+      const activeBtn = activeThumbnailRef.current;
+      if (!container || !activeBtn) return;
 
-  // Auto-scroll active thumbnail to center mathematically
-  useEffect(() => {
-    if (isOpen && thumbnailsContainerRef.current) {
-      const timer = setTimeout(() => {
-        const container = thumbnailsContainerRef.current;
-        if (!container) return;
+      // Use getBoundingClientRect for pixel-perfect positions after transition
+      const containerRect = container.getBoundingClientRect();
+      const btnRect = activeBtn.getBoundingClientRect();
 
-        const isMd = windowWidth >= 768;
-        const wInactive = isMd ? 36 : 28;
-        const wActive = isMd ? 48 : 40;
-        const gap = 8;
-        const padding = 16;
-        
-        // Mathematically calculate precise offsets of the active thumbnail
-        const left = padding + currentIndex * (wInactive + gap);
-        const center = left + wActive / 2;
-        const targetScrollLeft = center - container.clientWidth / 2;
-        
-        container.scrollTo({
-          left: targetScrollLeft,
-          behavior: 'smooth'
-        });
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [currentIndex, isOpen, windowWidth]);
+      // Compute how much we need to scroll so the button is centered in the container
+      const btnCenterRelativeToContainer = (btnRect.left - containerRect.left) + container.scrollLeft + btnRect.width / 2;
+      const targetScrollLeft = btnCenterRelativeToContainer - containerRect.width / 2;
+
+      container.scrollTo({
+        left: targetScrollLeft,
+        behavior: 'smooth'
+      });
+    }, 350); // Wait for transition-all duration-300 to finish
+    return () => clearTimeout(timer);
+  }, [currentIndex, isOpen]);
 
   // Touch event refs for mobile swiping & panning
   const touchStartX = useRef<number | null>(null);
