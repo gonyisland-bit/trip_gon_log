@@ -15,10 +15,12 @@ const EXCHANGE_RATES: { [currency: string]: number } = {
   JPY: 9.0,
   EUR: 1480,
   CNY: 190,
+  GBP: 1750,
+  TWD: 42,
 };
 
 const CURRENCY_SYMBOLS: { [key: string]: string } = {
-  KRW: '₩', USD: '$', JPY: '¥', EUR: '€', CNY: '¥',
+  KRW: 'KRW ', USD: 'USD ', JPY: 'JPY ', EUR: 'EUR ', CNY: 'CNY ', GBP: 'GBP ', TWD: 'TWD ',
 };
 
 const TYPE_CODES: { [key: string]: string } = {
@@ -175,6 +177,54 @@ export function SettlementView({
   }, [expenseItems, members]);
 
   const sharePerPerson = Math.round(totalExpenseKRW / Math.max(1, members.length));
+
+  // 해당 여정에 관련된 환율 목록 계산 (여정 시작일 기준)
+  const exchangeRatesText = React.useMemo(() => {
+    const activeDefault = (defaultCurrency || 'KRW').toUpperCase();
+    const currencies = new Set<string>();
+    if (activeDefault !== 'KRW') {
+      currencies.add(activeDefault);
+    }
+
+    expenseItems.forEach(item => {
+      const curr = (item.currency || 'KRW').toUpperCase();
+      if (curr !== 'KRW') {
+        currencies.add(curr);
+      }
+    });
+
+    if (currencies.size === 0 && trip.locationStr) {
+      const locStr = trip.locationStr.toLowerCase();
+      const locCurrency = (locStr.includes('일본') || locStr.includes('japan') || locStr.includes('도쿄') || locStr.includes('오사카') || locStr.includes('후쿠오카') || locStr.includes('tokyo') || locStr.includes('osaka')) ? 'JPY'
+        : (locStr.includes('대만') || locStr.includes('taiwan') || locStr.includes('타이베이') || locStr.includes('taipei')) ? 'TWD'
+        : (locStr.includes('영국') || locStr.includes('uk') || locStr.includes('united kingdom') || locStr.includes('런던') || locStr.includes('london')) ? 'GBP'
+        : (locStr.includes('미국') || locStr.includes('usa') || locStr.includes('united states') || locStr.includes('hawaii') || locStr.includes('guam') || locStr.includes('new york') || locStr.includes('los angeles')) ? 'USD'
+        : (locStr.includes('유럽') || locStr.includes('europe') || locStr.includes('프랑스') || locStr.includes('france') || locStr.includes('독일') || locStr.includes('germany') || locStr.includes('이탈리아') || locStr.includes('italy')) ? 'EUR'
+        : (locStr.includes('중국') || locStr.includes('china') || locStr.includes('shanghai') || locStr.includes('beijing')) ? 'CNY' : '';
+
+      if (locCurrency) {
+        currencies.add(locCurrency);
+      }
+    }
+
+    if (currencies.size === 0) return '원화(KRW) 기준';
+
+    const items = Array.from(currencies).map(curr => {
+      const rate = EXCHANGE_RATES[curr];
+      if (!rate) return null;
+      return `${curr} ${rate.toLocaleString()}`;
+    }).filter(Boolean);
+
+    return items.join(' · ');
+  }, [defaultCurrency, expenseItems, trip.locationStr]);
+
+  const exchangeDateLabel = React.useMemo(() => {
+    if (trip.date) {
+      const startDateStr = trip.date.split(' - ')[0]?.trim();
+      if (startDateStr) return `${startDateStr} 기준`;
+    }
+    return '여정 날짜 기준';
+  }, [trip.date]);
 
   const memberBalances = React.useMemo(() => {
     const balances: { [name: string]: number } = {};
@@ -484,9 +534,11 @@ export function SettlementView({
             <span className="text-sm md:text-base lg:text-lg font-black text-black dark:text-white whitespace-nowrap px-1">₩{sharePerPerson.toLocaleString()}</span>
           </div>
           <div className="flex flex-col justify-center">
-            <span className="text-[8px] md:text-[9px] uppercase font-bold tracking-widest text-black/45 dark:text-white/45 block mb-1">환율 기준</span>
+            <span className="text-[8px] md:text-[9px] uppercase font-bold tracking-widest text-black/45 dark:text-white/45 block mb-1">
+              환율 기준 ({exchangeDateLabel})
+            </span>
             <span className="text-[8px] md:text-[9.5px] font-bold text-black/60 dark:text-white/60 leading-tight">
-              USD 1,380 · JPY 9.0<br/>EUR 1,480 · CNY 190
+              {exchangeRatesText}
             </span>
           </div>
         </div>
@@ -549,10 +601,13 @@ export function SettlementView({
                 />
                 <select value={newItem.currency} onChange={e => setNewItem(v => ({ ...v, currency: e.target.value }))}
                   className="bg-transparent border-l border-black/10 dark:border-white/10 px-1 py-1 text-[9px] font-bold text-black/60 dark:text-white/60 outline-none cursor-pointer">
-                  <option value="KRW">₩</option>
-                  <option value="USD">$</option>
-                  <option value="JPY">¥</option>
-                  <option value="EUR">€</option>
+                  <option value="KRW">KRW</option>
+                  <option value="USD">USD</option>
+                  <option value="JPY">JPY</option>
+                  <option value="EUR">EUR</option>
+                  <option value="CNY">CNY</option>
+                  <option value="GBP">GBP</option>
+                  <option value="TWD">TWD</option>
                 </select>
               </div>
             </div>
@@ -673,11 +728,13 @@ export function SettlementView({
                               <select value={item.currency}
                                 onChange={e => onUpdateExpense(item.itemType as any, item.id as number, 'currency', e.target.value)}
                                 className="bg-transparent outline-none text-[8px] md:text-[9px] font-bold text-black/60 dark:text-white/60 pl-0.5 cursor-pointer">
-                                <option value="KRW">₩</option>
-                                <option value="USD">$</option>
-                                <option value="JPY">¥</option>
-                                <option value="EUR">€</option>
-                                <option value="CNY">¥</option>
+                                <option value="KRW">KRW</option>
+                                <option value="USD">USD</option>
+                                <option value="JPY">JPY</option>
+                                <option value="EUR">EUR</option>
+                                <option value="CNY">CNY</option>
+                                <option value="GBP">GBP</option>
+                                <option value="TWD">TWD</option>
                               </select>
                             </div>
                           ) : (

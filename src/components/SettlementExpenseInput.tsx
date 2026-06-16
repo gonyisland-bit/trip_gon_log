@@ -104,6 +104,29 @@ export const getDefaultCurrencyForLocation = (locationStr: string = ''): string 
     return 'CNY';
   }
   
+  // Taiwan
+  if (
+    loc.includes('대만') ||
+    loc.includes('taiwan') ||
+    loc.includes('타이베이') ||
+    loc.includes('taipei') ||
+    loc.includes('가오슝') ||
+    loc.includes('kaohsiung')
+  ) {
+    return 'TWD';
+  }
+
+  // UK
+  if (
+    loc.includes('영국') ||
+    loc.includes('uk') ||
+    loc.includes('united kingdom') ||
+    loc.includes('런던') ||
+    loc.includes('london')
+  ) {
+    return 'GBP';
+  }
+  
   return 'KRW';
 };
 
@@ -163,11 +186,13 @@ export function SettlementExpenseInput({
               onChange={handleCurrencyChange}
               className="bg-transparent outline-none text-[8px] md:text-[9px] font-bold text-black/60 dark:text-white/60 border-l border-black/10 dark:border-white/10 pl-0.5 cursor-pointer shrink-0"
             >
-              <option value="KRW">₩</option>
-              <option value="USD">$</option>
-              <option value="JPY">¥</option>
-              <option value="EUR">€</option>
-              <option value="CNY">¥</option>
+              <option value="KRW">KRW</option>
+              <option value="USD">USD</option>
+              <option value="JPY">JPY</option>
+              <option value="EUR">EUR</option>
+              <option value="CNY">CNY</option>
+              <option value="GBP">GBP</option>
+              <option value="TWD">TWD</option>
             </select>
           </div>
 
@@ -205,11 +230,13 @@ export function SettlementExpenseInput({
             onChange={handleCurrencyChange}
             className="bg-transparent outline-none text-[9px] md:text-[10px] font-bold text-black/60 dark:text-white/60 border-l border-black/10 dark:border-white/10 pl-1 cursor-pointer"
           >
-            <option value="KRW">₩ KRW</option>
-            <option value="USD">$ USD</option>
-            <option value="JPY">¥ JPY</option>
-            <option value="EUR">€ EUR</option>
-            <option value="CNY">¥ CNY</option>
+            <option value="KRW">KRW</option>
+            <option value="USD">USD</option>
+            <option value="JPY">JPY</option>
+            <option value="EUR">EUR</option>
+            <option value="CNY">CNY</option>
+            <option value="GBP">GBP</option>
+            <option value="TWD">TWD</option>
           </select>
         </div>
 

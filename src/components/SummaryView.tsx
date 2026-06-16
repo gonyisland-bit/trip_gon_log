@@ -13,10 +13,12 @@ const EXCHANGE_RATES: { [currency: string]: number } = {
   JPY: 9.0,
   EUR: 1480,
   CNY: 190,
+  GBP: 1750,
+  TWD: 42,
 };
 
 const CURRENCY_SYMBOLS: { [key: string]: string } = {
-  KRW: '₩', USD: '$', JPY: '¥', EUR: '€', CNY: '¥',
+  KRW: 'KRW ', USD: 'USD ', JPY: 'JPY ', EUR: 'EUR ', CNY: 'CNY ', GBP: 'GBP ', TWD: 'TWD ',
 };
 
 interface SummaryViewProps {
