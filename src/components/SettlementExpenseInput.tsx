@@ -156,7 +156,7 @@ export function SettlementExpenseInput({
               value={cost}
               onChange={handleCostChange}
               placeholder="0"
-              className="w-full bg-transparent outline-none text-[9px] md:text-[10px] font-bold text-right px-0.5 text-black dark:text-white"
+              className="w-full bg-transparent outline-none text-[9px] md:text-[10px] font-bold text-right px-0.5 text-black dark:text-white select-text"
             />
             <select
               value={activeCurrency}
@@ -198,7 +198,7 @@ export function SettlementExpenseInput({
             value={cost}
             onChange={handleCostChange}
             placeholder="0"
-            className="w-16 md:w-20 bg-transparent outline-none text-[10px] md:text-xs font-bold text-right px-1 text-black dark:text-white"
+            className="w-16 md:w-20 bg-transparent outline-none text-[10px] md:text-xs font-bold text-right px-1 text-black dark:text-white select-text"
           />
           <select
             value={activeCurrency}

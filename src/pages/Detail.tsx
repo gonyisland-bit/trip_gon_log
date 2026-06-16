@@ -3,7 +3,7 @@ import {
   Clock, Plane, Bed, Train, Bus, Car, User, Edit2, Trash2, 
   Image as ImageIcon, ChevronUp, ChevronDown, MapPin, Map, Plus, Loader2, Search, ArrowLeft,
   ExternalLink, MapPinOff, Maximize2, Star, ChevronLeft, ChevronRight, ArrowUp, ArrowDown,
-  Sun, Cloud, Cloudy, CloudRain, Snowflake, CloudLightning, ArrowRight, Calculator, FileText, Share2
+  Sun, Cloud, Cloudy, CloudRain, Snowflake, CloudLightning, ArrowRight, Calculator, FileText, Share2, GripVertical
 } from 'lucide-react';
 import { MapArea } from '../components/MapArea';
 import { ImageEditOverlay } from '../components/ImageEditOverlay';
@@ -577,6 +577,23 @@ export function JourneyDetailPage({
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const itemRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
+  const scrollTargetItemIdRef = useRef<number | null>(null);
+
+  // 시간 변경 등으로 정렬 순서가 바뀌었을 때 해당 일정 편집 위치로 스크롤 이동
+  useEffect(() => {
+    if (scrollTargetItemIdRef.current !== null) {
+      const targetId = scrollTargetItemIdRef.current;
+      // 리렌더링 후 DOM 정렬 및 배치가 완료될 시간을 약간 주기 위해 setTimeout 사용
+      setTimeout(() => {
+        const element = itemRefs.current[targetId];
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+      scrollTargetItemIdRef.current = null;
+    }
+  }, [draftTimeline]);
+
   const dateBarRef = useRef<HTMLDivElement>(null);
   const isDown = useRef(false);
   const startX = useRef(0);
@@ -2799,11 +2816,12 @@ export function JourneyDetailPage({
                         )}
                         <div 
                           ref={el => { itemRefs.current[item.id] = el; }} 
-                          className={`flex flex-col border-b border-black/10 dark:border-white/10 transition-all w-full ${isActive ? 'bg-red-500/[0.02] dark:bg-red-500/[0.02] border-l-2 border-l-red-600 dark:border-l-red-400' : 'border-l-2 border-l-transparent'} ${isEditing ? 'cursor-grab active:cursor-grabbing' : ''} ${collapsedDays.includes(item.date || '') && selectedDate === 'ALL' ? 'hidden' : ''}`}
+                          className={`flex flex-col border-b border-black/10 dark:border-white/10 transition-all w-full ${isActive ? 'bg-red-500/[0.02] dark:bg-red-500/[0.02] border-l-2 border-l-red-600 dark:border-l-red-400' : 'border-l-2 border-l-transparent'} ${collapsedDays.includes(item.date || '') && selectedDate === 'ALL' ? 'hidden' : ''}`}
                           draggable={isEditing}
                           onDragStart={(e) => {
                             const target = e.target as HTMLElement;
-                            if (target.closest('input, textarea, select, button')) {
+                            // GripVertical 아이콘이 위치한 drag-handle 내부에서 드래그를 시작한 경우에만 드래그 허용
+                            if (!target.closest('.drag-handle')) {
                               e.preventDefault();
                               return;
                             }
@@ -2816,9 +2834,12 @@ export function JourneyDetailPage({
                             className="group flex flex-row items-start py-4 px-4 md:py-5 md:px-6 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer relative w-full" 
                             onClick={() => handleItemToggle(item.id)}
                           >
-                            {/* Checkbox for batch select & Delete button */}
+                            {/* Drag handle & Checkbox for batch select & Delete button */}
                             {isEditing && (
-                              <div className="mr-3 mt-1.5 shrink-0 flex flex-col items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                              <div className="mr-3 mt-1 flex flex-col items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                <div className="drag-handle cursor-grab active:cursor-grabbing text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white p-1 -m-1 transition-colors" title="순서 이동 (드래그)">
+                                  <GripVertical className="w-4 h-4" />
+                                </div>
                                 <input
                                   type="checkbox"
                                   checked={selectedItemIds.includes(item.id)}
@@ -2851,18 +2872,20 @@ export function JourneyDetailPage({
                                     onChange={(e) => {
                                       const val24h = e.target.value;
                                       if (!val24h) return;
+                                      scrollTargetItemIdRef.current = item.id;
                                       updateTimelineItem(item.id, 'time', time24hTo12h(val24h));
                                     }}
-                                    className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-[9px] md:text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full text-center animate-in fade-in duration-300"
+                                    className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-[9px] md:text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full text-center animate-in fade-in duration-300 select-text"
                                   />
                                   <select
                                     value={item.date}
                                     onChange={(e) => {
                                       const newDate = e.target.value;
+                                      scrollTargetItemIdRef.current = item.id;
                                       updateTimelineItem(item.id, 'date', newDate);
                                       setSelectedDate(newDate);
                                     }}
-                                    className="bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 text-[9px] md:text-xs font-bold p-0.5 outline-none text-black dark:text-white rounded-none w-full text-center animate-in fade-in duration-300"
+                                    className="bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 text-[9px] md:text-xs font-bold p-0.5 outline-none text-black dark:text-white rounded-none w-full text-center animate-in fade-in duration-300 select-text"
                                   >
                                     {generatedDates.map(d => (
                                       <option key={d} value={d}>{d.slice(5).replace('.', '/')}</option>
@@ -2928,40 +2951,40 @@ export function JourneyDetailPage({
                               )}
                             </div>
 
-                          {/* Details */}
-                          <div className="flex-grow pr-2 md:pr-4 min-w-0">
-                            <div className={`font-bold tracking-tight text-sm md:text-base flex items-center gap-2 flex-wrap ${isActive ? 'text-red-600 dark:text-red-400' : ''}`}>
-                              {isEditing ? (
-                                <TimelineItemPlaceInput
-                                  itemId={item.id}
-                                  initialValue={item.place}
-                                  onUpdatePlace={(id, val) => updateTimelineItem(id, 'place', val)}
-                                  frequentPlaces={frequentPlaces}
-                                  onSelectFrequent={handleSelectFrequent}
-                                  toggleFrequentPlace={toggleFrequentPlace}
-                                  isFrequent={isFrequent}
-                                  item={item}
-                                />
-                              ) : (
-                                <span>{item.place}</span>
-                              )}
-                              {isActive ? <ChevronUp className="w-3 h-3 md:w-4 md:h-4 text-current shrink-0" /> : <ChevronDown className="w-3 h-3 md:w-4 md:h-4 text-black/40 dark:text-white/40 shrink-0" />}
-                            </div>
-                            
-                            <div className="mt-1">
-                              {isEditing ? (
-                                <textarea
-                                  value={item.memo || ''}
-                                  onChange={(e) => updateTimelineItem(item.id, 'memo', e.target.value)}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="bg-[#EAE8E3] dark:bg-white/10 p-1 outline-none text-xs md:text-sm text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full resize-none"
-                                  rows={item.memo ? Math.max(1, item.memo.split('\n').length) : 1}
-                                  placeholder="Memo"
-                                />
-                              ) : (
-                                <div className="text-xs md:text-sm text-black/60 dark:text-white/60 break-words w-full whitespace-pre-wrap">{item.memo}</div>
-                              )}
-                            </div>
+                            {/* Details */}
+                            <div className="flex-grow pr-2 md:pr-4 min-w-0">
+                              <div className={`font-bold tracking-tight text-sm md:text-base flex items-center gap-2 flex-wrap ${isActive ? 'text-red-600 dark:text-red-400' : ''}`}>
+                                {isEditing ? (
+                                  <TimelineItemPlaceInput
+                                    itemId={item.id}
+                                    initialValue={item.place}
+                                    onUpdatePlace={(id, val) => updateTimelineItem(id, 'place', val)}
+                                    frequentPlaces={frequentPlaces}
+                                    onSelectFrequent={handleSelectFrequent}
+                                    toggleFrequentPlace={toggleFrequentPlace}
+                                    isFrequent={isFrequent}
+                                    item={item}
+                                  />
+                                ) : (
+                                  <span>{item.place}</span>
+                                )}
+                                {isActive ? <ChevronUp className="w-3 h-3 md:w-4 md:h-4 text-current shrink-0" /> : <ChevronDown className="w-3 h-3 md:w-4 md:h-4 text-black/40 dark:text-white/40 shrink-0" />}
+                              </div>
+                              
+                              <div className="mt-1">
+                                {isEditing ? (
+                                  <textarea
+                                    value={item.memo || ''}
+                                    onChange={(e) => updateTimelineItem(item.id, 'memo', e.target.value)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="bg-[#EAE8E3] dark:bg-white/10 p-1 outline-none text-xs md:text-sm text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full resize-none select-text"
+                                    rows={item.memo ? Math.max(1, item.memo.split('\n').length) : 1}
+                                    placeholder="Memo"
+                                  />
+                                ) : (
+                                  <div className="text-xs md:text-sm text-black/60 dark:text-white/60 break-words w-full whitespace-pre-wrap">{item.memo}</div>
+                                )}
+                              </div>
 
                             {/* Settlement/Expense Editor (Shown when expanded/active) */}
                             {isActive && !isEditing && (
@@ -4023,7 +4046,7 @@ function TimelineItemPlaceInput({
           onChange={(e) => setLocalVal(e.target.value)}
           onFocus={() => setShowDropdown(true)}
           onBlur={handleBlur}
-          className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-sm md:text-base text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
+          className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-sm md:text-base text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full select-text"
           placeholder="일정 이름"
         />
         <button 
