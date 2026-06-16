@@ -211,6 +211,7 @@ export function SummaryView({
   let totalInBaseCurrency = 0;
 
   const addCost = (costVal: string | undefined, currencyVal: string | undefined) => {
+    if (!costVal || costVal === '-' || costVal.trim() === '') return;
     const cost = parseCost(costVal);
     if (cost <= 0) return;
     const curr = (currencyVal || defaultCurrency).toUpperCase();
@@ -218,20 +219,19 @@ export function SummaryView({
     budgetSummary[curr] = (budgetSummary[curr] || 0) + cost;
 
     const rate = EXCHANGE_RATES[curr] || 1;
-    totalInBaseCurrency += cost * rate;
+    // SettlementView의 parseCostToKRW와 완전히 일치하도록 아이템별 Math.round 환전 처리
+    totalInBaseCurrency += Math.round(cost * rate);
   };
 
-  stays.forEach(s => addCost(s.cost, s.paidBy ? s.currency : defaultCurrency));
-  flights.forEach(f => addCost(f.cost, f.paidBy ? f.currency : defaultCurrency));
-  transits.forEach(t => addCost(t.cost, t.paidBy ? t.currency : defaultCurrency));
+  stays.forEach(s => addCost(s.cost, s.currency || defaultCurrency));
+  flights.forEach(f => addCost(f.cost, f.currency || defaultCurrency));
+  transits.forEach(t => addCost(t.cost, t.currency || defaultCurrency));
   if (trip.customExpenses) {
     trip.customExpenses.forEach(c => addCost(c.cost, c.currency));
   }
   Object.values(timelineData).forEach(items => {
-    items.forEach(item => {
-      if (item.cost) {
-        addCost(item.cost, item.currency);
-      }
+    (items || []).forEach(item => {
+      addCost(item.cost, item.currency);
     });
   });
 
