@@ -435,16 +435,4 @@
   text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
-/* Hero Image Sharp Optimization */
-.hero-image-sharp {
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-  -ms-interpolation-mode: nearest-neighbor;
-  transform: translateZ(0);
-  will-change: transform, opacity;
-  backface-visibility: hidden;
-  perspective: 1000px;
-  transform-style: preserve-3d;
-}
-
 

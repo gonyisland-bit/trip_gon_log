@@ -265,7 +265,7 @@ export function HomePage({
             key={currentHero.id}
             src={currentHero.img}
             alt={currentHero.title || "Hero Trip"}
-            className={`absolute inset-0 w-full h-full object-cover transition-all duration-[2000ms] hero-image-sharp ${isTransitioning ? 'opacity-0 scale-110' : 'opacity-100 scale-100 group-hover:scale-105'}`}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[1500ms] ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}
             style={{ 
               transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)'
             }}
