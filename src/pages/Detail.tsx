@@ -2443,11 +2443,63 @@ export function JourneyDetailPage({
               ? Array.from(new Set(tripToUse.locations.map(l => (l as any).country).filter(Boolean))) as string[]
               : [];
             
-            // If locationsCountries has content, use it; otherwise fallback to locationStr's last part, or first part if only 1 part exists.
-            const country = hasMultipleLocations 
+            // Helper map to translate city names to country names and avoid duplication
+            const getCountryName = (locationToken: string): string => {
+              if (!locationToken) return 'TRAVEL';
+              const cleanToken = locationToken.trim().toLowerCase();
+              const CITY_TO_COUNTRY_MAP: { [key: string]: string } = {
+                'kyoto': 'JAPAN',
+                '교토': 'JAPAN',
+                'osaka': 'JAPAN',
+                '오사카': 'JAPAN',
+                'tokyo': 'JAPAN',
+                '도쿄': 'JAPAN',
+                'fukuoka': 'JAPAN',
+                '후쿠오카': 'JAPAN',
+                'sapporo': 'JAPAN',
+                'okinawa': 'JAPAN',
+                'paris': 'FRANCE',
+                '파리': 'FRANCE',
+                'london': 'UNITED KINGDOM',
+                '런던': 'UNITED KINGDOM',
+                'taipei': 'TAIWAN',
+                '타이베이': 'TAIWAN',
+                'taiwan': 'TAIWAN',
+                '대만': 'TAIWAN',
+                'new york': 'USA',
+                '뉴욕': 'USA',
+                'la': 'USA',
+                'los angeles': 'USA',
+                '로스앤젤레스': 'USA',
+                'san francisco': 'USA',
+                '샌프란시스코': 'USA',
+                'bangkok': 'THAILAND',
+                '방콕': 'THAILAND',
+                'danang': 'VIETNAM',
+                '다낭': 'VIETNAM',
+                'singapore': 'SINGAPORE',
+                '싱가포르': 'SINGAPORE',
+                'sydney': 'AUSTRALIA',
+                '시드니': 'AUSTRALIA',
+                'rome': 'ITALY',
+                '로마': 'ITALY',
+                'barcelona': 'SPAIN',
+                '바르셀로나': 'SPAIN',
+                'seoul': 'SOUTH KOREA',
+                '서울': 'SOUTH KOREA',
+                'jeju': 'SOUTH KOREA',
+                '제주': 'SOUTH KOREA',
+                'busan': 'SOUTH KOREA',
+                '부산': 'SOUTH KOREA'
+              };
+              return CITY_TO_COUNTRY_MAP[cleanToken] || locationToken.toUpperCase();
+            };
+
+            const rawCountry = hasMultipleLocations 
               ? (locationsCountries.length > 0 ? locationsCountries.join(', ') : (parts.length >= 1 ? parts[parts.length - 1] : 'TRAVEL'))
               : (parts.length >= 2 ? parts[parts.length - 1] : (parts[0] || 'TRAVEL'));
             
+            const country = getCountryName(rawCountry);
             const city = hasMultipleLocations 
               ? tripToUse?.locations?.map(l => l.name).join(', ') 
               : (parts.length >= 2 ? parts[0] : (loc || 'JOURNEY'));
