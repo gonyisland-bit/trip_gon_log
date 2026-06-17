@@ -17,6 +17,38 @@ interface EditTripModalProps {
   existingTags: string[];
 }
 
+function extractCountry(address: string): string {
+  if (!address) return '';
+  const clean = address.trim();
+  const countries = [
+    { key: 'japan', name: 'JAPAN', kr: '일본' },
+    { key: 'korea', name: 'KOREA', kr: '대한민국' },
+    { key: 'korea', name: 'KOREA', kr: '한국' },
+    { key: 'vietnam', name: 'VIETNAM', kr: '베트남' },
+    { key: 'taiwan', name: 'TAIWAN', kr: '대만' },
+    { key: 'thailand', name: 'THAILAND', kr: '태국' },
+    { key: 'singapore', name: 'SINGAPORE', kr: '싱가포르' },
+    { key: 'usa', name: 'USA', kr: '미국' },
+    { key: 'france', name: 'FRANCE', kr: '프랑스' },
+    { key: 'italy', name: 'ITALY', kr: '이탈리아' },
+    { key: 'uk', name: 'UK', kr: '영국' },
+    { key: 'germany', name: 'GERMANY', kr: '독일' },
+    { key: 'spain', name: 'SPAIN', kr: '스페인' },
+    { key: 'china', name: 'CHINA', kr: '중국' }
+  ];
+  const lower = clean.toLowerCase();
+  for (const c of countries) {
+    if (lower.includes(c.key) || lower.includes(c.kr.toLowerCase())) {
+      return c.name;
+    }
+  }
+  const parts = clean.split(',');
+  if (parts.length >= 2) {
+    return parts[parts.length - 1].trim().toUpperCase();
+  }
+  return clean.toUpperCase();
+}
+
 export function EditTripModal({
   isOpen,
   onClose,
@@ -30,7 +62,7 @@ export function EditTripModal({
   const [locationStr, setLocationStr] = useState('');
   const [lat, setLat] = useState<number | undefined>(undefined);
   const [lng, setLng] = useState<number | undefined>(undefined);
-  const [locations, setLocations] = useState<{ name: string; lat?: number; lng?: number }[]>([]);
+  const [locations, setLocations] = useState<{ name: string; lat?: number; lng?: number; country?: string }[]>([]);
   const [locationInput, setLocationInput] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [videoUploading, setVideoUploading] = useState(false);
@@ -319,11 +351,11 @@ export function EditTripModal({
                 <PlaceAutocompleteInput
                   value={locationInput}
                   onChange={(val) => setLocationInput(val)}
-                  onSelectPlace={(name, coords) => {
+                  onSelectPlace={(name, coords, address) => {
                     if (name.trim()) {
                       setLocations(prev => {
                         if (prev.some(loc => loc.name === name.trim())) return prev;
-                        return [...prev, { name: name.trim(), lat: coords?.lat, lng: coords?.lng }];
+                        return [...prev, { name: name.trim(), lat: coords?.lat, lng: coords?.lng, country: extractCountry(address) }];
                       });
                       setLocationInput('');
                     }
