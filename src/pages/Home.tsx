@@ -365,6 +365,7 @@ export function HomePage({
               return (
                 <div
                   key={plan.id}
+                  style={{ containerType: 'inline-size' }}
                   className={`group cursor-pointer aspect-[3/4] w-full overflow-hidden transition-all border relative shadow-[0_0_15px_rgba(239,68,68,0.08)] ${
                     activeCardId === plan.id
                       ? 'border-red-600 dark:border-red-400 ring-2 ring-red-600/20 dark:ring-red-400/20 scale-[1.01] shadow-lg'
@@ -395,21 +396,21 @@ export function HomePage({
                   <div className="absolute inset-0 p-4 md:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
                     {/* Top Header Row: Title & Issue Date */}
                     <div className="flex justify-between items-start gap-3 w-full">
-                      <h3 className="text-sm md:text-base font-black uppercase tracking-tight leading-none font-serif text-white drop-shadow-md max-w-[70%] line-clamp-2" style={{ fontFamily: "'Playfair Display', 'Georgia', serif" }}>
+                      <h3 className="text-[5.5cqw] font-black uppercase tracking-tight leading-none font-serif text-white drop-shadow-md max-w-[70%] line-clamp-2" style={{ fontFamily: "'Playfair Display', 'Georgia', serif" }}>
                         {plan.title}
                       </h3>
                       {month && year && (
                         <div className="flex flex-col items-end shrink-0 text-right leading-none font-mono">
-                          <span className="text-[10px] md:text-[11px] font-black tracking-widest text-amber-500 uppercase">{month}</span>
-                          <span className="text-[8px] font-bold tracking-widest text-white/60 mt-0.5">{year}</span>
+                          <span className="text-[3.8cqw] font-black tracking-widest text-amber-500 uppercase">{month}</span>
+                          <span className="text-[2.8cqw] font-bold tracking-widest text-white/60 mt-0.5">{year}</span>
                         </div>
                       )}
                     </div>
 
                     {/* Bottom Footer Row: Date & Status */}
                     <div className="mt-auto flex flex-col gap-0.5">
-                      <div className="text-[8px] md:text-[9px] tracking-widest text-white/70 font-mono truncate uppercase">{plan.date}</div>
-                      <div className="text-[8px] tracking-[0.2em] font-black text-amber-500/95 uppercase">UPCOMING PLAN</div>
+                      <div className="text-[3cqw] tracking-widest text-white/70 font-mono truncate uppercase">{plan.date}</div>
+                      <div className="text-[2.6cqw] tracking-[0.2em] font-black text-amber-500/95 uppercase">UPCOMING PLAN</div>
                     </div>
                   </div>
 
@@ -464,6 +465,7 @@ export function HomePage({
             return (
               <div
                 key={trip.id}
+                style={{ containerType: 'inline-size' }}
                 className={`group cursor-pointer aspect-[3/4] w-full overflow-hidden transition-all border relative shadow-[0_0_15px_rgba(0,0,0,0.08)] dark:shadow-[0_0_15px_rgba(255,255,255,0.03)] ${
                   draggedTripId === trip.id ? 'opacity-40' : 'opacity-100'
                 } ${
@@ -497,27 +499,20 @@ export function HomePage({
                 {/* Magazine Overlay Gradient */}
                 <div className="absolute inset-0 magazine-card-gradient pointer-events-none" />
 
-                {/* Drag handle indicator */}
-                {isLoggedIn && (
-                  <div className="absolute top-3 left-3 z-20 opacity-0 group-hover:opacity-60 transition-opacity pointer-events-none bg-black/40 p-1.5 rounded-sm">
-                    <GripVertical className="w-4 h-4 text-white" />
-                  </div>
-                )}
-
                 {/* Magazine Cover Text Layout */}
                 <div className="absolute inset-0 p-4 md:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
                   {/* Top Header Row: Title & Issue Date */}
                   <div className="flex justify-between items-start gap-3 w-full">
                     <h3
-                      className={`text-sm md:text-base font-black uppercase tracking-tight leading-none font-serif text-white drop-shadow-md max-w-[70%] line-clamp-2 ${isLoggedIn ? 'pl-7' : ''}`}
+                      className="text-[5.5cqw] font-black uppercase tracking-tight leading-none font-serif text-white drop-shadow-md max-w-[70%] line-clamp-2"
                       style={{ fontFamily: "'Playfair Display', 'Georgia', serif" }}
                     >
                       {trip.title}
                     </h3>
                     {month && year && (
                       <div className="flex flex-col items-end shrink-0 text-right leading-none font-mono">
-                        <span className="text-[10px] md:text-[11px] font-black tracking-widest text-amber-500 uppercase">{month}</span>
-                        <span className="text-[8px] font-bold tracking-widest text-white/60 mt-0.5">{year}</span>
+                        <span className="text-[3.8cqw] font-black tracking-widest text-amber-500 uppercase">{month}</span>
+                        <span className="text-[2.8cqw] font-bold tracking-widest text-white/60 mt-0.5">{year}</span>
                       </div>
                     )}
                   </div>
@@ -527,16 +522,16 @@ export function HomePage({
                     {trip.tags && trip.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {trip.tags.slice(0, 2).map(tag => (
-                          <span key={tag} className="text-[7px] md:text-[8px] uppercase font-bold tracking-widest bg-white/10 px-1.5 py-0.5 rounded-sm text-white/95">{tag}</span>
+                          <span key={tag} className="text-[2.6cqw] uppercase font-bold tracking-widest bg-white/10 px-1.5 py-0.5 rounded-sm text-white/95">{tag}</span>
                         ))}
                       </div>
                     )}
                     <div className="flex flex-col gap-0.5">
-                      <div className="text-[8px] md:text-[9px] tracking-widest text-white/70 font-mono truncate uppercase">
+                      <div className="text-[3cqw] tracking-widest text-white/70 font-mono truncate uppercase">
                         {trip.date}
                         {days > 0 && ` · ${days} DAYS`}
                       </div>
-                      <div className="text-[8px] tracking-[0.2em] font-black text-amber-500/95 uppercase">ARCHIVED JOURNEY</div>
+                      <div className="text-[2.6cqw] tracking-[0.2em] font-black text-amber-500/95 uppercase">ARCHIVED JOURNEY</div>
                     </div>
                   </div>
                 </div>

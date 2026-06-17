@@ -24,6 +24,24 @@ function getTripStartDate(dateRangeStr: string): Date {
   return isNaN(d.getTime()) ? new Date(0) : d;
 }
 
+// Helper to extract year and English short month for magazine styling
+function getYearAndMonth(dateRangeStr: string): { year: string; month: string } {
+  if (!dateRangeStr) return { year: '', month: '' };
+  const parts = dateRangeStr.split(/\s*[-—–]\s*/);
+  const cleanFirst = parts[0]?.trim();
+  if (cleanFirst) {
+    const dots = cleanFirst.split('.');
+    if (dots.length >= 2) {
+      const year = dots[0];
+      const monthNum = parseInt(dots[1], 10);
+      const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+      const month = months[monthNum - 1] || dots[1];
+      return { year, month };
+    }
+  }
+  return { year: '', month: '' };
+}
+
 export function PlanHubPage({
   plans,
   onNavigate,
@@ -168,47 +186,80 @@ export function PlanHubPage({
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-6 md:p-12 w-full">
-        {filteredPlans.map((plan) => (
-          <div 
-            key={plan.id} 
-            className={`group cursor-pointer p-6 flex flex-col h-full transition-all border w-full relative shadow-[0_0_15px_rgba(239,68,68,0.08)] ${
-              draggedPlanId === plan.id ? 'opacity-40' : 'opacity-100'
-            } ${
-              activeCardId === plan.id
-                ? 'border-red-600 dark:border-red-400 bg-red-500/[0.05] dark:bg-red-400/[0.05] ring-2 ring-red-600/20 dark:ring-red-400/20 scale-[1.01] shadow-lg'
-                : 'border-red-600/80 dark:border-red-400/80 bg-red-500/[0.02] dark:bg-red-400/[0.02] hover:bg-red-500/[0.04] dark:hover:bg-red-400/[0.04]'
-            }`} 
-            onClick={(e) => {
-              e.stopPropagation();
-              if (activeCardId === plan.id) {
-                onNavigate('detail', plan.id);
-              } else {
-                setActiveCardId(plan.id);
-              }
-            }}
-            draggable={isLoggedIn && sortBy === 'user'}
-            onDragStart={(e) => handlePlanDragStart(e, plan.id)}
-            onDragOver={(e) => handlePlanDragOver(e, plan.id)}
-            onDrop={handlePlanDrop}
-            onDragEnd={() => setDraggedPlanId(null)}
-          >
-            {/* Drag Handle Indicator */}
-            {isLoggedIn && sortBy === 'user' && (
-              <div className="absolute top-3 left-3 z-10 opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none">
-                <GripVertical className="w-4 h-4 text-black dark:text-white" />
-              </div>
-            )}
-
-            <div className="aspect-[3/4] w-full overflow-hidden mb-4 border border-black/10 dark:border-white/10 relative bg-black/5">
+        {filteredPlans.map((plan) => {
+          const { year, month } = getYearAndMonth(plan.date);
+          return (
+            <div
+              key={plan.id}
+              style={{ containerType: 'inline-size' }}
+              className={`group cursor-pointer aspect-[3/4] w-full overflow-hidden transition-all border relative shadow-[0_0_15px_rgba(239,68,68,0.08)] ${
+                draggedPlanId === plan.id ? 'opacity-40' : 'opacity-100'
+              } ${
+                activeCardId === plan.id
+                  ? 'border-red-600 dark:border-red-400 ring-2 ring-red-600/20 dark:ring-red-400/20 scale-[1.01] shadow-lg'
+                  : 'border-red-600/50 dark:border-red-400/50 bg-[#111]'
+              }`}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (activeCardId === plan.id) {
+                  onNavigate('detail', plan.id);
+                } else {
+                  setActiveCardId(plan.id);
+                }
+              }}
+              draggable={isLoggedIn && sortBy === 'user'}
+              onDragStart={(e) => handlePlanDragStart(e, plan.id)}
+              onDragOver={(e) => handlePlanDragOver(e, plan.id)}
+              onDrop={handlePlanDrop}
+              onDragEnd={() => setDraggedPlanId(null)}
+            >
+              {/* Background cover image */}
               <img
                 src={plan.img}
                 alt={plan.title}
-                className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none ${
-                  activeCardId === plan.id
-                    ? 'opacity-100 scale-105'
-                    : 'opacity-90 group-hover:opacity-100 group-hover:scale-105'
+                className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none group-hover:scale-105 ${
+                  activeCardId === plan.id ? 'scale-105 opacity-100' : 'opacity-85 group-hover:opacity-100'
                 }`}
               />
+
+              {/* Magazine Overlay Gradient */}
+              <div className="absolute inset-0 magazine-card-gradient pointer-events-none" />
+
+              {/* Magazine Cover Text Layout */}
+              <div className="absolute inset-0 p-4 md:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
+                {/* Top Header Row: Title & Issue Date */}
+                <div className="flex justify-between items-start gap-3 w-full">
+                  <h3
+                    className="text-[5.5cqw] font-black uppercase tracking-tight leading-none font-serif text-white drop-shadow-md max-w-[70%] line-clamp-2"
+                    style={{ fontFamily: "'Playfair Display', 'Georgia', serif" }}
+                  >
+                    {plan.title}
+                  </h3>
+                  {month && year && (
+                    <div className="flex flex-col items-end shrink-0 text-right leading-none font-mono">
+                      <span className="text-[3.8cqw] font-black tracking-widest text-amber-500 uppercase">{month}</span>
+                      <span className="text-[2.8cqw] font-bold tracking-widest text-white/60 mt-0.5">{year}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bottom Footer Row: Date & Status */}
+                <div className="mt-auto flex flex-col gap-1.5">
+                  {plan.tags && plan.tags.filter(t => t !== 'Plan' && t !== 'Archived').length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {plan.tags.filter(t => t !== 'Plan' && t !== 'Archived').slice(0, 2).map(tag => (
+                        <span key={tag} className="text-[2.6cqw] uppercase font-bold tracking-widest bg-white/10 px-1.5 py-0.5 rounded-sm text-white/95">{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-0.5">
+                    <div className="text-[3cqw] tracking-widest text-white/70 font-mono truncate uppercase">{plan.date}</div>
+                    <div className="text-[2.6cqw] tracking-[0.2em] font-black text-amber-500/95 uppercase">UPCOMING PLAN</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Hamburger menu */}
               <JourneyCardMenu
                 isLoggedIn={isLoggedIn}
                 onEdit={onEditPlan ? () => onEditPlan(plan.id) : undefined}
@@ -218,20 +269,8 @@ export function PlanHubPage({
                 moveLabel="아카이브로 이동"
               />
             </div>
-            
-            <div className="mt-auto flex flex-col gap-1">
-              <div className="flex flex-wrap gap-1 mb-1">
-                {plan.tags?.filter(t => t !== 'Plan' && t !== 'Archived').map(tag => (
-                  <span key={tag} className="text-[9px] uppercase font-bold tracking-widest text-black/40 dark:text-white/40">#{tag}</span>
-                ))}
-              </div>
-              <div className="text-[10px] tracking-widest text-black/55 dark:text-white/55 mb-1 transition-colors break-words">{plan.date}</div>
-              <div className="font-bold tracking-tight uppercase text-sm break-words">
-                {plan.title}
-              </div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </main>
   );

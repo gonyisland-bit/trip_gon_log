@@ -72,6 +72,24 @@ function calculateDays(dateRangeStr: string): number {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 }
 
+// Helper to extract year and English short month for magazine styling
+function getYearAndMonth(dateRangeStr: string): { year: string; month: string } {
+  if (!dateRangeStr) return { year: '', month: '' };
+  const parts = dateRangeStr.split(/\s*[-—–]\s*/);
+  const cleanFirst = parts[0]?.trim();
+  if (cleanFirst) {
+    const dots = cleanFirst.split('.');
+    if (dots.length >= 2) {
+      const year = dots[0];
+      const monthNum = parseInt(dots[1], 10);
+      const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+      const month = months[monthNum - 1] || dots[1];
+      return { year, month };
+    }
+  }
+  return { year: '', month: '' };
+}
+
 export function ArchiveHubPage({
   trips,
   onNavigate,
@@ -216,47 +234,84 @@ export function ArchiveHubPage({
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 p-6 md:p-12 w-full">
-        {filteredTrips.map((trip) => (
-          <div 
-            key={trip.id} 
-            className={`group cursor-pointer p-6 flex flex-col h-full transition-all border relative w-full ${
-              draggedTripId === trip.id ? 'opacity-40' : 'opacity-100'
-            } ${
-              activeCardId === trip.id
-                ? 'bg-black/5 dark:bg-white/5 border-red-600 dark:border-red-400 ring-2 ring-red-600/20 dark:ring-red-400/20 scale-[1.01] shadow-lg'
-                : 'border-black/10 dark:border-white/10 bg-white dark:bg-[#1a1a1a] hover:bg-black/5 dark:hover:bg-white/5'
-            }`} 
-            onClick={(e) => {
-              e.stopPropagation();
-              if (activeCardId === trip.id) {
-                onNavigate('detail', trip.id);
-              } else {
-                setActiveCardId(trip.id);
-              }
-            }}
-            draggable={isLoggedIn && sortBy === 'user'}
-            onDragStart={(e) => handleTripDragStart(e, trip.id)}
-            onDragOver={(e) => handleTripDragOver(e, trip.id)}
-            onDrop={handleTripDrop}
-            onDragEnd={() => setDraggedTripId(null)}
-          >
-            {/* Drag Handle Indicator */}
-            {isLoggedIn && sortBy === 'user' && (
-              <div className="absolute top-3 left-3 z-10 opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none">
-                <GripVertical className="w-4 h-4 text-black dark:text-white" />
-              </div>
-            )}
-
-            <div className="aspect-[3/4] w-full overflow-hidden mb-4 border border-black/10 dark:border-white/10 relative bg-black/5">
+        {filteredTrips.map((trip) => {
+          const { year, month } = getYearAndMonth(trip.date);
+          const days = calculateDays(trip.date);
+          return (
+            <div
+              key={trip.id}
+              style={{ containerType: 'inline-size' }}
+              className={`group cursor-pointer aspect-[3/4] w-full overflow-hidden transition-all border relative shadow-[0_0_15px_rgba(0,0,0,0.08)] dark:shadow-[0_0_15px_rgba(255,255,255,0.03)] ${
+                draggedTripId === trip.id ? 'opacity-40' : 'opacity-100'
+              } ${
+                activeCardId === trip.id
+                  ? 'border-red-600 dark:border-red-400 ring-2 ring-red-600/20 dark:ring-red-400/20 scale-[1.01] shadow-lg'
+                  : 'border-black/10 dark:border-white/10 bg-[#111]'
+              }`}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (activeCardId === trip.id) {
+                  onNavigate('detail', trip.id);
+                } else {
+                  setActiveCardId(trip.id);
+                }
+              }}
+              draggable={isLoggedIn && sortBy === 'user'}
+              onDragStart={(e) => handleTripDragStart(e, trip.id)}
+              onDragOver={(e) => handleTripDragOver(e, trip.id)}
+              onDrop={handleTripDrop}
+              onDragEnd={() => setDraggedTripId(null)}
+            >
+              {/* Background cover image */}
               <img
                 src={trip.img}
                 alt={trip.title}
-                className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none ${
-                  activeCardId === trip.id
-                    ? 'grayscale-0 opacity-100 scale-105'
-                    : 'grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105'
+                className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none group-hover:scale-105 ${
+                  activeCardId === trip.id ? 'scale-105 opacity-100' : 'opacity-85 group-hover:opacity-100'
                 }`}
               />
+
+              {/* Magazine Overlay Gradient */}
+              <div className="absolute inset-0 magazine-card-gradient pointer-events-none" />
+
+              {/* Magazine Cover Text Layout */}
+              <div className="absolute inset-0 p-4 md:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
+                {/* Top Header Row: Title & Issue Date */}
+                <div className="flex justify-between items-start gap-3 w-full">
+                  <h3
+                    className="text-[5.5cqw] font-black uppercase tracking-tight leading-none font-serif text-white drop-shadow-md max-w-[70%] line-clamp-2"
+                    style={{ fontFamily: "'Playfair Display', 'Georgia', serif" }}
+                  >
+                    {trip.title}
+                  </h3>
+                  {month && year && (
+                    <div className="flex flex-col items-end shrink-0 text-right leading-none font-mono">
+                      <span className="text-[3.8cqw] font-black tracking-widest text-amber-500 uppercase">{month}</span>
+                      <span className="text-[2.8cqw] font-bold tracking-widest text-white/60 mt-0.5">{year}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bottom Footer Row: Date, Tags & Status */}
+                <div className="mt-auto flex flex-col gap-1.5">
+                  {trip.tags && trip.tags.filter(t => t !== 'Plan' && t !== 'Archived').length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {trip.tags.filter(t => t !== 'Plan' && t !== 'Archived').slice(0, 2).map(tag => (
+                        <span key={tag} className="text-[2.6cqw] uppercase font-bold tracking-widest bg-white/10 px-1.5 py-0.5 rounded-sm text-white/95">{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-0.5">
+                    <div className="text-[3cqw] tracking-widest text-white/70 font-mono truncate uppercase">
+                      {trip.date}
+                      {days > 0 && ` · ${days} DAYS`}
+                    </div>
+                    <div className="text-[2.6cqw] tracking-[0.2em] font-black text-amber-500/95 uppercase">ARCHIVED JOURNEY</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Hamburger menu */}
               <JourneyCardMenu
                 isLoggedIn={isLoggedIn}
                 onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
@@ -266,22 +321,8 @@ export function ArchiveHubPage({
                 moveLabel="계획으로 이동"
               />
             </div>
-            <div className="mt-auto flex flex-col gap-1">
-              <div className="flex flex-wrap gap-1 mb-1">
-                {trip.tags?.filter(t => t !== 'Plan' && t !== 'Archived').map(tag => (
-                  <span key={tag} className="text-[9px] uppercase font-bold tracking-widest text-black/40 dark:text-white/40">#{tag}</span>
-                ))}
-              </div>
-              <div className="text-[10px] tracking-widest text-black/55 dark:text-white/55 mb-1 transition-colors break-words">
-                {trip.date}
-                {calculateDays(trip.date) > 0 && ` · ${calculateDays(trip.date)} DAYS`}
-              </div>
-              <div className="font-bold tracking-tight uppercase text-sm break-words">
-                {trip.title}
-              </div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </main>
   );
