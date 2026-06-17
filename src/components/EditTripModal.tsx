@@ -37,6 +37,7 @@ export function EditTripModal({
   const [memberInput, setMemberInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -156,7 +157,7 @@ export function EditTripModal({
 
     setUploading(true);
     try {
-      const compressedBlob = await compressImage(file, 3840, 3840, 0.92);
+      const compressedBlob = await compressImage(file, 3840, 3840, 0.75);
       const storagePath = `users/public/covers/${Date.now()}_${file.name}`;
       const imageRef = ref(storage, storagePath);
       await uploadBytes(imageRef, compressedBlob);
@@ -439,7 +440,12 @@ export function EditTripModal({
              {/* Image Preview */}
              <div className="mt-2 border border-black/10 dark:border-white/10 aspect-[16/9] overflow-hidden bg-black/5 relative group flex items-center justify-center">
                {imgUrl ? (
-                 <img src={imgUrl} alt="Cover Preview" className="w-full h-full object-cover" />
+                 <div className="relative w-full h-full cursor-zoom-in" onClick={() => setIsLightboxOpen(true)}>
+                   <img src={imgUrl} alt="Cover Preview" className="w-full h-full object-cover" />
+                   <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                     <span className="text-[10px] text-white font-bold uppercase tracking-widest bg-black/60 px-3 py-1.5 rounded-sm">Click to Zoom</span>
+                   </div>
+                 </div>
                ) : (
                  <div className="text-black/45 dark:text-white/45 text-[10px] font-bold uppercase tracking-widest text-center flex flex-col items-center justify-center p-4">
                    이미지를 드래그 앤 드롭하거나<br />위의 Upload 버튼을 눌러주세요
@@ -484,6 +490,26 @@ export function EditTripModal({
 
         </form>
       </div>
+
+      {/* Lightbox for Cover Image */}
+      {isLightboxOpen && imgUrl && (
+        <div 
+          className="fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center cursor-zoom-out p-4 md:p-10"
+          onClick={() => setIsLightboxOpen(false)}
+        >
+          <img 
+            src={imgUrl} 
+            alt="Cover Full View" 
+            className="max-w-full max-h-full object-contain shadow-2xl rounded-sm animate-in zoom-in-95 duration-200"
+          />
+          <button 
+            onClick={() => setIsLightboxOpen(false)}
+            className="absolute top-4 right-4 text-white hover:text-white/70 p-2 bg-black/40 rounded-full"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

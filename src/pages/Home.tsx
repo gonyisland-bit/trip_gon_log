@@ -265,8 +265,12 @@ export function HomePage({
             key={currentHero.id}
             src={currentHero.img}
             alt={currentHero.title || "Hero Trip"}
-            className={`absolute inset-0 w-full h-full object-cover transition-all duration-[2000ms] ${isTransitioning ? 'opacity-0 scale-110' : 'opacity-100 scale-100 group-hover:scale-105'}`}
-            style={{ transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
+            className={`absolute inset-0 w-full h-full object-cover transition-all duration-[2000ms] will-change-transform ${isTransitioning ? 'opacity-0 scale-110' : 'opacity-100 scale-100 group-hover:scale-105'}`}
+            style={{ 
+              transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+              transform: 'translateZ(0)',
+              imageRendering: 'auto'
+            }}
           />
         ) : (
           <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#EAE8E3] via-[#F4F3EF] to-[#D5D3CC] dark:from-[#0E0E0E] dark:via-[#161616] dark:to-[#0A0A0A]" />
