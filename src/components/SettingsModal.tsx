@@ -63,6 +63,7 @@ export function SettingsModal({
   const [marqueeSpd, setMarqueeSpd] = useState(marqueeSpeed);
   const [saving, setSaving] = useState(false);
   const [loadingId, setLoadingId] = useState<number | null>(null);
+  const [playVideoOnActivate, setPlayVideoOnActivate] = useState(() => localStorage.getItem('playVideoOnActivate') !== 'false');
 
   // Sync state with props when modal opens
   useEffect(() => {
@@ -105,6 +106,8 @@ export function SettingsModal({
         marqueeSpd,
         mediaType
       );
+      localStorage.setItem('playVideoOnActivate', String(playVideoOnActivate));
+      window.dispatchEvent(new Event('playVideoConfigChanged'));
       onClose();
     } catch (err) {
       console.error(err);
@@ -335,6 +338,19 @@ export function SettingsModal({
                     <option value="image">Image (이미지)</option>
                     <option value="video">Video (동영상)</option>
                   </select>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 mt-2">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-black dark:text-white">Autoplay Video on Activation</span>
+                    <span className="text-[8px] text-black/45 dark:text-white/45">Play the video cover when a trip card is selected (clicked).</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={playVideoOnActivate}
+                    onChange={(e) => setPlayVideoOnActivate(e.target.checked)}
+                    className="w-4 h-4 cursor-pointer accent-red-600"
+                  />
                 </div>
               </div>
 

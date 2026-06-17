@@ -2442,16 +2442,19 @@ export function JourneyDetailPage({
             const locationsCountries = tripToUse?.locations 
               ? Array.from(new Set(tripToUse.locations.map(l => (l as any).country).filter(Boolean))) as string[]
               : [];
+            
+            // If locationsCountries has content, use it; otherwise fallback to locationStr's last part, or first part if only 1 part exists.
             const country = hasMultipleLocations 
-              ? (locationsCountries.length > 0 ? locationsCountries.join(', ') : 'TRAVEL')
-              : (parts.length >= 2 ? parts[parts.length - 1] : 'TRAVEL');
+              ? (locationsCountries.length > 0 ? locationsCountries.join(', ') : (parts.length >= 1 ? parts[parts.length - 1] : 'TRAVEL'))
+              : (parts.length >= 2 ? parts[parts.length - 1] : (parts[0] || 'TRAVEL'));
+            
             const city = hasMultipleLocations 
               ? tripToUse?.locations?.map(l => l.name).join(', ') 
               : (parts.length >= 2 ? parts[0] : (loc || 'JOURNEY'));
             
             return (
               <div className="absolute top-8 left-8 z-[20] flex flex-col pointer-events-none select-none text-black dark:text-white drop-shadow-md animate-in fade-in duration-300">
-                <span className="text-[10px] md:text-[11px] font-black tracking-[0.4em] uppercase text-black/50 dark:text-white/50 mb-1 leading-none">
+                <span className="text-[13px] md:text-[15px] font-black tracking-[0.3em] uppercase text-red-600 dark:text-amber-500 mb-1 leading-none">
                   {country}
                 </span>
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-tighter leading-none border-b-2 border-amber-600 pb-1.5 max-w-[260px] md:max-w-[340px] break-all">

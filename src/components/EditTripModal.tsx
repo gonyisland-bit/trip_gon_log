@@ -201,9 +201,11 @@ export function EditTripModal({
     }
   };
 
-  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const uploadVideoFile = async (file: File) => {
+    if (file.size > 30 * 1024 * 1024) {
+      alert("모바일 로딩 지연을 방지하기 위해, 30MB 이하의 동영상 파일만 업로드할 수 있습니다.");
+      return;
+    }
 
     setVideoUploading(true);
     try {
@@ -218,6 +220,38 @@ export function EditTripModal({
     } finally {
       setVideoUploading(false);
       if (videoFileInputRef.current) videoFileInputRef.current.value = '';
+    }
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadVideoFile(file);
+  };
+
+  const [isVideoDragActive, setIsVideoDragActive] = useState(false);
+
+  const handleVideoDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setIsVideoDragActive(true);
+    } else if (e.type === "dragleave") {
+      setIsVideoDragActive(false);
+    }
+  };
+
+  const handleVideoDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsVideoDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      if (file.type.startsWith('video/')) {
+        await uploadVideoFile(file);
+      } else {
+        alert("동영상 파일만 업로드할 수 있습니다.");
+      }
     }
   };
 
@@ -603,19 +637,42 @@ export function EditTripModal({
               </button>
             </div>
 
-             {/* Video Preview */}
-             {videoUrl && (
-               <div className="mt-2 border border-black/10 dark:border-white/10 aspect-[16/9] overflow-hidden bg-black/5 relative group flex items-center justify-center">
-                 <video src={videoUrl} controls muted className="w-full h-full object-cover" />
-                 <button
-                   type="button"
-                   onClick={() => setVideoUrl('')}
-                   className="absolute top-2 right-2 bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 hover:bg-red-700 transition-colors shadow-md rounded-sm"
-                 >
-                   Delete Video
-                 </button>
-               </div>
-             )}
+             {/* Video Preview & Drag and Drop Dropzone */}
+             <div 
+               onDragEnter={handleVideoDrag}
+               onDragOver={handleVideoDrag}
+               onDragLeave={handleVideoDrag}
+               onDrop={handleVideoDrop}
+               className={`mt-2 border border-black/10 dark:border-white/10 aspect-[16/9] overflow-hidden bg-black/5 relative group flex items-center justify-center transition-all duration-300
+                 ${isVideoDragActive ? 'border-dashed border-red-600 bg-black/10 dark:bg-white/10 scale-[1.01]' : ''}
+               `}
+             >
+               {videoUrl ? (
+                 <>
+                   <video src={videoUrl} controls muted className="w-full h-full object-cover" />
+                   <button
+                     type="button"
+                     onClick={() => setVideoUrl('')}
+                     className="absolute top-2 right-2 bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 hover:bg-red-700 transition-colors shadow-md rounded-sm z-10"
+                   >
+                     Delete Video
+                   </button>
+                 </>
+               ) : (
+                 <div className="text-black/45 dark:text-white/45 text-[10px] font-bold uppercase tracking-widest text-center flex flex-col items-center justify-center p-4 pointer-events-none">
+                   {videoUploading ? (
+                     <div className="flex flex-col items-center gap-2">
+                       <Loader2 className="w-5 h-5 animate-spin" />
+                       <span>동영상을 업로드 중입니다...</span>
+                     </div>
+                   ) : (
+                     <>
+                       동영상을 드래그 앤 드롭하거나<br />위의 Upload 버튼을 눌러주세요
+                     </>
+                   )}
+                 </div>
+               )}
+             </div>
           </div>
 
           {/* Action Buttons */}

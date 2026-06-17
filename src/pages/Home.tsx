@@ -250,9 +250,18 @@ interface CardMediaProps {
 
 function CardMedia({ img, title, videoUrl, isActive }: CardMediaProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [autoplayEnabled, setAutoplayEnabled] = useState(() => localStorage.getItem('playVideoOnActivate') !== 'false');
 
   useEffect(() => {
-    if (videoUrl && videoRef.current) {
+    const handleConfigChange = () => {
+      setAutoplayEnabled(localStorage.getItem('playVideoOnActivate') !== 'false');
+    };
+    window.addEventListener('playVideoConfigChanged', handleConfigChange);
+    return () => window.removeEventListener('playVideoConfigChanged', handleConfigChange);
+  }, []);
+
+  useEffect(() => {
+    if (autoplayEnabled && videoUrl && videoRef.current) {
       if (isActive) {
         videoRef.current.currentTime = 0;
         const playPromise = videoRef.current.play();
@@ -265,7 +274,7 @@ function CardMedia({ img, title, videoUrl, isActive }: CardMediaProps) {
         videoRef.current.pause();
       }
     }
-  }, [isActive, videoUrl]);
+  }, [isActive, videoUrl, autoplayEnabled]);
 
   return (
     <>
@@ -276,7 +285,7 @@ function CardMedia({ img, title, videoUrl, isActive }: CardMediaProps) {
           isActive ? 'scale-105 opacity-100' : 'opacity-85 group-hover:opacity-100'
         }`}
       />
-      {videoUrl && (
+      {videoUrl && autoplayEnabled && isActive && (
         <video
           ref={videoRef}
           src={videoUrl}
@@ -284,9 +293,7 @@ function CardMedia({ img, title, videoUrl, isActive }: CardMediaProps) {
           muted
           playsInline
           preload="auto"
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 pointer-events-none scale-105 ${
-            isActive ? 'opacity-100' : 'opacity-0'
-          }`}
+          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 pointer-events-none scale-105 opacity-100 animate-in fade-in duration-300"
         />
       )}
     </>
