@@ -70,6 +70,24 @@ function calculateDays(dateRangeStr: string): number {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 }
 
+// Helper to extract year and English short month for magazine styling
+function getYearAndMonth(dateRangeStr: string): { year: string; month: string } {
+  if (!dateRangeStr) return { year: '', month: '' };
+  const parts = dateRangeStr.split(/\s*[-—–]\s*/);
+  const cleanFirst = parts[0]?.trim();
+  if (cleanFirst) {
+    const dots = cleanFirst.split('.');
+    if (dots.length >= 2) {
+      const year = dots[0];
+      const monthNum = parseInt(dots[1], 10);
+      const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+      const month = months[monthNum - 1] || dots[1];
+      return { year, month };
+    }
+  }
+  return { year: '', month: '' };
+}
+
 // Journey card hamburger menu
 export function JourneyCardMenu({
   onEdit,
@@ -258,40 +276,61 @@ export function HomePage({
           <div className="absolute inset-0 cursor-pointer z-0" onClick={() => onNavigate('detail', currentHero.id)} />
         )}
 
-        {/* Text content */}
-        <div className="absolute inset-0 flex flex-col justify-center p-6 sm:p-10 md:p-16 w-full md:w-2/3 lg:w-1/2 text-white z-10 pointer-events-none">
-          <div className="pointer-events-auto max-w-full">
-            <h1 className="text-4xl min-[390px]:text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[0.9] uppercase drop-shadow-xl" style={{ wordBreak: 'keep-all' }}>
-              {homeTitle.split(/\\n|\n/).map((part, idx, arr) => (
-                <React.Fragment key={idx}>{part}{idx < arr.length - 1 && <br />}</React.Fragment>
-              ))}
+        {/* Text content - Magazine Cover Style Hero */}
+        <div className="absolute inset-0 p-6 sm:p-10 md:p-16 flex flex-col justify-between text-white z-10 pointer-events-none">
+          {/* Top-Left: Static Home Hub Title & Subtitle (Minimized) */}
+          <div className="pointer-events-auto max-w-full sm:max-w-md md:max-w-lg mt-4 md:mt-0">
+            <h1 className="text-sm md:text-xs font-black tracking-[0.25em] uppercase text-amber-500 drop-shadow-sm mb-1">
+              {homeTitle.replace(/\\n|\n/g, ' ')}
             </h1>
+            <p className="text-[10px] md:text-[11px] text-white/60 uppercase tracking-widest font-bold max-w-xs drop-shadow-sm leading-relaxed break-keep">
+              {homeSubtitle}
+            </p>
           </div>
-          <div className="pointer-events-auto max-w-full pr-4 mt-6 md:mt-8">
-            <p className="text-sm md:text-base text-white/80 drop-shadow-md break-keep">{homeSubtitle}</p>
-          </div>
+
+          {/* Bottom-Left: Dynamic Active Slide Info (Magazine Style - Massive Serif Title + Month/Year) */}
+          {currentHero && (
+            <div className="pointer-events-auto mt-auto max-w-full md:max-w-[70%] lg:max-w-[60%] flex flex-col md:flex-row md:items-end gap-3 md:gap-6">
+              {/* Year/Month Badge */}
+              {(() => {
+                const { year, month } = getYearAndMonth(currentHero.date);
+                if (!month || !year) return null;
+                return (
+                  <div className="flex items-baseline md:flex-col items-start md:items-end shrink-0 leading-none font-mono border-l-2 md:border-l-0 md:border-r-2 border-amber-500 pl-3 md:pl-0 md:pr-4">
+                    <span className="text-2xl md:text-3xl font-black tracking-widest text-amber-500 uppercase">{month}</span>
+                    <span className="text-xs md:text-sm font-bold tracking-widest text-white/70 ml-2 md:ml-0 md:mt-1">{year}</span>
+                  </div>
+                );
+              })()}
+
+              {/* Title */}
+              <div className="flex flex-col">
+                <div className="text-[10px] tracking-[0.3em] font-bold text-white/50 uppercase mb-1 md:mb-2">FEATURED JOURNAL</div>
+                <h2
+                  onClick={() => onNavigate('detail', currentHero.id)}
+                  className="text-3xl min-[390px]:text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[0.95] font-serif cursor-pointer hover:text-amber-500 transition-colors drop-shadow-xl line-clamp-3 select-none"
+                  style={{ fontFamily: "'Playfair Display', 'Georgia', serif", wordBreak: 'keep-all' }}
+                >
+                  {currentHero.title}
+                </h2>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Featured label + slide dots */}
-        {currentHero && (
-          <div className="absolute bottom-4 right-4 md:bottom-6 md:right-6 flex flex-col items-end gap-2 z-10">
-            <div className="bg-white/40 dark:bg-black/40 backdrop-blur-md px-3 py-1.5 md:px-4 md:py-2 border border-white/20 dark:border-white/10 rounded-sm">
-              <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-black/90 dark:text-white/90 drop-shadow-sm">
-                Featured: {currentHero.title}
-              </span>
+        {/* Carousel slide dots */}
+        {currentHero && heroJourneys.length > 1 && (
+          <div className="absolute bottom-4 right-4 md:bottom-6 md:right-6 z-10">
+            <div className="flex items-center gap-1.5 bg-black/30 backdrop-blur-sm px-3 py-2 border border-white/10 rounded-full">
+              {heroJourneys.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={(e) => { e.stopPropagation(); goToSlide(idx); }}
+                  className={`rounded-full transition-all ${idx === heroSlide ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/40 hover:bg-white/70'}`}
+                  aria-label={`Go to slide ${idx + 1}`}
+                />
+              ))}
             </div>
-            {heroJourneys.length > 1 && (
-              <div className="flex items-center gap-1.5">
-                {heroJourneys.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={(e) => { e.stopPropagation(); goToSlide(idx); }}
-                    className={`rounded-full transition-all ${idx === heroSlide ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/40 hover:bg-white/70'}`}
-                    aria-label={`Go to slide ${idx + 1}`}
-                  />
-                ))}
-              </div>
-            )}
           </div>
         )}
 
@@ -321,49 +360,71 @@ export function HomePage({
             </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 p-6 md:p-12 w-full">
-            {localPlans.slice(0, 4).map((plan) => (
-              <div
-                key={plan.id}
-                className={`group cursor-pointer p-6 flex flex-col h-full transition-all border w-full relative shadow-[0_0_15px_rgba(239,68,68,0.08)] ${
-                  activeCardId === plan.id
-                    ? 'border-red-600 dark:border-red-400 bg-red-500/[0.05] dark:bg-red-400/[0.05] ring-2 ring-red-600/20 dark:ring-red-400/20 scale-[1.01] shadow-lg'
-                    : 'border-red-600/80 dark:border-red-400/80 bg-red-500/[0.02] dark:bg-red-400/[0.02] hover:bg-red-500/[0.04] dark:hover:bg-red-400/[0.04]'
-                }`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (activeCardId === plan.id) {
-                    onNavigate('detail', plan.id);
-                  } else {
-                    setActiveCardId(plan.id);
-                  }
-                }}
-              >
-                <div className="aspect-[3/4] w-full overflow-hidden mb-4 border border-black/10 dark:border-white/10 relative bg-black/5">
+            {localPlans.slice(0, 4).map((plan) => {
+              const { year, month } = getYearAndMonth(plan.date);
+              return (
+                <div
+                  key={plan.id}
+                  className={`group cursor-pointer aspect-[3/4] w-full overflow-hidden transition-all border relative shadow-[0_0_15px_rgba(239,68,68,0.08)] ${
+                    activeCardId === plan.id
+                      ? 'border-red-600 dark:border-red-400 ring-2 ring-red-600/20 dark:ring-red-400/20 scale-[1.01] shadow-lg'
+                      : 'border-red-600/50 dark:border-red-400/50 bg-[#111]'
+                  }`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (activeCardId === plan.id) {
+                      onNavigate('detail', plan.id);
+                    } else {
+                      setActiveCardId(plan.id);
+                    }
+                  }}
+                >
+                  {/* Background cover image */}
                   <img
                     src={plan.img}
                     alt={plan.title}
-                    className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none ${
-                      activeCardId === plan.id
-                        ? 'opacity-100 scale-105'
-                        : 'opacity-90 group-hover:opacity-100 group-hover:scale-105'
+                    className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none group-hover:scale-105 ${
+                      activeCardId === plan.id ? 'scale-105 opacity-100' : 'opacity-85 group-hover:opacity-100'
                     }`}
                   />
+                  
+                  {/* Magazine Overlay Gradient */}
+                  <div className="absolute inset-0 magazine-card-gradient pointer-events-none" />
+
+                  {/* Magazine Cover Text Layout */}
+                  <div className="absolute inset-0 p-4 md:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
+                    {/* Top Header Row: Title & Issue Date */}
+                    <div className="flex justify-between items-start gap-3 w-full">
+                      <h3 className="text-sm md:text-base font-black uppercase tracking-tight leading-none font-serif text-white drop-shadow-md max-w-[70%] line-clamp-2" style={{ fontFamily: "'Playfair Display', 'Georgia', serif" }}>
+                        {plan.title}
+                      </h3>
+                      {month && year && (
+                        <div className="flex flex-col items-end shrink-0 text-right leading-none font-mono">
+                          <span className="text-[10px] md:text-[11px] font-black tracking-widest text-amber-500 uppercase">{month}</span>
+                          <span className="text-[8px] font-bold tracking-widest text-white/60 mt-0.5">{year}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bottom Footer Row: Date & Status */}
+                    <div className="mt-auto flex flex-col gap-0.5">
+                      <div className="text-[8px] md:text-[9px] tracking-widest text-white/70 font-mono truncate uppercase">{plan.date}</div>
+                      <div className="text-[8px] tracking-[0.2em] font-black text-amber-500/95 uppercase">UPCOMING PLAN</div>
+                    </div>
+                  </div>
+
+                  {/* Hamburger menu */}
+                  <JourneyCardMenu
+                    isLoggedIn={isLoggedIn}
+                    onEdit={onEditTrip ? () => onEditTrip(plan.id) : undefined}
+                    onDelete={onDeleteTrip ? () => onDeleteTrip(plan.id) : undefined}
+                    onClone={onClonePlan ? () => onClonePlan(plan.id) : undefined}
+                    onMove={() => handleMoveToArchive(plan)}
+                    moveLabel="아카이브로 이동"
+                  />
                 </div>
-                <div className="mt-auto">
-                  <div className="text-xs tracking-widest text-black/50 dark:text-white/50 mb-1 break-words">{plan.date}</div>
-                  <div className="font-bold tracking-tight uppercase text-sm break-words">{plan.title}</div>
-                </div>
-                {/* Hamburger menu */}
-                <JourneyCardMenu
-                  isLoggedIn={isLoggedIn}
-                  onEdit={onEditTrip ? () => onEditTrip(plan.id) : undefined}
-                  onDelete={onDeleteTrip ? () => onDeleteTrip(plan.id) : undefined}
-                  onClone={onClonePlan ? () => onClonePlan(plan.id) : undefined}
-                  onMove={() => handleMoveToArchive(plan)}
-                  moveLabel="아카이브로 이동"
-                />
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}
@@ -397,72 +458,101 @@ export function HomePage({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 p-6 md:p-12 w-full">
-          {filteredTrips.slice(0, 4).map((trip) => (
-            <div
-              key={trip.id}
-              className={`group cursor-pointer p-6 flex flex-col h-full transition-all relative w-full border ${
-                draggedTripId === trip.id ? 'opacity-40' : 'opacity-100'
-              } ${
-                activeCardId === trip.id
-                  ? 'bg-black/5 dark:bg-white/5 border-red-600 dark:border-red-400 ring-2 ring-red-600/20 dark:ring-red-400/20 scale-[1.01] shadow-lg'
-                  : 'border-black/10 dark:border-white/10 bg-white dark:bg-[#1a1a1a] hover:bg-black/5 dark:hover:bg-white/5'
-              }`}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (activeCardId === trip.id) {
-                  onNavigate('detail', trip.id);
-                } else {
-                  setActiveCardId(trip.id);
-                }
-              }}
-              draggable={isLoggedIn}
-              onDragStart={(e) => handleTripDragStart(e, trip.id)}
-              onDragOver={(e) => handleTripDragOver(e, trip.id)}
-              onDrop={handleTripDrop}
-              onDragEnd={() => setDraggedTripId(null)}
-            >
-              {/* Drag handle indicator */}
-              {isLoggedIn && (
-                <div className="absolute top-3 left-3 z-10 opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none">
-                  <GripVertical className="w-4 h-4 text-black dark:text-white" />
-                </div>
-              )}
-
-              <div className="aspect-[3/4] w-full overflow-hidden mb-4 border border-black/10 dark:border-white/10 relative bg-black/5">
+          {filteredTrips.slice(0, 4).map((trip) => {
+            const { year, month } = getYearAndMonth(trip.date);
+            const days = calculateDays(trip.date);
+            return (
+              <div
+                key={trip.id}
+                className={`group cursor-pointer aspect-[3/4] w-full overflow-hidden transition-all border relative shadow-[0_0_15px_rgba(0,0,0,0.08)] dark:shadow-[0_0_15px_rgba(255,255,255,0.03)] ${
+                  draggedTripId === trip.id ? 'opacity-40' : 'opacity-100'
+                } ${
+                  activeCardId === trip.id
+                    ? 'border-red-600 dark:border-red-400 ring-2 ring-red-600/20 dark:ring-red-400/20 scale-[1.01] shadow-lg'
+                    : 'border-black/10 dark:border-white/10 bg-[#111]'
+                }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (activeCardId === trip.id) {
+                    onNavigate('detail', trip.id);
+                  } else {
+                    setActiveCardId(trip.id);
+                  }
+                }}
+                draggable={isLoggedIn}
+                onDragStart={(e) => handleTripDragStart(e, trip.id)}
+                onDragOver={(e) => handleTripDragOver(e, trip.id)}
+                onDrop={handleTripDrop}
+                onDragEnd={() => setDraggedTripId(null)}
+              >
+                {/* Background cover image */}
                 <img
                   src={trip.img}
                   alt={trip.title}
-                  className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none ${
-                    activeCardId === trip.id
-                      ? 'grayscale-0 opacity-100 scale-105'
-                      : 'grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105'
+                  className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none group-hover:scale-105 ${
+                    activeCardId === trip.id ? 'scale-105 opacity-100' : 'opacity-85 group-hover:opacity-100'
                   }`}
                 />
-              </div>
-              <div className="mt-auto">
-                <div className="flex flex-wrap gap-1 mb-2">
-                  {trip.tags?.slice(0, 2).map(tag => (
-                    <span key={tag} className="text-[9px] uppercase font-bold tracking-widest bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded-sm text-black/60 dark:text-white/60">{tag}</span>
-                  ))}
-                </div>
-                <div className="text-xs tracking-widest text-black/50 dark:text-white/50 mb-1 transition-colors break-words">
-                  {trip.date}
-                  {calculateDays(trip.date) > 0 && ` · ${calculateDays(trip.date)} DAYS`}
-                </div>
-                <div className="font-bold tracking-tight uppercase text-sm break-words">{trip.title}</div>
-              </div>
 
-              {/* Hamburger menu */}
-              <JourneyCardMenu
-                isLoggedIn={isLoggedIn}
-                onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
-                onDelete={onDeleteTrip ? () => onDeleteTrip(trip.id) : undefined}
-                onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
-                onMove={onMoveToPlans ? () => onMoveToPlans(trip) : undefined}
-                moveLabel="계획으로 이동"
-              />
-            </div>
-          ))}
+                {/* Magazine Overlay Gradient */}
+                <div className="absolute inset-0 magazine-card-gradient pointer-events-none" />
+
+                {/* Drag handle indicator */}
+                {isLoggedIn && (
+                  <div className="absolute top-3 left-3 z-20 opacity-0 group-hover:opacity-60 transition-opacity pointer-events-none bg-black/40 p-1.5 rounded-sm">
+                    <GripVertical className="w-4 h-4 text-white" />
+                  </div>
+                )}
+
+                {/* Magazine Cover Text Layout */}
+                <div className="absolute inset-0 p-4 md:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
+                  {/* Top Header Row: Title & Issue Date */}
+                  <div className="flex justify-between items-start gap-3 w-full">
+                    <h3
+                      className={`text-sm md:text-base font-black uppercase tracking-tight leading-none font-serif text-white drop-shadow-md max-w-[70%] line-clamp-2 ${isLoggedIn ? 'pl-7' : ''}`}
+                      style={{ fontFamily: "'Playfair Display', 'Georgia', serif" }}
+                    >
+                      {trip.title}
+                    </h3>
+                    {month && year && (
+                      <div className="flex flex-col items-end shrink-0 text-right leading-none font-mono">
+                        <span className="text-[10px] md:text-[11px] font-black tracking-widest text-amber-500 uppercase">{month}</span>
+                        <span className="text-[8px] font-bold tracking-widest text-white/60 mt-0.5">{year}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Bottom Footer Row: Date, Tags & Status */}
+                  <div className="mt-auto flex flex-col gap-1.5">
+                    {trip.tags && trip.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {trip.tags.slice(0, 2).map(tag => (
+                          <span key={tag} className="text-[7px] md:text-[8px] uppercase font-bold tracking-widest bg-white/10 px-1.5 py-0.5 rounded-sm text-white/95">{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex flex-col gap-0.5">
+                      <div className="text-[8px] md:text-[9px] tracking-widest text-white/70 font-mono truncate uppercase">
+                        {trip.date}
+                        {days > 0 && ` · ${days} DAYS`}
+                      </div>
+                      <div className="text-[8px] tracking-[0.2em] font-black text-amber-500/95 uppercase">ARCHIVED JOURNEY</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hamburger menu */}
+                <JourneyCardMenu
+                  isLoggedIn={isLoggedIn}
+                  onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
+                  onDelete={onDeleteTrip ? () => onDeleteTrip(trip.id) : undefined}
+                  onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
+                  onMove={onMoveToPlans ? () => onMoveToPlans(trip) : undefined}
+                  moveLabel="계획으로 이동"
+                />
+              </div>
+            );
+          })}
         </div>
         <div className="p-6 md:px-12 flex justify-center w-full">
           <button onClick={() => onNavigate('archive')} className="text-sm font-bold uppercase tracking-widest border border-black dark:border-white px-8 py-3 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors w-full md:w-auto">

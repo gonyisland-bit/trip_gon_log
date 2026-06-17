@@ -1479,16 +1479,16 @@ function App() {
 
       {/* Splash Screen */}
       {showSplash && (
-        <div className={`fixed inset-0 z-[99999] flex flex-col justify-between items-center bg-[#F4F3EF] dark:bg-[#0E0E0E] transition-opacity duration-300 ${fadeSplash ? 'opacity-0' : 'opacity-100'}`}>
+        <div className={`fixed inset-0 z-[99999] flex flex-col justify-between items-center bg-[#F4F3EF] dark:bg-[#0E0E0E] splash-container ${fadeSplash ? 'splash-container-fade' : 'splash-container-active'}`}>
           <div /> {/* Top spacing */}
           <div className="flex flex-col items-center">
-            <h1 className="text-4xl sm:text-6xl md:text-8xl font-black tracking-tighter uppercase text-black dark:text-white select-none">
-              tripgon log
+            <h1 className="text-5xl sm:text-7xl md:text-9xl font-black tracking-tighter splash-title-shimmer splash-text-animate select-none">
+              Tripgon log
             </h1>
           </div>
           <div className="pb-8">
             <span className="text-[10px] md:text-xs font-bold tracking-widest text-black/40 dark:text-white/40 uppercase">
-              v0.3e
+              v0.4
             </span>
           </div>
         </div>

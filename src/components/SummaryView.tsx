@@ -513,7 +513,7 @@ export function SummaryView({
           
           {/* Footer Logo (Reduced spacing and compact) */}
           <div className="text-center pt-3 border-t border-black/10 dark:border-white/10">
-            <span className="text-[8px] font-black tracking-[0.35em] text-black/35 dark:text-white/35">TRIP GON LOG v0.3e</span>
+            <span className="text-[8px] font-black tracking-[0.35em] text-black/35 dark:text-white/35">TRIP GON LOG v0.4</span>
           </div>
         </div>
       </div>
