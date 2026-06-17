@@ -2438,8 +2438,11 @@ export function JourneyDetailPage({
           {activeTab === 'summary' && (() => {
             const loc = tripToUse?.locationStr || '';
             const parts = loc.split(',').map(p => p.trim());
-            const country = parts.length >= 2 ? parts[parts.length - 1] : 'TRAVEL';
-            const city = parts.length >= 2 ? parts[0] : (loc || 'JOURNEY');
+            const hasMultipleLocations = tripToUse?.locations && tripToUse.locations.length >= 2;
+            const country = hasMultipleLocations ? 'TRAVEL' : (parts.length >= 2 ? parts[parts.length - 1] : 'TRAVEL');
+            const city = hasMultipleLocations 
+              ? tripToUse.locations.map(l => l.name).join(', ') 
+              : (parts.length >= 2 ? parts[0] : (loc || 'JOURNEY'));
             
             return (
               <div className="absolute top-8 left-8 z-[20] flex flex-col pointer-events-none select-none text-black dark:text-white drop-shadow-md animate-in fade-in duration-300">
