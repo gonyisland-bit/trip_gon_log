@@ -461,6 +461,7 @@ export function JourneyDetailPage({
   const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
   const [galleryViewMode, setGalleryViewMode] = useState<'grid' | 'accordion'>('grid');
   const [collapsedGalleryDays, setCollapsedGalleryDays] = useState<string[]>([]);
+  const [detailLocInput, setDetailLocInput] = useState('');
   
   // Autosave state
   const [showAutosaveModal, setShowAutosaveModal] = useState(false);
@@ -2144,24 +2145,54 @@ export function JourneyDetailPage({
                 />
               </div>
               <span>—</span>
-              <div className="w-32 md:w-40">
-                <PlaceAutocompleteInput
-                  value={draftTrip.locationStr}
-                  onChange={(val) => setDraftTrip({ ...draftTrip, locationStr: val })}
-                  onSelectPlace={(name, coords) => {
-                    setDraftTrip(prev => {
-                      if (!prev) return null;
-                      return {
-                        ...prev,
-                        locationStr: name,
-                        lat: coords?.lat ?? prev.lat,
-                        lng: coords?.lng ?? prev.lng
-                      };
-                    });
-                  }}
-                  className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[9px] md:text-[10px] text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
-                  placeholder="Default Map City"
-                />
+              <div className="flex flex-wrap items-center gap-1.5 border border-black/10 dark:border-white/10 p-1 bg-white/5 max-w-lg">
+                {(draftTrip.locations && Array.isArray(draftTrip.locations) ? draftTrip.locations : (draftTrip.locationStr ? [{ name: draftTrip.locationStr, lat: draftTrip.lat, lng: draftTrip.lng }] : [])).map((loc, idx) => (
+                  <span key={idx} className="flex items-center gap-1 bg-white dark:bg-[#1a1a1a] text-[8px] md:text-[9px] font-bold px-1.5 py-0.5 border border-black/15 dark:border-white/15 text-black dark:text-white rounded-none">
+                    {loc.name}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentLocs = draftTrip.locations && Array.isArray(draftTrip.locations) ? draftTrip.locations : (draftTrip.locationStr ? [{ name: draftTrip.locationStr, lat: draftTrip.lat, lng: draftTrip.lng }] : []);
+                        const updated = currentLocs.filter((_, i) => i !== idx);
+                        setDraftTrip({
+                          ...draftTrip,
+                          locations: updated,
+                          locationStr: updated.map(l => l.name).join(', '),
+                          lat: updated[0]?.lat,
+                          lng: updated[0]?.lng
+                        });
+                      }}
+                      className="text-red-500 font-bold hover:text-red-700 ml-0.5"
+                    >
+                      &times;
+                    </button>
+                  </span>
+                ))}
+                
+                <div className="w-24 md:w-32">
+                  <PlaceAutocompleteInput
+                    value={detailLocInput}
+                    onChange={(val) => setDetailLocInput(val)}
+                    onSelectPlace={(name, coords) => {
+                      if (name.trim()) {
+                        const currentLocs = draftTrip.locations && Array.isArray(draftTrip.locations) ? draftTrip.locations : (draftTrip.locationStr ? [{ name: draftTrip.locationStr, lat: draftTrip.lat, lng: draftTrip.lng }] : []);
+                        if (!currentLocs.some(loc => loc.name === name.trim())) {
+                          const updated = [...currentLocs, { name: name.trim(), lat: coords?.lat, lng: coords?.lng }];
+                          setDraftTrip({
+                            ...draftTrip,
+                            locations: updated,
+                            locationStr: updated.map(l => l.name).join(', '),
+                            lat: updated[0]?.lat,
+                            lng: updated[0]?.lng
+                          });
+                        }
+                        setDetailLocInput('');
+                      }
+                    }}
+                    className="bg-transparent outline-none text-[8px] md:text-[9px] text-black dark:text-white w-full border-none px-1 py-0.5"
+                    placeholder="도시 추가..."
+                  />
+                </div>
               </div>
             </div>
           ) : (

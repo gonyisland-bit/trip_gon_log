@@ -6,7 +6,7 @@ import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 interface CreateTripModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (title: string, dateRange: string, location: string, tags: string[], lat?: number, lng?: number, members?: string[]) => void;
+  onCreate: (title: string, dateRange: string, location: string, tags: string[], lat?: number, lng?: number, members?: string[], locations?: { name: string; lat?: number; lng?: number }[]) => void;
   existingTags: string[];
 }
 
@@ -20,6 +20,8 @@ export function CreateTripModal({
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [location, setLocation] = useState('');
+  const [locations, setLocations] = useState<{ name: string; lat?: number; lng?: number }[]>([]);
+  const [locationInput, setLocationInput] = useState('');
   const [lat, setLat] = useState<number | undefined>(undefined);
   const [lng, setLng] = useState<number | undefined>(undefined);
   const [tags, setTags] = useState<string[]>([]);
@@ -34,6 +36,8 @@ export function CreateTripModal({
       setStartDate('');
       setEndDate('');
       setLocation('');
+      setLocations([]);
+      setLocationInput('');
       setLat(undefined);
       setLng(undefined);
       setTags([]);
@@ -81,21 +85,26 @@ export function CreateTripModal({
     if (!startDate) return setError('시작 날짜를 입력해 주세요.');
     if (!endDate) return setError('종료 날짜를 입력해 주세요.');
     if (new Date(startDate) > new Date(endDate)) return setError('종료일은 시작일보다 빠를 수 없습니다.');
-    if (!location.trim()) return setError('여행 위치(도시명)를 입력해 주세요.');
+    if (locations.length === 0) return setError('여행 위치(도시명)를 1개 이상 추가해 주세요.');
 
     // Convert dates: YYYY-MM-DD -> YYYY.MM.DD
     const startFormatted = startDate.replace(/-/g, '.');
     const endFormatted = endDate.replace(/-/g, '.');
     const dateRange = `${startFormatted} - ${endFormatted}`;
 
+    const combinedLocationStr = locations.map(loc => loc.name).join(', ');
+    const firstLat = locations[0]?.lat;
+    const firstLng = locations[0]?.lng;
+
     onCreate(
       title.trim(),
       dateRange,
-      location.trim(),
+      combinedLocationStr,
       tags.length > 0 ? tags : ['Personal'],
-      lat,
-      lng,
-      members
+      firstLat,
+      firstLng,
+      members,
+      locations
     );
     onClose();
   };
@@ -208,26 +217,68 @@ export function CreateTripModal({
             </div>
           </div>
 
-          {/* Location with Google Autocomplete */}
+          {/* Location with Google Autocomplete (복수 장소 등록 지원) */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest text-black/50 dark:text-white/50">
-              Location / City
+              Locations (방문 장소 복수 지정 가능)
             </label>
-            <div className="relative flex items-center">
-              <MapPin className="absolute left-3 w-4 h-4 text-black/30 dark:text-white/30 z-10 pointer-events-none" />
-              <PlaceAutocompleteInput
-                value={location}
-                onChange={(val) => setLocation(val)}
-                onSelectPlace={(name, coords) => {
-                  setLocation(name);
-                  if (coords) {
-                    setLat(coords.lat);
-                    setLng(coords.lng);
+
+            {/* Location Pill Display */}
+            {locations.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-1.5 max-h-24 overflow-y-auto p-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+                {locations.map((loc, idx) => (
+                  <span 
+                    key={idx} 
+                    className="flex items-center gap-1.5 bg-white dark:bg-[#151515] text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border border-black/15 dark:border-white/15 text-black dark:text-white shadow-xs"
+                  >
+                    {loc.name}
+                    <button 
+                      type="button" 
+                      onClick={() => setLocations(prev => prev.filter((_, i) => i !== idx))} 
+                      className="text-black/45 dark:text-white/45 hover:text-red-500 transition-colors text-xs leading-none"
+                    >
+                      &times;
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="relative flex items-center gap-2">
+              <div className="relative flex-grow">
+                <MapPin className="absolute left-3 w-4 h-4 text-black/30 dark:text-white/30 z-10 pointer-events-none top-1/2 -translate-y-1/2" />
+                <PlaceAutocompleteInput
+                  value={locationInput}
+                  onChange={(val) => setLocationInput(val)}
+                  onSelectPlace={(name, coords) => {
+                    if (name.trim()) {
+                      setLocations(prev => {
+                        if (prev.some(loc => loc.name === name.trim())) return prev;
+                        return [...prev, { name: name.trim(), lat: coords?.lat, lng: coords?.lng }];
+                      });
+                      setLocationInput('');
+                    }
+                  }}
+                  className="w-full pl-10 pr-4 py-2 text-xs md:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none text-black dark:text-white"
+                  placeholder="도시 검색..."
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const clean = locationInput.trim();
+                  if (clean) {
+                    setLocations(prev => {
+                      if (prev.some(loc => loc.name === clean)) return prev;
+                      return [...prev, { name: clean }];
+                    });
+                    setLocationInput('');
                   }
                 }}
-                className="w-full pl-10 pr-4 py-2 text-xs md:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none text-black dark:text-white"
-                placeholder="Search destination city..."
-              />
+                className="px-3 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-bold uppercase tracking-widest hover:opacity-85 transition-opacity shrink-0 rounded-none border border-black/20 dark:border-white/20"
+              >
+                추가
+              </button>
             </div>
           </div>
 

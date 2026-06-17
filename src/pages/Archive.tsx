@@ -119,8 +119,17 @@ export function ArchiveHubPage({
     }
   }, [initialTagFilter]);
 
-  const baseFilters = ['All', '2026', '2025', '2024', 'Kyoto', 'Paris', 'Personal', 'Business'];
-  const filters = baseFilters.includes(activeFilter) ? baseFilters : [...baseFilters, activeFilter];
+  const filters = useMemo(() => {
+    const uniqueTags = new Set<string>();
+    localTrips.forEach(t => {
+      if (t.tags) {
+        t.tags.forEach(tag => {
+          if (tag) uniqueTags.add(tag);
+        });
+      }
+    });
+    return ['All', ...Array.from(uniqueTags).sort()];
+  }, [localTrips]);
 
   const sortedTrips = useMemo(() => {
     if (sortBy === 'date') {
@@ -177,39 +186,21 @@ export function ArchiveHubPage({
           
           {/* Active Filter and Sorting Layout */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-6">
-            {/* Tag Filter Dropdown */}
-            <div className="relative inline-block text-left z-20">
-              <button 
-                onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}
-                className="text-[10px] px-3 py-1.5 uppercase font-bold tracking-widest border border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-transparent text-black dark:text-white transition-colors flex items-center gap-1.5 rounded-sm"
-              >
-                <span>Tag Filter: {activeFilter}</span>
-                <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isTagDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {isTagDropdownOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setIsTagDropdownOpen(false)} />
-                  <div className="absolute left-0 mt-1 w-48 bg-white dark:bg-[#1a1a1a] border border-black/10 dark:border-white/10 shadow-xl z-20 max-h-60 overflow-y-auto rounded-sm py-1 animate-in fade-in slide-in-from-top-1 duration-150">
-                    {filters.map(f => (
-                      <button
-                        key={f}
-                        onClick={() => {
-                          setActiveFilter(f);
-                          setIsTagDropdownOpen(false);
-                        }}
-                        className={`w-full text-left px-3 py-2 text-[10px] uppercase font-bold tracking-widest transition-colors ${
-                          activeFilter === f 
-                            ? 'bg-black text-white dark:bg-white dark:text-black' 
-                            : 'text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5'
-                        }`}
-                      >
-                        {f}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
+            {/* Tag Filter horizontal scrollable buttons */}
+            <div className="flex flex-wrap gap-2">
+              {filters.map(f => (
+                <button
+                  key={f}
+                  onClick={() => setActiveFilter(f)}
+                  className={`text-[10px] px-3 py-1.5 uppercase font-bold tracking-widest border transition-colors shrink-0 rounded-sm ${
+                    activeFilter === f
+                    ? 'border-black bg-black text-white dark:border-white dark:bg-white dark:text-black'
+                    : 'border-black/20 text-black/50 hover:border-black/50 dark:border-white/20 dark:text-white/50 dark:hover:border-white/50 bg-transparent'
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
@@ -262,14 +253,25 @@ export function ArchiveHubPage({
               onDrop={handleTripDrop}
               onDragEnd={() => setDraggedTripId(null)}
             >
-              {/* Background cover image */}
-              <img
-                src={trip.img}
-                alt={trip.title}
-                className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none group-hover:scale-105 ${
-                  activeCardId === trip.id ? 'scale-105 opacity-100' : 'opacity-85 group-hover:opacity-100'
-                }`}
-              />
+              {/* Background cover image/video */}
+              {trip.videoUrl && activeCardId === trip.id ? (
+                <video
+                  src={trip.videoUrl}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none scale-105 opacity-100"
+                />
+              ) : (
+                <img
+                  src={trip.img}
+                  alt={trip.title}
+                  className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none group-hover:scale-105 ${
+                    activeCardId === trip.id ? 'scale-105 opacity-100' : 'opacity-85 group-hover:opacity-100'
+                  }`}
+                />
+              )}
 
               {/* Magazine Overlay Gradient */}
               <div className="absolute inset-0 magazine-card-gradient pointer-events-none" />

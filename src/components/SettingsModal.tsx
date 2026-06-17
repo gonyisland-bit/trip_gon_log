@@ -14,7 +14,8 @@ interface SettingsModalProps {
     heroAutoSlide: boolean,
     marqueeShow: boolean,
     marqueeMessage: string,
-    marqueeSpeed: number
+    marqueeSpeed: number,
+    heroMediaTypeParam?: 'image' | 'video'
   ) => Promise<void>;
   trashedJourneys: Trip[];
   onRestoreJourney: (id: number) => Promise<void>;
@@ -24,6 +25,7 @@ interface SettingsModalProps {
   plans: Trip[];
   initialHeroJourneyIds: number[];
   heroAutoSlide: boolean;
+  heroMediaType: 'image' | 'video';
   marqueeShow: boolean;
   marqueeMessage: string;
   marqueeSpeed: number;
@@ -45,6 +47,7 @@ export function SettingsModal({
   plans,
   initialHeroJourneyIds,
   heroAutoSlide,
+  heroMediaType,
   marqueeShow,
   marqueeMessage,
   marqueeSpeed,
@@ -54,6 +57,7 @@ export function SettingsModal({
   const [subtitle, setSubtitle] = useState(homeSubtitle);
   const [selectedHeroIds, setSelectedHeroIds] = useState<number[]>(initialHeroJourneyIds);
   const [autoSlide, setAutoSlide] = useState(heroAutoSlide);
+  const [mediaType, setMediaType] = useState<'image' | 'video'>(heroMediaType);
   const [showMarquee, setShowMarquee] = useState(marqueeShow);
   const [marqueeMsg, setMarqueeMsg] = useState(marqueeMessage);
   const [marqueeSpd, setMarqueeSpd] = useState(marqueeSpeed);
@@ -67,6 +71,7 @@ export function SettingsModal({
       setSubtitle(homeSubtitle);
       setSelectedHeroIds(initialHeroJourneyIds);
       setAutoSlide(heroAutoSlide);
+      setMediaType(heroMediaType);
       setShowMarquee(marqueeShow);
       setMarqueeMsg(marqueeMessage);
       setMarqueeSpd(marqueeSpeed);
@@ -78,6 +83,7 @@ export function SettingsModal({
     homeSubtitle,
     initialHeroJourneyIds,
     heroAutoSlide,
+    heroMediaType,
     marqueeShow,
     marqueeMessage,
     marqueeSpeed,
@@ -96,7 +102,8 @@ export function SettingsModal({
         autoSlide,
         showMarquee,
         marqueeMsg,
-        marqueeSpd
+        marqueeSpd,
+        mediaType
       );
       onClose();
     } catch (err) {
@@ -313,6 +320,21 @@ export function SettingsModal({
                     onChange={(e) => setAutoSlide(e.target.checked)}
                     className="w-4 h-4 cursor-pointer accent-red-600"
                   />
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 mt-2">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-black dark:text-white">Hero Media Type</span>
+                    <span className="text-[8px] text-black/45 dark:text-white/45">Choose between Cover Image or Video for the Hero section.</span>
+                  </div>
+                  <select
+                    value={mediaType}
+                    onChange={(e) => setMediaType(e.target.value as 'image' | 'video')}
+                    className="bg-[#EAE8E3] dark:bg-[#1a1a1a] border border-black/10 dark:border-white/10 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1.5 focus:outline-none text-black dark:text-white rounded-none border-none outline-none font-sans"
+                  >
+                    <option value="image">Image (이미지)</option>
+                    <option value="video">Video (동영상)</option>
+                  </select>
                 </div>
               </div>
 

@@ -71,8 +71,17 @@ export function PlanHubPage({
     }
   }, [initialTagFilter]);
 
-  const baseFilters = ['All', 'Plan', 'Kyoto', 'Paris', 'Personal', 'Business'];
-  const filters = baseFilters.includes(activeFilter) ? baseFilters : [...baseFilters, activeFilter];
+  const filters = useMemo(() => {
+    const uniqueTags = new Set<string>();
+    localPlans.forEach(p => {
+      if (p.tags) {
+        p.tags.forEach(tag => {
+          if (tag) uniqueTags.add(tag);
+        });
+      }
+    });
+    return ['All', ...Array.from(uniqueTags).sort()];
+  }, [localPlans]);
 
   const sortedPlans = useMemo(() => {
     if (sortBy === 'date') {

@@ -96,6 +96,7 @@ function App() {
   const [homeSubtitle, setHomeSubtitle] = useState("나만의 감성으로 기록하고 보관하는 여행 아카이브.");
   const [heroJourneyIds, setHeroJourneyIds] = useState<number[]>([]);
   const [editingTripId, setEditingTripId] = useState<number | null>(null);
+  const [heroMediaType, setHeroMediaType] = useState<'image' | 'video'>('image');
   
   const [heroAutoSlide, setHeroAutoSlide] = useState<boolean>(true);
   const [marqueeShow, setMarqueeShow] = useState<boolean>(true);
@@ -376,6 +377,7 @@ function App() {
         if (data.subtitle) setHomeSubtitle(data.subtitle);
         if (Array.isArray(data.heroJourneyIds)) setHeroJourneyIds(data.heroJourneyIds);
         if (data.heroAutoSlide !== undefined) setHeroAutoSlide(data.heroAutoSlide);
+        if (data.heroMediaType !== undefined) setHeroMediaType(data.heroMediaType);
         if (data.marqueeShow !== undefined) setMarqueeShow(data.marqueeShow);
         if (data.marqueeMessage !== undefined) setMarqueeMessage(data.marqueeMessage);
         if (data.marqueeSpeed !== undefined) setMarqueeSpeed(data.marqueeSpeed);
@@ -682,7 +684,8 @@ function App() {
     autoSlide?: boolean,
     showMarquee?: boolean,
     marqueeMsg?: string,
-    marqueeSpd?: number
+    marqueeSpd?: number,
+    heroMediaTypeParam?: 'image' | 'video'
   ) => {
     if (!isLoggedIn) return;
     try {
@@ -691,12 +694,14 @@ function App() {
         subtitle,
         heroJourneyIds: heroIds,
         heroAutoSlide: autoSlide ?? heroAutoSlide,
+        heroMediaType: heroMediaTypeParam ?? heroMediaType,
         marqueeShow: showMarquee ?? marqueeShow,
         marqueeMessage: marqueeMsg ?? marqueeMessage,
         marqueeSpeed: marqueeSpd ?? marqueeSpeed,
       });
       setHeroJourneyIds(heroIds);
       if (autoSlide !== undefined) setHeroAutoSlide(autoSlide);
+      if (heroMediaTypeParam !== undefined) setHeroMediaType(heroMediaTypeParam);
       if (showMarquee !== undefined) setMarqueeShow(showMarquee);
       if (marqueeMsg !== undefined) setMarqueeMessage(marqueeMsg);
       if (marqueeSpd !== undefined) setMarqueeSpeed(marqueeSpd);
@@ -793,7 +798,16 @@ function App() {
     setIsCreateModalOpen(true);
   };
 
-  const handleCreateJourney = async (title: string, dateRange: string, location: string, tags: string[], lat?: number, lng?: number, members?: string[]) => {
+  const handleCreateJourney = async (
+    title: string,
+    dateRange: string,
+    location: string,
+    tags: string[],
+    lat?: number,
+    lng?: number,
+    members?: string[],
+    locations?: { name: string; lat?: number; lng?: number }[]
+  ) => {
     const user = auth.currentUser;
     if (!user) return;
 
@@ -815,6 +829,7 @@ function App() {
       locationStr: location,
       lat,
       lng,
+      locations: locations || [],
       gallery: [],
       members: members || []
     };
@@ -1255,6 +1270,7 @@ function App() {
                   homeSubtitle={homeSubtitle}
                   heroJourneyIds={heroJourneyIds}
                   heroAutoSlide={heroAutoSlide}
+                  heroMediaType={heroMediaType}
                   onEditTrip={(id) => setEditingTripId(id)}
                   onDeleteTrip={(id) => handleDeleteJourney(id)}
                   onReorderTrips={async (orderedIds) => {
@@ -1396,6 +1412,7 @@ function App() {
           plans={plans}
           initialHeroJourneyIds={heroJourneyIds}
           heroAutoSlide={heroAutoSlide}
+          heroMediaType={heroMediaType}
           marqueeShow={marqueeShow}
           marqueeMessage={marqueeMessage}
           marqueeSpeed={marqueeSpeed}

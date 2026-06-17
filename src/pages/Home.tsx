@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Edit2, Trash2, GripVertical, Copy, ArrowUp } from 'lucide-react';
 import { Trip, Plan } from '../types';
 
@@ -14,6 +14,7 @@ interface HomePageProps {
   homeSubtitle: string;
   heroJourneyIds?: number[];
   heroAutoSlide?: boolean;
+  heroMediaType?: 'image' | 'video';
   onEditTrip?: (id: number) => void;
   onDeleteTrip?: (id: number) => void;
   onReorderTrips?: (orderedIds: number[]) => void;
@@ -177,6 +178,7 @@ export function HomePage({
   homeSubtitle,
   heroJourneyIds = [],
   heroAutoSlide = true,
+  heroMediaType = 'image',
   onEditTrip,
   onDeleteTrip,
   onReorderTrips,
@@ -200,7 +202,18 @@ export function HomePage({
   useEffect(() => { setLocalTrips(trips); }, [trips]);
   useEffect(() => { setLocalPlans(plans); }, [plans]);
 
-  const filters = ['All', '2026', '2025', '2024', 'Kyoto', 'Paris', 'Personal', 'Business'];
+  const filters = useMemo(() => {
+    const uniqueTags = new Set<string>();
+    localTrips.forEach(t => {
+      if (t.tags) {
+        t.tags.forEach(tag => {
+          if (tag) uniqueTags.add(tag);
+        });
+      }
+    });
+    return ['All', ...Array.from(uniqueTags).sort()];
+  }, [localTrips]);
+
   const filteredTrips = activeFilter === 'All' ? localTrips : localTrips.filter(t => t.tags?.includes(activeFilter));
 
   // Resolve hero journeys from heroJourneyIds. Fallback to trips[0] if nothing selected.
@@ -260,7 +273,20 @@ export function HomePage({
       {/* ===== Hero Section ===== */}
       <section className="relative w-full h-[60vh] md:h-[80vh] overflow-hidden group border-b border-black/20 dark:border-white/20">
         {/* Background style */}
-        {currentHero && currentHero.img ? (
+        {currentHero && heroMediaType === 'video' && currentHero.videoUrl ? (
+          <video
+            key={currentHero.id}
+            src={currentHero.videoUrl}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[1500ms] ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}
+            style={{ 
+              transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)'
+            }}
+          />
+        ) : currentHero && currentHero.img ? (
           <img
             key={currentHero.id}
             src={currentHero.img}
@@ -489,14 +515,25 @@ export function HomePage({
                 onDrop={handleTripDrop}
                 onDragEnd={() => setDraggedTripId(null)}
               >
-                {/* Background cover image */}
-                <img
-                  src={trip.img}
-                  alt={trip.title}
-                  className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none group-hover:scale-105 ${
-                    activeCardId === trip.id ? 'scale-105 opacity-100' : 'opacity-85 group-hover:opacity-100'
-                  }`}
-                />
+                {/* Background cover image/video */}
+                {trip.videoUrl && activeCardId === trip.id ? (
+                  <video
+                    src={trip.videoUrl}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none scale-105 opacity-100"
+                  />
+                ) : (
+                  <img
+                    src={trip.img}
+                    alt={trip.title}
+                    className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none group-hover:scale-105 ${
+                      activeCardId === trip.id ? 'scale-105 opacity-100' : 'opacity-85 group-hover:opacity-100'
+                    }`}
+                  />
+                )}
 
                 {/* Magazine Overlay Gradient */}
                 <div className="absolute inset-0 magazine-card-gradient pointer-events-none" />

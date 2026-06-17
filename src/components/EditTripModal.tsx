@@ -30,6 +30,10 @@ export function EditTripModal({
   const [locationStr, setLocationStr] = useState('');
   const [lat, setLat] = useState<number | undefined>(undefined);
   const [lng, setLng] = useState<number | undefined>(undefined);
+  const [locations, setLocations] = useState<{ name: string; lat?: number; lng?: number }[]>([]);
+  const [locationInput, setLocationInput] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoUploading, setVideoUploading] = useState(false);
   const [imgUrl, setImgUrl] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
@@ -37,9 +41,9 @@ export function EditTripModal({
   const [memberInput, setMemberInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen && trip) {
@@ -48,6 +52,13 @@ export function EditTripModal({
       setLocationStr(trip.locationStr);
       setLat(trip.lat);
       setLng(trip.lng);
+      if (trip.locations && Array.isArray(trip.locations)) {
+        setLocations(trip.locations);
+      } else {
+        setLocations(trip.locationStr ? [{ name: trip.locationStr, lat: trip.lat, lng: trip.lng }] : []);
+      }
+      setLocationInput('');
+      setVideoUrl(trip.videoUrl || '');
       setImgUrl(trip.img);
       setTags(trip.tags || []);
       setTagInput('');
@@ -131,13 +142,20 @@ export function EditTripModal({
     e.preventDefault();
     if (!isLoggedIn) return;
     setSaving(true);
+
+    const combinedLocationStr = locations.map(loc => loc.name).join(', ');
+    const firstLat = locations[0]?.lat ?? lat ?? trip.lat;
+    const firstLng = locations[0]?.lng ?? lng ?? trip.lng;
+
     try {
       await onSave(trip.id, {
         title,
         date,
-        locationStr,
-        lat: lat !== undefined ? lat : trip.lat,
-        lng: lng !== undefined ? lng : trip.lng,
+        locationStr: combinedLocationStr,
+        lat: firstLat,
+        lng: firstLng,
+        locations,
+        videoUrl,
         img: imgUrl,
         tags,
         members,
@@ -148,6 +166,26 @@ export function EditTripModal({
       alert('여정 정보 저장에 실패했습니다.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setVideoUploading(true);
+    try {
+      const storagePath = `users/public/covers/${Date.now()}_${file.name}`;
+      const videoRef = ref(storage, storagePath);
+      await uploadBytes(videoRef, file);
+      const downloadUrl = await getDownloadURL(videoRef);
+      setVideoUrl(downloadUrl);
+    } catch (error) {
+      console.error("Cover video upload failed:", error);
+      alert("커버 영상 업로드에 실패했습니다.");
+    } finally {
+      setVideoUploading(false);
+      if (videoFileInputRef.current) videoFileInputRef.current.value = '';
     }
   };
 
@@ -248,26 +286,68 @@ export function EditTripModal({
             </div>
           </div>
 
-          {/* Location with Google Autocomplete */}
+          {/* Location Name (복수 장소 등록 및 수정) */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
-              Location Name
+              Locations (방문 장소 복수 지정 가능)
             </label>
-            <div className="relative flex items-center">
-              <MapPin className="absolute left-3 w-4 h-4 text-black/30 dark:text-white/30 z-10 pointer-events-none" />
-              <PlaceAutocompleteInput
-                value={locationStr}
-                onChange={(val) => setLocationStr(val)}
-                onSelectPlace={(name, coords) => {
-                  setLocationStr(name);
-                  if (coords) {
-                    setLat(coords.lat);
-                    setLng(coords.lng);
+
+            {/* Location Pill Display */}
+            {locations.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-1.5 max-h-24 overflow-y-auto p-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+                {locations.map((loc, idx) => (
+                  <span 
+                    key={idx} 
+                    className="flex items-center gap-1.5 bg-white dark:bg-[#151515] text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border border-black/15 dark:border-white/15 text-black dark:text-white shadow-xs"
+                  >
+                    {loc.name}
+                    <button 
+                      type="button" 
+                      onClick={() => setLocations(prev => prev.filter((_, i) => i !== idx))} 
+                      className="text-black/45 dark:text-white/45 hover:text-red-500 transition-colors text-xs leading-none"
+                    >
+                      &times;
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="relative flex items-center gap-2">
+              <div className="relative flex-grow">
+                <MapPin className="absolute left-3 w-4 h-4 text-black/30 dark:text-white/30 z-10 pointer-events-none top-1/2 -translate-y-1/2" />
+                <PlaceAutocompleteInput
+                  value={locationInput}
+                  onChange={(val) => setLocationInput(val)}
+                  onSelectPlace={(name, coords) => {
+                    if (name.trim()) {
+                      setLocations(prev => {
+                        if (prev.some(loc => loc.name === name.trim())) return prev;
+                        return [...prev, { name: name.trim(), lat: coords?.lat, lng: coords?.lng }];
+                      });
+                      setLocationInput('');
+                    }
+                  }}
+                  className="w-full pl-10 pr-4 py-2.5 text-xs font-bold bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 focus:border-red-600 dark:focus:border-red-400 outline-none transition-colors rounded-none text-black dark:text-white"
+                  placeholder="도시 검색..."
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const clean = locationInput.trim();
+                  if (clean) {
+                    setLocations(prev => {
+                      if (prev.some(loc => loc.name === clean)) return prev;
+                      return [...prev, { name: clean }];
+                    });
+                    setLocationInput('');
                   }
                 }}
-                className="w-full pl-10 pr-4 py-2.5 text-xs font-bold bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 focus:border-red-600 dark:focus:border-red-400 outline-none transition-colors rounded-none text-black dark:text-white"
-                placeholder="Search destination city..."
-              />
+                className="px-3 py-2.5 bg-black text-white dark:bg-white dark:text-black text-[10px] font-black uppercase tracking-widest hover:opacity-85 transition-opacity shrink-0"
+              >
+                추가
+              </button>
             </div>
           </div>
 
@@ -400,8 +480,7 @@ export function EditTripModal({
               </button>
             </div>
           </div>
-
-          {/* Cover Image */}
+                   {/* Cover Image */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
               Cover Image (URL or Upload)
@@ -429,7 +508,7 @@ export function EditTripModal({
                 className="px-3 bg-black text-white dark:bg-white dark:text-black text-[10px] font-black uppercase tracking-widest hover:opacity-80 transition-opacity flex items-center gap-1.5 disabled:opacity-50 shrink-0"
               >
                 {uploading ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
                   <Upload className="w-3 h-3" />
                 )}
@@ -437,14 +516,11 @@ export function EditTripModal({
               </button>
             </div>
             
-             {/* Image Preview */}
+             {/* Image Preview (Zoom-in 라이트박스 기능 제거) */}
              <div className="mt-2 border border-black/10 dark:border-white/10 aspect-[16/9] overflow-hidden bg-black/5 relative group flex items-center justify-center">
                {imgUrl ? (
-                 <div className="relative w-full h-full cursor-zoom-in" onClick={() => setIsLightboxOpen(true)}>
+                 <div className="relative w-full h-full">
                    <img src={imgUrl} alt="Cover Preview" className="w-full h-full object-cover" />
-                   <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                     <span className="text-[10px] text-white font-bold uppercase tracking-widest bg-black/60 px-3 py-1.5 rounded-sm">Click to Zoom</span>
-                   </div>
                  </div>
                ) : (
                  <div className="text-black/45 dark:text-white/45 text-[10px] font-bold uppercase tracking-widest text-center flex flex-col items-center justify-center p-4">
@@ -460,18 +536,68 @@ export function EditTripModal({
              </div>
           </div>
 
+          {/* Cover Video */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+              Cover Video (URL or Upload)
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-2.5 text-xs font-medium text-black dark:text-white outline-none flex-grow focus:border-red-600 dark:focus:border-red-400 transition-colors"
+                placeholder="Video URL (e.g. mp4)"
+              />
+              <input
+                type="file"
+                ref={videoFileInputRef}
+                onChange={handleVideoUpload}
+                accept="video/*"
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => videoFileInputRef.current?.click()}
+                disabled={videoUploading}
+                className="px-3 bg-black text-white dark:bg-white dark:text-black text-[10px] font-black uppercase tracking-widest hover:opacity-80 transition-opacity flex items-center gap-1.5 disabled:opacity-50 shrink-0"
+              >
+                {videoUploading ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Upload className="w-3 h-3" />
+                )}
+                Upload
+              </button>
+            </div>
+
+             {/* Video Preview */}
+             {videoUrl && (
+               <div className="mt-2 border border-black/10 dark:border-white/10 aspect-[16/9] overflow-hidden bg-black/5 relative group flex items-center justify-center">
+                 <video src={videoUrl} controls muted className="w-full h-full object-cover" />
+                 <button
+                   type="button"
+                   onClick={() => setVideoUrl('')}
+                   className="absolute top-2 right-2 bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 hover:bg-red-700 transition-colors shadow-md rounded-sm"
+                 >
+                   Delete Video
+                 </button>
+               </div>
+             )}
+          </div>
+
           {/* Action Buttons */}
           <div className="flex justify-end gap-3 pt-4 border-t border-black/10 dark:border-white/10 mt-6 shrink-0">
             <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[10px] font-black uppercase tracking-widest transition-all text-black/60 dark:text-white/60"
+               type="button"
+               onClick={onClose}
+               className="px-4 py-2 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[10px] font-black uppercase tracking-widest transition-all text-black/60 dark:text-white/60"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={saving || uploading}
+              disabled={saving || uploading || videoUploading}
               className="px-5 py-2 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 disabled:opacity-50"
             >
               {saving ? (
@@ -490,26 +616,6 @@ export function EditTripModal({
 
         </form>
       </div>
-
-      {/* Lightbox for Cover Image */}
-      {isLightboxOpen && imgUrl && (
-        <div 
-          className="fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center cursor-zoom-out p-4 md:p-10"
-          onClick={() => setIsLightboxOpen(false)}
-        >
-          <img 
-            src={imgUrl} 
-            alt="Cover Full View" 
-            className="max-w-full max-h-full object-contain shadow-2xl rounded-sm animate-in zoom-in-95 duration-200"
-          />
-          <button 
-            onClick={() => setIsLightboxOpen(false)}
-            className="absolute top-4 right-4 text-white hover:text-white/70 p-2 bg-black/40 rounded-full"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-      )}
     </div>
   );
 }

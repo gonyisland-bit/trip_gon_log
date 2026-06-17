@@ -33,6 +33,8 @@ export interface Trip {
   locationStr: string;
   lat?: number;
   lng?: number;
+  locations?: { name: string; lat?: number; lng?: number }[];
+  videoUrl?: string;
   gallery?: (string | GalleryImageMeta)[];
   deletedAt?: number | null; // Soft-delete timestamp (null = active)
   displayOrder?: number;
