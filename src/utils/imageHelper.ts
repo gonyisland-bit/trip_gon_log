@@ -5,9 +5,9 @@
  */
 export function compressImage(
   file: File,
-  maxWidth = 1600,
-  maxHeight = 1600,
-  quality = 0.75
+  maxWidth = 2560,
+  maxHeight = 2560,
+  quality = 0.88
 ): Promise<Blob> {
   return new Promise<Blob>((resolve, reject) => {
     const reader = new FileReader();

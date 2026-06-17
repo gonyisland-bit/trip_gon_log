@@ -156,7 +156,7 @@ export function EditTripModal({
 
     setUploading(true);
     try {
-      const compressedBlob = await compressImage(file);
+      const compressedBlob = await compressImage(file, 3840, 3840, 0.92);
       const storagePath = `users/public/covers/${Date.now()}_${file.name}`;
       const imageRef = ref(storage, storagePath);
       await uploadBytes(imageRef, compressedBlob);
