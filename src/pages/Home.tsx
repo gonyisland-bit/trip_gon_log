@@ -241,6 +241,58 @@ function HeroMedia({ journey, isActive, mediaType }: HeroMediaProps) {
   );
 }
 
+interface CardMediaProps {
+  img: string;
+  title: string;
+  videoUrl?: string;
+  isActive: boolean;
+}
+
+function CardMedia({ img, title, videoUrl, isActive }: CardMediaProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (videoUrl && videoRef.current) {
+      if (isActive) {
+        videoRef.current.currentTime = 0;
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(error => {
+            console.log("Card video playback prevented or error:", error);
+          });
+        }
+      } else {
+        videoRef.current.pause();
+      }
+    }
+  }, [isActive, videoUrl]);
+
+  return (
+    <>
+      <img
+        src={img}
+        alt={title}
+        className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none group-hover:scale-105 ${
+          isActive ? 'scale-105 opacity-100' : 'opacity-85 group-hover:opacity-100'
+        }`}
+      />
+      {videoUrl && (
+        <video
+          ref={videoRef}
+          src={videoUrl}
+          loop
+          muted
+          playsInline
+          preload="auto"
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 pointer-events-none scale-105 ${
+            isActive ? 'opacity-100' : 'opacity-0'
+          }`}
+        />
+      )}
+    </>
+  );
+}
+
 export function HomePage({
   onNavigate,
   trips,
@@ -580,24 +632,12 @@ export function HomePage({
                 onDragEnd={() => setDraggedTripId(null)}
               >
                 {/* Background cover image/video */}
-                {trip.videoUrl && activeCardId === trip.id ? (
-                  <video
-                    src={trip.videoUrl}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none scale-105 opacity-100"
-                  />
-                ) : (
-                  <img
-                    src={trip.img}
-                    alt={trip.title}
-                    className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none group-hover:scale-105 ${
-                      activeCardId === trip.id ? 'scale-105 opacity-100' : 'opacity-85 group-hover:opacity-100'
-                    }`}
-                  />
-                )}
+                <CardMedia
+                  img={trip.img}
+                  title={trip.title}
+                  videoUrl={trip.videoUrl}
+                  isActive={activeCardId === trip.id}
+                />
 
                 {/* Magazine Overlay Gradient */}
                 <div className="absolute inset-0 magazine-card-gradient pointer-events-none" />
