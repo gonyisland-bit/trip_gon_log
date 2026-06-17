@@ -169,6 +169,78 @@ export function JourneyCardMenu({
   );
 }
 
+interface HeroMediaProps {
+  journey: Trip | Plan;
+  isActive: boolean;
+  mediaType: 'image' | 'video';
+}
+
+function HeroMedia({ journey, isActive, mediaType }: HeroMediaProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    
+    if (mediaType === 'video' && journey.videoUrl && videoRef.current) {
+      if (isActive) {
+        // Reset to start and play immediately when active
+        videoRef.current.currentTime = 0;
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(error => {
+            console.log("Playback prevented or error:", error);
+          });
+        }
+      } else {
+        // Delay pausing for 1.5s to let the fade-out transition complete while playing
+        timeoutId = setTimeout(() => {
+          if (videoRef.current) {
+            videoRef.current.pause();
+          }
+        }, 1500);
+      }
+    }
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [isActive, mediaType, journey.videoUrl]);
+
+  const hasVideo = mediaType === 'video' && journey.videoUrl;
+  const hasImage = journey.img;
+
+  return (
+    <div
+      className={`absolute inset-0 w-full h-full transition-opacity duration-[1500ms] ${isActive ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none -z-10'}`}
+      style={{ 
+        transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)'
+      }}
+    >
+      {hasVideo ? (
+        <video
+          ref={videoRef}
+          src={journey.videoUrl}
+          loop
+          muted
+          playsInline
+          preload="auto"
+          className="w-full h-full object-cover"
+        />
+      ) : hasImage ? (
+        <img
+          src={journey.img}
+          alt={journey.title || "Hero Trip"}
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <div className="w-full h-full bg-gradient-to-br from-[#EAE8E3] via-[#F4F3EF] to-[#D5D3CC] dark:from-[#0E0E0E] dark:via-[#161616] dark:to-[#0A0A0A]" />
+      )}
+    </div>
+  );
+}
+
 export function HomePage({
   onNavigate,
   trips,
@@ -190,7 +262,6 @@ export function HomePage({
 }: HomePageProps) {
   const [activeFilter, setActiveFilter] = useState('All');
   const [heroSlide, setHeroSlide] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [activeCardId, setActiveCardId] = useState<number | null>(null);
 
   // Drag-reorder state for archive cards
@@ -224,23 +295,30 @@ export function HomePage({
 
   const currentHero = heroJourneys[heroSlide] || heroJourneys[0];
 
-  // Auto-advance carousel every 6s when multiple heroes and auto-slide is enabled
-  useEffect(() => {
-    if (!heroAutoSlide || heroJourneys.length <= 1) return;
-    const timer = setInterval(() => { goToNext(); }, 6000);
-    return () => clearInterval(timer);
-  }, [heroJourneys.length, heroSlide, heroAutoSlide]);
-
-  useEffect(() => { setHeroSlide(0); }, [heroJourneyIds.join(',')]);
-
   const goToSlide = useCallback((idx: number) => {
-    if (isTransitioning || idx === heroSlide) return;
-    setIsTransitioning(true);
-    setTimeout(() => { setHeroSlide(idx); setIsTransitioning(false); }, 350);
-  }, [heroSlide, isTransitioning]);
+    if (idx === heroSlide) return;
+    setHeroSlide(idx);
+  }, [heroSlide]);
 
   const goToPrev = () => goToSlide((heroSlide - 1 + heroJourneys.length) % heroJourneys.length);
   const goToNext = () => goToSlide((heroSlide + 1) % heroJourneys.length);
+
+  // Auto-advance carousel with dynamic duration (10s for video, 6s for image) when multiple heroes and auto-slide is enabled
+  useEffect(() => {
+    if (!heroAutoSlide || heroJourneys.length <= 1) return;
+    
+    const currentHeroItem = heroJourneys[heroSlide];
+    const isVideo = heroMediaType === 'video' && currentHeroItem && 'videoUrl' in currentHeroItem && currentHeroItem.videoUrl;
+    const duration = isVideo ? 10000 : 6000;
+
+    const timer = setTimeout(() => {
+      goToNext();
+    }, duration);
+
+    return () => clearTimeout(timer);
+  }, [heroJourneys.length, heroSlide, heroAutoSlide, heroMediaType, heroJourneys, goToNext]);
+
+  useEffect(() => { setHeroSlide(0); }, [heroJourneyIds.join(',')]);
 
   // ── Drag-to-reorder for trip archive cards ──────────────────────────────
   const handleTripDragStart = (e: React.DragEvent, id: number) => {
@@ -273,31 +351,17 @@ export function HomePage({
       {/* ===== Hero Section ===== */}
       <section className="relative w-full h-[60vh] md:h-[80vh] overflow-hidden group border-b border-black/20 dark:border-white/20">
         {/* Background style */}
-        {currentHero && heroMediaType === 'video' && currentHero.videoUrl ? (
-          <video
-            key={currentHero.id}
-            src={currentHero.videoUrl}
-            autoPlay
-            loop
-            muted
-            playsInline
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[1500ms] ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}
-            style={{ 
-              transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)'
-            }}
-          />
-        ) : currentHero && currentHero.img ? (
-          <img
-            key={currentHero.id}
-            src={currentHero.img}
-            alt={currentHero.title || "Hero Trip"}
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[1500ms] ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}
-            style={{ 
-              transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)'
-            }}
-          />
-        ) : (
+        {heroJourneys.length === 0 ? (
           <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#EAE8E3] via-[#F4F3EF] to-[#D5D3CC] dark:from-[#0E0E0E] dark:via-[#161616] dark:to-[#0A0A0A]" />
+        ) : (
+          heroJourneys.map((journey, index) => (
+            <HeroMedia
+              key={journey.id}
+              journey={journey}
+              isActive={index === heroSlide}
+              mediaType={heroMediaType}
+            />
+          ))
         )}
         <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 md:via-black/40 to-transparent pointer-events-none" />
         {currentHero && (
