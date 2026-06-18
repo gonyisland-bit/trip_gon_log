@@ -33,6 +33,7 @@ export interface Trip {
   locationStr: string;
   lat?: number;
   lng?: number;
+  country?: string;
   locations?: { name: string; lat?: number; lng?: number; country?: string }[];
   videoUrl?: string;
   gallery?: (string | GalleryImageMeta)[];

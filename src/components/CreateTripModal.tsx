@@ -6,7 +6,7 @@ import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 interface CreateTripModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (title: string, dateRange: string, location: string, tags: string[], lat?: number, lng?: number, members?: string[], locations?: { name: string; lat?: number; lng?: number }[], statusBadge?: string) => void;
+  onCreate: (title: string, dateRange: string, location: string, tags: string[], lat?: number, lng?: number, members?: string[], locations?: { name: string; lat?: number; lng?: number }[], statusBadge?: string, country?: string) => void;
   existingTags: string[];
 }
 
@@ -84,6 +84,7 @@ export function CreateTripModal({
   const [members, setMembers] = useState<string[]>([]);
   const [memberInput, setMemberInput] = useState('');
   const [statusBadge, setStatusBadge] = useState<'NEW' | 'EDITING' | ''>('');
+  const [country, setCountry] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -101,6 +102,7 @@ export function CreateTripModal({
       setMembers([]);
       setMemberInput('');
       setStatusBadge('');
+      setCountry('');
       setError('');
     }
   }, [isOpen]);
@@ -162,7 +164,8 @@ export function CreateTripModal({
       firstLng,
       members,
       locations,
-      statusBadge
+      statusBadge,
+      country.trim()
     );
     onClose();
   };
@@ -224,6 +227,23 @@ export function CreateTripModal({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. KYOTO AUTUMN TRIP"
+                className="w-full pl-10 pr-4 py-2 text-xs md:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none text-black dark:text-white"
+              />
+            </div>
+          </div>
+
+          {/* Country */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest text-black/50 dark:text-white/50">
+              대표 국가명 (Country)
+            </label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30 dark:text-white/30" />
+              <input 
+                type="text"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                placeholder="e.g. JAPAN, VIETNAM (여정 서머리 지도 오버레이에 영문 대문자로 노출)"
                 className="w-full pl-10 pr-4 py-2 text-xs md:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none text-black dark:text-white"
               />
             </div>

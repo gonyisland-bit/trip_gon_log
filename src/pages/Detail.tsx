@@ -963,6 +963,12 @@ export function JourneyDetailPage({
     const detect = async () => {
       if (!tripToUse) return;
 
+      // 0. Prioritize manually entered country name from user (highest priority)
+      if (tripToUse.country && tripToUse.country.trim()) {
+        setDetectedCountry(tripToUse.country.trim().toUpperCase());
+        return;
+      }
+
       // 1. Prioritize locationsCountries from database (0 API traffic)
       const locationsCountries = tripToUse.locations
         ? Array.from(
@@ -2774,7 +2780,9 @@ export function JourneyDetailPage({
               : [];
 
             let country = 'TRAVEL';
-            if (locationsCountries.length > 0) {
+            if (tripToUse?.country && tripToUse.country.trim()) {
+              country = tripToUse.country.trim().toUpperCase();
+            } else if (locationsCountries.length > 0) {
               country = locationsCountries.join(', ');
             } else {
               const rawCountry = parts.length >= 2 ? parts[parts.length - 1] : (parts[0] || 'TRAVEL');

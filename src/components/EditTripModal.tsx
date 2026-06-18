@@ -95,6 +95,7 @@ export function EditTripModal({
   const [members, setMembers] = useState<string[]>([]);
   const [memberInput, setMemberInput] = useState('');
   const [statusBadge, setStatusBadge] = useState<'NEW' | 'EDITING' | ''>('');
+  const [country, setCountry] = useState('');
   const [isVideoDragActive, setIsVideoDragActive] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -107,6 +108,7 @@ export function EditTripModal({
       setTitle(trip.title);
       setDate(trip.date);
       setLocationStr(trip.locationStr);
+      setCountry(trip.country || '');
       setLat(trip.lat);
       setLng(trip.lng);
       if (trip.locations && Array.isArray(trip.locations)) {
@@ -213,6 +215,7 @@ export function EditTripModal({
         lat: firstLat,
         lng: firstLng,
         locations,
+        country: country.trim(),
         videoUrl,
         img: imgUrl,
         tags,
@@ -350,6 +353,20 @@ export function EditTripModal({
               className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-2.5 text-xs font-bold text-black dark:text-white outline-none w-full focus:border-red-600 dark:focus:border-red-400 transition-colors"
               placeholder="e.g. TOKYO, JAPAN"
               required
+            />
+          </div>
+
+          {/* Country */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+              대표 국가명 (Country)
+            </label>
+            <input
+              type="text"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-2.5 text-xs font-bold text-black dark:text-white outline-none w-full focus:border-red-600 dark:focus:border-red-400 transition-colors"
+              placeholder="e.g. JAPAN, ITALY (여정 서머리 지도 오버레이에 영문 대문자로 노출)"
             />
           </div>
 

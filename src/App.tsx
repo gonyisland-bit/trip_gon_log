@@ -807,7 +807,8 @@ function App() {
     lng?: number,
     members?: string[],
     locations?: { name: string; lat?: number; lng?: number }[],
-    statusBadge?: string
+    statusBadge?: string,
+    country?: string
   ) => {
     const user = auth.currentUser;
     if (!user) return;
@@ -833,7 +834,8 @@ function App() {
       locations: locations || [],
       gallery: [],
       members: members || [],
-      statusBadge: statusBadge || ''
+      statusBadge: statusBadge || '',
+      country: country || ''
     };
 
     try {
