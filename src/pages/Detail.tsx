@@ -26,7 +26,7 @@ import {
   TabType
 } from '../types';
 import { fetchCoordinates, fetchPlacePredictions, fetchCoordinatesByPlaceId } from '../utils/googleMapsHelper';
-import { fetchAddressFromCoords } from '../utils/googleMapsHelper';
+import { fetchAddressFromCoords, fetchCountryFromCoords } from '../utils/googleMapsHelper';
 import { readExif } from '../utils/exifHelper';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, storage, db } from '../firebase';
@@ -971,6 +971,11 @@ export function JourneyDetailPage({
                 .map((l: any) => {
                   // If country is already stored (e.g. 'JAPAN'), use it directly
                   if (l.country) return l.country.trim().toUpperCase();
+                  // Try to extract from name first
+                  const extracted = extractCountry(l.name || '');
+                  if (extracted && extracted !== (l.name || '').trim().toUpperCase()) {
+                    return extracted;
+                  }
                   // Otherwise, look up the city name in CITY_TO_COUNTRY_MAP
                   return getCountryName(l.name || '');
                 })
@@ -984,13 +989,13 @@ export function JourneyDetailPage({
         return;
       }
 
-      // 2. If empty, fallback to reverse geocoding the main lat/lng coordinates
+      // 2. If empty, fallback to reverse geocoding the main lat/lng coordinates (Geocoding API)
       if (tripToUse.lat !== undefined && tripToUse.lng !== undefined && tripToUse.lat !== null && tripToUse.lng !== null) {
         try {
-          const addr = await fetchAddressFromCoords(tripToUse.lat, tripToUse.lng);
-          if (addr && isMounted) {
-            const countryName = extractCountry(addr);
-            if (countryName) {
+          const countryRaw = await fetchCountryFromCoords(tripToUse.lat, tripToUse.lng);
+          if (countryRaw && isMounted) {
+            const countryName = extractCountry(countryRaw) || countryRaw.toUpperCase();
+            if (countryName && countryName !== 'TRAVEL') {
               setDetectedCountry(countryName);
               return;
             }
@@ -1004,7 +1009,10 @@ export function JourneyDetailPage({
       const loc = tripToUse.locationStr || '';
       const parts = loc.split(',').map(p => p.trim());
       const raw = parts.length >= 2 ? parts[parts.length - 1] : (parts[0] || 'TRAVEL');
-      const fallbackCountry = getCountryName(raw);
+      const extractedFallback = extractCountry(raw);
+      const fallbackCountry = (extractedFallback && extractedFallback !== raw.toUpperCase())
+        ? extractedFallback
+        : getCountryName(raw);
 
       if (isMounted) {
         setDetectedCountry(fallbackCountry);
@@ -2756,16 +2764,25 @@ export function JourneyDetailPage({
               ? Array.from(new Set(
                   tripToUse.locations.map((l: any) => {
                     if (l.country) return l.country.trim().toUpperCase();
+                    const extracted = extractCountry(l.name || '');
+                    if (extracted && extracted !== (l.name || '').trim().toUpperCase()) {
+                      return extracted;
+                    }
                     return getCountryName(l.name || '');
                   }).filter((c: string) => Boolean(c) && c !== 'TRAVEL')
                 )) as string[]
               : [];
 
-            const rawCountry = locationsCountries.length > 0
-              ? locationsCountries.join(', ')
-              : (parts.length >= 2 ? parts[parts.length - 1] : (parts[0] || 'TRAVEL'));
-            
-            const country = locationsCountries.length > 0 ? rawCountry : getCountryName(rawCountry);
+            let country = 'TRAVEL';
+            if (locationsCountries.length > 0) {
+              country = locationsCountries.join(', ');
+            } else {
+              const rawCountry = parts.length >= 2 ? parts[parts.length - 1] : (parts[0] || 'TRAVEL');
+              const extractedFallback = extractCountry(rawCountry);
+              country = (extractedFallback && extractedFallback !== rawCountry.toUpperCase())
+                ? extractedFallback
+                : getCountryName(rawCountry);
+            }
             const city = hasMultipleLocations 
               ? tripToUse?.locations?.map(l => l.name).join(', ') 
               : (parts.length >= 2 ? parts[0] : (loc || 'JOURNEY'));

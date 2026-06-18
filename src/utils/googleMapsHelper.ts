@@ -346,3 +346,48 @@ export async function fetchAddressFromCoords(lat: number, lng: number): Promise<
   return null;
 }
 
+/**
+ * 위경도 좌표를 기반으로 역지오코딩하여 국가명을 알아냅니다.
+ * 구글 Geocoding API를 우선 시도하고, 실패 시 Nominatim API를 폴백으로 사용합니다.
+ */
+export async function fetchCountryFromCoords(lat: number, lng: number): Promise<string | null> {
+  // 1. 구글 역지오코딩 시도
+  try {
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_API_KEY}`
+    );
+    const data = await response.json();
+    if (data.status === 'OK' && data.results && data.results.length > 0) {
+      for (const result of data.results) {
+        const countryComp = result.address_components?.find((c: any) => c.types.includes('country'));
+        if (countryComp) {
+          return countryComp.long_name;
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch country from Google coordinates:', error);
+  }
+
+  // 2. Nominatim (OpenStreetMap) 역지오코딩 폴백 시도
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`,
+      {
+        headers: {
+          'User-Agent': 'TripgonLog/1.0'
+        }
+      }
+    );
+    const data = await response.json();
+    if (data && data.address && data.address.country) {
+      return data.address.country;
+    }
+  } catch (error) {
+    console.error('Failed to fetch country from Nominatim:', error);
+  }
+
+  return null;
+}
+
+
