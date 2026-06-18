@@ -4,7 +4,7 @@ import { Search } from 'lucide-react';
 interface PlaceAutocompleteInputProps {
   value: string;
   onChange: (val: string) => void;
-  onSelectPlace: (placeName: string, coords: { lat: number; lng: number } | null, address: string) => void;
+  onSelectPlace: (placeName: string, coords: { lat: number; lng: number } | null, address: string, countryName?: string) => void;
   className?: string;
   placeholder?: string;
   onBlur?: () => void;
@@ -43,7 +43,7 @@ export function PlaceAutocompleteInput({
     }
 
     const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
-      fields: ['geometry', 'name', 'formatted_address']
+      fields: ['geometry', 'name', 'formatted_address', 'address_components']
     });
     autocompleteRef.current = autocomplete;
 
@@ -55,9 +55,17 @@ export function PlaceAutocompleteInput({
           const lng = place.geometry.location.lng();
           const name = place.name || place.formatted_address || '';
           const address = place.formatted_address || name;
-          hasSelectedRef.current = true; // Mark selection in progress to prevent blur race condition
+          // Extract country name from address_components for accuracy
+          let countryName: string | undefined;
+          if (place.address_components) {
+            const countryComp = (place.address_components as any[]).find(
+              (comp: any) => comp.types && comp.types.includes('country')
+            );
+            if (countryComp) countryName = countryComp.long_name;
+          }
+          hasSelectedRef.current = true;
           setLocalValue(address);
-          onSelectPlaceRef.current(name, { lat, lng }, address);
+          onSelectPlaceRef.current(name, { lat, lng }, address, countryName);
         }
       } catch (err) {
         console.error("Autocomplete select failed:", err);

@@ -308,11 +308,14 @@ export function CreateTripModal({
                 <PlaceAutocompleteInput
                   value={locationInput}
                   onChange={(val) => setLocationInput(val)}
-                  onSelectPlace={(name, coords, address) => {
+                  onSelectPlace={(name, coords, address, countryName) => {
                     if (name.trim()) {
                       setLocations(prev => {
                         if (prev.some(loc => loc.name === name.trim())) return prev;
-                        return [...prev, { name: name.trim(), lat: coords?.lat, lng: coords?.lng, country: extractCountry(address) }];
+                        const resolvedCountry = countryName
+                          ? extractCountry(countryName) || countryName.toUpperCase()
+                          : extractCountry(address);
+                        return [...prev, { name: name.trim(), lat: coords?.lat, lng: coords?.lng, country: resolvedCountry }];
                       });
                       setLocationInput('');
                     }

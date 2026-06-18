@@ -968,9 +968,13 @@ export function JourneyDetailPage({
         ? Array.from(
             new Set(
               tripToUse.locations
-                .map((l: any) => l.country || l.name)
-                .map((val: string) => extractCountry(val))
-                .filter(Boolean)
+                .map((l: any) => {
+                  // If country is already stored (e.g. 'JAPAN'), use it directly
+                  if (l.country) return l.country.trim().toUpperCase();
+                  // Otherwise, look up the city name in CITY_TO_COUNTRY_MAP
+                  return getCountryName(l.name || '');
+                })
+                .filter((c: string) => Boolean(c) && c !== 'TRAVEL')
             )
           ) as string[]
         : [];
@@ -2748,17 +2752,20 @@ export function JourneyDetailPage({
             const loc = tripToUse?.locationStr || '';
             const parts = loc.split(',').map(p => p.trim());
             const hasMultipleLocations = tripToUse?.locations && tripToUse.locations.length >= 2;
-            const locationsCountries = tripToUse?.locations 
-              ? Array.from(new Set(tripToUse.locations.map(l => (l as any).country).filter(Boolean))) as string[]
+            const locationsCountries = tripToUse?.locations
+              ? Array.from(new Set(
+                  tripToUse.locations.map((l: any) => {
+                    if (l.country) return l.country.trim().toUpperCase();
+                    return getCountryName(l.name || '');
+                  }).filter((c: string) => Boolean(c) && c !== 'TRAVEL')
+                )) as string[]
               : [];
-            
-            
 
             const rawCountry = locationsCountries.length > 0
               ? locationsCountries.join(', ')
               : (parts.length >= 2 ? parts[parts.length - 1] : (parts[0] || 'TRAVEL'));
             
-            const country = getCountryName(rawCountry);
+            const country = locationsCountries.length > 0 ? rawCountry : getCountryName(rawCountry);
             const city = hasMultipleLocations 
               ? tripToUse?.locations?.map(l => l.name).join(', ') 
               : (parts.length >= 2 ? parts[0] : (loc || 'JOURNEY'));
