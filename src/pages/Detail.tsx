@@ -184,34 +184,57 @@ function calculateLayoverTime(arrDate: string, arrTime: string, depDate: string,
 
 function extractCountry(address: string): string {
   if (!address) return '';
-  const clean = address.trim();
+  const clean = address.trim().toLowerCase();
+  
   const countries = [
-    { key: 'japan', name: 'JAPAN', kr: '일본' },
-    { key: 'korea', name: 'KOREA', kr: '대한민국' },
-    { key: 'korea', name: 'KOREA', kr: '한국' },
-    { key: 'vietnam', name: 'VIETNAM', kr: '베트남' },
-    { key: 'taiwan', name: 'TAIWAN', kr: '대만' },
-    { key: 'thailand', name: 'THAILAND', kr: '태국' },
-    { key: 'singapore', name: 'SINGAPORE', kr: '싱가포르' },
-    { key: 'usa', name: 'USA', kr: '미국' },
-    { key: 'france', name: 'FRANCE', kr: '프랑스' },
-    { key: 'italy', name: 'ITALY', kr: '이탈리아' },
-    { key: 'uk', name: 'UK', kr: '영국' },
-    { key: 'germany', name: 'GERMANY', kr: '독일' },
-    { key: 'spain', name: 'SPAIN', kr: '스페인' },
-    { key: 'china', name: 'CHINA', kr: '중국' }
+    { name: 'JAPAN', keys: ['japan', '일본', 'nihon', 'nippon', '日本', 'jp'] },
+    { name: 'SOUTH KOREA', keys: ['korea', '대한민국', '한국', 'south korea', 'kr', 'seoul'] },
+    { name: 'VIETNAM', keys: ['vietnam', '베트남', 'việt nam', 'viet nam', 'vn'] },
+    { name: 'TAIWAN', keys: ['taiwan', '대만', '타이완', 'tai wan', '台灣', '臺灣', 'tw'] },
+    { name: 'THAILAND', keys: ['thailand', '태국', 'ประเทศไทย', 'thai', 'th'] },
+    { name: 'SINGAPORE', keys: ['singapore', '싱가포르', '싱가폴', 'sg'] },
+    { name: 'USA', keys: ['usa', '미국', 'united states', 'america', 'us'] },
+    { name: 'FRANCE', keys: ['france', '프랑스', 'french', 'fr'] },
+    { name: 'ITALY', keys: ['italy', '이탈리아', '이태리', 'italia', 'it'] },
+    { name: 'UNITED KINGDOM', keys: ['uk', 'united kingdom', '영국', 'great britain', 'england', 'gb'] },
+    { name: 'GERMANY', keys: ['germany', '독일', 'deutschland', 'de'] },
+    { name: 'SPAIN', keys: ['spain', '스페인', 'españa', 'espana', 'es'] },
+    { name: 'CHINA', keys: ['china', '중국', '中国', 'cn'] },
+    { name: 'HONG KONG', keys: ['hong kong', '홍콩', 'hk'] },
+    { name: 'MACAU', keys: ['macau', '마카오', 'mo'] },
+    { name: 'PHILIPPINES', keys: ['philippines', '필리핀', 'ph'] },
+    { name: 'MALAYSIA', keys: ['malaysia', '말레이시아', 'my'] },
+    { name: 'INDONESIA', keys: ['indonesia', '인도네시아', '발리', 'bali', 'id'] },
+    { name: 'AUSTRALIA', keys: ['australia', '호주', 'au'] },
+    { name: 'NEW ZEALAND', keys: ['new zealand', '뉴질랜드', 'nz'] },
+    { name: 'SWITZERLAND', keys: ['switzerland', '스위스', 'ch'] },
+    { name: 'AUSTRIA', keys: ['austria', '오스트리아', 'at'] },
+    { name: 'CZECHIA', keys: ['czechia', 'czech', '체코', 'cz'] },
+    { name: 'HUNGARY', keys: ['hungary', '헝가리', 'hu'] }
   ];
-  const lower = clean.toLowerCase();
+
   for (const c of countries) {
-    if (lower.includes(c.key) || lower.includes(c.kr.toLowerCase())) {
-      return c.name;
+    for (const key of c.keys) {
+      if (clean.includes(key)) {
+        return c.name;
+      }
     }
   }
-  const parts = clean.split(',');
+
+  const parts = address.split(',');
   if (parts.length >= 2) {
-    return parts[parts.length - 1].trim().toUpperCase();
+    const lastPart = parts[parts.length - 1].trim().toUpperCase();
+    for (const c of countries) {
+      for (const key of c.keys) {
+        if (lastPart.toLowerCase() === key) {
+          return c.name;
+        }
+      }
+    }
+    return lastPart;
   }
-  return clean.toUpperCase();
+  
+  return address.trim().toUpperCase();
 }
 
 function getCountryName(locationToken: string): string {
@@ -942,7 +965,14 @@ export function JourneyDetailPage({
 
       // 1. Prioritize locationsCountries from database (0 API traffic)
       const locationsCountries = tripToUse.locations
-        ? Array.from(new Set(tripToUse.locations.map((l: any) => l.country).filter(Boolean))) as string[]
+        ? Array.from(
+            new Set(
+              tripToUse.locations
+                .map((l: any) => l.country || l.name)
+                .map((val: string) => extractCountry(val))
+                .filter(Boolean)
+            )
+          ) as string[]
         : [];
 
       if (locationsCountries.length > 0) {

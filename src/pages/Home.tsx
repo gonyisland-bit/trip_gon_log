@@ -648,7 +648,7 @@ export function HomePage({
 
                 {/* Status Badge (NEW / EDITING) */}
                 {trip.statusBadge && (
-                  <div className={`absolute top-3 left-3 z-[15] px-2 py-0.5 text-[8px] font-black tracking-widest uppercase shadow-md pointer-events-none select-none ${
+                  <div className={`absolute bottom-4 right-4 z-[15] px-2 py-0.5 text-[8px] font-black tracking-widest uppercase shadow-md pointer-events-none select-none ${
                     trip.statusBadge === 'NEW'
                       ? 'bg-red-600 text-white'
                       : 'bg-amber-600 text-white'
