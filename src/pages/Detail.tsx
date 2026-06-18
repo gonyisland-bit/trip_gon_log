@@ -182,6 +182,235 @@ function calculateLayoverTime(arrDate: string, arrTime: string, depDate: string,
   }
 }
 
+function extractCountry(address: string): string {
+  if (!address) return '';
+  const clean = address.trim();
+  const countries = [
+    { key: 'japan', name: 'JAPAN', kr: '일본' },
+    { key: 'korea', name: 'KOREA', kr: '대한민국' },
+    { key: 'korea', name: 'KOREA', kr: '한국' },
+    { key: 'vietnam', name: 'VIETNAM', kr: '베트남' },
+    { key: 'taiwan', name: 'TAIWAN', kr: '대만' },
+    { key: 'thailand', name: 'THAILAND', kr: '태국' },
+    { key: 'singapore', name: 'SINGAPORE', kr: '싱가포르' },
+    { key: 'usa', name: 'USA', kr: '미국' },
+    { key: 'france', name: 'FRANCE', kr: '프랑스' },
+    { key: 'italy', name: 'ITALY', kr: '이탈리아' },
+    { key: 'uk', name: 'UK', kr: '영국' },
+    { key: 'germany', name: 'GERMANY', kr: '독일' },
+    { key: 'spain', name: 'SPAIN', kr: '스페인' },
+    { key: 'china', name: 'CHINA', kr: '중국' }
+  ];
+  const lower = clean.toLowerCase();
+  for (const c of countries) {
+    if (lower.includes(c.key) || lower.includes(c.kr.toLowerCase())) {
+      return c.name;
+    }
+  }
+  const parts = clean.split(',');
+  if (parts.length >= 2) {
+    return parts[parts.length - 1].trim().toUpperCase();
+  }
+  return clean.toUpperCase();
+}
+
+function getCountryName(locationToken: string): string {
+  if (!locationToken) return 'TRAVEL';
+  const cleanToken = locationToken.trim().toLowerCase();
+  const CITY_TO_COUNTRY_MAP: { [key: string]: string } = {
+    'kyoto': 'JAPAN',
+    '교토': 'JAPAN',
+    'osaka': 'JAPAN',
+    '오사카': 'JAPAN',
+    'tokyo': 'JAPAN',
+    '도쿄': 'JAPAN',
+    'fukuoka': 'JAPAN',
+    '후쿠오카': 'JAPAN',
+    'sapporo': 'JAPAN',
+    '삿포로': 'JAPAN',
+    'okinawa': 'JAPAN',
+    '오키나와': 'JAPAN',
+    'nagoya': 'JAPAN',
+    '나고야': 'JAPAN',
+    'kobe': 'JAPAN',
+    '고베': 'JAPAN',
+    'takamatsu': 'JAPAN',
+    '다카마쓰': 'JAPAN',
+    'matsuyama': 'JAPAN',
+    '마쓰야마': 'JAPAN',
+    'shizuoka': 'JAPAN',
+    '시즈오카': 'JAPAN',
+    'kagoshima': 'JAPAN',
+    '가고시마': 'JAPAN',
+    'kumamoto': 'JAPAN',
+    '구마모토': 'JAPAN',
+    'miyazaki': 'JAPAN',
+    '미야자키': 'JAPAN',
+    'oita': 'JAPAN',
+    '오이타': 'JAPAN',
+    'nagasaki': 'JAPAN',
+    '나가사키': 'JAPAN',
+    'saga': 'JAPAN',
+    '사가': 'JAPAN',
+    'paris': 'FRANCE',
+    '파리': 'FRANCE',
+    'nice': 'FRANCE',
+    '니스': 'FRANCE',
+    'lyon': 'FRANCE',
+    '리옹': 'FRANCE',
+    'london': 'UNITED KINGDOM',
+    '런던': 'UNITED KINGDOM',
+    'taipei': 'TAIWAN',
+    '타이베이': 'TAIWAN',
+    'taiwan': 'TAIWAN',
+    '대만': 'TAIWAN',
+    'kaohsiung': 'TAIWAN',
+    '가오슝': 'TAIWAN',
+    'new york': 'USA',
+    '뉴욕': 'USA',
+    'la': 'USA',
+    'los angeles': 'USA',
+    '로스앤젤레스': 'USA',
+    'san francisco': 'USA',
+    '샌프란시스코': 'USA',
+    'seattle': 'USA',
+    '시애틀': 'USA',
+    'chicago': 'USA',
+    '시카고': 'USA',
+    'las vegas': 'USA',
+    '라스베이거스': 'USA',
+    'boston': 'USA',
+    '보스턴': 'USA',
+    'washington': 'USA',
+    '워싱턴': 'USA',
+    'guam': 'USA',
+    '괌': 'USA',
+    'saipan': 'USA',
+    '사이판': 'USA',
+    'bangkok': 'THAILAND',
+    '방콕': 'THAILAND',
+    'chiang mai': 'THAILAND',
+    '치앙마이': 'THAILAND',
+    'phuket': 'THAILAND',
+    '푸켓': 'THAILAND',
+    'pattaya': 'THAILAND',
+    '파타야': 'THAILAND',
+    'danang': 'VIETNAM',
+    '다낭': 'VIETNAM',
+    'hanoi': 'VIETNAM',
+    '하노이': 'VIETNAM',
+    'ho chi minh': 'VIETNAM',
+    '호치민': 'VIETNAM',
+    'saigon': 'VIETNAM',
+    '사이공': 'VIETNAM',
+    'nha trang': 'VIETNAM',
+    '나트랑': 'VIETNAM',
+    '냐짱': 'VIETNAM',
+    'phu quoc': 'VIETNAM',
+    '푸꾸옥': 'VIETNAM',
+    'da lat': 'VIETNAM',
+    '달랏': 'VIETNAM',
+    'sapa': 'VIETNAM',
+    '사파': 'VIETNAM',
+    'hoi an': 'VIETNAM',
+    '호이안': 'VIETNAM',
+    'singapore': 'SINGAPORE',
+    '싱가포르': 'SINGAPORE',
+    'sydney': 'AUSTRALIA',
+    '시드니': 'AUSTRALIA',
+    'melbourne': 'AUSTRALIA',
+    '멜버른': 'AUSTRALIA',
+    'brisbane': 'AUSTRALIA',
+    '브리즈번': 'AUSTRALIA',
+    'rome': 'ITALY',
+    '로마': 'ITALY',
+    'florence': 'ITALY',
+    '피렌체': 'ITALY',
+    'firenze': 'ITALY',
+    'venice': 'ITALY',
+    '베네치아': 'ITALY',
+    '베니스': 'ITALY',
+    'milan': 'ITALY',
+    '밀라노': 'ITALY',
+    'barcelona': 'SPAIN',
+    '바르셀로나': 'SPAIN',
+    'sevilla': 'SPAIN',
+    '세비야': 'SPAIN',
+    'granada': 'SPAIN',
+    '그라나다': 'SPAIN',
+    'berlin': 'GERMANY',
+    '베를린': 'GERMANY',
+    'frankfurt': 'GERMANY',
+    '프랑크푸르트': 'GERMANY',
+    'vienna': 'AUSTRIA',
+    '빈': 'AUSTRIA',
+    '비엔나': 'AUSTRIA',
+    'salzburg': 'AUSTRIA',
+    '잘츠부르크': 'AUSTRIA',
+    'prague': 'CZECHIA',
+    '프라하': 'CZECHIA',
+    'budapest': 'HUNGARY',
+    '부다페스트': 'HUNGARY',
+    'zurich': 'SWITZERLAND',
+    '취리히': 'SWITZERLAND',
+    'interlaken': 'SWITZERLAND',
+    '인터라켄': 'SWITZERLAND',
+    'seoul': 'SOUTH KOREA',
+    '서울': 'SOUTH KOREA',
+    'jeju': 'SOUTH KOREA',
+    '제주': 'SOUTH KOREA',
+    'busan': 'SOUTH KOREA',
+    '부산': 'SOUTH KOREA',
+    'incheon': 'SOUTH KOREA',
+    '인천': 'SOUTH KOREA',
+    'daegu': 'SOUTH KOREA',
+    '대구': 'SOUTH KOREA',
+    'daejeon': 'SOUTH KOREA',
+    '대전': 'SOUTH KOREA',
+    'gwangju': 'SOUTH KOREA',
+    '광주': 'SOUTH KOREA',
+    'ulsan': 'SOUTH KOREA',
+    '울산': 'SOUTH KOREA',
+    'suwon': 'SOUTH KOREA',
+    '수원': 'SOUTH KOREA',
+    'gyeongju': 'SOUTH KOREA',
+    '경주': 'SOUTH KOREA',
+    'gangneung': 'SOUTH KOREA',
+    '강릉': 'SOUTH KOREA',
+    'sokcho': 'SOUTH KOREA',
+    '속초': 'SOUTH KOREA',
+    'yeosu': 'SOUTH KOREA',
+    '여수': 'SOUTH KOREA',
+    'jeonju': 'SOUTH KOREA',
+    '전주': 'SOUTH KOREA',
+    'chuncheon': 'SOUTH KOREA',
+    '춘천': 'SOUTH KOREA',
+    'cebu': 'PHILIPPINES',
+    '세부': 'PHILIPPINES',
+    'boracay': 'PHILIPPINES',
+    '보라카이': 'PHILIPPINES',
+    'bohol': 'PHILIPPINES',
+    '보홀': 'PHILIPPINES',
+    'clark': 'PHILIPPINES',
+    '클락': 'PHILIPPINES',
+    'kuala lumpur': 'MALAYSIA',
+    '쿠알라룸푸르': 'MALAYSIA',
+    'kota kinabalu': 'MALAYSIA',
+    '코타키나발루': 'MALAYSIA',
+    'penang': 'MALAYSIA',
+    '페낭': 'MALAYSIA',
+    'bali': 'INDONESIA',
+    '발리': 'INDONESIA',
+    'jakarta': 'INDONESIA',
+    '자카르타': 'INDONESIA',
+    'macau': 'MACAU',
+    '마카오': 'MACAU',
+    'hong kong': 'HONG KONG',
+    '홍콩': 'HONG KONG'
+  };
+  return CITY_TO_COUNTRY_MAP[cleanToken] || locationToken.toUpperCase();
+}
+
 // Parse dateRange: 'YYYY.MM.DD - YYYY.MM.DD'
 function generateDateList(dateRangeStr: string): string[] {
   if (!dateRangeStr) return [];
@@ -411,6 +640,7 @@ export function JourneyDetailPage({
 }: JourneyDetailPageProps) {
   // All hooks must be called before conditional return
   const [activeTab, setActiveTab] = useState<TabType>('summary');
+  const [detectedCountry, setDetectedCountry] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string>('ALL');
   const [collapsedDays, setCollapsedDays] = useState<string[]>([]);
   const [expandedItemId, setExpandedItemId] = useState<number | null>(null);
@@ -704,6 +934,55 @@ export function JourneyDetailPage({
     }
   }, [trip, timelineData, generatedDates, isLoggedIn, isEditing]);
 
+  // Dynamically resolve country name with coordinate geocoding fallback (for data efficiency and error prevention)
+  useEffect(() => {
+    let isMounted = true;
+    const detect = async () => {
+      if (!tripToUse) return;
+
+      // 1. Prioritize locationsCountries from database (0 API traffic)
+      const locationsCountries = tripToUse.locations
+        ? Array.from(new Set(tripToUse.locations.map((l: any) => l.country).filter(Boolean))) as string[]
+        : [];
+
+      if (locationsCountries.length > 0) {
+        setDetectedCountry(locationsCountries.join(', '));
+        return;
+      }
+
+      // 2. If empty, fallback to reverse geocoding the main lat/lng coordinates
+      if (tripToUse.lat !== undefined && tripToUse.lng !== undefined && tripToUse.lat !== null && tripToUse.lng !== null) {
+        try {
+          const addr = await fetchAddressFromCoords(tripToUse.lat, tripToUse.lng);
+          if (addr && isMounted) {
+            const countryName = extractCountry(addr);
+            if (countryName) {
+              setDetectedCountry(countryName);
+              return;
+            }
+          }
+        } catch (e) {
+          console.error("Failed to detect country from coordinates:", e);
+        }
+      }
+
+      // 3. Worst-case fallback: string parsing on locationStr using the local dictionary map
+      const loc = tripToUse.locationStr || '';
+      const parts = loc.split(',').map(p => p.trim());
+      const raw = parts.length >= 2 ? parts[parts.length - 1] : (parts[0] || 'TRAVEL');
+      const fallbackCountry = getCountryName(raw);
+
+      if (isMounted) {
+        setDetectedCountry(fallbackCountry);
+      }
+    };
+
+    detect();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [tripToUse]);
 
 
   const handleDateChange = (type: 'start' | 'end', val: string) => {
@@ -2443,203 +2722,7 @@ export function JourneyDetailPage({
               ? Array.from(new Set(tripToUse.locations.map(l => (l as any).country).filter(Boolean))) as string[]
               : [];
             
-            // Helper map to translate city names to country names and avoid duplication
-            const getCountryName = (locationToken: string): string => {
-              if (!locationToken) return 'TRAVEL';
-              const cleanToken = locationToken.trim().toLowerCase();
-              const CITY_TO_COUNTRY_MAP: { [key: string]: string } = {
-                'kyoto': 'JAPAN',
-                '교토': 'JAPAN',
-                'osaka': 'JAPAN',
-                '오사카': 'JAPAN',
-                'tokyo': 'JAPAN',
-                '도쿄': 'JAPAN',
-                'fukuoka': 'JAPAN',
-                '후쿠오카': 'JAPAN',
-                'sapporo': 'JAPAN',
-                '삿포로': 'JAPAN',
-                'okinawa': 'JAPAN',
-                '오키나와': 'JAPAN',
-                'nagoya': 'JAPAN',
-                '나고야': 'JAPAN',
-                'kobe': 'JAPAN',
-                '고베': 'JAPAN',
-                'takamatsu': 'JAPAN',
-                '다카마쓰': 'JAPAN',
-                'matsuyama': 'JAPAN',
-                '마쓰야마': 'JAPAN',
-                'shizuoka': 'JAPAN',
-                '시즈오카': 'JAPAN',
-                'kagoshima': 'JAPAN',
-                '가고시마': 'JAPAN',
-                'kumamoto': 'JAPAN',
-                '구마모토': 'JAPAN',
-                'miyazaki': 'JAPAN',
-                '미야자키': 'JAPAN',
-                'oita': 'JAPAN',
-                '오이타': 'JAPAN',
-                'nagasaki': 'JAPAN',
-                '나가사키': 'JAPAN',
-                'saga': 'JAPAN',
-                '사가': 'JAPAN',
-                'paris': 'FRANCE',
-                '파리': 'FRANCE',
-                'nice': 'FRANCE',
-                '니스': 'FRANCE',
-                'lyon': 'FRANCE',
-                '리옹': 'FRANCE',
-                'london': 'UNITED KINGDOM',
-                '런던': 'UNITED KINGDOM',
-                'taipei': 'TAIWAN',
-                '타이베이': 'TAIWAN',
-                'taiwan': 'TAIWAN',
-                '대만': 'TAIWAN',
-                'kaohsiung': 'TAIWAN',
-                '가오슝': 'TAIWAN',
-                'new york': 'USA',
-                '뉴욕': 'USA',
-                'la': 'USA',
-                'los angeles': 'USA',
-                '로스앤젤레스': 'USA',
-                'san francisco': 'USA',
-                '샌프란시스코': 'USA',
-                'seattle': 'USA',
-                '시애틀': 'USA',
-                'chicago': 'USA',
-                '시카고': 'USA',
-                'las vegas': 'USA',
-                '라스베이거스': 'USA',
-                'boston': 'USA',
-                '보스턴': 'USA',
-                'washington': 'USA',
-                '워싱턴': 'USA',
-                'guam': 'USA',
-                '괌': 'USA',
-                'saipan': 'USA',
-                '사이판': 'USA',
-                'bangkok': 'THAILAND',
-                '방콕': 'THAILAND',
-                'chiang mai': 'THAILAND',
-                '치앙마이': 'THAILAND',
-                'phuket': 'THAILAND',
-                '푸켓': 'THAILAND',
-                'pattaya': 'THAILAND',
-                '파타야': 'THAILAND',
-                'danang': 'VIETNAM',
-                '다낭': 'VIETNAM',
-                'hanoi': 'VIETNAM',
-                '하노이': 'VIETNAM',
-                'ho chi minh': 'VIETNAM',
-                '호치민': 'VIETNAM',
-                'saigon': 'VIETNAM',
-                '사이공': 'VIETNAM',
-                'nha trang': 'VIETNAM',
-                '나트랑': 'VIETNAM',
-                '냐짱': 'VIETNAM',
-                'phu quoc': 'VIETNAM',
-                '푸꾸옥': 'VIETNAM',
-                'da lat': 'VIETNAM',
-                '달랏': 'VIETNAM',
-                'sapa': 'VIETNAM',
-                '사파': 'VIETNAM',
-                'hoi an': 'VIETNAM',
-                '호이안': 'VIETNAM',
-                'singapore': 'SINGAPORE',
-                '싱가포르': 'SINGAPORE',
-                'sydney': 'AUSTRALIA',
-                '시드니': 'AUSTRALIA',
-                'melbourne': 'AUSTRALIA',
-                '멜버른': 'AUSTRALIA',
-                'brisbane': 'AUSTRALIA',
-                '브리즈번': 'AUSTRALIA',
-                'rome': 'ITALY',
-                '로마': 'ITALY',
-                'florence': 'ITALY',
-                '피렌체': 'ITALY',
-                'firenze': 'ITALY',
-                'venice': 'ITALY',
-                '베네치아': 'ITALY',
-                '베니스': 'ITALY',
-                'milan': 'ITALY',
-                '밀라노': 'ITALY',
-                'barcelona': 'SPAIN',
-                '바르셀로나': 'SPAIN',
-                'sevilla': 'SPAIN',
-                '세비야': 'SPAIN',
-                'granada': 'SPAIN',
-                '그라나다': 'SPAIN',
-                'berlin': 'GERMANY',
-                '베를린': 'GERMANY',
-                'frankfurt': 'GERMANY',
-                '프랑크푸르트': 'GERMANY',
-                'vienna': 'AUSTRIA',
-                '빈': 'AUSTRIA',
-                '비엔나': 'AUSTRIA',
-                'salzburg': 'AUSTRIA',
-                '잘츠부르크': 'AUSTRIA',
-                'prague': 'CZECHIA',
-                '프라하': 'CZECHIA',
-                'budapest': 'HUNGARY',
-                '부다페스트': 'HUNGARY',
-                'zurich': 'SWITZERLAND',
-                '취리히': 'SWITZERLAND',
-                'interlaken': 'SWITZERLAND',
-                '인터라켄': 'SWITZERLAND',
-                'seoul': 'SOUTH KOREA',
-                '서울': 'SOUTH KOREA',
-                'jeju': 'SOUTH KOREA',
-                '제주': 'SOUTH KOREA',
-                'busan': 'SOUTH KOREA',
-                '부산': 'SOUTH KOREA',
-                'incheon': 'SOUTH KOREA',
-                '인천': 'SOUTH KOREA',
-                'daegu': 'SOUTH KOREA',
-                '대구': 'SOUTH KOREA',
-                'daejeon': 'SOUTH KOREA',
-                '대전': 'SOUTH KOREA',
-                'gwangju': 'SOUTH KOREA',
-                '광주': 'SOUTH KOREA',
-                'ulsan': 'SOUTH KOREA',
-                '울산': 'SOUTH KOREA',
-                'suwon': 'SOUTH KOREA',
-                '수원': 'SOUTH KOREA',
-                'gyeongju': 'SOUTH KOREA',
-                '경주': 'SOUTH KOREA',
-                'gangneung': 'SOUTH KOREA',
-                '강릉': 'SOUTH KOREA',
-                'sokcho': 'SOUTH KOREA',
-                '속초': 'SOUTH KOREA',
-                'yeosu': 'SOUTH KOREA',
-                '여수': 'SOUTH KOREA',
-                'jeonju': 'SOUTH KOREA',
-                '전주': 'SOUTH KOREA',
-                'chuncheon': 'SOUTH KOREA',
-                '춘천': 'SOUTH KOREA',
-                'cebu': 'PHILIPPINES',
-                '세부': 'PHILIPPINES',
-                'boracay': 'PHILIPPINES',
-                '보라카이': 'PHILIPPINES',
-                'bohol': 'PHILIPPINES',
-                '보홀': 'PHILIPPINES',
-                'clark': 'PHILIPPINES',
-                '클락': 'PHILIPPINES',
-                'kuala lumpur': 'MALAYSIA',
-                '쿠알라룸푸르': 'MALAYSIA',
-                'kota kinabalu': 'MALAYSIA',
-                '코타키나발루': 'MALAYSIA',
-                'penang': 'MALAYSIA',
-                '페낭': 'MALAYSIA',
-                'bali': 'INDONESIA',
-                '발리': 'INDONESIA',
-                'jakarta': 'INDONESIA',
-                '자카르타': 'INDONESIA',
-                'macau': 'MACAU',
-                '마카오': 'MACAU',
-                'hong kong': 'HONG KONG',
-                '홍콩': 'HONG KONG'
-              };
-              return CITY_TO_COUNTRY_MAP[cleanToken] || locationToken.toUpperCase();
-            };
+            
 
             const rawCountry = locationsCountries.length > 0
               ? locationsCountries.join(', ')
@@ -2653,7 +2736,7 @@ export function JourneyDetailPage({
             return (
               <div className="absolute top-8 left-8 z-[20] flex flex-col pointer-events-none select-none text-black dark:text-white drop-shadow-md animate-in fade-in duration-300">
                 <span className="text-[20px] md:text-[22px] font-black tracking-[0.3em] uppercase text-red-600 dark:text-amber-500 mb-1 leading-none">
-                  {country}
+                  {detectedCountry || country}
                 </span>
                 <h2 className="text-5xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter leading-none border-b-2 border-amber-600 pb-1.5 max-w-[390px] md:max-w-[510px] break-all">
                   {city}

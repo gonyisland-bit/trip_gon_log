@@ -72,6 +72,7 @@ export function EditTripModal({
   const [members, setMembers] = useState<string[]>([]);
   const [memberInput, setMemberInput] = useState('');
   const [statusBadge, setStatusBadge] = useState<'NEW' | 'EDITING' | ''>('');
+  const [isVideoDragActive, setIsVideoDragActive] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   
@@ -231,8 +232,6 @@ export function EditTripModal({
     if (!file) return;
     await uploadVideoFile(file);
   };
-
-  const [isVideoDragActive, setIsVideoDragActive] = useState(false);
 
   const handleVideoDrag = (e: React.DragEvent) => {
     e.preventDefault();
