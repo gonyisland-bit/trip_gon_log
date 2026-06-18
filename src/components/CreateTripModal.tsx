@@ -6,7 +6,7 @@ import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 interface CreateTripModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (title: string, dateRange: string, location: string, tags: string[], lat?: number, lng?: number, members?: string[], locations?: { name: string; lat?: number; lng?: number }[]) => void;
+  onCreate: (title: string, dateRange: string, location: string, tags: string[], lat?: number, lng?: number, members?: string[], locations?: { name: string; lat?: number; lng?: number }[], statusBadge?: string) => void;
   existingTags: string[];
 }
 
@@ -60,6 +60,7 @@ export function CreateTripModal({
   const [tagInput, setTagInput] = useState('');
   const [members, setMembers] = useState<string[]>([]);
   const [memberInput, setMemberInput] = useState('');
+  const [statusBadge, setStatusBadge] = useState<'NEW' | 'EDITING' | ''>('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -76,6 +77,7 @@ export function CreateTripModal({
       setTagInput('');
       setMembers([]);
       setMemberInput('');
+      setStatusBadge('');
       setError('');
     }
   }, [isOpen]);
@@ -136,7 +138,8 @@ export function CreateTripModal({
       firstLat,
       firstLng,
       members,
-      locations
+      locations,
+      statusBadge
     );
     onClose();
   };
@@ -437,6 +440,29 @@ export function CreateTripModal({
               >
                 추가
               </button>
+            </div>
+          </div>
+
+          {/* Status Badge Option */}
+          <div className="flex flex-col gap-1.5 mt-2">
+            <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest text-black/50 dark:text-white/50">
+              Status Badge (영문 상태 뱃지)
+            </label>
+            <div className="flex gap-2">
+              {(['', 'NEW', 'EDITING'] as const).map((badgeOpt) => (
+                <button
+                  key={badgeOpt}
+                  type="button"
+                  onClick={() => setStatusBadge(badgeOpt)}
+                  className={`flex-grow py-2 text-[9px] font-black uppercase tracking-widest border transition-all ${
+                    statusBadge === badgeOpt
+                      ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white shadow-xs'
+                      : 'bg-transparent border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/30 dark:hover:border-white/30'
+                  }`}
+                >
+                  {badgeOpt || 'NONE'}
+                </button>
+              ))}
             </div>
           </div>
 

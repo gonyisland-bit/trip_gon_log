@@ -38,6 +38,7 @@ export interface Trip {
   gallery?: (string | GalleryImageMeta)[];
   deletedAt?: number | null; // Soft-delete timestamp (null = active)
   displayOrder?: number;
+  statusBadge?: 'NEW' | 'EDITING' | '';
   weatherData?: {
     [date: string]: {
       type: 'sunny' | 'cloudy' | 'overcast' | 'rainy' | 'snowy' | 'stormy' | '';

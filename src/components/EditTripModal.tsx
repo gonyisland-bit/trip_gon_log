@@ -71,6 +71,7 @@ export function EditTripModal({
   const [tagInput, setTagInput] = useState('');
   const [members, setMembers] = useState<string[]>([]);
   const [memberInput, setMemberInput] = useState('');
+  const [statusBadge, setStatusBadge] = useState<'NEW' | 'EDITING' | ''>('');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   
@@ -96,6 +97,7 @@ export function EditTripModal({
       setTagInput('');
       setMembers(trip.members || []);
       setMemberInput('');
+      setStatusBadge(trip.statusBadge || '');
     }
   }, [isOpen, trip]);
 
@@ -191,6 +193,7 @@ export function EditTripModal({
         img: imgUrl,
         tags,
         members,
+        statusBadge,
       });
       onClose();
     } catch (err) {
@@ -673,6 +676,29 @@ export function EditTripModal({
                  </div>
                )}
              </div>
+          </div>
+
+          {/* Status Badge Option */}
+          <div className="flex flex-col gap-1.5 mt-4">
+            <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+              Status Badge (영문 상태 뱃지)
+            </label>
+            <div className="flex gap-2">
+              {(['', 'NEW', 'EDITING'] as const).map((badgeOpt) => (
+                <button
+                  key={badgeOpt}
+                  type="button"
+                  onClick={() => setStatusBadge(badgeOpt)}
+                  className={`flex-grow py-2 text-[9px] font-black uppercase tracking-widest border transition-all ${
+                    statusBadge === badgeOpt
+                      ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white shadow-xs'
+                      : 'bg-transparent border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/30 dark:hover:border-white/30'
+                  }`}
+                >
+                  {badgeOpt || 'NONE'}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Action Buttons */}

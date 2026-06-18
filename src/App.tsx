@@ -806,7 +806,8 @@ function App() {
     lat?: number,
     lng?: number,
     members?: string[],
-    locations?: { name: string; lat?: number; lng?: number }[]
+    locations?: { name: string; lat?: number; lng?: number }[],
+    statusBadge?: string
   ) => {
     const user = auth.currentUser;
     if (!user) return;
@@ -831,7 +832,8 @@ function App() {
       lng,
       locations: locations || [],
       gallery: [],
-      members: members || []
+      members: members || [],
+      statusBadge: statusBadge || ''
     };
 
     try {
@@ -1499,7 +1501,7 @@ function App() {
         <div className={`fixed inset-0 z-[99999] flex flex-col justify-between items-center bg-[#F4F3EF] dark:bg-[#0E0E0E] splash-container ${fadeSplash ? 'splash-container-fade' : 'splash-container-active'}`}>
           <div /> {/* Top spacing */}
           <div className="flex flex-col items-center">
-            <h1 className="text-5xl sm:text-7xl md:text-9xl font-black tracking-tighter splash-title-shimmer splash-text-animate select-none">
+            <h1 className="text-5xl sm:text-7xl md:text-9xl font-black tracking-tighter splash-title-shimmer splash-text-animate select-none pb-4 md:pb-8 leading-[1.15]">
               Tripgon log
             </h1>
           </div>
