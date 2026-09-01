@@ -917,13 +917,65 @@ export function JourneyDetailPage({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // 1. Escape: dismiss map confirmation modal or exit cinematic mode
       if (e.key === 'Escape') {
-        setMapConfirm(null);
+        if (mapConfirm) {
+          setMapConfirm(null);
+          return;
+        }
+        if (isCinematicMode) {
+          setIsCinematicMode(false);
+          return;
+        }
+      }
+
+      // 2. Ignore shortcut if user is currently typing in an input, textarea, select or contenteditable
+      const target = e.target as HTMLElement | null;
+      const isInput = target && (
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) ||
+        target.isContentEditable
+      );
+      if (isInput) return;
+
+      // 3. Space shortcut: Play / Pause toggle or start playback
+      if (e.code === 'Space' || e.key === ' ') {
+        if (cinematicItems.length === 0) return;
+        e.preventDefault();
+        if (!isCinematicMode) {
+          setActiveTab('timeline');
+          if (expandedItemId !== null) {
+            const targetIdx = cinematicItems.findIndex(i => i.id === expandedItemId);
+            setCinematicIndex(targetIdx !== -1 ? targetIdx : 0);
+          } else {
+            setCinematicIndex(0);
+          }
+          setIsCinematicMode(true);
+          setIsCinematicPaused(false);
+          setMobileSheetSnap('collapsed');
+        } else {
+          setIsCinematicPaused(prev => !prev);
+        }
+      }
+
+      // 4. ArrowLeft / ArrowRight shortcut: Previous / Next spot in tour
+      if (e.key === 'ArrowLeft') {
+        if (isCinematicMode && cinematicItems.length > 0) {
+          e.preventDefault();
+          setCinematicIndex(prev => (prev - 1 + cinematicItems.length) % cinematicItems.length);
+          setCinematicProgress(0);
+        }
+      } else if (e.key === 'ArrowRight') {
+        if (isCinematicMode && cinematicItems.length > 0) {
+          e.preventDefault();
+          setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
+          setCinematicProgress(0);
+        }
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [mapConfirm, isCinematicMode, cinematicItems, expandedItemId]);
 
   useEffect(() => {
     if (!isEditing) {
@@ -2993,120 +3045,131 @@ export function JourneyDetailPage({
             />
           </ErrorBoundary>
 
-          {/* Floating Circular Play Log Button (FAB) - Centered at bottom (w-10 h-10) */}
-          {cinematicItems.length > 0 && !isCinematicMode && (
-            <button
-              onClick={() => {
-                setActiveTab('timeline');
-                if (expandedItemId !== null) {
-                  const targetIdx = cinematicItems.findIndex(i => i.id === expandedItemId);
-                  setCinematicIndex(targetIdx !== -1 ? targetIdx : 0);
-                } else {
-                  setCinematicIndex(0);
-                }
-                setIsCinematicMode(true);
-                setIsCinematicPaused(false);
-                setMobileSheetSnap('collapsed');
-              }}
-              className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[1000] w-10 h-10 rounded-full bg-red-600 hover:bg-red-700 active:scale-95 text-white shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-105 border border-white/30 group cursor-pointer"
-              title="시네마틱 플레이로그 시작 (Play Log)"
-              aria-label="Play Log"
+          {/* Floating Morphing Player (Circular FAB <-> Expanded Stadium Pill) */}
+          {cinematicItems.length > 0 && (
+            <div
+              className={`absolute bottom-3 left-1/2 -translate-x-1/2 z-[1000] rounded-full shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden pointer-events-auto flex items-center ${
+                isCinematicMode
+                  ? 'w-[calc(100%-1.5rem)] max-w-[480px] h-13 sm:h-14 bg-black/90 backdrop-blur-md border border-white/20 text-white px-3 py-1.5 sm:px-4 sm:py-2 justify-between gap-2.5'
+                  : 'w-10 h-10 bg-red-600 hover:bg-red-700 border border-white/30 text-white p-0 hover:scale-105 active:scale-95 cursor-pointer justify-center group'
+              }`}
             >
-              <Play className="w-4 h-4 fill-current ml-0.5" />
-              <span className="hidden group-hover:md:inline-block absolute bottom-full mb-2 px-2.5 py-1 bg-black/85 backdrop-blur-md text-white text-[9.5px] font-bold rounded-full whitespace-nowrap uppercase tracking-wider shadow-lg border border-white/10">
-                Play Log
-              </span>
-            </button>
-          )}
+              {/* Collapsed State: Circular FAB Content */}
+              {!isCinematicMode ? (
+                <button
+                  onClick={() => {
+                    setActiveTab('timeline');
+                    if (expandedItemId !== null) {
+                      const targetIdx = cinematicItems.findIndex(i => i.id === expandedItemId);
+                      setCinematicIndex(targetIdx !== -1 ? targetIdx : 0);
+                    } else {
+                      setCinematicIndex(0);
+                    }
+                    setIsCinematicMode(true);
+                    setIsCinematicPaused(false);
+                    setMobileSheetSnap('collapsed');
+                  }}
+                  className="w-full h-full flex items-center justify-center cursor-pointer transition-opacity duration-300"
+                  title="시네마틱 플레이로그 시작 (Space)"
+                  aria-label="Play Log"
+                >
+                  <Play className="w-4 h-4 fill-current ml-0.5" />
+                  <span className="hidden group-hover:md:inline-block absolute bottom-full mb-2 px-2.5 py-1 bg-black/85 backdrop-blur-md text-white text-[9.5px] font-bold rounded-full whitespace-nowrap uppercase tracking-wider shadow-lg border border-white/10">
+                    Play Log (Space)
+                  </span>
+                </button>
+              ) : (
+                /* Expanded State: Stadium Pill Content */
+                currentCinematicItem && (
+                  <div className="w-full h-full flex items-center justify-between gap-2.5 transition-opacity duration-300 animate-in fade-in">
+                    {/* Mini Progress Bar along the bottom of the pill */}
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/20">
+                      <div
+                        className="h-full bg-gradient-to-r from-red-600 via-orange-500 to-amber-400 transition-all duration-75"
+                        style={{ width: `${cinematicProgress}%` }}
+                      />
+                    </div>
 
-          {/* Fully Rounded Stadium Pill (Expanded Floating Player - rounded-full) */}
-          {isCinematicMode && currentCinematicItem && (
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-[480px] z-[1000] bg-black/90 backdrop-blur-md border border-white/20 text-white rounded-full shadow-2xl px-3 py-1.5 sm:px-4 sm:py-2 flex items-center justify-between gap-2.5 transition-all duration-300 animate-in zoom-in-95 pointer-events-auto overflow-hidden">
-              {/* Mini Progress Bar along the bottom of the pill */}
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/20">
-                <div
-                  className="h-full bg-gradient-to-r from-red-600 via-orange-500 to-amber-400 transition-all duration-75"
-                  style={{ width: `${cinematicProgress}%` }}
-                />
-              </div>
+                    {/* Spot info */}
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      {currentCinematicItem.img && (
+                        <img
+                          src={getEffectiveImageUrl(currentCinematicItem.img)}
+                          alt={currentCinematicItem.place}
+                          className="w-7 h-7 sm:w-8 sm:h-8 object-cover rounded-full shrink-0 border border-white/20 shadow-sm"
+                        />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="bg-red-600 text-white px-1.5 py-0.2 text-[7.5px] font-black uppercase rounded-full tracking-wider shrink-0">
+                            DAY {allTripDates.indexOf(currentCinematicItem.dateKey) + 1}
+                          </span>
+                          {currentCinematicItem.time && (
+                            <span className="text-[8.5px] font-mono text-amber-400 font-bold shrink-0">
+                              {currentCinematicItem.time}
+                            </span>
+                          )}
+                          <span className="text-[7.5px] font-mono text-white/50 shrink-0">
+                            {cinematicIndex + 1}/{cinematicItems.length}
+                          </span>
+                        </div>
+                        <h4 className="text-xs font-bold text-white tracking-tight truncate uppercase font-satoshi">
+                          {currentCinematicItem.place || 'Spot'}
+                        </h4>
+                      </div>
+                    </div>
 
-              {/* Spot info */}
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                {currentCinematicItem.img && (
-                  <img
-                    src={getEffectiveImageUrl(currentCinematicItem.img)}
-                    alt={currentCinematicItem.place}
-                    className="w-7 h-7 sm:w-8 sm:h-8 object-cover rounded-full shrink-0 border border-white/20 shadow-sm"
-                  />
-                )}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="bg-red-600 text-white px-1.5 py-0.2 text-[7.5px] font-black uppercase rounded-full tracking-wider shrink-0">
-                      DAY {allTripDates.indexOf(currentCinematicItem.dateKey) + 1}
-                    </span>
-                    {currentCinematicItem.time && (
-                      <span className="text-[8.5px] font-mono text-amber-400 font-bold shrink-0">
-                        {currentCinematicItem.time}
-                      </span>
-                    )}
-                    <span className="text-[7.5px] font-mono text-white/50 shrink-0">
-                      {cinematicIndex + 1}/{cinematicItems.length}
-                    </span>
+                    {/* Controls */}
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => setCinematicSpeed(s => s === 3800 ? 2200 : (s === 2200 ? 5500 : 3800))}
+                        className="px-1.5 py-0.5 bg-white/10 hover:bg-white/20 rounded-full text-white/80 text-[7.5px] font-mono transition-colors cursor-pointer"
+                        title="속도 조절"
+                      >
+                        {cinematicSpeed === 3800 ? '1x' : (cinematicSpeed === 2200 ? '1.5x' : '0.7x')}
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setCinematicIndex(prev => (prev - 1 + cinematicItems.length) % cinematicItems.length);
+                          setCinematicProgress(0);
+                        }}
+                        className="p-1 sm:p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+                        title="이전 스팟 (←)"
+                      >
+                        <SkipBack className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => setIsCinematicPaused(p => !p)}
+                        className="p-1.5 bg-white text-black hover:bg-amber-400 rounded-full shadow transition-all active:scale-95 cursor-pointer"
+                        title={isCinematicPaused ? '재생 (Space)' : '일시정지 (Space)'}
+                      >
+                        {isCinematicPaused ? <Play className="w-3 h-3 fill-current ml-0.5" /> : <Pause className="w-3 h-3 fill-current" />}
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
+                          setCinematicProgress(0);
+                        }}
+                        className="p-1 sm:p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+                        title="다음 스팟 (→)"
+                      >
+                        <SkipForward className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => setIsCinematicMode(false)}
+                        className="p-1 sm:p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-colors ml-0.5 cursor-pointer"
+                        title="종료 (축소 / Esc)"
+                      >
+                        <CloseIcon className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <h4 className="text-xs font-bold text-white tracking-tight truncate uppercase font-satoshi">
-                    {currentCinematicItem.place || 'Spot'}
-                  </h4>
-                </div>
-              </div>
-
-              {/* Controls */}
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={() => setCinematicSpeed(s => s === 3800 ? 2200 : (s === 2200 ? 5500 : 3800))}
-                  className="px-1.5 py-0.5 bg-white/10 hover:bg-white/20 rounded-full text-white/80 text-[7.5px] font-mono transition-colors"
-                  title="속도 조절"
-                >
-                  {cinematicSpeed === 3800 ? '1x' : (cinematicSpeed === 2200 ? '1.5x' : '0.7x')}
-                </button>
-
-                <button
-                  onClick={() => {
-                    setCinematicIndex(prev => (prev - 1 + cinematicItems.length) % cinematicItems.length);
-                    setCinematicProgress(0);
-                  }}
-                  className="p-1 sm:p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-                  title="이전 스팟"
-                >
-                  <SkipBack className="w-3.5 h-3.5" />
-                </button>
-
-                <button
-                  onClick={() => setIsCinematicPaused(p => !p)}
-                  className="p-1.5 bg-white text-black hover:bg-amber-400 rounded-full shadow transition-all active:scale-95"
-                  title={isCinematicPaused ? '재생' : '일시정지'}
-                >
-                  {isCinematicPaused ? <Play className="w-3 h-3 fill-current ml-0.5" /> : <Pause className="w-3 h-3 fill-current" />}
-                </button>
-
-                <button
-                  onClick={() => {
-                    setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
-                    setCinematicProgress(0);
-                  }}
-                  className="p-1 sm:p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-                  title="다음 스팟"
-                >
-                  <SkipForward className="w-3.5 h-3.5" />
-                </button>
-
-                <button
-                  onClick={() => setIsCinematicMode(false)}
-                  className="p-1 sm:p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-colors ml-0.5"
-                  title="종료 (축소)"
-                >
-                  <CloseIcon className="w-3.5 h-3.5" />
-                </button>
-              </div>
+                )
+              )}
             </div>
           )}
         </div>
@@ -3599,36 +3662,54 @@ export function JourneyDetailPage({
                                     </span>
                                   )}
                                   
-                                  {/* Map Pin visibility toggle in view mode */}
-                                  {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) && (
-                                    <button
-                                      onClick={() => handleToggleExcludeFromMap(item)}
-                                      className={`flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest transition-colors mt-1.5 ${
-                                        isExcluded
-                                          ? 'text-black/20 dark:text-white/20 hover:text-black/45 dark:hover:text-white/45'
-                                          : 'hover:opacity-80'
-                                      }`}
-                                      style={!isExcluded && dayColor ? { color: dayColor } : undefined}
-                                      title={isExcluded ? "지도에 표시하기" : "지도에서 제외하기"}
-                                    >
-                                      {isExcluded ? (
-                                        <>
-                                          <MapPinOff className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
-                                          <span className="text-black/30 dark:text-white/30 text-[7px] md:text-[8px]">OFF</span>
-                                        </>
-                                      ) : (
-                                        <>
-                                          <MapPin className="w-3.5 h-3.5" />
-                                          <span className="text-[7px] md:text-[8px]">ON</span>
-                                        </>
-                                      )}
-                                    </button>
-                                  )}
+                                  <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                    {/* Map Pin visibility toggle in view mode */}
+                                    {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) && (
+                                      <button
+                                        onClick={() => handleToggleExcludeFromMap(item)}
+                                        className={`flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest transition-colors ${
+                                          isExcluded
+                                            ? 'text-black/20 dark:text-white/20 hover:text-black/45 dark:hover:text-white/45'
+                                            : 'hover:opacity-80'
+                                        }`}
+                                        style={!isExcluded && dayColor ? { color: dayColor } : undefined}
+                                        title={isExcluded ? "지도에 표시하기" : "지도에서 제외하기"}
+                                      >
+                                        {isExcluded ? (
+                                          <>
+                                            <MapPinOff className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
+                                            <span className="text-black/30 dark:text-white/30 text-[7px] md:text-[8px]">OFF</span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <MapPin className="w-3.5 h-3.5" />
+                                            <span className="text-[7px] md:text-[8px]">ON</span>
+                                          </>
+                                        )}
+                                      </button>
+                                    )}
+
+                                    {/* Small circular play symbol button - ONLY on selected timeline item (no layout shift) */}
+                                    {!isEditing && isActive && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handlePlayFromItem(item.id);
+                                        }}
+                                        className="w-5 h-5 rounded-full bg-red-600 hover:bg-red-700 active:scale-90 text-white shadow-sm flex items-center justify-center transition-all animate-in fade-in zoom-in-75 cursor-pointer"
+                                        title="여기서부터 시네마틱 재생 (Play Log)"
+                                        aria-label="Play Log"
+                                      >
+                                        <Play className="w-2.5 h-2.5 fill-current ml-0.5" />
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             )}
 
-                            {/* Details */}
+                            {/* Details: Inline place and memo without accordion expansion */}
                             <div className="flex-grow pr-2 md:pr-4 min-w-0">
                               <div className={`font-bold tracking-tight text-sm md:text-base flex items-center gap-2 flex-wrap ${isActive ? 'text-red-600 dark:text-red-400' : ''}`}>
                                 {isEditing ? (
@@ -3643,11 +3724,18 @@ export function JourneyDetailPage({
                                     item={item}
                                   />
                                 ) : (
-                                  <span>{item.place}</span>
+                                  <span className="break-words">{item.place}</span>
                                 )}
-                                {isActive ? <ChevronUp className="w-3 h-3 md:w-4 md:h-4 text-current shrink-0" /> : <ChevronDown className="w-3 h-3 md:w-4 md:h-4 text-black/40 dark:text-white/40 shrink-0" />}
+
+                                {/* Compact cost badge in view mode if cost exists */}
+                                {!isEditing && item.cost && item.cost !== '-' && item.cost.trim() !== '' && (
+                                  <span className="text-[9px] md:text-[10px] font-mono font-bold text-black/60 dark:text-white/60 bg-black/5 dark:bg-white/5 px-1.5 py-0.5 rounded border border-black/5 dark:border-white/5 shrink-0">
+                                    {item.currency || 'KRW'} {item.cost}
+                                  </span>
+                                )}
                               </div>
                               
+                              {/* Memo: rendered cleanly directly on the grid */}
                               <div className="mt-1">
                                 {isEditing ? (
                                   <textarea
@@ -3659,170 +3747,137 @@ export function JourneyDetailPage({
                                     placeholder="Memo"
                                   />
                                 ) : (
-                                  <div className="text-xs md:text-sm text-black/60 dark:text-white/60 break-words w-full whitespace-pre-wrap">{item.memo}</div>
+                                  item.memo ? (
+                                    <div className="text-xs md:text-sm text-black/60 dark:text-white/60 break-words w-full whitespace-pre-wrap leading-relaxed">{item.memo}</div>
+                                  ) : null
                                 )}
                               </div>
 
-                            {/* Settlement/Expense Editor & Play from here (Shown when expanded/active) */}
-                            {isActive && !isEditing && (
-                              <div className="mt-3 pt-3 border-t border-black/10 dark:border-white/10 flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
-                                <span className="text-[8.5px] md:text-[9.5px] text-black/40 dark:text-white/40 uppercase font-black tracking-widest block">Expense / Settlement (정산)</span>
-                                <SettlementExpenseInput
-                                  cost={item.cost}
-                                  currency={item.currency}
-                                  paidBy={item.paidBy || ''}
-                                  members={tripToUse?.members || []}
-                                  isEditMode={isEditing}
-                                  onUpdate={(updates) => {
-                                    if (updates.cost !== undefined) updateTimelineItem(item.id, 'cost', updates.cost);
-                                    if (updates.currency !== undefined) updateTimelineItem(item.id, 'currency', updates.currency);
-                                    if (updates.paidBy !== undefined) updateTimelineItem(item.id, 'paidBy', updates.paidBy);
-                                  }}
-                                  defaultCurrency={defaultCurrency}
-                                />
-
-                                {/* Play Log from this spot */}
-                                <div className="mt-2 pt-2 border-t border-black/10 dark:border-white/10 flex items-center justify-between">
-                                  <span className="text-[8.5px] md:text-[9.5px] text-black/40 dark:text-white/40 uppercase font-black tracking-widest">
-                                    Cinematic Tour
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => handlePlayFromItem(item.id)}
-                                    className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
-                                  >
-                                    <Play className="w-3 h-3 fill-current" />
-                                    <span>여기서부터 재생 (Play Log)</span>
-                                  </button>
+                              {/* Actions (Edit mode) */}
+                              {isEditing && isActive && (
+                                <div className="flex items-center gap-3.5 mt-3 pt-3 border-t border-black/10 dark:border-white/10 text-[10px] md:text-xs font-bold uppercase tracking-widest" onClick={(e) => e.stopPropagation()}>
+                                   <button 
+                                     type="button"
+                                     className="flex items-center gap-1 text-black dark:text-white hover:opacity-75 transition-opacity" 
+                                     onClick={() => handleAddTimelineItemRelativeTo(item.id, 'above')}
+                                   >
+                                     <ArrowUp className="w-3.5 h-3.5"/> Add
+                                   </button>
+                                   <button 
+                                     type="button"
+                                     className="flex items-center gap-1 text-black dark:text-white hover:opacity-75 transition-opacity" 
+                                     onClick={() => handleAddTimelineItemRelativeTo(item.id, 'below')}
+                                   >
+                                     <ArrowDown className="w-3.5 h-3.5"/> Add
+                                   </button>
                                 </div>
-                              </div>
-                            )}
+                              )}
+                            </div>
 
-                            {/* Actions (Edit mode) */}
-                            {isEditing && isActive && (
-                              <div className="flex items-center gap-3.5 mt-3 pt-3 border-t border-black/10 dark:border-white/10 text-[10px] md:text-xs font-bold uppercase tracking-widest" onClick={(e) => e.stopPropagation()}>
-                                 <button 
-                                   type="button"
-                                   className="flex items-center gap-1 text-black dark:text-white hover:opacity-75 transition-opacity" 
-                                   onClick={() => handleAddTimelineItemRelativeTo(item.id, 'above')}
-                                 >
-                                   <ArrowUp className="w-3.5 h-3.5"/> Add
-                                 </button>
-                                 <button 
-                                   type="button"
-                                   className="flex items-center gap-1 text-black dark:text-white hover:opacity-75 transition-opacity" 
-                                   onClick={() => handleAddTimelineItemRelativeTo(item.id, 'below')}
-                                 >
-                                   <ArrowDown className="w-3.5 h-3.5"/> Add
-                                 </button>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Right Column: Cost Editor (only in editing mode) & Large Thumbnail */}
-                          <div className="shrink-0 flex flex-col items-end gap-2 ml-2">
-                            {isEditing && (
-                              <div className="flex flex-col items-end gap-1">
-                                <span className="text-[8px] opacity-40 uppercase font-bold tracking-widest">Cost</span>
-                                <SettlementExpenseInput
-                                  cost={item.cost}
-                                  currency={item.currency}
-                                  paidBy={item.paidBy}
-                                  members={tripToUse?.members || []}
-                                  isEditMode={isEditing}
-                                  vertical={true}
-                                  onUpdate={(updates) => {
-                                    if (updates.cost !== undefined) updateTimelineItem(item.id, 'cost', updates.cost);
-                                    if (updates.currency !== undefined) updateTimelineItem(item.id, 'currency', updates.currency);
-                                    if (updates.paidBy !== undefined) updateTimelineItem(item.id, 'paidBy', updates.paidBy);
-                                  }}
-                                  defaultCurrency={defaultCurrency}
-                                />
-                              </div>
-                            )}
-                            
-                            {/* Card thumbnail (well-sized & visible within grid) */}
-                            {item.img ? (
-                              <div 
-                                className={`w-14 h-14 md:w-16 md:h-16 rounded-[4px] overflow-hidden border transition-all relative ${isActive ? 'border-red-600 dark:border-red-400 scale-105 origin-right shadow-md ring-2 ring-red-500/20' : 'border-black/20 dark:border-white/20'}`}
-                                onClick={(e) => {
-                                  if (!isEditing) {
-                                    e.stopPropagation();
-                                    setActiveTab('gallery');
-                                    setExpandedItemId(600000000 + item.id);
-                                    setTimeout(() => {
-                                      const el = itemRefs.current[600000000 + item.id];
-                                      if (el) {
-                                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                      }
-                                    }, 300);
-                                  }
-                                }}
-                              >
-                                <img src={getEffectiveImageUrl(item.img)} alt={item.place} className={`w-full h-full object-cover transition-all ${isActive ? 'grayscale-0' : 'grayscale group-hover:grayscale-0'}`} />
-                                {/* Red dot badge: mark as timeline-attached photo */}
-                                <span className="absolute top-1 right-1 w-2 h-2 bg-red-600 rounded-full border border-white dark:border-black shadow z-10" />
-                                <ImageEditOverlay 
-                                  isEditMode={isEditing} 
-                                  hasImage={true}
-                                  onImageRemoved={() => {
-                                    updateTimelineItemFields(item.id, { img: '' });
-                                  }}
-                                  onImageUploaded={async (url, gps) => {
-                                    if (gps) {
-                                      let addr = '';
-                                      try {
-                                        addr = await fetchAddressFromCoords(gps.lat, gps.lng) || '';
-                                      } catch (e) {
-                                        console.warn(e);
-                                      }
-                                      updateTimelineItemFields(item.id, { 
-                                        img: url, 
-                                        lat: gps.lat, 
-                                        lng: gps.lng,
-                                        location: addr || item.location,
-                                        place: addr ? addr.split(',')[0].trim() : item.place
-                                      });
-                                    } else {
-                                      updateTimelineItemFields(item.id, { img: url });
+                            {/* Right Column: Cost Editor (only in editing mode) & Large Thumbnail (Flush with Grid) */}
+                            <div className="shrink-0 flex flex-col items-end gap-2 ml-2">
+                              {isEditing && (
+                                <div className="flex flex-col items-end gap-1">
+                                  <span className="text-[8px] opacity-40 uppercase font-bold tracking-widest">Cost</span>
+                                  <SettlementExpenseInput
+                                    cost={item.cost}
+                                    currency={item.currency}
+                                    paidBy={item.paidBy}
+                                    members={tripToUse?.members || []}
+                                    isEditMode={isEditing}
+                                    vertical={true}
+                                    onUpdate={(updates) => {
+                                      if (updates.cost !== undefined) updateTimelineItem(item.id, 'cost', updates.cost);
+                                      if (updates.currency !== undefined) updateTimelineItem(item.id, 'currency', updates.currency);
+                                      if (updates.paidBy !== undefined) updateTimelineItem(item.id, 'paidBy', updates.paidBy);
+                                    }}
+                                    defaultCurrency={defaultCurrency}
+                                  />
+                                </div>
+                              )}
+                              
+                              {/* Card thumbnail (fitted & flush with grid) */}
+                              {item.img ? (
+                                <div 
+                                  className={`w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 rounded-md overflow-hidden border transition-all relative shrink-0 ${isActive ? 'border-red-600 dark:border-red-400 shadow-md ring-2 ring-red-500/20' : 'border-black/15 dark:border-white/15'}`}
+                                  onClick={(e) => {
+                                    if (!isEditing) {
+                                      e.stopPropagation();
+                                      setActiveTab('gallery');
+                                      setExpandedItemId(600000000 + item.id);
+                                      setTimeout(() => {
+                                        const el = itemRefs.current[600000000 + item.id];
+                                        if (el) {
+                                          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        }
+                                      }, 300);
                                     }
-                                  }} 
-                                />
-                              </div>
-                            ) : (
-                              <div className={`w-14 h-14 md:w-16 md:h-16 rounded-[4px] border bg-black/5 dark:bg-white/5 flex items-center justify-center transition-colors relative ${isActive ? 'border-red-600 dark:border-red-400 text-red-600 scale-105 origin-right' : 'border-black/10 dark:border-white/10'}`}>
-                                <ImageIcon className="w-4 h-4 text-black/40 dark:text-white/40" />
-                                <ImageEditOverlay 
-                                  isEditMode={isEditing} 
-                                  hasImage={false}
-                                  onImageUploaded={async (url, gps) => {
-                                    if (gps) {
-                                      let addr = '';
-                                      try {
-                                        addr = await fetchAddressFromCoords(gps.lat, gps.lng) || '';
-                                      } catch (e) {
-                                        console.warn(e);
+                                  }}
+                                >
+                                  <img src={getEffectiveImageUrl(item.img)} alt={item.place} className={`w-full h-full object-cover transition-all duration-300 ${isActive ? 'grayscale-0 scale-105' : 'grayscale group-hover:grayscale-0 group-hover:scale-105'}`} />
+                                  {/* Red dot badge: mark as timeline-attached photo */}
+                                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-600 rounded-full border border-white dark:border-black shadow z-10" />
+                                  <ImageEditOverlay 
+                                    isEditMode={isEditing} 
+                                    hasImage={true}
+                                    onImageRemoved={() => {
+                                      updateTimelineItemFields(item.id, { img: '' });
+                                    }}
+                                    onImageUploaded={async (url, gps) => {
+                                      if (gps) {
+                                        let addr = '';
+                                        try {
+                                          addr = await fetchAddressFromCoords(gps.lat, gps.lng) || '';
+                                        } catch (e) {
+                                          console.warn(e);
+                                        }
+                                        updateTimelineItemFields(item.id, { 
+                                          img: url, 
+                                          lat: gps.lat, 
+                                          lng: gps.lng,
+                                          location: addr || item.location,
+                                          place: addr ? addr.split(',')[0].trim() : item.place
+                                        });
+                                      } else {
+                                        updateTimelineItemFields(item.id, { img: url });
                                       }
-                                      updateTimelineItemFields(item.id, { 
-                                        img: url, 
-                                        lat: gps.lat, 
-                                        lng: gps.lng,
-                                        location: addr || item.location,
-                                        place: addr ? addr.split(',')[0].trim() : item.place
-                                      });
-                                    } else {
-                                      updateTimelineItemFields(item.id, { img: url });
-                                    }
-                                  }} 
-                                />
-                              </div>
-                            )
-                           }
+                                    }} 
+                                  />
+                                </div>
+                              ) : (
+                                <div className={`w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 rounded-md border bg-black/5 dark:bg-white/5 flex items-center justify-center transition-colors relative shrink-0 ${isActive ? 'border-red-600 dark:border-red-400 text-red-600' : 'border-black/10 dark:border-white/10'}`}>
+                                  <ImageIcon className="w-5 h-5 text-black/30 dark:text-white/30" />
+                                  <ImageEditOverlay 
+                                    isEditMode={isEditing} 
+                                    hasImage={false}
+                                    onImageUploaded={async (url, gps) => {
+                                      if (gps) {
+                                        let addr = '';
+                                        try {
+                                          addr = await fetchAddressFromCoords(gps.lat, gps.lng) || '';
+                                        } catch (e) {
+                                          console.warn(e);
+                                        }
+                                        updateTimelineItemFields(item.id, { 
+                                          img: url, 
+                                          lat: gps.lat, 
+                                          lng: gps.lng,
+                                          location: addr || item.location,
+                                          place: addr ? addr.split(',')[0].trim() : item.place
+                                        });
+                                      } else {
+                                        updateTimelineItemFields(item.id, { img: url });
+                                      }
+                                    }} 
+                                  />
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                         
-                        {/* Expanded Section Details */}
-                        {isActive && (
+                        {/* Expanded Section Details (Edit mode only - no accordion expansion in view mode) */}
+                        {isEditing && isActive && (
                           <div className="px-4 md:px-6 pb-4 md:pb-6 pt-1 md:pt-2 animate-in slide-in-from-top-2 fade-in duration-200">
                             <div className="bg-white/80 dark:bg-black/40 border border-black/10 dark:border-white/10 p-3 md:p-4 flex flex-col gap-3 text-xs md:text-sm transition-colors shadow-inner">
                               

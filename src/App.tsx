@@ -142,6 +142,28 @@ function App() {
     setPendingNavigation(null);
   };
 
+  // Keyboard shortcut listener for unsaved modal: Save (Y), Discard (N), Skip (Esc)
+  useEffect(() => {
+    if (!showUnsavedModal) return;
+    const handleModalKeyDown = (e: KeyboardEvent) => {
+      const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName) || (e.target as HTMLElement)?.isContentEditable;
+      if (isInput) return;
+
+      if (e.key === 'y' || e.key === 'Y') {
+        e.preventDefault();
+        handleSaveAndNavigate();
+      } else if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        handleDiscardAndNavigate();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        handleCancelUnsavedModal();
+      }
+    };
+    window.addEventListener('keydown', handleModalKeyDown);
+    return () => window.removeEventListener('keydown', handleModalKeyDown);
+  }, [showUnsavedModal, pendingNavigation]);
+
   // activeTrip: strictly match activeTripId. Do not automatically fall back to trips[0]
   // to avoid rendering one trip's map with another trip's details during sync.
   const activeTrip = trips.find(t => String(t.id) === String(activeTripId)) 
@@ -1476,21 +1498,21 @@ function App() {
               <div className="flex flex-col gap-2">
                 <button
                   onClick={handleSaveAndNavigate}
-                  className="w-full py-2.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-black uppercase tracking-widest rounded-none transition-all flex items-center justify-center gap-1.5"
+                  className="w-full py-2.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-black uppercase tracking-widest rounded-none transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  저장하고 이동
+                  Save (Y)
                 </button>
                 <button
                   onClick={handleDiscardAndNavigate}
-                  className="w-full py-2.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[10px] font-black uppercase tracking-widest rounded-none transition-all"
+                  className="w-full py-2.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[10px] font-black uppercase tracking-widest rounded-none transition-all cursor-pointer"
                 >
-                  저장하지 않고 이동
+                  Discard (N)
                 </button>
                 <button
                   onClick={handleCancelUnsavedModal}
-                  className="w-full py-2.5 text-black/45 dark:text-white/45 hover:text-black dark:hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors mt-1"
+                  className="w-full py-2.5 text-black/45 dark:text-white/45 hover:text-black dark:hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors mt-1 cursor-pointer"
                 >
-                  취소
+                  Skip (Esc)
                 </button>
               </div>
             </div>
@@ -1509,7 +1531,7 @@ function App() {
           </div>
           <div className="pb-8">
             <span className="text-[10px] md:text-xs font-bold tracking-widest text-black/40 dark:text-white/40 uppercase">
-              v0.6a
+              v0.6b
             </span>
           </div>
         </div>
