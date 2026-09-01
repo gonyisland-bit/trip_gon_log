@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { MapPin, Plus, Minus, Store, ShoppingBag, Train, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { MapPin, Plus, Minus, Store, ShoppingBag, Train, Loader2, ChevronDown, ChevronUp, Menu, Lock, Unlock } from 'lucide-react';
 import { Trip, TimelineItem, TransitItem } from '../types';
 
 const dayColors = [
@@ -49,6 +49,7 @@ export function MapArea({
   const summaryCircleRef = useRef<any>(null);
   const [mapReady, setMapReady] = useState(false);
   const [isInteractive, setIsInteractive] = useState(false);
+  const [isMapMenuOpen, setIsMapMenuOpen] = useState(false);
 
   const lastTabRef = useRef<string | undefined>(undefined);
   const lastExpandedItemIdRef = useRef<number | null>(null);
@@ -470,7 +471,7 @@ export function MapArea({
         iconAnchor: isSummaryMode ? [60, 17] : [70, isActive ? 12 : 9],
       });
 
-      const marker = L.marker([lat, lng], { icon, zIndexOffset: 1000 }).addTo(map);
+      const marker = L.marker([lat, lng], { icon, zIndexOffset: isActive ? 100000 : 1000 }).addTo(map);
       marker.on('click', (e: any) => { 
         L.DomEvent.stopPropagation(e); 
         handleItemToggle(activeTab === 'transit' ? item.transitId : item.id); 
@@ -1160,25 +1161,55 @@ export function MapArea({
         </div>
       )}
 
-      {/* ── Status Bar & Interaction Toggles ── */}
-      <div className="absolute bottom-4 left-4 right-4 md:bottom-6 md:left-6 md:right-6 flex justify-between items-end z-20 pointer-events-none gap-2">
-        <div className="bg-[#F9F8F6]/95 dark:bg-[#111111]/95 backdrop-blur border border-black/20 dark:border-white/20 px-2.5 py-1.5 md:px-3 md:py-2 text-[9px] md:text-[10px] uppercase font-bold tracking-widest flex items-center gap-1.5 transition-colors pointer-events-auto max-w-[60%] truncate">
-          <MapPin className="w-3 h-3 md:w-4 md:h-4 text-red-600 dark:text-red-400 shrink-0" />
-          <span className="truncate">{activeLocationName}</span>
-        </div>
+      {/* ── Compact Map Tools Mini Menu (Hamburger) ── */}
+      <div className="absolute top-3 right-3 z-30 flex flex-col items-end gap-1.5 pointer-events-auto select-none">
+        <button
+          type="button"
+          onClick={() => setIsMapMenuOpen(prev => !prev)}
+          className={`p-1.5 rounded shadow-sm border transition-all cursor-pointer flex items-center justify-center ${
+            isMapMenuOpen 
+              ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
+              : 'bg-[#F9F8F6]/90 dark:bg-[#111111]/90 backdrop-blur-md text-black/70 dark:text-white/70 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white hover:bg-[#F9F8F6] dark:hover:bg-[#111111]'
+          }`}
+          title="지도 도구 메뉴"
+          aria-label="Toggle map tools menu"
+        >
+          <Menu className="w-3.5 h-3.5" />
+        </button>
 
-        <div className="pointer-events-auto shrink-0">
-          <button
-            onClick={() => setIsInteractive(!isInteractive)}
-            className={`px-3 py-1.5 md:px-4 md:py-2 text-[9px] md:text-[10px] uppercase font-black tracking-widest border transition-all rounded-sm flex items-center gap-1.5 shadow-md ${
-              isInteractive
-                ? 'bg-red-500 border-red-500 text-white hover:bg-red-600'
-                : 'bg-[#F9F8F6]/95 dark:bg-[#111111]/95 text-black dark:text-white border-black/20 dark:border-white/20 hover:bg-white dark:hover:bg-[#222]'
-            }`}
-          >
-            {isInteractive ? '🔒 LOCK' : '🔓 UNLOCK'}
-          </button>
-        </div>
+        {isMapMenuOpen && (
+          <div className="flex flex-col gap-1 p-1 bg-[#F9F8F6]/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/15 dark:border-white/15 rounded shadow-lg animate-in fade-in slide-in-from-top-1 duration-150">
+            <button
+              type="button"
+              onClick={() => { if (mapRef.current) mapRef.current.zoomIn(); }}
+              className="w-7 h-7 flex items-center justify-center rounded text-black/80 dark:text-white/80 hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-pointer"
+              title="지도 확대"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => { if (mapRef.current) mapRef.current.zoomOut(); }}
+              className="w-7 h-7 flex items-center justify-center rounded text-black/80 dark:text-white/80 hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-pointer"
+              title="지도 축소"
+            >
+              <Minus className="w-3.5 h-3.5" />
+            </button>
+            <div className="w-full h-px bg-black/10 dark:bg-white/10 my-0.5" />
+            <button
+              type="button"
+              onClick={() => setIsInteractive(prev => !prev)}
+              className={`w-7 h-7 flex items-center justify-center rounded transition-colors cursor-pointer ${
+                isInteractive
+                  ? 'bg-red-600 text-white shadow-xs'
+                  : 'text-black/80 dark:text-white/80 hover:bg-black/10 dark:hover:bg-white/10'
+              }`}
+              title={isInteractive ? "지도 상호작용 잠금 (Lock)" : "지도 상호작용 활성화 (Unlock)"}
+            >
+              {isInteractive ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

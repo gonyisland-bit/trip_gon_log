@@ -756,9 +756,28 @@ export function JourneyDetailPage({
   const [isMobilePlayCollapsed, setIsMobilePlayCollapsed] = useState(true);
 
   // ─── Mobile Bottom Sheet States & Gesture Logic ───
-  const [mobileSheetSnap, setMobileSheetSnap] = useState<'collapsed' | 'half' | 'expanded'>('half');
+  const [mobileSheetSnap, setMobileSheetSnap] = useState<'half' | 'expanded'>('half');
   const sheetTouchStartYRef = useRef<number | null>(null);
   const [isBannerMenuOpen, setIsBannerMenuOpen] = useState(false);
+
+  // ─── Log Play FAB Idle Transparency ───
+  const [isPlayFabIdle, setIsPlayFabIdle] = useState(false);
+  const playFabTimerRef = useRef<any>(null);
+
+  const resetPlayFabIdleTimer = () => {
+    setIsPlayFabIdle(false);
+    if (playFabTimerRef.current) clearTimeout(playFabTimerRef.current);
+    playFabTimerRef.current = setTimeout(() => {
+      setIsPlayFabIdle(true);
+    }, 3000);
+  };
+
+  useEffect(() => {
+    resetPlayFabIdleTimer();
+    return () => {
+      if (playFabTimerRef.current) clearTimeout(playFabTimerRef.current);
+    };
+  }, [isCinematicMode]);
 
   // Flatten and sort timeline items for Cinematic Tour strictly by date & parsed time
   const cinematicItems = useMemo(() => {
@@ -846,7 +865,6 @@ export function JourneyDetailPage({
     }
     setIsCinematicMode(true);
     setIsCinematicPaused(false);
-    setMobileSheetSnap('collapsed');
   };
 
   const handleSheetTouchStart = (e: React.TouchEvent) => {
@@ -859,11 +877,11 @@ export function JourneyDetailPage({
     sheetTouchStartYRef.current = null;
 
     if (deltaY < -35) {
-      // Swiped UP -> expand sheet
-      setMobileSheetSnap(prev => prev === 'collapsed' ? 'half' : 'expanded');
+      // Swiped UP -> expand sheet (minimize map)
+      setMobileSheetSnap('expanded');
     } else if (deltaY > 35) {
-      // Swiped DOWN -> collapse sheet (expand map)
-      setMobileSheetSnap(prev => prev === 'expanded' ? 'half' : 'collapsed');
+      // Swiped DOWN -> return to standard half view
+      setMobileSheetSnap('half');
     }
   };
 
@@ -951,7 +969,6 @@ export function JourneyDetailPage({
           }
           setIsCinematicMode(true);
           setIsCinematicPaused(false);
-          setMobileSheetSnap('collapsed');
         } else {
           setIsCinematicPaused(prev => !prev);
         }
@@ -971,11 +988,35 @@ export function JourneyDetailPage({
           setCinematicProgress(0);
         }
       }
+
+      // 5. ArrowUp / ArrowDown shortcut: Navigate timeline items
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        if (!isCinematicMode && currentTimeline.length > 0) {
+          e.preventDefault();
+          const currentIdx = currentTimeline.findIndex(item => item.id === expandedItemId);
+          let targetIdx = 0;
+          if (currentIdx === -1) {
+            targetIdx = e.key === 'ArrowDown' ? 0 : currentTimeline.length - 1;
+          } else {
+            targetIdx = e.key === 'ArrowUp' ? currentIdx - 1 : currentIdx + 1;
+            if (targetIdx < 0) targetIdx = 0;
+            if (targetIdx >= currentTimeline.length) targetIdx = currentTimeline.length - 1;
+          }
+          const targetItem = currentTimeline[targetIdx];
+          if (targetItem) {
+            setExpandedItemId(targetItem.id);
+            setTimeout(() => {
+              const el = itemRefs.current[targetItem.id];
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 60);
+          }
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [mapConfirm, isCinematicMode, cinematicItems, expandedItemId]);
+  }, [mapConfirm, isCinematicMode, cinematicItems, expandedItemId, currentTimeline]);
 
   useEffect(() => {
     if (!isEditing) {
@@ -2974,13 +3015,11 @@ export function JourneyDetailPage({
       {/* Left: Map & Info Section (Responsive Height driven by mobileSheetSnap) */}
       <section 
         className={`w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-all duration-300 md:h-full shrink-0 ${
-          mobileSheetSnap === 'collapsed' 
-            ? 'max-md:h-[calc(100dvh-110px)]' 
-            : (mobileSheetSnap === 'expanded' ? 'max-md:h-[18dvh]' : 'max-md:h-[45dvh]')
+          mobileSheetSnap === 'expanded' ? 'max-md:h-[18dvh]' : 'max-md:h-[48dvh]'
         }`}
         onClick={() => {
-          if (window.innerWidth < 768 && mobileSheetSnap !== 'collapsed') {
-            setMobileSheetSnap('collapsed');
+          if (window.innerWidth < 768 && mobileSheetSnap === 'expanded') {
+            setMobileSheetSnap('half');
           }
         }}
       >
@@ -3058,10 +3097,15 @@ export function JourneyDetailPage({
           {/* Floating Morphing Player (Circular FAB <-> Expanded Stadium Pill) */}
           {cinematicItems.length > 0 && (
             <div
+              onMouseEnter={() => setIsPlayFabIdle(false)}
+              onMouseLeave={resetPlayFabIdleTimer}
+              onTouchStart={() => { setIsPlayFabIdle(false); resetPlayFabIdleTimer(); }}
               className={`absolute bottom-3 left-1/2 -translate-x-1/2 z-[1000] rounded-full shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden pointer-events-auto flex items-center ${
+                !isCinematicMode && isPlayFabIdle ? 'opacity-40 hover:opacity-100' : 'opacity-100'
+              } ${
                 isCinematicMode
                   ? 'w-[calc(100%-1.5rem)] max-w-[480px] h-13 sm:h-14 bg-black/90 backdrop-blur-md border border-white/20 text-white px-3 py-1.5 sm:px-4 sm:py-2 justify-between gap-2.5'
-                  : 'w-10 h-10 bg-red-600 hover:bg-red-700 border border-white/30 text-white p-0 hover:scale-105 active:scale-95 cursor-pointer justify-center group'
+                  : 'w-8 h-8 sm:w-8.5 sm:h-8.5 bg-red-600 hover:bg-red-700 border border-white/30 text-white p-0 hover:scale-105 active:scale-95 cursor-pointer justify-center group'
               }`}
             >
               {/* Collapsed State: Circular FAB Content */}
@@ -3077,13 +3121,12 @@ export function JourneyDetailPage({
                     }
                     setIsCinematicMode(true);
                     setIsCinematicPaused(false);
-                    setMobileSheetSnap('collapsed');
                   }}
                   className="w-full h-full flex items-center justify-center cursor-pointer transition-opacity duration-300"
                   title="시네마틱 플레이로그 시작 (Space)"
                   aria-label="Play Log"
                 >
-                  <Play className="w-4 h-4 fill-current ml-0.5" />
+                  <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current ml-0.5" />
                   <span className="hidden group-hover:md:inline-block absolute bottom-full mb-2 px-2.5 py-1 bg-black/85 backdrop-blur-md text-white text-[9.5px] font-bold rounded-full whitespace-nowrap uppercase tracking-wider shadow-lg border border-white/10">
                     Play Log (Space)
                   </span>
@@ -3189,24 +3232,26 @@ export function JourneyDetailPage({
       {/* Right: Record / Tabs Section (Responsive Bottom Sheet on Mobile) */}
       <section 
         className={`w-full md:w-1/2 flex flex-col bg-[#F9F8F6] dark:bg-[#111111] transition-all duration-300 flex-grow md:h-full overflow-hidden ${
-          mobileSheetSnap === 'collapsed'
-            ? 'max-md:h-[110px] max-md:overflow-hidden'
-            : (mobileSheetSnap === 'expanded' ? 'max-md:h-[82dvh]' : 'max-md:h-[55dvh]')
+          mobileSheetSnap === 'expanded' ? 'max-md:h-[82dvh]' : 'max-md:h-[52dvh]'
         }`}
       >
         {/* Mobile Bottom Sheet Grab Handle */}
         <div 
-          className="md:hidden flex flex-col items-center justify-center py-1.5 px-4 bg-[#F9F8F6] dark:bg-[#111111] border-b border-black/10 dark:border-white/10 cursor-pointer select-none touch-none shrink-0 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+          className="md:hidden flex flex-col items-center justify-center py-2 px-4 bg-[#F9F8F6] dark:bg-[#111111] border-b border-black/10 dark:border-white/10 cursor-pointer select-none touch-none shrink-0 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group/grab"
           onTouchStart={handleSheetTouchStart}
           onTouchEnd={handleSheetTouchEnd}
           onClick={() => {
-            setMobileSheetSnap(prev => prev === 'collapsed' ? 'half' : (prev === 'half' ? 'expanded' : 'collapsed'));
+            setMobileSheetSnap(prev => prev === 'half' ? 'expanded' : 'half');
           }}
+          title="지도/일정 분할 토글"
         >
-          <div className="w-8 h-1 bg-black/30 dark:bg-white/30 rounded-full mb-0.5" />
-          <div className="flex items-center justify-between w-full text-[8px] font-black uppercase tracking-widest text-black/40 dark:text-white/40 px-1">
-            <span>{mobileSheetSnap === 'collapsed' ? '▲ 일정 펼치기 (Expand)' : (mobileSheetSnap === 'expanded' ? '▼ 지도 크게보기 (Map)' : '● 기본 분할 (Toggle)')}</span>
-            <span className="text-[7.5px] font-mono opacity-60">{mobileSheetSnap.toUpperCase()}</span>
+          <div className="flex items-center gap-1">
+            <div className="w-10 h-1 bg-black/25 dark:bg-white/25 group-hover/grab:bg-black/40 rounded-full transition-colors" />
+            {mobileSheetSnap === 'expanded' ? (
+              <ChevronDown className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+            ) : (
+              <ChevronUp className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+            )}
           </div>
         </div>
         
@@ -3224,10 +3269,6 @@ export function JourneyDetailPage({
               onClick={() => { 
                 setActiveTab(tab.id as TabType); 
                 setExpandedItemId(null); 
-                // When clicking any tab while sheet is collapsed on mobile, immediately return to half view!
-                if (mobileSheetSnap === 'collapsed') {
-                  setMobileSheetSnap('half');
-                }
               }} 
               className={`flex-1 h-full px-1.5 sm:px-3 flex flex-row items-center justify-center gap-1.5 text-[9.5px] sm:text-[11px] md:text-xs font-bold uppercase tracking-wider border-r border-black/15 dark:border-white/15 last:border-r-0 transition-colors whitespace-nowrap cursor-pointer ${
                 activeTab === tab.id 
@@ -4385,6 +4426,12 @@ export function JourneyDetailPage({
                     className={`relative overflow-hidden border transition-all duration-300 cursor-pointer aspect-[4/3] group ${isPhotoActive ? 'border-orange-500 scale-[1.02] shadow-md ring-2 ring-orange-500/30' : 'border-black/10 dark:border-white/10'}`}
                     onClick={() => {
                       setExpandedItemId(imgItem.id);
+                    }}
+                    onDoubleClick={(e) => {
+                      e.stopPropagation();
+                      const globalIdx = galleryAllMeta.findIndex(m => m.url === imgItem.url);
+                      setLightboxIndex(globalIdx !== -1 ? globalIdx : 0);
+                      setIsLightboxOpen(true);
                     }}
                   >
                     <img
