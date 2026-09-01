@@ -571,19 +571,20 @@ export function MapArea({
             }
 
             const L = (window as any).L;
-            if (L) {
+              const travelerIcon = L.divIcon({
+                className: 'traveler-icon-container',
+                html: `<div style="font-size: 32px; line-height: 1; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)); transform: translate(-50%, -100%) translateY(-8px);" class="animate-bounce select-none pointer-events-none">🚶‍♂️</div>`,
+                iconSize: [36, 36],
+                iconAnchor: [18, 36]
+              });
               if (!travelerMarkerRef.current) {
-                const travelerIcon = L.divIcon({
-                  className: 'traveler-icon-container',
-                  html: `<div style="font-size: 28px; line-height: 1; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.5)); transform: translate(-50%, -50%);" class="animate-bounce select-none pointer-events-none">🚶‍♂️</div>`,
-                  iconSize: [32, 32],
-                  iconAnchor: [16, 16]
-                });
                 travelerMarkerRef.current = L.marker([prevCoords.lat, prevCoords.lng], {
                   icon: travelerIcon,
-                  zIndexOffset: 10000,
+                  zIndexOffset: 250000,
                 }).addTo(map);
               } else {
+                travelerMarkerRef.current.setIcon(travelerIcon);
+                travelerMarkerRef.current.setZIndexOffset(250000);
                 travelerMarkerRef.current.setLatLng([prevCoords.lat, prevCoords.lng]);
               }
 
