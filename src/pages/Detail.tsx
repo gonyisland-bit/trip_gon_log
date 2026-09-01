@@ -713,7 +713,8 @@ export function JourneyDetailPage({
   const [isGalleryDragActive, setIsGalleryDragActive] = useState(false);
   const [saving, setSaving] = useState(false);
   const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
-  const [galleryViewMode, setGalleryViewMode] = useState<'grid' | 'accordion'>('grid');
+  const [galleryViewMode, setGalleryViewMode] = useState<'grid' | 'accordion'>('accordion');
+  const [galleryColumns, setGalleryColumns] = useState<2 | 4>(2);
   const [collapsedGalleryDays, setCollapsedGalleryDays] = useState<string[]>([]);
   const [detailLocInput, setDetailLocInput] = useState('');
   
@@ -753,18 +754,34 @@ export function JourneyDetailPage({
   const [cinematicSpeed, setCinematicSpeed] = useState<number>(3800); // ms per step
   const [cinematicProgress, setCinematicProgress] = useState(0);
 
-  // Flatten and sort timeline items for Cinematic Tour
+  // Flatten and sort timeline items for Cinematic Tour strictly by date & parsed time
   const cinematicItems = useMemo(() => {
-    if (!timelineData) return [];
+    const rawItems = isEditing
+      ? draftTimeline
+      : Object.entries(timelineData || {}).flatMap(([d, list]) => 
+          (list || []).map(item => ({ ...item, date: item.date || d }))
+        );
+
     const items: (TimelineItem & { dateKey: string })[] = [];
-    generatedDates.forEach(d => {
-      const dayList = timelineData[d] || [];
-      dayList.forEach(item => {
-        items.push({ ...item, dateKey: d });
-      });
+    rawItems.forEach(item => {
+      if (item.date && item.date.trim()) {
+        items.push({ ...item, dateKey: item.date.trim() });
+      }
     });
-    return items;
-  }, [timelineData, generatedDates]);
+
+    // Sort strictly: date ascending, then time ascending, then ID
+    return items.sort((a, b) => {
+      if (a.dateKey !== b.dateKey) {
+        return a.dateKey.localeCompare(b.dateKey);
+      }
+      const timeA = parseTimeToMinutes(a.time);
+      const timeB = parseTimeToMinutes(b.time);
+      if (timeA !== timeB) {
+        return timeA - timeB;
+      }
+      return a.id - b.id;
+    });
+  }, [timelineData, draftTimeline, isEditing]);
 
   const currentCinematicItem = cinematicItems[cinematicIndex] || null;
 
@@ -772,16 +789,15 @@ export function JourneyDetailPage({
   useEffect(() => {
     if (!isCinematicMode || !currentCinematicItem) return;
     setExpandedItemId(currentCinematicItem.id);
-    if (selectedDate !== 'ALL' && selectedDate !== currentCinematicItem.dateKey) {
-      setSelectedDate(currentCinematicItem.dateKey);
-    }
+    setSelectedDate(currentCinematicItem.dateKey);
+
     // Smoothly scroll timeline item into view
     setTimeout(() => {
       const el = document.getElementById(`timeline-item-${currentCinematicItem.id}`);
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-    }, 100);
+    }, 150);
   }, [isCinematicMode, cinematicIndex, currentCinematicItem]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Cinematic timer loop
@@ -957,12 +973,14 @@ export function JourneyDetailPage({
 
   const dateBarRef = useRef<HTMLDivElement>(null);
   const isDown = useRef(false);
+  const hasMovedRef = useRef(false);
   const startX = useRef(0);
   const scrollLeftRef = useRef(0);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!dateBarRef.current) return;
     isDown.current = true;
+    hasMovedRef.current = false;
     startX.current = e.pageX - dateBarRef.current.offsetLeft;
     scrollLeftRef.current = dateBarRef.current.scrollLeft;
   };
@@ -977,10 +995,13 @@ export function JourneyDetailPage({
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDown.current || !dateBarRef.current) return;
-    e.preventDefault();
     const x = e.pageX - dateBarRef.current.offsetLeft;
     const walk = (x - startX.current) * 1.5;
-    dateBarRef.current.scrollLeft = scrollLeftRef.current - walk;
+    if (Math.abs(walk) > 4) {
+      hasMovedRef.current = true;
+      e.preventDefault();
+      dateBarRef.current.scrollLeft = scrollLeftRef.current - walk;
+    }
   };
 
   const scrollDays = (direction: 'left' | 'right') => {
@@ -1041,28 +1062,7 @@ export function JourneyDetailPage({
     }
   }, [searchFocusTab, searchFocusItemId, timelineData, onClearSearchFocus]);
 
-  // Auto-healing date mismatch in Firestore on page load
-  useEffect(() => {
-    if (isEditing) return; // Skip auto-healing when editing to prevent auto-saves during editing
-    if (!isLoggedIn || !trip || !timelineData || generatedDates.length === 0) return;
-    const rawTimeline = Object.entries(timelineData).flatMap(([d, list]) => 
-      (list || []).map(item => ({ ...item, date: item.date || d }))
-    );
-    const hasMismatch = rawTimeline.some(item => !generatedDates.includes(item.date || ''));
-    if (hasMismatch) {
-      console.log("Auto-healing timeline date mismatches in Firestore...");
-      const healedTimeline = rawTimeline.map(item => {
-        const itemDate = item.date || '';
-        if (!generatedDates.includes(itemDate)) {
-          return { ...item, date: generatedDates[0] };
-        }
-        return item;
-      });
-      onSave(trip.id, trip, healedTimeline, flights, stays, transits)
-        .then(() => console.log("Auto-healed timeline dates saved to Firestore."))
-        .catch(err => console.error("Failed to auto-heal timeline dates in Firestore:", err));
-    }
-  }, [trip, timelineData, generatedDates, isLoggedIn, isEditing]);
+  // Note: We preserve timeline items' authentic dates and dynamically derive all days to avoid data corruption.
 
   // Dynamically resolve country name with coordinate geocoding fallback (for data efficiency and error prevention)
   useEffect(() => {
@@ -1306,14 +1306,7 @@ export function JourneyDetailPage({
     const flatTimeline = Object.entries(timelineData || {}).flatMap(([d, list]) => 
       (list || []).map(item => ({ ...item, date: item.date || d }))
     );
-    const healedTimeline = flatTimeline.map(item => {
-      const itemDate = item.date || '';
-      if (generatedDates.length > 0 && !generatedDates.includes(itemDate)) {
-        return { ...item, date: generatedDates[0] };
-      }
-      return item;
-    });
-    setDraftTimeline(healedTimeline);
+    setDraftTimeline(flatTimeline);
     setDraftFlights([...flights]);
     setDraftStays([...stays]);
     setDraftTransits([...transits]);
@@ -1466,33 +1459,34 @@ export function JourneyDetailPage({
 
 
 
-  const dynamicDates = [
-    { id: 'all', date: 'ALL', label: 'Overall' },
-    ...generatedDates.map((d, index) => ({
-      id: d,
-      date: d,
-      label: `Day ${index + 1}`
-    }))
-  ];
-
-  // Determine current timeline items (original or draft) with date healing
-  const baseTimeline = (() => {
-    const rawTimeline = isEditing
+  // Determine current timeline items (original or draft) preserving authentic item dates
+  const baseTimeline = useMemo(() => {
+    return isEditing
       ? draftTimeline
       : Object.entries(timelineData || {}).flatMap(([d, list]) => 
           (list || []).map(item => ({ ...item, date: item.date || d }))
         );
-    if (generatedDates.length > 0) {
-      return rawTimeline.map(item => {
-        const itemDate = item.date || '';
-        if (!generatedDates.includes(itemDate)) {
-          return { ...item, date: generatedDates[0] };
-        }
-        return item;
-      });
-    }
-    return rawTimeline;
-  })();
+  }, [isEditing, draftTimeline, timelineData]);
+
+  // Combine trip's date-range dates with any dates actually present in the timeline
+  const allTripDates = useMemo(() => {
+    const datesSet = new Set<string>(generatedDates);
+    baseTimeline.forEach(item => {
+      if (item.date && item.date.trim()) {
+        datesSet.add(item.date.trim());
+      }
+    });
+    return Array.from(datesSet).sort();
+  }, [generatedDates, baseTimeline]);
+
+  const dynamicDates = useMemo(() => [
+    { id: 'all', date: 'ALL', label: 'Overall' },
+    ...allTripDates.map((d, index) => ({
+      id: d,
+      date: d,
+      label: `Day ${index + 1}`
+    }))
+  ], [allTripDates]);
 
   const groupedTimelineData = useMemo(() => {
     const map: { [date: string]: TimelineItem[] } = {};
@@ -1597,7 +1591,7 @@ export function JourneyDetailPage({
 
   const galleryGroups = useMemo(() => {
     const groups: { [date: string]: typeof allGalleryImages } = {};
-    generatedDates.forEach(d => {
+    allTripDates.forEach(d => {
       groups[d] = [];
     });
     groups['NO_DATE'] = [];
@@ -1611,7 +1605,7 @@ export function JourneyDetailPage({
       }
     });
     return groups;
-  }, [allGalleryImages, generatedDates]);
+  }, [allGalleryImages, allTripDates]);
 
   // Keep backward compat
   const galleryAllUnique = useMemo(() => {
@@ -1622,7 +1616,7 @@ export function JourneyDetailPage({
     const points: any[] = [];
     baseTimeline.forEach((item) => {
       if (item.img && item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) {
-        const dayIndex = item.date ? generatedDates.indexOf(item.date) + 1 : 0;
+        const dayIndex = item.date ? allTripDates.indexOf(item.date) + 1 : 0;
         points.push({
           id: 600000000 + item.id, // unique ID offset for timeline photo pins
           place: item.place || '일정 사진 위치',
@@ -1638,7 +1632,7 @@ export function JourneyDetailPage({
       }
     });
     return points;
-  }, [baseTimeline, generatedDates]);
+  }, [baseTimeline, allTripDates]);
 
 
 
@@ -1672,7 +1666,7 @@ export function JourneyDetailPage({
     galleryMetaImages.forEach((imgMeta, idx) => {
       if (imgMeta.lat !== undefined && imgMeta.lng !== undefined && imgMeta.lat !== null && imgMeta.lng !== null) {
         if (imgMeta.excludeFromMap) return;
-        const dayIndex = imgMeta.date ? generatedDates.indexOf(imgMeta.date) + 1 : 0;
+        const dayIndex = imgMeta.date ? allTripDates.indexOf(imgMeta.date) + 1 : 0;
         photoPoints.push({
           id: 500000 + idx, // unique ID offset for photo pins
           place: imgMeta.place || '사진 위치',
@@ -1692,7 +1686,7 @@ export function JourneyDetailPage({
       const timelinePoints = currentTimeline
         .filter(item => !item.excludeFromMap)
         .map(item => {
-          const dayIndex = item.date ? generatedDates.indexOf(item.date) + 1 : 0;
+          const dayIndex = item.date ? allTripDates.indexOf(item.date) + 1 : 0;
           return {
             ...item,
             lat: item.lat !== undefined && item.lat !== null ? Number(item.lat) : undefined,
@@ -1819,7 +1813,7 @@ export function JourneyDetailPage({
       const allTimelinePoints = baseTimeline
         .filter(item => item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null && !item.excludeFromMap)
         .map(item => {
-          const dayIndex = item.date ? generatedDates.indexOf(item.date) + 1 : 0;
+          const dayIndex = item.date ? allTripDates.indexOf(item.date) + 1 : 0;
           return {
             ...item,
             lat: Number(item.lat),
@@ -2986,6 +2980,7 @@ export function JourneyDetailPage({
               activeTab={activeTab}
               transitFocusType={transitFocusType}
               transits={isEditing ? draftTransits : transits}
+              isCinematicMode={isCinematicMode}
             />
           </ErrorBoundary>
 
@@ -3005,7 +3000,7 @@ export function JourneyDetailPage({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="bg-red-600 text-white px-1.5 py-0.5 text-[8px] font-black tracking-widest uppercase rounded-[1px]">
-                      DAY {generatedDates.indexOf(currentCinematicItem.dateKey) + 1}
+                      DAY {allTripDates.indexOf(currentCinematicItem.dateKey) + 1}
                     </span>
                     <span className="text-[10px] font-mono text-white/70">
                       SPOT {cinematicIndex + 1} / {cinematicItems.length}
@@ -3174,9 +3169,13 @@ export function JourneyDetailPage({
                     <button 
                       key={d.id} 
                       data-active={selectedDate === d.date}
-                      onClick={() => { setSelectedDate(d.date); setExpandedItemId(null); }} 
-                      className={`flex-1 min-w-[95px] md:min-w-[115px] py-2 px-3 md:px-4 flex flex-col items-center justify-center border-r border-black/20 dark:border-white/20 last:border-r-0 transition-all whitespace-nowrap ${selectedDate === d.date ? 'bg-black text-[#F9F8F6] dark:bg-white dark:text-black' : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white'}`}
-                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={() => { 
+                        if (!hasMovedRef.current) {
+                          setSelectedDate(d.date); 
+                          setExpandedItemId(null); 
+                        }
+                      }} 
+                      className={`flex-1 min-w-[95px] md:min-w-[115px] py-2 px-3 md:px-4 flex flex-col items-center justify-center border-r border-black/20 dark:border-white/20 last:border-r-0 transition-all whitespace-nowrap cursor-pointer ${selectedDate === d.date ? 'bg-black text-[#F9F8F6] dark:bg-white dark:text-black' : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white'}`}
                     >
                       <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest opacity-60 mb-0.5">
                         {d.label}
@@ -3235,15 +3234,15 @@ export function JourneyDetailPage({
                   <div className="flex justify-end px-4 md:px-6 py-2 bg-black/5 dark:bg-white/5 border-b border-black/10 dark:border-white/10 shrink-0 select-none">
                     <button
                       onClick={() => {
-                        if (collapsedDays.length === generatedDates.length) {
+                        if (collapsedDays.length === allTripDates.length) {
                           setCollapsedDays([]);
                         } else {
-                          setCollapsedDays([...generatedDates]);
+                          setCollapsedDays([...allTripDates]);
                         }
                       }}
                       className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-black/50 dark:text-white/50 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                     >
-                      {collapsedDays.length === generatedDates.length ? '▼ EXPAND ALL DAYS' : '▲ COLLAPSE ALL DAYS'}
+                      {collapsedDays.length === allTripDates.length ? '▼ EXPAND ALL DAYS' : '▲ COLLAPSE ALL DAYS'}
                     </button>
                   </div>
                 )}
@@ -3299,7 +3298,7 @@ export function JourneyDetailPage({
                             defaultValue=""
                           >
                             <option value="" disabled>Select Day</option>
-                            {generatedDates.map((d, index) => (
+                            {allTripDates.map((d, index) => (
                               <option key={d} value={d}>Day {index + 1} ({d.slice(5).replace('.', '/')})</option>
                             ))}
                           </select>
@@ -3322,7 +3321,7 @@ export function JourneyDetailPage({
                   currentTimeline.map((item, idx) => {
                     const isActive = expandedItemId === item.id;
                     const showDivider = (selectedDate === 'ALL' && (idx === 0 || currentTimeline[idx - 1].date !== item.date)) || (selectedDate !== 'ALL' && idx === 0);
-                    const dayIndex = item.date ? generatedDates.indexOf(item.date) + 1 : 0;
+                    const dayIndex = item.date ? allTripDates.indexOf(item.date) + 1 : 0;
                     const isExcluded = !!item.excludeFromMap;
                     const dayColor = dayIndex > 0 ? dayColors[(dayIndex - 1) % dayColors.length] : undefined;
                     const weatherInfo = tripToUse?.weatherData?.[item.date || ''];
@@ -3476,6 +3475,7 @@ export function JourneyDetailPage({
                           </div>
                         )}
                         <div 
+                          id={`timeline-item-${item.id}`}
                           ref={el => { itemRefs.current[item.id] = el; }} 
                           className={`flex flex-col border-b border-black/10 dark:border-white/10 transition-all w-full ${isActive ? 'bg-red-500/[0.02] dark:bg-red-500/[0.02] border-l-2 border-l-red-600 dark:border-l-red-400' : 'border-l-2 border-l-transparent'} ${collapsedDays.includes(item.date || '') && selectedDate === 'ALL' ? 'hidden' : ''}`}
                           draggable={isEditing}
@@ -3548,7 +3548,7 @@ export function JourneyDetailPage({
                                     }}
                                     className="bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 text-[9px] md:text-xs font-bold p-0.5 outline-none text-black dark:text-white rounded-none w-full text-center animate-in fade-in duration-300 select-text"
                                   >
-                                    {generatedDates.map(d => (
+                                    {allTripDates.map(d => (
                                       <option key={d} value={d}>{d.slice(5).replace('.', '/')}</option>
                                     ))}
                                   </select>
@@ -3717,7 +3717,7 @@ export function JourneyDetailPage({
                             {/* Card thumbnail (strictly preview, image is uploadable) */}
                             {item.img ? (
                               <div 
-                                className={`w-10 h-10 md:w-12 md:h-12 overflow-hidden border transition-all relative ${isActive ? 'border-red-600 dark:border-red-400 scale-110 origin-right' : 'border-black/20 dark:border-white/20'}`}
+                                className={`w-12 h-12 md:w-14 md:h-14 rounded-[2px] overflow-hidden border transition-all relative ${isActive ? 'border-red-600 dark:border-red-400 scale-110 origin-right shadow-md' : 'border-black/20 dark:border-white/20'}`}
                                 onClick={(e) => {
                                   if (!isEditing) {
                                     e.stopPropagation();
@@ -3763,8 +3763,8 @@ export function JourneyDetailPage({
                                 />
                               </div>
                             ) : (
-                              <div className={`w-10 h-10 md:w-12 md:h-12 border bg-black/5 dark:bg-white/5 flex items-center justify-center transition-colors relative ${isActive ? 'border-red-600 dark:border-red-400 text-red-600 scale-110 origin-right' : 'border-black/10 dark:border-white/10'}`}>
-                                <ImageIcon className="w-3 h-3 md:w-4 md:h-4" />
+                              <div className={`w-12 h-12 md:w-14 md:h-14 rounded-[2px] border bg-black/5 dark:bg-white/5 flex items-center justify-center transition-colors relative ${isActive ? 'border-red-600 dark:border-red-400 text-red-600 scale-110 origin-right' : 'border-black/10 dark:border-white/10'}`}>
+                                <ImageIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
                                 <ImageEditOverlay 
                                   isEditMode={isEditing} 
                                   hasImage={false}
@@ -3896,7 +3896,7 @@ export function JourneyDetailPage({
                 {isEditing && (
                   <div className="p-6 flex justify-center w-full">
                     <button 
-                      onClick={() => handleAddTimelineItem(selectedDate === 'ALL' ? generatedDates[0] || '2025.04.12' : selectedDate)}
+                      onClick={() => handleAddTimelineItem(selectedDate === 'ALL' ? allTripDates[0] || '2025.04.12' : selectedDate)}
                       className="text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-2"
                     >
                       <Plus className="w-4 h-4" /> Add Timeline Event
@@ -4435,30 +4435,60 @@ export function JourneyDetailPage({
                   />
                 )}
 
-                {/* Gallery View Mode Toggle */}
+                {/* Gallery View Mode & Column Toggle */}
                 {allGalleryImages.length > 0 && (
-                  <div className="flex justify-end mb-3">
-                    <div className="flex rounded-none border border-black/10 dark:border-white/10 p-0.5 bg-black/5 dark:bg-white/5">
-                      <button
-                        onClick={() => setGalleryViewMode('grid')}
-                        className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${
-                          galleryViewMode === 'grid'
-                            ? 'bg-white dark:bg-[#1a1a1a] text-black dark:text-white shadow-sm'
-                            : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
-                        }`}
-                      >
-                        TIME
-                      </button>
-                      <button
-                        onClick={() => setGalleryViewMode('accordion')}
-                        className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${
-                          galleryViewMode === 'accordion'
-                            ? 'bg-white dark:bg-[#1a1a1a] text-black dark:text-white shadow-sm'
-                            : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
-                        }`}
-                      >
-                        DATE
-                      </button>
+                  <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
+                      {allGalleryImages.length} Photos
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {/* 2 Cols / 4 Cols Toggle */}
+                      <div className="flex border border-black/10 dark:border-white/10 p-0.5 bg-black/5 dark:bg-white/5">
+                        <button
+                          onClick={() => setGalleryColumns(2)}
+                          className={`px-2.5 py-1 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                            galleryColumns === 2
+                              ? 'bg-white dark:bg-[#1a1a1a] text-black dark:text-white shadow-sm'
+                              : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                          }`}
+                        >
+                          2 COLS (BIG)
+                        </button>
+                        <button
+                          onClick={() => setGalleryColumns(4)}
+                          className={`px-2.5 py-1 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                            galleryColumns === 4
+                              ? 'bg-white dark:bg-[#1a1a1a] text-black dark:text-white shadow-sm'
+                              : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                          }`}
+                        >
+                          4 COLS
+                        </button>
+                      </div>
+
+                      {/* DATE / TIME Toggle */}
+                      <div className="flex border border-black/10 dark:border-white/10 p-0.5 bg-black/5 dark:bg-white/5">
+                        <button
+                          onClick={() => setGalleryViewMode('accordion')}
+                          className={`px-2.5 py-1 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                            galleryViewMode === 'accordion'
+                              ? 'bg-white dark:bg-[#1a1a1a] text-black dark:text-white shadow-sm'
+                              : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                          }`}
+                        >
+                          DATE
+                        </button>
+                        <button
+                          onClick={() => setGalleryViewMode('grid')}
+                          className={`px-2.5 py-1 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                            galleryViewMode === 'grid'
+                              ? 'bg-white dark:bg-[#1a1a1a] text-black dark:text-white shadow-sm'
+                              : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                          }`}
+                        >
+                          TIME
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -4470,7 +4500,7 @@ export function JourneyDetailPage({
                 ) : galleryViewMode === 'accordion' ? (
                   <div className="flex flex-col gap-3">
                     {/* Date Accordions */}
-                    {generatedDates.map((date, idx) => {
+                    {allTripDates.map((date, idx) => {
                       const items = galleryGroups[date] || [];
                       const isCollapsed = collapsedGalleryDays.includes(date);
                       if (items.length === 0) return null;
@@ -4493,7 +4523,7 @@ export function JourneyDetailPage({
                             </span>
                           </button>
                           {!isCollapsed && (
-                            <div className="p-3 md:p-5 grid grid-cols-2 gap-3 md:gap-5 border-t border-black/10 dark:border-white/10">
+                            <div className={`p-3 md:p-5 grid ${galleryColumns === 2 ? 'grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 md:gap-3'} border-t border-black/10 dark:border-white/10`}>
                               {items.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
                             </div>
                           )}
@@ -4523,7 +4553,7 @@ export function JourneyDetailPage({
                             </span>
                           </button>
                           {!isCollapsed && (
-                            <div className="p-3 md:p-5 grid grid-cols-2 gap-3 md:gap-5 border-t border-black/10 dark:border-white/10">
+                            <div className={`p-3 md:p-5 grid ${galleryColumns === 2 ? 'grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 md:gap-3'} border-t border-black/10 dark:border-white/10`}>
                               {items.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
                             </div>
                           )}
@@ -4533,7 +4563,7 @@ export function JourneyDetailPage({
                   </div>
                 ) : (
                   /* Timeline Grid View */
-                  <div className="grid grid-cols-2 gap-3 md:gap-5">
+                  <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 md:gap-3'}`}>
                     {allGalleryImages.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
                   </div>
                 )}

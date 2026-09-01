@@ -24,6 +24,7 @@ interface MapAreaProps {
   activeTab?: string;
   transitFocusType?: 'depart' | 'arrive' | 'boarding' | null;
   transits?: TransitItem[];
+  isCinematicMode?: boolean;
 }
 
 export function MapArea({
@@ -37,6 +38,7 @@ export function MapArea({
   activeTab,
   transitFocusType,
   transits = [],
+  isCinematicMode = false,
 }: MapAreaProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -57,6 +59,25 @@ export function MapArea({
   // Animation references for flight travel visualization
   const animMarkerRef = useRef<any>(null);
   const animFrameIdRef = useRef<number | null>(null);
+
+  // Traveler animation references for Cinematic Tour Mode
+  const travelerMarkerRef = useRef<any>(null);
+  const travelerAnimRef = useRef<number | null>(null);
+  const lastActiveSpotCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    if (!isCinematicMode) {
+      if (travelerAnimRef.current) {
+        cancelAnimationFrame(travelerAnimRef.current);
+        travelerAnimRef.current = null;
+      }
+      if (travelerMarkerRef.current && mapRef.current) {
+        try { mapRef.current.removeLayer(travelerMarkerRef.current); } catch (_) {}
+        travelerMarkerRef.current = null;
+      }
+      lastActiveSpotCoordsRef.current = null;
+    }
+  }, [isCinematicMode]);
 
   // Calculate animation key to prevent re-running animation effect on keystrokes
   const animKey = (() => {
@@ -547,7 +568,66 @@ export function MapArea({
         if (activeMarker) {
           const latLng = activeMarker.getLatLng();
           const targetZoom = (activeTab === 'timeline' || activeTab === 'stays') ? 15 : 14;
-          map.setView(latLng, Math.max(map.getZoom(), targetZoom), { animate: true });
+
+          if (isCinematicMode && lastActiveSpotCoordsRef.current && 
+              (lastActiveSpotCoordsRef.current.lat !== latLng.lat || lastActiveSpotCoordsRef.current.lng !== latLng.lng)) {
+            const prevCoords = { ...lastActiveSpotCoordsRef.current };
+            const nextCoords = { lat: latLng.lat, lng: latLng.lng };
+
+            if (travelerAnimRef.current) {
+              cancelAnimationFrame(travelerAnimRef.current);
+            }
+
+            const L = (window as any).L;
+            if (L) {
+              if (!travelerMarkerRef.current) {
+                const travelerIcon = L.divIcon({
+                  className: 'traveler-icon-container',
+                  html: `<div style="font-size: 28px; line-height: 1; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.5)); transform: translate(-50%, -50%);" class="animate-bounce select-none pointer-events-none">🚶‍♂️</div>`,
+                  iconSize: [32, 32],
+                  iconAnchor: [16, 16]
+                });
+                travelerMarkerRef.current = L.marker([prevCoords.lat, prevCoords.lng], {
+                  icon: travelerIcon,
+                  zIndexOffset: 10000,
+                }).addTo(map);
+              } else {
+                travelerMarkerRef.current.setLatLng([prevCoords.lat, prevCoords.lng]);
+              }
+
+              const startTime = performance.now();
+              const animDuration = 1600; // 1.6s smooth walk
+
+              const step = (now: number) => {
+                const elapsed = now - startTime;
+                const progress = Math.min(1, elapsed / animDuration);
+                // EaseInOutQuad
+                const ease = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
+
+                const curLat = prevCoords.lat + (nextCoords.lat - prevCoords.lat) * ease;
+                const curLng = prevCoords.lng + (nextCoords.lng - prevCoords.lng) * ease;
+
+                if (travelerMarkerRef.current) {
+                  travelerMarkerRef.current.setLatLng([curLat, curLng]);
+                }
+                map.panTo([curLat, curLng], { animate: false });
+
+                if (progress < 1) {
+                  travelerAnimRef.current = requestAnimationFrame(step);
+                } else {
+                  map.setView([nextCoords.lat, nextCoords.lng], Math.max(map.getZoom(), targetZoom), { animate: true });
+                }
+              };
+
+              travelerAnimRef.current = requestAnimationFrame(step);
+            } else {
+              map.setView(latLng, Math.max(map.getZoom(), targetZoom), { animate: true });
+            }
+          } else {
+            map.setView(latLng, Math.max(map.getZoom(), targetZoom), { animate: true });
+          }
+
+          lastActiveSpotCoordsRef.current = { lat: latLng.lat, lng: latLng.lng };
         } else if (activeTab === 'flights' || (activeTab === 'transit' && !transitFocusType)) {
           const fromPoint = mapPoints.find(p => p.id === expandedItemId * 10);
           const toPoint = mapPoints.find(p => p.id === expandedItemId * 10 + 1);
@@ -578,7 +658,7 @@ export function MapArea({
       }
     }
 
-  }, [mapPoints, expandedItemId, isDarkMode, mapReady, isInteractive, activeTab, transitFocusType, transits, selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mapPoints, expandedItemId, isDarkMode, mapReady, isInteractive, activeTab, transitFocusType, transits, selectedDate, isCinematicMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Effect 3b: Google Places POIs Fetcher ──────────────────────────────────
   useEffect(() => {
