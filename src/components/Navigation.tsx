@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, LogOut, User, Sun, Moon, Settings, Search } from 'lucide-react';
+import { Menu, LogOut, User, Sun, Moon, Settings, Search, Home, Archive as ArchiveIcon, Compass, X } from 'lucide-react';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 
@@ -58,107 +58,168 @@ export function Navigation({
   }, [showSettings, setShowSettings]);
 
   return (
-    <nav className="sticky top-0 z-50 flex items-center justify-between px-4 md:px-6 py-4 bg-[#F9F8F6]/90 dark:bg-[#111111]/90 backdrop-blur-md border-b border-black/20 dark:border-white/20 transition-colors duration-300 w-full">
-      <div className="flex items-center">
+    <nav className="sticky top-0 z-50 flex items-center justify-between px-3 md:px-6 py-2 md:py-2.5 bg-[#F9F8F6]/90 dark:bg-[#111111]/90 backdrop-blur-md border-b border-black/15 dark:border-white/15 transition-colors duration-300 w-full select-none">
+      <div className="flex items-center gap-1.5 sm:gap-2">
         <div 
-          className="text-lg sm:text-2xl md:text-3xl font-black tracking-tighter cursor-pointer hover:opacity-70 transition-opacity"
+          className="text-base sm:text-xl md:text-2xl font-black tracking-tighter cursor-pointer hover:opacity-70 transition-opacity"
           onClick={() => navigateTo('home')}
         >
           Tripgon log
         </div>
         <button 
           onClick={onSearchClick}
-          className="ml-3 p-1.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors rounded text-black dark:text-white"
+          className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors rounded text-black/70 hover:text-black dark:text-white/70 dark:hover:text-white cursor-pointer"
           title="Search"
         >
-          <Search className="w-4 h-4 md:w-5 md:h-5" />
+          <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         </button>
       </div>
 
-      <div className="flex items-center space-x-3 sm:space-x-5 md:space-x-8 text-[10px] md:text-sm font-medium tracking-wide uppercase relative">
-        <button onClick={() => navigateTo('home')} className={`hover:opacity-60 transition-opacity ${currentView === 'home' ? 'font-black border-b-2 border-black dark:border-white' : ''}`}>Home</button>
-        <button onClick={() => navigateTo('archive')} className={`hover:opacity-60 transition-opacity ${currentView === 'archive' ? 'font-black border-b-2 border-black dark:border-white' : ''}`}>Archive</button>
-        <button onClick={() => navigateTo('plan')} className={`hover:opacity-60 transition-opacity ${currentView === 'plan' ? 'font-black border-b-2 border-black dark:border-white' : ''}`}>Plan</button>
+      <div className="flex items-center gap-2 sm:gap-3 md:gap-5 text-[10px] md:text-xs font-bold tracking-wider uppercase relative">
+        <div className="hidden md:flex items-center gap-5">
+          <button onClick={() => navigateTo('home')} className={`hover:opacity-60 transition-opacity pb-0.5 cursor-pointer ${currentView === 'home' ? 'font-black border-b-2 border-black dark:border-white text-black dark:text-white' : 'text-black/60 dark:text-white/60'}`}>Home</button>
+          <button onClick={() => navigateTo('archive')} className={`hover:opacity-60 transition-opacity pb-0.5 cursor-pointer ${currentView === 'archive' ? 'font-black border-b-2 border-black dark:border-white text-black dark:text-white' : 'text-black/60 dark:text-white/60'}`}>Archive</button>
+          <button onClick={() => navigateTo('plan')} className={`hover:opacity-60 transition-opacity pb-0.5 cursor-pointer ${currentView === 'plan' ? 'font-black border-b-2 border-black dark:border-white text-black dark:text-white' : 'text-black/60 dark:text-white/60'}`}>Plan</button>
+        </div>
         
-        {/* Settings & User (Hamburger Menu) */}
+        {/* Standalone Logout / Login Icon Button */}
+        {isLoggedIn ? (
+          <button 
+            onClick={async () => {
+              if (confirm("로그아웃 하시겠습니까?")) {
+                await signOut(auth);
+              }
+            }} 
+            className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors rounded text-black/70 hover:text-red-600 dark:text-white/70 dark:hover:text-red-400 cursor-pointer flex items-center gap-1"
+            title="로그아웃"
+            aria-label="Log out"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="hidden lg:inline text-[9px] font-bold">LOGOUT</span>
+          </button>
+        ) : (
+          <button 
+            onClick={() => openAuthModal('login')} 
+            className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors rounded text-black/70 hover:text-black dark:text-white/70 dark:hover:text-white cursor-pointer flex items-center gap-1"
+            title="로그인"
+            aria-label="Log in"
+          >
+            <User className="w-4 h-4" />
+            <span className="hidden lg:inline text-[9px] font-bold">LOGIN</span>
+          </button>
+        )}
+
+        {/* Settings & App Menu (Hamburger Button) */}
         <div className="relative" ref={dropdownRef}>
           <button 
             onClick={() => setShowSettings(!showSettings)} 
-            className="hover:opacity-60 transition-opacity flex items-center border-l border-black/20 dark:border-white/20 pl-3 sm:pl-4 md:pl-8 ml-1 sm:ml-2 md:ml-4"
+            className={`p-1.5 sm:p-2 rounded-lg transition-all flex items-center justify-center cursor-pointer border ${
+              showSettings 
+                ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' 
+                : 'bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-black dark:text-white border-black/10 dark:border-white/10'
+            }`}
+            title="전체 메뉴"
+            aria-label="Toggle menu"
           >
             <div className="relative flex items-center justify-center">
-              <Menu className="w-5 h-5 md:w-6 md:h-6 text-black dark:text-white" />
-              {isLoggedIn && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border border-[#F9F8F6] dark:border-[#111111]"></span>}
+              <Menu className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+              {isLoggedIn && <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full ring-1 ring-white dark:ring-black"></span>}
             </div>
           </button>
           
-          {/* Settings Dropdown */}
+          {/* App-like Full Button Selection Menu Dropdown */}
           {showSettings && (
-            <div className="absolute top-full right-0 mt-4 w-48 bg-[#F9F8F6] dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 shadow-xl flex flex-col z-50">
+            <div className="absolute top-full right-0 mt-2 w-64 sm:w-72 bg-[#F9F8F6]/98 dark:bg-[#161616]/98 backdrop-blur-xl border border-black/15 dark:border-white/15 shadow-2xl rounded-2xl p-3 flex flex-col gap-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+              {/* User Profile Header if Logged In */}
               {isLoggedIn && (
-                <div className="px-4 py-3 border-b border-black/10 dark:border-white/10 text-[10px] uppercase tracking-widest text-black/50 dark:text-white/50">
-                  Logged in as <strong className="text-black dark:text-white ml-1">{displayName}</strong>
+                <div className="px-3 py-2 bg-black/5 dark:bg-white/5 rounded-xl flex items-center justify-between text-[10px] font-mono mb-1">
+                  <span className="text-black/50 dark:text-white/50 uppercase tracking-widest font-bold">ACCOUNT</span>
+                  <strong className="text-black dark:text-white font-bold truncate max-w-[140px]">{displayName}</strong>
                 </div>
               )}
+
+              {/* Navigation Full Cards */}
+              <button 
+                onClick={() => { navigateTo('home'); setShowSettings(false); }}
+                className={`w-full flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer text-left ${
+                  currentView === 'home'
+                    ? 'bg-black text-white dark:bg-white dark:text-black font-black shadow-md'
+                    : 'bg-black/4 dark:bg-white/5 hover:bg-black/8 dark:hover:bg-white/10 text-black dark:text-white font-bold'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Home className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span className="text-xs uppercase tracking-wider">Home</span>
+                </div>
+                <span className="text-[9px] opacity-60 font-mono">01</span>
+              </button>
+
+              <button 
+                onClick={() => { navigateTo('archive'); setShowSettings(false); }}
+                className={`w-full flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer text-left ${
+                  currentView === 'archive'
+                    ? 'bg-black text-white dark:bg-white dark:text-black font-black shadow-md'
+                    : 'bg-black/4 dark:bg-white/5 hover:bg-black/8 dark:hover:bg-white/10 text-black dark:text-white font-bold'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <ArchiveIcon className="w-4 h-4 text-blue-500 shrink-0" />
+                  <span className="text-xs uppercase tracking-wider">Archive</span>
+                </div>
+                <span className="text-[9px] opacity-60 font-mono">02</span>
+              </button>
+
+              <button 
+                onClick={() => { navigateTo('plan'); setShowSettings(false); }}
+                className={`w-full flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer text-left ${
+                  currentView === 'plan'
+                    ? 'bg-black text-white dark:bg-white dark:text-black font-black shadow-md'
+                    : 'bg-black/4 dark:bg-white/5 hover:bg-black/8 dark:hover:bg-white/10 text-black dark:text-white font-bold'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Compass className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span className="text-xs uppercase tracking-wider">Plan</span>
+                </div>
+                <span className="text-[9px] opacity-60 font-mono">03</span>
+              </button>
+
+              {/* Setting Button (if logged in) */}
               {isLoggedIn && (
                 <button 
                   onClick={() => { 
                     setShowSettings(false); 
                     openSettingModal(); 
                   }}
-                  className="p-4 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 border-b border-black/10 dark:border-white/10 transition-colors text-xs font-bold uppercase tracking-widest w-full text-left text-black dark:text-white"
+                  className="w-full flex items-center justify-between p-3 rounded-xl bg-black/4 dark:bg-white/5 hover:bg-black/8 dark:hover:bg-white/10 text-black dark:text-white font-bold transition-all cursor-pointer text-left"
                 >
-                  <span>Setting</span>
-                  <Settings className="w-4 h-4" />
+                  <div className="flex items-center gap-3">
+                    <Settings className="w-4 h-4 text-purple-500 shrink-0" />
+                    <span className="text-xs uppercase tracking-wider">Setting</span>
+                  </div>
+                  <span className="text-[9px] opacity-60 font-mono">SYS</span>
                 </button>
               )}
-              {isLoggedIn ? (
-                <button 
-                  onClick={async () => { 
-                    setShowSettings(false); 
-                    await signOut(auth);
-                  }}
-                  className="p-4 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 border-b border-black/10 dark:border-white/10 transition-colors text-xs font-bold uppercase tracking-widest w-full text-left"
-                >
-                  <span>Log out</span>
-                  <LogOut className="w-4 h-4" />
-                </button>
-              ) : (
-                <>
-                  <button 
-                    onClick={() => { 
-                      setShowSettings(false); 
-                      openAuthModal('login');
-                    }}
-                    className="p-4 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 border-b border-black/10 dark:border-white/10 transition-colors text-xs font-bold uppercase tracking-widest w-full text-left"
-                  >
-                    <span>Log in</span>
-                    <User className="w-4 h-4" />
-                  </button>
-                  <button 
-                    onClick={() => { 
-                      setShowSettings(false); 
-                      openAuthModal('signup');
-                    }}
-                    className="p-4 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 border-b border-black/10 dark:border-white/10 transition-colors text-xs font-bold uppercase tracking-widest w-full text-left"
-                  >
-                    <span>Sign up</span>
-                    <User className="w-4 h-4" />
-                  </button>
-                </>
-              )}
+
+              {/* Night Mode Toggle Card */}
               <button 
-                onClick={() => { setIsDarkMode(!isDarkMode); setShowSettings(false); }}
-                className="p-4 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-xs font-bold uppercase tracking-widest"
+                onClick={() => { setIsDarkMode(!isDarkMode); }}
+                className="w-full flex items-center justify-between p-3 rounded-xl bg-black/4 dark:bg-white/5 hover:bg-black/8 dark:hover:bg-white/10 text-black dark:text-white font-bold transition-all cursor-pointer text-left"
               >
-                <span>Night Mode</span>
-                {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                <div className="flex items-center gap-3">
+                  {isDarkMode ? <Sun className="w-4 h-4 text-amber-400 shrink-0" /> : <Moon className="w-4 h-4 text-indigo-400 shrink-0" />}
+                  <span className="text-xs uppercase tracking-wider">Night Mode</span>
+                </div>
+                <span className={`text-[9px] font-mono px-2 py-0.5 rounded-full font-black ${
+                  isDarkMode ? 'bg-amber-400/20 text-amber-600 dark:text-amber-300' : 'bg-black/10 text-black/70'
+                }`}>
+                  {isDarkMode ? 'DARK' : 'LIGHT'}
+                </span>
               </button>
             </div>
           )}
         </div>
       </div>
-      
     </nav>
   );
 }

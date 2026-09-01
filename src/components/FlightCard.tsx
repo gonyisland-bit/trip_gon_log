@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plane, Trash2, RefreshCw, Clock, Paperclip, Loader2, X, ExternalLink } from 'lucide-react';
+import { Plane, Trash2, RefreshCw, Clock, Paperclip, Loader2, X, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import { FlightItem } from '../types';
 import { SettlementExpenseInput } from './SettlementExpenseInput';
 import { uploadFileToR2, getEffectiveImageUrl } from '../utils/storageHelper';
@@ -102,6 +102,7 @@ export function FlightCard({
   const [searchQuery, setSearchQuery] = useState('');
   const fromTimeRef = useRef<HTMLInputElement>(null);
   const toTimeRef = useRef<HTMLInputElement>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -585,113 +586,146 @@ export function FlightCard({
         </div>
       </div>
       
-      {/* Settlement Section */}
-      {(isEditMode || (flight.cost && flight.cost !== '-')) && (
-        <div className="px-4 pb-4 md:px-6 md:pb-6">
-          <div className={`pt-3 border-t border-dashed border-black/10 dark:border-white/10 flex flex-wrap items-center justify-between gap-2 ${isEditMode ? 'pr-8' : ''}`}>
-            <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest">EXPENSE (정산)</span>
-            <SettlementExpenseInput
-              cost={flight.cost}
-              currency={flight.currency}
-              paidBy={flight.paidBy}
-              members={members}
-              isEditMode={isEditMode}
-              onUpdate={(updates) => {
-                if (updates.cost !== undefined) onUpdate(flight.id, 'cost', updates.cost);
-                if (updates.currency !== undefined) onUpdate(flight.id, 'currency', updates.currency);
-                if (updates.paidBy !== undefined) onUpdate(flight.id, 'paidBy', updates.paidBy);
-              }}
-              defaultCurrency={defaultCurrency}
-            />
+      {/* ── Accordion Expand/Collapse Toggle Bar ── */}
+      <div 
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsExpanded(prev => !prev);
+        }}
+        className="px-4 py-2 bg-black/[0.02] dark:bg-white/[0.02] border-t border-dashed border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between text-[9px] font-bold uppercase tracking-wider text-black/60 dark:text-white/60 cursor-pointer select-none"
+      >
+        <span className="flex items-center gap-2">
+          <span>EXPENSE & ATTACHMENTS</span>
+          {flight.cost && flight.cost !== '-' && (
+            <span className="px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 font-mono text-[8px] font-bold">
+              {flight.currency || 'KRW'} {flight.cost}
+            </span>
+          )}
+          {flight.attachments && flight.attachments.length > 0 && (
+            <span className="px-1.5 py-0.2 rounded bg-black/10 dark:bg-white/10 text-[8px] font-mono font-bold flex items-center gap-0.5">
+              <Paperclip className="w-2.5 h-2.5" />
+              {flight.attachments.length}
+            </span>
+          )}
+        </span>
+        <span className="flex items-center gap-1 text-[8.5px] font-semibold text-black/50 dark:text-white/50">
+          <span>{isExpanded ? '접기 (Close)' : '펼치기 (Expand)'}</span>
+          {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        </span>
+      </div>
+
+      {/* ── Accordion Expandable Content (Expense & Attachments) ── */}
+      {(isExpanded || isEditMode) && (
+        <div className="animate-in fade-in duration-200">
+          {/* Settlement Section */}
+          {(isEditMode || (flight.cost && flight.cost !== '-')) && (
+            <div className="px-4 pb-4 md:px-6 md:pb-6">
+              <div className={`pt-3 border-t border-dashed border-black/10 dark:border-white/10 flex flex-wrap items-center justify-between gap-2 ${isEditMode ? 'pr-8' : ''}`}>
+                <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest">EXPENSE (정산)</span>
+                <SettlementExpenseInput
+                  cost={flight.cost}
+                  currency={flight.currency}
+                  paidBy={flight.paidBy}
+                  members={members}
+                  isEditMode={isEditMode}
+                  onUpdate={(updates) => {
+                    if (updates.cost !== undefined) onUpdate(flight.id, 'cost', updates.cost);
+                    if (updates.currency !== undefined) onUpdate(flight.id, 'currency', updates.currency);
+                    if (updates.paidBy !== undefined) onUpdate(flight.id, 'paidBy', updates.paidBy);
+                  }}
+                  defaultCurrency={defaultCurrency}
+                />
+              </div>
+            </div>
+          )}
+          
+          {/* Attachments Section */}
+          <div className="px-4 pb-4 md:px-6 md:pb-6" onClick={(e) => e.stopPropagation()}>
+            <div className="pt-3 border-t border-dashed border-black/10 dark:border-white/10">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest flex items-center gap-1">
+                  <Paperclip className="w-3 h-3" /> ATTACHMENTS (첨부파일)
+                </span>
+                {isEditMode && (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingAttachment}
+                      className="text-[9px] md:text-[10px] bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 px-2 py-1 hover:bg-black/10 dark:hover:bg-white/10 transition-colors font-bold uppercase rounded-sm flex items-center gap-1 cursor-pointer text-black dark:text-white"
+                    >
+                      {uploadingAttachment ? (
+                        <>
+                          <Loader2 className="w-3 h-3 animate-spin text-red-600" />
+                          <span>UPLOADING...</span>
+                        </>
+                      ) : (
+                        <span>ADD FILE</span>
+                      )}
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      onChange={handleFileChange}
+                      accept="image/*,application/pdf"
+                      multiple
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Attachment List */}
+              {(!flight.attachments || flight.attachments.length === 0) ? (
+                <div className="text-[9px] text-black/30 dark:text-white/30 italic py-1">
+                  첨부된 파일이 없습니다.
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {flight.attachments.map((url, idx) => {
+                    const pdfMode = isPdf(url);
+                    return (
+                      <div key={idx} className="relative group">
+                        {pdfMode ? (
+                          <button
+                            type="button"
+                            onClick={() => window.open(getEffectiveImageUrl(url), '_blank')}
+                            className="w-12 h-12 md:w-16 md:h-16 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex flex-col items-center justify-center text-red-500 dark:text-red-400 hover:opacity-80 transition-opacity rounded-sm cursor-pointer"
+                          >
+                            <ExternalLink className="w-4 h-4 mb-1" />
+                            <span className="text-[8px] font-bold">PDF</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLightboxIndex(idx);
+                              setLightboxOpen(true);
+                            }}
+                            className="w-12 h-12 md:w-16 md:h-16 rounded-sm overflow-hidden border border-black/10 dark:border-white/10 hover:opacity-80 transition-opacity cursor-pointer"
+                          >
+                            <img src={getEffectiveImageUrl(url)} alt={`attachment-${idx}`} className="w-full h-full object-cover" />
+                          </button>
+                        )}
+                        {isEditMode && (
+                          <button
+                            type="button"
+                            onClick={(e) => removeAttachment(e, idx)}
+                            className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[8px] cursor-pointer"
+                            title="첨부파일 삭제"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
-      
-      {/* Attachments Section */}
-      <div className="px-4 pb-4 md:px-6 md:pb-6" onClick={(e) => e.stopPropagation()}>
-        <div className="pt-3 border-t border-dashed border-black/10 dark:border-white/10">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest flex items-center gap-1">
-              <Paperclip className="w-3 h-3" /> ATTACHMENTS (첨부파일)
-            </span>
-            {isEditMode && (
-              <div>
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingAttachment}
-                  className="text-[9px] md:text-[10px] bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 px-2 py-1 hover:bg-black/10 dark:hover:bg-white/10 transition-colors font-bold uppercase rounded-sm flex items-center gap-1 cursor-pointer text-black dark:text-white"
-                >
-                  {uploadingAttachment ? (
-                    <>
-                      <Loader2 className="w-3 h-3 animate-spin text-red-600" />
-                      <span>UPLOADING...</span>
-                    </>
-                  ) : (
-                    <span>ADD FILE</span>
-                  )}
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  className="hidden"
-                  onChange={handleFileChange}
-                  accept="image/*,application/pdf"
-                  multiple
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Attachment List */}
-          {(!flight.attachments || flight.attachments.length === 0) ? (
-            <div className="text-[9px] text-black/30 dark:text-white/30 italic py-1">
-              첨부된 파일이 없습니다.
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {flight.attachments.map((url, idx) => {
-                const pdfMode = isPdf(url);
-                return (
-                  <div key={idx} className="relative group">
-                    {pdfMode ? (
-                      <button
-                        type="button"
-                        onClick={() => window.open(getEffectiveImageUrl(url), '_blank')}
-                        className="w-12 h-12 md:w-16 md:h-16 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex flex-col items-center justify-center text-red-500 dark:text-red-400 hover:opacity-80 transition-opacity rounded-sm cursor-pointer"
-                      >
-                        <ExternalLink className="w-4 h-4 mb-1" />
-                        <span className="text-[8px] font-bold">PDF</span>
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setLightboxIndex(idx);
-                          setLightboxOpen(true);
-                        }}
-                        className="w-12 h-12 md:w-16 md:h-16 rounded-sm overflow-hidden border border-black/10 dark:border-white/10 hover:opacity-80 transition-opacity cursor-pointer"
-                      >
-                        <img src={getEffectiveImageUrl(url)} alt={`attachment-${idx}`} className="w-full h-full object-cover" />
-                      </button>
-                    )}
-                    {isEditMode && (
-                      <button
-                        type="button"
-                        onClick={(e) => removeAttachment(e, idx)}
-                        className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[8px] cursor-pointer"
-                        title="첨부파일 삭제"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* Delete button in edit mode */}
       {isEditMode && (

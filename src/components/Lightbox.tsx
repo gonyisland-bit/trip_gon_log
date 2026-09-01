@@ -245,6 +245,18 @@ export function Lightbox({
       if (!isSlideshow) {
         if (e.key === 'ArrowLeft') handlePrev();
         if (e.key === 'ArrowRight') handleNext();
+        if (e.key === '+' || e.key === '=' || e.code === 'NumpadAdd') {
+          e.preventDefault();
+          handleZoomIn();
+        }
+        if (e.key === '-' || e.key === '_' || e.code === 'NumpadSubtract') {
+          e.preventDefault();
+          handleZoomOut();
+        }
+        if (e.key === '*' || e.code === 'NumpadMultiply') {
+          e.preventDefault();
+          resetZoom();
+        }
       }
       if (isSlideshow && e.key === ' ') {
         e.preventDefault();
@@ -501,47 +513,52 @@ export function Lightbox({
               </button>
             )}
 
+            {/* Desktop Zoom controls */}
+            <div className="hidden sm:flex items-center gap-1">
+              <div className="h-4 w-[1px] bg-white/20 mx-1" />
+
+              <button
+                onClick={handleZoomOut}
+                disabled={scale <= 0.5}
+                className="p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors disabled:opacity-30 cursor-pointer"
+                title="Zoom Out (-)"
+              >
+                <ZoomOut className="w-4 h-4 md:w-5 md:h-5" />
+              </button>
+
+              <span className="text-[10px] md:text-xs font-mono font-bold w-10 text-center opacity-70">
+                {Math.round(scale * 100)}%
+              </span>
+
+              <button
+                onClick={handleZoomIn}
+                disabled={scale >= 4}
+                className="p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors disabled:opacity-30 cursor-pointer"
+                title="Zoom In (+)"
+              >
+                <ZoomIn className="w-4 h-4 md:w-5 md:h-5" />
+              </button>
+
+              <button
+                onClick={resetZoom}
+                disabled={scale === 1 && position.x === 0 && position.y === 0}
+                className="p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors disabled:opacity-30 cursor-pointer"
+                title="Reset Zoom (*)"
+              >
+                <RotateCcw className="w-4 h-4 md:w-5 md:h-5" />
+              </button>
+            </div>
+
             <div className="h-4 w-[1px] bg-white/20 mx-1" />
 
-            <button
-              onClick={handleZoomOut}
-              disabled={scale <= 0.5}
-              className="p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors disabled:opacity-30"
-              title="Zoom Out"
-            >
-              <ZoomOut className="w-4 h-4 md:w-5 md:h-5" />
-            </button>
-
-            <span className="text-[10px] md:text-xs font-mono font-bold w-10 text-center opacity-70">
-              {Math.round(scale * 100)}%
-            </span>
-
-            <button
-              onClick={handleZoomIn}
-              disabled={scale >= 4}
-              className="p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors disabled:opacity-30"
-              title="Zoom In"
-            >
-              <ZoomIn className="w-4 h-4 md:w-5 md:h-5" />
-            </button>
-
-            <button
-              onClick={resetZoom}
-              disabled={scale === 1 && position.x === 0 && position.y === 0}
-              className="p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors disabled:opacity-30"
-              title="Reset Zoom"
-            >
-              <RotateCcw className="w-4 h-4 md:w-5 md:h-5" />
-            </button>
-
-            <div className="h-4 w-[1px] bg-white/20 mx-1" />
-
+            {/* Exit/Close Button (Always visible & prominent on mobile) */}
             <button
               onClick={onClose}
-              className="p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors"
-              title="Close (ESC)"
+              className="p-2 sm:p-2.5 rounded-full bg-black/60 hover:bg-white/20 active:scale-95 text-white transition-all shadow-md cursor-pointer border border-white/20 flex items-center justify-center shrink-0"
+              title="나가기 / 닫기 (ESC)"
+              aria-label="Close Lightbox"
             >
-              <X className="w-4 h-4 md:w-5 md:h-5" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>
@@ -713,8 +730,8 @@ export function Lightbox({
       {/* Hint when no log or date */}
       {(!showLog || !hasLog) && !hasDate && !isSlideshow && (
         <div className="absolute bottom-0 left-0 right-0 z-20 pb-3 pt-6 text-center bg-gradient-to-t from-black/60 to-transparent pointer-events-none">
-          <p className="text-white/25 text-[9px] uppercase tracking-widest font-bold">
-            Double click to Zoom · Swipe/Click Thumbnails to Navigate
+          <p className="text-white/35 text-[9px] uppercase tracking-widest font-bold">
+            +/- to Zoom · * to Reset · Swipe/Click Thumbnails to Navigate
           </p>
         </div>
       )}

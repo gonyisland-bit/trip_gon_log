@@ -1001,6 +1001,7 @@ export function JourneyDetailPage({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const itemRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const scrollTargetItemIdRef = useRef<number | null>(null);
+  const lastGalleryTapRef = useRef<{ [key: number]: number }>({});
 
   // 시간 변경 등으로 정렬 순서가 바뀌었을 때 해당 일정 편집 위치로 스크롤 이동
   useEffect(() => {
@@ -1704,12 +1705,23 @@ export function JourneyDetailPage({
   // Global Keyboard Shortcuts (Space play/pause, ArrowLeft/Right tour, ArrowUp/Down timeline navigation, Esc)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // 1. Escape: dismiss map confirmation modal or exit cinematic mode
-      if (e.key === 'Escape') {
-        if (mapConfirm) {
+      // 1. mapConfirm shortcut: Y (confirm) / N or Escape (cancel)
+      if (mapConfirm) {
+        if (e.key === 'Escape' || e.key === 'n' || e.key === 'N') {
+          e.preventDefault();
           setMapConfirm(null);
           return;
         }
+        if (e.key === 'y' || e.key === 'Y' || e.key === 'Enter') {
+          e.preventDefault();
+          window.open(mapConfirm.url, '_blank', 'noopener,noreferrer');
+          setMapConfirm(null);
+          return;
+        }
+      }
+
+      // Escape: exit cinematic mode
+      if (e.key === 'Escape') {
         if (isCinematicMode) {
           setIsCinematicMode(false);
           return;
@@ -1760,7 +1772,7 @@ export function JourneyDetailPage({
 
       // 5. ArrowUp / ArrowDown shortcut: Navigate timeline items
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-        if (!isCinematicMode && currentTimeline.length > 0) {
+        if (currentTimeline.length > 0) {
           e.preventDefault();
           const currentIdx = currentTimeline.findIndex(item => item.id === expandedItemId);
           let targetIdx = 0;
@@ -1774,6 +1786,13 @@ export function JourneyDetailPage({
           const targetItem = currentTimeline[targetIdx];
           if (targetItem) {
             setExpandedItemId(targetItem.id);
+            if (isCinematicMode && cinematicItems.length > 0) {
+              const cIdx = cinematicItems.findIndex(i => i.id === targetItem.id);
+              if (cIdx !== -1) {
+                setCinematicIndex(cIdx);
+                setCinematicProgress(0);
+              }
+            }
             setTimeout(() => {
               const el = itemRefs.current[targetItem.id];
               if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1989,6 +2008,16 @@ export function JourneyDetailPage({
     }
 
     setExpandedItemId(prevId => prevId === targetId ? null : targetId);
+
+    // Sync cinematic player spot if cinematic mode is active
+    if (isCinematicMode && cinematicItems.length > 0) {
+      const targetIdx = cinematicItems.findIndex(i => i.id === targetId);
+      if (targetIdx !== -1) {
+        setCinematicIndex(targetIdx);
+        setCinematicProgress(0);
+      }
+    }
+
     if (expandedItemId !== targetId && itemRefs.current[targetId]) {
       setTimeout(() => {
         itemRefs.current[targetId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2696,12 +2725,12 @@ export function JourneyDetailPage({
 
           {/* Title & Date: 2-tier stacked on mobile, inline unclipped on web */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 min-w-0 flex-1">
-            <h1 className="text-xs sm:text-sm font-black uppercase tracking-tight text-black dark:text-white truncate font-satoshi max-w-[170px] sm:max-w-none">
+            <h1 className="text-xs sm:text-sm font-black uppercase tracking-tight text-black dark:text-white truncate font-satoshi">
               {(trip.title || '').replace(' (Plan)', '')}
             </h1>
 
             {/* Date & Destination summary - visible on mobile & web */}
-            <div className="flex items-center gap-1 text-[8.5px] sm:text-[10px] font-mono text-black/50 dark:text-white/50 truncate">
+            <div className="flex items-center gap-1 text-[8.5px] sm:text-[10px] font-mono text-black/50 dark:text-white/50 truncate shrink-0">
               <span className="hidden sm:inline text-black/25 dark:text-white/25">·</span>
               <span className="truncate font-medium">{trip.date}</span>
               {trip.locationStr && (
@@ -2715,33 +2744,31 @@ export function JourneyDetailPage({
 
         {/* Right: Quick Action Buttons & Accordion Toggle */}
         <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-          {/* Destination Current Local Time Badge */}
+          {/* Destination Current Local Time Badge (Clean, no 'LOCAL' text) */}
           {destLocalTime && (
-            <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 bg-black/5 dark:bg-white/10 rounded font-mono text-[8.5px] sm:text-[9.5px] font-bold text-black/70 dark:text-white/70 border border-black/5 dark:border-white/5" title="여행지 현재 시각">
+            <div className="hidden min-[480px]:flex items-center gap-1 px-1.5 py-0.5 bg-black/5 dark:bg-white/10 rounded font-mono text-[9px] font-bold text-black/70 dark:text-white/70 border border-black/5 dark:border-white/5" title="현지 시각">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-              <span className="text-[7.5px] opacity-60 uppercase font-semibold">LOCAL</span>
               <span>{destLocalTime}</span>
             </div>
           )}
 
-          {/* Quick Summary Pill */}
+          {/* Quick Summary Icon Button (Unified Icon on Web & Mobile) */}
           <button
             onClick={() => {
               setActiveTab(prev => prev === 'summary' ? 'timeline' : 'summary');
               setExpandedItemId(null);
             }}
-            className={`px-2 py-1 rounded text-[8.5px] sm:text-[9.5px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+            className={`p-1.5 rounded transition-colors cursor-pointer flex items-center justify-center ${
               activeTab === 'summary'
                 ? 'bg-amber-600 text-white shadow-xs'
                 : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'
             }`}
-            title="Summary View"
+            title="Summary View (요약 보기)"
           >
-            <FileText className="w-3 h-3 sm:hidden" />
-            <span className="hidden sm:inline">Summary</span>
+            <FileText className="w-3.5 h-3.5" />
           </button>
 
-          {/* Quick Edit / Done Button */}
+          {/* Quick Edit / Done Icon Button (Unified Icon on Web & Mobile) */}
           {isLoggedIn && (
             <button
               onClick={() => {
@@ -2753,15 +2780,14 @@ export function JourneyDetailPage({
                 }
               }}
               disabled={saving}
-              className={`px-2.5 py-1 rounded text-[8.5px] sm:text-[9.5px] font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1 ${
+              className={`p-1.5 rounded transition-colors cursor-pointer flex items-center justify-center ${
                 isEditing
                   ? 'bg-red-600 text-white shadow-xs'
                   : 'border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 text-black/80 dark:text-white/80'
               }`}
-              title={isEditing ? "저장 완료" : "여정 수정"}
+              title={isEditing ? "저장 완료 (Done)" : "여정 편집 (Edit)"}
             >
-              {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : (isEditing ? <Check className="w-3 h-3" /> : <Edit3 className="w-3 h-3" />)}
-              <span>{isEditing ? 'Done' : 'Edit'}</span>
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (isEditing ? <Check className="w-3.5 h-3.5" /> : <Edit3 className="w-3.5 h-3.5" />)}
             </button>
           )}
 
@@ -3102,7 +3128,7 @@ export function JourneyDetailPage({
               onMouseEnter={() => setIsPlayFabIdle(false)}
               onMouseLeave={resetPlayFabIdleTimer}
               onTouchStart={() => { setIsPlayFabIdle(false); resetPlayFabIdleTimer(); }}
-              className={`absolute bottom-3 left-1/2 -translate-x-1/2 z-[1000] rounded-full shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden pointer-events-auto flex items-center ${
+              className={`absolute bottom-3 left-1/2 -translate-x-1/2 z-30 rounded-full shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden pointer-events-auto flex items-center ${
                 !isCinematicMode && isPlayFabIdle ? 'opacity-40 hover:opacity-100' : 'opacity-100'
               } ${
                 isCinematicMode
@@ -3704,7 +3730,7 @@ export function JourneyDetailPage({
                                 )}
                               </div>
                             ) : (
-                              <div className={`w-22 sm:w-26 md:w-28 shrink-0 pr-2.5 flex flex-col tracking-tight mt-0.5 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/80 dark:text-white/80'}`}>
+                              <div className={`w-24 sm:w-28 md:w-30 shrink-0 pr-2.5 flex flex-col tracking-tight mt-0.5 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/80 dark:text-white/80'}`}>
                                 <div>
                                   <span className={`text-xs sm:text-[13px] md:text-sm font-black font-mono tracking-tight ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black dark:text-white'}`}>
                                     {item.time}
@@ -3714,7 +3740,7 @@ export function JourneyDetailPage({
                                   {selectedDate === 'ALL' && item.date && (
                                     <div className="mt-1">
                                       <span 
-                                        className="inline-flex items-center px-1.5 py-0.5 rounded-[3px] text-[9px] md:text-[10px] font-black font-mono tracking-tight shadow-2xs border select-none"
+                                        className="inline-flex items-center px-1.5 py-0.5 rounded text-[9.5px] md:text-[10.5px] font-black font-mono tracking-tight shadow-2xs border select-none whitespace-nowrap"
                                         style={dayColor ? { 
                                           backgroundColor: `${dayColor}18`, 
                                           color: dayColor, 
@@ -3735,23 +3761,23 @@ export function JourneyDetailPage({
                                     {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) && (
                                       <button
                                         onClick={() => handleToggleExcludeFromMap(item)}
-                                        className={`flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest transition-colors ${
+                                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8.5px] md:text-[9px] font-bold tracking-wider uppercase transition-colors border select-none ${
                                           isExcluded
-                                            ? 'text-black/20 dark:text-white/20 hover:text-black/45 dark:hover:text-white/45'
-                                            : 'hover:opacity-80'
+                                            ? 'text-black/30 dark:text-white/30 border-black/10 dark:border-white/10 hover:text-black/50'
+                                            : 'border-black/15 dark:border-white/15 hover:opacity-80'
                                         }`}
-                                        style={!isExcluded && dayColor ? { color: dayColor } : undefined}
+                                        style={!isExcluded && dayColor ? { color: dayColor, borderColor: `${dayColor}40`, backgroundColor: `${dayColor}10` } : undefined}
                                         title={isExcluded ? "지도에 표시하기" : "지도에서 제외하기"}
                                       >
                                         {isExcluded ? (
                                           <>
-                                            <MapPinOff className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
-                                            <span className="text-black/30 dark:text-white/30 text-[7px] md:text-[8px]">OFF</span>
+                                            <MapPinOff className="w-3 h-3 text-black/30 dark:text-white/30" />
+                                            <span className="text-[7.5px] font-mono font-bold">OFF</span>
                                           </>
                                         ) : (
                                           <>
-                                            <MapPin className="w-3.5 h-3.5" />
-                                            <span className="text-[7px] md:text-[8px]">ON</span>
+                                            <MapPin className="w-3 h-3" />
+                                            <span className="text-[7.5px] font-mono font-bold">ON</span>
                                           </>
                                         )}
                                       </button>
@@ -3778,7 +3804,7 @@ export function JourneyDetailPage({
                             )}
 
                             {/* Details: Inline place and memo without accordion expansion */}
-                            <div className="flex-grow pr-2 md:pr-4 min-w-0">
+                            <div className="flex-grow pr-2 md:pr-4 min-w-0 overflow-hidden">
                               {/* 1. Title (제목) */}
                               <div className={`font-bold tracking-tight text-sm md:text-base flex items-center gap-2 flex-wrap ${isActive ? 'text-red-600 dark:text-red-400' : ''}`}>
                                 {isEditing ? (
@@ -3836,7 +3862,7 @@ export function JourneyDetailPage({
                                     title="구글 지도에서 위치 확인"
                                   >
                                     <MapPin className="w-3 h-3 text-red-500 shrink-0 group-hover/loc:scale-110 transition-transform" />
-                                    <span className="truncate max-w-[200px] sm:max-w-[280px] md:max-w-[340px] font-medium">{item.location}</span>
+                                    <span className="truncate max-w-[120px] min-[360px]:max-w-[150px] sm:max-w-[280px] md:max-w-[340px] font-medium">{item.location}</span>
                                   </button>
                                 </div>
                               )}
@@ -4427,6 +4453,17 @@ export function JourneyDetailPage({
                   <div
                     className={`relative overflow-hidden border transition-all duration-300 cursor-pointer aspect-[4/3] group ${isPhotoActive ? 'border-orange-500 scale-[1.02] shadow-md ring-2 ring-orange-500/30' : 'border-black/10 dark:border-white/10'}`}
                     onClick={() => {
+                      const now = Date.now();
+                      const lastTap = lastGalleryTapRef.current[imgItem.id] || 0;
+                      if (now - lastTap < 350) {
+                        // Double tap detected on mobile!
+                        const globalIdx = galleryAllMeta.findIndex(m => m.url === imgItem.url);
+                        setLightboxIndex(globalIdx !== -1 ? globalIdx : 0);
+                        setIsLightboxOpen(true);
+                        lastGalleryTapRef.current[imgItem.id] = 0;
+                        return;
+                      }
+                      lastGalleryTapRef.current[imgItem.id] = now;
                       setExpandedItemId(imgItem.id);
                     }}
                     onDoubleClick={(e) => {
@@ -4822,35 +4859,36 @@ export function JourneyDetailPage({
       {mapConfirm && (
         <div 
           onClick={() => setMapConfirm(null)}
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200"
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="bg-[#F9F8F6] dark:bg-[#161616] border border-black/20 dark:border-white/20 p-6 md:p-8 w-full max-w-sm text-center shadow-2xl rounded-none text-black dark:text-white"
+            className="bg-[#F9F8F6] dark:bg-[#181818] border border-black/15 dark:border-white/15 p-5 md:p-6 w-full max-w-xs text-center shadow-2xl rounded-2xl text-black dark:text-white"
           >
-            <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto mb-4">
-              <Map className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto mb-3">
+              <MapPin className="w-5 h-5" />
             </div>
-            <h3 className="text-xs font-black uppercase tracking-widest text-black/50 dark:text-white/50 mb-2">구글 지도 이동</h3>
-            <p className="text-sm font-black tracking-tight mb-6 leading-relaxed break-keep" style={{ wordBreak: 'keep-all' }}>
-              '{mapConfirm.placeName}' 위치를 확인하기 위해 구글 지도로 이동하시겠습니까?
+            <h3 className="text-[11px] font-black uppercase tracking-wider text-black/50 dark:text-white/50 mb-1.5">구글 지도 이동</h3>
+            <p className="text-xs font-bold tracking-tight mb-5 leading-relaxed break-keep" style={{ wordBreak: 'keep-all' }}>
+              '<span className="text-red-600 dark:text-red-400">{mapConfirm.placeName}</span>' 위치를 구글 지도에서 확인하시겠습니까?
             </p>
-            <div className="flex flex-col gap-2">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setMapConfirm(null)}
+                className="flex-1 py-2 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer"
+              >
+                취소 (N)
+              </button>
               <a
                 href={mapConfirm.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setMapConfirm(null)}
-                className="w-full py-2.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-black uppercase tracking-widest rounded-none transition-all cursor-pointer block text-center"
+                className="flex-1 py-2 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer flex items-center justify-center shadow-sm"
               >
-                이동
+                이동 (Y)
               </a>
-              <button
-                onClick={() => setMapConfirm(null)}
-                className="w-full py-2.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[10px] font-black uppercase tracking-widest rounded-none transition-all cursor-pointer"
-              >
-                취소
-              </button>
             </div>
           </div>
         </div>

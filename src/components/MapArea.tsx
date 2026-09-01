@@ -163,13 +163,6 @@ export function MapArea({
       className: !cartoKey && isDarkMode ? 'map-tile-dark' : (!cartoKey ? 'map-tile-light' : ''),
     }).addTo(map);
 
-    // Add 1km scale control
-    L.control.scale({
-      metric: true,
-      imperial: false,
-      position: 'bottomleft'
-    }).addTo(map);
-
     // Fix blank tile edge after layout settles
     setTimeout(() => { if (mapRef.current) mapRef.current.invalidateSize(); }, 200);
 
@@ -1084,24 +1077,6 @@ export function MapArea({
         id="leaflet-map"
         className="absolute inset-0 w-full h-full z-0"
       />
-
-      {/* ── Custom Zoom Controls ── */}
-      <div className="absolute top-4 right-4 md:top-6 md:right-6 flex flex-col gap-1 z-20">
-        <button
-          onClick={zoomIn}
-          className="w-8 h-8 bg-[#F9F8F6]/95 dark:bg-[#111111]/95 backdrop-blur border border-black/20 dark:border-white/20 shadow flex items-center justify-center hover:bg-white dark:hover:bg-[#222] transition-colors"
-          aria-label="Zoom in"
-        >
-          <Plus className="w-4 h-4 text-black dark:text-white" />
-        </button>
-        <button
-          onClick={zoomOut}
-          className="w-8 h-8 bg-[#F9F8F6]/95 dark:bg-[#111111]/95 backdrop-blur border border-black/20 dark:border-white/20 shadow flex items-center justify-center hover:bg-white dark:hover:bg-[#222] transition-colors"
-          aria-label="Zoom out"
-        >
-          <Minus className="w-4 h-4 text-black dark:text-white" />
-        </button>
-      </div>
 
       {/* ── Nearby POI Toggles Overlay (Stays tab only) ── */}
       {isStayTab && (

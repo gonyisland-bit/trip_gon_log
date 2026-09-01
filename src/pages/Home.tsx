@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Edit2, Trash2, GripVertical, Copy, ArrowUp } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Edit2, Trash2, GripVertical, Copy, ArrowUp, Tag, ChevronDown, ChevronUp, Search, X } from 'lucide-react';
 import { Trip, Plan } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 
@@ -321,6 +321,8 @@ export function HomePage({
   isLoggedIn = false,
 }: HomePageProps) {
   const [activeFilter, setActiveFilter] = useState('All');
+  const [isTagAccordionOpen, setIsTagAccordionOpen] = useState(false);
+  const [tagSearchQuery, setTagSearchQuery] = useState('');
   const [heroSlide, setHeroSlide] = useState(0);
   const [activeCardId, setActiveCardId] = useState<number | null>(null);
 
@@ -344,6 +346,12 @@ export function HomePage({
     });
     return ['All', ...Array.from(uniqueTags).sort()];
   }, [localTrips]);
+
+  const visibleTags = useMemo(() => {
+    if (!tagSearchQuery.trim()) return filters;
+    const q = tagSearchQuery.trim().toLowerCase();
+    return filters.filter(f => f.toLowerCase().includes(q) || f === 'All');
+  }, [filters, tagSearchQuery]);
 
   const filteredTrips = activeFilter === 'All' ? localTrips : localTrips.filter(t => t.tags?.includes(activeFilter));
 
@@ -593,20 +601,88 @@ export function HomePage({
               </span>
             )}
           </div>
-          <div className="flex flex-wrap gap-2">
-            {filters.map(f => (
+          <div className="flex flex-col gap-2 w-full md:w-auto relative z-20">
+            <div className="flex items-center gap-2">
+              {/* Collapsible Tag Filter Trigger */}
               <button
-                key={f}
-                onClick={() => setActiveFilter(f)}
-                className={`text-[10px] px-3 py-1.5 uppercase font-bold tracking-widest border transition-colors shrink-0 ${
-                  activeFilter === f
-                  ? 'border-black bg-black text-white dark:border-white dark:bg-white dark:text-black'
-                  : 'border-black/20 text-black/50 hover:border-black/50 dark:border-white/20 dark:text-white/50 dark:hover:border-white/50'
+                type="button"
+                onClick={() => setIsTagAccordionOpen(prev => !prev)}
+                className={`text-[10px] px-3 py-1.5 uppercase font-bold tracking-wider border rounded-sm transition-all flex items-center gap-1.5 cursor-pointer ${
+                  activeFilter !== 'All'
+                    ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
+                    : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5'
                 }`}
+                title="태그 필터 열기/닫기"
               >
-                {f}
+                <Tag className="w-3 h-3" />
+                <span>{activeFilter === 'All' ? '태그 필터 (All)' : `태그: #${activeFilter}`}</span>
+                {isTagAccordionOpen ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
               </button>
-            ))}
+
+              {/* Reset Tag filter button if not 'All' */}
+              {activeFilter !== 'All' && (
+                <button
+                  type="button"
+                  onClick={() => setActiveFilter('All')}
+                  className="text-[9px] px-2 py-1 uppercase font-bold tracking-wider text-red-600 dark:text-red-400 hover:underline cursor-pointer flex items-center gap-0.5"
+                  title="필터 초기화"
+                >
+                  <X className="w-3 h-3" />
+                  초기화
+                </button>
+              )}
+            </div>
+
+            {/* Collapsible Content: Search input & Tag pills */}
+            {isTagAccordionOpen && (
+              <div className="flex flex-col gap-2 p-3 bg-[#F9F8F6] dark:bg-[#181818] border border-black/15 dark:border-white/15 rounded-sm shadow-xl animate-in fade-in slide-in-from-top-1 duration-150 mt-1 md:absolute md:top-full md:right-0 md:w-80">
+                {/* Tag Search Input */}
+                <div className="relative flex items-center">
+                  <Search className="w-3 h-3 text-black/40 dark:text-white/40 absolute left-2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={tagSearchQuery}
+                    onChange={(e) => setTagSearchQuery(e.target.value)}
+                    placeholder="태그 검색..."
+                    className="w-full pl-7 pr-7 py-1 text-[10px] bg-white dark:bg-[#222222] border border-black/10 dark:border-white/10 rounded-sm font-bold outline-none text-black dark:text-white placeholder:text-black/30 dark:placeholder:text-white/30"
+                  />
+                  {tagSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setTagSearchQuery('')}
+                      className="absolute right-2 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Tag Buttons */}
+                <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pt-1">
+                  {visibleTags.map(f => (
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => {
+                        setActiveFilter(f);
+                      }}
+                      className={`text-[9.5px] px-2.5 py-1 uppercase font-bold tracking-wider border rounded-sm transition-colors shrink-0 cursor-pointer ${
+                        activeFilter === f
+                          ? 'border-black bg-black text-white dark:border-white dark:bg-white dark:text-black'
+                          : 'border-black/15 bg-black/4 dark:bg-white/5 text-black/60 hover:border-black/40 dark:border-white/15 dark:text-white/60 dark:hover:border-white/40'
+                      }`}
+                    >
+                      {f === 'All' ? '전체 (All)' : `#${f}`}
+                    </button>
+                  ))}
+                  {visibleTags.length === 0 && (
+                    <span className="text-[10px] text-black/40 dark:text-white/40 py-1 italic">
+                      검색 결과가 없습니다.
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
