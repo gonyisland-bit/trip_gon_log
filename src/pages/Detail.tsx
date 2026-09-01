@@ -2628,9 +2628,9 @@ export function JourneyDetailPage({
   // Render Info Header ("여정배너"): Single-line compact top banner with collapsible accordion menu
   const renderInfoHeader = () => (
     <div className="w-full border-b border-black/15 dark:border-white/15 z-20 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0 select-none">
-      {/* 1. Single-line Compact Banner (h-11 sm:h-12) */}
-      <div className="flex items-center justify-between px-3 md:px-5 h-11 sm:h-12 gap-2">
-        {/* Left: Back button + Divider + Title + Date/Location summary */}
+      {/* 1. Single-line Compact Banner (h-12 sm:h-13) */}
+      <div className="flex items-center justify-between px-3 md:px-5 h-12 sm:h-13 gap-2">
+        {/* Left: Back button + Divider + Issue badge + Title & Date */}
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <button
             onClick={() => {
@@ -2651,22 +2651,32 @@ export function JourneyDetailPage({
             #{String((trip.displayOrder ?? (trip.id % 99)) + 1).padStart(2, '0')}
           </span>
 
-          {/* Journey Title */}
-          <h1 className="text-xs sm:text-sm font-black uppercase tracking-tight text-black dark:text-white truncate font-satoshi max-w-[140px] sm:max-w-[240px] md:max-w-[320px]">
-            {(trip.title || '').replace(' (Plan)', '')}
-          </h1>
+          {/* Title & Date: 2-tier stacked on mobile, inline unclipped on web */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 min-w-0 flex-1">
+            <h1 className="text-xs sm:text-sm font-black uppercase tracking-tight text-black dark:text-white truncate font-satoshi max-w-[170px] sm:max-w-none">
+              {(trip.title || '').replace(' (Plan)', '')}
+            </h1>
 
-          {/* Date & Destination summary */}
-          <span className="hidden min-[520px]:inline-block text-[9px] sm:text-[10px] font-mono text-black/45 dark:text-white/45 truncate">
-            {trip.date?.split('—')?.[0]?.trim() || trip.date} · {formatDestinations(trip.locationStr)}
-          </span>
+            {/* Date & Destination summary - visible on mobile & web */}
+            <div className="flex items-center gap-1 text-[8.5px] sm:text-[10px] font-mono text-black/50 dark:text-white/50 truncate">
+              <span className="hidden sm:inline text-black/25 dark:text-white/25">·</span>
+              <span className="truncate font-medium">{trip.date}</span>
+              {trip.locationStr && (
+                <span className="hidden md:inline truncate text-black/40 dark:text-white/40">
+                  · {formatDestinations(trip.locationStr)}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Right: Quick Action Buttons & Accordion Toggle */}
         <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+          {/* Destination Current Local Time Badge */}
           {destLocalTime && (
-            <div className="hidden lg:flex items-center gap-1 px-1.5 py-0.5 bg-black/5 dark:bg-white/10 rounded font-mono text-[8px] text-black/60 dark:text-white/60">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 bg-black/5 dark:bg-white/10 rounded font-mono text-[8.5px] sm:text-[9.5px] font-bold text-black/70 dark:text-white/70 border border-black/5 dark:border-white/5" title="여행지 현재 시각">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span className="text-[7.5px] opacity-60 uppercase font-semibold">LOCAL</span>
               <span>{destLocalTime}</span>
             </div>
           )}
@@ -3651,15 +3661,30 @@ export function JourneyDetailPage({
                                 )}
                               </div>
                             ) : (
-                              <div className={`w-20 sm:w-24 md:w-28 shrink-0 pr-2 flex flex-col text-[10px] md:text-xs font-bold tracking-tight mt-1 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/70 dark:text-white/70'}`}>
+                              <div className={`w-22 sm:w-26 md:w-28 shrink-0 pr-2.5 flex flex-col tracking-tight mt-0.5 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/80 dark:text-white/80'}`}>
                                 <div>
-                                  <span>{item.time}</span>
+                                  <span className={`text-xs sm:text-[13px] md:text-sm font-black font-mono tracking-tight ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black dark:text-white'}`}>
+                                    {item.time}
+                                  </span>
                                 </div>
                                 <div className="flex flex-col mt-0.5" onClick={(e) => e.stopPropagation()}>
-                                  {selectedDate === 'ALL' && (
-                                    <span className="text-[8.5px] block font-bold leading-none mt-0.5" style={{ color: dayColor || 'inherit' }}>
-                                      D{dayIndex} {item.date ? item.date.slice(5).replace('.', '/') : ''}
-                                    </span>
+                                  {selectedDate === 'ALL' && item.date && (
+                                    <div className="mt-1">
+                                      <span 
+                                        className="inline-flex items-center px-1.5 py-0.5 rounded-[3px] text-[9px] md:text-[10px] font-black font-mono tracking-tight shadow-2xs border select-none"
+                                        style={dayColor ? { 
+                                          backgroundColor: `${dayColor}18`, 
+                                          color: dayColor, 
+                                          borderColor: `${dayColor}35` 
+                                        } : {
+                                          backgroundColor: 'rgba(0,0,0,0.06)',
+                                          color: 'inherit',
+                                          borderColor: 'rgba(0,0,0,0.1)'
+                                        }}
+                                      >
+                                        {dayIndex}day, {Number(item.date.slice(5, 7))}/{Number(item.date.slice(8, 10))}
+                                      </span>
+                                    </div>
                                   )}
                                   
                                   <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
@@ -3711,6 +3736,7 @@ export function JourneyDetailPage({
 
                             {/* Details: Inline place and memo without accordion expansion */}
                             <div className="flex-grow pr-2 md:pr-4 min-w-0">
+                              {/* 1. Title (제목) */}
                               <div className={`font-bold tracking-tight text-sm md:text-base flex items-center gap-2 flex-wrap ${isActive ? 'text-red-600 dark:text-red-400' : ''}`}>
                                 {isEditing ? (
                                   <TimelineItemPlaceInput
@@ -3724,7 +3750,7 @@ export function JourneyDetailPage({
                                     item={item}
                                   />
                                 ) : (
-                                  <span className="break-words">{item.place}</span>
+                                  <span className="break-words font-black font-satoshi">{item.place}</span>
                                 )}
 
                                 {/* Compact cost badge in view mode if cost exists */}
@@ -3735,7 +3761,7 @@ export function JourneyDetailPage({
                                 )}
                               </div>
                               
-                              {/* Memo: rendered cleanly directly on the grid */}
+                              {/* 2. Subtitle / Memo (부제목) */}
                               <div className="mt-1">
                                 {isEditing ? (
                                   <textarea
@@ -3748,10 +3774,29 @@ export function JourneyDetailPage({
                                   />
                                 ) : (
                                   item.memo ? (
-                                    <div className="text-xs md:text-sm text-black/60 dark:text-white/60 break-words w-full whitespace-pre-wrap leading-relaxed">{item.memo}</div>
+                                    <div className="text-xs md:text-[13px] text-black/70 dark:text-white/70 break-words w-full whitespace-pre-wrap leading-relaxed">{item.memo}</div>
                                   ) : null
                                 )}
                               </div>
+
+                              {/* 3. Detailed Location Name (장소명 - 입력했을 경우) */}
+                              {!isEditing && item.location && item.location.trim() !== '' && item.location.trim() !== item.place.trim() && (
+                                <div className="mt-1.5 flex items-center">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location || '')}`;
+                                      setMapConfirm({ placeName: item.location || '', url });
+                                    }}
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] bg-black/5 dark:bg-white/10 text-[9.5px] md:text-[10.5px] text-black/60 dark:text-white/60 hover:text-red-600 dark:hover:text-red-400 hover:bg-black/10 dark:hover:bg-white/15 transition-colors cursor-pointer group/loc"
+                                    title="구글 지도에서 위치 확인"
+                                  >
+                                    <MapPin className="w-3 h-3 text-red-500 shrink-0 group-hover/loc:scale-110 transition-transform" />
+                                    <span className="truncate max-w-[200px] sm:max-w-[280px] md:max-w-[340px] font-medium">{item.location}</span>
+                                  </button>
+                                </div>
+                              )}
 
                               {/* Actions (Edit mode) */}
                               {isEditing && isActive && (
