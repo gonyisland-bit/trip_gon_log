@@ -45,7 +45,8 @@ export function ImageEditOverlay({
       const compressedBlob = await compressImage(file);
       
       // Store in users/public for public visibility and ease of rules management
-      const storagePath = `users/public/images/${Date.now()}_${file.name}`;
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const storagePath = `users/public/images/${Date.now()}_${safeName}`;
       const downloadUrl = await uploadFileToR2(compressedBlob, storagePath);
       onImageUploaded(downloadUrl, gps);
     } catch (error) {

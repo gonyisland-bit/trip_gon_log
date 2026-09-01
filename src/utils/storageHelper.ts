@@ -1,8 +1,8 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
-const ACCOUNT_ID = import.meta.env.VITE_R2_ACCOUNT_ID || '';
-const ACCESS_KEY_ID = import.meta.env.VITE_R2_ACCESS_KEY_ID || '';
-const SECRET_ACCESS_KEY = import.meta.env.VITE_R2_SECRET_ACCESS_KEY || '';
+const ACCOUNT_ID = import.meta.env.VITE_R2_ACCOUNT_ID || 'bd0c90c36c628664f396ac294fa0e863';
+const ACCESS_KEY_ID = import.meta.env.VITE_R2_ACCESS_KEY_ID || 'bd3036bba21c44bb0a777a530a045598';
+const SECRET_ACCESS_KEY = import.meta.env.VITE_R2_SECRET_ACCESS_KEY || 'f95e72f45df1014a6da96dbbb8cdc2e21c1f91532aef789aa079d94d0e2be76a';
 const BUCKET_NAME = import.meta.env.VITE_R2_BUCKET_NAME || 'tripgon';
 export const R2_PUBLIC_URL = (import.meta.env.VITE_R2_PUBLIC_URL || 'https://pub-73f603986a164324a3a48f1c03847cf3.r2.dev').replace(/\/+$/, '');
 

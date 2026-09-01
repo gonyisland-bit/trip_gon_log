@@ -753,6 +753,11 @@ export function JourneyDetailPage({
   const [isCinematicPaused, setIsCinematicPaused] = useState(false);
   const [cinematicSpeed, setCinematicSpeed] = useState<number>(3800); // ms per step
   const [cinematicProgress, setCinematicProgress] = useState(0);
+  const [isMobilePlayCollapsed, setIsMobilePlayCollapsed] = useState(true);
+
+  // ─── Mobile Bottom Sheet States & Gesture Logic ───
+  const [mobileSheetSnap, setMobileSheetSnap] = useState<'collapsed' | 'half' | 'expanded'>('half');
+  const sheetTouchStartYRef = useRef<number | null>(null);
 
   // Flatten and sort timeline items for Cinematic Tour strictly by date & parsed time
   const cinematicItems = useMemo(() => {
@@ -829,6 +834,37 @@ export function JourneyDetailPage({
       setIsCinematicMode(false);
     }
   }, [activeTab, isCinematicMode]);
+
+  const handlePlayFromItem = (itemId: number) => {
+    setActiveTab('timeline');
+    const foundIdx = cinematicItems.findIndex(i => i.id === itemId);
+    if (foundIdx !== -1) {
+      setCinematicIndex(foundIdx);
+    } else {
+      setCinematicIndex(0);
+    }
+    setIsCinematicMode(true);
+    setIsCinematicPaused(false);
+    setMobileSheetSnap('collapsed');
+  };
+
+  const handleSheetTouchStart = (e: React.TouchEvent) => {
+    sheetTouchStartYRef.current = e.touches[0].clientY;
+  };
+
+  const handleSheetTouchEnd = (e: React.TouchEvent) => {
+    if (sheetTouchStartYRef.current === null) return;
+    const deltaY = e.changedTouches[0].clientY - sheetTouchStartYRef.current;
+    sheetTouchStartYRef.current = null;
+
+    if (deltaY < -35) {
+      // Swiped UP -> expand sheet
+      setMobileSheetSnap(prev => prev === 'collapsed' ? 'half' : 'expanded');
+    } else if (deltaY > 35) {
+      // Swiped DOWN -> collapse sheet (expand map)
+      setMobileSheetSnap(prev => prev === 'expanded' ? 'half' : 'collapsed');
+    }
+  };
 
   // Destination Local Time
   const [destLocalTime, setDestLocalTime] = useState('');
@@ -2324,12 +2360,13 @@ export function JourneyDetailPage({
 
         // 2. Compress and upload
         const compressedBlob = await compressImage(file);
-        const storagePath = `users/public/gallery/${Date.now()}_${file.name}`;
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const storagePath = `users/public/gallery/${Date.now()}_${safeName}`;
         const url = await uploadFileToR2(compressedBlob, storagePath);
 
         // 3. Build GalleryImageMeta
-        const defaultDate = generatedDates[0] || '';
-        const finalDate = (exifDate && generatedDates.includes(exifDate)) ? exifDate : defaultDate;
+        const defaultDate = allTripDates[0] || '';
+        const finalDate = (exifDate && allTripDates.includes(exifDate)) ? exifDate : defaultDate;
 
         const newEntry = {
           url,
@@ -2694,8 +2731,19 @@ export function JourneyDetailPage({
                   setIsCinematicMode(false);
                 } else {
                   setActiveTab('timeline');
+                  if (expandedItemId !== null) {
+                    const targetIdx = cinematicItems.findIndex(i => i.id === expandedItemId);
+                    if (targetIdx !== -1) {
+                      setCinematicIndex(targetIdx);
+                    } else {
+                      setCinematicIndex(0);
+                    }
+                  } else {
+                    setCinematicIndex(0);
+                  }
                   setIsCinematicMode(true);
                   setIsCinematicPaused(false);
+                  setMobileSheetSnap('collapsed');
                 }
               }}
               className={`px-2.5 py-1.5 border rounded-sm transition-all flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest cursor-pointer ${
@@ -2911,8 +2959,19 @@ export function JourneyDetailPage({
   return (
     <main className="animate-in slide-in-from-right-8 duration-500 flex flex-col md:flex-row h-full w-full overflow-hidden">
       
-      {/* Left: Map & Info Section */}
-      <section className="w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-colors duration-300 md:h-full max-md:h-[35dvh] shrink-0">
+      {/* Left: Map & Info Section (Responsive Height driven by mobileSheetSnap) */}
+      <section 
+        className={`w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-all duration-300 md:h-full shrink-0 ${
+          mobileSheetSnap === 'collapsed' 
+            ? 'max-md:h-[calc(100dvh-125px)]' 
+            : (mobileSheetSnap === 'expanded' ? 'max-md:h-[18dvh]' : 'max-md:h-[45dvh]')
+        }`}
+        onClick={() => {
+          if (window.innerWidth < 768 && mobileSheetSnap !== 'collapsed') {
+            setMobileSheetSnap('collapsed');
+          }
+        }}
+      >
         {renderInfoHeader(false)}
         
         {/* Dynamic Map Area */}
@@ -2986,123 +3045,221 @@ export function JourneyDetailPage({
 
           {/* Floating Cinematic Tour Overlay */}
           {isCinematicMode && currentCinematicItem && (
-            <div className="absolute bottom-4 left-3 right-3 sm:left-6 sm:right-6 z-[1000] flex flex-col items-center pointer-events-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
-              <div className="w-full max-w-lg bg-black/90 backdrop-blur-md border border-white/20 text-white rounded-lg shadow-2xl p-3 flex flex-col gap-2">
-                {/* Progress bar */}
-                <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-red-600 via-orange-500 to-amber-400 transition-all duration-75"
-                    style={{ width: `${cinematicProgress}%` }}
-                  />
-                </div>
+            <>
+              {/* Mobile Sleek Mini-Player (Height only ~38px, keeps map 95% visible!) */}
+              {isMobilePlayCollapsed ? (
+                <div className="md:hidden absolute bottom-3 left-2 right-2 z-[1000] flex flex-col items-center pointer-events-auto animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <div className="w-full bg-black/90 backdrop-blur-md border border-white/20 text-white rounded-full shadow-2xl px-3 py-1.5 flex items-center justify-between gap-2 overflow-hidden relative">
+                    {/* Mini Progress Bar along bottom */}
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/20">
+                      <div className="h-full bg-gradient-to-r from-red-600 via-orange-500 to-amber-400" style={{ width: `${cinematicProgress}%` }} />
+                    </div>
 
-                {/* Header row */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="bg-red-600 text-white px-1.5 py-0.5 text-[8px] font-black tracking-widest uppercase rounded-[1px]">
-                      DAY {allTripDates.indexOf(currentCinematicItem.dateKey) + 1}
-                    </span>
-                    <span className="text-[10px] font-mono text-white/70">
-                      SPOT {cinematicIndex + 1} / {cinematicItems.length}
-                    </span>
-                    {currentCinematicItem.time && (
-                      <span className="text-[10px] font-mono text-amber-400 font-bold">
-                        {currentCinematicItem.time}
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                      <span className="bg-red-600 text-white px-1.5 py-0.5 text-[7.5px] font-black uppercase rounded-[1px] shrink-0">
+                        DAY {allTripDates.indexOf(currentCinematicItem.dateKey) + 1}
                       </span>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => setIsCinematicMode(false)}
-                    className="p-1 text-white/60 hover:text-white rounded-full hover:bg-white/10 transition-colors"
-                    title="투어 모드 종료"
-                  >
-                    <CloseIcon className="w-4 h-4" />
-                  </button>
-                </div>
+                      <span className="text-[10px] font-bold text-white truncate">
+                        {currentCinematicItem.place || 'Spot'}
+                      </span>
+                    </div>
 
-                {/* Spot detail */}
-                <div className="flex items-center gap-3">
-                  {currentCinematicItem.img && (
-                    <img
-                      src={getEffectiveImageUrl(currentCinematicItem.img)}
-                      alt={currentCinematicItem.place}
-                      className="w-12 h-12 md:w-14 md:h-14 object-cover rounded-sm shrink-0 border border-white/20 shadow-md"
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => {
+                          setCinematicIndex(prev => (prev - 1 + cinematicItems.length) % cinematicItems.length);
+                          setCinematicProgress(0);
+                        }}
+                        className="p-1 text-white/70 hover:text-white"
+                        title="이전 스팟"
+                      >
+                        <SkipBack className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setIsCinematicPaused(p => !p)}
+                        className="p-1 bg-white text-black hover:bg-amber-400 rounded-full"
+                        title={isCinematicPaused ? '재생' : '일시정지'}
+                      >
+                        {isCinematicPaused ? <Play className="w-3 h-3 fill-current ml-0.5" /> : <Pause className="w-3 h-3 fill-current" />}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
+                          setCinematicProgress(0);
+                        }}
+                        className="p-1 text-white/70 hover:text-white"
+                        title="다음 스팟"
+                      >
+                        <SkipForward className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setIsMobilePlayCollapsed(false)}
+                        className="px-1.5 py-0.5 bg-white/15 hover:bg-white/25 rounded text-[8px] font-mono text-white/90 uppercase tracking-wider"
+                        title="상세 보기"
+                      >
+                        ▲ 펼침
+                      </button>
+                      <button
+                        onClick={() => setIsCinematicMode(false)}
+                        className="p-1 text-white/50 hover:text-white"
+                        title="종료"
+                      >
+                        <CloseIcon className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Full Cinematic Card (Desktop default, or Mobile expanded) */}
+              <div className={`absolute bottom-4 left-3 right-3 sm:left-6 sm:right-6 z-[1000] flex-col items-center pointer-events-auto animate-in fade-in slide-in-from-bottom-4 duration-300 ${isMobilePlayCollapsed ? 'hidden md:flex' : 'flex'}`}>
+                <div className="w-full max-w-lg bg-black/90 backdrop-blur-md border border-white/20 text-white rounded-lg shadow-2xl p-3 flex flex-col gap-2">
+                  {/* Progress bar */}
+                  <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-red-600 via-orange-500 to-amber-400 transition-all duration-75"
+                      style={{ width: `${cinematicProgress}%` }}
                     />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-xs md:text-sm font-bold text-white tracking-tight truncate uppercase font-serif">
-                      {currentCinematicItem.place || 'Spot'}
-                    </h4>
-                    {currentCinematicItem.memo && (
-                      <p className="text-[10px] md:text-[11px] text-white/75 line-clamp-2 mt-0.5 leading-snug">
-                        {currentCinematicItem.memo}
-                      </p>
-                    )}
-                    {currentCinematicItem.location && (
-                      <span className="text-[8px] md:text-[9px] text-white/45 truncate block mt-0.5">
-                        {currentCinematicItem.location}
+                  </div>
+
+                  {/* Header row */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="bg-red-600 text-white px-1.5 py-0.5 text-[8px] font-black tracking-widest uppercase rounded-[1px]">
+                        DAY {allTripDates.indexOf(currentCinematicItem.dateKey) + 1}
                       </span>
+                      <span className="text-[10px] font-mono text-white/70">
+                        SPOT {cinematicIndex + 1} / {cinematicItems.length}
+                      </span>
+                      {currentCinematicItem.time && (
+                        <span className="text-[10px] font-mono text-amber-400 font-bold">
+                          {currentCinematicItem.time}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setIsMobilePlayCollapsed(true)}
+                        className="md:hidden px-1.5 py-0.5 bg-white/10 hover:bg-white/20 text-white/80 rounded text-[8px] font-mono uppercase"
+                        title="지도 크게보기"
+                      >
+                        ▼ 접기
+                      </button>
+                      <button
+                        onClick={() => setIsCinematicMode(false)}
+                        className="p-1 text-white/60 hover:text-white rounded-full hover:bg-white/10 transition-colors"
+                        title="투어 모드 종료"
+                      >
+                        <CloseIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Spot detail */}
+                  <div className="flex items-center gap-3">
+                    {currentCinematicItem.img && (
+                      <img
+                        src={getEffectiveImageUrl(currentCinematicItem.img)}
+                        alt={currentCinematicItem.place}
+                        className="w-12 h-12 md:w-14 md:h-14 object-cover rounded-sm shrink-0 border border-white/20 shadow-md"
+                      />
                     )}
-                  </div>
-                </div>
-
-                {/* Controls */}
-                <div className="flex items-center justify-between pt-1 border-t border-white/10">
-                  <div className="flex items-center gap-1.5 text-[9px] font-mono text-white/60">
-                    <button
-                      onClick={() => setCinematicSpeed(s => s === 3800 ? 2200 : (s === 2200 ? 5500 : 3800))}
-                      className="px-1.5 py-0.5 bg-white/10 hover:bg-white/20 rounded text-white/80 transition-colors"
-                      title="재생 속도 조절"
-                    >
-                      {cinematicSpeed === 3800 ? '1x' : (cinematicSpeed === 2200 ? '1.5x' : '0.7x')}
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        setCinematicIndex(prev => (prev - 1 + cinematicItems.length) % cinematicItems.length);
-                        setCinematicProgress(0);
-                      }}
-                      className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-                      title="이전 스팟"
-                    >
-                      <SkipBack className="w-4 h-4" />
-                    </button>
-
-                    <button
-                      onClick={() => setIsCinematicPaused(p => !p)}
-                      className="p-1.5 md:p-2 bg-white text-black hover:bg-amber-400 rounded-full shadow transition-all active:scale-95"
-                      title={isCinematicPaused ? '재생' : '일시정지'}
-                    >
-                      {isCinematicPaused ? <Play className="w-3.5 h-3.5 fill-current ml-0.5" /> : <Pause className="w-3.5 h-3.5 fill-current" />}
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
-                        setCinematicProgress(0);
-                      }}
-                      className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-                      title="다음 스팟"
-                    >
-                      <SkipForward className="w-4 h-4" />
-                    </button>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-xs md:text-sm font-bold text-white tracking-tight truncate uppercase font-serif">
+                        {currentCinematicItem.place || 'Spot'}
+                      </h4>
+                      {currentCinematicItem.memo && (
+                        <p className="text-[10px] md:text-[11px] text-white/75 line-clamp-2 mt-0.5 leading-snug">
+                          {currentCinematicItem.memo}
+                        </p>
+                      )}
+                      {currentCinematicItem.location && (
+                        <span className="text-[8px] md:text-[9px] text-white/45 truncate block mt-0.5">
+                          {currentCinematicItem.location}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  <span className="text-[8px] md:text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">
-                    PLAY LOG
-                  </span>
+                  {/* Controls */}
+                  <div className="flex items-center justify-between pt-1 border-t border-white/10">
+                    <div className="flex items-center gap-1.5 text-[9px] font-mono text-white/60">
+                      <button
+                        onClick={() => setCinematicSpeed(s => s === 3800 ? 2200 : (s === 2200 ? 5500 : 3800))}
+                        className="px-1.5 py-0.5 bg-white/10 hover:bg-white/20 rounded text-white/80 transition-colors"
+                        title="재생 속도 조절"
+                      >
+                        {cinematicSpeed === 3800 ? '1x' : (cinematicSpeed === 2200 ? '1.5x' : '0.7x')}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setCinematicIndex(prev => (prev - 1 + cinematicItems.length) % cinematicItems.length);
+                          setCinematicProgress(0);
+                        }}
+                        className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                        title="이전 스팟"
+                      >
+                        <SkipBack className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={() => setIsCinematicPaused(p => !p)}
+                        className="p-1.5 md:p-2 bg-white text-black hover:bg-amber-400 rounded-full shadow transition-all active:scale-95"
+                        title={isCinematicPaused ? '재생' : '일시정지'}
+                      >
+                        {isCinematicPaused ? <Play className="w-3.5 h-3.5 fill-current ml-0.5" /> : <Pause className="w-3.5 h-3.5 fill-current" />}
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
+                          setCinematicProgress(0);
+                        }}
+                        className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                        title="다음 스팟"
+                      >
+                        <SkipForward className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <span className="text-[8px] md:text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">
+                      PLAY LOG
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
+            </>
           )}
         </div>
 
       </section>
       
-      {/* Right: Record / Tabs Section */}
-      <section className="w-full md:w-1/2 flex flex-col bg-[#F9F8F6] dark:bg-[#111111] transition-colors duration-300 flex-grow md:h-full overflow-hidden">
+      {/* Right: Record / Tabs Section (Responsive Bottom Sheet on Mobile) */}
+      <section 
+        className={`w-full md:w-1/2 flex flex-col bg-[#F9F8F6] dark:bg-[#111111] transition-all duration-300 flex-grow md:h-full overflow-hidden ${
+          mobileSheetSnap === 'collapsed'
+            ? 'max-md:h-[125px] max-md:overflow-hidden'
+            : (mobileSheetSnap === 'expanded' ? 'max-md:h-[82dvh]' : 'max-md:h-[55dvh]')
+        }`}
+      >
+        {/* Mobile Bottom Sheet Grab Handle */}
+        <div 
+          className="md:hidden flex flex-col items-center justify-center py-2 px-4 bg-[#F9F8F6] dark:bg-[#111111] border-b border-black/10 dark:border-white/10 cursor-pointer select-none touch-none shrink-0 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+          onTouchStart={handleSheetTouchStart}
+          onTouchEnd={handleSheetTouchEnd}
+          onClick={() => {
+            setMobileSheetSnap(prev => prev === 'collapsed' ? 'half' : (prev === 'half' ? 'expanded' : 'collapsed'));
+          }}
+        >
+          <div className="w-10 h-1 bg-black/30 dark:bg-white/30 rounded-full mb-1" />
+          <div className="flex items-center justify-between w-full text-[8px] font-black uppercase tracking-widest text-black/40 dark:text-white/40 px-1">
+            <span>{mobileSheetSnap === 'collapsed' ? '▲ 일정 펼치기 (Expand List)' : (mobileSheetSnap === 'expanded' ? '▼ 지도 크게보기 (Expand Map)' : '● 기본 분할 (Tap to Toggle)')}</span>
+            <span className="text-[7.5px] font-mono opacity-60">{mobileSheetSnap.toUpperCase()}</span>
+          </div>
+        </div>
         
         {/* Tab Headers */}
         <div className="flex overflow-x-auto hide-scrollbar flex-nowrap border-b border-black/20 dark:border-white/20 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0 w-full">
@@ -3647,9 +3804,9 @@ export function JourneyDetailPage({
                                 )}
                               </div>
 
-                            {/* Settlement/Expense Editor (Shown when expanded/active) */}
+                            {/* Settlement/Expense Editor & Play from here (Shown when expanded/active) */}
                             {isActive && !isEditing && (
-                              <div className="mt-3 pt-3 border-t border-black/10 dark:border-white/10 flex flex-col gap-1.5" onClick={(e) => e.stopPropagation()}>
+                              <div className="mt-3 pt-3 border-t border-black/10 dark:border-white/10 flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
                                 <span className="text-[8.5px] md:text-[9.5px] text-black/40 dark:text-white/40 uppercase font-black tracking-widest block">Expense / Settlement (정산)</span>
                                 <SettlementExpenseInput
                                   cost={item.cost}
@@ -3664,6 +3821,21 @@ export function JourneyDetailPage({
                                   }}
                                   defaultCurrency={defaultCurrency}
                                 />
+
+                                {/* Play Log from this spot */}
+                                <div className="mt-2 pt-2 border-t border-black/10 dark:border-white/10 flex items-center justify-between">
+                                  <span className="text-[8.5px] md:text-[9.5px] text-black/40 dark:text-white/40 uppercase font-black tracking-widest">
+                                    Cinematic Tour
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handlePlayFromItem(item.id)}
+                                    className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                                  >
+                                    <Play className="w-3 h-3 fill-current" />
+                                    <span>여기서부터 재생 (Play Log)</span>
+                                  </button>
+                                </div>
                               </div>
                             )}
 
@@ -3688,11 +3860,11 @@ export function JourneyDetailPage({
                             )}
                           </div>
 
-                          {/* Cost & Image */}
+                          {/* Right Column: Cost Editor (only in editing mode) & Large Thumbnail */}
                           <div className="shrink-0 flex flex-col items-end gap-2 ml-2">
-                            <div className={isEditing ? "flex flex-col items-end gap-1" : "flex items-center gap-1"}>
-                              <span className="text-[8px] opacity-40 uppercase font-bold tracking-widest">Cost</span>
-                              {isEditing ? (
+                            {isEditing && (
+                              <div className="flex flex-col items-end gap-1">
+                                <span className="text-[8px] opacity-40 uppercase font-bold tracking-widest">Cost</span>
                                 <SettlementExpenseInput
                                   cost={item.cost}
                                   currency={item.currency}
@@ -3707,17 +3879,13 @@ export function JourneyDetailPage({
                                   }}
                                   defaultCurrency={defaultCurrency}
                                 />
-                              ) : (
-                                <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest bg-emerald-600/10 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-400 px-2 py-0.5 md:py-1 rounded-sm whitespace-nowrap block">
-                                  {item.cost && item.cost !== '-' ? `${item.cost} ${item.currency || defaultCurrency} ${item.paidBy ? `(${item.paidBy})` : ''}` : '-'}
-                                </span>
-                              )}
-                            </div>
+                              </div>
+                            )}
                             
-                            {/* Card thumbnail (strictly preview, image is uploadable) */}
+                            {/* Card thumbnail (well-sized & visible within grid) */}
                             {item.img ? (
                               <div 
-                                className={`w-12 h-12 md:w-14 md:h-14 rounded-[2px] overflow-hidden border transition-all relative ${isActive ? 'border-red-600 dark:border-red-400 scale-110 origin-right shadow-md' : 'border-black/20 dark:border-white/20'}`}
+                                className={`w-14 h-14 md:w-16 md:h-16 rounded-[4px] overflow-hidden border transition-all relative ${isActive ? 'border-red-600 dark:border-red-400 scale-105 origin-right shadow-md ring-2 ring-red-500/20' : 'border-black/20 dark:border-white/20'}`}
                                 onClick={(e) => {
                                   if (!isEditing) {
                                     e.stopPropagation();
@@ -3734,7 +3902,7 @@ export function JourneyDetailPage({
                               >
                                 <img src={getEffectiveImageUrl(item.img)} alt={item.place} className={`w-full h-full object-cover transition-all ${isActive ? 'grayscale-0' : 'grayscale group-hover:grayscale-0'}`} />
                                 {/* Red dot badge: mark as timeline-attached photo */}
-                                <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-600 rounded-full border border-white dark:border-black shadow z-10" />
+                                <span className="absolute top-1 right-1 w-2 h-2 bg-red-600 rounded-full border border-white dark:border-black shadow z-10" />
                                 <ImageEditOverlay 
                                   isEditMode={isEditing} 
                                   hasImage={true}
@@ -3763,8 +3931,8 @@ export function JourneyDetailPage({
                                 />
                               </div>
                             ) : (
-                              <div className={`w-12 h-12 md:w-14 md:h-14 rounded-[2px] border bg-black/5 dark:bg-white/5 flex items-center justify-center transition-colors relative ${isActive ? 'border-red-600 dark:border-red-400 text-red-600 scale-110 origin-right' : 'border-black/10 dark:border-white/10'}`}>
-                                <ImageIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                              <div className={`w-14 h-14 md:w-16 md:h-16 rounded-[4px] border bg-black/5 dark:bg-white/5 flex items-center justify-center transition-colors relative ${isActive ? 'border-red-600 dark:border-red-400 text-red-600 scale-105 origin-right' : 'border-black/10 dark:border-white/10'}`}>
+                                <ImageIcon className="w-4 h-4 text-black/40 dark:text-white/40" />
                                 <ImageEditOverlay 
                                   isEditMode={isEditing} 
                                   hasImage={false}
