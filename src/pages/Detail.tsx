@@ -3054,7 +3054,7 @@ export function JourneyDetailPage({
         {renderInfoHeader()}
         
         {/* Dynamic Map Area */}
-        <div className="w-full relative md:pb-6 flex flex-col flex-grow h-full overflow-hidden">
+        <div className="w-full relative flex flex-col flex-grow h-full overflow-hidden">
           {/* Magazine Cover Typography Overlay (Only in Summary tab) */}
           {activeTab === 'summary' && (() => {
             const loc = tripToUse?.locationStr || '';
@@ -3128,7 +3128,7 @@ export function JourneyDetailPage({
               onMouseEnter={() => setIsPlayFabIdle(false)}
               onMouseLeave={resetPlayFabIdleTimer}
               onTouchStart={() => { setIsPlayFabIdle(false); resetPlayFabIdleTimer(); }}
-              className={`absolute bottom-3 left-1/2 -translate-x-1/2 z-30 rounded-full shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden pointer-events-auto flex items-center ${
+              className={`absolute bottom-3 md:bottom-8 lg:bottom-10 left-1/2 -translate-x-1/2 z-30 rounded-full shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden pointer-events-auto flex items-center ${
                 !isCinematicMode && isPlayFabIdle ? 'opacity-40 hover:opacity-100' : 'opacity-100'
               } ${
                 isCinematicMode

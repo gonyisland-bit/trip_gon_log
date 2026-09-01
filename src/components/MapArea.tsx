@@ -434,9 +434,7 @@ export function MapArea({
         const dayIndex = item.dayIndex || 0;
         const colorIndex = (dayIndex ? dayIndex - 1 : 0) % dayColors.length;
         pinColor = dayColors[colorIndex];
-        if (dayIndex) {
-          pinTextPrefix = `[D${dayIndex}] `;
-        }
+        pinTextPrefix = '';
       }
 
       let htmlContent = '';
