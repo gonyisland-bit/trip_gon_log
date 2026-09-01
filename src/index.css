@@ -476,5 +476,12 @@ div[data-pin-hover],
   opacity: 0 !important;
   pointer-events: none !important;
 }
-
-
+/* Hero Slide Progress Gauge Animation */
+@keyframes heroGauge {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}

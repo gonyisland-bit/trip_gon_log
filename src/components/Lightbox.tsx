@@ -207,6 +207,7 @@ export function Lightbox({
   };
 
   const lastTouchTimeRef = useRef<number>(0);
+  const lastTouchZoomTimeRef = useRef<number>(0);
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX.current !== null && touchStartY.current !== null) {
@@ -224,6 +225,7 @@ export function Lightbox({
           } else {
             setScale(2.5);
           }
+          lastTouchZoomTimeRef.current = Date.now();
           lastTouchTimeRef.current = 0;
           setIsDragging(false);
           touchStartX.current = null;
@@ -340,6 +342,10 @@ export function Lightbox({
 
   function handleDoubleClick(e: React.MouseEvent) {
     e.preventDefault();
+    // If a touch double-tap was recently handled within 600ms, ignore this synthetic mouse double-click
+    if (Date.now() - lastTouchZoomTimeRef.current < 600) {
+      return;
+    }
     if (scale > 1.1) {
       resetZoom();
     } else {

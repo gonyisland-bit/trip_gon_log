@@ -465,6 +465,7 @@ export function ArchiveHubPage({
                 {/* Right Menu & Arrow */}
                 <div className="flex items-center gap-1 md:gap-2 shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
                   <JourneyCardMenu
+                    className="relative z-20"
                     isLoggedIn={isLoggedIn}
                     onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
                     onDelete={() => onDeleteTrip(trip.id)}
@@ -607,6 +608,7 @@ export function ArchiveHubPage({
 
                   {/* Hamburger menu */}
                   <JourneyCardMenu
+                    className="relative z-20 shrink-0 ml-2"
                     isLoggedIn={isLoggedIn}
                     onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
                     onDelete={() => onDeleteTrip(trip.id)}

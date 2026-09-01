@@ -211,6 +211,15 @@ function App() {
     return `${repeated}   ★   `;
   }, [marqueeOverrideText, currentView, activeTrip, marqueeMessage, flightsByTrip, staysByTrip]);
 
+  const marqueeTrips = useMemo(() => {
+    if (trips.length === 0) return [];
+    let list = [...trips];
+    while (list.length < 10) {
+      list = [...list, ...trips];
+    }
+    return list;
+  }, [trips]);
+
   // Sync activeTripId with trips[0]?.id if it is null and trips have loaded
   useEffect(() => {
     if (activeTripId === null && trips.length > 0) {
@@ -1254,12 +1263,50 @@ function App() {
         {currentView === 'home' && marqueeShow && (
           <div className="w-full bg-black text-white dark:bg-white dark:text-black border-b border-black dark:border-white py-2 overflow-hidden flex items-center shrink-0 transition-colors duration-300 select-none">
             <div 
-              key={displayMarqueeText}
-              className="animate-marquee text-xs md:text-sm font-mono font-black tracking-widest uppercase" 
+              className="animate-marquee hover:[animation-play-state:paused] text-xs md:text-sm font-mono font-black tracking-widest uppercase flex items-center" 
               style={{ '--marquee-speed': `${(marqueeSpeed / 1.5) * 1.43 * 2}s` } as React.CSSProperties}
             >
-              <span>{displayMarqueeText}</span>
-              <span>{displayMarqueeText}</span>
+              {marqueeTrips.length > 0 ? (
+                <>
+                  <div className="flex items-center shrink-0">
+                    {marqueeTrips.map((t, idx) => (
+                      <span key={`mq1-${t.id}-${idx}`} className="flex items-center">
+                        <button
+                          type="button"
+                          onClick={() => navigateTo('detail', t.id)}
+                          className="hover:text-amber-400 dark:hover:text-amber-600 transition-all cursor-pointer font-black px-2 py-0.5 rounded hover:bg-white/10 dark:hover:bg-black/10 active:scale-95 inline-flex items-center gap-1.5"
+                          title={`${t.title} 바로가기`}
+                        >
+                          <span>{t.title.toUpperCase()}</span>
+                          {t.date && <span className="opacity-50 text-[10px] font-mono">({t.date.split('.')[0] || t.date.slice(0, 4)})</span>}
+                        </button>
+                        <span className="text-amber-500 font-bold mx-3 text-xs">✦</span>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex items-center shrink-0">
+                    {marqueeTrips.map((t, idx) => (
+                      <span key={`mq2-${t.id}-${idx}`} className="flex items-center">
+                        <button
+                          type="button"
+                          onClick={() => navigateTo('detail', t.id)}
+                          className="hover:text-amber-400 dark:hover:text-amber-600 transition-all cursor-pointer font-black px-2 py-0.5 rounded hover:bg-white/10 dark:hover:bg-black/10 active:scale-95 inline-flex items-center gap-1.5"
+                          title={`${t.title} 바로가기`}
+                        >
+                          <span>{t.title.toUpperCase()}</span>
+                          {t.date && <span className="opacity-50 text-[10px] font-mono">({t.date.split('.')[0] || t.date.slice(0, 4)})</span>}
+                        </button>
+                        <span className="text-amber-500 font-bold mx-3 text-xs">✦</span>
+                      </span>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span>{displayMarqueeText}</span>
+                  <span>{displayMarqueeText}</span>
+                </>
+              )}
             </div>
           </div>
         )}

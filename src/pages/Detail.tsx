@@ -3022,15 +3022,6 @@ export function JourneyDetailPage({
                 </div>
               )}
             </div>
-
-            {/* Tags */}
-            <div className="flex items-center gap-1 flex-wrap">
-              {(tripToUse?.tags || []).filter(t => t !== 'Personal').map(tag => (
-                <span key={tag} className="text-[8px] font-bold border border-black/15 dark:border-white/15 px-1.5 py-0.5 rounded-full text-black/60 dark:text-white/60">
-                  #{tag}
-                </span>
-              ))}
-            </div>
           </div>
         </div>
       )}

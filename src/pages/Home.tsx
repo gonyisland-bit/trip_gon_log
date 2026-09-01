@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Edit2, Trash2, GripVertical, Copy, ArrowUp, Tag, ChevronDown, ChevronUp, Search, X, LayoutGrid, StretchHorizontal, List } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Menu, Edit2, Trash2, GripVertical, Copy, ArrowUp, Tag, ChevronDown, ChevronUp, Search, X, LayoutGrid, StretchHorizontal, List } from 'lucide-react';
 import { Trip, Plan } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 
@@ -98,6 +98,7 @@ export function JourneyCardMenu({
   onClone,
   onMove,
   moveLabel,
+  className,
 }: {
   onEdit?: () => void;
   onDelete?: () => void;
@@ -105,6 +106,7 @@ export function JourneyCardMenu({
   onClone?: () => void;
   onMove?: () => void;
   moveLabel?: string;
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -121,45 +123,45 @@ export function JourneyCardMenu({
   if (!isLoggedIn) return null;
 
   return (
-    <div ref={menuRef} className="absolute bottom-3 right-3 z-20">
+    <div ref={menuRef} className={className || "absolute bottom-3 right-3 z-20"}>
       <button
         onClick={(e) => { e.stopPropagation(); setOpen(v => !v); }}
-        className="p-1.5 bg-black/50 hover:bg-black/80 text-white rounded-sm transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
-        title="메뉴"
+        className="p-1.5 bg-black/60 hover:bg-black/90 text-white rounded-md transition-all shadow-md backdrop-blur-sm border border-white/20 opacity-90 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 flex items-center justify-center cursor-pointer active:scale-95"
+        title="카드 관리 메뉴"
         aria-label="Journey menu"
       >
-        <MoreVertical className="w-3.5 h-3.5" />
+        <Menu className="w-3.5 h-3.5" />
       </button>
       {open && (
-        <div className="absolute bottom-full right-0 mb-1 w-32 bg-[#F9F8F6] dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 shadow-xl z-50 overflow-hidden">
+        <div className="absolute bottom-full right-0 mb-1 w-32 bg-[#F9F8F6] dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 shadow-2xl rounded-md z-50 overflow-hidden animate-in zoom-in-95 duration-150">
           {onEdit && (
             <button
               onClick={(e) => { e.stopPropagation(); onEdit(); setOpen(false); }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
             >
-              <Edit2 className="w-3 h-3" /> 수정
+              <Edit2 className="w-3 h-3 text-amber-600" /> 수정
             </button>
           )}
           {onClone && (
             <button
               onClick={(e) => { e.stopPropagation(); onClone(); setOpen(false); }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
             >
-              <Copy className="w-3 h-3" /> 복제
+              <Copy className="w-3 h-3 text-blue-500" /> 복제
             </button>
           )}
           {onMove && (
             <button
               onClick={(e) => { e.stopPropagation(); onMove(); setOpen(false); }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
             >
-              <ArrowUp className="w-3 h-3" /> {moveLabel || '이동'}
+              <ArrowUp className="w-3 h-3 text-emerald-500" /> {moveLabel || '이동'}
             </button>
           )}
           {onDelete && (
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(); setOpen(false); }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer"
             >
               <Trash2 className="w-3 h-3" /> 삭제
             </button>
@@ -368,6 +370,8 @@ export function HomePage({
     : (localTrips[0] ? [localTrips[0]] : []);
 
   const currentHero = heroJourneys[heroSlide] || heroJourneys[0];
+  const isCurrentHeroVideo = heroMediaType === 'video' && currentHero && 'videoUrl' in currentHero && currentHero.videoUrl;
+  const heroSlideDuration = isCurrentHeroVideo ? 10000 : 6000;
 
   const goToSlide = useCallback((idx: number) => {
     if (idx === heroSlide) return;
@@ -443,7 +447,7 @@ export function HomePage({
         )}
 
         {/* Text content - Magazine Cover Style Hero */}
-        <div className="absolute inset-0 p-6 sm:p-10 md:p-16 flex flex-col justify-between text-white z-10 pointer-events-none">
+        <div className="absolute inset-0 p-6 sm:p-10 md:p-16 pb-16 sm:pb-16 md:pb-16 flex flex-col justify-between text-white z-10 pointer-events-none">
           {/* Top-Left: Static Home Hub Title & Subtitle (Minimized) */}
           <div className="pointer-events-auto max-w-full sm:max-w-md md:max-w-lg mt-4 md:mt-0">
             <h1 className="text-sm md:text-xs font-black tracking-[0.25em] uppercase text-amber-500 drop-shadow-sm mb-1">
@@ -484,18 +488,41 @@ export function HomePage({
           )}
         </div>
 
-        {/* Carousel slide dots */}
+        {/* Carousel slide indicators with animated progress gauge */}
         {currentHero && heroJourneys.length > 1 && (
-          <div className="absolute bottom-4 right-4 md:bottom-6 md:right-6 z-10">
-            <div className="flex items-center gap-1.5 bg-black/30 backdrop-blur-sm px-3 py-2 border border-white/10 rounded-full">
-              {heroJourneys.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={(e) => { e.stopPropagation(); goToSlide(idx); }}
-                  className={`rounded-full transition-all ${idx === heroSlide ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/40 hover:bg-white/70'}`}
-                  aria-label={`Go to slide ${idx + 1}`}
-                />
-              ))}
+          <div className="absolute bottom-4 right-4 md:bottom-6 md:right-8 z-20 pointer-events-auto">
+            <div className="flex items-center gap-2 bg-black/45 backdrop-blur-md px-3 py-1.5 border border-white/15 rounded-full shadow-2xl">
+              <span className="text-[9px] font-mono font-bold tracking-widest text-amber-400">
+                {String(heroSlide + 1).padStart(2, '0')}
+              </span>
+              <div className="flex items-center gap-1.5">
+                {heroJourneys.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={(e) => { e.stopPropagation(); goToSlide(idx); }}
+                    className="h-1.5 rounded-full overflow-hidden transition-all bg-white/20 hover:bg-white/30 cursor-pointer relative"
+                    style={{ width: idx === heroSlide ? '28px' : '8px' }}
+                    title={`Slide ${idx + 1}`}
+                    aria-label={`Go to slide ${idx + 1}`}
+                  >
+                    {idx === heroSlide ? (
+                      <div
+                        key={`${heroSlide}-${heroSlideDuration}`}
+                        className="h-full bg-gradient-to-r from-amber-500 to-amber-300"
+                        style={{
+                          animation: heroAutoSlide ? `heroGauge ${heroSlideDuration}ms linear forwards` : 'none',
+                          width: heroAutoSlide ? undefined : '100%',
+                        }}
+                      />
+                    ) : idx < heroSlide ? (
+                      <div className="h-full w-full bg-white/60" />
+                    ) : null}
+                  </button>
+                ))}
+              </div>
+              <span className="text-[9px] font-mono font-bold tracking-widest text-white/50">
+                {String(heroJourneys.length).padStart(2, '0')}
+              </span>
             </div>
           </div>
         )}
@@ -921,6 +948,7 @@ export function HomePage({
 
                     {/* Hamburger menu */}
                     <JourneyCardMenu
+                      className="relative z-20 shrink-0 ml-2"
                       isLoggedIn={isLoggedIn}
                       onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
                       onDelete={onDeleteTrip ? () => onDeleteTrip(trip.id) : undefined}

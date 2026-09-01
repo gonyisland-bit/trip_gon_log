@@ -308,7 +308,7 @@ export function SummaryView({
                 <FileText className="w-3.5 h-3.5" />
                 MEMORANDUM OF TRAVEL
               </span>
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-black uppercase tracking-tighter leading-tight break-words">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-black font-satoshi uppercase tracking-tight leading-tight break-words">
                 {trip.title ? trip.title.replace(' (Plan)', '') : 'MY TRIP'}
               </h2>
             </div>

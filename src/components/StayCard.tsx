@@ -245,7 +245,7 @@ export function StayCard({
                 placeholder="STAY TITLE"
               />
             ) : (
-              <h3 className="text-lg md:text-xl font-black tracking-tight leading-snug uppercase truncate">
+              <h3 className="text-lg md:text-xl font-black font-satoshi tracking-tight leading-snug uppercase truncate">
                 {stay.title}
               </h3>
             )}
