@@ -200,18 +200,40 @@ export function Lightbox({
     setPosition(limitPosition(newX, newY, scale));
   };
 
+  const lastTouchTimeRef = useRef<number>(0);
+
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (scale <= 1 && touchStartX.current !== null && touchStartY.current !== null) {
+    if (touchStartX.current !== null && touchStartY.current !== null) {
       const touch = e.changedTouches[0];
       const distanceX = touch.clientX - touchStartX.current;
       const distanceY = touch.clientY - touchStartY.current;
 
-      if (Math.abs(distanceX) > Math.abs(distanceY)) {
-        if (Math.abs(distanceX) > minSwipeDistance) {
-          if (distanceX > 0) {
-            handlePrev();
+      // Double-tap detection on mobile (stationary tap)
+      if (Math.abs(distanceX) < 15 && Math.abs(distanceY) < 15) {
+        const now = Date.now();
+        if (now - lastTouchTimeRef.current < 350) {
+          // Double-tap detected on mobile!
+          if (scale > 1.1) {
+            resetZoom();
           } else {
-            handleNext();
+            setScale(2.5);
+          }
+          lastTouchTimeRef.current = 0;
+          setIsDragging(false);
+          touchStartX.current = null;
+          touchStartY.current = null;
+          return;
+        }
+        lastTouchTimeRef.current = now;
+      } else if (scale <= 1) {
+        // Swipe gesture
+        if (Math.abs(distanceX) > Math.abs(distanceY)) {
+          if (Math.abs(distanceX) > minSwipeDistance) {
+            if (distanceX > 0) {
+              handlePrev();
+            } else {
+              handleNext();
+            }
           }
         }
       }

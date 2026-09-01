@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Edit2, Trash2, GripVertical, Copy, ArrowUp, Tag, ChevronDown, ChevronUp, Search, X } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Edit2, Trash2, GripVertical, Copy, ArrowUp, Tag, ChevronDown, ChevronUp, Search, X, LayoutGrid, StretchHorizontal, List } from 'lucide-react';
 import { Trip, Plan } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 
@@ -325,6 +325,12 @@ export function HomePage({
   const [tagSearchQuery, setTagSearchQuery] = useState('');
   const [heroSlide, setHeroSlide] = useState(0);
   const [activeCardId, setActiveCardId] = useState<number | null>(null);
+  const [cardViewMode, setCardViewMode] = useState<'grid' | 'wide' | 'list'>(() => (localStorage.getItem('cardViewMode') as any) || 'grid');
+
+  const handleSetCardViewMode = (mode: 'grid' | 'wide' | 'list') => {
+    setCardViewMode(mode);
+    localStorage.setItem('cardViewMode', mode);
+  };
 
   // Drag-reorder state for archive cards
   const [draggedTripId, setDraggedTripId] = useState<number | null>(null);
@@ -602,35 +608,77 @@ export function HomePage({
             )}
           </div>
           <div className="flex flex-col gap-2 w-full md:w-auto relative z-20">
-            <div className="flex items-center gap-2">
-              {/* Collapsible Tag Filter Trigger */}
-              <button
-                type="button"
-                onClick={() => setIsTagAccordionOpen(prev => !prev)}
-                className={`text-[10px] px-3 py-1.5 uppercase font-bold tracking-wider border rounded-sm transition-all flex items-center gap-1.5 cursor-pointer ${
-                  activeFilter !== 'All'
-                    ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
-                    : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5'
-                }`}
-                title="태그 필터 열기/닫기"
-              >
-                <Tag className="w-3 h-3" />
-                <span>{activeFilter === 'All' ? '태그 필터 (All)' : `태그: #${activeFilter}`}</span>
-                {isTagAccordionOpen ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
-              </button>
-
-              {/* Reset Tag filter button if not 'All' */}
-              {activeFilter !== 'All' && (
+            <div className="flex items-center justify-between md:justify-end gap-2 w-full">
+              <div className="flex items-center gap-2">
+                {/* Collapsible Tag Filter Trigger */}
                 <button
                   type="button"
-                  onClick={() => setActiveFilter('All')}
-                  className="text-[9px] px-2 py-1 uppercase font-bold tracking-wider text-red-600 dark:text-red-400 hover:underline cursor-pointer flex items-center gap-0.5"
-                  title="필터 초기화"
+                  onClick={() => setIsTagAccordionOpen(prev => !prev)}
+                  className={`text-[10px] px-3 py-1.5 uppercase font-bold tracking-wider border rounded-sm transition-all flex items-center gap-1.5 cursor-pointer ${
+                    activeFilter !== 'All'
+                      ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
+                      : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5'
+                  }`}
+                  title="태그 필터 열기/닫기"
                 >
-                  <X className="w-3 h-3" />
-                  초기화
+                  <Tag className="w-3 h-3" />
+                  <span>{activeFilter === 'All' ? '태그 필터 (All)' : `태그: #${activeFilter}`}</span>
+                  {isTagAccordionOpen ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
                 </button>
-              )}
+
+                {/* Reset Tag filter button if not 'All' */}
+                {activeFilter !== 'All' && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveFilter('All')}
+                    className="text-[9px] px-2 py-1 uppercase font-bold tracking-wider text-red-600 dark:text-red-400 hover:underline cursor-pointer flex items-center gap-0.5"
+                    title="필터 초기화"
+                  >
+                    <X className="w-3 h-3" />
+                    초기화
+                  </button>
+                )}
+              </div>
+
+              {/* View Mode Switcher: Grid (모바일 2열) / Wide (모바일 1열) / List */}
+              <div className="flex items-center border border-black/15 dark:border-white/15 rounded-sm p-0.5 bg-black/5 dark:bg-white/5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleSetCardViewMode('grid')}
+                  className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
+                    cardViewMode === 'grid' 
+                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
+                      : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                  }`}
+                  title="그리드 보기 (모바일 2열)"
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetCardViewMode('wide')}
+                  className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
+                    cardViewMode === 'wide' 
+                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
+                      : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                  }`}
+                  title="와이드 보기 (모바일 1열)"
+                >
+                  <StretchHorizontal className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetCardViewMode('list')}
+                  className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
+                    cardViewMode === 'list' 
+                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
+                      : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                  }`}
+                  title="리스트 보기"
+                >
+                  <List className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
             {/* Collapsible Content: Search input & Tag pills */}
@@ -686,141 +734,206 @@ export function HomePage({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 p-6 md:p-12 w-full">
-          {filteredTrips.slice(0, 4).map((trip, index) => {
-            const { year, month } = getYearAndMonth(trip.date);
-            const days = calculateDays(trip.date);
-            const isCardActive = activeCardId === trip.id;
-            const issueNumber = String((trip.displayOrder ?? index) + 1).padStart(2, '0');
+        {cardViewMode === 'list' ? (
+          <div className="flex flex-col gap-2.5 p-4 md:px-12 md:py-8 w-full">
+            {filteredTrips.slice(0, 8).map((trip, index) => {
+              const isCardActive = activeCardId === trip.id;
+              const issueNumber = String((trip.displayOrder ?? index) + 1).padStart(2, '0');
 
-            return (
-              <div key={trip.id} className="relative group">
-                {/* Ambient Glow Aura */}
+              return (
                 <div
-                  className={`absolute -inset-1.5 rounded-2xl bg-gradient-to-tr from-red-600/30 via-orange-500/20 to-amber-400/25 blur-xl transition-all duration-500 pointer-events-none -z-10 ${
-                    isCardActive ? 'opacity-80 scale-105' : 'opacity-0 group-hover:opacity-50 scale-100'
-                  }`}
-                />
-
-                <div
-                  style={{ containerType: 'inline-size' }}
-                  className={`cursor-pointer aspect-[3/4] w-full overflow-hidden transition-all border relative shadow-[0_0_15px_rgba(0,0,0,0.08)] dark:shadow-[0_0_15px_rgba(255,255,255,0.03)] ${
-                    draggedTripId === trip.id ? 'opacity-40' : 'opacity-100'
-                  } ${
+                  key={trip.id}
+                  onClick={() => onNavigate('detail', trip.id)}
+                  className={`flex items-center justify-between p-3 md:p-4 rounded-xl border transition-all cursor-pointer group select-none ${
                     isCardActive
-                      ? 'border-red-600 dark:border-red-400 ring-2 ring-red-600/20 dark:ring-red-400/20 scale-[1.01] shadow-lg'
-                      : 'border-black/10 dark:border-white/10 bg-[#111]'
+                      ? 'border-red-600 dark:border-red-400 bg-red-500/5 ring-1 ring-red-500/20 shadow-md'
+                      : 'border-black/10 dark:border-white/10 bg-white dark:bg-[#161616] hover:border-black/30 dark:hover:border-white/30 hover:shadow-sm'
                   }`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (activeCardId === trip.id) {
-                      onNavigate('detail', trip.id);
-                    } else {
-                      setActiveCardId(trip.id);
-                    }
-                  }}
-                  draggable={isLoggedIn}
-                  onDragStart={(e) => handleTripDragStart(e, trip.id)}
-                  onDragOver={(e) => handleTripDragOver(e, trip.id)}
-                  onDrop={handleTripDrop}
-                  onDragEnd={() => setDraggedTripId(null)}
                 >
-                  {/* Background cover image/video */}
-                  <CardMedia
-                    img={trip.img}
-                    title={trip.title}
-                    videoUrl={trip.videoUrl}
-                    isActive={isCardActive}
-                  />
-
-                  {/* Status Badge (NEW / EDITING) */}
-                  {trip.statusBadge && (
-                    <div className={`absolute bottom-3.5 right-11 z-[15] px-2 py-0.5 text-[8px] font-black tracking-widest uppercase shadow-md pointer-events-none select-none ${
-                      trip.statusBadge === 'NEW'
-                        ? 'bg-red-600 text-white'
-                        : 'bg-amber-600 text-white'
-                    }`}>
-                      {trip.statusBadge}
+                  <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
+                    {/* Thumbnail */}
+                    <div className="w-14 h-14 md:w-16 md:h-16 rounded-lg overflow-hidden bg-black/10 shrink-0 border border-black/10 dark:border-white/10 relative">
+                      <img src={getEffectiveImageUrl(trip.img)} alt={trip.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      <span className="absolute bottom-1 right-1 text-[8px] font-mono font-bold bg-black/75 text-white px-1 rounded">#{issueNumber}</span>
                     </div>
-                  )}
 
-                  {/* Magazine Overlay Gradient */}
-                  <div className="absolute inset-0 magazine-card-gradient pointer-events-none" />
-
-                  {/* Magazine Cover Text Layout */}
-                  <div className="absolute inset-0 p-4 md:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
-                    {/* Top Header Section */}
-                    <div className="w-full">
-                      {/* Editorial Masthead & Barcode Bar */}
-                      <div className="flex items-center justify-between text-[2.2cqw] font-mono tracking-widest text-white/80 uppercase border-b border-white/20 pb-1.5 mb-2 w-full">
-                        <div className="flex items-center gap-1.5">
-                          <span className="bg-white/25 px-1 py-0.5 rounded-[1px] font-black text-white">
-                            ISSUE #{issueNumber}
+                    {/* Meta */}
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-black text-sm md:text-base text-black dark:text-white uppercase truncate font-satoshi">{trip.title}</h3>
+                        {trip.statusBadge && (
+                          <span className={`text-[8px] font-black px-1.5 py-0.2 rounded uppercase ${
+                            trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
+                          }`}>
+                            {trip.statusBadge}
                           </span>
-                          <span className="tracking-wider text-white/90">TRIPGON</span>
-                        </div>
-                        <div className="flex items-center gap-[2px] h-2.5 opacity-75">
-                          <div className="w-[1px] h-full bg-white" />
-                          <div className="w-[2px] h-full bg-white" />
-                          <div className="w-[1px] h-full bg-white" />
-                          <div className="w-[3px] h-full bg-white" />
-                          <div className="w-[1px] h-full bg-white" />
-                          <div className="w-[2px] h-full bg-white" />
-                          <div className="w-[4px] h-full bg-white" />
-                          <div className="w-[1px] h-full bg-white" />
-                        </div>
-                      </div>
-
-                      {/* Title & Issue Date */}
-                      <div className="flex justify-between items-start gap-3 w-full">
-                        <h3
-                          className="text-[5.5cqw] font-black uppercase tracking-tight leading-[1.05] font-satoshi text-white drop-shadow-md max-w-[72%] line-clamp-2"
-                          style={{ fontFamily: "'Satoshi', sans-serif" }}
-                        >
-                          {trip.title}
-                        </h3>
-                        {month && year && (
-                          <div className="flex flex-col items-end shrink-0 text-right leading-none font-mono">
-                            <span className="text-[3.8cqw] font-black tracking-widest text-amber-500 uppercase">{month}</span>
-                            <span className="text-[2.8cqw] font-bold tracking-widest text-white/60 mt-0.5">{year}</span>
-                          </div>
                         )}
                       </div>
-                    </div>
-
-                    {/* Bottom Footer Row: Date, Tags & Status */}
-                    <div className="mt-auto flex flex-col gap-1.5">
+                      <div className="flex items-center gap-2 text-[10px] md:text-xs text-black/50 dark:text-white/50 font-mono mt-0.5">
+                        <span>{trip.date}</span>
+                        {trip.locationStr && (
+                          <>
+                            <span>·</span>
+                            <span className="truncate max-w-[120px] sm:max-w-[200px]">{trip.locationStr}</span>
+                          </>
+                        )}
+                      </div>
                       {trip.tags && trip.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {trip.tags.slice(0, 2).map(tag => (
-                            <span key={tag} className="text-[2.6cqw] uppercase font-bold tracking-widest bg-white/10 px-1.5 py-0.5 rounded-sm text-white/95">{tag}</span>
+                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                          {trip.tags.slice(0, 3).map(tag => (
+                            <span key={tag} className="text-[8.5px] px-1.5 py-0.2 rounded bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 font-bold uppercase tracking-wider">#{tag}</span>
                           ))}
                         </div>
                       )}
-                      <div className="flex flex-col gap-0.5">
-                        <div className="text-[3cqw] tracking-widest text-white/70 font-mono truncate uppercase">
-                          {trip.date}
-                          {days > 0 && ` · ${days} DAYS`}
-                        </div>
-                        <div className="text-[2.6cqw] tracking-[0.2em] font-black text-amber-500/95 uppercase">ARCHIVED JOURNEY</div>
-                      </div>
                     </div>
                   </div>
 
-                  {/* Hamburger menu */}
-                  <JourneyCardMenu
-                    isLoggedIn={isLoggedIn}
-                    onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
-                    onDelete={onDeleteTrip ? () => onDeleteTrip(trip.id) : undefined}
-                    onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
-                    onMove={onMoveToPlans ? () => onMoveToPlans(trip) : undefined}
-                    moveLabel="계획으로 이동"
-                  />
+                  {/* Right Menu & Arrow */}
+                  <div className="flex items-center gap-1 md:gap-2 shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
+                    <JourneyCardMenu
+                      isLoggedIn={isLoggedIn}
+                      onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
+                      onDelete={onDeleteTrip ? () => onDeleteTrip(trip.id) : undefined}
+                      onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
+                      onMove={onMoveToPlans ? () => onMoveToPlans(trip) : undefined}
+                      moveLabel="계획으로 이동"
+                    />
+                    <div className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-black/40 group-hover:text-black dark:text-white/40 dark:group-hover:text-white transition-colors">
+                      <ArrowRight className="w-4 h-4" />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className={cardViewMode === 'wide' 
+            ? "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 p-4 md:p-12 w-full"
+            : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 p-3 sm:p-6 md:p-12 w-full"
+          }>
+            {filteredTrips.slice(0, 4).map((trip, index) => {
+              const { year, month } = getYearAndMonth(trip.date);
+              const days = calculateDays(trip.date);
+              const isCardActive = activeCardId === trip.id;
+              const issueNumber = String((trip.displayOrder ?? index) + 1).padStart(2, '0');
+
+              return (
+                <div key={trip.id} className="relative group">
+                  {/* Ambient Glow Aura */}
+                  <div
+                    className={`absolute -inset-1.5 rounded-2xl bg-gradient-to-tr from-red-600/30 via-orange-500/20 to-amber-400/25 blur-xl transition-all duration-500 pointer-events-none -z-10 ${
+                      isCardActive ? 'opacity-80 scale-105' : 'opacity-0 group-hover:opacity-50 scale-100'
+                    }`}
+                  />
+
+                  <div
+                    style={{ containerType: 'inline-size' }}
+                    className={`cursor-pointer ${cardViewMode === 'wide' ? 'aspect-[16/10]' : 'aspect-[3/4]'} w-full overflow-hidden transition-all border relative shadow-[0_0_15px_rgba(0,0,0,0.08)] dark:shadow-[0_0_15px_rgba(255,255,255,0.03)] ${
+                      draggedTripId === trip.id ? 'opacity-40' : 'opacity-100'
+                    } ${
+                      isCardActive
+                        ? 'border-red-600 dark:border-red-400 ring-2 ring-red-600/20 dark:ring-red-400/20 scale-[1.01] shadow-lg'
+                        : 'border-black/10 dark:border-white/10 bg-[#111]'
+                    }`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (activeCardId === trip.id) {
+                        onNavigate('detail', trip.id);
+                      } else {
+                        setActiveCardId(trip.id);
+                      }
+                    }}
+                    draggable={isLoggedIn}
+                    onDragStart={(e) => handleTripDragStart(e, trip.id)}
+                    onDragOver={(e) => handleTripDragOver(e, trip.id)}
+                    onDrop={handleTripDrop}
+                    onDragEnd={() => setDraggedTripId(null)}
+                  >
+                    {/* Background cover image/video */}
+                    <CardMedia
+                      img={trip.img}
+                      title={trip.title}
+                      videoUrl={trip.videoUrl}
+                      isActive={isCardActive}
+                    />
+
+                    {/* Status Badge (NEW / EDITING) */}
+                    {trip.statusBadge && (
+                      <div className={`absolute bottom-3.5 right-11 z-[15] px-2 py-0.5 text-[8px] font-black tracking-widest uppercase shadow-md pointer-events-none select-none ${
+                        trip.statusBadge === 'NEW'
+                          ? 'bg-red-600 text-white'
+                          : 'bg-amber-600 text-white'
+                      }`}>
+                        {trip.statusBadge}
+                      </div>
+                    )}
+
+                    {/* Magazine Overlay Gradient */}
+                    <div className="absolute inset-0 magazine-card-gradient pointer-events-none" />
+
+                    {/* Magazine Cover Text Layout */}
+                    <div className="absolute inset-0 p-4 md:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
+                      {/* Top Header Section */}
+                      <div className="w-full">
+                        {/* Editorial Masthead & Barcode Bar */}
+                        <div className="flex items-center justify-between text-[2.2cqw] font-mono tracking-widest text-white/80 uppercase border-b border-white/20 pb-1.5 mb-2 w-full">
+                          <div className="flex items-center gap-1.5">
+                            <span className="bg-white/25 px-1 py-0.5 rounded-[1px] font-black text-white">
+                              ISSUE #{issueNumber}
+                            </span>
+                            <span className="tracking-wider text-white/90">TRIPGON</span>
+                          </div>
+                          <span className="font-bold tracking-widest text-white/60">AUTONOMOUS RECORD</span>
+                        </div>
+
+                        {/* Magazine Title & Destination */}
+                        <div className="flex items-baseline justify-between gap-2">
+                          <h3 className="text-[5.5cqw] font-black tracking-tight leading-tight uppercase font-satoshi drop-shadow-md truncate max-w-[80%]">
+                            {trip.title}
+                          </h3>
+                          {month && year && (
+                            <div className="flex flex-col items-end shrink-0 text-right leading-none font-mono">
+                              <span className="text-[3.8cqw] font-black tracking-widest text-amber-500 uppercase">{month}</span>
+                              <span className="text-[2.8cqw] font-bold tracking-widest text-white/60 mt-0.5">{year}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Bottom Footer Row: Date, Tags & Status */}
+                      <div className="mt-auto flex flex-col gap-1.5">
+                        {trip.tags && trip.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {trip.tags.slice(0, 2).map(tag => (
+                              <span key={tag} className="text-[2.6cqw] uppercase font-bold tracking-widest bg-white/10 px-1.5 py-0.5 rounded-sm text-white/95">{tag}</span>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex flex-col gap-0.5">
+                          <div className="text-[3cqw] tracking-widest text-white/70 font-mono truncate uppercase">
+                            {trip.date}
+                            {days > 0 && ` · ${days} DAYS`}
+                          </div>
+                          <div className="text-[2.6cqw] tracking-[0.2em] font-black text-amber-500/95 uppercase">ARCHIVED JOURNEY</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Hamburger menu */}
+                    <JourneyCardMenu
+                      isLoggedIn={isLoggedIn}
+                      onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
+                      onDelete={onDeleteTrip ? () => onDeleteTrip(trip.id) : undefined}
+                      onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
+                      onMove={onMoveToPlans ? () => onMoveToPlans(trip) : undefined}
+                      moveLabel="계획으로 이동"
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
         <div className="p-6 md:px-12 flex justify-center w-full">
           <button onClick={() => onNavigate('archive')} className="text-sm font-bold uppercase tracking-widest border border-black dark:border-white px-8 py-3 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors w-full md:w-auto">
             View Entire Archive

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bed, Trash2, ImagePlus, Loader2, X } from 'lucide-react';
+import { Bed, Trash2, ImagePlus, Loader2, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { StayItem } from '../types';
 import { ImageEditOverlay } from './ImageEditOverlay';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
@@ -82,6 +82,7 @@ export function StayCard({
   const [localTitle, setLocalTitle] = useState(stay.title);
   const [localConfNo, setLocalConfNo] = useState(stay.confNo);
   const [localMemo, setLocalMemo] = useState(stay.memo);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Additional images & Lightbox states
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -340,9 +341,56 @@ export function StayCard({
           )}
         </div>
         
-        {/* Accordion Area (Memo & Additional Images) - Only shown if isActive is true */}
-        {isActive && (
-          <div className="mt-4 pt-4 border-t border-black/10 dark:border-white/10 space-y-4">
+        {/* ── Accordion Expand / Collapse Toggle Bar ── */}
+        <div 
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsExpanded(prev => !prev);
+          }}
+          className="px-4 py-2 mt-4 bg-black/[0.02] dark:bg-white/[0.02] border-t border-dashed border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between text-[9px] font-bold uppercase tracking-wider text-black/60 dark:text-white/60 cursor-pointer select-none"
+        >
+          <span className="flex items-center gap-2">
+            <span>EXPENSE, MEMO & PHOTOS</span>
+            {stay.cost && stay.cost !== '-' && (
+              <span className="px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 font-mono text-[8px] font-bold">
+                {stay.currency || 'KRW'} {stay.cost}
+              </span>
+            )}
+            {stay.additionalImages && stay.additionalImages.length > 0 && (
+              <span className="px-1.5 py-0.2 rounded bg-black/10 dark:bg-white/10 text-[8px] font-mono font-bold">
+                📷 {stay.additionalImages.length}
+              </span>
+            )}
+          </span>
+          <span className="flex items-center gap-1 text-[8.5px] font-semibold text-black/50 dark:text-white/50">
+            <span>{isExpanded ? '접기 (Close)' : '상세 펼치기 (Expand)'}</span>
+            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </span>
+        </div>
+
+        {/* ── Accordion Expandable Content (Settlement, Memo & Additional Photos) ── */}
+        {(isExpanded || isEditMode) && (
+          <div className="animate-in fade-in duration-200 space-y-4 pt-3">
+            {/* Settlement Section */}
+            {(isEditMode || (stay.cost && stay.cost !== '-')) && (
+              <div className={`border-b border-dashed border-black/10 dark:border-white/10 pb-3 flex flex-wrap items-center justify-between gap-2 ${isEditMode ? 'pr-8' : ''}`}>
+                <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest">EXPENSE (정산)</span>
+                <SettlementExpenseInput
+                  cost={stay.cost}
+                  currency={stay.currency}
+                  paidBy={stay.paidBy}
+                  members={members}
+                  isEditMode={isEditMode}
+                  onUpdate={(updates) => {
+                    if (updates.cost !== undefined) onUpdate(stay.id, 'cost', updates.cost);
+                    if (updates.currency !== undefined) onUpdate(stay.id, 'currency', updates.currency);
+                    if (updates.paidBy !== undefined) onUpdate(stay.id, 'paidBy', updates.paidBy);
+                  }}
+                  defaultCurrency={defaultCurrency}
+                />
+              </div>
+            )}
+
             {/* Memo Box */}
             <div className="bg-[#EAE8E3]/35 dark:bg-white/5 p-3 md:p-4 text-xs md:text-sm border border-black/5 dark:border-white/5">
               <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-1">MEMO</span>
@@ -357,7 +405,7 @@ export function StayCard({
                 />
               ) : (
                 <p className="text-black/80 dark:text-white/80 leading-relaxed whitespace-pre-wrap">
-                  {stay.memo}
+                  {stay.memo || '메모가 없습니다.'}
                 </p>
               )}
             </div>
@@ -436,26 +484,6 @@ export function StayCard({
                 )}
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Settlement Section */}
-        {(isEditMode || (stay.cost && stay.cost !== '-')) && (
-          <div className={`mt-4 pt-3 border-t border-dashed border-black/10 dark:border-white/10 flex flex-wrap items-center justify-between gap-2 ${isEditMode ? 'pr-8' : ''}`}>
-            <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest">EXPENSE (정산)</span>
-            <SettlementExpenseInput
-              cost={stay.cost}
-              currency={stay.currency}
-              paidBy={stay.paidBy}
-              members={members}
-              isEditMode={isEditMode}
-              onUpdate={(updates) => {
-                if (updates.cost !== undefined) onUpdate(stay.id, 'cost', updates.cost);
-                if (updates.currency !== undefined) onUpdate(stay.id, 'currency', updates.currency);
-                if (updates.paidBy !== undefined) onUpdate(stay.id, 'paidBy', updates.paidBy);
-              }}
-              defaultCurrency={defaultCurrency}
-            />
           </div>
         )}
       </div>

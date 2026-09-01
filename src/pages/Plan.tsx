@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, GripVertical, ChevronDown, ChevronUp, Tag, Search, X } from 'lucide-react';
+import { Plus, GripVertical, ChevronDown, ChevronUp, Tag, Search, X, LayoutGrid, StretchHorizontal, List, ArrowRight } from 'lucide-react';
 import { Plan } from '../types';
 import { JourneyCardMenu } from './Home';
+import { getEffectiveImageUrl } from '../utils/storageHelper';
 
 interface PlanHubPageProps {
   plans: Plan[];
@@ -61,6 +62,12 @@ export function PlanHubPage({
   const [draggedPlanId, setDraggedPlanId] = useState<number | null>(null);
   const [localPlans, setLocalPlans] = useState<Plan[]>(plans);
   const [activeCardId, setActiveCardId] = useState<number | null>(null);
+  const [cardViewMode, setCardViewMode] = useState<'grid' | 'wide' | 'list'>(() => (localStorage.getItem('cardViewMode') as any) || 'grid');
+
+  const handleSetCardViewMode = (mode: 'grid' | 'wide' | 'list') => {
+    setCardViewMode(mode);
+    localStorage.setItem('cardViewMode', mode);
+  };
 
   useEffect(() => {
     setLocalPlans(plans);
@@ -231,17 +238,59 @@ export function PlanHubPage({
               )}
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-[10px] uppercase font-bold tracking-widest text-black/40 dark:text-white/40">정렬 기준:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="bg-transparent text-[10px] font-bold uppercase tracking-widest border border-black/20 dark:border-white/20 px-3 py-1.5 focus:outline-none focus:border-black dark:focus:border-white transition-colors"
-              >
-                <option value="user" className="bg-[#F9F8F6] dark:bg-[#111111]">사용자 순서</option>
-                <option value="date" className="bg-[#F9F8F6] dark:bg-[#111111]">시간별 순서</option>
-                <option value="place" className="bg-[#F9F8F6] dark:bg-[#111111]">장소별 순서</option>
-              </select>
+            <div className="flex items-center gap-3 shrink-0">
+              {/* View Mode Switcher: Grid (모바일 2열) / Wide (모바일 1열) / List */}
+              <div className="flex items-center border border-black/15 dark:border-white/15 rounded-sm p-0.5 bg-black/5 dark:bg-white/5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleSetCardViewMode('grid')}
+                  className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
+                    cardViewMode === 'grid' 
+                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
+                      : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                  }`}
+                  title="그리드 보기 (모바일 2열)"
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetCardViewMode('wide')}
+                  className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
+                    cardViewMode === 'wide' 
+                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
+                      : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                  }`}
+                  title="와이드 보기 (모바일 1열)"
+                >
+                  <StretchHorizontal className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetCardViewMode('list')}
+                  className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
+                    cardViewMode === 'list' 
+                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
+                      : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                  }`}
+                  title="리스트 보기"
+                >
+                  <List className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase font-bold tracking-widest text-black/40 dark:text-white/40">정렬:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="bg-transparent text-[10px] font-bold uppercase tracking-widest border border-black/20 dark:border-white/20 px-3 py-1.5 focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                >
+                  <option value="user" className="bg-[#F9F8F6] dark:bg-[#111111]">사용자 순서</option>
+                  <option value="date" className="bg-[#F9F8F6] dark:bg-[#111111]">시간별 순서</option>
+                  <option value="place" className="bg-[#F9F8F6] dark:bg-[#111111]">장소별 순서</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -252,93 +301,163 @@ export function PlanHubPage({
         )}
       </div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-6 md:p-12 w-full">
-        {filteredPlans.map((plan) => {
-          const { year, month } = getYearAndMonth(plan.date);
-          return (
-            <div
-              key={plan.id}
-              style={{ containerType: 'inline-size' }}
-              className={`group cursor-pointer aspect-[3/4] w-full overflow-hidden transition-all border relative shadow-[0_0_15px_rgba(239,68,68,0.08)] ${
-                draggedPlanId === plan.id ? 'opacity-40' : 'opacity-100'
-              } ${
-                activeCardId === plan.id
-                  ? 'border-red-600 dark:border-red-400 ring-2 ring-red-600/20 dark:ring-red-400/20 scale-[1.01] shadow-lg'
-                  : 'border-red-600/50 dark:border-red-400/50 bg-[#111]'
-              }`}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (activeCardId === plan.id) {
-                  onNavigate('detail', plan.id);
-                } else {
-                  setActiveCardId(plan.id);
-                }
-              }}
-              draggable={isLoggedIn && sortBy === 'user'}
-              onDragStart={(e) => handlePlanDragStart(e, plan.id)}
-              onDragOver={(e) => handlePlanDragOver(e, plan.id)}
-              onDrop={handlePlanDrop}
-              onDragEnd={() => setDraggedPlanId(null)}
-            >
-              {/* Background cover image */}
-              <img
-                src={plan.img}
-                alt={plan.title}
-                className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none group-hover:scale-105 ${
-                  activeCardId === plan.id ? 'scale-105 opacity-100' : 'opacity-85 group-hover:opacity-100'
+      {cardViewMode === 'list' ? (
+        <div className="flex flex-col gap-2.5 p-4 md:px-12 md:py-8 w-full">
+          {filteredPlans.map((plan, index) => {
+            const isCardActive = activeCardId === plan.id;
+            const issueNumber = String(index + 1).padStart(2, '0');
+
+            return (
+              <div
+                key={plan.id}
+                onClick={() => onNavigate('detail', plan.id)}
+                className={`flex items-center justify-between p-3 md:p-4 rounded-xl border transition-all cursor-pointer group select-none ${
+                  isCardActive
+                    ? 'border-red-600 dark:border-red-400 bg-red-500/5 ring-1 ring-red-500/20 shadow-md'
+                    : 'border-black/10 dark:border-white/10 bg-white dark:bg-[#161616] hover:border-black/30 dark:hover:border-white/30 hover:shadow-sm'
                 }`}
-              />
+              >
+                <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
+                  {/* Thumbnail */}
+                  <div className="w-14 h-14 md:w-16 md:h-16 rounded-lg overflow-hidden bg-black/10 shrink-0 border border-black/10 dark:border-white/10 relative">
+                    <img src={getEffectiveImageUrl(plan.img)} alt={plan.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <span className="absolute bottom-1 right-1 text-[8px] font-mono font-bold bg-red-600/85 text-white px-1 rounded">PLAN</span>
+                  </div>
 
-              {/* Magazine Overlay Gradient */}
-              <div className="absolute inset-0 magazine-card-gradient pointer-events-none" />
-
-              {/* Magazine Cover Text Layout */}
-              <div className="absolute inset-0 p-4 md:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
-                {/* Top Header Row: Title & Issue Date */}
-                <div className="flex justify-between items-start gap-3 w-full">
-                  <h3
-                    className="text-[5.5cqw] font-black uppercase tracking-tight leading-none font-satoshi text-white drop-shadow-md max-w-[70%] line-clamp-2"
-                    style={{ fontFamily: "'Satoshi', sans-serif" }}
-                  >
-                    {plan.title}
-                  </h3>
-                  {month && year && (
-                    <div className="flex flex-col items-end shrink-0 text-right leading-none font-mono">
-                      <span className="text-[3.8cqw] font-black tracking-widest text-amber-500 uppercase">{month}</span>
-                      <span className="text-[2.8cqw] font-bold tracking-widest text-white/60 mt-0.5">{year}</span>
+                  {/* Meta */}
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-black text-sm md:text-base text-black dark:text-white uppercase truncate font-satoshi">{plan.title}</h3>
                     </div>
-                  )}
+                    <div className="flex items-center gap-2 text-[10px] md:text-xs text-black/50 dark:text-white/50 font-mono mt-0.5">
+                      <span>{plan.date}</span>
+                      {plan.locationStr && (
+                        <>
+                          <span>·</span>
+                          <span className="truncate max-w-[120px] sm:max-w-[200px]">{plan.locationStr}</span>
+                        </>
+                      )}
+                    </div>
+                    {plan.tags && plan.tags.length > 0 && (
+                      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                        {plan.tags.slice(0, 3).map(tag => (
+                          <span key={tag} className="text-[8.5px] px-1.5 py-0.2 rounded bg-red-500/10 text-red-600 dark:text-red-400 font-bold uppercase tracking-wider">#{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Bottom Footer Row: Date & Status */}
-                <div className="mt-auto flex flex-col gap-1.5">
-                  {plan.tags && plan.tags.filter(t => t !== 'Plan' && t !== 'Archived').length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {plan.tags.filter(t => t !== 'Plan' && t !== 'Archived').slice(0, 2).map(tag => (
-                        <span key={tag} className="text-[2.6cqw] uppercase font-bold tracking-widest bg-white/10 px-1.5 py-0.5 rounded-sm text-white/95">{tag}</span>
-                      ))}
-                    </div>
-                  )}
-                  <div className="flex flex-col gap-0.5">
-                    <div className="text-[3cqw] tracking-widest text-white/70 font-mono truncate uppercase">{plan.date}</div>
-                    <div className="text-[2.6cqw] tracking-[0.2em] font-black text-amber-500/95 uppercase">UPCOMING PLAN</div>
+                {/* Right Menu & Arrow */}
+                <div className="flex items-center gap-1 md:gap-2 shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
+                  <JourneyCardMenu
+                    isLoggedIn={isLoggedIn}
+                    onEdit={onEditPlan ? () => onEditPlan(plan.id) : undefined}
+                    onDelete={() => onDeletePlan(plan.id)}
+                    onClone={onClonePlan ? () => onClonePlan(plan.id) : undefined}
+                    onMove={() => handleMoveToArchive(plan)}
+                    moveLabel="아카이브로 이동"
+                  />
+                  <div className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-black/40 group-hover:text-black dark:text-white/40 dark:group-hover:text-white transition-colors">
+                    <ArrowRight className="w-4 h-4" />
                   </div>
                 </div>
               </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className={cardViewMode === 'wide'
+          ? "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 p-4 md:p-12 w-full"
+          : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 p-3 sm:p-6 md:p-12 w-full"
+        }>
+          {filteredPlans.map((plan) => {
+            const { year, month } = getYearAndMonth(plan.date);
+            return (
+              <div
+                key={plan.id}
+                style={{ containerType: 'inline-size' }}
+                className={`group cursor-pointer ${cardViewMode === 'wide' ? 'aspect-[16/10]' : 'aspect-[3/4]'} w-full overflow-hidden transition-all border relative shadow-[0_0_15px_rgba(239,68,68,0.08)] ${
+                  draggedPlanId === plan.id ? 'opacity-40' : 'opacity-100'
+                } ${
+                  activeCardId === plan.id
+                    ? 'border-red-600 dark:border-red-400 ring-2 ring-red-600/20 dark:ring-red-400/20 scale-[1.01] shadow-lg'
+                    : 'border-red-600/50 dark:border-red-400/50 bg-[#111]'
+                }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (activeCardId === plan.id) {
+                    onNavigate('detail', plan.id);
+                  } else {
+                    setActiveCardId(plan.id);
+                  }
+                }}
+                draggable={isLoggedIn && sortBy === 'user'}
+                onDragStart={(e) => handlePlanDragStart(e, plan.id)}
+                onDragOver={(e) => handlePlanDragOver(e, plan.id)}
+                onDrop={handlePlanDrop}
+                onDragEnd={() => setDraggedPlanId(null)}
+              >
+                {/* Background cover image */}
+                <img
+                  src={plan.img}
+                  alt={plan.title}
+                  className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none group-hover:scale-105 ${
+                    activeCardId === plan.id ? 'scale-105 opacity-100' : 'opacity-85 group-hover:opacity-100'
+                  }`}
+                />
 
-              {/* Hamburger menu */}
-              <JourneyCardMenu
-                isLoggedIn={isLoggedIn}
-                onEdit={onEditPlan ? () => onEditPlan(plan.id) : undefined}
-                onDelete={() => onDeletePlan(plan.id)}
-                onClone={onClonePlan ? () => onClonePlan(plan.id) : undefined}
-                onMove={() => handleMoveToArchive(plan)}
-                moveLabel="아카이브로 이동"
-              />
-            </div>
-          );
-        })}
-      </div>
+                {/* Magazine Overlay Gradient */}
+                <div className="absolute inset-0 magazine-card-gradient pointer-events-none" />
+
+                {/* Magazine Cover Text Layout */}
+                <div className="absolute inset-0 p-4 md:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
+                  {/* Top Header Row: Title & Issue Date */}
+                  <div className="flex justify-between items-start gap-3 w-full">
+                    <h3
+                      className="text-[5.5cqw] font-black uppercase tracking-tight leading-none font-satoshi text-white drop-shadow-md max-w-[70%] line-clamp-2"
+                      style={{ fontFamily: "'Satoshi', sans-serif" }}
+                    >
+                      {plan.title}
+                    </h3>
+                    {month && year && (
+                      <div className="flex flex-col items-end shrink-0 text-right leading-none font-mono">
+                        <span className="text-[3.8cqw] font-black tracking-widest text-amber-500 uppercase">{month}</span>
+                        <span className="text-[2.8cqw] font-bold tracking-widest text-white/60 mt-0.5">{year}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Bottom Footer Row: Date & Status */}
+                  <div className="mt-auto flex flex-col gap-1.5">
+                    {plan.tags && plan.tags.filter(t => t !== 'Plan' && t !== 'Archived').length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {plan.tags.filter(t => t !== 'Plan' && t !== 'Archived').slice(0, 2).map(tag => (
+                          <span key={tag} className="text-[2.6cqw] uppercase font-bold tracking-widest bg-white/10 px-1.5 py-0.5 rounded-sm text-white/95">{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex flex-col gap-0.5">
+                      <div className="text-[3cqw] tracking-widest text-white/70 font-mono truncate uppercase">{plan.date}</div>
+                      <div className="text-[2.6cqw] tracking-[0.2em] font-black text-amber-500/95 uppercase">UPCOMING PLAN</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hamburger menu */}
+                <JourneyCardMenu
+                  isLoggedIn={isLoggedIn}
+                  onEdit={onEditPlan ? () => onEditPlan(plan.id) : undefined}
+                  onDelete={() => onDeletePlan(plan.id)}
+                  onClone={onClonePlan ? () => onClonePlan(plan.id) : undefined}
+                  onMove={() => handleMoveToArchive(plan)}
+                  moveLabel="아카이브로 이동"
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
     </main>
   );
 }
