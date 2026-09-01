@@ -933,90 +933,6 @@ export function JourneyDetailPage({
     }
   }, [activeTab]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // 1. Escape: dismiss map confirmation modal or exit cinematic mode
-      if (e.key === 'Escape') {
-        if (mapConfirm) {
-          setMapConfirm(null);
-          return;
-        }
-        if (isCinematicMode) {
-          setIsCinematicMode(false);
-          return;
-        }
-      }
-
-      // 2. Ignore shortcut if user is currently typing in an input, textarea, select or contenteditable
-      const target = e.target as HTMLElement | null;
-      const isInput = target && (
-        ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) ||
-        target.isContentEditable
-      );
-      if (isInput) return;
-
-      // 3. Space shortcut: Play / Pause toggle or start playback
-      if (e.code === 'Space' || e.key === ' ') {
-        if (cinematicItems.length === 0) return;
-        e.preventDefault();
-        if (!isCinematicMode) {
-          setActiveTab('timeline');
-          if (expandedItemId !== null) {
-            const targetIdx = cinematicItems.findIndex(i => i.id === expandedItemId);
-            setCinematicIndex(targetIdx !== -1 ? targetIdx : 0);
-          } else {
-            setCinematicIndex(0);
-          }
-          setIsCinematicMode(true);
-          setIsCinematicPaused(false);
-        } else {
-          setIsCinematicPaused(prev => !prev);
-        }
-      }
-
-      // 4. ArrowLeft / ArrowRight shortcut: Previous / Next spot in tour
-      if (e.key === 'ArrowLeft') {
-        if (isCinematicMode && cinematicItems.length > 0) {
-          e.preventDefault();
-          setCinematicIndex(prev => (prev - 1 + cinematicItems.length) % cinematicItems.length);
-          setCinematicProgress(0);
-        }
-      } else if (e.key === 'ArrowRight') {
-        if (isCinematicMode && cinematicItems.length > 0) {
-          e.preventDefault();
-          setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
-          setCinematicProgress(0);
-        }
-      }
-
-      // 5. ArrowUp / ArrowDown shortcut: Navigate timeline items
-      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-        if (!isCinematicMode && currentTimeline.length > 0) {
-          e.preventDefault();
-          const currentIdx = currentTimeline.findIndex(item => item.id === expandedItemId);
-          let targetIdx = 0;
-          if (currentIdx === -1) {
-            targetIdx = e.key === 'ArrowDown' ? 0 : currentTimeline.length - 1;
-          } else {
-            targetIdx = e.key === 'ArrowUp' ? currentIdx - 1 : currentIdx + 1;
-            if (targetIdx < 0) targetIdx = 0;
-            if (targetIdx >= currentTimeline.length) targetIdx = currentTimeline.length - 1;
-          }
-          const targetItem = currentTimeline[targetIdx];
-          if (targetItem) {
-            setExpandedItemId(targetItem.id);
-            setTimeout(() => {
-              const el = itemRefs.current[targetItem.id];
-              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 60);
-          }
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [mapConfirm, isCinematicMode, cinematicItems, expandedItemId, currentTimeline]);
 
   useEffect(() => {
     if (!isEditing) {
@@ -1784,6 +1700,92 @@ export function JourneyDetailPage({
     }
     return a.id - b.id;
   });
+
+  // Global Keyboard Shortcuts (Space play/pause, ArrowLeft/Right tour, ArrowUp/Down timeline navigation, Esc)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 1. Escape: dismiss map confirmation modal or exit cinematic mode
+      if (e.key === 'Escape') {
+        if (mapConfirm) {
+          setMapConfirm(null);
+          return;
+        }
+        if (isCinematicMode) {
+          setIsCinematicMode(false);
+          return;
+        }
+      }
+
+      // 2. Ignore shortcut if user is currently typing in an input, textarea, select or contenteditable
+      const target = e.target as HTMLElement | null;
+      const isInput = target && (
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) ||
+        target.isContentEditable
+      );
+      if (isInput) return;
+
+      // 3. Space shortcut: Play / Pause toggle or start playback
+      if (e.code === 'Space' || e.key === ' ') {
+        if (cinematicItems.length === 0) return;
+        e.preventDefault();
+        if (!isCinematicMode) {
+          setActiveTab('timeline');
+          if (expandedItemId !== null) {
+            const targetIdx = cinematicItems.findIndex(i => i.id === expandedItemId);
+            setCinematicIndex(targetIdx !== -1 ? targetIdx : 0);
+          } else {
+            setCinematicIndex(0);
+          }
+          setIsCinematicMode(true);
+          setIsCinematicPaused(false);
+        } else {
+          setIsCinematicPaused(prev => !prev);
+        }
+      }
+
+      // 4. ArrowLeft / ArrowRight shortcut: Previous / Next spot in tour
+      if (e.key === 'ArrowLeft') {
+        if (isCinematicMode && cinematicItems.length > 0) {
+          e.preventDefault();
+          setCinematicIndex(prev => (prev - 1 + cinematicItems.length) % cinematicItems.length);
+          setCinematicProgress(0);
+        }
+      } else if (e.key === 'ArrowRight') {
+        if (isCinematicMode && cinematicItems.length > 0) {
+          e.preventDefault();
+          setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
+          setCinematicProgress(0);
+        }
+      }
+
+      // 5. ArrowUp / ArrowDown shortcut: Navigate timeline items
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        if (!isCinematicMode && currentTimeline.length > 0) {
+          e.preventDefault();
+          const currentIdx = currentTimeline.findIndex(item => item.id === expandedItemId);
+          let targetIdx = 0;
+          if (currentIdx === -1) {
+            targetIdx = e.key === 'ArrowDown' ? 0 : currentTimeline.length - 1;
+          } else {
+            targetIdx = e.key === 'ArrowUp' ? currentIdx - 1 : currentIdx + 1;
+            if (targetIdx < 0) targetIdx = 0;
+            if (targetIdx >= currentTimeline.length) targetIdx = currentTimeline.length - 1;
+          }
+          const targetItem = currentTimeline[targetIdx];
+          if (targetItem) {
+            setExpandedItemId(targetItem.id);
+            setTimeout(() => {
+              const el = itemRefs.current[targetItem.id];
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 60);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mapConfirm, isCinematicMode, cinematicItems, expandedItemId, currentTimeline]);
 
   const mapPoints = (() => {
     // Collect gallery photo points that have valid coordinates
