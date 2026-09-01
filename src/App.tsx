@@ -1231,7 +1231,7 @@ function App() {
             <div 
               key={displayMarqueeText}
               className="animate-marquee text-[10px] md:text-xs font-black tracking-widest uppercase text-red-600 dark:text-red-400" 
-              style={{ '--marquee-speed': `${(marqueeSpeed / 1.5) * 1.43}s` } as React.CSSProperties}
+              style={{ '--marquee-speed': `${(marqueeSpeed / 1.5) * 1.43 * 2}s` } as React.CSSProperties}
             >
               <span>{displayMarqueeText}</span>
               <span>{displayMarqueeText}</span>

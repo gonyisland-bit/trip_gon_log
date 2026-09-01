@@ -2708,14 +2708,14 @@ export function JourneyDetailPage({
               type="text"
               value={draftTrip.title}
               onChange={(e) => setDraftTrip({ ...draftTrip, title: e.target.value })}
-              className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black tracking-tight uppercase leading-none bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 p-2 outline-none w-full text-black dark:text-white rounded-none font-serif"
-              style={{ fontFamily: "'Playfair Display', 'Georgia', serif" }}
+              className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black tracking-tight uppercase leading-none bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 p-2 outline-none w-full text-black dark:text-white rounded-none font-satoshi"
+              style={{ fontFamily: "'Satoshi', sans-serif" }}
               placeholder="JOURNEY TITLE"
             />
           ) : (
             <h1 
-              className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black tracking-tight uppercase leading-tight break-keep font-serif text-black dark:text-white"
-              style={{ wordBreak: 'keep-all', fontFamily: "'Playfair Display', 'Georgia', serif" }}
+              className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black tracking-tight uppercase leading-tight break-keep font-satoshi text-black dark:text-white"
+              style={{ wordBreak: 'keep-all', fontFamily: "'Satoshi', sans-serif" }}
             >
               {(trip.title || '').replace(' (Plan)', '')}
             </h1>
@@ -2723,40 +2723,7 @@ export function JourneyDetailPage({
         </div>
         
         <div className="shrink-0 flex flex-wrap items-center gap-1.5 w-full lg:w-auto justify-start lg:justify-end">
-          {/* Cinematic Tour Play Button */}
-          {cinematicItems.length > 0 && (
-            <button
-              onClick={() => {
-                if (isCinematicMode) {
-                  setIsCinematicMode(false);
-                } else {
-                  setActiveTab('timeline');
-                  if (expandedItemId !== null) {
-                    const targetIdx = cinematicItems.findIndex(i => i.id === expandedItemId);
-                    if (targetIdx !== -1) {
-                      setCinematicIndex(targetIdx);
-                    } else {
-                      setCinematicIndex(0);
-                    }
-                  } else {
-                    setCinematicIndex(0);
-                  }
-                  setIsCinematicMode(true);
-                  setIsCinematicPaused(false);
-                  setMobileSheetSnap('collapsed');
-                }
-              }}
-              className={`px-2.5 py-1.5 border rounded-sm transition-all flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest cursor-pointer ${
-                isCinematicMode
-                  ? 'bg-red-600 text-white border-red-600 shadow-md animate-pulse'
-                  : 'border-red-600/40 hover:border-red-600 hover:bg-red-600/10 text-red-600 dark:text-red-400'
-              }`}
-              title="시네마틱 여정 투어 모드 (Play Log)"
-            >
-              {isCinematicMode ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
-              <span>{isCinematicMode ? 'Playing' : 'Play Log'}</span>
-            </button>
-          )}
+
 
           <button
             onClick={() => {
@@ -2963,7 +2930,7 @@ export function JourneyDetailPage({
       <section 
         className={`w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-all duration-300 md:h-full shrink-0 ${
           mobileSheetSnap === 'collapsed' 
-            ? 'max-md:h-[calc(100dvh-125px)]' 
+            ? 'max-md:h-[calc(100dvh-110px)]' 
             : (mobileSheetSnap === 'expanded' ? 'max-md:h-[18dvh]' : 'max-md:h-[45dvh]')
         }`}
         onClick={() => {
@@ -3012,10 +2979,10 @@ export function JourneyDetailPage({
             
             return (
               <div className="absolute top-8 left-8 z-[20] flex flex-col pointer-events-none select-none text-black dark:text-white drop-shadow-md animate-in fade-in duration-300">
-                <span className="text-[20px] md:text-[22px] font-black tracking-[0.3em] uppercase text-red-600 dark:text-amber-500 mb-1 leading-none">
+                <span className="text-[20px] md:text-[22px] font-black tracking-[0.3em] uppercase text-red-600 dark:text-amber-500 mb-1 leading-none font-satoshi">
                   {detectedCountry || country}
                 </span>
-                <h2 className="text-5xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter leading-none border-b-2 border-amber-600 pb-1.5 max-w-[390px] md:max-w-[510px] break-all">
+                <h2 className="text-5xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter leading-none border-b-2 border-amber-600 pb-1.5 max-w-[390px] md:max-w-[510px] break-all font-satoshi">
                   {city}
                 </h2>
               </div>
@@ -3043,195 +3010,124 @@ export function JourneyDetailPage({
             />
           </ErrorBoundary>
 
-          {/* Floating Cinematic Tour Overlay */}
+          {/* Floating Circular Play Log Button (FAB) - Visible when NOT playing */}
+          {cinematicItems.length > 0 && !isCinematicMode && (
+            <button
+              onClick={() => {
+                setActiveTab('timeline');
+                if (expandedItemId !== null) {
+                  const targetIdx = cinematicItems.findIndex(i => i.id === expandedItemId);
+                  setCinematicIndex(targetIdx !== -1 ? targetIdx : 0);
+                } else {
+                  setCinematicIndex(0);
+                }
+                setIsCinematicMode(true);
+                setIsCinematicPaused(false);
+                setMobileSheetSnap('collapsed');
+              }}
+              className="absolute bottom-4 right-4 z-[1000] w-12 h-12 rounded-full bg-red-600 hover:bg-red-700 active:scale-95 text-white shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-105 border-2 border-white/20 group cursor-pointer"
+              title="시네마틱 플레이로그 시작 (Play Log)"
+              aria-label="Play Log"
+            >
+              <Play className="w-5 h-5 fill-current ml-0.5" />
+              <span className="hidden group-hover:md:inline-block absolute right-full mr-2.5 px-2.5 py-1 bg-black/80 backdrop-blur-md text-white text-[10px] font-bold rounded-full whitespace-nowrap uppercase tracking-wider shadow-lg border border-white/10">
+                Play Log
+              </span>
+            </button>
+          )}
+
+          {/* Wide Rounded Box: Morphing Expanded Floating Player */}
           {isCinematicMode && currentCinematicItem && (
-            <>
-              {/* Mobile Sleek Mini-Player (Height only ~38px, keeps map 95% visible!) */}
-              {isMobilePlayCollapsed ? (
-                <div className="md:hidden absolute bottom-3 left-2 right-2 z-[1000] flex flex-col items-center pointer-events-auto animate-in fade-in slide-in-from-bottom-2 duration-200">
-                  <div className="w-full bg-black/90 backdrop-blur-md border border-white/20 text-white rounded-full shadow-2xl px-3 py-1.5 flex items-center justify-between gap-2 overflow-hidden relative">
-                    {/* Mini Progress Bar along bottom */}
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/20">
-                      <div className="h-full bg-gradient-to-r from-red-600 via-orange-500 to-amber-400" style={{ width: `${cinematicProgress}%` }} />
-                    </div>
+            <div className="absolute bottom-3 left-3 right-3 sm:left-auto sm:right-4 sm:w-[440px] z-[1000] bg-black/90 backdrop-blur-md border border-white/20 text-white rounded-2xl shadow-2xl p-2.5 sm:p-3 flex flex-col gap-2 transition-all duration-300 animate-in zoom-in-95 pointer-events-auto">
+              {/* Progress Line */}
+              <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-red-600 via-orange-500 to-amber-400 transition-all duration-75"
+                  style={{ width: `${cinematicProgress}%` }}
+                />
+              </div>
 
-                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                      <span className="bg-red-600 text-white px-1.5 py-0.5 text-[7.5px] font-black uppercase rounded-[1px] shrink-0">
-                        DAY {allTripDates.indexOf(currentCinematicItem.dateKey) + 1}
-                      </span>
-                      <span className="text-[10px] font-bold text-white truncate">
-                        {currentCinematicItem.place || 'Spot'}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        onClick={() => {
-                          setCinematicIndex(prev => (prev - 1 + cinematicItems.length) % cinematicItems.length);
-                          setCinematicProgress(0);
-                        }}
-                        className="p-1 text-white/70 hover:text-white"
-                        title="이전 스팟"
-                      >
-                        <SkipBack className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => setIsCinematicPaused(p => !p)}
-                        className="p-1 bg-white text-black hover:bg-amber-400 rounded-full"
-                        title={isCinematicPaused ? '재생' : '일시정지'}
-                      >
-                        {isCinematicPaused ? <Play className="w-3 h-3 fill-current ml-0.5" /> : <Pause className="w-3 h-3 fill-current" />}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
-                          setCinematicProgress(0);
-                        }}
-                        className="p-1 text-white/70 hover:text-white"
-                        title="다음 스팟"
-                      >
-                        <SkipForward className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => setIsMobilePlayCollapsed(false)}
-                        className="px-1.5 py-0.5 bg-white/15 hover:bg-white/25 rounded text-[8px] font-mono text-white/90 uppercase tracking-wider"
-                        title="상세 보기"
-                      >
-                        ▲ 펼침
-                      </button>
-                      <button
-                        onClick={() => setIsCinematicMode(false)}
-                        className="p-1 text-white/50 hover:text-white"
-                        title="종료"
-                      >
-                        <CloseIcon className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-              {/* Full Cinematic Card (Desktop default, or Mobile expanded) */}
-              <div className={`absolute bottom-4 left-3 right-3 sm:left-6 sm:right-6 z-[1000] flex-col items-center pointer-events-auto animate-in fade-in slide-in-from-bottom-4 duration-300 ${isMobilePlayCollapsed ? 'hidden md:flex' : 'flex'}`}>
-                <div className="w-full max-w-lg bg-black/90 backdrop-blur-md border border-white/20 text-white rounded-lg shadow-2xl p-3 flex flex-col gap-2">
-                  {/* Progress bar */}
-                  <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-red-600 via-orange-500 to-amber-400 transition-all duration-75"
-                      style={{ width: `${cinematicProgress}%` }}
+              {/* Main Content & Controls */}
+              <div className="flex items-center justify-between gap-2">
+                {/* Spot info */}
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  {currentCinematicItem.img && (
+                    <img
+                      src={getEffectiveImageUrl(currentCinematicItem.img)}
+                      alt={currentCinematicItem.place}
+                      className="w-9 h-9 sm:w-10 sm:h-10 object-cover rounded-lg shrink-0 border border-white/20 shadow-sm"
                     />
-                  </div>
-
-                  {/* Header row */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="bg-red-600 text-white px-1.5 py-0.5 text-[8px] font-black tracking-widest uppercase rounded-[1px]">
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="bg-red-600 text-white px-1.5 py-0.2 text-[8px] font-black uppercase rounded-[2px] tracking-wider shrink-0">
                         DAY {allTripDates.indexOf(currentCinematicItem.dateKey) + 1}
-                      </span>
-                      <span className="text-[10px] font-mono text-white/70">
-                        SPOT {cinematicIndex + 1} / {cinematicItems.length}
                       </span>
                       {currentCinematicItem.time && (
-                        <span className="text-[10px] font-mono text-amber-400 font-bold">
+                        <span className="text-[9px] font-mono text-amber-400 font-bold shrink-0">
                           {currentCinematicItem.time}
                         </span>
                       )}
+                      <span className="text-[8px] font-mono text-white/50 shrink-0">
+                        {cinematicIndex + 1}/{cinematicItems.length}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => setIsMobilePlayCollapsed(true)}
-                        className="md:hidden px-1.5 py-0.5 bg-white/10 hover:bg-white/20 text-white/80 rounded text-[8px] font-mono uppercase"
-                        title="지도 크게보기"
-                      >
-                        ▼ 접기
-                      </button>
-                      <button
-                        onClick={() => setIsCinematicMode(false)}
-                        className="p-1 text-white/60 hover:text-white rounded-full hover:bg-white/10 transition-colors"
-                        title="투어 모드 종료"
-                      >
-                        <CloseIcon className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Spot detail */}
-                  <div className="flex items-center gap-3">
-                    {currentCinematicItem.img && (
-                      <img
-                        src={getEffectiveImageUrl(currentCinematicItem.img)}
-                        alt={currentCinematicItem.place}
-                        className="w-12 h-12 md:w-14 md:h-14 object-cover rounded-sm shrink-0 border border-white/20 shadow-md"
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-xs md:text-sm font-bold text-white tracking-tight truncate uppercase font-serif">
-                        {currentCinematicItem.place || 'Spot'}
-                      </h4>
-                      {currentCinematicItem.memo && (
-                        <p className="text-[10px] md:text-[11px] text-white/75 line-clamp-2 mt-0.5 leading-snug">
-                          {currentCinematicItem.memo}
-                        </p>
-                      )}
-                      {currentCinematicItem.location && (
-                        <span className="text-[8px] md:text-[9px] text-white/45 truncate block mt-0.5">
-                          {currentCinematicItem.location}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Controls */}
-                  <div className="flex items-center justify-between pt-1 border-t border-white/10">
-                    <div className="flex items-center gap-1.5 text-[9px] font-mono text-white/60">
-                      <button
-                        onClick={() => setCinematicSpeed(s => s === 3800 ? 2200 : (s === 2200 ? 5500 : 3800))}
-                        className="px-1.5 py-0.5 bg-white/10 hover:bg-white/20 rounded text-white/80 transition-colors"
-                        title="재생 속도 조절"
-                      >
-                        {cinematicSpeed === 3800 ? '1x' : (cinematicSpeed === 2200 ? '1.5x' : '0.7x')}
-                      </button>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          setCinematicIndex(prev => (prev - 1 + cinematicItems.length) % cinematicItems.length);
-                          setCinematicProgress(0);
-                        }}
-                        className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-                        title="이전 스팟"
-                      >
-                        <SkipBack className="w-4 h-4" />
-                      </button>
-
-                      <button
-                        onClick={() => setIsCinematicPaused(p => !p)}
-                        className="p-1.5 md:p-2 bg-white text-black hover:bg-amber-400 rounded-full shadow transition-all active:scale-95"
-                        title={isCinematicPaused ? '재생' : '일시정지'}
-                      >
-                        {isCinematicPaused ? <Play className="w-3.5 h-3.5 fill-current ml-0.5" /> : <Pause className="w-3.5 h-3.5 fill-current" />}
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
-                          setCinematicProgress(0);
-                        }}
-                        className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-                        title="다음 스팟"
-                      >
-                        <SkipForward className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    <span className="text-[8px] md:text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">
-                      PLAY LOG
-                    </span>
+                    <h4 className="text-xs sm:text-sm font-bold text-white tracking-tight truncate uppercase font-satoshi mt-0.5">
+                      {currentCinematicItem.place || 'Spot'}
+                    </h4>
                   </div>
                 </div>
+
+                {/* Controls */}
+                <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+                  <button
+                    onClick={() => setCinematicSpeed(s => s === 3800 ? 2200 : (s === 2200 ? 5500 : 3800))}
+                    className="px-1.5 py-0.5 bg-white/10 hover:bg-white/20 rounded text-white/80 text-[8px] font-mono transition-colors"
+                    title="속도 조절"
+                  >
+                    {cinematicSpeed === 3800 ? '1x' : (cinematicSpeed === 2200 ? '1.5x' : '0.7x')}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setCinematicIndex(prev => (prev - 1 + cinematicItems.length) % cinematicItems.length);
+                      setCinematicProgress(0);
+                    }}
+                    className="p-1 sm:p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                    title="이전 스팟"
+                  >
+                    <SkipBack className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </button>
+
+                  <button
+                    onClick={() => setIsCinematicPaused(p => !p)}
+                    className="p-1.5 sm:p-2 bg-white text-black hover:bg-amber-400 rounded-full shadow transition-all active:scale-95"
+                    title={isCinematicPaused ? '재생' : '일시정지'}
+                  >
+                    {isCinematicPaused ? <Play className="w-3.5 h-3.5 fill-current ml-0.5" /> : <Pause className="w-3.5 h-3.5 fill-current" />}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
+                      setCinematicProgress(0);
+                    }}
+                    className="p-1 sm:p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                    title="다음 스팟"
+                  >
+                    <SkipForward className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </button>
+
+                  <button
+                    onClick={() => setIsCinematicMode(false)}
+                    className="p-1 sm:p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-colors ml-0.5"
+                    title="종료 (축소)"
+                  >
+                    <CloseIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </button>
+                </div>
               </div>
-            </>
+            </div>
           )}
         </div>
 
@@ -3241,28 +3137,28 @@ export function JourneyDetailPage({
       <section 
         className={`w-full md:w-1/2 flex flex-col bg-[#F9F8F6] dark:bg-[#111111] transition-all duration-300 flex-grow md:h-full overflow-hidden ${
           mobileSheetSnap === 'collapsed'
-            ? 'max-md:h-[125px] max-md:overflow-hidden'
+            ? 'max-md:h-[110px] max-md:overflow-hidden'
             : (mobileSheetSnap === 'expanded' ? 'max-md:h-[82dvh]' : 'max-md:h-[55dvh]')
         }`}
       >
         {/* Mobile Bottom Sheet Grab Handle */}
         <div 
-          className="md:hidden flex flex-col items-center justify-center py-2 px-4 bg-[#F9F8F6] dark:bg-[#111111] border-b border-black/10 dark:border-white/10 cursor-pointer select-none touch-none shrink-0 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+          className="md:hidden flex flex-col items-center justify-center py-1.5 px-4 bg-[#F9F8F6] dark:bg-[#111111] border-b border-black/10 dark:border-white/10 cursor-pointer select-none touch-none shrink-0 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
           onTouchStart={handleSheetTouchStart}
           onTouchEnd={handleSheetTouchEnd}
           onClick={() => {
             setMobileSheetSnap(prev => prev === 'collapsed' ? 'half' : (prev === 'half' ? 'expanded' : 'collapsed'));
           }}
         >
-          <div className="w-10 h-1 bg-black/30 dark:bg-white/30 rounded-full mb-1" />
+          <div className="w-8 h-1 bg-black/30 dark:bg-white/30 rounded-full mb-0.5" />
           <div className="flex items-center justify-between w-full text-[8px] font-black uppercase tracking-widest text-black/40 dark:text-white/40 px-1">
-            <span>{mobileSheetSnap === 'collapsed' ? '▲ 일정 펼치기 (Expand List)' : (mobileSheetSnap === 'expanded' ? '▼ 지도 크게보기 (Expand Map)' : '● 기본 분할 (Tap to Toggle)')}</span>
+            <span>{mobileSheetSnap === 'collapsed' ? '▲ 일정 펼치기 (Expand)' : (mobileSheetSnap === 'expanded' ? '▼ 지도 크게보기 (Map)' : '● 기본 분할 (Toggle)')}</span>
             <span className="text-[7.5px] font-mono opacity-60">{mobileSheetSnap.toUpperCase()}</span>
           </div>
         </div>
         
-        {/* Tab Headers */}
-        <div className="flex overflow-x-auto hide-scrollbar flex-nowrap border-b border-black/20 dark:border-white/20 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0 w-full">
+        {/* Tab Headers - Unified Single-line Sleek Design */}
+        <div className="flex overflow-x-auto hide-scrollbar flex-nowrap border-b border-black/15 dark:border-white/15 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0 w-full h-9 sm:h-10">
           {[ 
             { id: 'timeline', label: 'Log', icon: Clock }, 
             { id: 'flights', label: 'Flights', icon: Plane }, 
@@ -3272,11 +3168,22 @@ export function JourneyDetailPage({
           ].map(tab => (
             <button 
               key={tab.id} 
-              onClick={() => { setActiveTab(tab.id as TabType); setExpandedItemId(null); }} 
-              className={`flex-1 min-w-[75px] sm:min-w-0 py-2.5 px-0.5 sm:px-2 md:py-4 md:px-4 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 md:gap-2 text-[8px] sm:text-[10px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest border-r border-black/20 dark:border-white/20 last:border-r-0 transition-colors whitespace-nowrap ${activeTab === tab.id ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white'}`}
+              onClick={() => { 
+                setActiveTab(tab.id as TabType); 
+                setExpandedItemId(null); 
+                // When clicking any tab while sheet is collapsed on mobile, immediately return to half view!
+                if (mobileSheetSnap === 'collapsed') {
+                  setMobileSheetSnap('half');
+                }
+              }} 
+              className={`flex-1 h-full px-1.5 sm:px-3 flex flex-row items-center justify-center gap-1.5 text-[9.5px] sm:text-[11px] md:text-xs font-bold uppercase tracking-wider border-r border-black/15 dark:border-white/15 last:border-r-0 transition-colors whitespace-nowrap cursor-pointer ${
+                activeTab === tab.id 
+                  ? 'bg-black text-white dark:bg-white dark:text-black font-black' 
+                  : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/75 dark:text-white/75'
+              }`}
             >
-              <tab.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 shrink-0" /> 
-              <span className="text-center truncate sm:overflow-visible">{tab.label}</span>
+              <tab.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> 
+              <span className="truncate">{tab.label}</span>
             </button>
           ))}
         </div>
@@ -3303,15 +3210,15 @@ export function JourneyDetailPage({
           {activeTab === 'timeline' && (
 
             <div className="animate-in fade-in duration-300 h-auto flex flex-col w-full relative">
-              {/* Day filter selector bar */}
-              <div className="relative border-b border-black/20 dark:border-white/20 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0 w-full flex items-center">
+              {/* Day filter selector bar - Slim and Sticky */}
+              <div className="sticky top-0 z-20 border-b border-black/15 dark:border-white/15 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0 w-full flex items-center shadow-xs">
                 {/* Scroll buttons for desktop/web */}
                 <button 
                   onClick={() => scrollDays('left')}
-                  className="absolute left-0 top-0 bottom-0 px-2 bg-gradient-to-r from-[#F9F8F6] via-[#F9F8F6] to-transparent dark:from-[#111111] dark:via-[#111111] z-10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center"
+                  className="absolute left-0 top-0 bottom-0 px-1.5 bg-gradient-to-r from-[#F9F8F6] via-[#F9F8F6] to-transparent dark:from-[#111111] dark:via-[#111111] z-10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer"
                   aria-label="Scroll left"
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
 
                 <div 
@@ -3320,7 +3227,7 @@ export function JourneyDetailPage({
                   onMouseLeave={handleMouseLeave}
                   onMouseUp={handleMouseUp}
                   onMouseMove={handleMouseMove}
-                  className="flex overflow-x-auto hide-scrollbar w-full scroll-smooth select-none cursor-grab active:cursor-grabbing px-6"
+                  className="flex overflow-x-auto hide-scrollbar w-full scroll-smooth select-none cursor-grab active:cursor-grabbing px-5 h-9 sm:h-10"
                 >
                   {dynamicDates.map((d) => (
                     <button 
@@ -3332,50 +3239,26 @@ export function JourneyDetailPage({
                           setExpandedItemId(null); 
                         }
                       }} 
-                      className={`flex-1 min-w-[95px] md:min-w-[115px] py-2 px-3 md:px-4 flex flex-col items-center justify-center border-r border-black/20 dark:border-white/20 last:border-r-0 transition-all whitespace-nowrap cursor-pointer ${selectedDate === d.date ? 'bg-black text-[#F9F8F6] dark:bg-white dark:text-black' : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white'}`}
+                      className={`flex-1 min-w-[70px] sm:min-w-[85px] md:min-w-[100px] h-full px-2 flex flex-row items-center justify-center gap-1.5 border-r border-black/15 dark:border-white/15 last:border-r-0 transition-all whitespace-nowrap cursor-pointer ${selectedDate === d.date ? 'bg-black text-[#F9F8F6] dark:bg-white dark:text-black font-black' : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white'}`}
                     >
-                      <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest opacity-60 mb-0.5">
+                      <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider opacity-75">
                         {d.label}
                       </span>
-                      <span className="text-[11px] md:text-xs font-black tracking-tighter">
-                        {d.date === 'ALL' ? 'VIEW ALL' : d.date.slice(5).replace('.', '/')}
-                      </span>
-                      {d.date !== 'ALL' && (() => {
-                        try {
-                          const [y, mo, day] = d.date.split('.');
-                          const dow = new Date(Number(y), Number(mo) - 1, Number(day)).toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
-                          return <span className={`text-[8px] font-bold mt-0.5 ${selectedDate === d.date ? 'opacity-70' : 'opacity-40'}`}>{dow}</span>;
-                        } catch { return null; }
-                      })()}
-                      {d.date !== 'ALL' && tripToUse?.weatherData?.[d.date] && (() => {
-                        const wInfo = tripToUse.weatherData[d.date];
-                        if (!wInfo || (!wInfo.type && !wInfo.temp)) return null;
-                        return (
-                          <div className="mt-1 flex items-center gap-1">
-                            {wInfo.type === 'sunny' && <Sun className="w-3 h-3 text-amber-500 shrink-0" />}
-                            {wInfo.type === 'cloudy' && <Cloud className="w-3 h-3 text-blue-400 shrink-0" />}
-                            {wInfo.type === 'overcast' && <Cloudy className="w-3 h-3 text-slate-400 shrink-0" />}
-                            {wInfo.type === 'rainy' && <CloudRain className="w-3 h-3 text-indigo-400 shrink-0" />}
-                            {wInfo.type === 'snowy' && <Snowflake className="w-3 h-3 text-sky-400 shrink-0" />}
-                            {wInfo.type === 'stormy' && <CloudLightning className="w-3 h-3 text-red-500 shrink-0" />}
-                            {wInfo.temp && (
-                              <span className={`text-[8px] font-bold font-mono ${selectedDate === d.date ? 'text-[#F9F8F6]/75 dark:text-black/75' : 'text-black/60 dark:text-white/60'}`}>
-                                {wInfo.temp}
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })()}
+                      {d.date !== 'ALL' && (
+                        <span className="text-[9.5px] md:text-[10.5px] font-mono tracking-tighter opacity-90">
+                          {d.date.slice(5).replace('.', '/')}
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
 
                 <button 
                   onClick={() => scrollDays('right')}
-                  className="absolute right-0 top-0 bottom-0 px-2 bg-gradient-to-l from-[#F9F8F6] via-[#F9F8F6] to-transparent dark:from-[#111111] dark:via-[#111111] z-10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center"
+                  className="absolute right-0 top-0 bottom-0 px-1.5 bg-gradient-to-l from-[#F9F8F6] via-[#F9F8F6] to-transparent dark:from-[#111111] dark:via-[#111111] z-10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer"
                   aria-label="Scroll right"
                 >
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               </div>
 
@@ -3652,122 +3535,119 @@ export function JourneyDetailPage({
                             className="group flex flex-row items-start py-4 px-4 md:py-5 md:px-6 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer relative w-full" 
                             onClick={() => handleItemToggle(item.id)}
                           >
-                            {/* Drag handle & Checkbox for batch select & Delete button */}
-                            {isEditing && (
-                              <div className="mr-3 mt-1 flex flex-col items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-                                <div className="drag-handle cursor-grab active:cursor-grabbing text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white p-1 -m-1 transition-colors" title="순서 이동 (드래그)">
-                                  <GripVertical className="w-4 h-4" />
-                                </div>
-                                <input
-                                  type="checkbox"
-                                  checked={selectedItemIds.includes(item.id)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setSelectedItemIds(prev => [...prev, item.id]);
-                                    } else {
-                                      setSelectedItemIds(prev => prev.filter(id => id !== item.id));
-                                    }
-                                  }}
-                                  className="w-4 h-4 rounded border-black/20 dark:border-white/20 text-red-600 focus:ring-red-500 cursor-pointer accent-red-600"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteTimelineItem(item.id)}
-                                  className="text-red-500 hover:text-red-700 p-1 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-                                  title="일정 삭제"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            )}
-                            {/* Time */}
-                            <div className={`shrink-0 text-[10px] md:text-xs font-bold tracking-widest mt-1 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60'} ${isEditing ? 'w-24 md:w-28 flex flex-col gap-1' : 'w-16 md:w-24 flex flex-col gap-1.5'}`}>
-                              {isEditing ? (
-                                <div className="flex flex-col gap-1 w-full" onClick={(e) => e.stopPropagation()}>
+                            {/* Left Column: Fixed Width in BOTH view and edit mode (w-20 sm:w-24 md:w-28 shrink-0 pr-2) */}
+                            {isEditing ? (
+                              <div className="w-20 sm:w-24 md:w-28 shrink-0 pr-2 flex flex-col gap-1 text-[10px] md:text-xs font-bold" onClick={(e) => e.stopPropagation()}>
+                                {/* Compact action row: Grip, Checkbox, Trash */}
+                                <div className="flex items-center justify-between w-full py-0.5 px-1 bg-black/5 dark:bg-white/5 rounded border border-black/10 dark:border-white/10 mb-0.5">
+                                  <div className="drag-handle cursor-grab active:cursor-grabbing text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white p-0.5" title="순서 이동">
+                                    <GripVertical className="w-3.5 h-3.5" />
+                                  </div>
                                   <input
-                                    type="time"
-                                    value={timeStrTo24h(item.time)}
+                                    type="checkbox"
+                                    checked={selectedItemIds.includes(item.id)}
                                     onChange={(e) => {
-                                      const val24h = e.target.value;
-                                      if (!val24h) return;
-                                      scrollTargetItemIdRef.current = item.id;
-                                      updateTimelineItem(item.id, 'time', time24hTo12h(val24h));
+                                      if (e.target.checked) {
+                                        setSelectedItemIds(prev => [...prev, item.id]);
+                                      } else {
+                                        setSelectedItemIds(prev => prev.filter(id => id !== item.id));
+                                      }
                                     }}
-                                    className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-[9px] md:text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full text-center animate-in fade-in duration-300 select-text"
+                                    className="w-3.5 h-3.5 rounded border-black/20 text-red-600 cursor-pointer accent-red-600"
                                   />
-                                  <select
-                                    value={item.date}
-                                    onChange={(e) => {
-                                      const newDate = e.target.value;
-                                      scrollTargetItemIdRef.current = item.id;
-                                      updateTimelineItem(item.id, 'date', newDate);
-                                      setSelectedDate(newDate);
-                                    }}
-                                    className="bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 text-[9px] md:text-xs font-bold p-0.5 outline-none text-black dark:text-white rounded-none w-full text-center animate-in fade-in duration-300 select-text"
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteTimelineItem(item.id)}
+                                    className="text-red-500 hover:text-red-700 p-0.5 transition-colors"
+                                    title="일정 삭제"
                                   >
-                                    {allTripDates.map(d => (
-                                      <option key={d} value={d}>{d.slice(5).replace('.', '/')}</option>
-                                    ))}
-                                  </select>
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+
+                                <input
+                                  type="time"
+                                  value={timeStrTo24h(item.time)}
+                                  onChange={(e) => {
+                                    const val24h = e.target.value;
+                                    if (!val24h) return;
+                                    scrollTargetItemIdRef.current = item.id;
+                                    updateTimelineItem(item.id, 'time', time24hTo12h(val24h));
+                                  }}
+                                  className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-[9px] md:text-[10px] text-black dark:text-white rounded border border-black/10 dark:border-white/10 w-full text-center"
+                                />
+
+                                <select
+                                  value={item.date}
+                                  onChange={(e) => {
+                                    const newDate = e.target.value;
+                                    scrollTargetItemIdRef.current = item.id;
+                                    updateTimelineItem(item.id, 'date', newDate);
+                                    setSelectedDate(newDate);
+                                  }}
+                                  className="bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 text-[8.5px] md:text-[9.5px] font-bold p-0.5 outline-none text-black dark:text-white rounded w-full text-center"
+                                >
+                                  {allTripDates.map(d => (
+                                    <option key={d} value={d}>{d.slice(5).replace('.', '/')}</option>
+                                  ))}
+                                </select>
+
+                                {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) && (
+                                  <button
+                                    onClick={() => handleToggleExcludeFromMap(item)}
+                                    className={`flex items-center justify-center py-0.5 border border-black/10 dark:border-white/10 rounded text-[7.5px] font-bold w-full transition-colors ${
+                                      isExcluded
+                                        ? 'text-black/20 dark:text-white/20'
+                                        : 'hover:opacity-80'
+                                    }`}
+                                    style={!isExcluded && dayColor ? { color: dayColor, borderColor: dayColor } : undefined}
+                                    title={isExcluded ? "지도에 표시하기" : "지도에서 제외하기"}
+                                  >
+                                    {isExcluded ? <MapPinOff className="w-3 h-3 mr-0.5" /> : <MapPin className="w-3 h-3 mr-0.5" style={dayColor ? { color: dayColor } : undefined} />}
+                                    <span>{isExcluded ? "OFF" : "ON"}</span>
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <div className={`w-20 sm:w-24 md:w-28 shrink-0 pr-2 flex flex-col text-[10px] md:text-xs font-bold tracking-tight mt-1 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/70 dark:text-white/70'}`}>
+                                <div>
+                                  <span>{item.time}</span>
+                                </div>
+                                <div className="flex flex-col mt-0.5" onClick={(e) => e.stopPropagation()}>
+                                  {selectedDate === 'ALL' && (
+                                    <span className="text-[8.5px] block font-bold leading-none mt-0.5" style={{ color: dayColor || 'inherit' }}>
+                                      D{dayIndex} {item.date ? item.date.slice(5).replace('.', '/') : ''}
+                                    </span>
+                                  )}
                                   
-                                  {/* Map Pin visibility toggle inline */}
+                                  {/* Map Pin visibility toggle in view mode */}
                                   {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) && (
                                     <button
                                       onClick={() => handleToggleExcludeFromMap(item)}
-                                      className={`flex items-center justify-center py-0.5 border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-colors w-full mt-0.5 ${
+                                      className={`flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest transition-colors mt-1.5 ${
                                         isExcluded
-                                          ? 'text-black/20 dark:text-white/20'
+                                          ? 'text-black/20 dark:text-white/20 hover:text-black/45 dark:hover:text-white/45'
                                           : 'hover:opacity-80'
                                       }`}
-                                      style={!isExcluded && dayColor ? { color: dayColor, borderColor: dayColor } : undefined}
+                                      style={!isExcluded && dayColor ? { color: dayColor } : undefined}
                                       title={isExcluded ? "지도에 표시하기" : "지도에서 제외하기"}
                                     >
-                                      {isExcluded ? <MapPinOff className="w-3.5 h-3.5" /> : <MapPin className="w-3.5 h-3.5" style={dayColor ? { color: dayColor } : undefined} />}
-                                      <span className="text-[7px] md:text-[8px] font-bold ml-1">{isExcluded ? "OFF" : "ON"}</span>
+                                      {isExcluded ? (
+                                        <>
+                                          <MapPinOff className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
+                                          <span className="text-black/30 dark:text-white/30 text-[7px] md:text-[8px]">OFF</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <MapPin className="w-3.5 h-3.5" />
+                                          <span className="text-[7px] md:text-[8px]">ON</span>
+                                        </>
+                                      )}
                                     </button>
                                   )}
                                 </div>
-                              ) : (
-                                <>
-                                  <div>
-                                    <span>{item.time}</span>
-                                  </div>
-                                  <div className="flex flex-col mt-0.5" onClick={(e) => e.stopPropagation()}>
-                                    {selectedDate === 'ALL' && (
-                                      <span className="text-[9px] block font-bold leading-none mt-0.5" style={{ color: dayColor || 'inherit' }}>
-                                        D{dayIndex} {item.date ? item.date.slice(5).replace('.', '/') : ''}
-                                      </span>
-                                    )}
-                                    
-                                    {/* Map Pin visibility toggle in view mode */}
-                                    {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) && (
-                                      <button
-                                        onClick={() => handleToggleExcludeFromMap(item)}
-                                        className={`flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest transition-colors mt-1.5 ${
-                                          isExcluded
-                                            ? 'text-black/20 dark:text-white/20 hover:text-black/45 dark:hover:text-white/45'
-                                            : 'hover:opacity-80'
-                                        }`}
-                                        style={!isExcluded && dayColor ? { color: dayColor } : undefined}
-                                        title={isExcluded ? "지도에 표시하기" : "지도에서 제외하기"}
-                                      >
-                                        {isExcluded ? (
-                                          <>
-                                            <MapPinOff className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
-                                            <span className="text-black/30 dark:text-white/30 text-[7px] md:text-[8px]">OFF</span>
-                                          </>
-                                        ) : (
-                                          <>
-                                            <MapPin className="w-3.5 h-3.5" />
-                                            <span className="text-[7px] md:text-[8px]">ON</span>
-                                          </>
-                                        )}
-                                      </button>
-                                    )}
-                                  </div>
-                                </>
-                              )}
-                            </div>
+                              </div>
+                            )}
 
                             {/* Details */}
                             <div className="flex-grow pr-2 md:pr-4 min-w-0">

@@ -239,8 +239,8 @@ export function PlanHubPage({
                 {/* Top Header Row: Title & Issue Date */}
                 <div className="flex justify-between items-start gap-3 w-full">
                   <h3
-                    className="text-[5.5cqw] font-black uppercase tracking-tight leading-none font-serif text-white drop-shadow-md max-w-[70%] line-clamp-2"
-                    style={{ fontFamily: "'Playfair Display', 'Georgia', serif" }}
+                    className="text-[5.5cqw] font-black uppercase tracking-tight leading-none font-satoshi text-white drop-shadow-md max-w-[70%] line-clamp-2"
+                    style={{ fontFamily: "'Satoshi', sans-serif" }}
                   >
                     {plan.title}
                   </h3>

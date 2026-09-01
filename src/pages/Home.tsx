@@ -460,8 +460,8 @@ export function HomePage({
                 <div className="text-[10px] tracking-[0.3em] font-bold text-white/50 uppercase mb-1 md:mb-2">FEATURED JOURNAL</div>
                 <h2
                   onClick={() => onNavigate('detail', currentHero.id)}
-                  className="text-3xl min-[390px]:text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[0.95] font-serif cursor-pointer hover:text-amber-500 transition-colors drop-shadow-xl line-clamp-3 select-none"
-                  style={{ fontFamily: "'Playfair Display', 'Georgia', serif", wordBreak: 'keep-all' }}
+                  className="text-3xl min-[390px]:text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[0.95] font-satoshi cursor-pointer hover:text-amber-500 transition-colors drop-shadow-xl line-clamp-3 select-none"
+                  style={{ fontFamily: "'Satoshi', sans-serif", wordBreak: 'keep-all' }}
                 >
                   {currentHero.title}
                 </h2>
@@ -548,7 +548,7 @@ export function HomePage({
                   <div className="absolute inset-0 p-4 md:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
                     {/* Top Header Row: Title & Issue Date */}
                     <div className="flex justify-between items-start gap-3 w-full">
-                      <h3 className="text-[5.5cqw] font-black uppercase tracking-tight leading-none font-serif text-white drop-shadow-md max-w-[70%] line-clamp-2" style={{ fontFamily: "'Playfair Display', 'Georgia', serif" }}>
+                      <h3 className="text-[5.5cqw] font-black uppercase tracking-tight leading-none font-satoshi text-white drop-shadow-md max-w-[70%] line-clamp-2" style={{ fontFamily: "'Satoshi', sans-serif" }}>
                         {plan.title}
                       </h3>
                       {month && year && (
@@ -698,8 +698,8 @@ export function HomePage({
                       {/* Title & Issue Date */}
                       <div className="flex justify-between items-start gap-3 w-full">
                         <h3
-                          className="text-[5.5cqw] font-black uppercase tracking-tight leading-[1.05] font-serif text-white drop-shadow-md max-w-[72%] line-clamp-2"
-                          style={{ fontFamily: "'Playfair Display', 'Georgia', serif" }}
+                          className="text-[5.5cqw] font-black uppercase tracking-tight leading-[1.05] font-satoshi text-white drop-shadow-md max-w-[72%] line-clamp-2"
+                          style={{ fontFamily: "'Satoshi', sans-serif" }}
                         >
                           {trip.title}
                         </h3>

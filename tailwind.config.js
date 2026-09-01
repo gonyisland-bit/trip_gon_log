@@ -11,8 +11,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        serif: ['"Playfair Display"', 'Georgia', 'serif'],
+        sans: ['Satoshi', 'Inter', 'sans-serif'],
+        satoshi: ['Satoshi', 'sans-serif'],
+        inter: ['Inter', 'sans-serif'],
+        serif: ['Satoshi', 'Inter', 'sans-serif'],
       },
     },
   },

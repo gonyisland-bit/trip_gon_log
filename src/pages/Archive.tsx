@@ -372,8 +372,8 @@ export function ArchiveHubPage({
                     {/* Title & Issue Date */}
                     <div className="flex justify-between items-start gap-3 w-full">
                       <h3
-                        className="text-[5.5cqw] font-black uppercase tracking-tight leading-[1.05] font-serif text-white drop-shadow-md max-w-[72%] line-clamp-2"
-                        style={{ fontFamily: "'Playfair Display', 'Georgia', serif" }}
+                        className="text-[5.5cqw] font-black uppercase tracking-tight leading-[1.05] font-satoshi text-white drop-shadow-md max-w-[72%] line-clamp-2"
+                        style={{ fontFamily: "'Satoshi', sans-serif" }}
                       >
                         {trip.title}
                       </h3>
