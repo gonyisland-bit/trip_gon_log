@@ -571,6 +571,7 @@ export function MapArea({
             }
 
             const L = (window as any).L;
+            if (L) {
               const travelerIcon = L.divIcon({
                 className: 'traveler-icon-container',
                 html: `<div style="font-size: 32px; line-height: 1; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)); transform: translate(-50%, -100%) translateY(-8px);" class="animate-bounce select-none pointer-events-none">🚶‍♂️</div>`,
