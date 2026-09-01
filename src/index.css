@@ -458,4 +458,24 @@
   filter: saturate(88%) contrast(102%) !important;
 }
 
+/* ── Prevent Pinterest extension hover button across all images ── */
+img {
+  -webkit-touch-callout: default;
+}
+
+[data-pin-log],
+[data-pin-hover],
+[data-pin-nopin],
+a[data-pin-do],
+span[data-pin-hover],
+span[data-pin-save],
+div[data-pin-hover],
+.pinit-btn,
+.PIN_1 {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 

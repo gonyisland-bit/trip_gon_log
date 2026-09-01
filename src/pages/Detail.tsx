@@ -1527,11 +1527,11 @@ export function JourneyDetailPage({
   }, [generatedDates, baseTimeline]);
 
   const dynamicDates = useMemo(() => [
-    { id: 'all', date: 'ALL', label: 'Overall' },
-    ...allTripDates.map((d, index) => ({
+    { id: 'all', date: 'ALL', label: 'ALL' },
+    ...allTripDates.map((d) => ({
       id: d,
       date: d,
-      label: `Day ${index + 1}`
+      label: d.slice(5).replace('.', '/')
     }))
   ], [allTripDates]);
 
@@ -3350,28 +3350,31 @@ export function JourneyDetailPage({
                   onMouseMove={handleMouseMove}
                   className="flex overflow-x-auto hide-scrollbar w-full scroll-smooth select-none cursor-grab active:cursor-grabbing px-5 h-9 sm:h-10"
                 >
-                  {dynamicDates.map((d) => (
-                    <button 
-                      key={d.id} 
-                      data-active={selectedDate === d.date}
-                      onClick={() => { 
-                        if (!hasMovedRef.current) {
-                          setSelectedDate(d.date); 
-                          setExpandedItemId(null); 
-                        }
-                      }} 
-                      className={`flex-1 min-w-[70px] sm:min-w-[85px] md:min-w-[100px] h-full px-2 flex flex-row items-center justify-center gap-1.5 border-r border-black/15 dark:border-white/15 last:border-r-0 transition-all whitespace-nowrap cursor-pointer ${selectedDate === d.date ? 'bg-black text-[#F9F8F6] dark:bg-white dark:text-black font-black' : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white'}`}
-                    >
-                      <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider opacity-75">
-                        {d.label}
-                      </span>
-                      {d.date !== 'ALL' && (
-                        <span className="text-[9.5px] md:text-[10.5px] font-mono tracking-tighter opacity-90">
-                          {d.date.slice(5).replace('.', '/')}
+                  {dynamicDates.map((d) => {
+                    const isAll = d.date === 'ALL';
+                    const displayDate = isAll ? 'ALL' : d.date.slice(5).replace('.', '/');
+                    return (
+                      <button 
+                        key={d.id} 
+                        data-active={selectedDate === d.date}
+                        onClick={() => { 
+                          if (!hasMovedRef.current) {
+                            setSelectedDate(d.date); 
+                            setExpandedItemId(null); 
+                          }
+                        }} 
+                        className={`flex-1 min-w-[58px] sm:min-w-[72px] md:min-w-[85px] h-full px-3 flex items-center justify-center border-r border-black/15 dark:border-white/15 last:border-r-0 transition-all whitespace-nowrap cursor-pointer font-['Inter',sans-serif] ${
+                          selectedDate === d.date 
+                            ? 'bg-black text-[#F9F8F6] dark:bg-white dark:text-black font-black shadow-xs' 
+                            : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white font-extrabold'
+                        }`}
+                      >
+                        <span className="text-xs sm:text-[13px] font-black tracking-tight font-['Inter',sans-serif]">
+                          {displayDate}
                         </span>
-                      )}
-                    </button>
-                  ))}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <button 

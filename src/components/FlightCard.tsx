@@ -232,7 +232,7 @@ export function FlightCard({
       </div>
       
       {/* Card Body */}
-      <div className="p-4 md:p-6 flex flex-col md:flex-row md:items-center min-w-0 w-full">
+      <div className="p-3 sm:p-4 md:p-6 flex flex-col md:flex-row md:items-center min-w-0 w-full">
         {/* Left Side: Route and Airport Codes */}
         <div className="flex-grow flex items-center justify-around pr-4 relative min-w-0">
           
@@ -543,11 +543,11 @@ export function FlightCard({
         
         {/* Dividers: vertical on desktop, horizontal on mobile */}
         <div className="hidden md:block border-l border-dashed border-black/20 dark:border-white/20 h-16 self-stretch"></div>
-        <div className="block md:hidden border-t border-dashed border-black/20 dark:border-white/20 w-full my-3"></div>
+        <div className="block md:hidden border-t border-dashed border-black/15 dark:border-white/15 w-full my-2"></div>
         
-        {/* Right Side: Seat & PNR */}
-        <div className="w-full md:w-28 md:pl-4 flex flex-row md:flex-col justify-between md:justify-center mt-3 md:mt-0 gap-4 md:gap-0 shrink-0">
-          <div className="flex-1 md:flex-none md:mb-3">
+        {/* Right Side: Seat & PNR (Balanced 2-column on mobile, vertical stack on desktop) */}
+        <div className="w-full md:w-28 md:pl-4 grid grid-cols-2 md:flex md:flex-col items-center justify-between md:justify-center mt-1 md:mt-0 gap-2 md:gap-0 shrink-0">
+          <div className="w-full text-center md:text-left md:mb-2.5">
             <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5">SEAT</span>
             {isEditMode ? (
               <input
@@ -556,7 +556,7 @@ export function FlightCard({
                 onChange={(e) => setLocalSeat(e.target.value.toUpperCase())}
                 onBlur={() => onUpdate(flight.id, 'seat', localSeat)}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
+                className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full text-center md:text-left uppercase"
                 placeholder="00A"
               />
             ) : (
@@ -565,7 +565,7 @@ export function FlightCard({
               </span>
             )}
           </div>
-          <div className="flex-1 md:flex-none">
+          <div className="w-full text-center md:text-left">
             <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5">PNR</span>
             {isEditMode ? (
               <input
@@ -574,7 +574,7 @@ export function FlightCard({
                 onChange={(e) => setLocalPnr(e.target.value.toUpperCase())}
                 onBlur={() => onUpdate(flight.id, 'pnr', localPnr)}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
+                className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full text-center md:text-left uppercase"
                 placeholder="XXXXXX"
               />
             ) : (
@@ -586,7 +586,7 @@ export function FlightCard({
         </div>
       </div>
       
-      {/* ── Accordion Expand/Collapse Toggle Bar ── */}
+      {/* ── Accordion Expand/Collapse Toggle Bar (Price shown ONLY when expanded) ── */}
       <div 
         onClick={(e) => {
           e.stopPropagation();
@@ -596,11 +596,6 @@ export function FlightCard({
       >
         <span className="flex items-center gap-2">
           <span>EXPENSE & ATTACHMENTS</span>
-          {flight.cost && flight.cost !== '-' && (
-            <span className="px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 font-mono text-[8px] font-bold">
-              {flight.currency || 'KRW'} {flight.cost}
-            </span>
-          )}
           {flight.attachments && flight.attachments.length > 0 && (
             <span className="px-1.5 py-0.2 rounded bg-black/10 dark:bg-white/10 text-[8px] font-mono font-bold flex items-center gap-0.5">
               <Paperclip className="w-2.5 h-2.5" />
