@@ -4,8 +4,8 @@ import {
   ChevronRight, ChevronDown, Paperclip, Loader2, X, ExternalLink, Share2, Download
 } from 'lucide-react';
 import { Trip, TimelineItem, FlightItem, StayItem, TransitItem, TabType, CustomExpenseItem } from '../types';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { auth, storage } from '../firebase';
+import { uploadFileToR2, getEffectiveImageUrl } from '../utils/storageHelper';
+import { auth } from '../firebase';
 import html2canvas from 'html2canvas';
 import { createPortal } from 'react-dom';
 
@@ -339,9 +339,7 @@ export function SettlementView({
       const urls: string[] = [];
       for (const file of Array.from(files)) {
         const storagePath = `users/public/settlements/${trip.id}/${matchedItem.itemType}/${matchedItem.id}/${Date.now()}_${file.name}`;
-        const storageRef = ref(storage, storagePath);
-        await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(storageRef);
+        const url = await uploadFileToR2(file, storagePath);
         urls.push(url);
       }
 
@@ -448,9 +446,9 @@ export function SettlementView({
             <X className="w-6 h-6" />
           </button>
           {isPdf(lightboxUrl) ? (
-            <iframe src={lightboxUrl} className="w-full max-w-3xl h-[80vh] bg-white" onClick={e => e.stopPropagation()} />
+            <iframe src={getEffectiveImageUrl(lightboxUrl)} className="w-full max-w-3xl h-[80vh] bg-white" onClick={e => e.stopPropagation()} />
           ) : (
-            <img src={lightboxUrl} className="max-w-full max-h-[90vh] object-contain" onClick={e => e.stopPropagation()} />
+            <img src={getEffectiveImageUrl(lightboxUrl)} className="max-w-full max-h-[90vh] object-contain" onClick={e => e.stopPropagation()} />
           )}
         </div>,
         document.body
@@ -824,7 +822,7 @@ export function SettlementView({
                                         </button>
                                       ) : (
                                         <button onClick={() => setLightboxUrl(url)} className="w-16 h-16 md:w-20 md:h-20 rounded-sm overflow-hidden border border-black/10 dark:border-white/10 hover:opacity-80 transition-opacity">
-                                          <img src={url} alt={`attachment-${aIdx}`} className="w-full h-full object-cover" />
+                                          <img src={getEffectiveImageUrl(url)} alt={`attachment-${aIdx}`} className="w-full h-full object-cover" />
                                         </button>
                                       )}
                                       {/* Delete button on hover */}

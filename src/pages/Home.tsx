@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Edit2, Trash2, GripVertical, Copy, ArrowUp } from 'lucide-react';
 import { Trip, Plan } from '../types';
+import { getEffectiveImageUrl } from '../utils/storageHelper';
 
 interface HomePageProps {
   onNavigate: (view: string, tripId?: number | null) => void;
@@ -279,7 +280,7 @@ function CardMedia({ img, title, videoUrl, isActive }: CardMediaProps) {
   return (
     <>
       <img
-        src={img}
+        src={getEffectiveImageUrl(img)}
         alt={title}
         className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none group-hover:scale-105 ${
           isActive ? 'scale-105 opacity-100' : 'opacity-85 group-hover:opacity-100'
@@ -288,7 +289,7 @@ function CardMedia({ img, title, videoUrl, isActive }: CardMediaProps) {
       {videoUrl && autoplayEnabled && isActive && (
         <video
           ref={videoRef}
-          src={videoUrl}
+          src={getEffectiveImageUrl(videoUrl)}
           loop
           muted
           playsInline
@@ -610,102 +611,136 @@ export function HomePage({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 p-6 md:p-12 w-full">
-          {filteredTrips.slice(0, 4).map((trip) => {
+          {filteredTrips.slice(0, 4).map((trip, index) => {
             const { year, month } = getYearAndMonth(trip.date);
             const days = calculateDays(trip.date);
+            const isCardActive = activeCardId === trip.id;
+            const issueNumber = String((trip.displayOrder ?? index) + 1).padStart(2, '0');
+
             return (
-              <div
-                key={trip.id}
-                style={{ containerType: 'inline-size' }}
-                className={`group cursor-pointer aspect-[3/4] w-full overflow-hidden transition-all border relative shadow-[0_0_15px_rgba(0,0,0,0.08)] dark:shadow-[0_0_15px_rgba(255,255,255,0.03)] ${
-                  draggedTripId === trip.id ? 'opacity-40' : 'opacity-100'
-                } ${
-                  activeCardId === trip.id
-                    ? 'border-red-600 dark:border-red-400 ring-2 ring-red-600/20 dark:ring-red-400/20 scale-[1.01] shadow-lg'
-                    : 'border-black/10 dark:border-white/10 bg-[#111]'
-                }`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (activeCardId === trip.id) {
-                    onNavigate('detail', trip.id);
-                  } else {
-                    setActiveCardId(trip.id);
-                  }
-                }}
-                draggable={isLoggedIn}
-                onDragStart={(e) => handleTripDragStart(e, trip.id)}
-                onDragOver={(e) => handleTripDragOver(e, trip.id)}
-                onDrop={handleTripDrop}
-                onDragEnd={() => setDraggedTripId(null)}
-              >
-                {/* Background cover image/video */}
-                <CardMedia
-                  img={trip.img}
-                  title={trip.title}
-                  videoUrl={trip.videoUrl}
-                  isActive={activeCardId === trip.id}
+              <div key={trip.id} className="relative group">
+                {/* Ambient Glow Aura */}
+                <div
+                  className={`absolute -inset-1.5 rounded-2xl bg-gradient-to-tr from-red-600/30 via-orange-500/20 to-amber-400/25 blur-xl transition-all duration-500 pointer-events-none -z-10 ${
+                    isCardActive ? 'opacity-80 scale-105' : 'opacity-0 group-hover:opacity-50 scale-100'
+                  }`}
                 />
 
-                {/* Status Badge (NEW / EDITING) */}
-                {trip.statusBadge && (
-                  <div className={`absolute bottom-3.5 right-11 z-[15] px-2 py-0.5 text-[8px] font-black tracking-widest uppercase shadow-md pointer-events-none select-none ${
-                    trip.statusBadge === 'NEW'
-                      ? 'bg-red-600 text-white'
-                      : 'bg-amber-600 text-white'
-                  }`}>
-                    {trip.statusBadge}
-                  </div>
-                )}
+                <div
+                  style={{ containerType: 'inline-size' }}
+                  className={`cursor-pointer aspect-[3/4] w-full overflow-hidden transition-all border relative shadow-[0_0_15px_rgba(0,0,0,0.08)] dark:shadow-[0_0_15px_rgba(255,255,255,0.03)] ${
+                    draggedTripId === trip.id ? 'opacity-40' : 'opacity-100'
+                  } ${
+                    isCardActive
+                      ? 'border-red-600 dark:border-red-400 ring-2 ring-red-600/20 dark:ring-red-400/20 scale-[1.01] shadow-lg'
+                      : 'border-black/10 dark:border-white/10 bg-[#111]'
+                  }`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (activeCardId === trip.id) {
+                      onNavigate('detail', trip.id);
+                    } else {
+                      setActiveCardId(trip.id);
+                    }
+                  }}
+                  draggable={isLoggedIn}
+                  onDragStart={(e) => handleTripDragStart(e, trip.id)}
+                  onDragOver={(e) => handleTripDragOver(e, trip.id)}
+                  onDrop={handleTripDrop}
+                  onDragEnd={() => setDraggedTripId(null)}
+                >
+                  {/* Background cover image/video */}
+                  <CardMedia
+                    img={trip.img}
+                    title={trip.title}
+                    videoUrl={trip.videoUrl}
+                    isActive={isCardActive}
+                  />
 
-                {/* Magazine Overlay Gradient */}
-                <div className="absolute inset-0 magazine-card-gradient pointer-events-none" />
+                  {/* Status Badge (NEW / EDITING) */}
+                  {trip.statusBadge && (
+                    <div className={`absolute bottom-3.5 right-11 z-[15] px-2 py-0.5 text-[8px] font-black tracking-widest uppercase shadow-md pointer-events-none select-none ${
+                      trip.statusBadge === 'NEW'
+                        ? 'bg-red-600 text-white'
+                        : 'bg-amber-600 text-white'
+                    }`}>
+                      {trip.statusBadge}
+                    </div>
+                  )}
 
-                {/* Magazine Cover Text Layout */}
-                <div className="absolute inset-0 p-4 md:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
-                  {/* Top Header Row: Title & Issue Date */}
-                  <div className="flex justify-between items-start gap-3 w-full">
-                    <h3
-                      className="text-[5.5cqw] font-black uppercase tracking-tight leading-none font-serif text-white drop-shadow-md max-w-[70%] line-clamp-2"
-                      style={{ fontFamily: "'Playfair Display', 'Georgia', serif" }}
-                    >
-                      {trip.title}
-                    </h3>
-                    {month && year && (
-                      <div className="flex flex-col items-end shrink-0 text-right leading-none font-mono">
-                        <span className="text-[3.8cqw] font-black tracking-widest text-amber-500 uppercase">{month}</span>
-                        <span className="text-[2.8cqw] font-bold tracking-widest text-white/60 mt-0.5">{year}</span>
-                      </div>
-                    )}
-                  </div>
+                  {/* Magazine Overlay Gradient */}
+                  <div className="absolute inset-0 magazine-card-gradient pointer-events-none" />
 
-                  {/* Bottom Footer Row: Date, Tags & Status */}
-                  <div className="mt-auto flex flex-col gap-1.5">
-                    {trip.tags && trip.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {trip.tags.slice(0, 2).map(tag => (
-                          <span key={tag} className="text-[2.6cqw] uppercase font-bold tracking-widest bg-white/10 px-1.5 py-0.5 rounded-sm text-white/95">{tag}</span>
-                        ))}
+                  {/* Magazine Cover Text Layout */}
+                  <div className="absolute inset-0 p-4 md:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
+                    {/* Top Header Section */}
+                    <div className="w-full">
+                      {/* Editorial Masthead & Barcode Bar */}
+                      <div className="flex items-center justify-between text-[2.2cqw] font-mono tracking-widest text-white/80 uppercase border-b border-white/20 pb-1.5 mb-2 w-full">
+                        <div className="flex items-center gap-1.5">
+                          <span className="bg-white/25 px-1 py-0.5 rounded-[1px] font-black text-white">
+                            ISSUE #{issueNumber}
+                          </span>
+                          <span className="tracking-wider text-white/90">TRIPGON</span>
+                        </div>
+                        <div className="flex items-center gap-[2px] h-2.5 opacity-75">
+                          <div className="w-[1px] h-full bg-white" />
+                          <div className="w-[2px] h-full bg-white" />
+                          <div className="w-[1px] h-full bg-white" />
+                          <div className="w-[3px] h-full bg-white" />
+                          <div className="w-[1px] h-full bg-white" />
+                          <div className="w-[2px] h-full bg-white" />
+                          <div className="w-[4px] h-full bg-white" />
+                          <div className="w-[1px] h-full bg-white" />
+                        </div>
                       </div>
-                    )}
-                    <div className="flex flex-col gap-0.5">
-                      <div className="text-[3cqw] tracking-widest text-white/70 font-mono truncate uppercase">
-                        {trip.date}
-                        {days > 0 && ` · ${days} DAYS`}
+
+                      {/* Title & Issue Date */}
+                      <div className="flex justify-between items-start gap-3 w-full">
+                        <h3
+                          className="text-[5.5cqw] font-black uppercase tracking-tight leading-[1.05] font-serif text-white drop-shadow-md max-w-[72%] line-clamp-2"
+                          style={{ fontFamily: "'Playfair Display', 'Georgia', serif" }}
+                        >
+                          {trip.title}
+                        </h3>
+                        {month && year && (
+                          <div className="flex flex-col items-end shrink-0 text-right leading-none font-mono">
+                            <span className="text-[3.8cqw] font-black tracking-widest text-amber-500 uppercase">{month}</span>
+                            <span className="text-[2.8cqw] font-bold tracking-widest text-white/60 mt-0.5">{year}</span>
+                          </div>
+                        )}
                       </div>
-                      <div className="text-[2.6cqw] tracking-[0.2em] font-black text-amber-500/95 uppercase">ARCHIVED JOURNEY</div>
+                    </div>
+
+                    {/* Bottom Footer Row: Date, Tags & Status */}
+                    <div className="mt-auto flex flex-col gap-1.5">
+                      {trip.tags && trip.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {trip.tags.slice(0, 2).map(tag => (
+                            <span key={tag} className="text-[2.6cqw] uppercase font-bold tracking-widest bg-white/10 px-1.5 py-0.5 rounded-sm text-white/95">{tag}</span>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex flex-col gap-0.5">
+                        <div className="text-[3cqw] tracking-widest text-white/70 font-mono truncate uppercase">
+                          {trip.date}
+                          {days > 0 && ` · ${days} DAYS`}
+                        </div>
+                        <div className="text-[2.6cqw] tracking-[0.2em] font-black text-amber-500/95 uppercase">ARCHIVED JOURNEY</div>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Hamburger menu */}
-                <JourneyCardMenu
-                  isLoggedIn={isLoggedIn}
-                  onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
-                  onDelete={onDeleteTrip ? () => onDeleteTrip(trip.id) : undefined}
-                  onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
-                  onMove={onMoveToPlans ? () => onMoveToPlans(trip) : undefined}
-                  moveLabel="계획으로 이동"
-                />
+                  {/* Hamburger menu */}
+                  <JourneyCardMenu
+                    isLoggedIn={isLoggedIn}
+                    onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
+                    onDelete={onDeleteTrip ? () => onDeleteTrip(trip.id) : undefined}
+                    onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
+                    onMove={onMoveToPlans ? () => onMoveToPlans(trip) : undefined}
+                    moveLabel="계획으로 이동"
+                  />
+                </div>
               </div>
             );
           })}

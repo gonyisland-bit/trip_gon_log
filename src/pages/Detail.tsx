@@ -28,8 +28,8 @@ import {
 import { fetchCoordinates, fetchPlacePredictions, fetchCoordinatesByPlaceId } from '../utils/googleMapsHelper';
 import { fetchAddressFromCoords, fetchCountryFromCoords } from '../utils/googleMapsHelper';
 import { readExif } from '../utils/exifHelper';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { auth, storage, db } from '../firebase';
+import { uploadFileToR2, getEffectiveImageUrl } from '../utils/storageHelper';
+import { auth, db } from '../firebase';
 import { compressImage } from '../utils/imageHelper';
 import { doc, setDoc } from 'firebase/firestore';
 const dayColors = [
@@ -1402,7 +1402,9 @@ export function JourneyDetailPage({
   const galleryMetaImages = useMemo(() => {
     const rawGalleryEntries = tripToUse?.gallery || [];
     return rawGalleryEntries.map(entry =>
-      typeof entry === 'string' ? { url: entry } : entry as any
+      typeof entry === 'string' 
+        ? { url: getEffectiveImageUrl(entry) } 
+        : { ...(entry as any), url: getEffectiveImageUrl((entry as any).url) }
     ) as { url: string; date?: string; time?: string; place?: string; imgNote?: string; lat?: number | null; lng?: number | null; excludeFromMap?: boolean }[];
   }, [tripToUse?.gallery]);
 
@@ -1410,7 +1412,7 @@ export function JourneyDetailPage({
     return baseTimeline
       .filter(item => item.img)
       .map(item => ({
-        url: item.img as string,
+        url: getEffectiveImageUrl(item.img as string),
         place: item.place,
         date: item.date || '',
         time: item.time || '',
@@ -2221,9 +2223,8 @@ export function JourneyDetailPage({
 
         // 2. Compress and upload
         const compressedBlob = await compressImage(file);
-        const storageRef = ref(storage, `users/public/gallery/${Date.now()}_${file.name}`);
-        await uploadBytes(storageRef, compressedBlob);
-        const url = await getDownloadURL(storageRef);
+        const storagePath = `users/public/gallery/${Date.now()}_${file.name}`;
+        const url = await uploadFileToR2(compressedBlob, storagePath);
 
         // 3. Build GalleryImageMeta
         const defaultDate = generatedDates[0] || '';
@@ -2532,21 +2533,45 @@ export function JourneyDetailPage({
         </div>
       </div>
       
+      {/* Magazine Masthead & Issue Bar */}
+      <div className="flex items-center justify-between text-[9px] md:text-[10px] font-mono tracking-widest text-black/45 dark:text-white/45 uppercase border-b border-black/10 dark:border-white/10 pb-2 mt-3 mb-2 w-full">
+        <div className="flex items-center gap-2">
+          <span className="bg-black/10 dark:bg-white/15 px-1.5 py-0.5 rounded-[1px] font-black text-black dark:text-white">
+            ISSUE #{String((trip.displayOrder ?? (trip.id % 99)) + 1).padStart(2, '0')}
+          </span>
+          <span className="font-bold tracking-wider">TRIPGON EDITORIAL ARCHIVE</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="hidden sm:inline text-[8px] text-black/30 dark:text-white/30 font-medium">CURATED LOG</span>
+          <div className="flex items-center gap-[2px] h-3 opacity-60">
+            <div className="w-[1px] h-full bg-current" />
+            <div className="w-[2px] h-full bg-current" />
+            <div className="w-[1px] h-full bg-current" />
+            <div className="w-[3px] h-full bg-current" />
+            <div className="w-[1px] h-full bg-current" />
+            <div className="w-[2px] h-full bg-current" />
+            <div className="w-[4px] h-full bg-current" />
+            <div className="w-[1px] h-full bg-current" />
+          </div>
+        </div>
+      </div>
+
       {/* Journey Title & Edit controls row */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mt-2">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="flex-grow w-full">
           {isEditing && draftTrip ? (
             <input
               type="text"
               value={draftTrip.title}
               onChange={(e) => setDraftTrip({ ...draftTrip, title: e.target.value })}
-              className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black tracking-tighter uppercase leading-none bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 p-2 outline-none w-full text-black dark:text-white rounded-none"
+              className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black tracking-tight uppercase leading-none bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 p-2 outline-none w-full text-black dark:text-white rounded-none font-serif"
+              style={{ fontFamily: "'Playfair Display', 'Georgia', serif" }}
               placeholder="JOURNEY TITLE"
             />
           ) : (
             <h1 
-              className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter uppercase leading-tight break-keep"
-              style={{ wordBreak: 'keep-all' }}
+              className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black tracking-tight uppercase leading-tight break-keep font-serif text-black dark:text-white"
+              style={{ wordBreak: 'keep-all', fontFamily: "'Playfair Display', 'Georgia', serif" }}
             >
               {(trip.title || '').replace(' (Plan)', '')}
             </h1>
@@ -3456,7 +3481,7 @@ export function JourneyDetailPage({
                                   }
                                 }}
                               >
-                                <img src={item.img} alt={item.place} className={`w-full h-full object-cover transition-all ${isActive ? 'grayscale-0' : 'grayscale group-hover:grayscale-0'}`} />
+                                <img src={getEffectiveImageUrl(item.img)} alt={item.place} className={`w-full h-full object-cover transition-all ${isActive ? 'grayscale-0' : 'grayscale group-hover:grayscale-0'}`} />
                                 {/* Red dot badge: mark as timeline-attached photo */}
                                 <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-600 rounded-full border border-white dark:border-black shadow z-10" />
                                 <ImageEditOverlay 

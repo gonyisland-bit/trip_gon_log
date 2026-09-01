@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, Edit2, Loader2, Upload, Tag, MapPin } from 'lucide-react';
 import { Trip } from '../types';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '../firebase';
+import { uploadFileToR2, getEffectiveImageUrl } from '../utils/storageHelper';
 import { compressImage } from '../utils/imageHelper';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { ImageEditOverlay } from './ImageEditOverlay';
@@ -240,9 +239,7 @@ export function EditTripModal({
     setVideoUploading(true);
     try {
       const storagePath = `users/public/covers/${Date.now()}_${file.name}`;
-      const videoRef = ref(storage, storagePath);
-      await uploadBytes(videoRef, file);
-      const downloadUrl = await getDownloadURL(videoRef);
+      const downloadUrl = await uploadFileToR2(file, storagePath);
       setVideoUrl(downloadUrl);
     } catch (error) {
       console.error("Cover video upload failed:", error);
@@ -291,9 +288,7 @@ export function EditTripModal({
     try {
       const compressedBlob = await compressImage(file, 3840, 3840, 0.75);
       const storagePath = `users/public/covers/${Date.now()}_${file.name}`;
-      const imageRef = ref(storage, storagePath);
-      await uploadBytes(imageRef, compressedBlob);
-      const downloadUrl = await getDownloadURL(imageRef);
+      const downloadUrl = await uploadFileToR2(compressedBlob, storagePath);
       setImgUrl(downloadUrl);
     } catch (error) {
       console.error("Cover image upload failed:", error);

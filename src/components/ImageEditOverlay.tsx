@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { ImagePlus, Loader2, Trash2 } from 'lucide-react';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage, auth } from '../firebase';
+import { uploadFileToR2 } from '../utils/storageHelper';
+import { auth } from '../firebase';
 import { compressImage } from '../utils/imageHelper';
 import { extractGpsFromImage } from '../utils/exifHelper';
 
@@ -46,9 +46,7 @@ export function ImageEditOverlay({
       
       // Store in users/public for public visibility and ease of rules management
       const storagePath = `users/public/images/${Date.now()}_${file.name}`;
-      const imageRef = ref(storage, storagePath);
-      await uploadBytes(imageRef, compressedBlob);
-      const downloadUrl = await getDownloadURL(imageRef);
+      const downloadUrl = await uploadFileToR2(compressedBlob, storagePath);
       onImageUploaded(downloadUrl, gps);
     } catch (error) {
       console.error("Image upload failed:", error);

@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Plane, Trash2, RefreshCw, Clock, Paperclip, Loader2, X, ExternalLink } from 'lucide-react';
 import { FlightItem } from '../types';
 import { SettlementExpenseInput } from './SettlementExpenseInput';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage, auth } from '../firebase';
+import { uploadFileToR2, getEffectiveImageUrl } from '../utils/storageHelper';
+import { auth } from '../firebase';
 import { Lightbox } from './Lightbox';
 
 interface FlightCardProps {
@@ -117,9 +117,7 @@ export function FlightCard({
     setUploadingAttachment(true);
     try {
       const storagePath = `users/public/flights/${flight.id}/${Date.now()}_${file.name}`;
-      const storageRef = ref(storage, storagePath);
-      await uploadBytes(storageRef, file);
-      const downloadUrl = await getDownloadURL(storageRef);
+      const downloadUrl = await uploadFileToR2(file, storagePath);
       
       const currentList = flight.attachments || [];
       const newList = [...currentList, downloadUrl];
@@ -659,7 +657,7 @@ export function FlightCard({
                     {pdfMode ? (
                       <button
                         type="button"
-                        onClick={() => window.open(url, '_blank')}
+                        onClick={() => window.open(getEffectiveImageUrl(url), '_blank')}
                         className="w-12 h-12 md:w-16 md:h-16 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex flex-col items-center justify-center text-red-500 dark:text-red-400 hover:opacity-80 transition-opacity rounded-sm cursor-pointer"
                       >
                         <ExternalLink className="w-4 h-4 mb-1" />
@@ -674,7 +672,7 @@ export function FlightCard({
                         }}
                         className="w-12 h-12 md:w-16 md:h-16 rounded-sm overflow-hidden border border-black/10 dark:border-white/10 hover:opacity-80 transition-opacity cursor-pointer"
                       >
-                        <img src={url} alt={`attachment-${idx}`} className="w-full h-full object-cover" />
+                        <img src={getEffectiveImageUrl(url)} alt={`attachment-${idx}`} className="w-full h-full object-cover" />
                       </button>
                     )}
                     {isEditMode && (
@@ -710,7 +708,7 @@ export function FlightCard({
       {lightboxOpen && (
         <Lightbox
           isOpen={lightboxOpen}
-          images={(flight.attachments || []).map(url => ({ url }))}
+          images={(flight.attachments || []).map(url => ({ url: getEffectiveImageUrl(url) }))}
           currentIndex={lightboxIndex}
           onClose={() => setLightboxOpen(false)}
           onNavigate={(idx) => setLightboxIndex(idx)}

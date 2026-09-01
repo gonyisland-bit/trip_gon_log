@@ -3,8 +3,8 @@ import { Bed, Trash2, ImagePlus, Loader2, X } from 'lucide-react';
 import { StayItem } from '../types';
 import { ImageEditOverlay } from './ImageEditOverlay';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage, auth } from '../firebase';
+import { uploadFileToR2, getEffectiveImageUrl } from '../utils/storageHelper';
+import { auth } from '../firebase';
 import { compressImage } from '../utils/imageHelper';
 import { Lightbox } from './Lightbox';
 import { SettlementExpenseInput } from './SettlementExpenseInput';
@@ -116,9 +116,7 @@ export function StayCard({
     try {
       const compressedBlob = await compressImage(file);
       const storagePath = `users/public/images/stays/${Date.now()}_${file.name}`;
-      const imageRef = ref(storage, storagePath);
-      await uploadBytes(imageRef, compressedBlob);
-      const downloadUrl = await getDownloadURL(imageRef);
+      const downloadUrl = await uploadFileToR2(compressedBlob, storagePath);
       
       const currentList = stay.additionalImages || [];
       const newList = [...currentList, downloadUrl];
@@ -202,7 +200,7 @@ export function StayCard({
       {/* Image & Booking Status Pill Tag */}
       <div className="relative aspect-[21/9] w-full overflow-hidden border-b border-black/10 dark:border-white/10 bg-black/5 group">
         <img 
-          src={stay.img || "https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=800&auto=format&fit=crop"} 
+          src={getEffectiveImageUrl(stay.img) || "https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=800&auto=format&fit=crop"} 
           alt={stay.title} 
           className="w-full h-full object-cover" 
         />
@@ -405,7 +403,7 @@ export function StayCard({
                 {(stay.additionalImages || []).map((imgUrl, idx) => (
                   <div key={idx} className="relative w-16 h-16 border border-black/10 dark:border-white/10 overflow-hidden group/thumb">
                     <img
-                      src={imgUrl}
+                      src={getEffectiveImageUrl(imgUrl)}
                       alt={`Additional ${idx + 1}`}
                       onClick={() => {
                         setLightboxIndex(idx);
@@ -477,7 +475,7 @@ export function StayCard({
       {lightboxOpen && (
         <Lightbox
           isOpen={lightboxOpen}
-          images={(stay.additionalImages || []).map(url => ({ url }))}
+          images={(stay.additionalImages || []).map(url => ({ url: getEffectiveImageUrl(url) }))}
           currentIndex={lightboxIndex}
           onClose={() => setLightboxOpen(false)}
           onNavigate={(idx) => setLightboxIndex(idx)}

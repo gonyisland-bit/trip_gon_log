@@ -4,8 +4,8 @@ import { TransitItem } from '../types';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { ImageEditOverlay } from './ImageEditOverlay';
 import { SettlementExpenseInput } from './SettlementExpenseInput';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage, auth } from '../firebase';
+import { uploadFileToR2, getEffectiveImageUrl } from '../utils/storageHelper';
+import { auth } from '../firebase';
 import { Lightbox } from './Lightbox';
 
 interface TransitCardProps {
@@ -106,9 +106,7 @@ export function TransitCard({
     setUploadingAttachment(true);
     try {
       const storagePath = `users/public/transits/${transit.id}/${Date.now()}_${file.name}`;
-      const storageRef = ref(storage, storagePath);
-      await uploadBytes(storageRef, file);
-      const downloadUrl = await getDownloadURL(storageRef);
+      const downloadUrl = await uploadFileToR2(file, storagePath);
       
       const currentList = transit.attachments || [];
       const newList = [...currentList, downloadUrl];
@@ -492,7 +490,7 @@ export function TransitCard({
                   <div className="relative w-20 h-20 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 overflow-hidden group flex items-center justify-center shrink-0">
                     {transit.boardingImg ? (
                       <img 
-                        src={transit.boardingImg} 
+                        src={getEffectiveImageUrl(transit.boardingImg)} 
                         className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" 
                         alt="Boarding reference" 
                         onClick={(e) => { if (!isEditMode) { e.stopPropagation(); setLightboxOpen(true); } }}
@@ -594,7 +592,7 @@ export function TransitCard({
                     {pdfMode ? (
                       <button
                         type="button"
-                        onClick={() => window.open(url, '_blank')}
+                        onClick={() => window.open(getEffectiveImageUrl(url), '_blank')}
                         className="w-12 h-12 md:w-16 md:h-16 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex flex-col items-center justify-center text-red-500 dark:text-red-400 hover:opacity-80 transition-opacity rounded-sm cursor-pointer"
                       >
                         <ExternalLink className="w-4 h-4 mb-1" />
@@ -609,7 +607,7 @@ export function TransitCard({
                         }}
                         className="w-12 h-12 md:w-16 md:h-16 rounded-sm overflow-hidden border border-black/10 dark:border-white/10 hover:opacity-80 transition-opacity cursor-pointer"
                       >
-                        <img src={url} alt={`attachment-${idx}`} className="w-full h-full object-cover" />
+                        <img src={getEffectiveImageUrl(url)} alt={`attachment-${idx}`} className="w-full h-full object-cover" />
                       </button>
                     )}
                     {isEditMode && (
@@ -648,7 +646,7 @@ export function TransitCard({
           onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}
         >
           <img 
-            src={transit.boardingImg || ''} 
+            src={getEffectiveImageUrl(transit.boardingImg) || ''} 
             alt="Boarding point reference full size" 
             className="max-w-full max-h-[90vh] object-contain shadow-2xl border border-white/10"
           />
@@ -665,7 +663,7 @@ export function TransitCard({
       {attachmentLightboxOpen && (
         <Lightbox
           isOpen={attachmentLightboxOpen}
-          images={(transit.attachments || []).map(url => ({ url }))}
+          images={(transit.attachments || []).map(url => ({ url: getEffectiveImageUrl(url) }))}
           currentIndex={attachmentLightboxIndex}
           onClose={() => setAttachmentLightboxOpen(false)}
           onNavigate={(idx) => setAttachmentLightboxIndex(idx)}
