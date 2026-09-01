@@ -3874,7 +3874,6 @@ export function JourneyDetailPage({
                               )}
                             </div>
                           </div>
-                        </div>
                         
                         {/* Expanded Section Details (Edit mode only - no accordion expansion in view mode) */}
                         {isEditing && isActive && (
