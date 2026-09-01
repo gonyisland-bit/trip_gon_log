@@ -53,6 +53,13 @@ export function Lightbox({
   const thumbnailsContainerRef = useRef<HTMLDivElement>(null);
   const thumbnailsInnerRef = useRef<HTMLDivElement>(null);
   const isFirstScrollRef = useRef(true);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Reset first-scroll flag when lightbox opens
   useEffect(() => {
@@ -183,10 +190,9 @@ export function Lightbox({
 
   const handleTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0];
-    if (scale <= 1) {
-      touchStartX.current = touch.clientX;
-      touchStartY.current = touch.clientY;
-    } else {
+    touchStartX.current = touch.clientX;
+    touchStartY.current = touch.clientY;
+    if (scale > 1) {
       setIsDragging(true);
       dragStart.current = { x: touch.clientX - position.x, y: touch.clientY - position.y };
     }
@@ -208,11 +214,11 @@ export function Lightbox({
       const distanceX = touch.clientX - touchStartX.current;
       const distanceY = touch.clientY - touchStartY.current;
 
-      // Double-tap detection on mobile (stationary tap)
-      if (Math.abs(distanceX) < 15 && Math.abs(distanceY) < 15) {
+      // Double-tap detection on mobile (stationary tap within 18px and 350ms)
+      if (Math.abs(distanceX) < 18 && Math.abs(distanceY) < 18) {
         const now = Date.now();
         if (now - lastTouchTimeRef.current < 350) {
-          // Double-tap detected on mobile!
+          // Double-tap detected on mobile: toggle between 2.5x and 1x
           if (scale > 1.1) {
             resetZoom();
           } else {
@@ -226,7 +232,7 @@ export function Lightbox({
         }
         lastTouchTimeRef.current = now;
       } else if (scale <= 1) {
-        // Swipe gesture
+        // Swipe gesture (only when not zoomed in)
         if (Math.abs(distanceX) > Math.abs(distanceY)) {
           if (Math.abs(distanceX) > minSwipeDistance) {
             if (distanceX > 0) {
@@ -611,7 +617,7 @@ export function Lightbox({
             className="relative inline-block"
             style={{
               transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-              transition: (isDragging || scale === 1) ? 'none' : 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+              transition: isDragging ? 'none' : 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
               transformOrigin: 'center center',
             }}
           >
@@ -623,8 +629,16 @@ export function Lightbox({
               onDoubleClick={isSlideshow ? undefined : handleDoubleClick}
               data-pin-nopin="true"
               style={{
-                maxHeight: isSlideshow ? '100vh' : 'calc(100vh - 145px)',
-                maxWidth: isSlideshow ? '100vw' : 'min(96vw, calc(100vw - 100px))',
+                maxHeight: isSlideshow
+                  ? '100vh'
+                  : isMobile
+                    ? 'calc(100vh - 85px)'
+                    : 'calc(100vh - 145px)',
+                maxWidth: isSlideshow
+                  ? '100vw'
+                  : isMobile
+                    ? 'calc(100vw - 8px)'
+                    : 'min(96vw, calc(100vw - 100px))',
                 objectFit: 'contain',
                 userSelect: 'none',
                 display: 'block',

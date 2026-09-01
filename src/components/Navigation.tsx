@@ -41,25 +41,21 @@ export function Navigation({
     }
   };
 
-  // Close dropdown on outside click or Escape key
+  const handleMenuNavigate = (view: string) => {
+    setShowSettings(false);
+    navigateTo(view);
+  };
+
+  // Close menu on Escape key
   useEffect(() => {
     if (!showSettings) return;
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setShowSettings(false);
-      }
-    };
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setShowSettings(false);
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleKeyDown);
-
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [showSettings, setShowSettings]);
@@ -71,19 +67,14 @@ export function Navigation({
         <div className="flex items-center gap-6 md:gap-10 min-w-0">
           <button 
             onClick={() => navigateTo('home')} 
-            className="flex items-center gap-2 text-left cursor-pointer group shrink-0"
+            className="flex flex-col text-left cursor-pointer group shrink-0"
           >
-            <div className="w-7 h-7 bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-black text-sm tracking-tighter rounded-xs group-hover:rotate-6 transition-transform">
-              TL
-            </div>
-            <div className="flex flex-col">
-              <span className="font-black text-sm sm:text-base md:text-lg tracking-tighter uppercase font-satoshi leading-tight text-black dark:text-white">
-                Tripgon log
-              </span>
-              <span className="text-[8px] font-mono tracking-widest text-black/40 dark:text-white/40 uppercase leading-none">
-                TRAVEL MEMOIR
-              </span>
-            </div>
+            <span className="font-black text-lg sm:text-xl md:text-2xl tracking-tight font-['Inter',sans-serif] leading-tight text-black dark:text-white group-hover:opacity-80 transition-opacity">
+              Tripgon log
+            </span>
+            <span className="text-[7.5px] sm:text-[8px] font-mono tracking-widest text-black/40 dark:text-white/40 uppercase leading-none mt-0.5">
+              TRAVEL MEMOIR
+            </span>
           </button>
 
           {/* Desktop Nav Links (HOME / ARCHIVE / PLAN in Inter Font, Uppercase, Larger) */}
@@ -202,7 +193,7 @@ export function Navigation({
           {/* Header */}
           <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-5">
             <div className="flex flex-col">
-              <span className="font-black text-xl tracking-tighter uppercase font-satoshi text-black dark:text-white">
+              <span className="font-black text-2xl tracking-tight font-['Inter',sans-serif] text-black dark:text-white">
                 Tripgon log
               </span>
               <span className="text-[9px] font-mono tracking-widest text-black/40 dark:text-white/40 uppercase">
@@ -222,7 +213,7 @@ export function Navigation({
           {/* Editorial Menu List */}
           <div className="flex flex-col space-y-6 sm:space-y-8 my-auto py-8">
             <button
-              onClick={() => { navigateTo('home'); setShowSettings(false); }}
+              onClick={() => handleMenuNavigate('home')}
               className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-2"
             >
               <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-4 sm:mr-6 select-none">
@@ -238,7 +229,7 @@ export function Navigation({
             </button>
 
             <button
-              onClick={() => { navigateTo('archive'); setShowSettings(false); }}
+              onClick={() => handleMenuNavigate('archive')}
               className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-2"
             >
               <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-4 sm:mr-6 select-none">
@@ -254,7 +245,7 @@ export function Navigation({
             </button>
 
             <button
-              onClick={() => { navigateTo('plan'); setShowSettings(false); }}
+              onClick={() => handleMenuNavigate('plan')}
               className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-2"
             >
               <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-4 sm:mr-6 select-none">
