@@ -99,7 +99,10 @@ function App() {
   const [heroMediaType, setHeroMediaType] = useState<'image' | 'video'>('image');
   
   const [heroAutoSlide, setHeroAutoSlide] = useState<boolean>(true);
-  const [marqueeShow, setMarqueeShow] = useState<boolean>(true);
+  const [marqueeShow, setMarqueeShow] = useState<boolean>(() => {
+    const saved = localStorage.getItem('marqueeShow');
+    return saved !== null ? saved === 'true' : true;
+  });
   const [marqueeMessage, setMarqueeMessage] = useState<string>("🎉 WELCOME TO TRIPGON LOG! PLAN YOUR JOURNEY OR EXPLORE ARCHIVED LOGS.");
   const [marqueeSpeed, setMarqueeSpeed] = useState<number>(30);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
@@ -1249,10 +1252,10 @@ function App() {
 
         {/* Marquee Banner - Only on Home View */}
         {currentView === 'home' && marqueeShow && (
-          <div className="w-full bg-[#EAE8E3] dark:bg-[#161616] border-b border-black/10 dark:border-white/10 py-2 overflow-hidden flex items-center shrink-0">
+          <div className="w-full bg-black text-white dark:bg-white dark:text-black border-b border-black dark:border-white py-2 overflow-hidden flex items-center shrink-0 transition-colors duration-300 select-none">
             <div 
               key={displayMarqueeText}
-              className="animate-marquee text-[10px] md:text-xs font-black tracking-widest uppercase text-red-600 dark:text-red-400" 
+              className="animate-marquee text-xs md:text-sm font-mono font-black tracking-widest uppercase" 
               style={{ '--marquee-speed': `${(marqueeSpeed / 1.5) * 1.43 * 2}s` } as React.CSSProperties}
             >
               <span>{displayMarqueeText}</span>

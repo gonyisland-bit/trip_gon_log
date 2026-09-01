@@ -360,17 +360,28 @@ export function SettingsModal({
                   Marquee Banner Settings
                 </h3>
                 
-                <div className="flex items-center justify-between p-3 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+                <div className="flex items-center justify-between p-3.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm">
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-bold uppercase tracking-wide text-black dark:text-white">Show Marquee Banner</span>
-                    <span className="text-[8px] text-black/45 dark:text-white/45">Display text marquee banner under menu bar.</span>
+                    <span className="text-xs font-black uppercase tracking-wider text-black dark:text-white">마퀴 전광판 배너 (Marquee Banner)</span>
+                    <span className="text-[9px] text-black/50 dark:text-white/50">홈 화면 상단에 흐르는 전광판 배너 표시 여부</span>
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={showMarquee}
-                    onChange={(e) => setShowMarquee(e.target.checked)}
-                    className="w-4 h-4 cursor-pointer accent-red-600"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = !showMarquee;
+                      setShowMarquee(next);
+                      localStorage.setItem('marqueeShow', next.toString());
+                    }}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      showMarquee ? 'bg-black dark:bg-white' : 'bg-black/20 dark:bg-white/20'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white dark:bg-black shadow-lg ring-0 transition duration-200 ease-in-out ${
+                        showMarquee ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
                 </div>
 
                 {showMarquee && (
