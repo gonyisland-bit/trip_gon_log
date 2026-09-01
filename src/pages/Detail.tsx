@@ -4,7 +4,7 @@ import {
   Image as ImageIcon, ChevronUp, ChevronDown, MapPin, Map, Plus, Loader2, Search, ArrowLeft,
   ExternalLink, MapPinOff, Maximize2, Star, ChevronLeft, ChevronRight, ArrowUp, ArrowDown,
   Sun, Cloud, Cloudy, CloudRain, Snowflake, CloudLightning, ArrowRight, Calculator, FileText, Share2, GripVertical,
-  Play, Pause, SkipForward, SkipBack, X as CloseIcon
+  Play, Pause, SkipForward, SkipBack, X as CloseIcon, Check, Edit3, DollarSign
 } from 'lucide-react';
 import { MapArea } from '../components/MapArea';
 import { ImageEditOverlay } from '../components/ImageEditOverlay';
@@ -758,6 +758,7 @@ export function JourneyDetailPage({
   // ─── Mobile Bottom Sheet States & Gesture Logic ───
   const [mobileSheetSnap, setMobileSheetSnap] = useState<'collapsed' | 'half' | 'expanded'>('half');
   const sheetTouchStartYRef = useRef<number | null>(null);
+  const [isBannerMenuOpen, setIsBannerMenuOpen] = useState(false);
 
   // Flatten and sort timeline items for Cinematic Tour strictly by date & parsed time
   const cinematicItems = useMemo(() => {
@@ -2501,8 +2502,7 @@ export function JourneyDetailPage({
       );
     }
   };
-
-  const handleToggleGalleryImagePin = async (imageUrl: string, exclude: boolean) => {
+    const handleToggleGalleryImagePin = async (imageUrl: string, exclude: boolean) => {
     const updateGallery = (gallery: (string | any)[]): (string | any)[] =>
       gallery.map(item => {
         if (typeof item === 'string') return { url: item, excludeFromMap: exclude };
@@ -2524,8 +2524,6 @@ export function JourneyDetailPage({
       );
     }
   };
-
-  // galleryMetaImages, timelineImages, galleryAllMeta, galleryAllUnique variables are now declared at the top of the component.
 
   // Format destinations dynamically: e.g. "Osaka, Kyoto, Japan" -> "JAPAN (OSAKA, KYOTO)"
   const formatDestinations = (locStr?: string) => {
@@ -2575,351 +2573,336 @@ export function JourneyDetailPage({
     return formattedGroups.join(' · ');
   };
 
-  // Render Info Header helper function to avoid duplicating code between desktop and mobile layouts
-  const renderInfoHeader = (isMobile: boolean) => (
-    <div className={`p-3 md:py-4 md:px-6 border-b border-black/20 dark:border-white/20 z-10 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0 ${isMobile ? 'block md:hidden' : 'hidden md:block'}`}>
-      
-      {/* Back to hub & Metadata row */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-        <button
-          onClick={() => {
-            const isPlan = trip?.tags.includes('Plan') || trip?.title.includes('(Plan)');
-            onNavigate(isPlan ? 'plan' : 'archive');
-          }}
-          className="flex items-center gap-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
-          title="Go back to Hub"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to { (trip?.tags.includes('Plan') || trip?.title.includes('(Plan)')) ? 'Plans' : 'Archive' }
-        </button>
-        
-        <div className="flex items-center space-x-2 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-black/40 dark:text-white/40 transition-colors">
-          {isEditing && draftTrip ? (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <div className="flex items-center gap-1">
-                <input
-                  type="date"
-                  value={parseDateRange(draftTrip.date).start}
-                  onChange={(e) => handleDateChange('start', e.target.value)}
-                  className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-[9px] md:text-[10px] text-black dark:text-white rounded-none border border-black/10 dark:border-white/10"
-                />
-                <span>—</span>
-                <input
-                  type="date"
-                  value={parseDateRange(draftTrip.date).end}
-                  onChange={(e) => handleDateChange('end', e.target.value)}
-                  className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-[9px] md:text-[10px] text-black dark:text-white rounded-none border border-black/10 dark:border-white/10"
-                />
-              </div>
-              <span>—</span>
-              <div className="flex flex-wrap items-center gap-1.5 border border-black/10 dark:border-white/10 p-1 bg-white/5 max-w-lg">
-                {(draftTrip.locations && Array.isArray(draftTrip.locations) ? draftTrip.locations : (draftTrip.locationStr ? [{ name: draftTrip.locationStr, lat: draftTrip.lat, lng: draftTrip.lng }] : [])).map((loc, idx) => (
-                  <span key={idx} className="flex items-center gap-1 bg-white dark:bg-[#1a1a1a] text-[8px] md:text-[9px] font-bold px-1.5 py-0.5 border border-black/15 dark:border-white/15 text-black dark:text-white rounded-none">
-                    {loc.name}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const currentLocs = draftTrip.locations && Array.isArray(draftTrip.locations) ? draftTrip.locations : (draftTrip.locationStr ? [{ name: draftTrip.locationStr, lat: draftTrip.lat, lng: draftTrip.lng }] : []);
-                        const updated = currentLocs.filter((_, i) => i !== idx);
-                        setDraftTrip({
-                          ...draftTrip,
-                          locations: updated,
-                          locationStr: updated.map(l => l.name).join(', '),
-                          lat: updated[0]?.lat,
-                          lng: updated[0]?.lng
-                        });
-                      }}
-                      className="text-red-500 font-bold hover:text-red-700 ml-0.5"
-                    >
-                      &times;
-                    </button>
-                  </span>
-                ))}
-                
-                <div className="w-24 md:w-32">
-                  <PlaceAutocompleteInput
-                    value={detailLocInput}
-                    onChange={(val) => setDetailLocInput(val)}
-                    onSelectPlace={(name, coords) => {
-                      if (name.trim()) {
-                        const currentLocs = draftTrip.locations && Array.isArray(draftTrip.locations) ? draftTrip.locations : (draftTrip.locationStr ? [{ name: draftTrip.locationStr, lat: draftTrip.lat, lng: draftTrip.lng }] : []);
-                        if (!currentLocs.some(loc => loc.name === name.trim())) {
-                          const updated = [...currentLocs, { name: name.trim(), lat: coords?.lat, lng: coords?.lng }];
-                          setDraftTrip({
-                            ...draftTrip,
-                            locations: updated,
-                            locationStr: updated.map(l => l.name).join(', '),
-                            lat: updated[0]?.lat,
-                            lng: updated[0]?.lng
-                          });
-                        }
-                        setDetailLocInput('');
-                      }
-                    }}
-                    className="bg-transparent outline-none text-[8px] md:text-[9px] text-black dark:text-white w-full border-none px-1 py-0.5"
-                    placeholder="도시 추가..."
-                  />
-                </div>
-              </div>
-            </div>
-          ) : (
-            <>
-              <span>{trip.date}</span>
-              <span>—</span>
-              <span>{formatDestinations(trip.locationStr)}</span>
-            </>
-          )}
-        </div>
-      </div>
-      
-      {/* Magazine Masthead & Issue Bar */}
-      <div className="flex items-center justify-between text-[9px] md:text-[10px] font-mono tracking-widest text-black/45 dark:text-white/45 uppercase border-b border-black/10 dark:border-white/10 pb-2 mt-3 mb-2 w-full">
-        <div className="flex items-center gap-2">
-          <span className="bg-black/10 dark:bg-white/15 px-1.5 py-0.5 rounded-[1px] font-black text-black dark:text-white">
-            ISSUE #{String((trip.displayOrder ?? (trip.id % 99)) + 1).padStart(2, '0')}
+  // Render Info Header ("여정배너"): Single-line compact top banner with collapsible accordion menu
+  const renderInfoHeader = () => (
+    <div className="w-full border-b border-black/15 dark:border-white/15 z-20 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0 select-none">
+      {/* 1. Single-line Compact Banner (h-11 sm:h-12) */}
+      <div className="flex items-center justify-between px-3 md:px-5 h-11 sm:h-12 gap-2">
+        {/* Left: Back button + Divider + Title + Date/Location summary */}
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <button
+            onClick={() => {
+              const isPlan = trip?.tags.includes('Plan') || trip?.title.includes('(Plan)');
+              onNavigate(isPlan ? 'plan' : 'archive');
+            }}
+            className="flex items-center gap-1 text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wider text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white transition-colors cursor-pointer shrink-0"
+            title="Go back"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Back</span>
+          </button>
+
+          <span className="text-black/20 dark:text-white/20 shrink-0">|</span>
+
+          {/* Issue # badge (minimalist) */}
+          <span className="hidden md:inline-block bg-black/10 dark:bg-white/15 px-1.5 py-0.5 rounded-[2px] font-mono text-[8.5px] font-black text-black dark:text-white shrink-0">
+            #{String((trip.displayOrder ?? (trip.id % 99)) + 1).padStart(2, '0')}
           </span>
-          <span className="font-bold tracking-wider">TRIPGON EDITORIAL ARCHIVE</span>
+
+          {/* Journey Title */}
+          <h1 className="text-xs sm:text-sm font-black uppercase tracking-tight text-black dark:text-white truncate font-satoshi max-w-[140px] sm:max-w-[240px] md:max-w-[320px]">
+            {(trip.title || '').replace(' (Plan)', '')}
+          </h1>
+
+          {/* Date & Destination summary */}
+          <span className="hidden min-[520px]:inline-block text-[9px] sm:text-[10px] font-mono text-black/45 dark:text-white/45 truncate">
+            {trip.date?.split('—')?.[0]?.trim() || trip.date} · {formatDestinations(trip.locationStr)}
+          </span>
         </div>
-        <div className="flex items-center gap-2.5">
+
+        {/* Right: Quick Action Buttons & Accordion Toggle */}
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
           {destLocalTime && (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-black/5 dark:bg-white/10 border border-black/10 dark:border-white/15 rounded-sm text-black/75 dark:text-white/85 font-mono text-[9px] font-bold">
+            <div className="hidden lg:flex items-center gap-1 px-1.5 py-0.5 bg-black/5 dark:bg-white/10 rounded font-mono text-[8px] text-black/60 dark:text-white/60">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>LOCAL {destLocalTime}</span>
+              <span>{destLocalTime}</span>
             </div>
           )}
-          <span className="hidden sm:inline text-[8px] text-black/30 dark:text-white/30 font-medium">CURATED LOG</span>
-          <div className="flex items-center gap-[2px] h-3 opacity-60">
-            <div className="w-[1px] h-full bg-current" />
-            <div className="w-[2px] h-full bg-current" />
-            <div className="w-[1px] h-full bg-current" />
-            <div className="w-[3px] h-full bg-current" />
-            <div className="w-[1px] h-full bg-current" />
-            <div className="w-[2px] h-full bg-current" />
-            <div className="w-[4px] h-full bg-current" />
-            <div className="w-[1px] h-full bg-current" />
-          </div>
-        </div>
-      </div>
 
-      {/* Journey Title & Edit controls row */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="flex-grow w-full">
-          {isEditing && draftTrip ? (
-            <input
-              type="text"
-              value={draftTrip.title}
-              onChange={(e) => setDraftTrip({ ...draftTrip, title: e.target.value })}
-              className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black tracking-tight uppercase leading-none bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 p-2 outline-none w-full text-black dark:text-white rounded-none font-satoshi"
-              style={{ fontFamily: "'Satoshi', sans-serif" }}
-              placeholder="JOURNEY TITLE"
-            />
-          ) : (
-            <h1 
-              className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black tracking-tight uppercase leading-tight break-keep font-satoshi text-black dark:text-white"
-              style={{ wordBreak: 'keep-all', fontFamily: "'Satoshi', sans-serif" }}
-            >
-              {(trip.title || '').replace(' (Plan)', '')}
-            </h1>
-          )}
-        </div>
-        
-        <div className="shrink-0 flex flex-wrap items-center gap-1.5 w-full lg:w-auto justify-start lg:justify-end">
-
-
+          {/* Quick Summary Pill */}
           <button
             onClick={() => {
               setActiveTab(prev => prev === 'summary' ? 'timeline' : 'summary');
               setExpandedItemId(null);
             }}
-            className={`px-2.5 py-1.5 border rounded-sm transition-all flex items-center gap-1 text-[9px] font-black uppercase tracking-widest cursor-pointer ${
+            className={`px-2 py-1 rounded text-[8.5px] sm:text-[9.5px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
               activeTab === 'summary'
-                ? 'bg-amber-600 text-white border-amber-600 dark:bg-amber-500 dark:border-amber-500 shadow-sm'
-                : 'border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'
             }`}
-            title="여정 요약"
+            title="Summary View"
           >
-            <FileText className="w-3.5 h-3.5" />
-            <span>Summary</span>
+            <FileText className="w-3 h-3 sm:hidden" />
+            <span className="hidden sm:inline">Summary</span>
           </button>
 
-          <button
-            onClick={() => {
-              setActiveTab(prev => prev === 'settlement' ? 'timeline' : 'settlement');
-              setExpandedItemId(null);
-            }}
-            className={`px-2.5 py-1.5 border rounded-sm transition-all flex items-center gap-1 text-[9px] font-black uppercase tracking-widest cursor-pointer ${
-              activeTab === 'settlement'
-                ? 'bg-emerald-600 text-white border-emerald-600 dark:bg-emerald-500 dark:border-emerald-500 shadow-sm'
-                : 'border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'
-            }`}
-            title="정산 모드"
-          >
-            <Calculator className="w-3.5 h-3.5" />
-            <span>Pay</span>
-          </button>
-
-          <button
-            onClick={handleCopyShareLink}
-            className="px-2.5 py-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all text-black/60 dark:text-white/60 cursor-pointer flex items-center gap-1"
-            title="공유 링크 복사"
-          >
-            <Share2 className="w-3.5 h-3.5" />
-            <span>Share</span>
-          </button>
-
+          {/* Quick Edit / Done Button */}
           {isLoggedIn && (
-            <div className="flex items-center gap-1.5">
-              {isEditing ? (
-                <>
-                  <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="px-2.5 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all flex items-center gap-1 disabled:opacity-50 cursor-pointer"
-                  >
-                    {saving && <Loader2 className="w-3 h-3 animate-spin" />}
-                    Save
-                  </button>
+            <button
+              onClick={() => {
+                if (isEditing) {
+                  handleSave();
+                } else {
+                  handleStartEditing();
+                  setIsBannerMenuOpen(true);
+                }
+              }}
+              disabled={saving}
+              className={`px-2.5 py-1 rounded text-[8.5px] sm:text-[9.5px] font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1 ${
+                isEditing
+                  ? 'bg-red-600 text-white shadow-xs'
+                  : 'border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 text-black/80 dark:text-white/80'
+              }`}
+              title={isEditing ? "저장 완료" : "여정 수정"}
+            >
+              {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : (isEditing ? <Check className="w-3 h-3" /> : <Edit3 className="w-3 h-3" />)}
+              <span>{isEditing ? 'Done' : 'Edit'}</span>
+            </button>
+          )}
+
+          {/* Accordion Menu Toggle Button */}
+          <button
+            onClick={() => setIsBannerMenuOpen(p => !p)}
+            className={`p-1.5 rounded transition-all cursor-pointer ${
+              isBannerMenuOpen
+                ? 'bg-black/10 dark:bg-white/15 text-red-600 dark:text-red-400'
+                : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/55 dark:text-white/55'
+            }`}
+            title="여정 상세 메뉴 토글"
+            aria-label="Toggle banner menu"
+          >
+            <ChevronDown className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-200 ${isBannerMenuOpen ? 'rotate-180' : ''}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* 2. Accordion Dropdown Panel (Shown when isBannerMenuOpen or isEditing) */}
+      {(isBannerMenuOpen || isEditing) && (
+        <div className="border-t border-black/10 dark:border-white/10 bg-[#F4F2EC] dark:bg-[#161616] p-3 sm:p-4 animate-in slide-in-from-top-2 duration-200 flex flex-col gap-3 shadow-inner">
+          {/* Row 1: Title Input (in Edit mode) or Detailed Title Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            {isEditing && draftTrip ? (
+              <div className="flex-1 min-w-0">
+                <span className="text-[8px] uppercase tracking-widest text-black/40 dark:text-white/40 font-bold block mb-1">Journey Title</span>
+                <input
+                  type="text"
+                  value={draftTrip.title}
+                  onChange={(e) => setDraftTrip({ ...draftTrip, title: e.target.value })}
+                  className="text-base sm:text-lg md:text-xl font-black uppercase bg-[#EAE8E3] dark:bg-white/10 border border-black/15 dark:border-white/15 px-2.5 py-1 outline-none w-full text-black dark:text-white rounded font-satoshi"
+                  placeholder="JOURNEY TITLE"
+                />
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold text-red-600 dark:text-red-400 tracking-wider">
+                  ISSUE #{String((trip.displayOrder ?? (trip.id % 99)) + 1).padStart(2, '0')}
+                </span>
+                <span className="text-sm sm:text-base font-black uppercase text-black dark:text-white font-satoshi">
+                  {trip.title}
+                </span>
+              </div>
+            )}
+
+            {/* Actions: Settlement, Share, Delete */}
+            <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+              <button
+                onClick={() => {
+                  setActiveTab(prev => prev === 'settlement' ? 'timeline' : 'settlement');
+                  setExpandedItemId(null);
+                }}
+                className={`px-2.5 py-1 border rounded text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1 ${
+                  activeTab === 'settlement'
+                    ? 'bg-emerald-600 text-white border-emerald-600'
+                    : 'border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70'
+                }`}
+                title="정산 관리"
+              >
+                <DollarSign className="w-3 h-3" />
+                <span>Settlement</span>
+              </button>
+
+              <button
+                onClick={handleCopyShareLink}
+                className="px-2.5 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 rounded text-[9px] font-bold uppercase tracking-wider text-black/70 dark:text-white/70 transition-colors flex items-center gap-1 cursor-pointer"
+                title="공유 링크 복사"
+              >
+                <Share2 className="w-3 h-3" />
+                <span>Share</span>
+              </button>
+
+              {isEditing && (
                 <button
                   onClick={handleCancel}
-                  className="px-2.5 py-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all text-black/60 dark:text-white/60 cursor-pointer"
+                  className="px-2.5 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 rounded text-[9px] font-bold uppercase tracking-wider text-black/70 dark:text-white/70 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
-              </>
+              )}
+
+              {isEditing && onDelete && (
+                <button
+                  onClick={async () => {
+                    if (window.confirm("정말 이 여정을 삭제하시겠습니까? 복구할 수 없습니다.")) {
+                      await onDelete(trip.id);
+                    }
+                  }}
+                  className="px-2.5 py-1 border border-red-600/30 text-red-600 hover:bg-red-600 hover:text-white rounded text-[9px] font-bold uppercase tracking-wider transition-colors flex items-center gap-1 cursor-pointer"
+                  title="여정 삭제"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  <span>Delete</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Row 2: Dates & Destinations */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 text-[9px] sm:text-[10px] font-bold border-t border-black/10 dark:border-white/10 pt-2.5">
+            {isEditing && draftTrip ? (
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[8px] uppercase tracking-widest text-black/40 dark:text-white/40 font-bold shrink-0">Dates:</span>
+                  <input
+                    type="date"
+                    value={parseDateRange(draftTrip.date).start}
+                    onChange={(e) => handleDateChange('start', e.target.value)}
+                    className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[9px] text-black dark:text-white rounded border border-black/15"
+                  />
+                  <span>—</span>
+                  <input
+                    type="date"
+                    value={parseDateRange(draftTrip.date).end}
+                    onChange={(e) => handleDateChange('end', e.target.value)}
+                    className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[9px] text-black dark:text-white rounded border border-black/15"
+                  />
+                </div>
+
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <span className="text-[8px] uppercase tracking-widest text-black/40 dark:text-white/40 font-bold shrink-0">Cities:</span>
+                  <div className="flex flex-wrap items-center gap-1 border border-black/15 dark:border-white/15 p-1 bg-white/5 rounded flex-1">
+                    {(draftTrip.locations && Array.isArray(draftTrip.locations) ? draftTrip.locations : (draftTrip.locationStr ? [{ name: draftTrip.locationStr, lat: draftTrip.lat, lng: draftTrip.lng }] : [])).map((loc, idx) => (
+                      <span key={idx} className="flex items-center gap-1 bg-white dark:bg-[#222] text-[8px] font-bold px-1.5 py-0.5 border border-black/15 text-black dark:text-white rounded-sm">
+                        {loc.name}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentLocs = draftTrip.locations && Array.isArray(draftTrip.locations) ? draftTrip.locations : (draftTrip.locationStr ? [{ name: draftTrip.locationStr, lat: draftTrip.lat, lng: draftTrip.lng }] : []);
+                            const updated = currentLocs.filter((_, i) => i !== idx);
+                            setDraftTrip({
+                              ...draftTrip,
+                              locations: updated,
+                              locationStr: updated.map(l => l.name).join(', '),
+                              lat: updated[0]?.lat,
+                              lng: updated[0]?.lng
+                            });
+                          }}
+                          className="text-red-500 font-bold hover:text-red-700 ml-0.5"
+                        >
+                          &times;
+                        </button>
+                      </span>
+                    ))}
+                    <div className="w-24 md:w-32">
+                      <PlaceAutocompleteInput
+                        value={detailLocInput}
+                        onChange={(val) => setDetailLocInput(val)}
+                        onSelectPlace={(name, coords) => {
+                          if (name.trim()) {
+                            const currentLocs = draftTrip.locations && Array.isArray(draftTrip.locations) ? draftTrip.locations : (draftTrip.locationStr ? [{ name: draftTrip.locationStr, lat: draftTrip.lat, lng: draftTrip.lng }] : []);
+                            if (!currentLocs.some(loc => loc.name === name.trim())) {
+                              const updated = [...currentLocs, { name: name.trim(), lat: coords?.lat, lng: coords?.lng }];
+                              setDraftTrip({
+                                ...draftTrip,
+                                locations: updated,
+                                locationStr: updated.map(l => l.name).join(', '),
+                                lat: updated[0]?.lat,
+                                lng: updated[0]?.lng
+                              });
+                            }
+                            setDetailLocInput('');
+                          }
+                        }}
+                        className="bg-transparent outline-none text-[8px] text-black dark:text-white w-full border-none px-1 py-0.5"
+                        placeholder="+ City..."
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
             ) : (
-              <button
-                onClick={handleStartEditing}
-                className="px-2.5 py-1.5 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-[9px] font-black uppercase tracking-widest rounded-sm transition-all cursor-pointer"
-              >
-                Edit
-              </button>
+              <div className="flex items-center gap-2 flex-wrap text-black/60 dark:text-white/60">
+                <span>🗓 {trip.date}</span>
+                <span>•</span>
+                <span>📍 {formatDestinations(trip.locationStr)}</span>
+              </div>
             )}
           </div>
-        )}
-      </div>
-    </div>
-      
-      {/* Tags & Members row */}
-      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-black/50 dark:text-white/50" onClick={(e) => e.stopPropagation()}>
-        {/* Tags sub-group */}
-        <div className="flex flex-wrap gap-1.5 items-center">
-          {isEditing && draftTrip ? (
-            <>
-              {(draftTrip.tags || []).filter(t => t !== 'Personal').map(tag => (
-                <span
-                  key={tag}
-                  className="text-[8px] md:text-[9px] font-bold border border-orange-500/50 dark:border-orange-400/50 px-2.5 py-0.5 uppercase rounded-full flex items-center gap-1 bg-orange-500/5 dark:bg-orange-400/5 text-orange-600 dark:text-orange-400 shadow-sm"
-                >
-                  #{tag}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const updatedTags = draftTrip.tags.filter(t => t !== tag);
-                      setDraftTrip({ ...draftTrip, tags: updatedTags });
-                    }}
-                    className="hover:text-red-500 transition-colors font-bold text-[9px] px-0.5 shrink-0 cursor-pointer"
-                    title="태그 삭제"
-                  >
-                    ✕
-                  </button>
-                </span>
-              ))}
-              <input
-                type="text"
-                placeholder="+ Tag"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const val = e.currentTarget.value.trim().replace(/#/g, '');
-                    if (val && !draftTrip.tags.includes(val)) {
-                      const updatedTags = [...draftTrip.tags, val];
-                      setDraftTrip({ ...draftTrip, tags: updatedTags });
-                      e.currentTarget.value = '';
-                    }
-                  }
-                }}
-                className="text-[8px] md:text-[9px] font-bold border border-black/20 dark:border-white/20 px-2.5 py-0.5 rounded-full bg-transparent outline-none w-16 focus:w-24 focus:border-orange-500 transition-all duration-200 text-black dark:text-white"
-              />
-            </>
-          ) : (
-            (tripToUse?.tags || []).filter(t => t !== 'Personal').map(tag => {
-              const isPlan = trip?.tags.includes('Plan') || trip?.title.includes('(Plan)');
-              return (
-                <button
-                  key={tag}
-                  onClick={() => onNavigate(isPlan ? 'plan' : 'archive', null, true, tag)}
-                  className="text-[8px] md:text-[9px] font-bold border border-black/20 dark:border-white/20 px-2 py-0.5 uppercase rounded-full hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black hover:border-black dark:hover:border-white transition-all duration-200 cursor-pointer shadow-sm"
-                >
-                  #{tag}
-                </button>
-              );
-            })
-          )}
-        </div>
 
-        <span className="text-[9px] md:text-[10px] text-black/20 dark:text-white/20">|</span>
-
-        {/* Members sub-group */}
-        <div className="flex flex-wrap gap-1.5 items-center text-[9px] md:text-[10px] font-bold uppercase tracking-widest">
-          <span className="opacity-60 flex items-center gap-1">👥 Members:</span>
-          {isEditing && draftTrip ? (
-            <div className="flex flex-wrap gap-1.5 items-center">
-              {(draftTrip.members || []).map(m => (
-                <span key={m} className="px-2 py-0.5 bg-black/5 dark:bg-white/5 border border-red-500/40 dark:border-red-500/40 rounded-sm text-black/75 dark:text-white/75 font-black flex items-center gap-1 normal-case">
-                  {m}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (window.confirm(`정말 '${m}' 인원을 삭제하시겠습니까? 관련 결제 기록의 결제자가 변경될 수 있습니다.`)) {
-                        const newMembers = (draftTrip.members || []).filter(x => x !== m);
-                        setDraftTrip({ ...draftTrip, members: newMembers });
+          {/* Row 3: Members & Tags */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-t border-black/10 dark:border-white/10 pt-2.5">
+            {/* Members */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[8px] uppercase tracking-widest text-black/40 dark:text-white/40 font-bold shrink-0">👥 Members:</span>
+              {isEditing && draftTrip ? (
+                <div className="flex flex-wrap gap-1 items-center">
+                  {(draftTrip.members || []).map(m => (
+                    <span key={m} className="px-1.5 py-0.5 bg-black/5 dark:bg-white/5 border border-red-500/30 rounded text-black/75 dark:text-white/75 font-bold flex items-center gap-1 text-[8.5px]">
+                      {m}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newMembers = (draftTrip.members || []).filter(x => x !== m);
+                          setDraftTrip({ ...draftTrip, members: newMembers });
+                        }}
+                        className="hover:text-red-500 text-red-600 font-bold text-[8px]"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                  <input
+                    type="text"
+                    placeholder="+ Member"
+                    onKeyDown={(e) => {
+                      if (e.nativeEvent.isComposing) return;
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const val = e.currentTarget.value.trim();
+                        if (val && !(draftTrip.members || []).includes(val)) {
+                          setDraftTrip({ ...draftTrip, members: [...(draftTrip.members || []), val] });
+                          e.currentTarget.value = '';
+                        }
                       }
                     }}
-                    className="hover:text-red-500 transition-colors font-bold text-[9px] px-0.5 shrink-0 cursor-pointer text-red-600"
-                    title="인원 삭제"
-                  >
-                    ✕
-                  </button>
-                </span>
-              ))}
-              <input
-                type="text"
-                placeholder="+ Member"
-                onKeyDown={(e) => {
-                  if (e.nativeEvent.isComposing) return;
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const val = e.currentTarget.value.trim();
-                    if (val) {
-                      if ((draftTrip.members || []).includes(val)) {
-                        alert("이미 등록된 인원입니다.");
-                      } else {
-                        const newMembers = [...(draftTrip.members || []), val];
-                        setDraftTrip({ ...draftTrip, members: newMembers });
-                        e.currentTarget.value = '';
-                      }
-                    }
-                  }
-                }}
-                className="text-[8px] md:text-[9px] font-bold border border-black/20 dark:border-white/20 px-2 py-0.5 rounded-full bg-transparent outline-none w-20 focus:w-28 focus:border-orange-500 transition-all duration-200 text-black dark:text-white normal-case"
-              />
-            </div>
-          ) : (
-            <>
-              {tripToUse?.members && tripToUse.members.length > 0 ? (
-                tripToUse.members.map(m => (
-                  <span key={m} className="px-2 py-0.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm text-black/75 dark:text-white/75 font-black normal-case">
-                    {m}
-                  </span>
-                ))
+                    className="text-[8px] font-bold border border-black/15 px-2 py-0.5 rounded-full bg-transparent outline-none w-16 focus:w-24 text-black dark:text-white"
+                  />
+                </div>
               ) : (
-                <span className="italic opacity-60 normal-case">나</span>
+                <div className="flex items-center gap-1 flex-wrap">
+                  {tripToUse?.members && tripToUse.members.length > 0 ? (
+                    tripToUse.members.map(m => (
+                      <span key={m} className="px-1.5 py-0.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded text-black/75 dark:text-white/75 font-bold text-[8.5px]">
+                        {m}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-[8.5px] italic text-black/50 dark:text-white/50">나</span>
+                  )}
+                </div>
               )}
-            </>
-          )}
+            </div>
+
+            {/* Tags */}
+            <div className="flex items-center gap-1 flex-wrap">
+              {(tripToUse?.tags || []).filter(t => t !== 'Personal').map(tag => (
+                <span key={tag} className="text-[8px] font-bold border border-black/15 dark:border-white/15 px-1.5 py-0.5 rounded-full text-black/60 dark:text-white/60">
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 
@@ -2939,7 +2922,7 @@ export function JourneyDetailPage({
           }
         }}
       >
-        {renderInfoHeader(false)}
+        {renderInfoHeader()}
         
         {/* Dynamic Map Area */}
         <div className="w-full relative md:pb-6 flex flex-col flex-grow h-full overflow-hidden">
@@ -3010,7 +2993,7 @@ export function JourneyDetailPage({
             />
           </ErrorBoundary>
 
-          {/* Floating Circular Play Log Button (FAB) - Visible when NOT playing */}
+          {/* Floating Circular Play Log Button (FAB) - Centered at bottom (w-10 h-10) */}
           {cinematicItems.length > 0 && !isCinematicMode && (
             <button
               onClick={() => {
@@ -3025,107 +3008,104 @@ export function JourneyDetailPage({
                 setIsCinematicPaused(false);
                 setMobileSheetSnap('collapsed');
               }}
-              className="absolute bottom-4 right-4 z-[1000] w-12 h-12 rounded-full bg-red-600 hover:bg-red-700 active:scale-95 text-white shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-105 border-2 border-white/20 group cursor-pointer"
+              className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[1000] w-10 h-10 rounded-full bg-red-600 hover:bg-red-700 active:scale-95 text-white shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-105 border border-white/30 group cursor-pointer"
               title="시네마틱 플레이로그 시작 (Play Log)"
               aria-label="Play Log"
             >
-              <Play className="w-5 h-5 fill-current ml-0.5" />
-              <span className="hidden group-hover:md:inline-block absolute right-full mr-2.5 px-2.5 py-1 bg-black/80 backdrop-blur-md text-white text-[10px] font-bold rounded-full whitespace-nowrap uppercase tracking-wider shadow-lg border border-white/10">
+              <Play className="w-4 h-4 fill-current ml-0.5" />
+              <span className="hidden group-hover:md:inline-block absolute bottom-full mb-2 px-2.5 py-1 bg-black/85 backdrop-blur-md text-white text-[9.5px] font-bold rounded-full whitespace-nowrap uppercase tracking-wider shadow-lg border border-white/10">
                 Play Log
               </span>
             </button>
           )}
 
-          {/* Wide Rounded Box: Morphing Expanded Floating Player */}
+          {/* Fully Rounded Stadium Pill (Expanded Floating Player - rounded-full) */}
           {isCinematicMode && currentCinematicItem && (
-            <div className="absolute bottom-3 left-3 right-3 sm:left-auto sm:right-4 sm:w-[440px] z-[1000] bg-black/90 backdrop-blur-md border border-white/20 text-white rounded-2xl shadow-2xl p-2.5 sm:p-3 flex flex-col gap-2 transition-all duration-300 animate-in zoom-in-95 pointer-events-auto">
-              {/* Progress Line */}
-              <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden">
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-[480px] z-[1000] bg-black/90 backdrop-blur-md border border-white/20 text-white rounded-full shadow-2xl px-3 py-1.5 sm:px-4 sm:py-2 flex items-center justify-between gap-2.5 transition-all duration-300 animate-in zoom-in-95 pointer-events-auto overflow-hidden">
+              {/* Mini Progress Bar along the bottom of the pill */}
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/20">
                 <div
                   className="h-full bg-gradient-to-r from-red-600 via-orange-500 to-amber-400 transition-all duration-75"
                   style={{ width: `${cinematicProgress}%` }}
                 />
               </div>
 
-              {/* Main Content & Controls */}
-              <div className="flex items-center justify-between gap-2">
-                {/* Spot info */}
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  {currentCinematicItem.img && (
-                    <img
-                      src={getEffectiveImageUrl(currentCinematicItem.img)}
-                      alt={currentCinematicItem.place}
-                      className="w-9 h-9 sm:w-10 sm:h-10 object-cover rounded-lg shrink-0 border border-white/20 shadow-sm"
-                    />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="bg-red-600 text-white px-1.5 py-0.2 text-[8px] font-black uppercase rounded-[2px] tracking-wider shrink-0">
-                        DAY {allTripDates.indexOf(currentCinematicItem.dateKey) + 1}
+              {/* Spot info */}
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                {currentCinematicItem.img && (
+                  <img
+                    src={getEffectiveImageUrl(currentCinematicItem.img)}
+                    alt={currentCinematicItem.place}
+                    className="w-7 h-7 sm:w-8 sm:h-8 object-cover rounded-full shrink-0 border border-white/20 shadow-sm"
+                  />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="bg-red-600 text-white px-1.5 py-0.2 text-[7.5px] font-black uppercase rounded-full tracking-wider shrink-0">
+                      DAY {allTripDates.indexOf(currentCinematicItem.dateKey) + 1}
+                    </span>
+                    {currentCinematicItem.time && (
+                      <span className="text-[8.5px] font-mono text-amber-400 font-bold shrink-0">
+                        {currentCinematicItem.time}
                       </span>
-                      {currentCinematicItem.time && (
-                        <span className="text-[9px] font-mono text-amber-400 font-bold shrink-0">
-                          {currentCinematicItem.time}
-                        </span>
-                      )}
-                      <span className="text-[8px] font-mono text-white/50 shrink-0">
-                        {cinematicIndex + 1}/{cinematicItems.length}
-                      </span>
-                    </div>
-                    <h4 className="text-xs sm:text-sm font-bold text-white tracking-tight truncate uppercase font-satoshi mt-0.5">
-                      {currentCinematicItem.place || 'Spot'}
-                    </h4>
+                    )}
+                    <span className="text-[7.5px] font-mono text-white/50 shrink-0">
+                      {cinematicIndex + 1}/{cinematicItems.length}
+                    </span>
                   </div>
+                  <h4 className="text-xs font-bold text-white tracking-tight truncate uppercase font-satoshi">
+                    {currentCinematicItem.place || 'Spot'}
+                  </h4>
                 </div>
+              </div>
 
-                {/* Controls */}
-                <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-                  <button
-                    onClick={() => setCinematicSpeed(s => s === 3800 ? 2200 : (s === 2200 ? 5500 : 3800))}
-                    className="px-1.5 py-0.5 bg-white/10 hover:bg-white/20 rounded text-white/80 text-[8px] font-mono transition-colors"
-                    title="속도 조절"
-                  >
-                    {cinematicSpeed === 3800 ? '1x' : (cinematicSpeed === 2200 ? '1.5x' : '0.7x')}
-                  </button>
+              {/* Controls */}
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => setCinematicSpeed(s => s === 3800 ? 2200 : (s === 2200 ? 5500 : 3800))}
+                  className="px-1.5 py-0.5 bg-white/10 hover:bg-white/20 rounded-full text-white/80 text-[7.5px] font-mono transition-colors"
+                  title="속도 조절"
+                >
+                  {cinematicSpeed === 3800 ? '1x' : (cinematicSpeed === 2200 ? '1.5x' : '0.7x')}
+                </button>
 
-                  <button
-                    onClick={() => {
-                      setCinematicIndex(prev => (prev - 1 + cinematicItems.length) % cinematicItems.length);
-                      setCinematicProgress(0);
-                    }}
-                    className="p-1 sm:p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-                    title="이전 스팟"
-                  >
-                    <SkipBack className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  </button>
+                <button
+                  onClick={() => {
+                    setCinematicIndex(prev => (prev - 1 + cinematicItems.length) % cinematicItems.length);
+                    setCinematicProgress(0);
+                  }}
+                  className="p-1 sm:p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                  title="이전 스팟"
+                >
+                  <SkipBack className="w-3.5 h-3.5" />
+                </button>
 
-                  <button
-                    onClick={() => setIsCinematicPaused(p => !p)}
-                    className="p-1.5 sm:p-2 bg-white text-black hover:bg-amber-400 rounded-full shadow transition-all active:scale-95"
-                    title={isCinematicPaused ? '재생' : '일시정지'}
-                  >
-                    {isCinematicPaused ? <Play className="w-3.5 h-3.5 fill-current ml-0.5" /> : <Pause className="w-3.5 h-3.5 fill-current" />}
-                  </button>
+                <button
+                  onClick={() => setIsCinematicPaused(p => !p)}
+                  className="p-1.5 bg-white text-black hover:bg-amber-400 rounded-full shadow transition-all active:scale-95"
+                  title={isCinematicPaused ? '재생' : '일시정지'}
+                >
+                  {isCinematicPaused ? <Play className="w-3 h-3 fill-current ml-0.5" /> : <Pause className="w-3 h-3 fill-current" />}
+                </button>
 
-                  <button
-                    onClick={() => {
-                      setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
-                      setCinematicProgress(0);
-                    }}
-                    className="p-1 sm:p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-                    title="다음 스팟"
-                  >
-                    <SkipForward className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  </button>
+                <button
+                  onClick={() => {
+                    setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
+                    setCinematicProgress(0);
+                  }}
+                  className="p-1 sm:p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                  title="다음 스팟"
+                >
+                  <SkipForward className="w-3.5 h-3.5" />
+                </button>
 
-                  <button
-                    onClick={() => setIsCinematicMode(false)}
-                    className="p-1 sm:p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-colors ml-0.5"
-                    title="종료 (축소)"
-                  >
-                    <CloseIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  </button>
-                </div>
+                <button
+                  onClick={() => setIsCinematicMode(false)}
+                  className="p-1 sm:p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-colors ml-0.5"
+                  title="종료 (축소)"
+                >
+                  <CloseIcon className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           )}
@@ -3193,7 +3173,6 @@ export function JourneyDetailPage({
           ref={tabContentRef}
           className="flex-grow flex flex-col relative overflow-y-auto overflow-x-hidden w-full h-full bg-[#F9F8F6] dark:bg-[#111111]"
         >
-          {renderInfoHeader(true)}
           {/* SUMMARY TAB */}
           {activeTab === 'summary' && (
             <SummaryView 

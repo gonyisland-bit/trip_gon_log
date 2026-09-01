@@ -1225,8 +1225,8 @@ function App() {
           onSearchClick={() => setIsSearchOpen(true)}
         />
 
-        {/* Marquee Banner */}
-        {marqueeShow && (
+        {/* Marquee Banner - Only on Home View */}
+        {currentView === 'home' && marqueeShow && (
           <div className="w-full bg-[#EAE8E3] dark:bg-[#161616] border-b border-black/10 dark:border-white/10 py-2 overflow-hidden flex items-center shrink-0">
             <div 
               key={displayMarqueeText}
@@ -1509,7 +1509,7 @@ function App() {
           </div>
           <div className="pb-8">
             <span className="text-[10px] md:text-xs font-bold tracking-widest text-black/40 dark:text-white/40 uppercase">
-              v0.6
+              v0.6a
             </span>
           </div>
         </div>
