@@ -132,11 +132,14 @@ export function MapArea({
     const cartoKey = import.meta.env.VITE_CARTO_API_KEY;
     const tileUrl = cartoKey
       ? `https://{s}.basemaps.cartocdn.com/rastertiles/${isDarkMode ? 'dark_all' : 'light_all'}/{z}/{x}/{y}.png?key=${cartoKey}`
-      : isDarkMode
-        ? 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
-        : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+      : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko';
 
-    tileLayerRef.current = L.tileLayer(tileUrl, { maxNativeZoom: 16, maxZoom: 20, zIndex: 1 }).addTo(map);
+    tileLayerRef.current = L.tileLayer(tileUrl, {
+      maxNativeZoom: 20,
+      maxZoom: 21,
+      zIndex: 1,
+      className: !cartoKey && isDarkMode ? 'map-tile-dark' : (!cartoKey ? 'map-tile-light' : ''),
+    }).addTo(map);
 
     // Add 1km scale control
     L.control.scale({
@@ -197,11 +200,14 @@ export function MapArea({
     const cartoKey = import.meta.env.VITE_CARTO_API_KEY;
     const tileUrl = cartoKey
       ? `https://{s}.basemaps.cartocdn.com/rastertiles/${isDarkMode ? 'dark_all' : 'light_all'}/{z}/{x}/{y}.png?key=${cartoKey}`
-      : isDarkMode
-        ? 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
-        : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+      : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko';
 
-    tileLayerRef.current = L.tileLayer(tileUrl, { maxNativeZoom: 16, maxZoom: 20, zIndex: 1 }).addTo(map);
+    tileLayerRef.current = L.tileLayer(tileUrl, {
+      maxNativeZoom: 20,
+      maxZoom: 21,
+      zIndex: 1,
+      className: !cartoKey && isDarkMode ? 'map-tile-dark' : (!cartoKey ? 'map-tile-light' : ''),
+    }).addTo(map);
 
     // Redraw polyline to bring to front and align layers
     if (polylineRef.current?.bringToFront) polylineRef.current.bringToFront();

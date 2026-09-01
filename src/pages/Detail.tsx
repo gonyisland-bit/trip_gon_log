@@ -3,7 +3,8 @@ import {
   Clock, Plane, Bed, Train, Bus, Car, User, Edit2, Trash2, 
   Image as ImageIcon, ChevronUp, ChevronDown, MapPin, Map, Plus, Loader2, Search, ArrowLeft,
   ExternalLink, MapPinOff, Maximize2, Star, ChevronLeft, ChevronRight, ArrowUp, ArrowDown,
-  Sun, Cloud, Cloudy, CloudRain, Snowflake, CloudLightning, ArrowRight, Calculator, FileText, Share2, GripVertical
+  Sun, Cloud, Cloudy, CloudRain, Snowflake, CloudLightning, ArrowRight, Calculator, FileText, Share2, GripVertical,
+  Play, Pause, SkipForward, SkipBack, X as CloseIcon
 } from 'lucide-react';
 import { MapArea } from '../components/MapArea';
 import { ImageEditOverlay } from '../components/ImageEditOverlay';
@@ -745,8 +746,114 @@ export function JourneyDetailPage({
   const [airportGeocodedCoords, setAirportGeocodedCoords] = useState<{ [code: string]: { lat: number; lng: number } }>({});
   const tabContentRef = useRef<HTMLDivElement | null>(null);
 
+  // ─── Cinematic Tour Mode ("Play Log") States & Logic ───
+  const [isCinematicMode, setIsCinematicMode] = useState(false);
+  const [cinematicIndex, setCinematicIndex] = useState(0);
+  const [isCinematicPaused, setIsCinematicPaused] = useState(false);
+  const [cinematicSpeed, setCinematicSpeed] = useState<number>(3800); // ms per step
+  const [cinematicProgress, setCinematicProgress] = useState(0);
 
+  // Flatten and sort timeline items for Cinematic Tour
+  const cinematicItems = useMemo(() => {
+    if (!timelineData) return [];
+    const items: (TimelineItem & { dateKey: string })[] = [];
+    generatedDates.forEach(d => {
+      const dayList = timelineData[d] || [];
+      dayList.forEach(item => {
+        items.push({ ...item, dateKey: d });
+      });
+    });
+    return items;
+  }, [timelineData, generatedDates]);
 
+  const currentCinematicItem = cinematicItems[cinematicIndex] || null;
+
+  // Sync active step to timeline and map
+  useEffect(() => {
+    if (!isCinematicMode || !currentCinematicItem) return;
+    setExpandedItemId(currentCinematicItem.id);
+    if (selectedDate !== 'ALL' && selectedDate !== currentCinematicItem.dateKey) {
+      setSelectedDate(currentCinematicItem.dateKey);
+    }
+    // Smoothly scroll timeline item into view
+    setTimeout(() => {
+      const el = document.getElementById(`timeline-item-${currentCinematicItem.id}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+  }, [isCinematicMode, cinematicIndex, currentCinematicItem]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Cinematic timer loop
+  useEffect(() => {
+    if (!isCinematicMode || isCinematicPaused || cinematicItems.length === 0) {
+      return;
+    }
+
+    const interval = 50;
+    const totalTicks = cinematicSpeed / interval;
+    let currentTick = 0;
+    setCinematicProgress(0);
+
+    const timer = setInterval(() => {
+      currentTick++;
+      setCinematicProgress(Math.min(100, (currentTick / totalTicks) * 100));
+      if (currentTick >= totalTicks) {
+        currentTick = 0;
+        setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
+      }
+    }, interval);
+
+    return () => clearInterval(timer);
+  }, [isCinematicMode, isCinematicPaused, cinematicIndex, cinematicItems.length, cinematicSpeed]);
+
+  // Turn off cinematic mode when user edits or changes tab away from timeline
+  useEffect(() => {
+    if (activeTab !== 'timeline' && isCinematicMode) {
+      setIsCinematicMode(false);
+    }
+  }, [activeTab, isCinematicMode]);
+
+  // Destination Local Time
+  const [destLocalTime, setDestLocalTime] = useState('');
+  useEffect(() => {
+    const updateTime = () => {
+      try {
+        const country = (detectedCountry || tripToUse?.country || '').toUpperCase();
+        let timeZone = 'Asia/Tokyo'; // Default JST
+        if (country.includes('KOREA') || country.includes('한국')) timeZone = 'Asia/Seoul';
+        else if (country.includes('JAPAN') || country.includes('일본')) timeZone = 'Asia/Tokyo';
+        else if (country.includes('FRANCE') || country.includes('ITALY') || country.includes('GERMANY') || country.includes('SPAIN')) timeZone = 'Europe/Paris';
+        else if (country.includes('UK') || country.includes('BRITAIN') || country.includes('LONDON')) timeZone = 'Europe/London';
+        else if (country.includes('USA') || country.includes('AMERICA') || country.includes('US')) timeZone = 'America/New_York';
+        else if (country.includes('THAILAND') || country.includes('BANGKOK') || country.includes('VIETNAM')) timeZone = 'Asia/Bangkok';
+        else if (tripToUse?.lng !== undefined && tripToUse?.lng !== null) {
+          const offsetHours = Math.round(tripToUse.lng / 15);
+          const now = new Date();
+          const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+          const destDate = new Date(utc + (3600000 * offsetHours));
+          const hours = String(destDate.getHours()).padStart(2, '0');
+          const minutes = String(destDate.getMinutes()).padStart(2, '0');
+          setDestLocalTime(`${hours}:${minutes}`);
+          return;
+        }
+
+        const now = new Date();
+        const formatted = new Intl.DateTimeFormat('ko-KR', {
+          timeZone,
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        }).format(now);
+        setDestLocalTime(formatted);
+      } catch (e) {
+        setDestLocalTime('');
+      }
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 30000);
+    return () => clearInterval(interval);
+  }, [detectedCountry, tripToUse?.country, tripToUse?.lng]);
   // Scroll window and tab container to top when switching tabs
   useEffect(() => {
     window.scrollTo({ top: 0 });
@@ -2541,7 +2648,13 @@ export function JourneyDetailPage({
           </span>
           <span className="font-bold tracking-wider">TRIPGON EDITORIAL ARCHIVE</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
+          {destLocalTime && (
+            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-black/5 dark:bg-white/10 border border-black/10 dark:border-white/15 rounded-sm text-black/75 dark:text-white/85 font-mono text-[9px] font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>LOCAL {destLocalTime}</span>
+            </div>
+          )}
           <span className="hidden sm:inline text-[8px] text-black/30 dark:text-white/30 font-medium">CURATED LOG</span>
           <div className="flex items-center gap-[2px] h-3 opacity-60">
             <div className="w-[1px] h-full bg-current" />
@@ -2579,6 +2692,30 @@ export function JourneyDetailPage({
         </div>
         
         <div className="shrink-0 flex flex-wrap items-center gap-1.5 w-full lg:w-auto justify-start lg:justify-end">
+          {/* Cinematic Tour Play Button */}
+          {cinematicItems.length > 0 && (
+            <button
+              onClick={() => {
+                if (isCinematicMode) {
+                  setIsCinematicMode(false);
+                } else {
+                  setActiveTab('timeline');
+                  setIsCinematicMode(true);
+                  setIsCinematicPaused(false);
+                }
+              }}
+              className={`px-2.5 py-1.5 border rounded-sm transition-all flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest cursor-pointer ${
+                isCinematicMode
+                  ? 'bg-red-600 text-white border-red-600 shadow-md animate-pulse'
+                  : 'border-red-600/40 hover:border-red-600 hover:bg-red-600/10 text-red-600 dark:text-red-400'
+              }`}
+              title="시네마틱 여정 투어 모드 (Play Log)"
+            >
+              {isCinematicMode ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+              <span>{isCinematicMode ? 'Playing' : 'Play Log'}</span>
+            </button>
+          )}
+
           <button
             onClick={() => {
               setActiveTab(prev => prev === 'summary' ? 'timeline' : 'summary');
@@ -2851,6 +2988,120 @@ export function JourneyDetailPage({
               transits={isEditing ? draftTransits : transits}
             />
           </ErrorBoundary>
+
+          {/* Floating Cinematic Tour Overlay */}
+          {isCinematicMode && currentCinematicItem && (
+            <div className="absolute bottom-4 left-3 right-3 sm:left-6 sm:right-6 z-[1000] flex flex-col items-center pointer-events-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
+              <div className="w-full max-w-lg bg-black/90 backdrop-blur-md border border-white/20 text-white rounded-lg shadow-2xl p-3 flex flex-col gap-2">
+                {/* Progress bar */}
+                <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-red-600 via-orange-500 to-amber-400 transition-all duration-75"
+                    style={{ width: `${cinematicProgress}%` }}
+                  />
+                </div>
+
+                {/* Header row */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="bg-red-600 text-white px-1.5 py-0.5 text-[8px] font-black tracking-widest uppercase rounded-[1px]">
+                      DAY {generatedDates.indexOf(currentCinematicItem.dateKey) + 1}
+                    </span>
+                    <span className="text-[10px] font-mono text-white/70">
+                      SPOT {cinematicIndex + 1} / {cinematicItems.length}
+                    </span>
+                    {currentCinematicItem.time && (
+                      <span className="text-[10px] font-mono text-amber-400 font-bold">
+                        {currentCinematicItem.time}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setIsCinematicMode(false)}
+                    className="p-1 text-white/60 hover:text-white rounded-full hover:bg-white/10 transition-colors"
+                    title="투어 모드 종료"
+                  >
+                    <CloseIcon className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Spot detail */}
+                <div className="flex items-center gap-3">
+                  {currentCinematicItem.img && (
+                    <img
+                      src={getEffectiveImageUrl(currentCinematicItem.img)}
+                      alt={currentCinematicItem.place}
+                      className="w-12 h-12 md:w-14 md:h-14 object-cover rounded-sm shrink-0 border border-white/20 shadow-md"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-xs md:text-sm font-bold text-white tracking-tight truncate uppercase font-serif">
+                      {currentCinematicItem.place || 'Spot'}
+                    </h4>
+                    {currentCinematicItem.memo && (
+                      <p className="text-[10px] md:text-[11px] text-white/75 line-clamp-2 mt-0.5 leading-snug">
+                        {currentCinematicItem.memo}
+                      </p>
+                    )}
+                    {currentCinematicItem.location && (
+                      <span className="text-[8px] md:text-[9px] text-white/45 truncate block mt-0.5">
+                        {currentCinematicItem.location}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Controls */}
+                <div className="flex items-center justify-between pt-1 border-t border-white/10">
+                  <div className="flex items-center gap-1.5 text-[9px] font-mono text-white/60">
+                    <button
+                      onClick={() => setCinematicSpeed(s => s === 3800 ? 2200 : (s === 2200 ? 5500 : 3800))}
+                      className="px-1.5 py-0.5 bg-white/10 hover:bg-white/20 rounded text-white/80 transition-colors"
+                      title="재생 속도 조절"
+                    >
+                      {cinematicSpeed === 3800 ? '1x' : (cinematicSpeed === 2200 ? '1.5x' : '0.7x')}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setCinematicIndex(prev => (prev - 1 + cinematicItems.length) % cinematicItems.length);
+                        setCinematicProgress(0);
+                      }}
+                      className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                      title="이전 스팟"
+                    >
+                      <SkipBack className="w-4 h-4" />
+                    </button>
+
+                    <button
+                      onClick={() => setIsCinematicPaused(p => !p)}
+                      className="p-1.5 md:p-2 bg-white text-black hover:bg-amber-400 rounded-full shadow transition-all active:scale-95"
+                      title={isCinematicPaused ? '재생' : '일시정지'}
+                    >
+                      {isCinematicPaused ? <Play className="w-3.5 h-3.5 fill-current ml-0.5" /> : <Pause className="w-3.5 h-3.5 fill-current" />}
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
+                        setCinematicProgress(0);
+                      }}
+                      className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                      title="다음 스팟"
+                    >
+                      <SkipForward className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <span className="text-[8px] md:text-[9px] font-mono text-amber-400 uppercase tracking-widest font-bold">
+                    PLAY LOG
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
       </section>

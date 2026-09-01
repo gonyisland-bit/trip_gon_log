@@ -61,42 +61,19 @@ export function Lightbox({
     }
   }, [isOpen]);
 
-  // Auto-scroll active thumbnail to center
+  // Auto-scroll active thumbnail to center immediately on index change
   useEffect(() => {
     if (!isOpen || isSlideshow) return;
 
-    // Wait for CSS transition (300ms) on thumbnail size to finish
-    const timer = setTimeout(() => {
-      const container = thumbnailsContainerRef.current;
-      const inner = thumbnailsInnerRef.current;
-      const activeBtn = activeThumbnailRef.current;
-      if (!container || !inner || !activeBtn) return;
-
-      const containerWidth = container.clientWidth;
-
-      // Set side padding on the inner strip so any item can be centered
-      const halfContainer = Math.floor(containerWidth / 2);
-      inner.style.paddingLeft = `${halfContainer}px`;
-      inner.style.paddingRight = `${halfContainer}px`;
-
-      // Compute center of the active button relative to inner strip origin (after padding)
-      const innerRect = inner.getBoundingClientRect();
-      const btnRect = activeBtn.getBoundingClientRect();
-      const btnCenterInInner = (btnRect.left - innerRect.left) + btnRect.width / 2;
-
-      // scrollLeft such that btnCenter sits at containerWidth/2
-      const targetScrollLeft = btnCenterInInner - containerWidth / 2;
-
-      // Jump instantly on first open, smooth on navigation
-      if (isFirstScrollRef.current) {
-        container.scrollLeft = targetScrollLeft;
-        isFirstScrollRef.current = false;
-      } else {
-        container.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
-      }
-    }, 320);
-
-    return () => clearTimeout(timer);
+    const activeBtn = activeThumbnailRef.current;
+    if (activeBtn) {
+      activeBtn.scrollIntoView({
+        behavior: isFirstScrollRef.current ? 'auto' : 'smooth',
+        inline: 'center',
+        block: 'nearest',
+      });
+      isFirstScrollRef.current = false;
+    }
   }, [currentIndex, isOpen, isSlideshow]);
 
   // ── Slideshow engine ──
@@ -595,7 +572,7 @@ export function Lightbox({
             className="relative inline-block"
             style={{
               transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-              transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+              transition: (isDragging || scale === 1) ? 'none' : 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
               transformOrigin: 'center center',
             }}
           >
@@ -607,8 +584,8 @@ export function Lightbox({
               onDoubleClick={isSlideshow ? undefined : handleDoubleClick}
               data-pin-nopin="true"
               style={{
-                maxHeight: isSlideshow ? '100vh' : '72vh',
-                maxWidth: isSlideshow ? '100vw' : '90vw',
+                maxHeight: isSlideshow ? '100vh' : 'calc(100vh - 145px)',
+                maxWidth: isSlideshow ? '100vw' : 'min(96vw, calc(100vw - 100px))',
                 objectFit: 'contain',
                 userSelect: 'none',
                 display: 'block',
@@ -677,8 +654,8 @@ export function Lightbox({
 
       {/* Bottom Thumbnails Strip (hidden in slideshow mode) */}
       {images.length > 1 && !isSlideshow && (
-        <div ref={thumbnailsContainerRef} className="w-full bg-black/40 py-2 border-t border-white/5 overflow-x-auto hide-scrollbar z-20 shrink-0">
-          <div ref={thumbnailsInnerRef} className="flex gap-2 w-max">
+        <div ref={thumbnailsContainerRef} className="w-full bg-black/50 py-2 border-t border-white/10 overflow-x-auto hide-scrollbar z-20 shrink-0">
+          <div ref={thumbnailsInnerRef} className="flex gap-2 w-max px-6 min-w-full justify-center">
             {images.map((img, idx) => {
               const isActive = idx === currentIndex;
               return (
@@ -686,10 +663,10 @@ export function Lightbox({
                   key={idx}
                   ref={isActive ? activeThumbnailRef : null}
                   onClick={() => onNavigate(idx)}
-                  className={`relative overflow-hidden transition-all duration-300 focus:outline-none shrink-0 ${
+                  className={`relative overflow-hidden transition-all duration-150 focus:outline-none shrink-0 w-11 h-11 md:w-13 md:h-13 rounded-[2px] ${
                     isActive 
-                      ? 'w-10 h-10 md:w-12 md:h-12 border-2 border-orange-500 scale-110 opacity-100 z-10' 
-                      : 'w-7 h-7 md:w-9 md:h-9 border border-white/20 opacity-40 hover:opacity-80'
+                      ? 'border-2 border-orange-500 ring-2 ring-orange-500/40 opacity-100 scale-105 z-10 shadow-lg' 
+                      : 'border border-white/20 opacity-45 hover:opacity-85 scale-100'
                   }`}
                 >
                   <img

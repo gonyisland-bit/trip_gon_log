@@ -435,4 +435,13 @@
   text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
+/* Custom Editorial Map Tile Styling */
+.map-tile-dark {
+  filter: invert(100%) hue-rotate(180deg) brightness(88%) contrast(115%) !important;
+}
+
+.map-tile-light {
+  filter: saturate(88%) contrast(102%) !important;
+}
+
 
