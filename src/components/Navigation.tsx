@@ -293,60 +293,86 @@ export function Navigation({
                 </div>
               </div>
 
-              {/* 2. Desktop Popover Dropdown (md and up, 100% solid background) */}
-              <div className="hidden md:flex absolute top-full right-0 mt-2 w-72 bg-[#F9F8F6] dark:bg-[#161616] border border-black/15 dark:border-white/15 shadow-2xl rounded-2xl p-3 flex-col gap-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+              {/* 2. Desktop Dropdown Menu (md and up, Glassmorphism with High Visibility) */}
+              <div 
+                className="hidden md:block fixed inset-0 z-40" 
+                onClick={() => setShowSettings(false)} 
+              />
+              <div className="hidden md:flex absolute top-full right-0 mt-2.5 w-84 backdrop-blur-2xl bg-white/85 dark:bg-[#161616]/85 border border-black/12 dark:border-white/15 shadow-2xl shadow-black/15 dark:shadow-black/60 rounded-2xl p-3 flex-col gap-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                 {/* User Profile Header if Logged In */}
-                {isLoggedIn && (
-                  <div className="px-3 py-2 bg-black/5 dark:bg-white/5 rounded-xl flex items-center justify-between text-[10px] font-mono mb-1">
-                    <span className="text-black/50 dark:text-white/50 uppercase tracking-widest font-bold">ACCOUNT</span>
-                    <strong className="text-black dark:text-white font-bold truncate max-w-[140px]">{displayName}</strong>
+                {isLoggedIn ? (
+                  <div className="px-3 py-2 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl flex items-center justify-between text-[11px] font-mono border border-black/5 dark:border-white/5 mb-0.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span className="text-black/60 dark:text-white/60 uppercase tracking-widest font-bold">USER</span>
+                    </div>
+                    <strong className="text-black dark:text-white font-bold truncate max-w-[160px]">{displayName}</strong>
+                  </div>
+                ) : (
+                  <div className="px-3 py-1.5 text-[10px] font-mono text-black/50 dark:text-white/50 uppercase tracking-widest font-bold">
+                    NAVIGATION MENU
                   </div>
                 )}
 
-                {/* Navigation Full Cards */}
+                {/* Navigation Items with High Visibility */}
                 <button 
                   onClick={() => { navigateTo('home'); setShowSettings(false); }}
-                  className={`w-full flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer text-left ${
+                  className={`w-full flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer text-left border ${
                     currentView === 'home'
-                      ? 'bg-black text-white dark:bg-white dark:text-black font-black shadow-md'
-                      : 'bg-black/4 dark:bg-white/5 hover:bg-black/8 dark:hover:bg-white/10 text-black dark:text-white font-bold'
+                      ? 'bg-black text-white dark:bg-white dark:text-black font-black border-transparent shadow-md'
+                      : 'bg-black/[0.03] dark:bg-white/[0.04] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] text-black dark:text-white font-bold border-black/5 dark:border-white/5'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <Home className="w-4 h-4 text-amber-500 shrink-0" />
-                    <span className="text-xs uppercase tracking-wider">Home</span>
+                    <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                      <Home className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase tracking-wider font-black">Home</div>
+                      <div className="text-[10px] opacity-60 font-normal">홈 매거진 및 추천 여정</div>
+                    </div>
                   </div>
-                  <span className="text-[9px] opacity-60 font-mono">01</span>
+                  <span className="text-[10px] opacity-40 font-mono font-bold">01</span>
                 </button>
 
                 <button 
                   onClick={() => { navigateTo('archive'); setShowSettings(false); }}
-                  className={`w-full flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer text-left ${
+                  className={`w-full flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer text-left border ${
                     currentView === 'archive'
-                      ? 'bg-black text-white dark:bg-white dark:text-black font-black shadow-md'
-                      : 'bg-black/4 dark:bg-white/5 hover:bg-black/8 dark:hover:bg-white/10 text-black dark:text-white font-bold'
+                      ? 'bg-black text-white dark:bg-white dark:text-black font-black border-transparent shadow-md'
+                      : 'bg-black/[0.03] dark:bg-white/[0.04] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] text-black dark:text-white font-bold border-black/5 dark:border-white/5'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <ArchiveIcon className="w-4 h-4 text-blue-500 shrink-0" />
-                    <span className="text-xs uppercase tracking-wider">Archive</span>
+                    <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                      <ArchiveIcon className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase tracking-wider font-black">Archive</div>
+                      <div className="text-[10px] opacity-60 font-normal">모든 여행 아카이브 모아보기</div>
+                    </div>
                   </div>
-                  <span className="text-[9px] opacity-60 font-mono">02</span>
+                  <span className="text-[10px] opacity-40 font-mono font-bold">02</span>
                 </button>
 
                 <button 
                   onClick={() => { navigateTo('plan'); setShowSettings(false); }}
-                  className={`w-full flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer text-left ${
+                  className={`w-full flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer text-left border ${
                     currentView === 'plan'
-                      ? 'bg-black text-white dark:bg-white dark:text-black font-black shadow-md'
-                      : 'bg-black/4 dark:bg-white/5 hover:bg-black/8 dark:hover:bg-white/10 text-black dark:text-white font-bold'
+                      ? 'bg-black text-white dark:bg-white dark:text-black font-black border-transparent shadow-md'
+                      : 'bg-black/[0.03] dark:bg-white/[0.04] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] text-black dark:text-white font-bold border-black/5 dark:border-white/5'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <Compass className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span className="text-xs uppercase tracking-wider">Plan</span>
+                    <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                      <Compass className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase tracking-wider font-black">Plan</div>
+                      <div className="text-[10px] opacity-60 font-normal">다가오는 여행 계획 작성</div>
+                    </div>
                   </div>
-                  <span className="text-[9px] opacity-60 font-mono">03</span>
+                  <span className="text-[10px] opacity-40 font-mono font-bold">03</span>
                 </button>
 
                 {/* Setting Button (if logged in) */}
@@ -356,31 +382,68 @@ export function Navigation({
                       setShowSettings(false); 
                       openSettingModal(); 
                     }}
-                    className="w-full flex items-center justify-between p-3 rounded-xl bg-black/4 dark:bg-white/5 hover:bg-black/8 dark:hover:bg-white/10 text-black dark:text-white font-bold transition-all cursor-pointer text-left"
+                    className="w-full flex items-center justify-between p-3 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] text-black dark:text-white font-bold border border-black/5 dark:border-white/5 transition-all cursor-pointer text-left"
                   >
                     <div className="flex items-center gap-3">
-                      <Settings className="w-4 h-4 text-purple-500 shrink-0" />
-                      <span className="text-xs uppercase tracking-wider">Setting</span>
+                      <div className="p-2 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                        <Settings className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs uppercase tracking-wider font-black">Setting</div>
+                        <div className="text-[10px] opacity-60 font-normal">환경설정 및 데이터 관리</div>
+                      </div>
                     </div>
-                    <span className="text-[9px] opacity-60 font-mono">SYS</span>
+                    <span className="text-[10px] opacity-40 font-mono font-bold">SYS</span>
                   </button>
                 )}
 
                 {/* Night Mode Toggle Card */}
                 <button 
-                  onClick={() => { setIsDarkMode(!isDarkMode); }}
-                  className="w-full flex items-center justify-between p-3 rounded-xl bg-black/4 dark:bg-white/5 hover:bg-black/8 dark:hover:bg-white/10 text-black dark:text-white font-bold transition-all cursor-pointer text-left"
+                  onClick={() => setIsDarkMode(!isDarkMode)}
+                  className="w-full flex items-center justify-between p-3 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] text-black dark:text-white font-bold border border-black/5 dark:border-white/5 transition-all cursor-pointer text-left"
                 >
                   <div className="flex items-center gap-3">
-                    {isDarkMode ? <Sun className="w-4 h-4 text-amber-400 shrink-0" /> : <Moon className="w-4 h-4 text-indigo-400 shrink-0" />}
-                    <span className="text-xs uppercase tracking-wider">Night Mode</span>
+                    <div className="p-2 rounded-lg bg-amber-400/10 text-amber-500">
+                      {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4 text-indigo-500" />}
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase tracking-wider font-black">Night Mode</div>
+                      <div className="text-[10px] opacity-60 font-normal">화면 테마 전환</div>
+                    </div>
                   </div>
-                  <span className={`text-[9px] font-mono px-2 py-0.5 rounded-full font-black ${
+                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-black ${
                     isDarkMode ? 'bg-amber-400/20 text-amber-600 dark:text-amber-300' : 'bg-black/10 text-black/70'
                   }`}>
                     {isDarkMode ? 'DARK' : 'LIGHT'}
                   </span>
                 </button>
+
+                {/* Desktop Menu Footer Auth */}
+                <div className="pt-2 mt-1 border-t border-black/10 dark:border-white/10 flex items-center justify-between">
+                  {isLoggedIn ? (
+                    <button
+                      onClick={() => { setShowSettings(false); handleLogout(); }}
+                      className="w-full py-2 text-center text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors cursor-pointer"
+                    >
+                      로그아웃 (Sign Out)
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2 w-full">
+                      <button
+                        onClick={() => { setShowSettings(false); openAuthModal('login'); }}
+                        className="flex-1 py-2 text-center bg-black text-white dark:bg-white dark:text-black rounded-xl font-bold text-xs uppercase tracking-wider cursor-pointer"
+                      >
+                        로그인
+                      </button>
+                      <button
+                        onClick={() => { setShowSettings(false); openAuthModal('signup'); }}
+                        className="flex-1 py-2 text-center border border-black/20 dark:border-white/20 rounded-xl font-bold text-xs uppercase tracking-wider cursor-pointer text-black dark:text-white"
+                      >
+                        회원가입
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </>
           )}

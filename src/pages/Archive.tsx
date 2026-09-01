@@ -620,7 +620,6 @@ export function ArchiveHubPage({
           })}
         </div>
       )}
-      </div>
     </main>
   );
 }
