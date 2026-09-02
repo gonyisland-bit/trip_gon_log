@@ -995,13 +995,13 @@ export function HomePage({
                           </div>
                         ) : <div />}
 
-                        {/* Responsive Tag Box: PLAN (Black/White minimal box) or Status Badge (NEW/EDITING) */}
+                        {/* Responsive Large Bold Tag Box: PLAN or Status Badge (NEW/EDITING) */}
                         {((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
-                          <span className="px-2 py-0.5 text-[2.6cqw] font-black uppercase tracking-widest font-mono shadow-sm bg-black text-white dark:bg-white dark:text-black border border-white/30 dark:border-black/30">
+                          <span className="px-2.5 sm:px-3.5 py-0.5 sm:py-1 text-[5.5cqw] sm:text-[6.5cqw] font-black uppercase tracking-wider font-mono shadow-md bg-black text-white dark:bg-white dark:text-black border border-white/40 dark:border-black/40 leading-none">
                             PLAN
                           </span>
                         ) : trip.statusBadge ? (
-                          <span className={`px-1.5 py-0.5 text-[2.6cqw] font-black uppercase tracking-widest font-mono shadow-sm ${
+                          <span className={`px-2.5 sm:px-3.5 py-0.5 sm:py-1 text-[5.5cqw] sm:text-[6.5cqw] font-black uppercase tracking-wider font-mono shadow-md leading-none ${
                             trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
                           }`}>
                             {trip.statusBadge}

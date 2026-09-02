@@ -1616,10 +1616,13 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     const map = L.map(mapContainerRef.current, {
       center: [36.0, 127.5], // Centered on South Korea
       zoom: 3.2,
-      minZoom: 2,
+      minZoom: 2.3,
       maxZoom: 18,
       zoomControl: false,
-      worldCopyJump: true,
+      maxBounds: [[-85, -180], [85, 180]],
+      maxBoundsViscosity: 1.0,
+      bounceAtZoomLimits: false,
+      worldCopyJump: false,
     });
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -1814,7 +1817,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
   const isCurrentCountryFavorite = selectedCountry && favoriteCountries.includes(selectedCountry.code);
 
   return (
-    <main className={`relative w-full h-[calc(100vh-56px)] flex flex-col bg-white dark:bg-[#0A0A0A] overflow-hidden select-none font-sans touch-pan-x touch-pan-y ${!showPinLabels ? 'map-hide-pin-labels' : ''}`}>
+    <main className={`relative w-full h-[calc(100vh-56px)] h-[calc(100dvh-56px)] flex flex-col bg-white dark:bg-[#0A0A0A] overflow-hidden overscroll-none select-none font-sans touch-pan-x touch-pan-y ${!showPinLabels ? 'map-hide-pin-labels' : ''}`}>
       
       {/* 1. Top Bar: Search with Integrated Wishlist Star & Swiss Minimal Layer Toggles */}
       <div className="absolute top-4 left-4 right-4 sm:left-6 sm:right-auto z-[500] flex flex-wrap items-center gap-2">
@@ -2348,8 +2351,8 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black/5 dark:bg-white/5 text-black/70 dark:text-white/70 border border-black/10 dark:border-white/10">
-                          {group.journeys.length} 여정
+                        <span className="text-[10px] font-sans font-bold px-1.5 py-0.5 bg-black/5 dark:bg-white/5 text-black/70 dark:text-white/70 border border-black/10 dark:border-white/10">
+                          {group.journeys.length} Trip
                         </span>
                         <ArrowRight className="w-3.5 h-3.5 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white group-hover:translate-x-0.5 transition-all" />
                       </div>

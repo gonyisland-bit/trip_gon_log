@@ -1338,7 +1338,7 @@ function App() {
 
   return (
     <div className={`${isDarkMode ? 'dark' : ''} overflow-x-hidden w-full`}>
-      <div className={`min-h-screen bg-white text-black dark:bg-[#0A0A0A] dark:text-white font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 w-full overflow-x-hidden flex flex-col ${currentView === 'detail' ? 'h-screen overflow-hidden' : ''}`}>
+      <div className={`min-h-screen bg-white text-black dark:bg-[#0A0A0A] dark:text-white font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 w-full overflow-x-hidden flex flex-col ${(currentView === 'detail' || currentView === 'map') ? 'h-screen overflow-hidden' : ''}`}>
         
         {/* Firebase Error/Status Banners */}
         {dbError && (
@@ -1421,7 +1421,7 @@ function App() {
         )}
 
         {/* View Routing */}
-        <div className={`w-full flex-grow ${currentView === 'detail' ? 'overflow-hidden flex flex-col h-full flex-1 min-h-0' : ''}`}>
+        <div className={`w-full flex-grow ${(currentView === 'detail' || currentView === 'map') ? 'overflow-hidden flex flex-col h-full flex-1 min-h-0' : ''}`}>
           {!isLoggedIn && !isShareMode ? (
             <div className="min-h-[60vh] md:min-h-[70vh] flex flex-col items-center justify-center p-8 bg-[#F4F3EF] dark:bg-[#0E0E0E] transition-colors text-center w-full">
               <div className="max-w-md flex flex-col items-center gap-5">

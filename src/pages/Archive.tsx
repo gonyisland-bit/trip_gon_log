@@ -358,7 +358,7 @@ export function ArchiveHubPage({
       <div className="p-4 sm:p-6 md:px-12 md:py-8 border-b border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.02] flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6">
         <div className="flex-1">
           <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter uppercase mb-1 sm:mb-1.5 break-keep">Journeys Archive</h1>
-          <p className="max-w-xl text-xs sm:text-sm leading-relaxed opacity-70 break-keep">모든 여행의 감각적인 기록과 다음 여정 계획들을 한눈에 총괄 관리합니다.</p>
+          <p className="text-xs sm:text-sm leading-relaxed opacity-70 whitespace-nowrap truncate">지난 여정 및 여행 계획 모음</p>
           
           {/* Active Filter and Sorting Layout */}
           <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
@@ -778,11 +778,11 @@ export function ArchiveHubPage({
                       ) : <div />}
 
                       {((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
-                        <span className="px-2 py-0.5 text-[2.6cqw] font-black uppercase tracking-widest font-mono shadow-sm bg-black text-white dark:bg-white dark:text-black border border-white/30 dark:border-black/30">
+                        <span className="px-2.5 sm:px-3.5 py-0.5 sm:py-1 text-[5.5cqw] sm:text-[6.5cqw] font-black uppercase tracking-wider font-mono shadow-md bg-black text-white dark:bg-white dark:text-black border border-white/40 dark:border-black/40 leading-none">
                           PLAN
                         </span>
                       ) : trip.statusBadge ? (
-                        <span className={`px-1.5 py-0.5 text-[2.6cqw] font-black uppercase tracking-widest font-mono shadow-sm ${
+                        <span className={`px-2.5 sm:px-3.5 py-0.5 sm:py-1 text-[5.5cqw] sm:text-[6.5cqw] font-black uppercase tracking-wider font-mono shadow-md leading-none ${
                           trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
                         }`}>
                           {trip.statusBadge}
