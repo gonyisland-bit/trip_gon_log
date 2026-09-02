@@ -8,6 +8,7 @@ interface CreateTripModalProps {
   onClose: () => void;
   onCreate: (title: string, dateRange: string, location: string, tags: string[], lat?: number, lng?: number, members?: string[], locations?: { name: string; lat?: number; lng?: number }[], statusBadge?: string, country?: string) => void;
   existingTags: string[];
+  initialCountry?: string;
 }
 
 function extractCountry(address: string): string {
@@ -70,6 +71,7 @@ export function CreateTripModal({
   onClose,
   onCreate,
   existingTags,
+  initialCountry,
 }: CreateTripModalProps) {
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -89,23 +91,23 @@ export function CreateTripModal({
 
   useEffect(() => {
     if (isOpen) {
-      setTitle('');
+      setTitle(initialCountry ? `${initialCountry} Journey` : '');
       setStartDate('');
       setEndDate('');
-      setLocation('');
-      setLocations([]);
+      setLocation(initialCountry || '');
+      setCountry(initialCountry || '');
+      setLocations(initialCountry ? [{ name: initialCountry }] : []);
       setLocationInput('');
       setLat(undefined);
       setLng(undefined);
-      setTags([]);
+      setTags(initialCountry ? [initialCountry] : []);
       setTagInput('');
       setMembers([]);
       setMemberInput('');
       setStatusBadge('');
-      setCountry('');
       setError('');
     }
-  }, [isOpen]);
+  }, [isOpen, initialCountry]);
 
   useEffect(() => {
     if (!isOpen) return;

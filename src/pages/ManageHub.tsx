@@ -4,23 +4,23 @@ import {
   ChevronDown, 
   Save, 
   Trash2, 
+  RotateCcw,
   Copy, 
   ArrowRightLeft, 
   ArrowLeft,
   Upload, 
-  Image as ImageIcon, 
-  Film, 
   Calendar, 
   MapPin, 
   Tag as TagIcon, 
   Check, 
-  Sparkles,
   Sliders,
   Globe,
   Home as HomeIcon,
   Archive as ArchiveIcon,
-  Layers,
-  X
+  X,
+  Play,
+  Film,
+  Image as ImageIcon
 } from 'lucide-react';
 import { Trip, Plan } from '../types';
 import { getEffectiveImageUrl, uploadFileToR2 } from '../utils/storageHelper';
@@ -36,9 +36,29 @@ interface ManageHubPageProps {
   onMoveToPlans: (trip: Trip) => Promise<void>;
   onMoveToArchive: (plan: Plan) => Promise<void>;
   onReorderTrips: (orderedIds: number[]) => Promise<void>;
-  onSaveHomeSettings: (marqueeMsg?: string, marqueeSpd?: number) => Promise<void>;
+  // Home & App settings
+  homeTitle: string;
+  homeSubtitle: string;
+  heroJourneyIds: number[];
+  heroAutoSlide: boolean;
+  heroMediaType: 'image' | 'video';
+  marqueeShow: boolean;
   marqueeMessage: string;
   marqueeSpeed: number;
+  onSaveAllHomeSettings: (
+    title: string,
+    subtitle: string,
+    heroIds: number[],
+    autoSlide: boolean,
+    marqueeShow: boolean,
+    marqueeMsg: string,
+    marqueeSpd: number,
+    heroMediaTypeParam?: 'image' | 'video'
+  ) => Promise<void>;
+  // Trash bin
+  trashedJourneys: Trip[];
+  onRestoreJourney: (id: number) => Promise<void>;
+  onPermanentDeleteJourney: (id: number) => Promise<void>;
   isLoggedIn: boolean;
   isDarkMode: boolean;
 }
@@ -53,22 +73,38 @@ export function ManageHubPage({
   onMoveToPlans,
   onMoveToArchive,
   onReorderTrips,
-  onSaveHomeSettings,
+  homeTitle,
+  homeSubtitle,
+  heroJourneyIds,
+  heroAutoSlide,
+  heroMediaType,
+  marqueeShow,
   marqueeMessage,
   marqueeSpeed,
+  onSaveAllHomeSettings,
+  trashedJourneys,
+  onRestoreJourney,
+  onPermanentDeleteJourney,
   isLoggedIn,
   isDarkMode,
 }: ManageHubPageProps) {
-  // Top-level mode tabs: 'HOME' | 'ARCHIVE' | 'MAP'
-  const [activeMode, setActiveMode] = useState<'HOME' | 'ARCHIVE' | 'MAP'>('ARCHIVE');
+  // Top-level mode tabs: 'ARCHIVE' | 'HOME' | 'MAP' | 'TRASH'
+  const [activeMode, setActiveMode] = useState<'ARCHIVE' | 'HOME' | 'MAP' | 'TRASH'>('ARCHIVE');
 
   // Combined Journeys for ARCHIVE management
   const [localJourneys, setLocalJourneys] = useState<(Trip | Plan)[]>([]);
   const [selectedJourneyId, setSelectedJourneyId] = useState<number | null>(null);
 
   // Home configuration state
+  const [title, setTitle] = useState(homeTitle || '');
+  const [subtitle, setSubtitle] = useState(homeSubtitle || '');
+  const [selectedHeroIds, setSelectedHeroIds] = useState<number[]>(heroJourneyIds || []);
+  const [autoSlide, setAutoSlide] = useState(heroAutoSlide);
+  const [mediaType, setMediaType] = useState<'image' | 'video'>(heroMediaType || 'image');
+  const [showMarquee, setShowMarquee] = useState(marqueeShow);
   const [homeMarquee, setHomeMarquee] = useState(marqueeMessage || '');
   const [homeSpeed, setHomeSpeed] = useState(marqueeSpeed || 50);
+  const [playVideoOnActivate, setPlayVideoOnActivate] = useState(() => localStorage.getItem('playVideoOnActivate') !== 'false');
   const [isSavingHome, setIsSavingHome] = useState(false);
   const [homeSaveSuccess, setHomeSaveSuccess] = useState(false);
 
@@ -211,7 +247,17 @@ export function ManageHubPage({
   const handleSaveHome = async () => {
     setIsSavingHome(true);
     try {
-      await onSaveHomeSettings(homeMarquee, homeSpeed);
+      localStorage.setItem('playVideoOnActivate', String(playVideoOnActivate));
+      await onSaveAllHomeSettings(
+        title,
+        subtitle,
+        selectedHeroIds,
+        autoSlide,
+        showMarquee,
+        homeMarquee,
+        homeSpeed,
+        mediaType
+      );
       setHomeSaveSuccess(true);
       setTimeout(() => setHomeSaveSuccess(false), 2000);
     } catch (err) {
@@ -253,9 +299,9 @@ export function ManageHubPage({
           </div>
         </div>
 
-        {/* Mode Switcher: HOME / ARCHIVE / MAP */}
+        {/* Mode Switcher: ARCHIVE / HOME / MAP / TRASH */}
         <div className="flex items-center border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 p-0.5 rounded-none">
-          {(['HOME', 'ARCHIVE', 'MAP'] as const).map(mode => (
+          {(['ARCHIVE', 'HOME', 'MAP', 'TRASH'] as const).map(mode => (
             <button
               key={mode}
               onClick={() => setActiveMode(mode)}
@@ -266,6 +312,11 @@ export function ManageHubPage({
               }`}
             >
               {mode}
+              {mode === 'TRASH' && trashedJourneys.length > 0 && (
+                <span className="ml-1 text-[9px] font-mono px-1 bg-red-600 text-white">
+                  {trashedJourneys.length}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -496,14 +547,14 @@ export function ManageHubPage({
                     <button
                       type="button"
                       onClick={() => {
-                        if (confirm(`'${selectedJourney.title}' 여정을 정말 삭제하시겠습니까?`)) {
+                        if (confirm(`'${selectedJourney.title}' 여정을 정말 삭제하시겠습니까? (휴지통으로 이동)`)) {
                           onDeleteTrip(selectedJourney.id);
                         }
                       }}
                       className="px-3 py-2 text-red-600 dark:text-red-400 border border-red-600/30 dark:border-red-400/30 text-xs font-black uppercase tracking-wider hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                      <span>삭제 (DELETE)</span>
+                      <span>휴지통으로 이동</span>
                     </button>
                   </div>
                 </div>
@@ -605,31 +656,143 @@ export function ManageHubPage({
         )}
 
         {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* MODE: HOME (Marquee Text, Speed, Hero Media Config)                 */}
+        {/* MODE: HOME (Full App & Home Settings Integration)                   */}
         {/* ─────────────────────────────────────────────────────────────────── */}
         {activeMode === 'HOME' && (
-          <div className="w-full max-w-2xl mx-auto p-6 sm:p-12 flex flex-col gap-8 animate-in fade-in duration-200">
+          <div className="w-full max-w-3xl mx-auto p-6 sm:p-12 flex flex-col gap-8 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200">
             <div className="border-b border-black/15 dark:border-white/15 pb-4">
               <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
-                HOME PREVIEW & BANNER SETTINGS
+                APP & HOME GENERAL SETTINGS
               </span>
               <h2 className="text-2xl font-black uppercase tracking-tight text-black dark:text-white">
-                홈 메인 화면 설정
+                홈 메인 및 앱 환경설정
               </h2>
             </div>
 
             <div className="flex flex-col gap-6">
+              {/* Home Title & Subtitle */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70">
+                    HOME TITLE (메인 타이틀)
+                  </label>
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={e => setTitle(e.target.value)}
+                    className="px-3.5 py-2.5 text-xs font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70">
+                    HOME SUBTITLE (서브 타이틀)
+                  </label>
+                  <input
+                    type="text"
+                    value={subtitle}
+                    onChange={e => setSubtitle(e.target.value)}
+                    className="px-3.5 py-2.5 text-xs font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none"
+                  />
+                </div>
+              </div>
+
+              {/* Hero Media Type & Auto Slide */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-black/10 dark:border-white/10">
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70">
+                    HERO MEDIA TYPE (히어로 미디어 형태)
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setMediaType('image')}
+                      className={`flex-1 py-2 text-xs font-bold uppercase border transition-colors cursor-pointer rounded-none flex items-center justify-center gap-1.5 ${
+                        mediaType === 'image'
+                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                          : 'bg-white dark:bg-[#161616] border-black/20 dark:border-white/20'
+                      }`}
+                    >
+                      <ImageIcon className="w-3.5 h-3.5" />
+                      <span>IMAGE</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMediaType('video')}
+                      className={`flex-1 py-2 text-xs font-bold uppercase border transition-colors cursor-pointer rounded-none flex items-center justify-center gap-1.5 ${
+                        mediaType === 'video'
+                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                          : 'bg-white dark:bg-[#161616] border-black/20 dark:border-white/20'
+                      }`}
+                    >
+                      <Film className="w-3.5 h-3.5" />
+                      <span>VIDEO</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70">
+                    HERO AUTO SLIDE (자동 롤링)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setAutoSlide(!autoSlide)}
+                    className={`w-full py-2 text-xs font-bold uppercase border transition-colors cursor-pointer rounded-none flex items-center justify-center gap-2 ${
+                      autoSlide
+                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                        : 'bg-white dark:bg-[#161616] border-black/20 dark:border-white/20 text-black/60 dark:text-white/60'
+                    }`}
+                  >
+                    <span>{autoSlide ? 'AUTO SLIDE: ON' : 'AUTO SLIDE: OFF'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Video Autoplay On Hover Toggle */}
+              <div className="flex items-center justify-between p-3.5 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02]">
+                <div>
+                  <span className="text-xs font-bold uppercase block text-black dark:text-white">
+                    카드 호버 시 비디오 자동 재생
+                  </span>
+                  <span className="text-[10px] text-black/50 dark:text-white/50">
+                    여정 카드에 마우스를 올렸을 때 비디오를 자동으로 재생합니다.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPlayVideoOnActivate(!playVideoOnActivate)}
+                  className={`px-3 py-1 text-xs font-mono font-bold border transition-colors cursor-pointer rounded-none ${
+                    playVideoOnActivate
+                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                      : 'bg-white dark:bg-[#161616] border-black/20 dark:border-white/20 text-black/60'
+                  }`}
+                >
+                  {playVideoOnActivate ? 'ENABLED' : 'DISABLED'}
+                </button>
+              </div>
+
               {/* Marquee Banner Text */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70">
-                  MARQUEE BANNER TEXT (전광판 롤링 문구)
-                </label>
+              <div className="flex flex-col gap-1.5 pt-4 border-t border-black/10 dark:border-white/10">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70">
+                    MARQUEE BANNER TEXT (전광판 롤링 문구)
+                  </label>
+                  <label className="text-[10px] font-bold text-black/60 dark:text-white/60 flex items-center gap-1 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={showMarquee}
+                      onChange={e => setShowMarquee(e.target.checked)}
+                      className="accent-black dark:accent-white"
+                    />
+                    <span>전광판 노출</span>
+                  </label>
+                </div>
                 <textarea
-                  rows={3}
+                  rows={2}
                   value={homeMarquee}
                   onChange={e => setHomeMarquee(e.target.value)}
                   placeholder="홈 상단에 흐르는 문구를 입력하세요..."
-                  className="px-3.5 py-2.5 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none leading-relaxed"
+                  className="px-3.5 py-2 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none leading-relaxed"
                 />
               </div>
 
@@ -647,10 +810,38 @@ export function ManageHubPage({
                   onChange={e => setHomeSpeed(parseInt(e.target.value, 10))}
                   className="w-full accent-black dark:accent-white cursor-pointer"
                 />
-                <div className="flex justify-between text-[9px] font-mono text-black/40 dark:text-white/40">
-                  <span>FAST (15s)</span>
-                  <span>DEFAULT (50s)</span>
-                  <span>SLOW (120s)</span>
+              </div>
+
+              {/* Hero Journeys Multi-Selection */}
+              <div className="flex flex-col gap-2 pt-4 border-t border-black/10 dark:border-white/10">
+                <label className="text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70">
+                  HERO JOURNEYS (히어로에 노출할 여정 선택)
+                </label>
+                <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616]">
+                  {localJourneys.map(j => {
+                    const isSelected = selectedHeroIds.includes(j.id);
+                    return (
+                      <button
+                        key={j.id}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedHeroIds(selectedHeroIds.filter(id => id !== j.id));
+                          } else {
+                            setSelectedHeroIds([...selectedHeroIds, j.id]);
+                          }
+                        }}
+                        className={`px-2.5 py-1 text-xs font-bold transition-colors cursor-pointer border rounded-none ${
+                          isSelected
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                            : 'bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70 border-black/10'
+                        }`}
+                      >
+                        {isSelected ? '✓ ' : '+ '}
+                        {j.title.replace(' (Plan)', '')}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -665,7 +856,7 @@ export function ManageHubPage({
                   }`}
                 >
                   {homeSaveSuccess ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                  <span>{homeSaveSuccess ? 'SAVED' : 'SAVE HOME SETTINGS'}</span>
+                  <span>{homeSaveSuccess ? 'SAVED' : 'SAVE ALL SETTINGS'}</span>
                 </button>
               </div>
             </div>
@@ -739,6 +930,87 @@ export function ManageHubPage({
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ─────────────────────────────────────────────────────────────────── */}
+        {/* MODE: TRASH (Trash Bin - Restoring & Permanent Deletion)            */}
+        {/* ─────────────────────────────────────────────────────────────────── */}
+        {activeMode === 'TRASH' && (
+          <div className="w-full max-w-3xl mx-auto p-6 sm:p-12 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200">
+            <div className="border-b border-black/15 dark:border-white/15 pb-4">
+              <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                TRASH REPOSITORY
+              </span>
+              <div className="flex items-baseline justify-between">
+                <h2 className="text-2xl font-black uppercase tracking-tight text-black dark:text-white">
+                  휴지통 관리 ({trashedJourneys.length})
+                </h2>
+                <span className="text-xs font-mono text-black/50 dark:text-white/50">
+                  삭제된 여정은 영구 삭제 전까지 안전하게 보관됩니다.
+                </span>
+              </div>
+            </div>
+
+            {trashedJourneys.length === 0 ? (
+              <div className="py-20 text-center flex flex-col items-center justify-center gap-2 text-black/40 dark:text-white/40 font-mono text-xs">
+                <Trash2 className="w-8 h-8 opacity-40 mb-1" />
+                <span>휴지통이 비어 있습니다.</span>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {trashedJourneys.map(journey => (
+                  <div
+                    key={journey.id}
+                    className="p-3.5 border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] flex items-center justify-between gap-4"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-14 h-14 aspect-square border border-black/15 dark:border-white/15 shrink-0 overflow-hidden bg-black/10">
+                        <img
+                          src={getEffectiveImageUrl(journey.img)}
+                          alt={journey.title}
+                          className="w-full h-full object-cover grayscale opacity-75"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="text-sm font-black font-sans uppercase tracking-tight text-black dark:text-white truncate line-through opacity-75">
+                          {journey.title}
+                        </h4>
+                        <span className="text-[11px] font-mono text-black/50 dark:text-white/50 block mt-0.5">
+                          {journey.date} · {journey.locationStr}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => onRestoreJourney(journey.id)}
+                        className="px-3 py-1.5 border border-black/20 dark:border-white/20 text-xs font-black uppercase tracking-wider font-sans hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                        title="여정 복구"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>복구</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm(`'${journey.title}' 여정을 영구적으로 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) {
+                            onPermanentDeleteJourney(journey.id);
+                          }
+                        }}
+                        className="px-3 py-1.5 text-red-600 dark:text-red-400 border border-red-600/30 dark:border-red-400/30 text-xs font-black uppercase tracking-wider font-sans hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                        title="영구 삭제"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>영구 삭제</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

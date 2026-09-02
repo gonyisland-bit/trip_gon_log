@@ -78,6 +78,7 @@ function App() {
   const [fadeSplash, setFadeSplash] = useState<boolean>(false);
   const [isManageModalOpen, setIsManageModalOpen] = useState<boolean>(false);
   const [createModalType, setCreateModalType] = useState<'archive' | 'plan'>('archive');
+  const [createCountryInitial, setCreateCountryInitial] = useState<string>('');
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
   
   // Start with empty state for clean public load
@@ -830,6 +831,14 @@ function App() {
 
   const handleAddPlan = async () => {
     if (!isLoggedIn) return alert("로그인 후 이용 가능합니다.");
+    setCreateCountryInitial('');
+    setCreateModalType('plan');
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCreateTripForCountry = (countryName: string) => {
+    if (!isLoggedIn) return alert("로그인 후 이용 가능합니다.");
+    setCreateCountryInitial(countryName);
     setCreateModalType('plan');
     setIsCreateModalOpen(true);
   };
@@ -1398,6 +1407,7 @@ function App() {
                   trips={trips}
                   plans={plans}
                   onNavigate={navigateTo}
+                  onCreateTripForCountry={handleCreateTripForCountry}
                   isDarkMode={isDarkMode}
                 />
               )}
@@ -1421,19 +1431,18 @@ function App() {
                     });
                     await batch.commit();
                   }}
-                  onSaveHomeSettings={async (marqueeMsg, marqueeSpd) => {
-                    await handleSaveSettings(
-                      homeTitle,
-                      homeSubtitle,
-                      heroJourneyIds,
-                      heroAutoSlide,
-                      marqueeShow,
-                      marqueeMsg,
-                      marqueeSpd
-                    );
-                  }}
+                  homeTitle={homeTitle}
+                  homeSubtitle={homeSubtitle}
+                  heroJourneyIds={heroJourneyIds}
+                  heroAutoSlide={heroAutoSlide}
+                  heroMediaType={heroMediaType}
+                  marqueeShow={marqueeShow}
                   marqueeMessage={marqueeMessage}
                   marqueeSpeed={marqueeSpeed}
+                  onSaveAllHomeSettings={handleSaveSettings}
+                  trashedJourneys={trashedJourneys}
+                  onRestoreJourney={handleRestoreJourney}
+                  onPermanentDeleteJourney={handlePermanentDeleteJourney}
                   isLoggedIn={isLoggedIn}
                   isDarkMode={isDarkMode}
                 />
@@ -1519,9 +1528,13 @@ function App() {
         {/* Create Trip Modal Popup */}
         <CreateTripModal
           isOpen={isCreateModalOpen}
-          onClose={() => setIsCreateModalOpen(false)}
+          onClose={() => {
+            setIsCreateModalOpen(false);
+            setCreateCountryInitial('');
+          }}
           onCreate={handleCreateJourney}
           existingTags={existingTags}
+          initialCountry={createCountryInitial}
         />
 
         {/* Settings Modal Popup */}

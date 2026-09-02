@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, X, ArrowRight, Calendar } from 'lucide-react';
+import { Search, X, ArrowRight, Calendar, Star, Plus } from 'lucide-react';
 import { Trip, Plan } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
@@ -579,19 +579,46 @@ interface MapHubPageProps {
   trips: Trip[];
   plans: Plan[];
   onNavigate: (view: string, tripId?: number | null) => void;
+  onCreateTripForCountry?: (countryName: string) => void;
   isDarkMode: boolean;
 }
 
-export function MapHubPage({ trips, plans, onNavigate, isDarkMode }: MapHubPageProps) {
+export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, isDarkMode }: MapHubPageProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const tileLayerRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const highlightLayerRef = useRef<any>(null);
+  const selectPinRef = useRef<any>(null);
+  const yellowMarkersRef = useRef<any[]>([]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCountry, setSelectedCountry] = useState<CountryInfo | null>(null);
   const [selectedPinGroup, setSelectedPinGroup] = useState<MapPinGroup | null>(null);
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
+  const [isWishlistModalOpen, setIsWishlistModalOpen] = useState(false);
+
+  // Favorite countries (Wishlist) state stored in localStorage
+  const [favoriteCountries, setFavoriteCountries] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('wishlist_countries');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const toggleFavoriteCountry = (code: string) => {
+    setFavoriteCountries(prev => {
+      const updated = prev.includes(code)
+        ? prev.filter(c => c !== code)
+        : [...prev, code];
+      try {
+        localStorage.setItem('wishlist_countries', JSON.stringify(updated));
+      } catch (_) {}
+      return updated;
+    });
+  };
 
   const allJourneys = useMemo(() => [...trips, ...plans], [trips, plans]);
 
@@ -644,18 +671,89 @@ export function MapHubPage({ trips, plans, onNavigate, isDarkMode }: MapHubPageP
     return Array.from(map.values());
   }, [allJourneys]);
 
+  // Country selection handler: highlights country area and places pulse selection pin
+  const handleSelectCountry = (country: CountryInfo) => {
+    setSelectedCountry(country);
+    setIsSearchDropdownOpen(false);
+    setSearchQuery(country.name);
+
+    const map = mapRef.current;
+    const L = (window as any).L;
+    if (map && L) {
+      // 1. Remove previous highlight and selection pin
+      if (highlightLayerRef.current) {
+        map.removeLayer(highlightLayerRef.current);
+        highlightLayerRef.current = null;
+      }
+      if (selectPinRef.current) {
+        map.removeLayer(selectPinRef.current);
+        selectPinRef.current = null;
+      }
+
+      // 2. Add boundary/area highlight circle around country center
+      const radiusMeters = Math.max(140000, (11 - country.zoom) * 95000);
+      highlightLayerRef.current = L.circle(country.center, {
+        radius: radiusMeters,
+        color: '#DC2626',
+        weight: 2,
+        dashArray: '6, 6',
+        fillColor: '#DC2626',
+        fillOpacity: 0.12,
+      }).addTo(map);
+
+      // 3. Add selection radar pin
+      const selectHtml = `
+        <div class="relative flex items-center justify-center select-none" style="transform: translate(-50%, -50%);">
+          <span class="absolute w-12 h-12 rounded-full bg-red-600/30 animate-ping"></span>
+          <span class="absolute w-8 h-8 rounded-full bg-red-600/35"></span>
+          <span class="w-4 h-4 rounded-full bg-red-600 border-2 border-white shadow-lg"></span>
+        </div>
+      `;
+      const selectIcon = L.divIcon({
+        className: 'custom-select-pin',
+        html: selectHtml,
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+      });
+      selectPinRef.current = L.marker(country.center, { icon: selectIcon, zIndexOffset: 1200 }).addTo(map);
+
+      // 4. Fly to country
+      map.flyTo(country.center, country.zoom, { duration: 1.2 });
+    }
+  };
+
+  // Close country handler: removes highlight and restores full world view zoom
+  const handleCloseCountry = () => {
+    setSelectedCountry(null);
+    setSearchQuery('');
+    const map = mapRef.current;
+    if (map) {
+      if (highlightLayerRef.current) {
+        map.removeLayer(highlightLayerRef.current);
+        highlightLayerRef.current = null;
+      }
+      if (selectPinRef.current) {
+        map.removeLayer(selectPinRef.current);
+        selectPinRef.current = null;
+      }
+      // Restore full world view zoom
+      map.flyTo([25, 20], 2.7, { duration: 1.2 });
+    }
+  };
+
   // ESC key to close modal or selection
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setSelectedPinGroup(null);
-        setSelectedCountry(null);
+        if (selectedPinGroup) setSelectedPinGroup(null);
+        else if (isWishlistModalOpen) setIsWishlistModalOpen(false);
+        else if (selectedCountry) handleCloseCountry();
         setIsSearchDropdownOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [selectedCountry, selectedPinGroup, isWishlistModalOpen]);
 
   // Initialize Leaflet Map
   useEffect(() => {
@@ -710,7 +808,7 @@ export function MapHubPage({ trips, plans, onNavigate, isDarkMode }: MapHubPageP
     }).addTo(map);
   }, [isDarkMode]);
 
-  // Render Red Pins
+  // Render Red Pins for registered journeys
   useEffect(() => {
     const L = (window as any).L;
     const map = mapRef.current;
@@ -721,7 +819,6 @@ export function MapHubPage({ trips, plans, onNavigate, isDarkMode }: MapHubPageP
     markersRef.current = [];
 
     pinGroups.forEach(group => {
-      // SVG: "상단이 둥글고 하단이 핀처럼 박힌 빨간 핀"
       const pinHtml = `
         <div class="relative cursor-pointer group flex flex-col items-center select-none" style="transform: translate(-50%, -100%);">
           <div class="relative transition-transform duration-200 group-hover:scale-110 drop-shadow-md">
@@ -758,6 +855,49 @@ export function MapHubPage({ trips, plans, onNavigate, isDarkMode }: MapHubPageP
     });
   }, [pinGroups]);
 
+  // Render Yellow Pins for favorite countries (Wishlist)
+  useEffect(() => {
+    const L = (window as any).L;
+    const map = mapRef.current;
+    if (!map || !L) return;
+
+    yellowMarkersRef.current.forEach(m => map.removeLayer(m));
+    yellowMarkersRef.current = [];
+
+    favoriteCountries.forEach(code => {
+      const country = COUNTRIES_DATA.find(c => c.code === code);
+      if (!country) return;
+
+      const yellowPinHtml = `
+        <div class="relative cursor-pointer group flex flex-col items-center select-none" style="transform: translate(-50%, -100%);">
+          <div class="relative transition-transform duration-200 group-hover:scale-115 drop-shadow-md">
+            <svg viewBox="0 0 24 34" width="28" height="38" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 0C5.37258 0 0 5.37258 0 12C0 21 12 34 12 34C12 34 24 21 24 12C24 5.37258 18.6274 0 12 0Z" fill="#EAB308"/>
+              <polygon points="12,6.5 13.6,9.8 17.2,10.3 14.6,12.8 15.2,16.5 12,14.8 8.8,16.5 9.4,12.8 6.8,10.3 10.4,9.8" fill="#FFFFFF"/>
+            </svg>
+          </div>
+          <div class="bg-amber-500 text-black font-sans text-[8.5px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-none mt-0.5 whitespace-nowrap shadow-sm border border-black/20">
+            ★ ${country.name}
+          </div>
+        </div>
+      `;
+
+      const icon = L.divIcon({
+        className: 'custom-yellow-pin',
+        html: yellowPinHtml,
+        iconSize: [28, 42],
+        iconAnchor: [14, 38],
+      });
+
+      const marker = L.marker(country.center, { icon, zIndexOffset: 600 }).addTo(map);
+      marker.on('click', () => {
+        handleSelectCountry(country);
+      });
+
+      yellowMarkersRef.current.push(marker);
+    });
+  }, [favoriteCountries]);
+
   // Filtered countries for search
   const filteredCountries = useMemo(() => {
     if (!searchQuery.trim()) return COUNTRIES_DATA;
@@ -769,77 +909,91 @@ export function MapHubPage({ trips, plans, onNavigate, isDarkMode }: MapHubPageP
     );
   }, [searchQuery]);
 
-  const handleSelectCountry = (country: CountryInfo) => {
-    setSelectedCountry(country);
-    setIsSearchDropdownOpen(false);
-    setSearchQuery(country.name);
+  // Wishlist countries full data
+  const wishlistCountriesData = useMemo(() => {
+    return favoriteCountries
+      .map(code => COUNTRIES_DATA.find(c => c.code === code))
+      .filter(Boolean) as CountryInfo[];
+  }, [favoriteCountries]);
 
-    if (mapRef.current) {
-      mapRef.current.flyTo(country.center, country.zoom, {
-        duration: 1.2,
-      });
-    }
-  };
+  const isCurrentCountryFavorite = selectedCountry && favoriteCountries.includes(selectedCountry.code);
 
   return (
     <main className="relative w-full h-[calc(100vh-56px)] flex flex-col bg-white dark:bg-[#0A0A0A] overflow-hidden select-none font-sans">
-      {/* 1. Top Bar: Floating Swiss Minimal Search & Country Selector */}
-      <div className="absolute top-4 left-4 right-4 sm:left-6 sm:right-auto z-[500] w-auto sm:w-80">
-        <div className="relative bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/20 dark:border-white/20 shadow-2xl flex items-center px-3 py-2">
-          <Search className="w-4 h-4 text-black/50 dark:text-white/50 shrink-0 mr-2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setIsSearchDropdownOpen(true);
-            }}
-            onFocus={() => setIsSearchDropdownOpen(true)}
-            placeholder="Search country or city..."
-            className="w-full bg-transparent text-xs font-sans font-bold uppercase tracking-wider text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 outline-none"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedCountry(null);
+      {/* 1. Top Bar: Search & Wishlist Button */}
+      <div className="absolute top-4 left-4 right-4 sm:left-6 sm:right-auto z-[500] flex flex-wrap items-center gap-2.5">
+        
+        {/* Country Search Bar */}
+        <div className="relative w-72 sm:w-80">
+          <div className="relative bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/20 dark:border-white/20 shadow-2xl flex items-center px-3 py-2">
+            <Search className="w-4 h-4 text-black/50 dark:text-white/50 shrink-0 mr-2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setIsSearchDropdownOpen(true);
               }}
-              className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
+              onFocus={() => setIsSearchDropdownOpen(true)}
+              placeholder="Search country or city..."
+              className="w-full bg-transparent text-xs font-sans font-bold uppercase tracking-wider text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 outline-none"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={handleCloseCountry}
+                className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Dropdown Suggestions */}
+          {isSearchDropdownOpen && filteredCountries.length > 0 && (
+            <>
+              <div className="fixed inset-0 z-[490]" onClick={() => setIsSearchDropdownOpen(false)} />
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#141414] border border-black/20 dark:border-white/20 shadow-2xl max-h-60 overflow-y-auto z-[510] divide-y divide-black/10 dark:divide-white/10 animate-in fade-in duration-150">
+                {filteredCountries.map(c => (
+                  <button
+                    key={c.code}
+                    type="button"
+                    onClick={() => handleSelectCountry(c)}
+                    className="w-full px-3.5 py-2.5 flex items-center justify-between text-left hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer group"
+                  >
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xs font-black uppercase tracking-wider text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400">
+                        {c.name}
+                      </span>
+                      <span className="text-[10px] text-black/40 dark:text-white/40 font-medium">
+                        {c.nameKo}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {favoriteCountries.includes(c.code) && (
+                        <Star className="w-3 h-3 fill-amber-400 text-amber-500" />
+                      )}
+                      <span className="text-[9px] font-mono font-bold text-black/50 dark:text-white/50 border border-black/15 dark:border-white/15 px-1">
+                        {c.currency}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </>
           )}
         </div>
 
-        {/* Dropdown Suggestions */}
-        {isSearchDropdownOpen && filteredCountries.length > 0 && (
-          <>
-            <div className="fixed inset-0 z-[490]" onClick={() => setIsSearchDropdownOpen(false)} />
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#141414] border border-black/20 dark:border-white/20 shadow-2xl max-h-60 overflow-y-auto z-[510] divide-y divide-black/10 dark:divide-white/10 animate-in fade-in duration-150">
-              {filteredCountries.map(c => (
-                <button
-                  key={c.code}
-                  type="button"
-                  onClick={() => handleSelectCountry(c)}
-                  className="w-full px-3.5 py-2.5 flex items-center justify-between text-left hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer group"
-                >
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-xs font-black uppercase tracking-wider text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400">
-                      {c.name}
-                    </span>
-                    <span className="text-[10px] text-black/40 dark:text-white/40 font-medium">
-                      {c.nameKo}
-                    </span>
-                  </div>
-                  <span className="text-[9px] font-mono font-bold text-black/50 dark:text-white/50 border border-black/15 dark:border-white/15 px-1">
-                    {c.currency}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
+        {/* Wishlist Button */}
+        <button
+          type="button"
+          onClick={() => setIsWishlistModalOpen(true)}
+          className="bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/20 dark:border-white/20 shadow-2xl px-3.5 py-2 text-xs font-black uppercase tracking-wider font-sans text-black dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+          title="가고싶은 나라 즐겨찾기 목록"
+        >
+          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+          <span>WISHLIST ({favoriteCountries.length})</span>
+        </button>
       </div>
 
       {/* 2. Full-bleed Leaflet Map */}
@@ -861,9 +1015,9 @@ export function MapHubPage({ trips, plans, onNavigate, isDarkMode }: MapHubPageP
               </span>
             </div>
             <button
-              onClick={() => setSelectedCountry(null)}
+              onClick={handleCloseCountry}
               className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer"
-              title="Close"
+              title="닫기 (전체보기 복원)"
             >
               <X className="w-4 h-4" />
             </button>
@@ -888,7 +1042,7 @@ export function MapHubPage({ trips, plans, onNavigate, isDarkMode }: MapHubPageP
             </div>
           </div>
 
-          <div className="pt-3">
+          <div className="py-3 border-b border-black/15 dark:border-white/15">
             <span className="text-[8.5px] uppercase tracking-wider text-black/40 dark:text-white/40 block font-sans font-bold mb-1">
               MAJOR TRAVEL CITIES / 주요 여행도시
             </span>
@@ -900,10 +1054,133 @@ export function MapHubPage({ trips, plans, onNavigate, isDarkMode }: MapHubPageP
               ))}
             </div>
           </div>
+
+          {/* Actions: Favorite Toggle & Create Journey */}
+          <div className="pt-3.5 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => toggleFavoriteCountry(selectedCountry.code)}
+              className={`flex-1 py-2 px-3 flex items-center justify-center gap-1.5 text-xs font-black uppercase tracking-wider font-sans border transition-colors cursor-pointer rounded-none ${
+                isCurrentCountryFavorite
+                  ? 'bg-amber-500 text-black border-amber-600 hover:bg-amber-400'
+                  : 'bg-black/5 dark:bg-white/10 text-black dark:text-white border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black'
+              }`}
+            >
+              <Star className={`w-3.5 h-3.5 ${isCurrentCountryFavorite ? 'fill-black' : ''}`} />
+              <span>{isCurrentCountryFavorite ? 'FAVORITED' : 'WISHLIST'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (onCreateTripForCountry) {
+                  onCreateTripForCountry(selectedCountry.name);
+                } else {
+                  onNavigate('archive');
+                }
+              }}
+              className="flex-1 py-2 px-3 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-xs font-black uppercase tracking-wider font-sans flex items-center justify-center gap-1 cursor-pointer rounded-none"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>여정 만들기</span>
+            </button>
+          </div>
         </div>
       )}
 
-      {/* 4. Journey List Modal when a Pin is Clicked */}
+      {/* 4. Wishlist Modal */}
+      {isWishlistModalOpen && (
+        <div
+          onClick={() => setIsWishlistModalOpen(false)}
+          className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-[#111111] max-w-lg w-full border border-black/20 dark:border-white/20 shadow-2xl flex flex-col max-h-[82vh] overflow-hidden rounded-none animate-in zoom-in-95 duration-150"
+          >
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 border-b border-black/15 dark:border-white/15 flex items-center justify-between bg-black/[0.02] dark:bg-white/[0.02]">
+              <div className="flex items-center gap-2">
+                <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
+                <h3 className="text-base sm:text-lg font-black font-sans uppercase tracking-tight text-black dark:text-white">
+                  WISHLIST COUNTRIES ({wishlistCountriesData.length})
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsWishlistModalOpen(false)}
+                className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 sm:p-5 overflow-y-auto flex flex-col gap-2.5 divide-y divide-black/10 dark:divide-white/10">
+              {wishlistCountriesData.length === 0 ? (
+                <div className="py-12 text-center text-xs font-mono text-black/40 dark:text-white/40">
+                  가고싶은 나라가 아직 없습니다.<br />지도에서 나라를 선택한 후 'WISHLIST' 버튼을 눌러 추가하세요.
+                </div>
+              ) : (
+                wishlistCountriesData.map(c => (
+                  <div
+                    key={c.code}
+                    className="pt-2.5 first:pt-0 flex items-center justify-between gap-3"
+                  >
+                    <div
+                      onClick={() => {
+                        handleSelectCountry(c);
+                        setIsWishlistModalOpen(false);
+                      }}
+                      className="cursor-pointer group flex-1 min-w-0"
+                    >
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-sm font-black uppercase tracking-tight text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors truncate">
+                          {c.name}
+                        </span>
+                        <span className="text-xs text-black/50 dark:text-white/50 font-medium shrink-0">
+                          {c.nameKo}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-mono text-black/40 dark:text-white/40 block mt-0.5 truncate">
+                        {c.cities.slice(0, 4).join(', ')} · 1 {c.currency} ≈ ₩{c.rateToKRW.toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsWishlistModalOpen(false);
+                          if (onCreateTripForCountry) {
+                            onCreateTripForCountry(c.name);
+                          } else {
+                            onNavigate('archive');
+                          }
+                        }}
+                        className="px-2.5 py-1.5 bg-black text-white dark:bg-white dark:text-black text-[10px] font-black uppercase tracking-wider font-sans hover:opacity-85 transition-opacity flex items-center gap-1 cursor-pointer rounded-none"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>여정 만들기</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => toggleFavoriteCountry(c.code)}
+                        className="p-1.5 text-black/30 dark:text-white/30 hover:text-red-500 transition-colors cursor-pointer"
+                        title="즐겨찾기 삭제"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Journey List Modal when a Pin is Clicked */}
       {selectedPinGroup && (
         <div 
           onClick={() => setSelectedPinGroup(null)}
