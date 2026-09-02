@@ -99,6 +99,7 @@ export function JourneyCardMenu({
   onMove,
   moveLabel,
   className,
+  variant = 'card',
 }: {
   onEdit?: () => void;
   onDelete?: () => void;
@@ -107,6 +108,7 @@ export function JourneyCardMenu({
   onMove?: () => void;
   moveLabel?: string;
   className?: string;
+  variant?: 'card' | 'minimal';
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -123,17 +125,20 @@ export function JourneyCardMenu({
   if (!isLoggedIn) return null;
 
   return (
-    <div ref={menuRef} className={`${className || "absolute bottom-3 right-3 z-30"} pointer-events-auto`}>
+    <div ref={menuRef} className={`${className || (variant === 'minimal' ? 'relative' : "absolute bottom-3 right-3 z-30")} pointer-events-auto`}>
       <button
         onClick={(e) => { e.stopPropagation(); setOpen(v => !v); }}
-        className="p-1.5 bg-black/60 hover:bg-black/90 text-white rounded-md transition-all shadow-md backdrop-blur-sm border border-white/20 opacity-90 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 flex items-center justify-center cursor-pointer active:scale-95"
+        className={variant === 'minimal'
+          ? "p-2 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer bg-transparent border-0 shadow-none"
+          : "p-1.5 bg-black/60 hover:bg-black/90 text-white rounded-md transition-all shadow-md backdrop-blur-sm border border-white/20 opacity-90 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 flex items-center justify-center cursor-pointer active:scale-95"
+        }
         title="카드 관리 메뉴"
         aria-label="Journey menu"
       >
         <Menu className="w-3.5 h-3.5" />
       </button>
       {open && (
-        <div className="absolute bottom-full right-0 mb-1 w-32 bg-[#F9F8F6] dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 shadow-2xl rounded-md z-50 overflow-hidden animate-in zoom-in-95 duration-150">
+        <div className={`absolute ${variant === 'minimal' ? 'top-full right-0 mt-1' : 'bottom-full right-0 mb-1'} w-32 bg-white dark:bg-[#1a1a1a] border border-black/15 dark:border-white/15 shadow-xl rounded-none z-50 overflow-hidden animate-in zoom-in-95 duration-150`}>
           {onEdit && (
             <button
               onClick={(e) => { e.stopPropagation(); onEdit(); setOpen(false); }}
@@ -550,44 +555,40 @@ export function HomePage({
       {/* Plans Section Preview */}
       {localPlans.length > 0 && (
         <section className="flex flex-col w-full overflow-hidden border-b border-black/20 dark:border-white/20 transition-colors">
-          <div className="p-6 md:px-12 border-b border-black/20 dark:border-white/20 flex flex-col sm:flex-row justify-between sm:items-end gap-4 transition-colors bg-black/[0.02] dark:bg-white/[0.02]">
-            <div>
-              <h2 className="text-2xl font-black tracking-tighter uppercase break-keep">Upcoming Plans</h2>
-              <p className="text-sm text-black/50 dark:text-white/50 mt-1 break-keep">다가오는 여행 계획을 준비하고, 여행 후 아카이브로 전환하세요.</p>
-            </div>
-            <div className="flex items-center gap-3 shrink-0">
-              {/* Plan View Mode Toggle: GRID (default) vs WIDE */}
-              <div className="flex items-center gap-0.5 border border-black/15 dark:border-white/15 p-0.5 bg-white dark:bg-[#121212]">
+          <div className="p-4 sm:p-6 md:px-12 md:py-6 border-b border-black/20 dark:border-white/20 flex items-center justify-between gap-4 transition-colors bg-black/[0.02] dark:bg-white/[0.02]">
+            <h2 className="text-xl sm:text-2xl font-black tracking-tighter uppercase break-keep">Upcoming Plans</h2>
+            
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              {/* Plan View Mode Toggle: Grid (기본) / Wide (하단과 완전히 동일한 아이콘 전용) */}
+              <div className="flex items-center border border-black/15 dark:border-white/15 rounded-xs p-0.5 bg-black/5 dark:bg-white/5 shrink-0">
                 <button
                   type="button"
                   onClick={() => handleSetPlanViewMode('grid')}
-                  className={`flex items-center gap-1 px-2 py-1 text-[9px] font-black uppercase tracking-wider transition-colors cursor-pointer ${
-                    planViewMode === 'grid'
-                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                  className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
+                    planViewMode === 'grid' 
+                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
                       : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
                   }`}
                   title="그리드 보기 (기본)"
                 >
-                  <LayoutGrid className="w-3 h-3" />
-                  <span>GRID</span>
+                  <LayoutGrid className="w-3.5 h-3.5" />
                 </button>
                 <button
                   type="button"
                   onClick={() => handleSetPlanViewMode('wide')}
-                  className={`flex items-center gap-1 px-2 py-1 text-[9px] font-black uppercase tracking-wider transition-colors cursor-pointer ${
-                    planViewMode === 'wide'
-                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                  className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
+                    planViewMode === 'wide' 
+                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
                       : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
                   }`}
                   title="와이드 보기"
                 >
-                  <StretchHorizontal className="w-3 h-3" />
-                  <span>WIDE</span>
+                  <StretchHorizontal className="w-3.5 h-3.5" />
                 </button>
               </div>
 
-              <button onClick={() => onNavigate('plan')} className="text-xs font-bold uppercase tracking-widest flex items-center hover:opacity-60 shrink-0 ml-1">
-                View All Plans <ArrowRight className="w-4 h-4 ml-1.5" />
+              <button onClick={() => onNavigate('plan')} className="text-[11px] sm:text-xs font-bold uppercase tracking-widest flex items-center hover:opacity-60 shrink-0 ml-1">
+                View All <ArrowRight className="w-3.5 h-3.5 ml-1" />
               </button>
             </div>
           </div>
@@ -820,61 +821,52 @@ export function HomePage({
         </div>
 
         {cardViewMode === 'list' ? (
-          <div className="flex flex-col gap-2.5 p-4 md:px-12 md:py-8 w-full">
+          <div className="flex flex-col w-full border-t border-black/15 dark:border-white/15">
             {filteredTrips.slice(0, 8).map((trip, index) => {
               const isCardActive = activeCardId === trip.id;
-              const issueNumber = String((trip.displayOrder ?? index) + 1).padStart(2, '0');
 
               return (
                 <div
                   key={trip.id}
                   onClick={() => onNavigate('detail', trip.id)}
-                  className={`flex items-center justify-between p-3 md:p-4 rounded-xl border transition-all cursor-pointer group select-none ${
-                    isCardActive
-                      ? 'border-red-600 dark:border-red-400 bg-red-500/5 ring-1 ring-red-500/20 shadow-md'
-                      : 'border-black/10 dark:border-white/10 bg-white dark:bg-[#161616] hover:border-black/30 dark:hover:border-white/30 hover:shadow-sm'
+                  className={`group flex flex-row items-stretch border-b border-black/15 dark:border-white/15 transition-colors cursor-pointer w-full select-none ${
+                    isCardActive 
+                      ? 'bg-neutral-100 dark:bg-white/[0.08] border-l-[4px] border-l-red-600 dark:border-l-red-500' 
+                      : 'border-l-[4px] border-l-transparent hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
                   }`}
                 >
-                  <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
-                    {/* Thumbnail */}
-                    <div className="w-14 h-14 md:w-16 md:h-16 rounded-lg overflow-hidden bg-black/10 shrink-0 border border-black/10 dark:border-white/10 relative">
-                      <img src={getEffectiveImageUrl(trip.img)} alt={trip.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                      <span className="absolute bottom-1 right-1 text-[8px] font-mono font-bold bg-black/75 text-white px-1 rounded">#{issueNumber}</span>
-                    </div>
+                  {/* Thumbnail: 1:1 full-height square edge-to-edge */}
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 aspect-square self-stretch shrink-0 border-r border-black/15 dark:border-white/15 overflow-hidden rounded-none relative bg-black/10">
+                    <img src={getEffectiveImageUrl(trip.img)} alt={trip.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  </div>
 
-                    {/* Meta */}
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-black text-sm md:text-base text-black dark:text-white uppercase truncate font-satoshi">{trip.title}</h3>
-                        {trip.statusBadge && (
-                          <span className={`text-[8px] font-black px-1.5 py-0.2 rounded uppercase ${
-                            trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
-                          }`}>
-                            {trip.statusBadge}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-[10px] md:text-xs text-black/50 dark:text-white/50 font-mono mt-0.5">
-                        <span>{trip.date}</span>
-                        {trip.locationStr && (
-                          <>
-                            <span>·</span>
-                            <span className="truncate max-w-[120px] sm:max-w-[200px]">{trip.locationStr}</span>
-                          </>
-                        )}
-                      </div>
-                      {trip.tags && trip.tags.length > 0 && (
-                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                          {trip.tags.slice(0, 3).map(tag => (
-                            <span key={tag} className="text-[8.5px] px-1.5 py-0.2 rounded bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 font-bold uppercase tracking-wider">#{tag}</span>
-                          ))}
-                        </div>
+                  {/* Meta */}
+                  <div className="flex-1 min-w-0 py-2.5 px-3 sm:px-4 md:px-6 flex flex-col justify-center gap-0.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-black text-sm sm:text-base md:text-lg text-black dark:text-white uppercase font-satoshi truncate">
+                        {trip.title}
+                      </h3>
+                      {trip.statusBadge && (
+                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-none font-mono uppercase ${
+                          trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
+                        }`}>
+                          {trip.statusBadge}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-[10.5px] sm:text-xs text-black/60 dark:text-white/60 font-mono flex-wrap mt-0.5">
+                      <span className="font-bold text-black/80 dark:text-white/80">{trip.date}</span>
+                      {trip.locationStr && (
+                        <>
+                          <span>·</span>
+                          <span className="text-black/70 dark:text-white/70">{trip.locationStr.replace(/,/g, ' · ')}</span>
+                        </>
                       )}
                     </div>
                   </div>
 
-                  {/* Right Menu & Arrow */}
-                  <div className="flex items-center gap-1 md:gap-2 shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
+                  {/* Right Menu (Unboxed, NO right arrow button) */}
+                  <div className="flex items-center pr-2 sm:pr-4 md:pr-6 shrink-0" onClick={(e) => e.stopPropagation()}>
                     <JourneyCardMenu
                       isLoggedIn={isLoggedIn}
                       onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
@@ -882,10 +874,8 @@ export function HomePage({
                       onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
                       onMove={onMoveToPlans ? () => onMoveToPlans(trip) : undefined}
                       moveLabel="계획으로 이동"
+                      variant="minimal"
                     />
-                    <div className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-black/40 group-hover:text-black dark:text-white/40 dark:group-hover:text-white transition-colors">
-                      <ArrowRight className="w-4 h-4" />
-                    </div>
                   </div>
                 </div>
               );

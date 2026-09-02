@@ -252,13 +252,13 @@ export function ArchiveHubPage({
 
   return (
     <main onClick={() => setActiveCardId(null)} className="animate-in fade-in duration-500 min-h-screen w-full">
-      <div className="p-6 md:px-12 md:py-12 border-b border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.02] flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+      <div className="p-4 sm:p-6 md:px-12 md:py-8 border-b border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.02] flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6">
         <div className="flex-1">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tighter uppercase mb-2 sm:mb-3 break-keep" style={{ wordBreak: 'keep-all' }}>Journeys Archive</h1>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter uppercase mb-1 sm:mb-1.5 break-keep">Journeys Archive</h1>
           <p className="max-w-xl text-xs sm:text-sm leading-relaxed opacity-70 break-keep">모든 여행의 감각적인 기록들입니다. 다녀온 곳을 회고하고 기록을 엑셀로 추출할 수 있습니다.</p>
           
           {/* Active Filter and Sorting Layout */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
             {/* Tag Filter Collapsible Trigger & Search Dropdown */}
             <div className="relative inline-block text-left z-20">
               <div className="flex items-center gap-2">
@@ -409,73 +409,61 @@ export function ArchiveHubPage({
       </div>
       
       {cardViewMode === 'list' ? (
-        <div className="flex flex-col gap-2.5 p-4 md:px-12 md:py-8 w-full">
+        <div className="flex flex-col w-full border-t border-black/15 dark:border-white/15">
           {filteredTrips.map((trip, index) => {
             const isCardActive = activeCardId === trip.id;
-            const issueNumber = String((trip.displayOrder ?? index) + 1).padStart(2, '0');
 
             return (
               <div
                 key={trip.id}
                 onClick={() => onNavigate('detail', trip.id)}
-                className={`flex items-center justify-between p-3 md:p-4 rounded-xl border transition-all cursor-pointer group select-none ${
-                  isCardActive
-                    ? 'border-red-600 dark:border-red-400 bg-red-500/5 ring-1 ring-red-500/20 shadow-md'
-                    : 'border-black/10 dark:border-white/10 bg-white dark:bg-[#161616] hover:border-black/30 dark:hover:border-white/30 hover:shadow-sm'
+                className={`group flex flex-row items-stretch border-b border-black/15 dark:border-white/15 transition-colors cursor-pointer w-full select-none ${
+                  isCardActive 
+                    ? 'bg-neutral-100 dark:bg-white/[0.08] border-l-[4px] border-l-red-600 dark:border-l-red-500' 
+                    : 'border-l-[4px] border-l-transparent hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
                 }`}
               >
-                <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
-                  {/* Thumbnail */}
-                  <div className="w-14 h-14 md:w-16 md:h-16 rounded-lg overflow-hidden bg-black/10 shrink-0 border border-black/10 dark:border-white/10 relative">
-                    <img src={getEffectiveImageUrl(trip.img)} alt={trip.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                    <span className="absolute bottom-1 right-1 text-[8px] font-mono font-bold bg-black/75 text-white px-1 rounded">#{issueNumber}</span>
-                  </div>
+                {/* Thumbnail: 1:1 full-height square edge-to-edge */}
+                <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 aspect-square self-stretch shrink-0 border-r border-black/15 dark:border-white/15 overflow-hidden rounded-none relative bg-black/10">
+                  <img src={getEffectiveImageUrl(trip.img)} alt={trip.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                </div>
 
-                  {/* Meta */}
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-black text-sm md:text-base text-black dark:text-white uppercase truncate font-satoshi">{trip.title}</h3>
-                      {trip.statusBadge && (
-                        <span className={`text-[8px] font-black px-1.5 py-0.2 rounded uppercase ${
-                          trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
-                        }`}>
-                          {trip.statusBadge}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 text-[10px] md:text-xs text-black/50 dark:text-white/50 font-mono mt-0.5">
-                      <span>{trip.date}</span>
-                      {trip.locationStr && (
-                        <>
-                          <span>·</span>
-                          <span className="truncate max-w-[120px] sm:max-w-[200px]">{trip.locationStr}</span>
-                        </>
-                      )}
-                    </div>
-                    {trip.tags && trip.tags.length > 0 && (
-                      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                        {trip.tags.slice(0, 3).map(tag => (
-                          <span key={tag} className="text-[8.5px] px-1.5 py-0.2 rounded bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 font-bold uppercase tracking-wider">#{tag}</span>
-                        ))}
-                      </div>
+                {/* Meta */}
+                <div className="flex-1 min-w-0 py-2.5 px-3 sm:px-4 md:px-6 flex flex-col justify-center gap-0.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-black text-sm sm:text-base md:text-lg text-black dark:text-white uppercase font-satoshi truncate">
+                      {trip.title}
+                    </h3>
+                    {trip.statusBadge && (
+                      <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-none font-mono uppercase ${
+                        trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
+                      }`}>
+                        {trip.statusBadge}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-[10.5px] sm:text-xs text-black/60 dark:text-white/60 font-mono flex-wrap mt-0.5">
+                    <span className="font-bold text-black/80 dark:text-white/80">{trip.date}</span>
+                    {trip.locationStr && (
+                      <>
+                        <span>·</span>
+                        <span className="text-black/70 dark:text-white/70">{trip.locationStr.replace(/,/g, ' · ')}</span>
+                      </>
                     )}
                   </div>
                 </div>
 
-                {/* Right Menu & Arrow */}
-                <div className="flex items-center gap-1 md:gap-2 shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
+                {/* Right Menu (Unboxed, NO right arrow button) */}
+                <div className="flex items-center pr-2 sm:pr-4 md:pr-6 shrink-0" onClick={(e) => e.stopPropagation()}>
                   <JourneyCardMenu
-                    className="relative z-20"
                     isLoggedIn={isLoggedIn}
                     onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
                     onDelete={() => onDeleteTrip(trip.id)}
                     onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
                     onMove={onMoveToPlans ? () => onMoveToPlans(trip) : undefined}
                     moveLabel="계획으로 이동"
+                    variant="minimal"
                   />
-                  <div className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-black/40 group-hover:text-black dark:text-white/40 dark:group-hover:text-white transition-colors">
-                    <ArrowRight className="w-4 h-4" />
-                  </div>
                 </div>
               </div>
             );

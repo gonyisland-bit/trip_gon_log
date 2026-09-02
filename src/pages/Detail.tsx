@@ -4153,12 +4153,12 @@ export function JourneyDetailPage({
 
           {/* FLIGHTS TAB */}
           {activeTab === 'flights' && (
-            <div className="p-4 md:p-6 animate-in fade-in duration-300">
+            <div className="w-full flex flex-col animate-in fade-in duration-300">
               {(() => {
                 const flightsToUse = isEditing ? draftFlights : flights;
                 if (flightsToUse.length === 0) {
                   return (
-                    <div className="text-center py-12 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
+                    <div className="text-center py-16 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
                       등록된 항공편이 없습니다.
                     </div>
                   );
@@ -4194,12 +4194,14 @@ export function JourneyDetailPage({
                 const renderGroup = (groupFlights: FlightItem[], groupLabel: string) => {
                   if (groupFlights.length === 0) return null;
                   return (
-                    <div className="mb-8">
-                      <div className="flex items-center gap-3 mb-4">
-                        <span className="text-[10px] uppercase font-black tracking-widest text-red-600 dark:text-red-400 shrink-0 font-bold">
-                          {groupLabel} ({groupFlights.length})
+                    <div className="w-full flex flex-col">
+                      <div className="flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/15 dark:border-white/15">
+                        <span className="text-[10px] md:text-xs uppercase font-black tracking-widest text-red-600 dark:text-red-400 font-mono">
+                          {groupLabel}
                         </span>
-                        <div className="h-[1px] flex-grow bg-red-600/20 dark:bg-red-400/20" />
+                        <span className="text-[9px] md:text-[10px] font-mono font-bold text-black/40 dark:text-white/40 tracking-wider">
+                          {groupFlights.length} FLIGHT{groupFlights.length > 1 ? 'S' : ''}
+                        </span>
                       </div>
                       
                       {groupFlights.map((flight, idx) => {
@@ -4215,13 +4217,10 @@ export function JourneyDetailPage({
                             className="w-full flex flex-col"
                           >
                             {prevFlight && layoverTimeStr && (
-                              <div className="my-4 flex items-center justify-center relative w-full" onClick={(e) => e.stopPropagation()}>
-                                <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                                  <div className="w-full border-t border-dashed border-red-500/30 dark:border-red-400/30" />
-                                </div>
-                                <div className="relative flex justify-center text-[9px] font-black uppercase tracking-widest bg-[#F9F8F6] dark:bg-[#111111] px-3 text-red-600 dark:text-red-400 border border-red-500/20 py-1 rounded-full">
-                                  ✈️ Layover at {prevFlight.toCode} : {layoverTimeStr}
-                                </div>
+                              <div className="py-2 px-4 md:px-6 flex items-center justify-center bg-red-50/60 dark:bg-red-950/20 border-b border-red-500/20 w-full" onClick={(e) => e.stopPropagation()}>
+                                <span className="text-[9px] sm:text-[10px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-400">
+                                  ✈️ Layover at {prevFlight.toCode} · {layoverTimeStr}
+                                </span>
                               </div>
                             )}
                             <FlightCard 
@@ -4247,7 +4246,7 @@ export function JourneyDetailPage({
                 };
 
                 return (
-                  <div className="flex flex-col">
+                  <div className="flex flex-col w-full">
                     {renderGroup(outbound, 'Outbound Flights')}
                     {renderGroup(inbound, 'Inbound Flights')}
                   </div>
@@ -4256,7 +4255,7 @@ export function JourneyDetailPage({
               
               {/* Add Flight controls */}
               {isEditing && (
-                <div className="flex gap-4 justify-center mt-6">
+                <div className="flex gap-4 justify-center py-6">
                   <button 
                     onClick={() => handleAddFlight('OUTBOUND FLIGHT')} 
                     className="text-[10px] md:text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5"
@@ -4282,14 +4281,14 @@ export function JourneyDetailPage({
 
           {/* STAYS TAB */}
           {activeTab === 'stays' && (
-            <div className="p-4 md:p-6 animate-in fade-in duration-300">
+            <div className="w-full flex flex-col animate-in fade-in duration-300">
               {(isEditing ? draftStays : stays).length === 0 ? (
-                <div className="text-center py-12 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
+                <div className="text-center py-16 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
                   등록된 숙소 정보가 없습니다.
                 </div>
               ) : (
                 (isEditing ? draftStays : stays).map(stay => (
-                  <div ref={el => { itemRefs.current[stay.id] = el; }} key={stay.id}>
+                  <div ref={el => { itemRefs.current[stay.id] = el; }} key={stay.id} className="w-full">
                     <StayCard 
                       stay={stay} 
                       isEditMode={isEditing} 
@@ -4312,7 +4311,7 @@ export function JourneyDetailPage({
 
               {/* Add Stay control */}
               {isEditing && (
-                <div className="flex justify-center mt-6">
+                <div className="flex justify-center py-6">
                   <button 
                     onClick={handleAddStay} 
                     className="text-[10px] md:text-xs font-bold uppercase tracking-widest border border-black dark:border-white px-6 py-2.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-2"
@@ -4326,18 +4325,18 @@ export function JourneyDetailPage({
 
           {/* TRANSIT TAB */}
           {activeTab === 'transit' && (
-            <div className="p-4 md:p-6 animate-in fade-in duration-300">
+            <div className="w-full flex flex-col animate-in fade-in duration-300">
               {/* Sort Type Control */}
-              <div className="flex justify-end gap-2 mb-4 text-[9px] md:text-[10px] font-bold uppercase tracking-widest select-none">
+              <div className="w-full flex justify-end items-center gap-2 py-2 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/15 dark:border-white/15 text-[9px] md:text-[10px] font-bold uppercase tracking-widest select-none">
                 <button 
                   onClick={() => setTransitSortType('time')} 
-                  className={`px-2.5 py-1 border transition-colors rounded-sm ${transitSortType === 'time' ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' : 'border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'}`}
+                  className={`px-2.5 py-1 border transition-colors rounded-sm cursor-pointer ${transitSortType === 'time' ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' : 'border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'}`}
                 >
                   탑승시간순
                 </button>
                 <button 
                   onClick={() => setTransitSortType('type')} 
-                  className={`px-2.5 py-1 border transition-colors rounded-sm ${transitSortType === 'type' ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' : 'border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'}`}
+                  className={`px-2.5 py-1 border transition-colors rounded-sm cursor-pointer ${transitSortType === 'type' ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' : 'border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'}`}
                 >
                   탑승종류순
                 </button>
@@ -4347,7 +4346,7 @@ export function JourneyDetailPage({
                 const rawTransitList = isEditing ? draftTransits : transits;
                 if (rawTransitList.length === 0) {
                   return (
-                    <div className="text-center py-12 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
+                    <div className="text-center py-16 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
                       등록된 교통편이 없습니다.
                     </div>
                   );
@@ -4376,17 +4375,21 @@ export function JourneyDetailPage({
                 const renderGroup = (items: TransitItem[], label: string, IconComponent: any) => {
                   if (items.length === 0) return null;
                   return (
-                    <div className="mb-8 last:mb-0">
-                      <div className="flex items-center gap-2 mb-4">
-                        <IconComponent className="w-4 h-4 text-black/55 dark:text-white/55" />
-                        <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-black/55 dark:text-white/55">
-                          {label} ({items.length})
+                    <div className="w-full flex flex-col">
+                      <div className="flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/15 dark:border-white/15">
+                        <div className="flex items-center gap-2">
+                          <IconComponent className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+                          <span className="text-[10px] md:text-xs uppercase font-black tracking-widest text-red-600 dark:text-red-400 font-mono">
+                            {label}
+                          </span>
+                        </div>
+                        <span className="text-[9px] md:text-[10px] font-mono font-bold text-black/40 dark:text-white/40 tracking-wider">
+                          {items.length} ITEM{items.length > 1 ? 'S' : ''}
                         </span>
-                        <div className="h-[1px] flex-grow bg-black/10 dark:bg-white/10" />
                       </div>
-                      <div className="space-y-4">
+                      <div className="flex flex-col w-full">
                         {items.map(transit => (
-                          <div ref={el => { itemRefs.current[transit.id] = el; }} key={transit.id}>
+                          <div ref={el => { itemRefs.current[transit.id] = el; }} key={transit.id} className="w-full">
                             <TransitCard 
                               transit={transit} 
                               isEditMode={isEditing} 
@@ -4417,7 +4420,7 @@ export function JourneyDetailPage({
                 if (transitSortType === 'time') {
                   // 탑승시간순 정렬: Train/Bus/Taxi 묶지 않고 시간순으로 정렬된 전체 리스트를 하나의 그룹으로 렌더링
                   return (
-                    <div className="flex flex-col text-left">
+                    <div className="flex flex-col text-left w-full">
                       {renderGroup(transitList, 'Transit Schedule', Train)}
                     </div>
                   );
@@ -4427,7 +4430,7 @@ export function JourneyDetailPage({
                   const buses = transitList.filter(t => t.transitType === 'bus');
                   const taxis = transitList.filter(t => t.transitType === 'taxi');
                   return (
-                    <div className="flex flex-col text-left">
+                    <div className="flex flex-col text-left w-full">
                       {renderGroup(trains, 'Train Tickets', Train)}
                       {renderGroup(buses, 'Bus Tickets', Bus)}
                       {renderGroup(taxis, 'Taxi/Car Tickets', Car)}
@@ -4438,7 +4441,7 @@ export function JourneyDetailPage({
 
               {/* Add Transit control */}
               {isEditing && (
-                <div className="flex flex-col items-center mt-6 gap-2">
+                <div className="flex flex-col items-center py-6 gap-2">
                   <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-black tracking-widest">Add Transit Ticket (교통 티켓 추가)</span>
                   <div className="flex flex-wrap justify-center gap-2">
                     <button 
@@ -4644,7 +4647,7 @@ export function JourneyDetailPage({
 
             return (
               <div 
-                className="pt-2 px-4 pb-4 md:pt-3 md:px-6 md:pb-6 relative min-h-[400px] animate-in fade-in duration-300"
+                className="w-full flex flex-col relative min-h-[400px] animate-in fade-in duration-300"
                 onDragOver={handleGalleryDragOver}
                 onDragLeave={handleGalleryDragLeave}
                 onDrop={handleGalleryDrop}
@@ -4677,7 +4680,7 @@ export function JourneyDetailPage({
 
                 {/* Gallery View Mode & Column Toggle */}
                 {allGalleryImages.length > 0 && (
-                  <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                  <div className="w-full flex items-center justify-between gap-2 py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/15 dark:border-white/15 flex-wrap">
                     <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
                       {allGalleryImages.length} Photos
                     </span>
@@ -4714,7 +4717,7 @@ export function JourneyDetailPage({
                       <div className="flex border border-black/10 dark:border-white/10 p-0.5 bg-black/5 dark:bg-white/5">
                         <button
                           onClick={() => setGalleryViewMode('accordion')}
-                          className={`px-2.5 py-1 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                          className={`px-2.5 py-1 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                             galleryViewMode === 'accordion'
                               ? 'bg-white dark:bg-[#1a1a1a] text-black dark:text-white shadow-sm'
                               : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
@@ -4724,7 +4727,7 @@ export function JourneyDetailPage({
                         </button>
                         <button
                           onClick={() => setGalleryViewMode('grid')}
-                          className={`px-2.5 py-1 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                          className={`px-2.5 py-1 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                             galleryViewMode === 'grid'
                               ? 'bg-white dark:bg-[#1a1a1a] text-black dark:text-white shadow-sm'
                               : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
@@ -4759,7 +4762,7 @@ export function JourneyDetailPage({
                                 setCollapsedGalleryDays(prev => [...prev, date]);
                               }
                             }}
-                            className="w-full flex items-center justify-between py-2.5 px-3 sm:px-4 bg-black/[0.02] dark:bg-white/[0.02] text-[10px] sm:text-xs font-black uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
+                            className="w-full flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] text-[10px] sm:text-xs font-black uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
                           >
                             <div className="flex items-center gap-2">
                               <span className="font-black">DAY {idx + 1}</span>
@@ -4771,7 +4774,7 @@ export function JourneyDetailPage({
                             </span>
                           </button>
                           {!isCollapsed && (
-                            <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 sm:grid-cols-2 gap-3 p-3' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1 p-1'} bg-white dark:bg-[#0A0A0A]`}>
+                            <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 sm:grid-cols-2 gap-2 p-2 sm:gap-3 sm:p-3' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[2px] p-[2px]'} bg-white dark:bg-[#0A0A0A]`}>
                               {items.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
                             </div>
                           )}
@@ -4793,7 +4796,7 @@ export function JourneyDetailPage({
                                 setCollapsedGalleryDays(prev => [...prev, 'NO_DATE']);
                               }
                             }}
-                            className="w-full flex items-center justify-between py-2.5 px-3 sm:px-4 bg-black/[0.02] dark:bg-white/[0.02] text-[10px] sm:text-xs font-black uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
+                            className="w-full flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] text-[10px] sm:text-xs font-black uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
                           >
                             <span className="font-black">NO DATE</span>
                             <span className="text-[9px] font-mono font-bold text-black/40 dark:text-white/40 tracking-wider">
@@ -4801,7 +4804,7 @@ export function JourneyDetailPage({
                             </span>
                           </button>
                           {!isCollapsed && (
-                            <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 sm:grid-cols-2 gap-3 p-3' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1 p-1'} bg-white dark:bg-[#0A0A0A]`}>
+                            <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 sm:grid-cols-2 gap-2 p-2 sm:gap-3 sm:p-3' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[2px] p-[2px]'} bg-white dark:bg-[#0A0A0A]`}>
                               {items.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
                             </div>
                           )}
@@ -4811,15 +4814,15 @@ export function JourneyDetailPage({
                   </div>
                 ) : (
                   /* Timeline Grid View */
-                  <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 md:gap-3'}`}>
+                  <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 sm:grid-cols-2 gap-2 p-2 sm:gap-3 sm:p-3' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[2px] p-[2px]'}`}>
                     {allGalleryImages.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
                   </div>
                 )}
-              {/* Gallery footer */}
-              <div className="w-full shrink-0 mt-12">
-                <Footer className="mt-0" />
+                {/* Gallery footer */}
+                <div className="w-full shrink-0 mt-12">
+                  <Footer className="mt-0" />
+                </div>
               </div>
-            </div>
             );
           })()}
 
