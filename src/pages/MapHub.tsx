@@ -14,6 +14,8 @@ interface CountryInfo {
   cities: string[];
   center: [number, number]; // [lat, lng]
   zoom: number;
+  continent: string;
+  continentKo: string;
 }
 
 const COUNTRIES_DATA: CountryInfo[] = [
@@ -28,6 +30,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['TOKYO', 'OSAKA', 'KYOTO', 'FUKUOKA', 'SAPPORO', 'NAGOYA', 'OKINAWA', 'KOBE', 'NARA'],
     center: [36.2048, 138.2529],
     zoom: 5.5,
+    continent: 'Asia',
+    continentKo: '아시아',
   },
   {
     code: 'KR',
@@ -39,6 +43,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['SEOUL', 'BUSAN', 'JEJU', 'GANGNEUNG', 'GYEONGJU', 'INCHEON', 'SOKCHO', 'JEONJU'],
     center: [36.5, 127.8],
     zoom: 6.5,
+    continent: 'Asia',
+    continentKo: '아시아',
   },
   {
     code: 'TW',
@@ -50,6 +56,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['TAIPEI', 'KAOHSIUNG', 'TAICHUNG', 'TAINAN', 'HUALIEN', 'JIUFEN'],
     center: [23.7, 121.0],
     zoom: 7,
+    continent: 'Asia',
+    continentKo: '아시아',
   },
   {
     code: 'HK',
@@ -61,6 +69,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['HONG KONG', 'KOWLOON', 'CENTRAL', 'TSIM SHA TSUI', 'LANTAU'],
     center: [22.3193, 114.1694],
     zoom: 11,
+    continent: 'Asia',
+    continentKo: '아시아',
   },
   {
     code: 'MO',
@@ -72,6 +82,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['MACAU', 'TAIPA', 'COTAI', 'COLOANE'],
     center: [22.1987, 113.5439],
     zoom: 12,
+    continent: 'Asia',
+    continentKo: '아시아',
   },
   {
     code: 'CN',
@@ -83,6 +95,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['SHANGHAI', 'BEIJING', 'QINGDAO', 'ZHANGJIAJIE', 'CHENGDU', 'GUANGZHOU', 'XIAN'],
     center: [35.8617, 104.1954],
     zoom: 4,
+    continent: 'Asia',
+    continentKo: '아시아',
   },
   {
     code: 'MN',
@@ -94,9 +108,11 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['ULAANBAATAR', 'GOBI', 'TERELJ', 'KHUVSGUL'],
     center: [46.8625, 103.8467],
     zoom: 5,
+    continent: 'Asia',
+    continentKo: '아시아',
   },
 
-  // ─── SOUTHEAST ASIA ────────────────────────────────────────────────────────
+  // ─── SOUTHEAST & SOUTH ASIA ───────────────────────────────────────────────
   {
     code: 'VN',
     name: 'VIETNAM',
@@ -107,6 +123,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['DA NANG', 'HANOI', 'HO CHI MINH', 'NHA TRANG', 'PHU QUOC', 'HOI AN', 'SAPA'],
     center: [15.8, 108.0],
     zoom: 5.5,
+    continent: 'Asia',
+    continentKo: '아시아',
   },
   {
     code: 'TH',
@@ -118,6 +136,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['BANGKOK', 'CHIANG MAI', 'PHUKET', 'PATTAYA', 'KOH SAMUI', 'KRABI'],
     center: [14.5, 101.0],
     zoom: 5.5,
+    continent: 'Asia',
+    continentKo: '아시아',
   },
   {
     code: 'PH',
@@ -129,6 +149,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['CEBU', 'BORACAY', 'BOHOL', 'MANILA', 'CORON', 'EL NIDO'],
     center: [12.8797, 121.7740],
     zoom: 5.5,
+    continent: 'Asia',
+    continentKo: '아시아',
   },
   {
     code: 'SG',
@@ -140,6 +162,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['SINGAPORE', 'SENTOSA', 'MARINA BAY'],
     center: [1.3521, 103.8198],
     zoom: 11,
+    continent: 'Asia',
+    continentKo: '아시아',
   },
   {
     code: 'MY',
@@ -151,6 +175,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['KUALA LUMPUR', 'KOTA KINABALU', 'PENANG', 'LANGKAWI', 'MALACCA'],
     center: [4.2105, 101.9758],
     zoom: 5.5,
+    continent: 'Asia',
+    continentKo: '아시아',
   },
   {
     code: 'ID',
@@ -162,6 +188,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['BALI', 'JAKARTA', 'YOGYAKARTA', 'LOMBOK', 'KOMODO'],
     center: [-0.7893, 113.9213],
     zoom: 5,
+    continent: 'Asia',
+    continentKo: '아시아',
   },
   {
     code: 'LA',
@@ -173,6 +201,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['VIENTIANE', 'LUANG PRABANG', 'VANG VIENG'],
     center: [19.8563, 102.4955],
     zoom: 6,
+    continent: 'Asia',
+    continentKo: '아시아',
   },
   {
     code: 'KH',
@@ -184,6 +214,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['SIEM REAP', 'PHNOM PENH', 'KAMPOT'],
     center: [12.5657, 104.9910],
     zoom: 6.5,
+    continent: 'Asia',
+    continentKo: '아시아',
   },
   {
     code: 'MV',
@@ -195,6 +227,34 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['MALE', 'MAAFUSHI', 'ARI ATOLL'],
     center: [3.2028, 73.2207],
     zoom: 7,
+    continent: 'Asia',
+    continentKo: '아시아',
+  },
+  {
+    code: 'IN',
+    name: 'INDIA',
+    nameKo: '인도',
+    currency: 'INR',
+    currencySymbol: '₹',
+    rateToKRW: 16.5,
+    cities: ['NEW DELHI', 'MUMBAI', 'JAIPUR', 'AGRA', 'GOA', 'VARANASI'],
+    center: [20.5937, 78.9629],
+    zoom: 4.5,
+    continent: 'Asia',
+    continentKo: '아시아',
+  },
+  {
+    code: 'NP',
+    name: 'NEPAL',
+    nameKo: '네팔',
+    currency: 'NPR',
+    currencySymbol: '₨',
+    rateToKRW: 10.2,
+    cities: ['KATHMANDU', 'POKHARA', 'EVEREST'],
+    center: [28.3949, 84.1240],
+    zoom: 7,
+    continent: 'Asia',
+    continentKo: '아시아',
   },
 
   // ─── EUROPE ────────────────────────────────────────────────────────────────
@@ -208,6 +268,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['PARIS', 'NICE', 'LYON', 'MARSEILLE', 'BORDEAUX', 'STRASBOURG', 'COLMAR'],
     center: [46.6, 2.3],
     zoom: 5.5,
+    continent: 'Europe',
+    continentKo: '유럽',
   },
   {
     code: 'IT',
@@ -219,6 +281,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['ROME', 'FLORENCE', 'VENICE', 'MILAN', 'NAPLES', 'AMALFI', 'POSITANO'],
     center: [42.5, 12.5],
     zoom: 5.5,
+    continent: 'Europe',
+    continentKo: '유럽',
   },
   {
     code: 'ES',
@@ -230,6 +294,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['BARCELONA', 'MADRID', 'SEVILLE', 'GRANADA', 'VALENCIA', 'MALAGA', 'IBIZA'],
     center: [40.4, -3.7],
     zoom: 5.5,
+    continent: 'Europe',
+    continentKo: '유럽',
   },
   {
     code: 'GB',
@@ -241,6 +307,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['LONDON', 'EDINBURGH', 'MANCHESTER', 'OXFORD', 'CAMBRIDGE', 'LIVERPOOL'],
     center: [54.5, -2.5],
     zoom: 5.5,
+    continent: 'Europe',
+    continentKo: '유럽',
   },
   {
     code: 'CH',
@@ -252,6 +320,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['ZURICH', 'INTERLAKEN', 'GENEVA', 'LUCERNE', 'ZERMATT', 'GRINDELWALD'],
     center: [46.8, 8.2],
     zoom: 7,
+    continent: 'Europe',
+    continentKo: '유럽',
   },
   {
     code: 'DE',
@@ -263,6 +333,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['BERLIN', 'MUNICH', 'FRANKFURT', 'HAMBURG', 'COLOGNE', 'HEIDELBERG'],
     center: [51.1, 10.4],
     zoom: 5.5,
+    continent: 'Europe',
+    continentKo: '유럽',
   },
   {
     code: 'AT',
@@ -274,6 +346,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['VIENNA', 'SALZBURG', 'HALLSTATT', 'INNSBRUCK', 'GRAZ'],
     center: [47.5162, 14.5501],
     zoom: 6.5,
+    continent: 'Europe',
+    continentKo: '유럽',
   },
   {
     code: 'CZ',
@@ -285,6 +359,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['PRAGUE', 'CESKY KRUMLOV', 'BRNO', 'KARLOVY VARY'],
     center: [49.8175, 15.4730],
     zoom: 6.5,
+    continent: 'Europe',
+    continentKo: '유럽',
   },
   {
     code: 'HU',
@@ -296,6 +372,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['BUDAPEST', 'DEBRECEN', 'EGER', 'SZEGED'],
     center: [47.1625, 19.5033],
     zoom: 6.5,
+    continent: 'Europe',
+    continentKo: '유럽',
   },
   {
     code: 'HR',
@@ -307,6 +385,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['DUBROVNIK', 'ZAGREB', 'SPLIT', 'PLITVICE', 'HVAR', 'ZADAR'],
     center: [45.1, 15.2],
     zoom: 6,
+    continent: 'Europe',
+    continentKo: '유럽',
   },
   {
     code: 'PT',
@@ -318,6 +398,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['LISBON', 'PORTO', 'SINTRA', 'FARO', 'COIMBRA', 'MADEIRA'],
     center: [39.3999, -8.2245],
     zoom: 6,
+    continent: 'Europe',
+    continentKo: '유럽',
   },
   {
     code: 'GR',
@@ -329,6 +411,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['ATHENS', 'SANTORINI', 'MYKONOS', 'CRETE', 'ZAKYNTHOS'],
     center: [39.0742, 21.8243],
     zoom: 6,
+    continent: 'Europe',
+    continentKo: '유럽',
   },
   {
     code: 'NL',
@@ -340,6 +424,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['AMSTERDAM', 'ROTTERDAM', 'UTRECHT', 'THE HAGUE', 'GIETHOORN'],
     center: [52.1326, 5.2913],
     zoom: 7,
+    continent: 'Europe',
+    continentKo: '유럽',
   },
   {
     code: 'BE',
@@ -351,17 +437,112 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['BRUSSELS', 'BRUGES', 'GHENT', 'ANTWERP'],
     center: [50.5039, 4.4699],
     zoom: 7.5,
+    continent: 'Europe',
+    continentKo: '유럽',
   },
   {
-    code: 'TR',
-    name: 'TURKEY',
-    nameKo: '튀르키예',
-    currency: 'TRY',
-    currencySymbol: '₺',
-    rateToKRW: 42.0,
-    cities: ['ISTANBUL', 'CAPPADOCIA', 'ANTALYA', 'PAMUKKALE', 'IZMIR'],
-    center: [38.9637, 35.2433],
-    zoom: 5.5,
+    code: 'DK',
+    name: 'DENMARK',
+    nameKo: '덴마크',
+    currency: 'DKK',
+    currencySymbol: 'kr',
+    rateToKRW: 200.0,
+    cities: ['COPENHAGEN', 'AARHUS', 'ODENSE', 'BILLUND'],
+    center: [56.2639, 9.5018],
+    zoom: 6.5,
+    continent: 'Europe',
+    continentKo: '유럽',
+  },
+  {
+    code: 'NO',
+    name: 'NORWAY',
+    nameKo: '노르웨이',
+    currency: 'NOK',
+    currencySymbol: 'kr',
+    rateToKRW: 130.0,
+    cities: ['OSLO', 'BERGEN', 'TROMSO', 'STAVANGER', 'FLAM'],
+    center: [60.4720, 8.4689],
+    zoom: 5,
+    continent: 'Europe',
+    continentKo: '유럽',
+  },
+  {
+    code: 'SE',
+    name: 'SWEDEN',
+    nameKo: '스웨덴',
+    currency: 'SEK',
+    currencySymbol: 'kr',
+    rateToKRW: 130.0,
+    cities: ['STOCKHOLM', 'GOTHENBURG', 'MALMO', 'UPPSALA'],
+    center: [60.1282, 18.6435],
+    zoom: 5,
+    continent: 'Europe',
+    continentKo: '유럽',
+  },
+  {
+    code: 'FI',
+    name: 'FINLAND',
+    nameKo: '핀란드',
+    currency: 'EUR',
+    currencySymbol: '€',
+    rateToKRW: 1480,
+    cities: ['HELSINKI', 'ROVANIEMI', 'TAMPERE', 'TURKU'],
+    center: [61.9241, 25.7482],
+    zoom: 5,
+    continent: 'Europe',
+    continentKo: '유럽',
+  },
+  {
+    code: 'PL',
+    name: 'POLAND',
+    nameKo: '폴란드',
+    currency: 'PLN',
+    currencySymbol: 'zł',
+    rateToKRW: 345.0,
+    cities: ['WARSAW', 'KRAKOW', 'GDANSK', 'WROCLAW'],
+    center: [51.9194, 19.1451],
+    zoom: 6,
+    continent: 'Europe',
+    continentKo: '유럽',
+  },
+  {
+    code: 'IE',
+    name: 'IRELAND',
+    nameKo: '아일랜드',
+    currency: 'EUR',
+    currencySymbol: '€',
+    rateToKRW: 1480,
+    cities: ['DUBLIN', 'CORK', 'GALWAY', 'KILLARNEY'],
+    center: [53.1424, -7.6921],
+    zoom: 6.5,
+    continent: 'Europe',
+    continentKo: '유럽',
+  },
+  {
+    code: 'RO',
+    name: 'ROMANIA',
+    nameKo: '루마니아',
+    currency: 'RON',
+    currencySymbol: 'lei',
+    rateToKRW: 295.0,
+    cities: ['BUCHAREST', 'BRASOV', 'CLUJ-NAPOCA', 'SIBIU'],
+    center: [45.9432, 24.9668],
+    zoom: 6,
+    continent: 'Europe',
+    continentKo: '유럽',
+  },
+  {
+    code: 'SI',
+    name: 'SLOVENIA',
+    nameKo: '슬로베니아',
+    currency: 'EUR',
+    currencySymbol: '€',
+    rateToKRW: 1480,
+    cities: ['LJUBLJANA', 'BLED', 'PIRAN', 'POSTOJNA'],
+    center: [46.1512, 14.9955],
+    zoom: 7.5,
+    continent: 'Europe',
+    continentKo: '유럽',
   },
   {
     code: 'IS',
@@ -373,9 +554,145 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['REYKJAVIK', 'VIK', 'AKUREYRI', 'GOLDEN CIRCLE'],
     center: [64.9631, -19.0208],
     zoom: 6,
+    continent: 'Europe',
+    continentKo: '유럽',
+  },
+  {
+    code: 'TR',
+    name: 'TURKEY',
+    nameKo: '튀르키예',
+    currency: 'TRY',
+    currencySymbol: '₺',
+    rateToKRW: 42.0,
+    cities: ['ISTANBUL', 'CAPPADOCIA', 'ANTALYA', 'PAMUKKALE', 'IZMIR'],
+    center: [38.9637, 35.2433],
+    zoom: 5.5,
+    continent: 'Europe',
+    continentKo: '유럽',
   },
 
-  // ─── AMERICAS & OCEANIA ───────────────────────────────────────────────────
+  // ─── AFRICA ────────────────────────────────────────────────────────────────
+  {
+    code: 'EG',
+    name: 'EGYPT',
+    nameKo: '이집트',
+    currency: 'EGP',
+    currencySymbol: 'E£',
+    rateToKRW: 28.0,
+    cities: ['CAIRO', 'GIZA', 'LUXOR', 'ASWAN', 'HURGHADA', 'ALEXANDRIA'],
+    center: [26.8206, 30.8025],
+    zoom: 5.5,
+    continent: 'Africa',
+    continentKo: '아프리카',
+  },
+  {
+    code: 'MA',
+    name: 'MOROCCO',
+    nameKo: '모로코',
+    currency: 'MAD',
+    currencySymbol: 'DH',
+    rateToKRW: 138.0,
+    cities: ['MARRAKECH', 'CASABLANCA', 'FES', 'CHEFCHAOUEN', 'RABAT'],
+    center: [31.7917, -7.0926],
+    zoom: 5.5,
+    continent: 'Africa',
+    continentKo: '아프리카',
+  },
+  {
+    code: 'ZA',
+    name: 'SOUTH AFRICA',
+    nameKo: '남아프리카공화국',
+    currency: 'ZAR',
+    currencySymbol: 'R',
+    rateToKRW: 75.0,
+    cities: ['CAPE TOWN', 'JOHANNESBURG', 'DURBAN', 'KRUGER'],
+    center: [-30.5595, 22.9375],
+    zoom: 5,
+    continent: 'Africa',
+    continentKo: '아프리카',
+  },
+  {
+    code: 'KE',
+    name: 'KENYA',
+    nameKo: '케냐',
+    currency: 'KES',
+    currencySymbol: 'KSh',
+    rateToKRW: 10.5,
+    cities: ['NAIROBI', 'MASAI MARA', 'MOMBASA'],
+    center: [-0.0236, 37.9062],
+    zoom: 6,
+    continent: 'Africa',
+    continentKo: '아프리카',
+  },
+  {
+    code: 'TZ',
+    name: 'TANZANIA',
+    nameKo: '탄자니아',
+    currency: 'TZS',
+    currencySymbol: 'TSh',
+    rateToKRW: 0.52,
+    cities: ['ZANZIBAR', 'SERENGETI', 'DAR ES SALAAM', 'KILIMANJARO'],
+    center: [-6.3690, 34.8888],
+    zoom: 6,
+    continent: 'Africa',
+    continentKo: '아프리카',
+  },
+
+  // ─── MIDDLE EAST ───────────────────────────────────────────────────────────
+  {
+    code: 'AE',
+    name: 'UNITED ARAB EMIRATES',
+    nameKo: '아랍에미리트',
+    currency: 'AED',
+    currencySymbol: 'AED',
+    rateToKRW: 375.0,
+    cities: ['DUBAI', 'ABU DHABI', 'SHARJAH'],
+    center: [23.4241, 53.8478],
+    zoom: 7,
+    continent: 'Middle East',
+    continentKo: '중동',
+  },
+  {
+    code: 'JO',
+    name: 'JORDAN',
+    nameKo: '요르단',
+    currency: 'JOD',
+    currencySymbol: 'JD',
+    rateToKRW: 1920.0,
+    cities: ['AMMAN', 'PETRA', 'WADI RUM', 'DEAD SEA', 'AQABA'],
+    center: [30.5852, 36.2384],
+    zoom: 7,
+    continent: 'Middle East',
+    continentKo: '중동',
+  },
+  {
+    code: 'QA',
+    name: 'QATAR',
+    nameKo: '카타르',
+    currency: 'QAR',
+    currencySymbol: 'QR',
+    rateToKRW: 375.0,
+    cities: ['DOHA', 'AL WAKRAH', 'LUSAIL'],
+    center: [25.3548, 51.1839],
+    zoom: 8.5,
+    continent: 'Middle East',
+    continentKo: '중동',
+  },
+  {
+    code: 'SA',
+    name: 'SAUDI ARABIA',
+    nameKo: '사우디아라비아',
+    currency: 'SAR',
+    currencySymbol: 'SR',
+    rateToKRW: 365.0,
+    cities: ['RIYADH', 'JEDDAH', 'ALULA', 'MEDINA'],
+    center: [23.8859, 45.0792],
+    zoom: 5,
+    continent: 'Middle East',
+    continentKo: '중동',
+  },
+
+  // ─── AMERICAS ─────────────────────────────────────────────────────────────
   {
     code: 'US',
     name: 'UNITED STATES',
@@ -386,28 +703,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['NEW YORK', 'LOS ANGELES', 'SAN FRANCISCO', 'LAS VEGAS', 'HONOLULU', 'SEATTLE', 'CHICAGO'],
     center: [39.8, -98.5],
     zoom: 4,
-  },
-  {
-    code: 'GU',
-    name: 'GUAM',
-    nameKo: '괌',
-    currency: 'USD',
-    currencySymbol: '$',
-    rateToKRW: 1380,
-    cities: ['TUMON', 'HAGATNA', 'TAMUNING'],
-    center: [13.4443, 144.7937],
-    zoom: 11,
-  },
-  {
-    code: 'MP',
-    name: 'SAIPAN',
-    nameKo: '사이판',
-    currency: 'USD',
-    currencySymbol: '$',
-    rateToKRW: 1380,
-    cities: ['GARAPAN', 'MARPI', 'SUSUPE'],
-    center: [15.1850, 145.7467],
-    zoom: 11,
+    continent: 'North America',
+    continentKo: '북미',
   },
   {
     code: 'CA',
@@ -419,7 +716,102 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['VANCOUVER', 'TORONTO', 'MONTREAL', 'QUEBEC', 'BANFF', 'CALGARY'],
     center: [56.1, -106.3],
     zoom: 3.5,
+    continent: 'North America',
+    continentKo: '북미',
   },
+  {
+    code: 'MX',
+    name: 'MEXICO',
+    nameKo: '멕시코',
+    currency: 'MXN',
+    currencySymbol: '$',
+    rateToKRW: 72.0,
+    cities: ['CANCUN', 'MEXICO CITY', 'PLAYA DEL CARMEN', 'TULUM', 'OAXACA'],
+    center: [23.6345, -102.5528],
+    zoom: 4.5,
+    continent: 'North America',
+    continentKo: '중남미',
+  },
+  {
+    code: 'CU',
+    name: 'CUBA',
+    nameKo: '쿠바',
+    currency: 'CUP',
+    currencySymbol: '$',
+    rateToKRW: 57.0,
+    cities: ['HAVANA', 'VARADERO', 'TRINIDAD', 'VINALES'],
+    center: [21.5218, -77.7812],
+    zoom: 6.5,
+    continent: 'North America',
+    continentKo: '중남미',
+  },
+  {
+    code: 'PE',
+    name: 'PERU',
+    nameKo: '페루',
+    currency: 'PEN',
+    currencySymbol: 'S/.',
+    rateToKRW: 365.0,
+    cities: ['LIMA', 'CUSCO', 'MACHU PICCHU', 'AREQUIPA', 'PUNO'],
+    center: [-9.1900, -75.0152],
+    zoom: 5,
+    continent: 'South America',
+    continentKo: '남미',
+  },
+  {
+    code: 'BR',
+    name: 'BRAZIL',
+    nameKo: '브라질',
+    currency: 'BRL',
+    currencySymbol: 'R$',
+    rateToKRW: 245.0,
+    cities: ['RIO DE JANEIRO', 'SAO PAULO', 'SALVADOR', 'IGUACU'],
+    center: [-14.2350, -51.9253],
+    zoom: 4,
+    continent: 'South America',
+    continentKo: '남미',
+  },
+  {
+    code: 'AR',
+    name: 'ARGENTINA',
+    nameKo: '아르헨티나',
+    currency: 'ARS',
+    currencySymbol: '$',
+    rateToKRW: 1.4,
+    cities: ['BUENOS AIRES', 'BARILOCHE', 'USHUAIA', 'EL CALAFATE', 'IGUAZU'],
+    center: [-38.4161, -63.6167],
+    zoom: 4,
+    continent: 'South America',
+    continentKo: '남미',
+  },
+  {
+    code: 'CL',
+    name: 'CHILE',
+    nameKo: '칠레',
+    currency: 'CLP',
+    currencySymbol: '$',
+    rateToKRW: 1.45,
+    cities: ['SANTIAGO', 'SAN PEDRO DE ATACAMA', 'TORRES DEL PAINE', 'EASTER ISLAND'],
+    center: [-35.6751, -71.5430],
+    zoom: 4,
+    continent: 'South America',
+    continentKo: '남미',
+  },
+  {
+    code: 'CO',
+    name: 'COLOMBIA',
+    nameKo: '콜롬비아',
+    currency: 'COP',
+    currencySymbol: '$',
+    rateToKRW: 0.33,
+    cities: ['BOGOTA', 'MEDELLIN', 'CARTAGENA', 'CALI'],
+    center: [4.5709, -74.2973],
+    zoom: 5.5,
+    continent: 'South America',
+    continentKo: '남미',
+  },
+
+  // ─── OCEANIA ───────────────────────────────────────────────────────────────
   {
     code: 'AU',
     name: 'AUSTRALIA',
@@ -430,6 +822,8 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['SYDNEY', 'MELBOURNE', 'BRISBANE', 'PERTH', 'GOLD COAST', 'CAIRNS'],
     center: [-25.2, 133.7],
     zoom: 4,
+    continent: 'Oceania',
+    continentKo: '오세아니아',
   },
   {
     code: 'NZ',
@@ -441,28 +835,47 @@ const COUNTRIES_DATA: CountryInfo[] = [
     cities: ['AUCKLAND', 'QUEENSTOWN', 'CHRISTCHURCH', 'ROTORUA'],
     center: [-40.9006, 174.8860],
     zoom: 5,
+    continent: 'Oceania',
+    continentKo: '오세아니아',
   },
   {
-    code: 'MX',
-    name: 'MEXICO',
-    nameKo: '멕시코',
-    currency: 'MXN',
+    code: 'FJ',
+    name: 'FIJI',
+    nameKo: '피지',
+    currency: 'FJD',
+    currencySymbol: 'FJ$',
+    rateToKRW: 610.0,
+    cities: ['NADI', 'SUVA', 'MAMANUCA ISLANDS'],
+    center: [-17.7134, 178.0650],
+    zoom: 7.5,
+    continent: 'Oceania',
+    continentKo: '오세아니아',
+  },
+  {
+    code: 'GU',
+    name: 'GUAM',
+    nameKo: '괌',
+    currency: 'USD',
     currencySymbol: '$',
-    rateToKRW: 72.0,
-    cities: ['CANCUN', 'MEXICO CITY', 'PLAYA DEL CARMEN', 'TULUM'],
-    center: [23.6345, -102.5528],
-    zoom: 4.5,
+    rateToKRW: 1380,
+    cities: ['TUMON', 'HAGATNA', 'TAMUNING'],
+    center: [13.4443, 144.7937],
+    zoom: 11,
+    continent: 'Oceania',
+    continentKo: '오세아니아',
   },
   {
-    code: 'AE',
-    name: 'UNITED ARAB EMIRATES',
-    nameKo: '아랍에미리트',
-    currency: 'AED',
-    currencySymbol: 'AED',
-    rateToKRW: 375.0,
-    cities: ['DUBAI', 'ABU DHABI', 'SHARJAH'],
-    center: [23.4241, 53.8478],
-    zoom: 7,
+    code: 'MP',
+    name: 'SAIPAN',
+    nameKo: '사이판',
+    currency: 'USD',
+    currencySymbol: '$',
+    rateToKRW: 1380,
+    cities: ['GARAPAN', 'MARPI', 'SUSUPE'],
+    center: [15.1850, 145.7467],
+    zoom: 11,
+    continent: 'Oceania',
+    continentKo: '오세아니아',
   },
 ];
 
@@ -621,6 +1034,80 @@ const KNOWN_CITY_COORDS: { [key: string]: [number, number] } = {
   브뤼셀: [50.8503, 4.3517],
   bruges: [51.2093, 3.2247],
   브뤼헤: [51.2093, 3.2247],
+  copenhagen: [55.6761, 12.5683],
+  코펜하겐: [55.6761, 12.5683],
+  oslo: [59.9139, 10.7522],
+  오슬로: [59.9139, 10.7522],
+  bergen: [60.3913, 5.3221],
+  베르겐: [60.3913, 5.3221],
+  stockholm: [59.3293, 18.0686],
+  스톡홀름: [59.3293, 18.0686],
+  helsinki: [60.1699, 24.9384],
+  헬싱키: [60.1699, 24.9384],
+  warsaw: [52.2297, 21.0122],
+  바르샤바: [52.2297, 21.0122],
+  krakow: [50.0647, 19.9450],
+  크라쿠프: [50.0647, 19.9450],
+  dublin: [53.3498, -6.2603],
+  더블린: [53.3498, -6.2603],
+  bucharest: [44.4268, 26.1025],
+  부쿠레슈티: [44.4268, 26.1025],
+  ljubljana: [46.0569, 14.5058],
+  류블랴나: [46.0569, 14.5058],
+  bled: [46.3683, 14.1146],
+  블레드: [46.3683, 14.1146],
+  cairo: [30.0444, 31.2357],
+  카이로: [30.0444, 31.2357],
+  luxor: [25.6872, 32.6396],
+  룩소르: [25.6872, 32.6396],
+  marrakech: [31.6295, -7.9811],
+  마라케시: [31.6295, -7.9811],
+  casablanca: [33.5731, -7.5898],
+  카사블랑카: [33.5731, -7.5898],
+  capetown: [-33.9249, 18.4241],
+  케이프타운: [-33.9249, 18.4241],
+  nairobi: [-1.2921, 36.8219],
+  나이로비: [-1.2921, 36.8219],
+  zanzibar: [-6.1659, 39.2026],
+  잔지바르: [-6.1659, 39.2026],
+  newdelhi: [28.6139, 77.2090],
+  뉴델리: [28.6139, 77.2090],
+  delhi: [28.6139, 77.2090],
+  델리: [28.6139, 77.2090],
+  kathmandu: [27.7172, 85.3240],
+  카트만두: [27.7172, 85.3240],
+  amman: [31.9454, 35.9284],
+  암만: [31.9454, 35.9284],
+  petra: [30.3285, 35.4444],
+  페트라: [30.3285, 35.4444],
+  doha: [25.2854, 51.5310],
+  도하: [25.2854, 51.5310],
+  riyadh: [24.7136, 46.6753],
+  리야드: [24.7136, 46.6753],
+  mexicocity: [19.4326, -99.1332],
+  멕시코시티: [19.4326, -99.1332],
+  lima: [-12.0464, -77.0428],
+  리마: [-12.0464, -77.0428],
+  cusco: [-13.5319, -71.9675],
+  쿠스코: [-13.5319, -71.9675],
+  machupicchu: [-13.1631, -72.5450],
+  마추픽추: [-13.1631, -72.5450],
+  riodejaneiro: [-22.9068, -43.1729],
+  리우데자네이루: [-22.9068, -43.1729],
+  saopaulo: [-23.5505, -46.6333],
+  상파울루: [-23.5505, -46.6333],
+  buenosaires: [-34.6037, -58.3816],
+  부에노스아이레스: [-34.6037, -58.3816],
+  santiago: [-33.4489, -70.6693],
+  산티아고: [-33.4489, -70.6693],
+  bogota: [4.7110, -74.0721],
+  보고타: [4.7110, -74.0721],
+  havana: [23.1136, -82.3666],
+  아바나: [23.1136, -82.3666],
+  nadi: [-17.8065, 177.4150],
+  난디: [-17.8065, 177.4150],
+  suva: [-18.1416, 178.4419],
+  수바: [-18.1416, 178.4419],
   istanbul: [41.0082, 28.9784],
   이스탄불: [41.0082, 28.9784],
   cappadocia: [38.6431, 34.8289],
@@ -710,6 +1197,41 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     }
   });
 
+  // View toggles: Pin Labels, Visited (Red pins), Wishlist (Yellow pins)
+  const [showPinLabels, setShowPinLabels] = useState<boolean>(() => {
+    return localStorage.getItem('map_view_labels') !== 'false';
+  });
+  const [showVisitedPins, setShowVisitedPins] = useState<boolean>(() => {
+    return localStorage.getItem('map_view_visited') !== 'false';
+  });
+  const [showWishlistPins, setShowWishlistPins] = useState<boolean>(() => {
+    return localStorage.getItem('map_view_wishlist') !== 'false';
+  });
+
+  const togglePinLabels = () => {
+    setShowPinLabels(prev => {
+      const next = !prev;
+      try { localStorage.setItem('map_view_labels', String(next)); } catch (_) {}
+      return next;
+    });
+  };
+
+  const toggleVisitedPins = () => {
+    setShowVisitedPins(prev => {
+      const next = !prev;
+      try { localStorage.setItem('map_view_visited', String(next)); } catch (_) {}
+      return next;
+    });
+  };
+
+  const toggleWishlistPins = () => {
+    setShowWishlistPins(prev => {
+      const next = !prev;
+      try { localStorage.setItem('map_view_wishlist', String(next)); } catch (_) {}
+      return next;
+    });
+  };
+
   const toggleFavoriteCountry = (code: string) => {
     setFavoriteCountries(prev => {
       const updated = prev.includes(code)
@@ -724,7 +1246,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
 
   const allJourneys = useMemo(() => [...trips, ...plans], [trips, plans]);
 
-  // Group journeys into geographic pins (Multi-city per country support)
+  // Group journeys into geographic pins (Multi-city per country & Same city deduplication)
   const pinGroups: MapPinGroup[] = useMemo(() => {
     const map = new Map<string, MapPinGroup>();
 
@@ -793,21 +1315,52 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
         });
       }
 
-      // Add each extracted point into the pin groups map
+      // Add each extracted point into the pin groups map, merging same cities
       pointsToPin.forEach(pt => {
-        const groupKey = `${pt.lat.toFixed(2)}_${pt.lng.toFixed(2)}`;
-        if (!map.has(groupKey)) {
+        const ptCityClean = cleanAdministrativeDistricts(pt.name).toUpperCase().trim();
+        
+        // Canonical city normalizer
+        let canonicalCity = ptCityClean;
+        if (['도쿄', '도쿄도', 'TOKYO', 'TOKYO-TO', 'SHINJUKU', 'SHIBUYA', 'GINZA', '신주쿠', '시부야', '긴자'].includes(canonicalCity)) {
+          canonicalCity = 'TOKYO';
+        } else if (['오사카', '오사카부', 'OSAKA', 'OSAKA-FU', 'UMEDA', 'NAMBA', '우메다', '난바'].includes(canonicalCity)) {
+          canonicalCity = 'OSAKA';
+        } else if (['교토', '교토부', 'KYOTO', 'KYOTO-FU'].includes(canonicalCity)) {
+          canonicalCity = 'KYOTO';
+        } else if (['후쿠오카', '후쿠오카현', 'FUKUOKA', 'HAKATA', '하카타'].includes(canonicalCity)) {
+          canonicalCity = 'FUKUOKA';
+        } else if (['서울', 'SEOUL', 'GANGNAM', '강남', '홍대', '명동'].includes(canonicalCity)) {
+          canonicalCity = 'SEOUL';
+        } else if (['부산', 'BUSAN', 'HAEUNDAE', '해운대'].includes(canonicalCity)) {
+          canonicalCity = 'BUSAN';
+        } else if (['제주', 'JEJU', 'SEOGWIPO', '서귀포'].includes(canonicalCity)) {
+          canonicalCity = 'JEJU';
+        }
+
+        // Find existing group by canonical city name OR proximity (< 0.28 degrees ~ 30km)
+        let foundGroup: MapPinGroup | undefined;
+        for (const existing of map.values()) {
+          const sameCanonical = existing.city === canonicalCity;
+          const closeDistance = Math.hypot(existing.lat - pt.lat, existing.lng - pt.lng) < 0.28;
+          if (sameCanonical || closeDistance) {
+            foundGroup = existing;
+            break;
+          }
+        }
+
+        if (foundGroup) {
+          if (!foundGroup.journeys.some(j => j.id === journey.id)) {
+            foundGroup.journeys.push(journey);
+          }
+        } else {
+          const groupKey = `${canonicalCity}_${pt.lat.toFixed(2)}_${pt.lng.toFixed(2)}`;
           map.set(groupKey, {
-            city: pt.name.toUpperCase(),
+            city: canonicalCity,
             country: (journey.country || '').toUpperCase(),
             lat: pt.lat,
             lng: pt.lng,
-            journeys: [],
+            journeys: [journey],
           });
-        }
-        const grp = map.get(groupKey)!;
-        if (!grp.journeys.some(j => j.id === journey.id)) {
-          grp.journeys.push(journey);
         }
       });
     });
@@ -918,8 +1471,8 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
       : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
 
     tileLayerRef.current = L.tileLayer(tileUrl, {
-      attribution: '&copy; Esri &copy; OpenStreetMap',
-      maxZoom: 16,
+      attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+      maxZoom: 18,
     }).addTo(map);
 
     mapRef.current = map;
@@ -930,10 +1483,10 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     };
   }, []);
 
-  // Update tiles on dark mode change
+  // Sync dark mode tile change
   useEffect(() => {
-    const L = (window as any).L;
     const map = mapRef.current;
+    const L = (window as any).L;
     if (!map || !L) return;
 
     if (tileLayerRef.current) {
@@ -945,12 +1498,12 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
       : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
 
     tileLayerRef.current = L.tileLayer(tileUrl, {
-      attribution: '&copy; Esri &copy; OpenStreetMap',
-      maxZoom: 16,
+      attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+      maxZoom: 18,
     }).addTo(map);
   }, [isDarkMode]);
 
-  // Render Red Pins for registered journeys
+  // Render Red Pins for registered journeys (controlled by showVisitedPins)
   useEffect(() => {
     const L = (window as any).L;
     const map = mapRef.current;
@@ -960,11 +1513,13 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     markersRef.current.forEach(m => map.removeLayer(m));
     markersRef.current = [];
 
+    if (!showVisitedPins) return;
+
     pinGroups.forEach(group => {
       const pinHtml = `
         <div class="relative cursor-pointer group select-none flex justify-center" style="width: 26px; height: 34px;">
           <!-- City Badge floating above the pin -->
-          <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 pointer-events-none whitespace-nowrap bg-black text-white font-sans text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 border border-white/20 shadow-sm opacity-90 group-hover:opacity-100 transition-opacity">
+          <div class="pin-label absolute bottom-full left-1/2 -translate-x-1/2 mb-1 pointer-events-none whitespace-nowrap bg-black text-white font-sans text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 border border-white/20 shadow-sm opacity-90 group-hover:opacity-100 transition-opacity">
             ${group.city}
           </div>
           <!-- Red SVG Pin: Sharp bottom tip is precisely at (13, 34) -->
@@ -997,9 +1552,9 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
 
       markersRef.current.push(marker);
     });
-  }, [pinGroups]);
+  }, [pinGroups, showVisitedPins]);
 
-  // Render Yellow Pins for favorite countries (Wishlist)
+  // Render Yellow Pins for favorite countries (Wishlist, controlled by showWishlistPins)
   useEffect(() => {
     const L = (window as any).L;
     const map = mapRef.current;
@@ -1008,6 +1563,8 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     yellowMarkersRef.current.forEach(m => map.removeLayer(m));
     yellowMarkersRef.current = [];
 
+    if (!showWishlistPins) return;
+
     favoriteCountries.forEach(code => {
       const country = COUNTRIES_DATA.find(c => c.code === code);
       if (!country) return;
@@ -1015,7 +1572,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
       const yellowPinHtml = `
         <div class="relative cursor-pointer group select-none flex justify-center" style="width: 26px; height: 34px;">
           <!-- Country Badge floating above the pin -->
-          <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 pointer-events-none whitespace-nowrap bg-amber-500 text-black font-sans text-[8.5px] font-black uppercase tracking-wider px-1.5 py-0.5 border border-black/20 shadow-sm">
+          <div class="pin-label absolute bottom-full left-1/2 -translate-x-1/2 mb-1 pointer-events-none whitespace-nowrap bg-amber-500 text-black font-sans text-[8.5px] font-black uppercase tracking-wider px-1.5 py-0.5 border border-black/20 shadow-sm">
             ★ ${country.name}
           </div>
           <!-- Yellow SVG Pin: Sharp bottom tip is precisely at (13, 34) -->
@@ -1042,15 +1599,17 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
 
       yellowMarkersRef.current.push(marker);
     });
-  }, [favoriteCountries]);
+  }, [favoriteCountries, showWishlistPins]);
 
-  // Filtered countries for search
+  // Filtered countries for search (Supports continent search e.g. "아시아", "유럽", "아프리카", "남미")
   const filteredCountries = useMemo(() => {
     if (!searchQuery.trim()) return COUNTRIES_DATA;
     const q = searchQuery.trim().toLowerCase();
     return COUNTRIES_DATA.filter(c =>
       c.name.toLowerCase().includes(q) ||
       c.nameKo.includes(q) ||
+      c.continent.toLowerCase().includes(q) ||
+      c.continentKo.includes(q) ||
       c.cities.some(city => city.toLowerCase().includes(q))
     );
   }, [searchQuery]);
@@ -1066,11 +1625,12 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
 
   return (
     <main className="relative w-full h-[calc(100vh-56px)] flex flex-col bg-white dark:bg-[#0A0A0A] overflow-hidden select-none font-sans">
-      {/* 1. Top Bar: Search & Wishlist Button */}
+      
+      {/* 1. Top Bar: Search, View Layer Toggles, & Wishlist Button */}
       <div className="absolute top-4 left-4 right-4 sm:left-6 sm:right-auto z-[500] flex flex-wrap items-center gap-2.5">
         
-        {/* Country Search Bar */}
-        <div className="relative w-72 sm:w-80">
+        {/* Country & Continent Search Bar */}
+        <div className="relative w-64 sm:w-72">
           <div className="relative bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/20 dark:border-white/20 shadow-2xl flex items-center px-3 py-2">
             <Search className="w-4 h-4 text-black/50 dark:text-white/50 shrink-0 mr-2" />
             <input
@@ -1081,7 +1641,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                 setIsSearchDropdownOpen(true);
               }}
               onFocus={() => setIsSearchDropdownOpen(true)}
-              placeholder="Search country or city..."
+              placeholder="나라, 도시 또는 대륙 검색 (ex. 아시아)..."
               className="w-full bg-transparent text-xs font-sans font-bold uppercase tracking-wider text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 outline-none"
             />
             {searchQuery && (
@@ -1098,158 +1658,213 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
           {/* Dropdown Suggestions */}
           {isSearchDropdownOpen && filteredCountries.length > 0 && (
             <>
-              <div className="fixed inset-0 z-[490]" onClick={() => setIsSearchDropdownOpen(false)} />
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#141414] border border-black/20 dark:border-white/20 shadow-2xl max-h-60 overflow-y-auto z-[510] divide-y divide-black/10 dark:divide-white/10 animate-in fade-in duration-150">
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setIsSearchDropdownOpen(false)}
+              />
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white/95 dark:bg-[#121212]/95 backdrop-blur-md border border-black/15 dark:border-white/15 max-h-64 overflow-y-auto z-50 shadow-2xl divide-y divide-black/5 dark:divide-white/5">
                 {filteredCountries.map(c => (
-                  <button
+                  <div
                     key={c.code}
-                    type="button"
                     onClick={() => handleSelectCountry(c)}
-                    className="w-full px-3.5 py-2.5 flex items-center justify-between text-left hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer group"
+                    className="p-2.5 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer flex items-center justify-between transition-colors"
                   >
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-xs font-black uppercase tracking-wider text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400">
-                        {c.name}
-                      </span>
-                      <span className="text-[10px] text-black/40 dark:text-white/40 font-medium">
-                        {c.nameKo}
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-black uppercase text-black dark:text-white">
+                          {c.name}
+                        </span>
+                        <span className="text-[10px] font-sans text-black/50 dark:text-white/50">
+                          ({c.nameKo})
+                        </span>
+                        <span className="px-1 py-0.2 text-[8px] font-mono font-bold bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60">
+                          {c.continentKo}
+                        </span>
+                      </div>
+                      <span className="text-[9px] font-mono text-black/40 dark:text-white/40 block mt-0.5 truncate">
+                        {c.cities.slice(0, 3).join(', ')}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      {favoriteCountries.includes(c.code) && (
-                        <Star className="w-3 h-3 fill-amber-400 text-amber-500" />
-                      )}
-                      <span className="text-[9px] font-mono font-bold text-black/50 dark:text-white/50 border border-black/15 dark:border-white/15 px-1">
-                        {c.currency}
-                      </span>
-                    </div>
-                  </button>
+                    <span className="text-[10px] font-mono font-bold text-red-600 dark:text-red-400">
+                      {c.currency}
+                    </span>
+                  </div>
                 ))}
               </div>
             </>
           )}
         </div>
 
-        {/* Wishlist Button */}
+        {/* Swiss Minimal Map View Layer Toggles: Labels / Visited / Wishlist */}
+        <div className="flex items-center border border-black/20 dark:border-white/20 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md p-0.5 shadow-2xl">
+          <button
+            type="button"
+            onClick={togglePinLabels}
+            className={`px-2 sm:px-2.5 py-1.5 text-[10px] font-mono font-black uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1 ${
+              showPinLabels
+                ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                : 'text-black/40 dark:text-white/40 line-through'
+            }`}
+            title="핀 상단 텍스트 라벨 켜기/끄기"
+          >
+            <span>🏷️ 라벨</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={toggleVisitedPins}
+            className={`px-2 sm:px-2.5 py-1.5 text-[10px] font-mono font-black uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1 border-l border-black/15 dark:border-white/15 ${
+              showVisitedPins
+                ? 'bg-red-600 text-white dark:bg-red-600 dark:text-white shadow-xs'
+                : 'text-black/40 dark:text-white/40 line-through'
+            }`}
+            title="여정이 있는 간곳(레드핀) 켜기/끄기"
+          >
+            <span>📍 간곳</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={toggleWishlistPins}
+            className={`px-2 sm:px-2.5 py-1.5 text-[10px] font-mono font-black uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1 border-l border-black/15 dark:border-white/15 ${
+              showWishlistPins
+                ? 'bg-amber-500 text-black dark:bg-amber-500 dark:text-black font-black shadow-xs'
+                : 'text-black/40 dark:text-white/40 line-through'
+            }`}
+            title="즐겨찾기한 가고싶은 나라(노란핀) 켜기/끄기"
+          >
+            <span>★ 위시</span>
+          </button>
+        </div>
+
+        {/* Favorite Wishlist Trigger Button */}
         <button
           type="button"
           onClick={() => setIsWishlistModalOpen(true)}
-          className="bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/20 dark:border-white/20 shadow-2xl px-3.5 py-2 text-xs font-black uppercase tracking-wider font-sans text-black dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
-          title="가고싶은 나라 즐겨찾기 목록"
+          className="px-3 py-2 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/20 dark:border-white/20 shadow-2xl text-xs font-black uppercase tracking-wider text-black dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer"
         >
-          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+          <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
           <span>WISHLIST ({favoriteCountries.length})</span>
         </button>
+
       </div>
 
-      {/* 2. Full-bleed Leaflet Map */}
-      <div ref={mapContainerRef} className="w-full h-full z-0" />
+      {/* 2. Map Container (with label hide toggle support) */}
+      <div 
+        ref={mapContainerRef} 
+        className={`w-full h-full z-0 ${!showPinLabels ? 'map-hide-pin-labels' : ''}`} 
+      />
 
-      {/* 3. Selected Country Info Panel (Swiss Minimal Editorial Tone) */}
+      {/* 3. Selected Country Card (Swiss Minimal Editorial Style) */}
       {selectedCountry && (
-        <div className="absolute bottom-6 left-4 sm:left-6 z-[500] max-w-sm sm:max-w-md w-[calc(100%-2rem)] sm:w-auto bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/20 dark:border-white/20 shadow-2xl p-5 animate-in fade-in slide-in-from-bottom-2 duration-200">
-          <div className="flex items-start justify-between border-b border-black/15 dark:border-white/15 pb-3">
+        <div className="absolute top-20 right-4 sm:right-6 w-80 sm:w-96 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/15 dark:border-white/15 shadow-2xl z-[500] p-5 sm:p-6 animate-in fade-in slide-in-from-right duration-200">
+          
+          <div className="flex items-start justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-4">
             <div>
-              <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
-                COUNTRY DOSSIER
-              </span>
-              <h2 className="text-xl sm:text-2xl font-black font-sans uppercase tracking-tight text-black dark:text-white">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-[10px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500">
+                  {selectedCountry.code} · {selectedCountry.continentKo}
+                </span>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-black dark:text-white">
                 {selectedCountry.name}
-              </h2>
-              <span className="text-xs text-black/50 dark:text-white/50 font-medium">
+              </h3>
+              <span className="text-xs font-sans text-black/50 dark:text-white/50">
                 {selectedCountry.nameKo}
               </span>
             </div>
             <button
               onClick={handleCloseCountry}
-              className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer"
-              title="닫기 (전체보기 복원)"
+              className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+              title="닫기 (ESC)"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 py-3 border-b border-black/15 dark:border-white/15 text-xs font-mono">
-            <div>
-              <span className="text-[8.5px] uppercase tracking-wider text-black/40 dark:text-white/40 block font-sans font-bold">
-                CURRENCY / 통화
-              </span>
-              <span className="font-bold text-black dark:text-white">
-                {selectedCountry.currency} ({selectedCountry.currencySymbol})
-              </span>
-            </div>
-            <div>
-              <span className="text-[8.5px] uppercase tracking-wider text-black/40 dark:text-white/40 block font-sans font-bold">
-                RATE / 환율 (KRW)
-              </span>
-              <span className="font-bold text-black dark:text-white">
-                1 {selectedCountry.currency} ≈ ₩{selectedCountry.rateToKRW.toLocaleString()}
-              </span>
-            </div>
-          </div>
-
-          <div className="py-3 border-b border-black/15 dark:border-white/15">
-            <span className="text-[8.5px] uppercase tracking-wider text-black/40 dark:text-white/40 block font-sans font-bold mb-1">
-              MAJOR TRAVEL CITIES / 주요 여행도시
-            </span>
-            <div className="flex flex-wrap gap-1 text-[10px] font-sans font-black text-black/80 dark:text-white/80 uppercase">
-              {selectedCountry.cities.map((city) => (
-                <span key={city} className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5">
-                  {city}
+          <div className="flex flex-col gap-4">
+            {/* Currency & Exchange Info */}
+            <div className="p-3 bg-black/[0.03] dark:bg-white/[0.03] border border-black/10 dark:border-white/10">
+              <div className="text-[9px] font-mono font-black uppercase tracking-widest text-black/50 dark:text-white/50 mb-1">
+                CURRENCY & RATE (현지 통화)
+              </div>
+              <div className="flex items-baseline justify-between">
+                <span className="text-base font-black font-mono">
+                  {selectedCountry.currencySymbol} {selectedCountry.currency}
                 </span>
-              ))}
+                <span className="text-xs font-mono font-bold text-black/70 dark:text-white/70">
+                  1 {selectedCountry.currency} ≈ ₩{selectedCountry.rateToKRW.toLocaleString()}
+                </span>
+              </div>
             </div>
-          </div>
 
-          {/* Actions: Favorite Toggle & Create Journey */}
-          <div className="pt-3.5 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => toggleFavoriteCountry(selectedCountry.code)}
-              className={`flex-1 py-2 px-3 flex items-center justify-center gap-1.5 text-xs font-black uppercase tracking-wider font-sans border transition-colors cursor-pointer rounded-none ${
-                isCurrentCountryFavorite
-                  ? 'bg-amber-500 text-black border-amber-600 hover:bg-amber-400'
-                  : 'bg-black/5 dark:bg-white/10 text-black dark:text-white border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black'
-              }`}
-            >
-              <Star className={`w-3.5 h-3.5 ${isCurrentCountryFavorite ? 'fill-black' : ''}`} />
-              <span>{isCurrentCountryFavorite ? 'FAVORITED' : 'WISHLIST'}</span>
-            </button>
+            {/* Main Cities Guide */}
+            <div>
+              <div className="text-[9px] font-mono font-black uppercase tracking-widest text-black/50 dark:text-white/50 mb-2">
+                MAJOR DESTINATIONS (주요 여행 도시)
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {selectedCountry.cities.map(city => (
+                  <span
+                    key={city}
+                    className="px-2 py-0.5 text-[10px] font-mono font-bold uppercase bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-black/80 dark:text-white/80"
+                  >
+                    {city}
+                  </span>
+                ))}
+              </div>
+            </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                if (onCreateTripForCountry) {
-                  onCreateTripForCountry(selectedCountry.name);
-                } else {
-                  onNavigate('archive');
-                }
-              }}
-              className="flex-1 py-2 px-3 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-xs font-black uppercase tracking-wider font-sans flex items-center justify-center gap-1 cursor-pointer rounded-none"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>여정 만들기</span>
-            </button>
+            {/* Actions: Wishlist Toggle & Create Journey Button */}
+            <div className="pt-2 border-t border-black/10 dark:border-white/10 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => toggleFavoriteCountry(selectedCountry.code)}
+                className={`w-full py-2.5 text-xs font-black uppercase tracking-wider font-sans flex items-center justify-center gap-1.5 transition-colors cursor-pointer border ${
+                  isCurrentCountryFavorite
+                    ? 'bg-amber-500 text-black border-amber-500 shadow-sm'
+                    : 'bg-white dark:bg-[#161616] text-black dark:text-white border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white'
+                }`}
+              >
+                <Star className={`w-3.5 h-3.5 ${isCurrentCountryFavorite ? 'fill-black' : ''}`} />
+                <span>{isCurrentCountryFavorite ? '★ WISHLIST SAVED (가고싶은 나라)' : '☆ ADD TO WISHLIST (가고싶은 나라 담기)'}</span>
+              </button>
+
+              {onCreateTripForCountry && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onCreateTripForCountry(selectedCountry.name);
+                    handleCloseCountry();
+                  }}
+                  className="w-full py-2.5 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-widest font-sans flex items-center justify-center gap-1.5 hover:opacity-85 transition-opacity cursor-pointer shadow-sm"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ {selectedCountry.name} 여정 만들기</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
 
-      {/* 4. Wishlist Modal */}
+      {/* 4. Wishlist Countries Modal Popup */}
       {isWishlistModalOpen && (
-        <div
+        <div 
+          className="fixed inset-0 z-[600] bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
           onClick={() => setIsWishlistModalOpen(false)}
-          className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
         >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-[#111111] max-w-lg w-full border border-black/20 dark:border-white/20 shadow-2xl flex flex-col max-h-[82vh] overflow-hidden rounded-none animate-in zoom-in-95 duration-150"
+          <div 
+            className="w-full max-w-md bg-white dark:bg-[#111111] border border-black/20 dark:border-white/20 shadow-2xl p-6 select-none"
+            onClick={e => e.stopPropagation()}
           >
-            {/* Modal Header */}
-            <div className="p-4 sm:p-5 border-b border-black/15 dark:border-white/15 flex items-center justify-between bg-black/[0.02] dark:bg-white/[0.02]">
-              <div className="flex items-center gap-2">
-                <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
-                <h3 className="text-base sm:text-lg font-black font-sans uppercase tracking-tight text-black dark:text-white">
-                  WISHLIST COUNTRIES ({wishlistCountriesData.length})
+            <div className="flex items-start justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-4">
+              <div>
+                <span className="text-[9px] font-mono font-black uppercase tracking-widest text-amber-500 block mb-0.5">
+                  MY TRAVEL WISHLIST
+                </span>
+                <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white">
+                  가고싶은 나라 ({favoriteCountries.length})
                 </h3>
               </div>
               <button
@@ -1260,108 +1875,96 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-4 sm:p-5 overflow-y-auto flex flex-col gap-2.5 divide-y divide-black/10 dark:divide-white/10">
-              {wishlistCountriesData.length === 0 ? (
-                <div className="py-12 text-center text-xs font-mono text-black/40 dark:text-white/40">
-                  가고싶은 나라가 아직 없습니다.<br />지도에서 나라를 선택한 후 'WISHLIST' 버튼을 눌러 추가하세요.
-                </div>
-              ) : (
-                wishlistCountriesData.map(c => (
-                  <div
-                    key={c.code}
-                    className="pt-2.5 first:pt-0 flex items-center justify-between gap-3"
-                  >
-                    <div
+            {wishlistCountriesData.length === 0 ? (
+              <div className="py-12 text-center text-xs font-mono text-black/40 dark:text-white/40">
+                즐겨찾기에 등록된 국가가 없습니다. <br />
+                국가를 검색하거나 지도에서 선택하여 가고싶은 나라를 담아보세요.
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 max-h-80 overflow-y-auto pr-1 divide-y divide-black/5 dark:divide-white/5">
+                {wishlistCountriesData.map(c => (
+                  <div key={c.code} className="pt-2 flex items-center justify-between gap-3">
+                    <div 
+                      className="cursor-pointer flex-1 min-w-0"
                       onClick={() => {
                         handleSelectCountry(c);
                         setIsWishlistModalOpen(false);
                       }}
-                      className="cursor-pointer group flex-1 min-w-0"
                     >
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-sm font-black uppercase tracking-tight text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors truncate">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-black uppercase truncate text-black dark:text-white">
                           {c.name}
                         </span>
-                        <span className="text-xs text-black/50 dark:text-white/50 font-medium shrink-0">
-                          {c.nameKo}
+                        <span className="text-[10px] font-sans text-black/50 dark:text-white/50">
+                          ({c.nameKo})
                         </span>
                       </div>
-                      <span className="text-[10px] font-mono text-black/40 dark:text-white/40 block mt-0.5 truncate">
-                        {c.cities.slice(0, 4).join(', ')} · 1 {c.currency} ≈ ₩{c.rateToKRW.toLocaleString()}
+                      <span className="text-[9px] font-mono text-black/40 dark:text-white/40 block truncate">
+                        {c.cities.slice(0, 3).join(', ')}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsWishlistModalOpen(false);
-                          if (onCreateTripForCountry) {
+                      {onCreateTripForCountry && (
+                        <button
+                          type="button"
+                          onClick={() => {
                             onCreateTripForCountry(c.name);
-                          } else {
-                            onNavigate('archive');
-                          }
-                        }}
-                        className="px-2.5 py-1.5 bg-black text-white dark:bg-white dark:text-black text-[10px] font-black uppercase tracking-wider font-sans hover:opacity-85 transition-opacity flex items-center gap-1 cursor-pointer rounded-none"
-                      >
-                        <Plus className="w-3 h-3" />
-                        <span>여정 만들기</span>
-                      </button>
-
+                            setIsWishlistModalOpen(false);
+                          }}
+                          className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-[10px] font-black uppercase tracking-wider cursor-pointer hover:opacity-85"
+                        >
+                          + 여정 만들기
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => toggleFavoriteCountry(c.code)}
-                        className="p-1.5 text-black/30 dark:text-white/30 hover:text-red-500 transition-colors cursor-pointer"
-                        title="즐겨찾기 삭제"
+                        className="p-1 text-black/30 dark:text-white/30 hover:text-red-500 cursor-pointer"
+                        title="즐겨찾기 해제"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* 5. Journey List Modal when a Pin is Clicked */}
+      {/* 5. Pin Journeys Modal (When Clicking City Pin) */}
       {selectedPinGroup && (
         <div 
+          className="fixed inset-0 z-[600] bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
           onClick={() => setSelectedPinGroup(null)}
-          className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
         >
           <div 
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-[#111111] max-w-md w-full border border-black/20 dark:border-white/20 shadow-2xl flex flex-col max-h-[80vh] overflow-hidden rounded-none animate-in zoom-in-95 duration-150"
+            className="w-full max-w-lg bg-white dark:bg-[#111111] border border-black/20 dark:border-white/20 shadow-2xl p-6 select-none"
+            onClick={e => e.stopPropagation()}
           >
-            {/* Modal Header */}
-            <div className="p-4 sm:p-5 border-b border-black/15 dark:border-white/15 flex items-center justify-between bg-black/[0.02] dark:bg-white/[0.02]">
+            <div className="flex items-start justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-4">
               <div>
-                <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block">
-                  REGISTERED JOURNEYS
+                <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                  JOURNEY ARCHIVE
                 </span>
-                <h3 className="text-lg sm:text-xl font-black font-sans uppercase tracking-tight text-black dark:text-white">
+                <h3 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-black dark:text-white">
                   {selectedPinGroup.city}
                 </h3>
-                {selectedPinGroup.country && (
-                  <span className="text-[10px] text-black/40 dark:text-white/40 font-mono">
-                    {selectedPinGroup.country} · {selectedPinGroup.journeys.length} JOURNEY{selectedPinGroup.journeys.length > 1 ? 'S' : ''}
-                  </span>
-                )}
+                <span className="text-xs font-mono text-black/50 dark:text-white/50">
+                  {selectedPinGroup.country} · {selectedPinGroup.journeys.length} JOURNEYS RECORDED
+                </span>
               </div>
               <button
                 onClick={() => setSelectedPinGroup(null)}
-                className="p-1 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white cursor-pointer"
-                title="닫기 (ESC)"
+                className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Journey Card List */}
-            <div className="flex-1 overflow-y-auto divide-y divide-black/10 dark:divide-white/10 p-2">
+            <div className="flex flex-col gap-2.5 max-h-96 overflow-y-auto pr-1">
               {selectedPinGroup.journeys.map(journey => {
                 const isPlan = journey.tags?.includes('Plan') || journey.title.includes('(Plan)');
                 const cleanTitle = journey.title.replace(' (Plan)', '');
@@ -1373,19 +1976,17 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                       setSelectedPinGroup(null);
                       onNavigate('detail', journey.id);
                     }}
-                    className="p-3 flex items-center gap-3 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer group"
+                    className="p-3 border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] hover:bg-black/5 dark:hover:bg-white/5 transition-all flex items-center justify-between gap-3 cursor-pointer group rounded-none"
                   >
-                    {/* Square Thumbnail */}
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 aspect-square shrink-0 border border-black/15 dark:border-white/15 overflow-hidden bg-black/10">
+                    <div className="w-12 h-12 aspect-square border border-black/10 dark:border-white/10 shrink-0 overflow-hidden bg-black/10">
                       <img
                         src={getEffectiveImageUrl(journey.img)}
                         alt={cleanTitle}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
 
-                    {/* Meta */}
-                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <h4 className="text-xs sm:text-sm font-black font-sans uppercase tracking-tight text-black dark:text-white truncate group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
                           {cleanTitle}
@@ -1415,12 +2016,16 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
         </div>
       )}
 
-      {/* Marker CSS Overrides */}
+      {/* Marker CSS Overrides & Label Toggle Rules */}
       <style>{`
         .custom-map-pin, .custom-yellow-pin, .custom-select-pin {
           background: transparent !important;
           border: none !important;
           overflow: visible !important;
+        }
+        .map-hide-pin-labels .custom-map-pin .pin-label,
+        .map-hide-pin-labels .custom-yellow-pin .pin-label {
+          display: none !important;
         }
       `}</style>
     </main>
