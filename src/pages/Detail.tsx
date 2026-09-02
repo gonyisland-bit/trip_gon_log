@@ -692,6 +692,7 @@ export function JourneyDetailPage({
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
   const [switcherSearch, setSwitcherSearch] = useState('');
   const [showTripDeleteConfirm, setShowTripDeleteConfirm] = useState(false);
+  const [costModalItem, setCostModalItem] = useState<TimelineItem | null>(null);
 
   useEffect(() => {
     if (!isSwitcherOpen) return;
@@ -769,7 +770,6 @@ export function JourneyDetailPage({
   useEffect(() => { draftTransitsRef.current = draftTransits; }, [draftTransits]);
 
   const [transitSortType, setTransitSortType] = useState<'time' | 'type'>('time');
-  const [costModalItem, setCostModalItem] = useState<TimelineItem | null>(null);
   const [mapConfirm, setMapConfirm] = useState<{ placeName: string; url: string } | null>(null);
 
   const handleCopyShareLink = () => {
@@ -1821,7 +1821,7 @@ export function JourneyDetailPage({
     } catch (e) {
       console.warn(e);
     }
-  }, [tripId, timelineData]);
+  }, [trip?.id, timelineData]);
 
   // Global Keyboard Shortcuts (Space play/pause, ArrowLeft/Right tour, ArrowUp/Down timeline navigation, Esc)
   useEffect(() => {
