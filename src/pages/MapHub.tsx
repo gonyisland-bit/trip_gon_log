@@ -846,7 +846,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
 
       // Selected country pulse pin
       const selectHtml = `
-        <div class="relative flex items-center justify-center select-none" style="transform: translate(-50%, -50%);">
+        <div class="relative w-10 h-10 flex items-center justify-center select-none pointer-events-none">
           <span class="absolute w-12 h-12 rounded-full bg-red-600/30 animate-ping"></span>
           <span class="absolute w-8 h-8 rounded-full bg-red-600/35"></span>
           <span class="w-4 h-4 rounded-full bg-red-600 border-2 border-white shadow-lg"></span>
@@ -962,20 +962,22 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
 
     pinGroups.forEach(group => {
       const pinHtml = `
-        <div class="relative cursor-pointer group flex flex-col items-center select-none" style="transform: translate(-50%, -100%);">
-          <div class="relative transition-transform duration-200 group-hover:scale-110 drop-shadow-md">
-            <svg viewBox="0 0 24 34" width="28" height="38" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <div class="relative cursor-pointer group select-none flex justify-center" style="width: 26px; height: 34px;">
+          <!-- City Badge floating above the pin -->
+          <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 pointer-events-none whitespace-nowrap bg-black text-white font-sans text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 border border-white/20 shadow-sm opacity-90 group-hover:opacity-100 transition-opacity">
+            ${group.city}
+          </div>
+          <!-- Red SVG Pin: Sharp bottom tip is precisely at (13, 34) -->
+          <div class="relative w-full h-full drop-shadow-md transition-transform duration-150 group-hover:scale-110 origin-bottom">
+            <svg viewBox="0 0 24 34" width="26" height="34" fill="none" xmlns="http://www.w3.org/2000/svg" class="block">
               <path d="M12 0C5.37258 0 0 5.37258 0 12C0 21 12 34 12 34C12 34 24 21 24 12C24 5.37258 18.6274 0 12 0Z" fill="#DC2626"/>
               <circle cx="12" cy="11" r="4.5" fill="#FFFFFF"/>
             </svg>
             ${group.journeys.length > 1 ? `
-              <span class="absolute -top-1 -right-1.5 bg-black text-white dark:bg-white dark:text-black font-mono font-black text-[9px] w-4 h-4 rounded-full flex items-center justify-center border border-white dark:border-black shadow-xs">
+              <span class="absolute -top-1 -right-1 bg-black text-white dark:bg-white dark:text-black font-mono font-black text-[9px] w-4 h-4 rounded-full flex items-center justify-center border border-white dark:border-black shadow-xs">
                 ${group.journeys.length}
               </span>
             ` : ''}
-          </div>
-          <div class="bg-black/90 text-white font-sans text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-none mt-0.5 whitespace-nowrap shadow-sm border border-white/20 opacity-90 group-hover:opacity-100">
-            ${group.city}
           </div>
         </div>
       `;
@@ -983,8 +985,8 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
       const icon = L.divIcon({
         className: 'custom-map-pin',
         html: pinHtml,
-        iconSize: [28, 42],
-        iconAnchor: [14, 38],
+        iconSize: [26, 34],
+        iconAnchor: [13, 34],
       });
 
       const marker = L.marker([group.lat, group.lng], { icon }).addTo(map);
@@ -1011,15 +1013,17 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
       if (!country) return;
 
       const yellowPinHtml = `
-        <div class="relative cursor-pointer group flex flex-col items-center select-none" style="transform: translate(-50%, -100%);">
-          <div class="relative transition-transform duration-200 group-hover:scale-115 drop-shadow-md">
-            <svg viewBox="0 0 24 34" width="28" height="38" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <div class="relative cursor-pointer group select-none flex justify-center" style="width: 26px; height: 34px;">
+          <!-- Country Badge floating above the pin -->
+          <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 pointer-events-none whitespace-nowrap bg-amber-500 text-black font-sans text-[8.5px] font-black uppercase tracking-wider px-1.5 py-0.5 border border-black/20 shadow-sm">
+            ★ ${country.name}
+          </div>
+          <!-- Yellow SVG Pin: Sharp bottom tip is precisely at (13, 34) -->
+          <div class="relative w-full h-full drop-shadow-md transition-transform duration-150 group-hover:scale-110 origin-bottom">
+            <svg viewBox="0 0 24 34" width="26" height="34" fill="none" xmlns="http://www.w3.org/2000/svg" class="block">
               <path d="M12 0C5.37258 0 0 5.37258 0 12C0 21 12 34 12 34C12 34 24 21 24 12C24 5.37258 18.6274 0 12 0Z" fill="#EAB308"/>
               <polygon points="12,6.5 13.6,9.8 17.2,10.3 14.6,12.8 15.2,16.5 12,14.8 8.8,16.5 9.4,12.8 6.8,10.3 10.4,9.8" fill="#FFFFFF"/>
             </svg>
-          </div>
-          <div class="bg-amber-500 text-black font-sans text-[8.5px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-none mt-0.5 whitespace-nowrap shadow-sm border border-black/20">
-            ★ ${country.name}
           </div>
         </div>
       `;
@@ -1027,8 +1031,8 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
       const icon = L.divIcon({
         className: 'custom-yellow-pin',
         html: yellowPinHtml,
-        iconSize: [28, 42],
-        iconAnchor: [14, 38],
+        iconSize: [26, 34],
+        iconAnchor: [13, 34],
       });
 
       const marker = L.marker(country.center, { icon, zIndexOffset: 600 }).addTo(map);
@@ -1410,6 +1414,15 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
           </div>
         </div>
       )}
+
+      {/* Marker CSS Overrides */}
+      <style>{`
+        .custom-map-pin, .custom-yellow-pin, .custom-select-pin {
+          background: transparent !important;
+          border: none !important;
+          overflow: visible !important;
+        }
+      `}</style>
     </main>
   );
 }
