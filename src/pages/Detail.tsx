@@ -2896,7 +2896,7 @@ export function JourneyDetailPage({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             {isEditing && draftTrip ? (
               <div className="flex-1 min-w-0">
-                <span className="text-[8px] uppercase tracking-widest text-black/40 dark:text-white/40 font-bold block mb-1">Journey Title</span>
+                <span className="text-[10px] uppercase tracking-widest text-black/50 dark:text-white/50 font-bold block mb-1">Journey Title</span>
                 <input
                   type="text"
                   value={draftTrip.title}
@@ -2967,27 +2967,27 @@ export function JourneyDetailPage({
             {isEditing && draftTrip ? (
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[8px] uppercase tracking-widest text-black/40 dark:text-white/40 font-bold shrink-0">Dates:</span>
+                  <span className="text-[10px] uppercase tracking-widest text-black/50 dark:text-white/50 font-bold shrink-0">Dates:</span>
                   <input
                     type="date"
                     value={parseDateRange(draftTrip.date).start}
                     onChange={(e) => handleDateChange('start', e.target.value)}
-                    className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[9px] text-black dark:text-white rounded border border-black/15"
+                    className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] text-black dark:text-white rounded border border-black/15 font-mono"
                   />
                   <span>—</span>
                   <input
                     type="date"
                     value={parseDateRange(draftTrip.date).end}
                     onChange={(e) => handleDateChange('end', e.target.value)}
-                    className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[9px] text-black dark:text-white rounded border border-black/15"
+                    className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] text-black dark:text-white rounded border border-black/15 font-mono"
                   />
                 </div>
 
                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                  <span className="text-[8px] uppercase tracking-widest text-black/40 dark:text-white/40 font-bold shrink-0">Cities:</span>
+                  <span className="text-[10px] uppercase tracking-widest text-black/50 dark:text-white/50 font-bold shrink-0">Cities:</span>
                   <div className="flex flex-wrap items-center gap-1 border border-black/15 dark:border-white/15 p-1 bg-white/5 rounded flex-1">
                     {(draftTrip.locations && Array.isArray(draftTrip.locations) ? draftTrip.locations : (draftTrip.locationStr ? [{ name: draftTrip.locationStr, lat: draftTrip.lat, lng: draftTrip.lng }] : [])).map((loc, idx) => (
-                      <span key={idx} className="flex items-center gap-1 bg-white dark:bg-[#222] text-[8px] font-bold px-1.5 py-0.5 border border-black/15 text-black dark:text-white rounded-sm">
+                      <span key={idx} className="flex items-center gap-1 bg-white dark:bg-[#222] text-[10px] font-bold px-1.5 py-0.5 border border-black/15 text-black dark:text-white rounded-sm">
                         {loc.name}
                         <button
                           type="button"
@@ -3048,11 +3048,11 @@ export function JourneyDetailPage({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-t border-black/10 dark:border-white/10 pt-2.5">
             {/* Members */}
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[8px] uppercase tracking-widest text-black/40 dark:text-white/40 font-bold shrink-0">👥 Members:</span>
+              <span className="text-[10px] uppercase tracking-widest text-black/50 dark:text-white/50 font-bold shrink-0">👥 Members:</span>
               {isEditing && draftTrip ? (
                 <div className="flex flex-wrap gap-1 items-center">
                   {(draftTrip.members || []).map(m => (
-                    <span key={m} className="px-1.5 py-0.5 bg-black/5 dark:bg-white/5 border border-red-500/30 rounded text-black/75 dark:text-white/75 font-bold flex items-center gap-1 text-[8.5px]">
+                    <span key={m} className="px-1.5 py-0.5 bg-black/5 dark:bg-white/5 border border-red-500/30 rounded text-black/75 dark:text-white/75 font-bold flex items-center gap-1 text-[10.5px]">
                       {m}
                       <button
                         type="button"
@@ -3060,7 +3060,7 @@ export function JourneyDetailPage({
                           const newMembers = (draftTrip.members || []).filter(x => x !== m);
                           setDraftTrip({ ...draftTrip, members: newMembers });
                         }}
-                        className="hover:text-red-500 text-red-600 font-bold text-[8px]"
+                        className="hover:text-red-500 text-red-600 font-bold text-[10px]"
                       >
                         ✕
                       </button>
@@ -3080,19 +3080,19 @@ export function JourneyDetailPage({
                         }
                       }
                     }}
-                    className="text-[8px] font-bold border border-black/15 px-2 py-0.5 rounded-full bg-transparent outline-none w-16 focus:w-24 text-black dark:text-white"
+                    className="text-[10px] font-bold border border-black/15 px-2 py-0.5 rounded-full bg-transparent outline-none w-20 focus:w-28 text-black dark:text-white"
                   />
                 </div>
               ) : (
                 <div className="flex items-center gap-1 flex-wrap">
                   {tripToUse?.members && tripToUse.members.length > 0 ? (
                     tripToUse.members.map(m => (
-                      <span key={m} className="px-1.5 py-0.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded text-black/75 dark:text-white/75 font-bold text-[8.5px]">
+                      <span key={m} className="px-1.5 py-0.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded text-black/75 dark:text-white/75 font-bold text-[10.5px]">
                         {m}
                       </span>
                     ))
                   ) : (
-                    <span className="text-[8.5px] italic text-black/50 dark:text-white/50">나</span>
+                    <span className="text-[10.5px] font-medium text-black/50 dark:text-white/50 font-sans">나</span>
                   )}
                 </div>
               )}
@@ -3576,15 +3576,15 @@ export function JourneyDetailPage({
                             }}
                             className="bg-white dark:bg-[#0A0A0A] py-3.5 px-4 md:px-6 border-b border-t border-black/15 dark:border-white/15 flex items-center justify-between cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors select-none"
                           >
-                            <div className="flex items-baseline gap-2.5 sm:gap-3">
-                              <span className="text-2xl sm:text-3xl font-black font-satoshi tracking-tighter text-black dark:text-white leading-none">
+                            <div className="flex items-baseline gap-2.5 sm:gap-3.5">
+                              <span className="text-3xl sm:text-4xl font-black font-satoshi tracking-tighter text-black dark:text-white leading-none">
                                 {dayIndex < 10 ? `0${dayIndex}` : dayIndex}
                               </span>
                               <div className="flex flex-col text-left font-satoshi leading-tight">
-                                <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-black dark:text-white">
+                                <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-black dark:text-white font-satoshi">
                                   DAY {dayIndex}
                                 </span>
-                                <span className="text-[8.5px] sm:text-[9.5px] font-mono text-black/50 dark:text-white/50">
+                                <span className="text-[11px] sm:text-xs font-mono font-bold text-black/65 dark:text-white/65 mt-0.5 tracking-wider">
                                   {item.date} {getDayOfWeek(item.date || '') ? `· ${getDayOfWeek(item.date || '')}` : ''}
                                 </span>
                               </div>
@@ -3596,61 +3596,61 @@ export function JourneyDetailPage({
                                   <button
                                     type="button"
                                     onClick={() => handleWeatherChange(item.date || '', 'sunny', weatherInfo?.temp || '')}
-                                    className={`p-0.5 rounded transition-colors ${weatherInfo?.type === 'sunny' ? 'bg-orange-500 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                    className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'sunny' ? 'bg-orange-500 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
                                     title="Sunny (해)"
                                   >
-                                    <Sun className="w-3.5 h-3.5" />
+                                    <Sun className="w-4 h-4" />
                                   </button>
                                   {/* Overcast */}
                                   <button
                                     type="button"
                                     onClick={() => handleWeatherChange(item.date || '', 'overcast', weatherInfo?.temp || '')}
-                                    className={`p-0.5 rounded transition-colors ${weatherInfo?.type === 'overcast' ? 'bg-slate-400 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                    className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'overcast' ? 'bg-slate-400 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
                                     title="Overcast (흐림)"
                                   >
-                                    <Cloudy className="w-3.5 h-3.5" />
+                                    <Cloudy className="w-4 h-4" />
                                   </button>
                                   {/* Cloudy */}
                                   <button
                                     type="button"
                                     onClick={() => handleWeatherChange(item.date || '', 'cloudy', weatherInfo?.temp || '')}
-                                    className={`p-0.5 rounded transition-colors ${weatherInfo?.type === 'cloudy' ? 'bg-blue-400 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                    className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'cloudy' ? 'bg-blue-400 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
                                     title="Cloudy (구름)"
                                   >
-                                    <Cloud className="w-3.5 h-3.5" />
+                                    <Cloud className="w-4 h-4" />
                                   </button>
                                   {/* Rainy */}
                                   <button
                                     type="button"
                                     onClick={() => handleWeatherChange(item.date || '', 'rainy', weatherInfo?.temp || '')}
-                                    className={`p-0.5 rounded transition-colors ${weatherInfo?.type === 'rainy' ? 'bg-indigo-400 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                    className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'rainy' ? 'bg-indigo-400 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
                                     title="Rainy (비)"
                                   >
-                                    <CloudRain className="w-3.5 h-3.5" />
+                                    <CloudRain className="w-4 h-4" />
                                   </button>
                                   {/* Snowy */}
                                   <button
                                     type="button"
                                     onClick={() => handleWeatherChange(item.date || '', 'snowy', weatherInfo?.temp || '')}
-                                    className={`p-0.5 rounded transition-colors ${weatherInfo?.type === 'snowy' ? 'bg-sky-400 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                    className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'snowy' ? 'bg-sky-400 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
                                     title="Snowy (눈)"
                                   >
-                                    <Snowflake className="w-3.5 h-3.5" />
+                                    <Snowflake className="w-4 h-4" />
                                   </button>
                                   {/* Stormy */}
                                   <button
                                     type="button"
                                     onClick={() => handleWeatherChange(item.date || '', 'stormy', weatherInfo?.temp || '')}
-                                    className={`p-0.5 rounded transition-colors ${weatherInfo?.type === 'stormy' ? 'bg-red-500 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                    className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'stormy' ? 'bg-red-500 text-white' : 'text-black/45 dark:text-white/45 hover:bg-black/5 dark:hover:bg-white/5'}`}
                                     title="Stormy (태풍)"
                                   >
-                                    <CloudLightning className="w-3.5 h-3.5" />
+                                    <CloudLightning className="w-4 h-4" />
                                   </button>
                                   {weatherInfo?.type && (
                                     <button
                                       type="button"
                                       onClick={() => handleWeatherChange(item.date || '', '', '')}
-                                      className="text-[8px] font-bold text-red-500 dark:text-red-400 hover:underline px-0.5"
+                                      className="text-[10px] font-bold text-red-500 dark:text-red-400 hover:underline px-1 font-mono"
                                     >
                                       CLEAR
                                     </button>
@@ -3672,7 +3672,7 @@ export function JourneyDetailPage({
                                     };
                                     const { min, max } = parseMinMaxTemp(weatherInfo?.temp || '');
                                     return (
-                                      <div className="flex items-center gap-0.5 ml-1">
+                                      <div className="flex items-center gap-1 ml-1.5 font-mono">
                                         <input
                                           type="number"
                                           placeholder="Min"
@@ -3682,10 +3682,10 @@ export function JourneyDetailPage({
                                             const newTemp = (minNum || max) ? `${minNum ? minNum + '°' : ''}/${max ? max + '°' : ''}` : '';
                                             handleWeatherChange(item.date || '', weatherInfo?.type || '', newTemp);
                                           }}
-                                          className="w-8 md:w-9 bg-white dark:bg-black/20 border border-black/10 dark:border-white/10 px-0.5 py-0.5 text-[9px] text-center font-bold outline-none text-black dark:text-white rounded-sm [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:margin-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:margin-0 [&::-webkit-inner-spin-button]:appearance-none"
+                                          className="w-9 md:w-10 bg-white dark:bg-black/20 border border-black/15 dark:border-white/15 px-1 py-0.5 text-[10px] text-center font-bold outline-none text-black dark:text-white rounded-none [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:margin-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:margin-0 [&::-webkit-inner-spin-button]:appearance-none"
                                           onClick={(e) => e.stopPropagation()}
                                         />
-                                        <span className="text-[8px] text-black/45 dark:text-white/45 font-bold">/</span>
+                                        <span className="text-[10px] text-black/50 dark:text-white/50 font-bold">/</span>
                                         <input
                                           type="number"
                                           placeholder="Max"
@@ -3695,7 +3695,7 @@ export function JourneyDetailPage({
                                             const newTemp = (min || maxNum) ? `${min ? min + '°' : ''}/${maxNum ? maxNum + '°' : ''}` : '';
                                             handleWeatherChange(item.date || '', weatherInfo?.type || '', newTemp);
                                           }}
-                                          className="w-8 md:w-9 bg-white dark:bg-black/20 border border-black/10 dark:border-white/10 px-0.5 py-0.5 text-[9px] text-center font-bold outline-none text-black dark:text-white rounded-sm [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:margin-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:margin-0 [&::-webkit-inner-spin-button]:appearance-none"
+                                          className="w-9 md:w-10 bg-white dark:bg-black/20 border border-black/15 dark:border-white/15 px-1 py-0.5 text-[10px] text-center font-bold outline-none text-black dark:text-white rounded-none [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:margin-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:margin-0 [&::-webkit-inner-spin-button]:appearance-none"
                                           onClick={(e) => e.stopPropagation()}
                                         />
                                       </div>
@@ -3704,19 +3704,19 @@ export function JourneyDetailPage({
                                 </div>
                               ) : (
                                 weatherInfo && (weatherInfo.type || weatherInfo.temp) && (
-                                  <div className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 text-[9px] font-bold text-orange-500 dark:text-orange-400 normal-case ml-2 font-mono">
-                                    {weatherInfo.type === 'sunny' && <Sun className="w-3 h-3 text-amber-500 shrink-0" />}
-                                    {weatherInfo.type === 'overcast' && <Cloudy className="w-3 h-3 text-slate-400 shrink-0" />}
-                                    {weatherInfo.type === 'cloudy' && <Cloud className="w-3 h-3 text-blue-400 shrink-0" />}
-                                    {weatherInfo.type === 'rainy' && <CloudRain className="w-3 h-3 text-indigo-400 shrink-0" />}
-                                    {weatherInfo.type === 'snowy' && <Snowflake className="w-3 h-3 text-sky-400 shrink-0" />}
-                                    {weatherInfo.type === 'stormy' && <CloudLightning className="w-3 h-3 text-red-500 shrink-0" />}
-                                    {weatherInfo.temp && <span className="text-black/60 dark:text-white/60">{weatherInfo.temp}</span>}
+                                  <div className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-mono font-bold text-black/85 dark:text-white/85 normal-case ml-2">
+                                    {weatherInfo.type === 'sunny' && <Sun className="w-4 h-4 text-amber-500 shrink-0" />}
+                                    {weatherInfo.type === 'overcast' && <Cloudy className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />}
+                                    {weatherInfo.type === 'cloudy' && <Cloud className="w-4 h-4 text-blue-500 dark:text-blue-400 shrink-0" />}
+                                    {weatherInfo.type === 'rainy' && <CloudRain className="w-4 h-4 text-indigo-500 dark:text-indigo-400 shrink-0" />}
+                                    {weatherInfo.type === 'snowy' && <Snowflake className="w-4 h-4 text-sky-500 dark:text-sky-400 shrink-0" />}
+                                    {weatherInfo.type === 'stormy' && <CloudLightning className="w-4 h-4 text-red-500 shrink-0" />}
+                                    {weatherInfo.temp && <span className="text-black/80 dark:text-white/80">{weatherInfo.temp}</span>}
                                   </div>
                                 )
                               )}
                             </div>
-                            <span className="text-[8px] md:text-[9px] font-black text-black/40 dark:text-white/40 flex items-center gap-1 shrink-0">
+                            <span className="text-[10px] md:text-[11px] font-black font-mono text-black/45 dark:text-white/45 flex items-center gap-1 shrink-0">
                               {collapsedDays.includes(item.date || '') ? '▼ EXPAND' : '▲ COLLAPSE'}
                             </span>
                           </div>
@@ -3803,7 +3803,7 @@ export function JourneyDetailPage({
                                 {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) && (
                                   <button
                                     onClick={() => handleToggleExcludeFromMap(item)}
-                                    className={`flex items-center justify-center py-0.5 border border-black/15 dark:border-white/15 text-[8px] font-mono font-bold w-full transition-colors rounded-none cursor-pointer ${
+                                    className={`flex items-center justify-center py-1 border border-black/15 dark:border-white/15 text-[10px] font-mono font-bold w-full transition-colors rounded-none cursor-pointer ${
                                       isExcluded
                                         ? 'text-black/20 dark:text-white/20'
                                         : 'hover:opacity-80'
@@ -4522,7 +4522,7 @@ export function JourneyDetailPage({
               {/* Add Transit control */}
               {isEditing && (
                 <div className="flex flex-col items-center py-6 gap-2">
-                  <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-black tracking-widest">Add Transit Ticket (교통 티켓 추가)</span>
+                  <span className="text-[10px] md:text-[11px] text-black/50 dark:text-white/50 uppercase font-black tracking-widest font-sans break-keep">Add Transit Ticket (교통 티켓 추가)</span>
                   <div className="flex flex-wrap justify-center gap-2">
                     <button 
                       onClick={() => handleAddTransit('train')} 
@@ -4558,11 +4558,11 @@ export function JourneyDetailPage({
                 <div 
                   ref={el => { itemRefs.current[imgItem.id] = el; }}
                   key={`${imgItem.type}-${imgItem.url}-${idx}`} 
-                  className="flex flex-col group/gallery"
+                  className="flex flex-col group/gallery bg-white dark:bg-[#0E0E0E] overflow-hidden"
                 >
                   {/* Film-photo styled image container */}
                   <div
-                    className={`relative overflow-hidden border transition-all duration-300 cursor-pointer aspect-[4/3] group ${isPhotoActive ? 'border-orange-500 scale-[1.02] shadow-md ring-2 ring-orange-500/30' : 'border-black/10 dark:border-white/10'}`}
+                    className={`relative overflow-hidden border-b transition-all duration-300 cursor-pointer aspect-[4/3] group ${isPhotoActive ? 'border-orange-500 scale-[1.01] shadow-md ring-2 ring-orange-500/30' : 'border-black/10 dark:border-white/10'}`}
                     onClick={() => {
                       const now = Date.now();
                       const lastTap = lastGalleryTapRef.current[imgItem.id] || 0;
@@ -4601,7 +4601,7 @@ export function JourneyDetailPage({
                           e.stopPropagation();
                           handleRemoveGalleryImage(imgItem.url, e);
                         }}
-                        className={`absolute top-2 right-2 p-1.5 bg-black/75 hover:bg-red-600 text-white transition-colors z-10 rounded-sm ${isPhotoActive ? 'opacity-100' : 'opacity-0 group-hover/gallery:opacity-100'}`}
+                        className={`absolute top-2 right-2 p-1.5 bg-black/75 hover:bg-red-600 text-white transition-colors z-10 rounded-none ${isPhotoActive ? 'opacity-100' : 'opacity-0 group-hover/gallery:opacity-100'}`}
                         title="Remove Image"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -4619,7 +4619,7 @@ export function JourneyDetailPage({
                             setExpandedItemId(imgItem.id);
                           }
                         }}
-                        className={`absolute top-2 ${isLoggedIn ? 'right-9' : 'right-2'} p-1.5 transition-colors z-10 rounded-sm ${!imgItem.excludeFromMap ? 'bg-orange-500 hover:bg-orange-600 text-white opacity-100' : (isPhotoActive ? 'bg-black/75 hover:bg-black text-white/50 hover:text-white opacity-100' : 'bg-black/75 hover:bg-black text-white/50 hover:text-white opacity-0 group-hover/gallery:opacity-100 focus:opacity-100')}`}
+                        className={`absolute top-2 ${isLoggedIn ? 'right-9' : 'right-2'} p-1.5 transition-colors z-10 rounded-none ${!imgItem.excludeFromMap ? 'bg-orange-500 hover:bg-orange-600 text-white opacity-100' : (isPhotoActive ? 'bg-black/75 hover:bg-black text-white/50 hover:text-white opacity-100' : 'bg-black/75 hover:bg-black text-white/50 hover:text-white opacity-0 group-hover/gallery:opacity-100 focus:opacity-100')}`}
                         title={imgItem.excludeFromMap ? "지도에 핀 표시하기" : "지도에서 핀 숨기기"}
                       >
                         <MapPin className="w-3.5 h-3.5" />
@@ -4634,7 +4634,7 @@ export function JourneyDetailPage({
                         setLightboxIndex(globalIdx !== -1 ? globalIdx : 0);
                         setIsLightboxOpen(true);
                       }}
-                      className={`absolute bottom-2 right-2 p-1.5 bg-black/75 hover:bg-black text-white transition-colors z-10 rounded-sm ${isPhotoActive ? 'opacity-100' : 'opacity-0 group-hover/gallery:opacity-100 focus:opacity-100'}`}
+                      className={`absolute bottom-2 right-2 p-1.5 bg-black/75 hover:bg-black text-white transition-colors z-10 rounded-none ${isPhotoActive ? 'opacity-100' : 'opacity-0 group-hover/gallery:opacity-100 focus:opacity-100'}`}
                       title="전체화면"
                     >
                       <Maximize2 className="w-3.5 h-3.5" />
@@ -4643,54 +4643,72 @@ export function JourneyDetailPage({
                     <div className="absolute inset-0 bg-black/0 group-hover/gallery:bg-black/10 transition-colors pointer-events-none" />
                   </div>
 
-                  {/* Note / description area below image */}
-                  <div className="bg-black/3 dark:bg-white/3 border border-t-0 border-black/10 dark:border-white/10 px-3 py-2 flex flex-col gap-1">
-                    {(imgItem.date || imgItem.place) && (
-                      <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[8px] font-bold uppercase tracking-wider text-black/55 dark:text-white/55 mb-0.5">
-                        {imgItem.date && (
-                          <span className="text-amber-600 dark:text-amber-400">
-                            📅 {imgItem.date} {imgItem.time && `(${imgItem.time})`}
-                          </span>
-                        )}
-                        {imgItem.place && (
-                          <span className="text-amber-600 dark:text-amber-400">
-                            📍 {imgItem.place}
-                          </span>
+                  {/* Note / description area below image (Swiss Minimal Style) */}
+                  <div className="bg-white dark:bg-[#0E0E0E] px-3 py-2.5 flex flex-col gap-1 text-black dark:text-white">
+                    {/* Top Meta: Date and Time (Black / White high contrast, no emojis) */}
+                    {imgItem.date && (
+                      <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 not-italic">
+                        <span>{imgItem.date}</span>
+                        {imgItem.time && (
+                          <>
+                            <span className="text-black/30 dark:text-white/30">·</span>
+                            <span>{imgItem.time}</span>
+                          </>
                         )}
                       </div>
                     )}
-                    <div className="flex items-center justify-between gap-2 w-full">
+
+                    {/* Title / Description */}
+                    <div className="flex items-start justify-between gap-2 w-full mt-0.5">
                       <div className="flex-1 min-w-0">
-                        {imgItem.type === 'timeline' && (imgItem as any).memo && (
-                          <p className="text-[10px] text-black/70 dark:text-white/70 font-medium leading-relaxed mt-0.5">{(imgItem as any).memo}</p>
-                        )}
-                        {imgItem.type === 'timeline' && imgItem.imgNote && (
-                          <p className="text-[10px] text-black/50 dark:text-white/50 italic leading-relaxed border-t border-black/5 dark:border-white/5 pt-1 mt-0.5 truncate">{imgItem.imgNote}</p>
-                        )}
-                        {imgItem.type === 'gallery' && (
+                        {/* 1. Main Title or Note */}
+                        {imgItem.type === 'timeline' && (imgItem as any).memo ? (
+                          <h4 className="text-xs sm:text-[13px] font-sans font-bold text-black dark:text-white leading-snug break-keep line-clamp-2 not-italic">
+                            {(imgItem as any).memo}
+                          </h4>
+                        ) : imgItem.type === 'timeline' && imgItem.imgNote ? (
+                          <h4 className="text-xs sm:text-[13px] font-sans font-bold text-black dark:text-white leading-snug break-keep line-clamp-2 not-italic">
+                            {imgItem.imgNote}
+                          </h4>
+                        ) : imgItem.type === 'gallery' ? (
                           isEditing ? (
                             <input
                               type="text"
                               value={imgItem.imgNote || ''}
                               onChange={(e) => handleUpdateGalleryImageNote(imgItem.url, e.target.value)}
                               placeholder="사진 설명 추가..."
-                              className="w-full bg-transparent outline-none text-[10px] text-black/70 dark:text-white/70 placeholder-black/25 dark:placeholder-white/25 mt-0.5"
+                              className="w-full bg-transparent outline-none text-xs sm:text-[13px] font-sans font-bold text-black dark:text-white placeholder-black/30 dark:placeholder-white/30 not-italic border-b border-black/20 dark:border-white/20 pb-0.5"
                               onClick={(e) => e.stopPropagation()}
                             />
                           ) : imgItem.imgNote ? (
-                            <p className="text-[10px] text-black/60 dark:text-white/60 italic leading-relaxed truncate">{imgItem.imgNote}</p>
+                            <h4 className="text-xs sm:text-[13px] font-sans font-bold text-black dark:text-white leading-snug break-keep line-clamp-2 not-italic">
+                              {imgItem.imgNote}
+                            </h4>
                           ) : (
-                            <p className="text-[10px] text-black/20 dark:text-white/20 italic">메모 없음</p>
+                            <p className="text-[10.5px] font-sans font-medium text-black/35 dark:text-white/35 not-italic">기록된 메모 없음</p>
                           )
+                        ) : (
+                          <p className="text-[10.5px] font-sans font-medium text-black/35 dark:text-white/35 not-italic">기록된 메모 없음</p>
                         )}
-                        {imgItem.type === 'timeline' && !(imgItem as any).memo && !imgItem.imgNote && (
-                          <p className="text-[10px] text-black/20 dark:text-white/20 italic">메모 없음</p>
+
+                        {/* 2. Specified Place Name right below title (Swiss Minimal, Inter font, bold, not italic, >= 10px) */}
+                        {imgItem.place && (
+                          <div className="text-[10.5px] sm:text-xs font-sans font-semibold text-red-600 dark:text-red-400 tracking-tight flex items-center gap-1 mt-1 not-italic truncate">
+                            <MapPin className="w-3 h-3 shrink-0" />
+                            <span className="truncate">{imgItem.place}</span>
+                          </div>
+                        )}
+
+                        {/* Secondary note if both memo and imgNote exist for timeline */}
+                        {imgItem.type === 'timeline' && (imgItem as any).memo && imgItem.imgNote && (
+                          <p className="text-[10.5px] font-sans text-black/65 dark:text-white/65 not-italic leading-relaxed mt-1 break-keep line-clamp-2 border-t border-black/5 dark:border-white/5 pt-1">
+                            {imgItem.imgNote}
+                          </p>
                         )}
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {imgItem.lat !== undefined && imgItem.lng !== undefined && imgItem.lat !== null && imgItem.lng !== null && (
-                          <MapPin className="w-3 h-3 text-orange-500" />
-                        )}
+
+                      {/* Right action icons */}
+                      <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
                         {(() => {
                           let targetItemId = imgItem.type === 'timeline' ? (imgItem as any).itemId : undefined;
                           const targetDate = imgItem.date || '';
@@ -4709,10 +4727,10 @@ export function JourneyDetailPage({
                                   e.stopPropagation();
                                   handleJumpToTimelineItem(targetItemId, targetDate);
                                 }}
-                                className="p-0.5 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors cursor-pointer"
+                                className="p-1 bg-black/5 dark:bg-white/5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-black/60 dark:text-white/60 transition-colors cursor-pointer"
                                 title="일정으로 이동"
                               >
-                                <ArrowRight className="w-3 h-3 animate-pulse" />
+                                <ArrowRight className="w-3 h-3" />
                               </button>
                             );
                           }
@@ -4849,12 +4867,12 @@ export function JourneyDetailPage({
                               <span className="text-black/30 dark:text-white/30">·</span>
                               <span className="font-mono text-black/70 dark:text-white/70">{date}</span>
                             </div>
-                            <span className="text-[9px] font-mono font-bold text-black/40 dark:text-white/40 tracking-wider">
+                            <span className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50 tracking-wider">
                               {items.length} PHOTOS {isCollapsed ? '▼' : '▲'}
                             </span>
                           </button>
                           {!isCollapsed && (
-                            <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 sm:grid-cols-2 gap-2 p-2 sm:gap-3 sm:p-3' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[2px] p-[2px]'} bg-white dark:bg-[#0A0A0A]`}>
+                            <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 md:grid-cols-2 gap-[1px]' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[1px]'} bg-black/15 dark:bg-white/15 border-b border-black/15 dark:border-white/15`}>
                               {items.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
                             </div>
                           )}
@@ -4879,12 +4897,12 @@ export function JourneyDetailPage({
                             className="w-full flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] text-[10px] sm:text-xs font-black uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
                           >
                             <span className="font-black">NO DATE</span>
-                            <span className="text-[9px] font-mono font-bold text-black/40 dark:text-white/40 tracking-wider">
+                            <span className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50 tracking-wider">
                               {items.length} PHOTOS {isCollapsed ? '▼' : '▲'}
                             </span>
                           </button>
                           {!isCollapsed && (
-                            <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 sm:grid-cols-2 gap-2 p-2 sm:gap-3 sm:p-3' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[2px] p-[2px]'} bg-white dark:bg-[#0A0A0A]`}>
+                            <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 md:grid-cols-2 gap-[1px]' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[1px]'} bg-black/15 dark:bg-white/15 border-b border-black/15 dark:border-white/15`}>
                               {items.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
                             </div>
                           )}
@@ -4894,7 +4912,7 @@ export function JourneyDetailPage({
                   </div>
                 ) : (
                   /* Timeline Grid View */
-                  <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 sm:grid-cols-2 gap-2 p-2 sm:gap-3 sm:p-3' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[2px] p-[2px]'}`}>
+                  <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 md:grid-cols-2 gap-[1px]' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[1px]'} bg-black/15 dark:bg-white/15 border-b border-black/15 dark:border-white/15`}>
                     {allGalleryImages.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
                   </div>
                 )}
