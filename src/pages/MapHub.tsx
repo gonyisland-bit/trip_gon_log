@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, X, ArrowRight, Calendar, Star, Plus } from 'lucide-react';
+import { Search, X, ArrowRight, Calendar, Star, Plus, Tag, MapPin, Bookmark } from 'lucide-react';
 import { Trip, Plan } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
@@ -1624,15 +1624,15 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
   const isCurrentCountryFavorite = selectedCountry && favoriteCountries.includes(selectedCountry.code);
 
   return (
-    <main className="relative w-full h-[calc(100vh-56px)] flex flex-col bg-white dark:bg-[#0A0A0A] overflow-hidden select-none font-sans">
+    <main className={`relative w-full h-[calc(100vh-56px)] flex flex-col bg-white dark:bg-[#0A0A0A] overflow-hidden select-none font-sans ${!showPinLabels ? 'map-hide-pin-labels' : ''}`}>
       
-      {/* 1. Top Bar: Search, View Layer Toggles, & Wishlist Button */}
-      <div className="absolute top-4 left-4 right-4 sm:left-6 sm:right-auto z-[500] flex flex-wrap items-center gap-2.5">
+      {/* 1. Top Bar: Search with Integrated Wishlist Star & Swiss Minimal Layer Toggles */}
+      <div className="absolute top-4 left-4 right-4 sm:left-6 sm:right-auto z-[500] flex flex-wrap items-center gap-2">
         
-        {/* Country & Continent Search Bar */}
-        <div className="relative w-64 sm:w-72">
-          <div className="relative bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/20 dark:border-white/20 shadow-2xl flex items-center px-3 py-2">
-            <Search className="w-4 h-4 text-black/50 dark:text-white/50 shrink-0 mr-2" />
+        {/* Country & Continent Search Bar with Integrated Wishlist Star Button */}
+        <div className="relative flex items-center bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/20 dark:border-white/20 shadow-2xl">
+          <div className="w-56 sm:w-72 flex items-center px-3 py-2">
+            <Search className="w-3.5 h-3.5 text-black/50 dark:text-white/50 shrink-0 mr-2" />
             <input
               type="text"
               value={searchQuery}
@@ -1641,19 +1641,36 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                 setIsSearchDropdownOpen(true);
               }}
               onFocus={() => setIsSearchDropdownOpen(true)}
-              placeholder="나라, 도시 또는 대륙 검색 (ex. 아시아)..."
+              placeholder="나라, 도시 또는 대륙 검색..."
               className="w-full bg-transparent text-xs font-sans font-bold uppercase tracking-wider text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 outline-none"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={handleCloseCountry}
-                className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer"
+                className="p-0.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer mr-1"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
+
+          {/* Integrated Wishlist Star Button on the right of Search */}
+          <button
+            type="button"
+            onClick={() => setIsWishlistModalOpen(true)}
+            className={`px-3 py-2.5 border-l border-black/15 dark:border-white/15 flex items-center gap-1.5 transition-colors cursor-pointer ${
+              favoriteCountries.length > 0
+                ? 'text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
+            }`}
+            title={`가고싶은 나라 (WISHLIST: ${favoriteCountries.length})`}
+          >
+            <Star className={`w-3.5 h-3.5 ${favoriteCountries.length > 0 ? 'fill-black text-black dark:fill-white dark:text-white' : ''}`} />
+            {favoriteCountries.length > 0 && (
+              <span className="text-[10px] font-mono font-black">{favoriteCountries.length}</span>
+            )}
+          </button>
 
           {/* Dropdown Suggestions */}
           {isSearchDropdownOpen && filteredCountries.length > 0 && (
@@ -1695,64 +1712,57 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
           )}
         </div>
 
-        {/* Swiss Minimal Map View Layer Toggles: Labels / Visited / Wishlist */}
-        <div className="flex items-center border border-black/20 dark:border-white/20 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md p-0.5 shadow-2xl">
+        {/* Swiss Minimal Monochrome Icon Toggles: Tag (Labels) / MapPin (Visited) / Bookmark (Wishlist) */}
+        <div className="flex items-center border border-black/20 dark:border-white/20 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md shadow-2xl divide-x divide-black/15 dark:divide-white/15">
+          {/* 1. Label Toggle (Tag) */}
           <button
             type="button"
             onClick={togglePinLabels}
-            className={`px-2 sm:px-2.5 py-1.5 text-[10px] font-mono font-black uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1 ${
+            className={`p-2 sm:px-2.5 sm:py-2 transition-colors cursor-pointer flex items-center justify-center ${
               showPinLabels
-                ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
-                : 'text-black/40 dark:text-white/40 line-through'
+                ? 'bg-black text-white dark:bg-white dark:text-black'
+                : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
             }`}
-            title="핀 상단 텍스트 라벨 켜기/끄기"
+            title={showPinLabels ? "라벨 숨기기 (Hide Labels)" : "라벨 켜기 (Show Labels)"}
           >
-            <span>🏷️ 라벨</span>
+            <Tag className="w-3.5 h-3.5" />
           </button>
 
+          {/* 2. Visited Red Pins Toggle (MapPin) */}
           <button
             type="button"
             onClick={toggleVisitedPins}
-            className={`px-2 sm:px-2.5 py-1.5 text-[10px] font-mono font-black uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1 border-l border-black/15 dark:border-white/15 ${
+            className={`p-2 sm:px-2.5 sm:py-2 transition-colors cursor-pointer flex items-center justify-center ${
               showVisitedPins
-                ? 'bg-red-600 text-white dark:bg-red-600 dark:text-white shadow-xs'
-                : 'text-black/40 dark:text-white/40 line-through'
+                ? 'bg-black text-white dark:bg-white dark:text-black'
+                : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
             }`}
-            title="여정이 있는 간곳(레드핀) 켜기/끄기"
+            title={showVisitedPins ? "간곳 여정 핀 숨기기 (Hide Visited Pins)" : "간곳 여정 핀 켜기 (Show Visited Pins)"}
           >
-            <span>📍 간곳</span>
+            <MapPin className="w-3.5 h-3.5" />
           </button>
 
+          {/* 3. Wishlist Yellow Pins Toggle (Bookmark) */}
           <button
             type="button"
             onClick={toggleWishlistPins}
-            className={`px-2 sm:px-2.5 py-1.5 text-[10px] font-mono font-black uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1 border-l border-black/15 dark:border-white/15 ${
+            className={`p-2 sm:px-2.5 sm:py-2 transition-colors cursor-pointer flex items-center justify-center ${
               showWishlistPins
-                ? 'bg-amber-500 text-black dark:bg-amber-500 dark:text-black font-black shadow-xs'
-                : 'text-black/40 dark:text-white/40 line-through'
+                ? 'bg-black text-white dark:bg-white dark:text-black'
+                : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
             }`}
-            title="즐겨찾기한 가고싶은 나라(노란핀) 켜기/끄기"
+            title={showWishlistPins ? "위시 핀 숨기기 (Hide Wishlist Pins)" : "위시 핀 켜기 (Show Wishlist Pins)"}
           >
-            <span>★ 위시</span>
+            <Bookmark className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* Favorite Wishlist Trigger Button */}
-        <button
-          type="button"
-          onClick={() => setIsWishlistModalOpen(true)}
-          className="px-3 py-2 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/20 dark:border-white/20 shadow-2xl text-xs font-black uppercase tracking-wider text-black dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer"
-        >
-          <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-          <span>WISHLIST ({favoriteCountries.length})</span>
-        </button>
-
       </div>
 
-      {/* 2. Map Container (with label hide toggle support) */}
+      {/* 2. Map Container (Static classes to preserve Leaflet's internal DOM state) */}
       <div 
         ref={mapContainerRef} 
-        className={`w-full h-full z-0 ${!showPinLabels ? 'map-hide-pin-labels' : ''}`} 
+        className="w-full h-full z-0" 
       />
 
       {/* 3. Selected Country Card (Swiss Minimal Editorial Style) */}
