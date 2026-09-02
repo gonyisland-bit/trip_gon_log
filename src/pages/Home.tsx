@@ -123,7 +123,7 @@ export function JourneyCardMenu({
   if (!isLoggedIn) return null;
 
   return (
-    <div ref={menuRef} className={className || "absolute bottom-3 right-3 z-20"}>
+    <div ref={menuRef} className={`${className || "absolute bottom-3 right-3 z-30"} pointer-events-auto`}>
       <button
         onClick={(e) => { e.stopPropagation(); setOpen(v => !v); }}
         className="p-1.5 bg-black/60 hover:bg-black/90 text-white rounded-md transition-all shadow-md backdrop-blur-sm border border-white/20 opacity-90 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 flex items-center justify-center cursor-pointer active:scale-95"
@@ -594,8 +594,8 @@ export function HomePage({
                       </h3>
                       {month && year && (
                         <div className="flex flex-col items-end shrink-0 text-right leading-none font-mono">
-                          <span className="text-[3.8cqw] font-black tracking-widest text-amber-500 uppercase">{month}</span>
-                          <span className="text-[2.8cqw] font-bold tracking-widest text-white/60 mt-0.5">{year}</span>
+                          <span className="text-[5.5cqw] font-black tracking-tight leading-none text-white">{year}</span>
+                          <span className="text-[3cqw] font-black tracking-widest text-amber-400 uppercase mt-0.5">{month}</span>
                         </div>
                       )}
                     </div>
@@ -603,12 +603,13 @@ export function HomePage({
                     {/* Bottom Footer Row: Date & Status */}
                     <div className="mt-auto flex flex-col gap-0.5">
                       <div className="text-[3cqw] tracking-widest text-white/70 font-mono truncate uppercase">{plan.date}</div>
-                      <div className="text-[2.6cqw] tracking-[0.2em] font-black text-amber-500/95 uppercase">UPCOMING PLAN</div>
+                      <div className="text-[2.6cqw] tracking-[0.25em] font-black text-red-400 uppercase">PLAN</div>
                     </div>
                   </div>
 
                   {/* Hamburger menu */}
                   <JourneyCardMenu
+                    className="absolute bottom-3 right-3 z-30"
                     isLoggedIn={isLoggedIn}
                     onEdit={onEditTrip ? () => onEditTrip(plan.id) : undefined}
                     onDelete={onDeleteTrip ? () => onDeleteTrip(plan.id) : undefined}
@@ -920,8 +921,8 @@ export function HomePage({
                           </h3>
                           {month && year && (
                             <div className="flex flex-col items-end shrink-0 text-right leading-none font-mono">
-                              <span className="text-[3.8cqw] font-black tracking-widest text-amber-500 uppercase">{month}</span>
-                              <span className="text-[2.8cqw] font-bold tracking-widest text-white/60 mt-0.5">{year}</span>
+                              <span className="text-[5.5cqw] font-black tracking-tight leading-none text-white">{year}</span>
+                              <span className="text-[3cqw] font-black tracking-widest text-amber-400 uppercase mt-0.5">{month}</span>
                             </div>
                           )}
                         </div>
@@ -941,14 +942,14 @@ export function HomePage({
                             {trip.date}
                             {days > 0 && ` · ${days} DAYS`}
                           </div>
-                          <div className="text-[2.6cqw] tracking-[0.2em] font-black text-amber-500/95 uppercase">ARCHIVED JOURNEY</div>
+                          <div className="text-[2.6cqw] tracking-[0.25em] font-black text-amber-400 uppercase">ARCHIVE</div>
                         </div>
                       </div>
                     </div>
 
                     {/* Hamburger menu */}
                     <JourneyCardMenu
-                      className="relative z-20 shrink-0 ml-2"
+                      className="absolute bottom-3 right-3 z-30"
                       isLoggedIn={isLoggedIn}
                       onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
                       onDelete={onDeleteTrip ? () => onDeleteTrip(trip.id) : undefined}

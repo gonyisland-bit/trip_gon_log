@@ -1424,6 +1424,7 @@ export function JourneyDetailPage({
       );
       setIsEditing(false);
       onEditModeChange?.(false);
+      setIsBannerMenuOpen(false);
     } catch (e) {
       console.error(e);
     } finally {
@@ -2776,7 +2777,6 @@ export function JourneyDetailPage({
                   handleSave();
                 } else {
                   handleStartEditing();
-                  setIsBannerMenuOpen(true);
                 }
               }}
               disabled={saving}
@@ -2807,8 +2807,8 @@ export function JourneyDetailPage({
         </div>
       </div>
 
-      {/* 2. Accordion Dropdown Panel (Shown when isBannerMenuOpen or isEditing) */}
-      {(isBannerMenuOpen || isEditing) && (
+      {/* 2. Accordion Dropdown Panel (Shown ONLY when isBannerMenuOpen) */}
+      {isBannerMenuOpen && (
         <div className="border-t border-black/10 dark:border-white/10 bg-[#F4F2EC] dark:bg-[#161616] p-3 sm:p-4 animate-in slide-in-from-top-2 duration-200 flex flex-col gap-3 shadow-inner">
           {/* Row 1: Title Input (in Edit mode) or Detailed Title Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">

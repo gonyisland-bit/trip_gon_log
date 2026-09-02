@@ -580,8 +580,8 @@ export function ArchiveHubPage({
                         </h3>
                         {month && year && (
                           <div className="flex flex-col items-end shrink-0 text-right leading-none font-mono">
-                            <span className="text-[3.8cqw] font-black tracking-widest text-amber-500 uppercase">{month}</span>
-                            <span className="text-[2.8cqw] font-bold tracking-widest text-white/60 mt-0.5">{year}</span>
+                            <span className="text-[5.5cqw] font-black tracking-tight leading-none text-white">{year}</span>
+                            <span className="text-[3cqw] font-black tracking-widest text-amber-400 uppercase mt-0.5">{month}</span>
                           </div>
                         )}
                       </div>
@@ -601,14 +601,14 @@ export function ArchiveHubPage({
                           {trip.date}
                           {days > 0 && ` · ${days} DAYS`}
                         </div>
-                        <div className="text-[2.6cqw] tracking-[0.2em] font-black text-amber-500/95 uppercase">ARCHIVED JOURNEY</div>
+                        <div className="text-[2.6cqw] tracking-[0.25em] font-black text-amber-400 uppercase">ARCHIVE</div>
                       </div>
                     </div>
                   </div>
 
                   {/* Hamburger menu */}
                   <JourneyCardMenu
-                    className="relative z-20 shrink-0 ml-2"
+                    className="absolute bottom-3 right-3 z-30"
                     isLoggedIn={isLoggedIn}
                     onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
                     onDelete={() => onDeleteTrip(trip.id)}

@@ -783,9 +783,9 @@ function App() {
 
   const handleEditTripSave = async (tripId: number, updatedData: Partial<Trip>) => {
     if (!isLoggedIn) return;
-    const isPlan = plans.some(p => p.id === tripId);
+    const isPlan = plans.some(p => String(p.id) === String(tripId));
     const collectionName = isPlan ? 'plans' : 'trips';
-    const oldTrip = (isPlan ? plans : trips).find(t => t.id === tripId);
+    const oldTrip = (isPlan ? plans : trips).find(t => String(t.id) === String(tripId));
     const dateChanged = oldTrip && updatedData.date && oldTrip.date !== updatedData.date;
 
     try {
@@ -1498,7 +1498,7 @@ function App() {
         <EditTripModal
           isOpen={editingTripId !== null}
           onClose={() => setEditingTripId(null)}
-          trip={trips.find(t => t.id === editingTripId) || plans.find(p => p.id === editingTripId)}
+          trip={trips.find(t => String(t.id) === String(editingTripId)) || plans.find(p => String(p.id) === String(editingTripId))}
           onSave={handleEditTripSave}
           isLoggedIn={isLoggedIn}
           existingTags={existingTags}

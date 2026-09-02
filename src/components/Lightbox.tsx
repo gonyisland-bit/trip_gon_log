@@ -361,6 +361,8 @@ export function Lightbox({
 
   function handleMouseDown(e: React.MouseEvent) {
     if (scale <= 1) return;
+    // Guard against synthetic mousedown right after touch double-tap zoom
+    if (Date.now() - lastTouchZoomTimeRef.current < 600) return;
     e.preventDefault();
     setIsDragging(true);
     dragStart.current = { x: e.clientX - position.x, y: e.clientY - position.y };
@@ -623,8 +625,9 @@ export function Lightbox({
             className="relative inline-block"
             style={{
               transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-              transition: isDragging ? 'none' : 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+              transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
               transformOrigin: 'center center',
+              willChange: 'transform',
             }}
           >
             {/* ── New (current) image: always fully visible underneath ── */}
