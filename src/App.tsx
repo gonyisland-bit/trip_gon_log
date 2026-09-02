@@ -797,11 +797,13 @@ function App() {
     showMarquee?: boolean,
     marqueeMsg?: string,
     marqueeSpd?: number,
-    heroMediaTypeParam?: 'image' | 'video'
+    heroMediaTypeParam?: 'image' | 'video',
+    magazineMomentsParam?: MagazineMoment[]
   ) => {
     if (!isLoggedIn) return;
     try {
-      await setDoc(doc(db, 'users', 'public', 'settings', 'home'), {
+      const momentsToSave = magazineMomentsParam !== undefined ? magazineMomentsParam : magazineMoments;
+      await setDoc(doc(db, 'users', 'public', 'settings', 'home'), cleanForFirestore({
         title,
         subtitle,
         heroJourneyIds: heroIds,
@@ -810,13 +812,16 @@ function App() {
         marqueeShow: showMarquee ?? marqueeShow,
         marqueeMessage: marqueeMsg ?? marqueeMessage,
         marqueeSpeed: marqueeSpd ?? marqueeSpeed,
-      });
+        magazineMoments: cleanForFirestore(momentsToSave)
+      }), { merge: true });
+
       setHeroJourneyIds(heroIds);
       if (autoSlide !== undefined) setHeroAutoSlide(autoSlide);
       if (heroMediaTypeParam !== undefined) setHeroMediaType(heroMediaTypeParam);
       if (showMarquee !== undefined) setMarqueeShow(showMarquee);
       if (marqueeMsg !== undefined) setMarqueeMessage(marqueeMsg);
       if (marqueeSpd !== undefined) setMarqueeSpeed(marqueeSpd);
+      if (magazineMomentsParam !== undefined) setMagazineMoments(magazineMomentsParam);
     } catch (err) {
       console.error("Failed to save settings:", err);
       throw err;

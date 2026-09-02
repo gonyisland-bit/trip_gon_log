@@ -445,6 +445,8 @@ export function HomePage({
     localStorage.setItem('cardViewMode', mode);
   };
 
+  const [magazineSpreadIndex, setMagazineSpreadIndex] = useState(0);
+
   // Drag-reorder state for archive cards
   const [draggedTripId, setDraggedTripId] = useState<number | null>(null);
   const [localTrips, setLocalTrips] = useState<Trip[]>(trips);
@@ -454,9 +456,19 @@ export function HomePage({
   useEffect(() => { setLocalTrips(trips); }, [trips]);
   useEffect(() => { setLocalPlans(plans); }, [plans]);
 
+  // Combined Journeys & Plans for unified archive view
+  const combinedArchiveList = useMemo(() => {
+    const formattedPlans = localPlans.map(p => ({
+      ...p,
+      isPlan: true,
+      tags: p.tags ? Array.from(new Set([...p.tags, 'Plan'])) : ['Plan']
+    }));
+    return [...localTrips, ...formattedPlans];
+  }, [localTrips, localPlans]);
+
   const filters = useMemo(() => {
     const uniqueTags = new Set<string>();
-    localTrips.forEach(t => {
+    combinedArchiveList.forEach(t => {
       if (t.tags) {
         t.tags.forEach(tag => {
           if (tag) uniqueTags.add(tag);
@@ -464,7 +476,7 @@ export function HomePage({
       }
     });
     return ['All', ...Array.from(uniqueTags).sort()];
-  }, [localTrips]);
+  }, [combinedArchiveList]);
 
   const visibleTags = useMemo(() => {
     if (!tagSearchQuery.trim()) return filters;
@@ -472,7 +484,7 @@ export function HomePage({
     return filters.filter(f => f.toLowerCase().includes(q) || f === 'All');
   }, [filters, tagSearchQuery]);
 
-  const filteredTrips = activeFilter === 'All' ? localTrips : localTrips.filter(t => t.tags?.includes(activeFilter));
+  const filteredTrips = activeFilter === 'All' ? combinedArchiveList : combinedArchiveList.filter(t => t.tags?.includes(activeFilter));
 
   // Resolve hero journeys from heroJourneyIds. Fallback to trips[0] if nothing selected.
   const allJourneys: (Trip | Plan)[] = [...localTrips, ...localPlans];
@@ -757,9 +769,12 @@ export function HomePage({
                         </div>
                       ) : <div />}
 
-                      <span className="px-1.5 py-0.5 bg-red-600 text-white text-[2.6cqw] font-black uppercase tracking-widest font-mono shadow-sm">
-                        PLAN
-                      </span>
+                      {/* Trendy Black Duct Tape Style PLAN Label */}
+                      <div className="relative inline-flex items-center select-none transform -rotate-2 hover:rotate-0 transition-transform">
+                        <span className="px-2.5 sm:px-3 py-0.5 sm:py-1 bg-black text-white text-[3.2cqw] sm:text-[3cqw] font-black uppercase tracking-widest font-mono shadow-2xl border-y border-white/40">
+                          PLAN
+                        </span>
+                      </div>
                     </div>
 
                     {/* Bottom Footer Row: Title, Location, Date (3-tier clean stack) */}
@@ -967,13 +982,17 @@ export function HomePage({
                       <h3 className="font-black text-sm sm:text-base md:text-lg text-black dark:text-white uppercase font-satoshi truncate">
                         {trip.title}
                       </h3>
-                      {trip.statusBadge && (
+                      {((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
+                        <span className="text-[9px] font-black px-2 py-0.5 font-mono uppercase bg-black text-white border-y border-white/30 tracking-widest">
+                          PLAN
+                        </span>
+                      ) : trip.statusBadge ? (
                         <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-none font-mono uppercase ${
                           trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
                         }`}>
                           {trip.statusBadge}
                         </span>
-                      )}
+                      ) : null}
                     </div>
                     <div className="flex items-center gap-2 text-[10.5px] sm:text-xs text-black/60 dark:text-white/60 font-mono flex-wrap mt-0.5">
                       <span className="font-bold text-black/80 dark:text-white/80">{trip.date}</span>
@@ -1073,13 +1092,20 @@ export function HomePage({
                           </div>
                         ) : <div />}
 
-                        {trip.statusBadge && (
+                        {/* Status Badge or Trendy Black Tape PLAN Label */}
+                        {((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
+                          <div className="relative inline-flex items-center select-none transform -rotate-2 hover:rotate-0 transition-transform">
+                            <span className="px-2.5 sm:px-3 py-0.5 sm:py-1 bg-black text-white text-[3.2cqw] sm:text-[3cqw] font-black uppercase tracking-widest font-mono shadow-2xl border-y border-white/40">
+                              PLAN
+                            </span>
+                          </div>
+                        ) : trip.statusBadge ? (
                           <span className={`px-1.5 py-0.5 text-[2.6cqw] font-black uppercase tracking-widest font-mono shadow-sm ${
                             trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
                           }`}>
                             {trip.statusBadge}
                           </span>
-                        )}
+                        ) : null}
                       </div>
 
                       {/* Bottom Footer Row: Title, Location, Date (3-tier clean stack) */}
@@ -1145,8 +1171,11 @@ export function HomePage({
 
           if (displayMoments.length === 0) return null;
 
-          const featured = displayMoments[0];
-          const subMoments = displayMoments.slice(1, 4);
+          const totalSpreads = Math.ceil(displayMoments.length / 4);
+          const currentSpread = Math.min(magazineSpreadIndex, Math.max(0, totalSpreads - 1));
+          const currentSlice = displayMoments.slice(currentSpread * 4, (currentSpread + 1) * 4);
+          const featured = currentSlice[0];
+          const subMoments = currentSlice.slice(1, 4);
 
           return (
             <div className="w-full border-t border-black/10 dark:border-white/10 mt-12 pt-12 px-4 sm:px-8 md:px-12 flex flex-col gap-8">
@@ -1165,9 +1194,39 @@ export function HomePage({
                     JOURNEY MAGAZINE & MEMORIES
                   </h2>
                 </div>
-                <p className="text-xs font-sans text-black/60 dark:text-white/60 max-w-md leading-relaxed break-keep">
-                  길 위에서 마주한 가장 선명한 순간들. 타임라인에 기록된 인상 깊은 기억과 사진들을 한 편의 미니멀 매거진처럼 엮어냅니다.
-                </p>
+
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <p className="text-xs font-sans text-black/60 dark:text-white/60 max-w-md leading-relaxed break-keep">
+                    길 위에서 마주한 가장 선명한 순간들. 타임라인에 기록된 인상 깊은 기억과 사진들을 한 편의 미니멀 매거진처럼 엮어냅니다.
+                  </p>
+
+                  {/* Magazine Spread Switcher (Shown when more than 4 moments are registered) */}
+                  {totalSpreads > 1 && (
+                    <div className="flex items-center gap-2 font-mono text-xs font-bold shrink-0 self-start sm:self-auto bg-black/5 dark:bg-white/5 p-1 border border-black/10 dark:border-white/10">
+                      <span className="text-black/60 dark:text-white/60 text-[10px] tracking-widest px-2">
+                        SPREAD {String(currentSpread + 1).padStart(2, '0')} / {String(totalSpreads).padStart(2, '0')}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setMagazineSpreadIndex(prev => Math.max(0, prev - 1))}
+                        disabled={currentSpread === 0}
+                        className="p-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-colors cursor-pointer bg-white dark:bg-[#151515]"
+                        title="이전 화보 스프레드"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMagazineSpreadIndex(prev => Math.min(totalSpreads - 1, prev + 1))}
+                        disabled={currentSpread >= totalSpreads - 1}
+                        className="p-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-colors cursor-pointer bg-white dark:bg-[#151515]"
+                        title="다음 화보 스프레드"
+                      >
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Magazine Editorial Spread Layout */}

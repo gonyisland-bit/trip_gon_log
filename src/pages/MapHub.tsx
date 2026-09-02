@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, X, ArrowRight, Calendar, Star, Plus, Tag, MapPin, Bookmark, Home as HomeIcon } from 'lucide-react';
+import { Search, X, ArrowRight, Calendar, Star, Plus, Tag, MapPin, Bookmark, Home as HomeIcon, List } from 'lucide-react';
 import { Trip, Plan } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
@@ -1208,6 +1208,8 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
   const [selectedPinGroup, setSelectedPinGroup] = useState<MapPinGroup | null>(null);
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
   const [isWishlistModalOpen, setIsWishlistModalOpen] = useState(false);
+  const [isPlaceListModalOpen, setIsPlaceListModalOpen] = useState(false);
+  const [placeSearchQuery, setPlaceSearchQuery] = useState('');
 
   // Favorite countries (Wishlist) state stored in localStorage
   const [favoriteCountries, setFavoriteCountries] = useState<string[]>(() => {
@@ -1500,6 +1502,19 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     return Array.from(map.values());
   }, [allJourneys]);
 
+  // Filter place groups for the Registered Places Directory
+  const filteredPlaceGroups = useMemo(() => {
+    if (!placeSearchQuery.trim()) return pinGroups;
+    const q = placeSearchQuery.trim().toLowerCase();
+    return pinGroups.filter(g => 
+      g.cityCleaned.toLowerCase().includes(q) ||
+      g.cityName.toLowerCase().includes(q) ||
+      (g.countryName && g.countryName.toLowerCase().includes(q)) ||
+      g.trips.some(t => t.title.toLowerCase().includes(q)) ||
+      g.plans.some(p => p.title.toLowerCase().includes(q))
+    );
+  }, [pinGroups, placeSearchQuery]);
+
   // Country selection handler: highlights country area and places pulse selection pin
   const handleSelectCountry = (country: CountryInfo) => {
     setSelectedCountry(country);
@@ -1582,6 +1597,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
       const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName) || (e.target as HTMLElement)?.isContentEditable;
       if (e.key === 'Escape') {
         if (selectedPinGroup) setSelectedPinGroup(null);
+        else if (isPlaceListModalOpen) setIsPlaceListModalOpen(false);
         else if (isWishlistModalOpen) setIsWishlistModalOpen(false);
         else if (selectedCountry) handleCloseCountry();
         setIsSearchDropdownOpen(false);
@@ -1592,7 +1608,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedCountry, selectedPinGroup, isWishlistModalOpen]);
+  }, [selectedCountry, selectedPinGroup, isWishlistModalOpen, isPlaceListModalOpen]);
 
   // Initialize Leaflet Map centered on South Korea
   useEffect(() => {
@@ -1800,7 +1816,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
   const isCurrentCountryFavorite = selectedCountry && favoriteCountries.includes(selectedCountry.code);
 
   return (
-    <main className={`relative w-full h-[calc(100vh-56px)] flex flex-col bg-white dark:bg-[#0A0A0A] overflow-hidden select-none font-sans ${!showPinLabels ? 'map-hide-pin-labels' : ''}`}>
+    <main className={`relative w-full h-[calc(100vh-56px)] flex flex-col bg-white dark:bg-[#0A0A0A] overflow-hidden select-none font-sans touch-pan-x touch-pan-y ${!showPinLabels ? 'map-hide-pin-labels' : ''}`}>
       
       {/* 1. Top Bar: Search with Integrated Wishlist Star & Swiss Minimal Layer Toggles */}
       <div className="absolute top-4 left-4 right-4 sm:left-6 sm:right-auto z-[500] flex flex-wrap items-center gap-2">
@@ -1940,6 +1956,16 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
             title="기본 위치로 돌아오기 (단축키: H)"
           >
             <HomeIcon className="w-3.5 h-3.5" />
+          </button>
+
+          {/* 5. Registered Journey Places List Button (신설) */}
+          <button
+            type="button"
+            onClick={() => setIsPlaceListModalOpen(true)}
+            className="p-2 sm:px-2.5 sm:py-2 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center border-l border-black/15 dark:border-white/15"
+            title="등록된 여정 장소 목록 보기 (도시 리스트)"
+          >
+            <List className="w-3.5 h-3.5" />
           </button>
         </div>
 
@@ -2225,6 +2251,114 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                   </div>
                 );
               })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Registered Journey Places Directory Modal (신설) */}
+      {isPlaceListModalOpen && (
+        <div 
+          className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setIsPlaceListModalOpen(false)}
+        >
+          <div 
+            className="relative w-full max-w-xl bg-white dark:bg-[#151515] border border-black/15 dark:border-white/15 shadow-2xl p-4 sm:p-6 flex flex-col max-h-[82vh] overflow-hidden select-none"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-black/15 dark:border-white/15">
+              <div>
+                <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                  VISITED LOCATIONS DIRECTORY
+                </span>
+                <h3 className="text-lg sm:text-xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                  등록된 여정 장소 목록 ({pinGroups.length}개 도시)
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPlaceListModalOpen(false)}
+                className="p-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Search filter for locations */}
+            <div className="pt-3 pb-2">
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
+                <input
+                  type="text"
+                  value={placeSearchQuery}
+                  onChange={e => setPlaceSearchQuery(e.target.value)}
+                  placeholder="도시 또는 국가 검색..."
+                  className="w-full pl-9 pr-3 py-2 text-xs font-mono font-bold bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15 outline-none text-black dark:text-white rounded-none"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            {/* Place list items */}
+            <div className="flex-1 overflow-y-auto flex flex-col divide-y divide-black/10 dark:divide-white/10 mt-2 pr-1">
+              {filteredPlaceGroups.length === 0 ? (
+                <div className="py-12 text-center text-xs font-mono text-black/40 dark:text-white/40">
+                  검색된 등록 장소가 없습니다.
+                </div>
+              ) : (
+                filteredPlaceGroups.map(group => {
+                  const repJourney = group.trips[0] || group.plans[0];
+                  return (
+                    <div
+                      key={group.key}
+                      onClick={() => {
+                        setIsPlaceListModalOpen(false);
+                        const map = mapRef.current;
+                        if (map) {
+                          map.flyTo([group.lat, group.lng], 8, { duration: 1.2 });
+                        }
+                        setSelectedPinGroup(group);
+                      }}
+                      className="group flex items-center justify-between py-2.5 px-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 aspect-square overflow-hidden bg-black/10 shrink-0 border border-black/10 dark:border-white/10">
+                          {repJourney?.img ? (
+                            <img src={getEffectiveImageUrl(repJourney.img)} alt={group.cityCleaned} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-black/20 dark:text-white/20">
+                              <MapPin className="w-4 h-4" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-black text-xs sm:text-sm text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors uppercase truncate">
+                              {group.cityCleaned}
+                            </span>
+                            {group.countryName && (
+                              <span className="text-[10px] font-mono text-black/40 dark:text-white/40 uppercase">
+                                · {group.countryName}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] font-mono text-black/50 dark:text-white/50 truncate">
+                            {repJourney?.title || '기록된 여정'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black/5 dark:bg-white/5 text-black/70 dark:text-white/70 border border-black/10 dark:border-white/10">
+                          {group.trips.length + group.plans.length} 여정
+                        </span>
+                        <ArrowRight className="w-3.5 h-3.5 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>

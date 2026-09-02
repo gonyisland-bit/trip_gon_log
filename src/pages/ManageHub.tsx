@@ -23,7 +23,8 @@ import {
   Image as ImageIcon,
   ExternalLink,
   Search,
-  GripVertical
+  GripVertical,
+  Eye
 } from 'lucide-react';
 import { Trip, Plan, MagazineMoment, TimelineData, TimelineItem } from '../types';
 import { getEffectiveImageUrl, uploadFileToR2 } from '../utils/storageHelper';
@@ -56,7 +57,8 @@ interface ManageHubPageProps {
     marqueeShow: boolean,
     marqueeMsg: string,
     marqueeSpd: number,
-    heroMediaTypeParam?: 'image' | 'video'
+    heroMediaTypeParam?: 'image' | 'video',
+    magazineMomentsParam?: MagazineMoment[]
   ) => Promise<void>;
   // Magazine Highlights
   magazineMoments?: MagazineMoment[];
@@ -155,9 +157,49 @@ export function ManageHubPage({
   const [isSavingTrip, setIsSavingTrip] = useState(false);
   const [tripSaveSuccess, setTripSaveSuccess] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
 
   // Drag and Drop state
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  // Selected Journey memo
+  const selectedJourney = useMemo(() => {
+    return localJourneys.find(j => j.id === selectedJourneyId);
+  }, [localJourneys, selectedJourneyId]);
+
+  // Dirty tracking for HOME configuration & magazine moments
+  const isHomeDirty = useMemo(() => {
+    return (
+      title !== (homeTitle || '') ||
+      subtitle !== (homeSubtitle || '') ||
+      JSON.stringify(selectedHeroIds) !== JSON.stringify(heroJourneyIds || []) ||
+      autoSlide !== heroAutoSlide ||
+      mediaType !== heroMediaType ||
+      showMarquee !== marqueeShow ||
+      homeMarquee !== (marqueeMessage || '') ||
+      homeSpeed !== (marqueeSpeed || 50) ||
+      JSON.stringify(momentsList) !== JSON.stringify(magazineMoments || [])
+    );
+  }, [title, homeTitle, subtitle, homeSubtitle, selectedHeroIds, heroJourneyIds, autoSlide, heroAutoSlide, mediaType, heroMediaType, showMarquee, marqueeShow, homeMarquee, marqueeMessage, homeSpeed, marqueeSpeed, momentsList, magazineMoments]);
+
+  // Dirty tracking for currently selected journey in ARCHIVE mode
+  const isArchiveDirty = useMemo(() => {
+    if (!selectedJourney) return false;
+    return (
+      editTitle !== (selectedJourney.title || '') ||
+      editDate !== (selectedJourney.date || '') ||
+      editLocation !== (selectedJourney.locationStr || '') ||
+      editCountry !== (selectedJourney.country || '') ||
+      JSON.stringify(editTags) !== JSON.stringify(selectedJourney.tags || []) ||
+      editImg !== (selectedJourney.img || '') ||
+      editVideoUrl !== (selectedJourney.videoUrl || '') ||
+      editHeroImg !== (selectedJourney.heroImg || '') ||
+      editHeroVideoUrl !== (selectedJourney.heroVideoUrl || '') ||
+      editStatusBadge !== (selectedJourney.statusBadge || '')
+    );
+  }, [selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge]);
+
+  const isCurrentDirty = (activeMode === 'HOME' && isHomeDirty) || (activeMode === 'ARCHIVE' && isArchiveDirty);
 
   // Sync journeys from props with localStorage order preservation
   useEffect(() => {
@@ -186,9 +228,6 @@ export function ManageHubPage({
   }, [trips, plans]);
 
   // When selected journey changes, populate form
-  const selectedJourney = useMemo(() => {
-    return localJourneys.find(j => j.id === selectedJourneyId) || null;
-  }, [localJourneys, selectedJourneyId]);
 
   useEffect(() => {
     if (selectedJourney) {
@@ -321,7 +360,7 @@ export function ManageHubPage({
     setEditTags(editTags.filter(t => t !== tagToRemove));
   };
 
-  // Save Home Settings
+  // Save Home Settings + Magazine Moments together
   const handleSaveHome = async () => {
     setIsSavingHome(true);
     try {
@@ -334,7 +373,8 @@ export function ManageHubPage({
         showMarquee,
         homeMarquee,
         homeSpeed,
-        mediaType
+        mediaType,
+        momentsList
       );
       setHomeSaveSuccess(true);
       setTimeout(() => setHomeSaveSuccess(false), 2000);
@@ -345,6 +385,41 @@ export function ManageHubPage({
       setIsSavingHome(false);
     }
   };
+
+  // Keyboard Shortcuts: Enter / ESC / D in Unsaved Modal, and Ctrl+S to Save
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 1. Unsaved changes modal shortcuts
+      if (showUnsavedModal) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          (async () => {
+            if (activeMode === 'HOME') await handleSaveHome();
+            else if (activeMode === 'ARCHIVE') await handleSaveJourney();
+            setShowUnsavedModal(false);
+            onNavigate('home');
+          })();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          setShowUnsavedModal(false);
+        } else if (e.key === 'd' || e.key === 'D') {
+          e.preventDefault();
+          setShowUnsavedModal(false);
+          onNavigate('home');
+        }
+        return;
+      }
+
+      // 2. Ctrl + S / Cmd + S to save
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        if (activeMode === 'HOME') handleSaveHome();
+        else if (activeMode === 'ARCHIVE') handleSaveJourney();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showUnsavedModal, activeMode, isHomeDirty, isArchiveDirty, title, subtitle, selectedHeroIds, autoSlide, showMarquee, homeMarquee, homeSpeed, mediaType, momentsList, selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge]);
 
   // Save Map Settings
   const handleSaveMapSettings = () => {
@@ -439,22 +514,6 @@ export function ManageHubPage({
   // Update moment field
   const handleUpdateMoment = (id: string, field: keyof MagazineMoment, value: any) => {
     setMomentsList(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
-  };
-
-  // Save moments to Firebase
-  const handleSaveMagazineMomentsClick = async () => {
-    if (!onSaveMagazineMoments) return;
-    setIsSavingMoments(true);
-    try {
-      await onSaveMagazineMoments(momentsList);
-      setMomentsSaveSuccess(true);
-      setTimeout(() => setMomentsSaveSuccess(false), 2000);
-    } catch (err) {
-      console.error(err);
-      alert('잡지 연출 저장에 실패했습니다.');
-    } finally {
-      setIsSavingMoments(false);
-    }
   };
 
   const isSelectedPlan = selectedJourney?.tags?.includes('Plan') || selectedJourney?.title.includes('(Plan)');
@@ -938,21 +997,9 @@ export function ManageHubPage({
                     )}
                   </div>
 
-                  {/* Save Magazine Moments Button */}
-                  <div className="flex justify-end pt-2">
-                    <button
-                      type="button"
-                      onClick={handleSaveMagazineMomentsClick}
-                      disabled={isSavingMoments}
-                      className={`px-4 py-2 text-xs font-black uppercase tracking-wider font-sans flex items-center gap-1.5 cursor-pointer border transition-colors ${
-                        momentsSaveSuccess
-                          ? 'bg-green-600 text-white border-green-600'
-                          : 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white hover:opacity-85'
-                      }`}
-                    >
-                      {momentsSaveSuccess ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
-                      <span>{momentsSaveSuccess ? '잡지 설정 저장됨' : '잡지 연출 목록 저장'}</span>
-                    </button>
+                  {/* Unified Save Notice */}
+                  <div className="flex items-center justify-between pt-2 text-[10px] font-mono text-black/50 dark:text-white/50 border-t border-black/10 dark:border-white/10 mt-2">
+                    <span>* 변경된 잡지 연출 목록은 하단의 'SAVE ALL SETTINGS' 또는 좌측 하단 플로팅 저장 버튼을 누를 때 홈 설정과 함께 한 번에 저장됩니다.</span>
                   </div>
                 </div>
               </div>
@@ -1526,6 +1573,103 @@ export function ManageHubPage({
         )}
 
       </div>
+
+      {/* 3. Floating Bottom-Left Action Bar: Save & View Mode Buttons */}
+      <div className="fixed bottom-6 left-6 z-[600] flex items-center gap-3 animate-in fade-in slide-in-from-bottom-3 duration-200">
+        {/* Floating Save Button */}
+        <button
+          type="button"
+          onClick={() => {
+            if (activeMode === 'HOME') handleSaveHome();
+            else if (activeMode === 'ARCHIVE') handleSaveJourney();
+          }}
+          disabled={activeMode === 'HOME' ? isSavingHome : (activeMode === 'ARCHIVE' ? isSavingTrip : false)}
+          className={`w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-all cursor-pointer border ${
+            (homeSaveSuccess || tripSaveSuccess)
+              ? 'bg-green-600 text-white border-green-600 scale-105'
+              : 'bg-black text-white dark:bg-white dark:text-black border-white/20 dark:border-black/20 hover:scale-110 active:scale-95'
+          }`}
+          title="변경사항 저장 (단축키: Ctrl + S)"
+        >
+          {(homeSaveSuccess || tripSaveSuccess) ? (
+            <Check className="w-5 h-5 animate-in zoom-in" />
+          ) : (
+            <Save className="w-5 h-5" />
+          )}
+        </button>
+
+        {/* Floating View Mode Button (Eye icon) */}
+        <button
+          type="button"
+          onClick={() => {
+            if (isCurrentDirty) {
+              setShowUnsavedModal(true);
+            } else {
+              onNavigate('home');
+            }
+          }}
+          className="w-12 h-12 rounded-full flex items-center justify-center shadow-2xl bg-white dark:bg-[#1a1a1a] text-black dark:text-white border border-black/15 dark:border-white/15 hover:scale-110 active:scale-95 transition-all cursor-pointer"
+          title="홈 뷰 모드로 이동"
+        >
+          <Eye className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* 4. Common Minimal Unsaved Changes Modal */}
+      {showUnsavedModal && (
+        <div 
+          className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => setShowUnsavedModal(false)}
+        >
+          <div 
+            className="w-full max-w-sm bg-white dark:bg-[#111] border border-black/20 dark:border-white/20 shadow-2xl p-6 select-none flex flex-col gap-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500">
+                UNSAVED CHANGES
+              </span>
+              <h3 className="text-base font-black uppercase tracking-tight text-black dark:text-white">
+                수정사항이 저장되지 않았습니다
+              </h3>
+              <p className="text-xs text-black/60 dark:text-white/60 font-sans mt-0.5 leading-relaxed">
+                저장하지 않고 뷰 모드로 이동하면 편집 중인 내용이 유실될 수 있습니다. 저장 후 이동하시겠습니까?
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 pt-2 border-t border-black/10 dark:border-white/10">
+              <button
+                type="button"
+                onClick={async () => {
+                  if (activeMode === 'HOME') await handleSaveHome();
+                  else if (activeMode === 'ARCHIVE') await handleSaveJourney();
+                  setShowUnsavedModal(false);
+                  onNavigate('home');
+                }}
+                className="w-full py-2.5 bg-black text-white dark:bg-white dark:text-black font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 hover:opacity-85 cursor-pointer rounded-none"
+              >
+                저장 후 뷰 모드로 이동 (Enter)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowUnsavedModal(false);
+                  onNavigate('home');
+                }}
+                className="w-full py-2 border border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/5 font-mono font-bold text-xs uppercase tracking-wider cursor-pointer rounded-none"
+              >
+                저장하지 않고 이동 (D)
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowUnsavedModal(false)}
+                className="w-full py-1.5 text-[11px] font-mono text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white uppercase tracking-wider cursor-pointer text-center"
+              >
+                계속 편집하기 (ESC)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
