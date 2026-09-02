@@ -1619,10 +1619,10 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
       minZoom: 2.3,
       maxZoom: 18,
       zoomControl: false,
-      maxBounds: [[-85, -180], [85, 180]],
-      maxBoundsViscosity: 1.0,
+      maxBounds: [[-85, -540], [85, 540]],
+      maxBoundsViscosity: 0.8,
       bounceAtZoomLimits: false,
-      worldCopyJump: false,
+      worldCopyJump: true,
     });
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -1690,10 +1690,16 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
         map.removeLayer(selectPinRef.current);
         selectPinRef.current = null;
       }
+      const currentCenter = map.getCenter();
+      const baseLng = 127.5;
+      const diff = (currentCenter ? currentCenter.lng : baseLng) - baseLng;
+      const wraps = Math.round(diff / 360);
+      const targetLng = baseLng + wraps * 360;
+
       if (typeof map.flyTo === 'function') {
-        map.flyTo([36.0, 127.5], 3.2, { duration: 0.8, easeLinearity: 0.25 });
+        map.flyTo([36.0, targetLng], 3.2, { duration: 0.8, easeLinearity: 0.25 });
       } else {
-        map.setView([36.0, 127.5], 3.2);
+        map.setView([36.0, targetLng], 3.2);
       }
     }
   };

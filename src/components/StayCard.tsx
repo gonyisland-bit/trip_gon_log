@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bed, Trash2, ImagePlus, Loader2, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Bed, Trash2, ImagePlus, Loader2, X, ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
 import { StayItem } from '../types';
 import { ImageEditOverlay } from './ImageEditOverlay';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
@@ -83,6 +83,7 @@ export function StayCard({
   const [localConfNo, setLocalConfNo] = useState(stay.confNo);
   const [localMemo, setLocalMemo] = useState(stay.memo);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   // Additional images & Lightbox states
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -323,21 +324,42 @@ export function StayCard({
               />
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stay.address)}`;
-                if (onOpenMapConfirm) {
-                  onOpenMapConfirm(stay.address, url);
-                } else {
-                  window.open(url, '_blank');
-                }
-              }}
-              className="block text-left hover:underline hover:text-red-600 transition-colors font-medium underline decoration-dotted decoration-black/30 dark:decoration-white/30 bg-transparent border-none p-0 cursor-pointer text-black dark:text-white"
-            >
-              {stay.address}
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stay.address)}`;
+                  if (onOpenMapConfirm) {
+                    onOpenMapConfirm(stay.address, url);
+                  } else {
+                    window.open(url, '_blank');
+                  }
+                }}
+                className="block text-left hover:underline hover:text-red-600 transition-colors font-medium underline decoration-dotted decoration-black/30 dark:decoration-white/30 bg-transparent border-none p-0 cursor-pointer text-black dark:text-white"
+              >
+                {stay.address}
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigator.clipboard.writeText(stay.address);
+                  setIsCopied(true);
+                  setTimeout(() => setIsCopied(false), 1800);
+                }}
+                className="p-1 hover:text-red-600 dark:hover:text-red-400 text-black/50 dark:text-white/50 transition-colors cursor-pointer inline-flex items-center gap-1 shrink-0"
+                title="주소 복사"
+              >
+                {isCopied ? (
+                  <span className="flex items-center gap-0.5 text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                    <Check className="w-3 h-3" /> COPIED
+                  </span>
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
+              </button>
+            </div>
           )}
         </div>
         
@@ -347,12 +369,12 @@ export function StayCard({
             e.stopPropagation();
             setIsExpanded(prev => !prev);
           }}
-          className="px-4 py-2 mt-4 bg-black/[0.02] dark:bg-white/[0.02] border-t border-dashed border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between text-[9px] font-bold uppercase tracking-wider text-black/60 dark:text-white/60 cursor-pointer select-none"
+          className="px-4 py-2 mt-4 bg-black/[0.02] dark:bg-white/[0.02] border-t border-dashed border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-black/60 dark:text-white/60 cursor-pointer select-none"
         >
           <span className="flex items-center gap-2">
             <span>EXPENSE, MEMO & PHOTOS</span>
             {stay.cost && stay.cost !== '-' && (
-              <span className="px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 font-mono text-[8px] font-bold">
+              <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 font-mono text-[10px] font-bold">
                 {stay.currency || 'KRW'} {stay.cost}
               </span>
             )}

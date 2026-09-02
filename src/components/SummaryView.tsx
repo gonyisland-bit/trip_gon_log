@@ -1,7 +1,8 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { 
   FileText, Share2, Download, X, Calendar, MapPin, 
-  Bed, Plane, Train, Landmark, ChevronDown, ChevronUp, ArrowDownRight, ArrowRight
+  Bed, Plane, Train, Landmark, ChevronDown, ChevronUp, ArrowDownRight, ArrowRight,
+  Copy, Check
 } from 'lucide-react';
 import { Trip, TimelineItem, FlightItem, StayItem, TransitItem } from '../types';
 import html2canvas from 'html2canvas';
@@ -110,7 +111,15 @@ export function SummaryView({
   const [expandedTransitId, setExpandedTransitId] = useState<number | null>(null);
   const [isTransitExpanded, setIsTransitExpanded] = useState(false);
   const [isCostExpanded, setIsCostExpanded] = useState(false);
+  const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
+
+  const handleCopyAddress = (e: React.MouseEvent, addr: string) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(addr);
+    setCopiedAddress(addr);
+    setTimeout(() => setCopiedAddress(null), 1800);
+  };
 
   // Safe date parser helper to prevent browser-specific bugs (e.g. Safari parsing dash format or timezone offset issues)
   const parseDateParts = (dateStr: string, defaultYear?: number): Date | null => {
@@ -546,11 +555,29 @@ export function SummaryView({
                     </div>
 
                     {isOpen && (
-                      <div className="pt-2 pb-1 flex flex-col gap-1.5 text-xs text-black/70 dark:text-white/70 animate-in fade-in duration-150">
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px]">
-                          <span>🗓 {s.dateRange || 'DATES TBD'}</span>
-                          {s.confNo && <span className="text-red-600 dark:text-red-400 font-bold"># {s.confNo}</span>}
-                          {s.address && <span>📍 {s.address}</span>}
+                      <div className="pt-2 pb-1 flex flex-col gap-1.5 text-xs sm:text-[13px] text-black/75 dark:text-white/75 animate-in fade-in duration-150">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 font-mono text-xs text-black/80 dark:text-white/80">
+                          <span className="font-bold">{s.dateRange || 'DATES TBD'}</span>
+                          {s.confNo && <span className="text-red-600 dark:text-red-400 font-bold font-mono"># {s.confNo}</span>}
+                          {s.address && (
+                            <div className="inline-flex items-center gap-1.5 bg-black/5 dark:bg-white/5 px-2 py-0.5 border border-black/10 dark:border-white/10 text-xs font-sans rounded-none">
+                              <span className="truncate max-w-[240px] sm:max-w-md font-medium">{s.address}</span>
+                              <button
+                                type="button"
+                                onClick={(e) => handleCopyAddress(e, s.address)}
+                                className="p-0.5 hover:text-red-600 dark:hover:text-red-400 text-black/50 dark:text-white/50 transition-colors cursor-pointer shrink-0"
+                                title="주소 복사"
+                              >
+                                {copiedAddress === s.address ? (
+                                  <span className="flex items-center gap-0.5 text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                                    <Check className="w-3 h-3" /> COPIED
+                                  </span>
+                                ) : (
+                                  <Copy className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                            </div>
+                          )}
                         </div>
                         {!isDefaultMemo && (
                           <p className="text-black/60 dark:text-white/60 font-sans leading-relaxed pt-1 text-xs">

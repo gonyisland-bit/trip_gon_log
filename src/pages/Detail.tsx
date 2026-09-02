@@ -5,7 +5,7 @@ import {
   ExternalLink, MapPinOff, Maximize2, Star, ChevronLeft, ChevronRight, ArrowUp, ArrowDown,
   Sun, Cloud, Cloudy, CloudRain, Snowflake, CloudLightning, ArrowRight, Calculator, FileText, Share2, GripVertical,
   Play, Pause, SkipForward, SkipBack, X as CloseIcon, Check, Edit3, DollarSign,
-  Columns2, LayoutGrid, ArrowRightLeft, X
+  Columns2, LayoutGrid, ArrowRightLeft, X, Coins
 } from 'lucide-react';
 import { MapArea } from '../components/MapArea';
 import { ImageEditOverlay } from '../components/ImageEditOverlay';
@@ -704,6 +704,17 @@ export function JourneyDetailPage({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isSwitcherOpen]);
 
+  useEffect(() => {
+    if (!costModalItem) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setCostModalItem(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [costModalItem]);
+
   const switcherJourneys = useMemo(() => {
     const list: Array<{ id: number; title: string; date: string; locationStr: string; img?: string; type: 'ARCHIVE' | 'PLAN' }> = [];
     (allTrips || []).forEach(t => {
@@ -758,6 +769,7 @@ export function JourneyDetailPage({
   useEffect(() => { draftTransitsRef.current = draftTransits; }, [draftTransits]);
 
   const [transitSortType, setTransitSortType] = useState<'time' | 'type'>('time');
+  const [costModalItem, setCostModalItem] = useState<TimelineItem | null>(null);
   const [mapConfirm, setMapConfirm] = useState<{ placeName: string; url: string } | null>(null);
 
   const handleCopyShareLink = () => {
@@ -1769,6 +1781,47 @@ export function JourneyDetailPage({
     }
     return a.id - b.id;
   });
+
+  // Handle pending detail jump (e.g. from Magazine moment click on Home page)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('pending_detail_jump');
+      if (raw) {
+        localStorage.removeItem('pending_detail_jump');
+        const parsed = JSON.parse(raw);
+        if (parsed.tab === 'timeline') {
+          setActiveTab('timeline');
+          if (parsed.date) {
+            setSelectedDate(parsed.date);
+          } else {
+            setSelectedDate('ALL');
+          }
+          setTimeout(() => {
+            const allItems = Object.values(timelineData).flat();
+            let match = null;
+            if (parsed.imgUrl) {
+              match = allItems.find(i => i.img === parsed.imgUrl);
+            }
+            if (!match && parsed.placeName) {
+              match = allItems.find(i => i.place && i.place.includes(parsed.placeName));
+            }
+            if (!match && parsed.date) {
+              match = allItems.find(i => i.date === parsed.date);
+            }
+            if (match) {
+              setExpandedItemId(match.id);
+              const el = itemRefs.current[match.id];
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }
+          }, 350);
+        }
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  }, [tripId, timelineData]);
 
   // Global Keyboard Shortcuts (Space play/pause, ArrowLeft/Right tour, ArrowUp/Down timeline navigation, Esc)
   useEffect(() => {
@@ -3813,8 +3866,6 @@ export function JourneyDetailPage({
                                   >
                                     {isExcluded ? <MapPinOff className="w-3 h-3 mr-0.5" /> : <MapPin className="w-3 h-3 mr-0.5" style={dayColor ? { color: dayColor } : undefined} />}
                                     <span>{isExcluded ? "OFF" : "ON"}</span>
-                                  </button>
-                                )}
                               </div>
                             ) : (
                               <div className={`w-24 sm:w-28 md:w-32 shrink-0 pr-2.5 flex flex-col tracking-tight mt-0.5 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/80 dark:text-white/80'}`}>
@@ -3842,131 +3893,164 @@ export function JourneyDetailPage({
                                     );
                                   })()}
                                 </div>
-                                <div className="flex flex-col mt-1" onClick={(e) => e.stopPropagation()}>
-                                  {selectedDate === 'ALL' && item.date && (
-                                    <div className="flex items-center gap-1.5 text-[9.5px] sm:text-[10px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 select-none">
-                                      <span className={`font-black ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black dark:text-white'}`}>
-                                        DAY {dayIndex}
-                                      </span>
-                                      <span className="text-black/30 dark:text-white/30">·</span>
-                                      <span>{item.date ? item.date.slice(5).replace('-', '.') : ''}</span>
-                                    </div>
+                                <div className="flex items-center gap-1.5 mt-1.5 h-6">
+                                  {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleExcludeFromMap(item)}
+                                      className="p-1 hover:text-red-600 dark:hover:text-red-400 transition-colors select-none cursor-pointer"
+                                      title={isExcluded ? "지도에 표시하기 (현재 OFF)" : "지도에서 제외하기 (현재 ON)"}
+                                    >
+                                      {isExcluded ? (
+                                        <MapPinOff className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
+                                      ) : (
+                                        <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+                                      )}
+                                    </button>
+                                  ) : (
+                                    <div className="w-5 h-5" />
                                   )}
-                                  
-                                  <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                                    {/* Map Pin visibility toggle in view mode */}
-                                    {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) && (
-                                      <button
-                                        onClick={() => handleToggleExcludeFromMap(item)}
-                                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8.5px] md:text-[9px] font-bold tracking-wider uppercase transition-colors border select-none ${
-                                          isExcluded
-                                            ? 'text-black/30 dark:text-white/30 border-black/10 dark:border-white/10 hover:text-black/50'
-                                            : 'border-black/15 dark:border-white/15 hover:opacity-80'
-                                        }`}
-                                        style={!isExcluded && dayColor ? { color: dayColor, borderColor: `${dayColor}40`, backgroundColor: `${dayColor}10` } : undefined}
-                                        title={isExcluded ? "지도에 표시하기" : "지도에서 제외하기"}
-                                      >
-                                        {isExcluded ? (
-                                          <>
-                                            <MapPinOff className="w-3 h-3 text-black/30 dark:text-white/30" />
-                                            <span className="text-[7.5px] font-mono font-bold">OFF</span>
-                                          </>
-                                        ) : (
-                                          <>
-                                            <MapPin className="w-3 h-3" />
-                                            <span className="text-[7.5px] font-mono font-bold">ON</span>
-                                          </>
-                                        )}
-                                      </button>
-                                    )}
 
-                                    {/* Small circular play symbol button - ONLY on selected timeline item (no layout shift) */}
-                                    {!isEditing && isActive && (
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handlePlayFromItem(item.id);
-                                        }}
-                                        className="w-5 h-5 rounded-full bg-red-600 hover:bg-red-700 active:scale-90 text-white shadow-sm flex items-center justify-center transition-all animate-in fade-in zoom-in-75 cursor-pointer"
-                                        title="여기서부터 시네마틱 재생 (Play Log)"
-                                        aria-label="Play Log"
-                                      >
-                                        <Play className="w-2.5 h-2.5 fill-current ml-0.5" />
-                                      </button>
-                                    )}
-                                  </div>
+                                  {!isEditing && isActive ? (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handlePlayFromItem(item.id);
+                                      }}
+                                      className="w-5 h-5 rounded-full bg-red-600 hover:bg-red-700 active:scale-90 text-white shadow-sm flex items-center justify-center transition-all animate-in fade-in zoom-in-75 cursor-pointer shrink-0"
+                                      title="여기서부터 시네마틱 재생 (Play Log)"
+                                      aria-label="Play Log"
+                                    >
+                                      <Play className="w-2.5 h-2.5 fill-current ml-0.5" />
+                                    </button>
+                                  ) : (
+                                    <div className="w-5 h-5" />
+                                  )}
                                 </div>
                               </div>
                             )}
 
-                            {/* Details: Inline place and memo without accordion expansion */}
-                            <div className="flex-grow pr-2 md:pr-4 min-w-0 overflow-hidden">
-                              {/* 1. Title (제목) */}
-                              <div className={`font-bold tracking-tight text-sm md:text-base flex items-center gap-2 flex-wrap ${isActive ? 'text-red-600 dark:text-red-400' : ''}`}>
-                                {isEditing ? (
-                                  <TimelineItemPlaceInput
-                                    itemId={item.id}
-                                    initialValue={item.place}
-                                    onUpdatePlace={(id, val) => updateTimelineItem(id, 'place', val)}
-                                    frequentPlaces={frequentPlaces}
-                                    onSelectFrequent={handleSelectFrequent}
-                                    toggleFrequentPlace={toggleFrequentPlace}
-                                    isFrequent={isFrequent}
-                                    item={item}
-                                  />
-                                ) : (
-                                  <span className="break-words font-black font-satoshi">{item.place}</span>
-                                )}
+                            <div className="flex-grow pr-2 md:pr-4 min-w-0 overflow-hidden flex flex-col gap-1.5">
+                              {/* 1. Title (제목) & Coin Badge */}
+                              <div className="flex items-center justify-between gap-2">
+                                <div className={`font-bold text-sm md:text-base flex-1 min-w-0 flex items-center gap-2 ${isActive ? 'text-red-600 dark:text-red-400' : ''}`}>
+                                  {isEditing ? (
+                                    <TimelineItemPlaceInput
+                                      itemId={item.id}
+                                      initialValue={item.place}
+                                      onUpdatePlace={(id, val) => updateTimelineItem(id, 'place', val)}
+                                      frequentPlaces={frequentPlaces}
+                                      onSelectFrequent={handleSelectFrequent}
+                                      toggleFrequentPlace={toggleFrequentPlace}
+                                      isFrequent={isFrequent}
+                                      item={item}
+                                    />
+                                  ) : (
+                                    <h3 className="break-keep font-sans font-bold text-sm sm:text-base text-black dark:text-white leading-snug tracking-normal">
+                                      {item.place}
+                                    </h3>
+                                  )}
+                                </div>
 
-                                {/* Compact cost badge in view mode if cost exists */}
+                                {/* Coin icon button in view mode if cost exists */}
                                 {!isEditing && item.cost && item.cost !== '-' && item.cost.trim() !== '' && (
-                                  <span className="text-[9px] md:text-[10px] font-mono font-bold text-black/60 dark:text-white/60 bg-black/5 dark:bg-white/5 px-1.5 py-0.5 rounded border border-black/5 dark:border-white/5 shrink-0">
-                                    {item.currency || 'KRW'} {item.cost}
-                                  </span>
-                                )}
-                              </div>
-                              
-                              {/* 2. Subtitle / Memo (부제목) */}
-                              <div className="mt-1">
-                                {isEditing ? (
-                                  <textarea
-                                    value={item.memo || ''}
-                                    onChange={(e) => updateTimelineItem(item.id, 'memo', e.target.value)}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="bg-black/5 dark:bg-white/10 p-1 outline-none text-xs md:text-sm text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full resize-none select-text"
-                                    rows={item.memo ? Math.max(1, item.memo.split('\n').length) : 1}
-                                    placeholder="Memo"
-                                  />
-                                ) : (
-                                  item.memo ? (
-                                    <div className="text-xs md:text-[13px] text-black/70 dark:text-white/70 break-words w-full whitespace-pre-wrap leading-relaxed">{item.memo}</div>
-                                  ) : null
-                                )}
-                              </div>
-
-                              {/* 3. Detailed Location Name (장소명 - 입력했을 경우) */}
-                              {!isEditing && item.location && item.location.trim() !== '' && item.location.trim() !== item.place.trim() && (
-                                <div className="mt-1.5 flex items-center">
                                   <button
                                     type="button"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location || '')}`;
-                                      setMapConfirm({ placeName: item.location || '', url });
+                                      setCostModalItem(item);
                                     }}
-                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] bg-black/5 dark:bg-white/10 text-[9.5px] md:text-[10.5px] text-black/60 dark:text-white/60 hover:text-red-600 dark:hover:text-red-400 hover:bg-black/10 dark:hover:bg-white/15 transition-colors cursor-pointer group/loc"
-                                    title="구글 지도에서 위치 확인"
+                                    className="p-1 text-amber-500 hover:text-amber-600 dark:hover:text-amber-400 hover:scale-110 transition-transform cursor-pointer shrink-0"
+                                    title={`비용 확인: ${item.currency || 'KRW'} ${item.cost}`}
                                   >
-                                    <MapPin className="w-3 h-3 text-red-500 shrink-0 group-hover/loc:scale-110 transition-transform" />
-                                    <span className="truncate max-w-[120px] min-[360px]:max-w-[150px] sm:max-w-[280px] md:max-w-[340px] font-medium">{item.location}</span>
+                                    <Coins className="w-4 h-4" />
                                   </button>
+                                )}
+                              </div>
+                              
+                              {/* 2. Place Input in Edit mode (Replaced subtitle memo with Place Autocomplete Input) */}
+                              {isEditing ? (
+                                <div className="w-full flex flex-col gap-1.5 mt-0.5" onClick={(e) => e.stopPropagation()}>
+                                  <div className="flex items-center gap-2">
+                                    <MapPin className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                                    <PlaceAutocompleteInput
+                                      value={item.location || ''}
+                                      onChange={(val) => updateTimelineItemFields(item.id, { location: val, lat: undefined, lng: undefined })}
+                                      onBlur={async () => {
+                                        setTimeout(async () => {
+                                          const latestTimeline = draftTimelineRef.current;
+                                          const currentItem = latestTimeline.find((t: any) => t.id === item.id);
+                                          if (!currentItem) return;
+                                          if (
+                                            currentItem.location &&
+                                            currentItem.location.trim() !== '' &&
+                                            (currentItem.lat === undefined || currentItem.lat === null || currentItem.lng === undefined || currentItem.lng === null)
+                                          ) {
+                                            const coords = await fetchCoordinates(currentItem.location);
+                                            if (coords) {
+                                              updateTimelineItemFields(currentItem.id, {
+                                                lat: coords.lat,
+                                                lng: coords.lng,
+                                              });
+                                            }
+                                          }
+                                        }, 300);
+                                      }}
+                                      onSelectPlace={(name, coords, address) => {
+                                        updateTimelineItemFields(item.id, {
+                                          location: name || address,
+                                          lat: coords?.lat ?? item.lat,
+                                          lng: coords?.lng ?? item.lng,
+                                        });
+                                      }}
+                                      className="bg-black/5 dark:bg-white/10 px-2 py-1 outline-none text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
+                                      placeholder="장소 지정 (예: 나리타공항, 도쿄 타워)"
+                                    />
+                                  </div>
+
+                                  {/* Direct Cost Input in Edit Mode (No accordion needed) */}
+                                  <div className="flex items-center gap-2 pt-1 border-t border-black/5 dark:border-white/5">
+                                    <SettlementExpenseInput
+                                      cost={item.cost}
+                                      currency={item.currency}
+                                      paidBy={item.paidBy}
+                                      members={tripToUse?.members || []}
+                                      isEditMode={isEditing}
+                                      vertical={false}
+                                      onUpdate={(updates) => {
+                                        if (updates.cost !== undefined) updateTimelineItem(item.id, 'cost', updates.cost);
+                                        if (updates.currency !== undefined) updateTimelineItem(item.id, 'currency', updates.currency);
+                                        if (updates.paidBy !== undefined) updateTimelineItem(item.id, 'paidBy', updates.paidBy);
+                                      }}
+                                      defaultCurrency={defaultCurrency}
+                                    />
+                                  </div>
                                 </div>
+                              ) : (
+                                /* View Mode: Location link below title */
+                                item.location && item.location.trim() !== '' && (
+                                  <div className="mt-0.5 flex items-center">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location || '')}`;
+                                        setMapConfirm({ placeName: item.location || '', url });
+                                      }}
+                                      className="inline-flex items-center gap-1.5 text-xs font-sans text-black/65 dark:text-white/65 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer group/loc not-italic"
+                                      title="구글 지도에서 위치 확인"
+                                    >
+                                      <MapPin className="w-3.5 h-3.5 text-red-500 shrink-0 group-hover/loc:scale-110 transition-transform" />
+                                      <span className="truncate max-w-[220px] sm:max-w-md font-medium">{item.location}</span>
+                                    </button>
+                                  </div>
+                                )
                               )}
 
                               {/* Actions (Edit mode) - Swiss Minimal Icon Only Buttons */}
                               {isEditing && isActive && (
-                                <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-black/10 dark:border-white/10" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-black/10 dark:border-white/10" onClick={(e) => e.stopPropagation()}>
                                   <button 
                                     type="button"
                                     className="p-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white transition-colors cursor-pointer" 
@@ -3986,17 +4070,7 @@ export function JourneyDetailPage({
                                 </div>
                               )}
                             </div>
-
-                            {/* Compact Cost Badge (shown in view or closed mode so it never cramps title/memo) */}
-                            {item.cost && item.cost !== '-' && item.cost.trim() !== '' && !isActive && (
-                              <div className="flex items-center self-start shrink-0 ml-2 mt-0.5">
-                                <span className="text-[9px] md:text-[10px] font-mono font-bold text-black/60 dark:text-white/60 bg-black/5 dark:bg-white/5 px-1.5 py-0.5 border border-black/10 dark:border-white/10 shrink-0">
-                                  {item.currency || 'KRW'} {item.cost}
-                                </span>
-                              </div>
-                            )}
-
-                            </div>
+                          </div>
 
                             {/* Right Column: Full-Height 1:1 Edge-to-Edge Square Grid Thumbnail */}
                             {item.img ? (
@@ -4072,124 +4146,10 @@ export function JourneyDetailPage({
                                 />
                               </div>
                             ) : null}
-                          </div>
-                        
-                        {/* Expanded Section Details (Edit mode only - no accordion expansion in view mode) */}
-                        {isEditing && isActive && (
-                          <div className="px-4 md:px-6 pb-4 md:pb-6 pt-1 md:pt-2 animate-in slide-in-from-top-2 fade-in duration-200">
-                            <div className="bg-white/80 dark:bg-black/40 border border-black/10 dark:border-white/10 p-3 md:p-4 flex flex-col gap-3 text-xs md:text-sm transition-colors shadow-inner">
-                              
-                              {/* Address Input */}
-                              <div className="flex items-start gap-3 group/copy w-full">
-                                <Map className="w-3.5 h-3.5 md:w-4 md:h-4 mt-1.5 text-black/60 dark:text-white/60 shrink-0" />
-                                {isEditing ? (
-                                  <div className="w-full" onClick={(e) => e.stopPropagation()}>
-                                    <PlaceAutocompleteInput
-                                      value={item.location || ''}
-                                      onChange={(val) => updateTimelineItemFields(item.id, { location: val, lat: undefined, lng: undefined })}
-                                      onBlur={async () => {
-                                        // Use a small delay to let onSelectPlace write coords first if a place was selected
-                                        setTimeout(async () => {
-                                          const latestTimeline = draftTimelineRef.current;
-                                          const currentItem = latestTimeline.find((t: any) => t.id === item.id);
-                                          if (!currentItem) return;
-
-                                          if (
-                                            currentItem.location &&
-                                            currentItem.location.trim() !== '' &&
-                                            (currentItem.lat === undefined || currentItem.lat === null || currentItem.lng === undefined || currentItem.lng === null)
-                                          ) {
-                                            const coords = await fetchCoordinates(currentItem.location);
-                                            if (coords) {
-                                              updateTimelineItemFields(currentItem.id, {
-                                                lat: coords.lat,
-                                                lng: coords.lng,
-                                              });
-                                            }
-                                          }
-                                        }, 300);
-                                      }}
-                                      onSelectPlace={(name, coords, address) => {
-                                        // Atomic update: location (name) + lat + lng in one setState
-                                        updateTimelineItemFields(item.id, {
-                                          location: name || address,
-                                          lat: coords?.lat ?? item.lat,
-                                          lng: coords?.lng ?? item.lng,
-                                        });
-                                      }}
-                                      className="bg-black/5 dark:bg-white/10 px-2 py-1 outline-none text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
-                                      placeholder="위치 지정 (예: 나리타공항)"
-                                    />
-                                  </div>
-                                ) : (
-                                  <span className="flex-grow text-black/80 dark:text-white/80 font-medium break-words">
-                                    {item.location ? (
-                                      <button
-                                        type="button"
-                                        className="text-red-600 dark:text-red-400 hover:underline inline-flex items-center gap-1 text-left cursor-pointer"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location || '')}`;
-                                          setMapConfirm({ placeName: item.location || '', url });
-                                        }}
-                                      >
-                                        {item.location}
-                                        <ExternalLink className="w-3 h-3 shrink-0" />
-                                      </button>
-                                    ) : (
-                                      '위치 정보 없음'
-                                    )}
-                                  </span>
-                                )}
                               </div>
-
-                              {/* Hours Input */}
-                              <div className="flex items-center gap-3 text-black/80 dark:text-white/80">
-                                <Clock className="w-3.5 h-3.5 md:w-4 md:h-4 text-black/60 dark:text-white/60 shrink-0" />
-                                {isEditing ? (
-                                  <input
-                                    key={`hours-${item.id}-${item.hours || ''}`}
-                                    type="text"
-                                    defaultValue={item.hours || ''}
-                                    onBlur={(e) => updateTimelineItem(item.id, 'hours', e.target.value)}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="bg-black/5 dark:bg-white/10 px-2 py-1 outline-none text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
-                                    placeholder="Hours e.g. 09:00 AM - 18:00 PM"
-                                  />
-                                ) : (
-                                  <span className="font-medium">
-                                    {item.hours || '영업시간 정보 없음'}
-                                  </span>
-                                )}
-                              </div>
-
-                              {/* Cost & Expense Input (Inside Accordion for spacious, easy editing) */}
-                              {isEditing && (
-                                <div className="flex flex-col gap-1.5 pt-2.5 border-t border-black/10 dark:border-white/10" onClick={(e) => e.stopPropagation()}>
-                                  <span className="text-[9.5px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
-                                    비용 / 지출 (Cost & Expense)
-                                  </span>
-                                  <SettlementExpenseInput
-                                    cost={item.cost}
-                                    currency={item.currency}
-                                    paidBy={item.paidBy}
-                                    members={tripToUse?.members || []}
-                                    isEditMode={isEditing}
-                                    vertical={false}
-                                    onUpdate={(updates) => {
-                                      if (updates.cost !== undefined) updateTimelineItem(item.id, 'cost', updates.cost);
-                                      if (updates.currency !== undefined) updateTimelineItem(item.id, 'currency', updates.currency);
-                                      if (updates.paidBy !== undefined) updateTimelineItem(item.id, 'paidBy', updates.paidBy);
-                                    }}
-                                    defaultCurrency={defaultCurrency}
-                                  />
-                                </div>
-                              )}
-
-                            </div>
+                            ) : null}
                           </div>
-                        )}
-                      </div>
+                        </div>
                       </div>
                     );
                   })
@@ -4558,11 +4518,23 @@ export function JourneyDetailPage({
                 <div 
                   ref={el => { itemRefs.current[imgItem.id] = el; }}
                   key={`${imgItem.type}-${imgItem.url}-${idx}`} 
-                  className="flex flex-col group/gallery bg-white dark:bg-[#0E0E0E] overflow-hidden"
+                  className={`flex flex-col group/gallery transition-all duration-300 relative ${
+                    isPhotoActive 
+                      ? 'bg-neutral-100 dark:bg-[#1A1A1A] ring-2 ring-red-600 dark:ring-red-500 shadow-2xl z-20 scale-[1.015]' 
+                      : 'bg-white dark:bg-[#0E0E0E]'
+                  }`}
                 >
+                  {/* Selected Tag */}
+                  {isPhotoActive && (
+                    <div className="absolute top-2 left-2 z-20 pointer-events-none">
+                      <span className="bg-red-600 text-white font-mono text-[9px] font-black px-1.5 py-0.5 tracking-widest shadow-md">
+                        ACTIVE
+                      </span>
+                    </div>
+                  )}
                   {/* Film-photo styled image container */}
                   <div
-                    className={`relative overflow-hidden border-b transition-all duration-300 cursor-pointer aspect-[4/3] group ${isPhotoActive ? 'border-orange-500 scale-[1.01] shadow-md ring-2 ring-orange-500/30' : 'border-black/10 dark:border-white/10'}`}
+                    className={`relative overflow-hidden border-b transition-all duration-300 cursor-pointer aspect-[4/3] group ${isPhotoActive ? 'border-red-600 dark:border-red-500' : 'border-black/10 dark:border-white/10'}`}
                     onClick={() => {
                       const now = Date.now();
                       const lastTap = lastGalleryTapRef.current[imgItem.id] || 0;
@@ -4644,7 +4616,9 @@ export function JourneyDetailPage({
                   </div>
 
                   {/* Note / description area below image (Swiss Minimal Style) */}
-                  <div className="bg-white dark:bg-[#0E0E0E] px-3 py-2.5 flex flex-col gap-1 text-black dark:text-white">
+                  <div className={`px-3 py-2.5 flex flex-col gap-1 transition-colors ${
+                    isPhotoActive ? 'bg-neutral-100 dark:bg-[#1A1A1A] border-t-2 border-red-600' : 'bg-white dark:bg-[#0E0E0E] text-black dark:text-white'
+                  }`}>
                     {/* Top Meta: Date and Time (Black / White high contrast, no emojis) */}
                     {imgItem.date && (
                       <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 not-italic">
@@ -5159,6 +5133,82 @@ export function JourneyDetailPage({
         }}
         onCancel={() => setShowTripDeleteConfirm(false)}
       />
+
+      {/* Swiss Minimal Timeline Cost Detail Modal */}
+      {costModalItem && (
+        <div 
+          className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => setCostModalItem(null)}
+        >
+          <div 
+            className="bg-white dark:bg-[#121212] border-2 border-black dark:border-white p-6 sm:p-8 max-w-sm w-full shadow-2xl flex flex-col gap-5 text-black dark:text-white rounded-none select-none relative animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header: Title & Close */}
+            <div className="flex items-start justify-between gap-3 border-b-2 border-black dark:border-white pb-3">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/50 dark:text-white/50">
+                  EXPENSE DETAIL · 비용 상세
+                </span>
+                <h3 className="text-base sm:text-lg font-black font-sans tracking-tight break-keep mt-0.5">
+                  {costModalItem.place}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCostModalItem(null)}
+                className="p-1 text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white hover:rotate-90 transition-all cursor-pointer"
+                title="닫기 (ESC)"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Cost Display: Large Swiss Minimal Typography */}
+            <div className="flex flex-col gap-1 py-1">
+              <span className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50 uppercase tracking-wider">
+                AMOUNT (금액)
+              </span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-red-600 dark:text-red-400">
+                  {costModalItem.currency || 'KRW'} {costModalItem.cost}
+                </span>
+              </div>
+            </div>
+
+            {/* Meta Rows: Date, Time, Paid By */}
+            <div className="flex flex-col gap-2 pt-3 border-t border-black/10 dark:border-white/10 font-sans text-xs">
+              {costModalItem.date && (
+                <div className="flex justify-between items-center text-black/70 dark:text-white/70">
+                  <span className="font-mono text-black/40 dark:text-white/40 uppercase font-bold">DATE / TIME</span>
+                  <span className="font-mono font-bold">{costModalItem.date} {costModalItem.time && `· ${costModalItem.time}`}</span>
+                </div>
+              )}
+              {costModalItem.paidBy && (
+                <div className="flex justify-between items-center text-black/70 dark:text-white/70">
+                  <span className="font-mono text-black/40 dark:text-white/40 uppercase font-bold">PAID BY (결제자)</span>
+                  <span className="font-bold px-2 py-0.5 bg-black/5 dark:bg-white/10">{costModalItem.paidBy}</span>
+                </div>
+              )}
+              {costModalItem.location && (
+                <div className="flex justify-between items-start text-black/70 dark:text-white/70 gap-2">
+                  <span className="font-mono text-black/40 dark:text-white/40 uppercase font-bold shrink-0">LOCATION</span>
+                  <span className="font-medium text-right break-words line-clamp-2">{costModalItem.location}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setCostModalItem(null)}
+              className="mt-2 w-full py-2.5 bg-black hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-black font-mono font-black text-xs uppercase tracking-widest transition-colors cursor-pointer"
+            >
+              CLOSE [ESC]
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

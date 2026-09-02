@@ -1198,7 +1198,22 @@ export function HomePage({
                   return (
                     <div
                       key={moment.id || idx}
-                      onClick={() => moment.tripId && onNavigate('detail', moment.tripId)}
+                      onClick={() => {
+                        if (moment.tripId) {
+                          try {
+                            localStorage.setItem('pending_detail_jump', JSON.stringify({
+                              tab: 'timeline',
+                              imgUrl: moment.img,
+                              date: moment.date,
+                              placeName: moment.placeName,
+                              title: moment.title
+                            }));
+                          } catch (e) {
+                            console.warn(e);
+                          }
+                          onNavigate('detail', moment.tripId);
+                        }
+                      }}
                       className="group relative cursor-pointer overflow-hidden border border-black/15 dark:border-white/15 bg-white dark:bg-[#121212] flex flex-col justify-between shadow-sm hover:shadow-xl transition-all duration-300 select-none"
                     >
                       {/* 1. Album Photo Section: 4:3 Minimal Matte Photo Frame */}
