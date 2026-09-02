@@ -202,6 +202,7 @@ export function ArchiveHubPage({
         const hasPlanTag = p.tags?.includes('Plan');
         list.push({
           ...p,
+          isPlan: true,
           tags: hasPlanTag ? p.tags : [...(p.tags || []), 'Plan'],
         });
       });
