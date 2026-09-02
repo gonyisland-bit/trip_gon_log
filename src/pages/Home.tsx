@@ -456,14 +456,34 @@ export function HomePage({
   useEffect(() => { setLocalTrips(trips); }, [trips]);
   useEffect(() => { setLocalPlans(plans); }, [plans]);
 
-  // Combined Journeys & Plans for unified archive view
+  // Combined Journeys & Plans for unified archive view (matches Archive Hub sorting)
   const combinedArchiveList = useMemo(() => {
-    const formattedPlans = localPlans.map(p => ({
-      ...p,
-      isPlan: true,
-      tags: p.tags ? Array.from(new Set([...p.tags, 'Plan'])) : ['Plan']
-    }));
-    return [...localTrips, ...formattedPlans];
+    const list: (Trip | Plan)[] = [...localTrips];
+    if (localPlans && localPlans.length > 0) {
+      localPlans.forEach(p => {
+        const hasPlanTag = p.tags?.includes('Plan');
+        list.push({
+          ...p,
+          isPlan: true,
+          tags: hasPlanTag ? p.tags : [...(p.tags || []), 'Plan'],
+        });
+      });
+    }
+
+    try {
+      const saved = localStorage.getItem('journey_order');
+      if (saved) {
+        const order: number[] = JSON.parse(saved);
+        const idMap = new Map(order.map((id, idx) => [id, idx]));
+        return list.sort((a, b) => {
+          const orderA = idMap.has(a.id) ? idMap.get(a.id)! : (a.displayOrder ?? 999999);
+          const orderB = idMap.has(b.id) ? idMap.get(b.id)! : (b.displayOrder ?? 999999);
+          return orderA - orderB;
+        });
+      }
+    } catch (_) {}
+
+    return list.sort((a, b) => (a.displayOrder ?? 999999) - (b.displayOrder ?? 999999));
   }, [localTrips, localPlans]);
 
   const filters = useMemo(() => {
@@ -549,7 +569,11 @@ export function HomePage({
 
   const handleTripDrop = () => {
     setDraggedTripId(null);
-    if (onReorderTrips) onReorderTrips(localTrips.map(t => t.id));
+    const orderedIds = localTrips.map(t => t.id);
+    try {
+      localStorage.setItem('journey_order', JSON.stringify(orderedIds));
+    } catch (_) {}
+    if (onReorderTrips) onReorderTrips(orderedIds);
   };
 
   return (
@@ -862,7 +886,7 @@ export function HomePage({
                         {trip.title}
                       </h3>
                       {((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
-                        <span className="text-[9px] font-black px-2 py-0.5 font-mono uppercase bg-black text-white border-y border-white/30 tracking-widest">
+                        <span className="text-[8px] font-black px-1.5 py-0.5 font-mono uppercase bg-black text-white dark:bg-white dark:text-black border border-white/30 dark:border-black/30 tracking-widest">
                           PLAN
                         </span>
                       ) : trip.statusBadge ? (
@@ -943,15 +967,6 @@ export function HomePage({
                     onDrop={handleTripDrop}
                     onDragEnd={() => setDraggedTripId(null)}
                   >
-                    {/* Top-Right Corner Flush Wide Bold PLAN Tag (그리드 가로 절반폭 와이드 사이즈) */}
-                    {((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) && (
-                      <div className="absolute top-0 right-0 z-20 w-1/2 bg-black text-white dark:bg-white dark:text-black py-1 sm:py-1.5 px-2.5 flex items-center justify-center border-b border-l border-white/20 dark:border-black/20 shadow-md pointer-events-none">
-                        <span className="font-mono text-[11px] sm:text-xs md:text-sm font-black tracking-widest uppercase">
-                          PLAN
-                        </span>
-                      </div>
-                    )}
-
                     {/* Background cover image/video */}
                     <CardMedia
                       img={trip.img}
@@ -965,7 +980,7 @@ export function HomePage({
 
                     {/* Swiss Editorial Poster Text Layout */}
                     <div className="absolute inset-0 p-4 sm:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
-                      {/* Top Header Row: Giant Bold Year & Month / Status Badge */}
+                      {/* Top Header Row: Giant Bold Year & Month / Status Badge (Aligned with Year) */}
                       <div className="flex justify-between items-start w-full">
                         {year ? (
                           <div className="flex flex-col leading-none">
@@ -980,14 +995,18 @@ export function HomePage({
                           </div>
                         ) : <div />}
 
-                        {/* Status Badge (NEW / EDITING) for non-plans */}
-                        {!((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) && trip.statusBadge && (
+                        {/* Responsive Tag Box: PLAN (Black/White minimal box) or Status Badge (NEW/EDITING) */}
+                        {((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
+                          <span className="px-2 py-0.5 text-[2.6cqw] font-black uppercase tracking-widest font-mono shadow-sm bg-black text-white dark:bg-white dark:text-black border border-white/30 dark:border-black/30">
+                            PLAN
+                          </span>
+                        ) : trip.statusBadge ? (
                           <span className={`px-1.5 py-0.5 text-[2.6cqw] font-black uppercase tracking-widest font-mono shadow-sm ${
                             trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
                           }`}>
                             {trip.statusBadge}
                           </span>
-                        )}
+                        ) : null}
                       </div>
 
                       {/* Bottom Footer Row: Title, Location, Date (3-tier clean stack) */}
@@ -1129,9 +1148,9 @@ export function HomePage({
                           <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-widest bg-black text-white dark:bg-white dark:text-black shadow-md">
                             PAGE #{String(globalIdx).padStart(2, '0')}
                           </span>
-                          {moment.location && (
+                          {(moment.placeName || moment.location) && (
                             <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider bg-white/90 dark:bg-black/90 text-black dark:text-white backdrop-blur-xs shadow-md truncate max-w-[55%]">
-                              {cleanAdministrativeDistricts(moment.location)}
+                              {moment.placeName || cleanAdministrativeDistricts(moment.location || '')}
                             </span>
                           )}
                         </div>
@@ -1161,7 +1180,9 @@ export function HomePage({
                         </div>
 
                         <div className="pt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-[10px] font-mono text-black/50 dark:text-white/50 mt-1">
-                          <span className="truncate max-w-[150px]">{cleanAdministrativeDistricts(moment.location || '')}</span>
+                          <span className="truncate max-w-[160px] font-medium" title={moment.placeName || moment.location || ''}>
+                            {moment.placeName || cleanAdministrativeDistricts(moment.location || '')}
+                          </span>
                           <span className="font-bold text-black dark:text-white group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
                             VIEW ➔
                           </span>

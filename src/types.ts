@@ -168,6 +168,7 @@ export interface MagazineMoment {
   title: string;
   date?: string;
   location?: string;
+  placeName?: string;
   caption?: string;
   img: string;
   quote?: string;

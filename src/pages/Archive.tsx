@@ -657,15 +657,15 @@ export function ArchiveHubPage({
                     <h3 className="font-black text-sm sm:text-base md:text-lg text-black dark:text-white uppercase font-satoshi truncate">
                       {trip.title}
                     </h3>
-                    {trip.statusBadge ? (
+                    {((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
+                      <span className="text-[8px] font-black px-1.5 py-0.5 font-mono uppercase bg-black text-white dark:bg-white dark:text-black border border-white/30 dark:border-black/30 tracking-widest">
+                        PLAN
+                      </span>
+                    ) : trip.statusBadge ? (
                       <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-none font-mono uppercase ${
                         trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
                       }`}>
                         {trip.statusBadge}
-                      </span>
-                    ) : (trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
-                      <span className="text-[8px] font-black px-1.5 py-0.5 rounded-none font-mono uppercase bg-blue-600 text-white">
-                        PLAN
                       </span>
                     ) : null}
                   </div>
@@ -776,15 +776,15 @@ export function ArchiveHubPage({
                         </div>
                       ) : <div />}
 
-                      {trip.statusBadge ? (
+                      {((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
+                        <span className="px-2 py-0.5 text-[2.6cqw] font-black uppercase tracking-widest font-mono shadow-sm bg-black text-white dark:bg-white dark:text-black border border-white/30 dark:border-black/30">
+                          PLAN
+                        </span>
+                      ) : trip.statusBadge ? (
                         <span className={`px-1.5 py-0.5 text-[2.6cqw] font-black uppercase tracking-widest font-mono shadow-sm ${
                           trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
                         }`}>
                           {trip.statusBadge}
-                        </span>
-                      ) : (trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
-                        <span className="px-1.5 py-0.5 text-[2.6cqw] font-black uppercase tracking-widest font-mono shadow-sm bg-blue-600 text-white">
-                          PLAN
                         </span>
                       ) : null}
                     </div>
