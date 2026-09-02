@@ -1507,11 +1507,9 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     if (!placeSearchQuery.trim()) return pinGroups;
     const q = placeSearchQuery.trim().toLowerCase();
     return pinGroups.filter(g => 
-      g.cityCleaned.toLowerCase().includes(q) ||
-      g.cityName.toLowerCase().includes(q) ||
-      (g.countryName && g.countryName.toLowerCase().includes(q)) ||
-      g.trips.some(t => t.title.toLowerCase().includes(q)) ||
-      g.plans.some(p => p.title.toLowerCase().includes(q))
+      g.city.toLowerCase().includes(q) ||
+      (g.country && g.country.toLowerCase().includes(q)) ||
+      g.journeys.some(j => j.title.toLowerCase().includes(q))
     );
   }, [pinGroups, placeSearchQuery]);
 
@@ -2307,11 +2305,11 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                   검색된 등록 장소가 없습니다.
                 </div>
               ) : (
-                filteredPlaceGroups.map(group => {
-                  const repJourney = group.trips[0] || group.plans[0];
+                filteredPlaceGroups.map((group, idx) => {
+                  const repJourney = group.journeys[0];
                   return (
                     <div
-                      key={group.key}
+                      key={`${group.city}-${group.lat}-${group.lng}-${idx}`}
                       onClick={() => {
                         setIsPlaceListModalOpen(false);
                         const map = mapRef.current;
@@ -2325,7 +2323,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-10 h-10 aspect-square overflow-hidden bg-black/10 shrink-0 border border-black/10 dark:border-white/10">
                           {repJourney?.img ? (
-                            <img src={getEffectiveImageUrl(repJourney.img)} alt={group.cityCleaned} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                            <img src={getEffectiveImageUrl(repJourney.img)} alt={group.city} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-black/20 dark:text-white/20">
                               <MapPin className="w-4 h-4" />
@@ -2335,11 +2333,11 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                         <div className="flex flex-col min-w-0">
                           <div className="flex items-center gap-1.5">
                             <span className="font-black text-xs sm:text-sm text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors uppercase truncate">
-                              {group.cityCleaned}
+                              {group.city}
                             </span>
-                            {group.countryName && (
+                            {group.country && (
                               <span className="text-[10px] font-mono text-black/40 dark:text-white/40 uppercase">
-                                · {group.countryName}
+                                · {group.country}
                               </span>
                             )}
                           </div>
@@ -2351,7 +2349,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
 
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black/5 dark:bg-white/5 text-black/70 dark:text-white/70 border border-black/10 dark:border-white/10">
-                          {group.trips.length + group.plans.length} 여정
+                          {group.journeys.length} 여정
                         </span>
                         <ArrowRight className="w-3.5 h-3.5 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white group-hover:translate-x-0.5 transition-all" />
                       </div>
