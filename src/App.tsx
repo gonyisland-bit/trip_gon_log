@@ -192,7 +192,9 @@ function App() {
   }, [showUnsavedModal, pendingNavigation]);
 
   const currentUserEmail = auth.currentUser?.email?.toLowerCase() || '';
-  const isAdmin = isLoggedIn && (adminEmails.includes(currentUserEmail) || currentUserEmail === 'gonyisland@google.com');
+  const isGuest = currentUserEmail.startsWith('guest') || currentUserEmail.includes('guest') || Boolean(auth.currentUser?.isAnonymous);
+  // Guest accounts can only edit journeys, while admin accounts (including other admin accounts) have full hub management rights
+  const isAdmin = isLoggedIn && !isGuest;
 
   // Global shortcut Ctrl+K / Cmd+K for Unified Search Modal
   useEffect(() => {
@@ -974,8 +976,8 @@ function App() {
     };
 
     try {
-      // 1. Save journey doc immediately
-      await setDoc(doc(db, 'users', 'public', collectionName, String(newId)), newJourney);
+      // 1. Save journey doc immediately with cleanForFirestore to purge undefined values
+      await setDoc(doc(db, 'users', 'public', collectionName, String(newId)), cleanForFirestore(newJourney));
 
       // 2. Generate default template timeline items
       const generateTemplateDays = (): { date: string; items: any[] }[] => {
@@ -1059,7 +1061,7 @@ function App() {
         const batch = writeBatch(db);
         templateDays.forEach(({ date, items }) => {
           items.forEach(item => {
-            batch.set(doc(db, 'users', 'public', 'timeline', String(item.id)), { ...item, tripId: newId });
+            batch.set(doc(db, 'users', 'public', 'timeline', String(item.id)), cleanForFirestore({ ...item, tripId: newId }));
           });
         });
         await batch.commit();
@@ -1072,10 +1074,10 @@ function App() {
       fetchCoordinates(location).then(async (coords) => {
         if (coords) {
           try {
-            await setDoc(doc(db, 'users', 'public', collectionName, String(newId)), {
+            await setDoc(doc(db, 'users', 'public', collectionName, String(newId)), cleanForFirestore({
               lat: coords.lat,
               lng: coords.lng
-            }, { merge: true });
+            }), { merge: true });
           } catch (e) {
             console.error("Failed to update coordinates in background:", e);
           }

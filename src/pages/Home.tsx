@@ -445,13 +445,6 @@ export function HomePage({
     localStorage.setItem('cardViewMode', mode);
   };
 
-  const [planViewMode, setPlanViewMode] = useState<'grid' | 'wide'>(() => (localStorage.getItem('planViewMode') as any) || 'grid');
-
-  const handleSetPlanViewMode = (mode: 'grid' | 'wide') => {
-    setPlanViewMode(mode);
-    localStorage.setItem('planViewMode', mode);
-  };
-
   // Drag-reorder state for archive cards
   const [draggedTripId, setDraggedTripId] = useState<number | null>(null);
   const [localTrips, setLocalTrips] = useState<Trip[]>(trips);
@@ -676,13 +669,13 @@ export function HomePage({
             <h2 className="text-xl sm:text-2xl font-black tracking-tighter uppercase break-keep">Upcoming Plans</h2>
             
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-              {/* Plan View Mode Toggle: Grid (기본) / Wide (하단과 완전히 동일한 아이콘 전용) */}
+              {/* Unified View Mode Toggle: Grid (기본) / Wide */}
               <div className="flex items-center border border-black/15 dark:border-white/15 rounded-xs p-0.5 bg-black/5 dark:bg-white/5 shrink-0">
                 <button
                   type="button"
-                  onClick={() => handleSetPlanViewMode('grid')}
+                  onClick={() => handleSetCardViewMode('grid')}
                   className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
-                    planViewMode === 'grid' 
+                    cardViewMode === 'grid' 
                       ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
                       : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
                   }`}
@@ -692,9 +685,9 @@ export function HomePage({
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleSetPlanViewMode('wide')}
+                  onClick={() => handleSetCardViewMode('wide')}
                   className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
-                    planViewMode === 'wide' 
+                    cardViewMode === 'wide' 
                       ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
                       : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
                   }`}
@@ -704,19 +697,24 @@ export function HomePage({
                 </button>
               </div>
 
-              <button onClick={() => onNavigate('plan')} className="text-[11px] sm:text-xs font-bold uppercase tracking-widest flex items-center hover:opacity-60 shrink-0 ml-1">
+              {/* View All redirects to Archive Hub where all journeys and plans are managed together */}
+              <button 
+                onClick={() => onNavigate('archive')} 
+                className="text-[11px] sm:text-xs font-bold uppercase tracking-widest flex items-center hover:opacity-60 shrink-0 ml-1 cursor-pointer"
+                title="모든 여정 및 계획 보기"
+              >
                 View All <ArrowRight className="w-3.5 h-3.5 ml-1" />
               </button>
             </div>
           </div>
-          <div className={`grid ${planViewMode === 'wide' ? 'grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6' : 'grid-cols-2 md:grid-cols-4 gap-3 md:gap-6'} p-4 sm:p-6 md:p-12 w-full`}>
+          <div className={`grid ${cardViewMode === 'wide' ? 'grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6' : 'grid-cols-2 md:grid-cols-4 gap-3 md:gap-6'} p-4 sm:p-6 md:p-12 w-full`}>
             {localPlans.slice(0, 4).map((plan) => {
               const { year, month, compactDate } = getYearAndMonth(plan.date);
               return (
                 <div
                   key={plan.id}
                   style={{ containerType: 'inline-size' }}
-                  className={`group cursor-pointer ${planViewMode === 'wide' ? 'aspect-[16/10]' : 'aspect-[3/4]'} w-full overflow-hidden transition-all border relative shadow-[0_0_15px_rgba(239,68,68,0.08)] ${
+                  className={`group cursor-pointer ${cardViewMode === 'wide' ? 'aspect-[16/10]' : 'aspect-[3/4]'} w-full overflow-hidden transition-all border relative shadow-[0_0_15px_rgba(239,68,68,0.08)] ${
                     activeCardId === plan.id
                       ? 'border-red-600 dark:border-red-400 ring-2 ring-red-600/20 dark:ring-red-400/20 scale-[1.01] shadow-lg'
                       : 'border-red-600/40 dark:border-red-500/40 bg-[#111]'

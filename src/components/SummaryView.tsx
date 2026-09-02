@@ -31,12 +31,25 @@ interface SummaryViewProps {
   onSelectTab?: (tab: string) => void;
 }
 
-// Clean administrative suffixes like '시', '도', '특별시', '광역시', '특별자치도', '부', '현'
+// Clean administrative suffixes like '시', '도', '특별시', '광역시', '특별자치도', '부', '현', and strip trailing country strings
 export function cleanAdministrativeDistricts(locationStr?: string): string {
   if (!locationStr) return '';
-  const items = locationStr.split(/[,·/]+/).map(s => s.trim()).filter(Boolean);
+
+  // 1. Strip trailing country identifiers (e.g. ", SOUTH KOREA", ", 대한민국")
+  let preClean = locationStr
+    .replace(/,\s*(SOUTH KOREA|KOREA|대한민국|한국|JAPAN|일본|VIETNAM|베트남|THAILAND|태국|TAIWAN|대만|CHINA|중국|USA|미국|FRANCE|프랑스|ITALY|이탈리아|UK|영국|SPAIN|스페인).*$/i, '')
+    .trim();
+
+  // 2. Special single-destination normalization (e.g. Jeju)
+  const upper = preClean.toUpperCase();
+  if (upper.includes('JEJU') || upper.includes('제주') || upper.includes('SEOGWIPO') || upper.includes('서귀포')) {
+    return '제주';
+  }
+
+  const items = preClean.split(/[,·/]+/).map(s => s.trim()).filter(Boolean);
   const cleaned = items.map(name => {
     let n = name;
+    // Strip common administrative endings
     n = n.replace(/(특별자치시|특별자치도|특별시|광역시|자치시|자치도)$/, '');
     if (n.length > 2) {
       n = n.replace(/(시|군|구|도|부|현)$/, '');
@@ -46,7 +59,9 @@ export function cleanAdministrativeDistricts(locationStr?: string): string {
     return n.trim();
   }).filter(Boolean);
 
-  return cleaned.join(', ');
+  // De-duplicate
+  const unique = Array.from(new Set(cleaned));
+  return unique.join(', ');
 }
 
 // Extract season from date string (3-5: 봄, 6-8: 여름, 9-11: 가을, 12-2: 겨울)

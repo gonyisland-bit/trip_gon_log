@@ -1545,7 +1545,15 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
       });
       selectPinRef.current = L.marker(country.center, { icon: selectIcon, zIndexOffset: 1200 }).addTo(map);
 
-      map.flyTo(country.center, country.zoom, { duration: 1.2 });
+      // On mobile screens, offset center downward so pin appears in the upper 1/3 of viewport above bottom sheet
+      const isMobile = window.innerWidth < 640;
+      if (isMobile) {
+        const targetPoint = map.project(country.center, country.zoom).add([0, window.innerHeight * 0.22]);
+        const targetCenter = map.unproject(targetPoint, country.zoom);
+        map.flyTo(targetCenter, country.zoom, { duration: 1.2 });
+      } else {
+        map.flyTo(country.center, country.zoom, { duration: 1.2 });
+      }
     }
   };
 
@@ -1568,14 +1576,18 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     }
   };
 
-  // ESC key to close modal or selection
+  // ESC key to close modal / selection, and 'h' key to reset to global home view
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName) || (e.target as HTMLElement)?.isContentEditable;
       if (e.key === 'Escape') {
         if (selectedPinGroup) setSelectedPinGroup(null);
         else if (isWishlistModalOpen) setIsWishlistModalOpen(false);
         else if (selectedCountry) handleCloseCountry();
         setIsSearchDropdownOpen(false);
+      } else if (!isInput && (e.key === 'h' || e.key === 'H')) {
+        e.preventDefault();
+        handleResetToDefaultView();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -1925,7 +1937,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
             type="button"
             onClick={handleResetToDefaultView}
             className="p-2 sm:px-2.5 sm:py-2 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center"
-            title="기본 위치로 돌아오기 (Reset View)"
+            title="기본 위치로 돌아오기 (단축키: H)"
           >
             <HomeIcon className="w-3.5 h-3.5" />
           </button>

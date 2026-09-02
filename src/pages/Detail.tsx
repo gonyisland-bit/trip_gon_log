@@ -2804,10 +2804,10 @@ export function JourneyDetailPage({
               {(trip.title || '').replace(' (Plan)', '')}
             </h1>
 
-            {/* Date & Destination summary - visible on mobile & web */}
-            <div className="flex items-center gap-1 text-[8.5px] sm:text-[10px] font-mono text-black/50 dark:text-white/50 truncate shrink-0">
+            {/* Date & Destination summary - visible on mobile & web with high legibility */}
+            <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-mono font-medium text-black/65 dark:text-white/65 min-w-0">
               <span className="hidden sm:inline text-black/25 dark:text-white/25">·</span>
-              <span className="truncate font-medium">{generateJourneyMessage(trip.locationStr, trip.date, generatedDates.length)}</span>
+              <span className="truncate sm:break-keep font-medium leading-tight">{generateJourneyMessage(trip.locationStr, trip.date, generatedDates.length)}</span>
             </div>
           </div>
         </div>
@@ -3743,11 +3743,11 @@ export function JourneyDetailPage({
                             onClick={() => handleItemToggle(item.id)}
                           >
                             <div className="flex-1 flex flex-row items-start py-4 px-4 md:py-5 md:px-6 min-w-0">
-                            {/* Left Column: Fixed Width in BOTH view and edit mode (w-20 sm:w-24 md:w-28 shrink-0 pr-2) */}
+                            {/* Left Column: Fixed Width in BOTH view and edit mode (w-24 sm:w-28 md:w-32 shrink-0 pr-2.5) */}
                             {isEditing ? (
-                              <div className="w-20 sm:w-24 md:w-28 shrink-0 pr-2 flex flex-col gap-1 text-[10px] md:text-xs font-bold" onClick={(e) => e.stopPropagation()}>
-                                {/* Compact action row: Grip, Checkbox, Trash */}
-                                <div className="flex items-center justify-between w-full py-0.5 px-1 bg-black/5 dark:bg-white/5 rounded border border-black/10 dark:border-white/10 mb-0.5">
+                              <div className="w-24 sm:w-28 md:w-32 shrink-0 pr-2.5 flex flex-col gap-1.5 text-[10px] md:text-xs font-bold" onClick={(e) => e.stopPropagation()}>
+                                {/* Compact action row: Grip, Checkbox, Trash (Swiss Minimal) */}
+                                <div className="flex items-center justify-between w-full py-1 px-1.5 bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15">
                                   <div className="drag-handle cursor-grab active:cursor-grabbing text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white p-0.5" title="순서 이동">
                                     <GripVertical className="w-3.5 h-3.5" />
                                   </div>
@@ -3761,15 +3761,15 @@ export function JourneyDetailPage({
                                         setSelectedItemIds(prev => prev.filter(id => id !== item.id));
                                       }
                                     }}
-                                    className="w-3.5 h-3.5 rounded border-black/20 text-red-600 cursor-pointer accent-red-600"
+                                    className="w-3.5 h-3.5 border-black/20 text-red-600 cursor-pointer accent-red-600 rounded-none"
                                   />
                                   <button
                                     type="button"
                                     onClick={() => handleDeleteTimelineItem(item.id)}
-                                    className="text-red-500 hover:text-red-700 p-0.5 transition-colors"
+                                    className="text-red-500 hover:text-red-700 p-0.5 transition-colors cursor-pointer"
                                     title="일정 삭제"
                                   >
-                                    <Trash2 className="w-3 h-3" />
+                                    <Trash2 className="w-3.5 h-3.5" />
                                   </button>
                                 </div>
 
@@ -3782,7 +3782,7 @@ export function JourneyDetailPage({
                                     scrollTargetItemIdRef.current = item.id;
                                     updateTimelineItem(item.id, 'time', time24hTo12h(val24h));
                                   }}
-                                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-[9px] md:text-[10px] text-black dark:text-white rounded border border-black/10 dark:border-white/10 w-full text-center"
+                                  className="bg-black/5 dark:bg-white/10 px-1 py-1 outline-none font-mono font-bold text-[10px] md:text-xs text-black dark:text-white border border-black/15 dark:border-white/15 w-full text-center rounded-none"
                                 />
 
                                 <select
@@ -3793,7 +3793,7 @@ export function JourneyDetailPage({
                                     updateTimelineItem(item.id, 'date', newDate);
                                     setSelectedDate(newDate);
                                   }}
-                                  className="bg-black/5 dark:bg-white/10 border border-black/10 dark:border-white/10 text-[8.5px] md:text-[9.5px] font-bold p-0.5 outline-none text-black dark:text-white rounded w-full text-center"
+                                  className="bg-black/5 dark:bg-white/10 border border-black/15 dark:border-white/15 text-[9px] md:text-[10px] font-mono font-bold p-1 outline-none text-black dark:text-white w-full text-center rounded-none cursor-pointer"
                                 >
                                   {allTripDates.map(d => (
                                     <option key={d} value={d}>{d.slice(5).replace('.', '/')}</option>
@@ -3803,7 +3803,7 @@ export function JourneyDetailPage({
                                 {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) && (
                                   <button
                                     onClick={() => handleToggleExcludeFromMap(item)}
-                                    className={`flex items-center justify-center py-0.5 border border-black/10 dark:border-white/10 rounded text-[7.5px] font-bold w-full transition-colors ${
+                                    className={`flex items-center justify-center py-0.5 border border-black/15 dark:border-white/15 text-[8px] font-mono font-bold w-full transition-colors rounded-none cursor-pointer ${
                                       isExcluded
                                         ? 'text-black/20 dark:text-white/20'
                                         : 'hover:opacity-80'
@@ -3817,7 +3817,7 @@ export function JourneyDetailPage({
                                 )}
                               </div>
                             ) : (
-                              <div className={`w-24 sm:w-28 md:w-30 shrink-0 pr-2.5 flex flex-col tracking-tight mt-0.5 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/80 dark:text-white/80'}`}>
+                              <div className={`w-24 sm:w-28 md:w-32 shrink-0 pr-2.5 flex flex-col tracking-tight mt-0.5 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/80 dark:text-white/80'}`}>
                                 <div>
                                   {(() => {
                                     const match = (item.time || '').match(/^(\d{1,2}:\d{2})\s*(AM|PM)?$/i);
@@ -3964,47 +3964,37 @@ export function JourneyDetailPage({
                                 </div>
                               )}
 
-                              {/* Actions (Edit mode) */}
+                              {/* Actions (Edit mode) - Swiss Minimal Icon Only Buttons */}
                               {isEditing && isActive && (
-                                <div className="flex items-center gap-3.5 mt-3 pt-3 border-t border-black/10 dark:border-white/10 text-[10px] md:text-xs font-bold uppercase tracking-widest" onClick={(e) => e.stopPropagation()}>
-                                   <button 
-                                     type="button"
-                                     className="flex items-center gap-1 text-black dark:text-white hover:opacity-75 transition-opacity" 
-                                     onClick={() => handleAddTimelineItemRelativeTo(item.id, 'above')}
-                                   >
-                                     <ArrowUp className="w-3.5 h-3.5"/> Add
-                                   </button>
-                                   <button 
-                                     type="button"
-                                     className="flex items-center gap-1 text-black dark:text-white hover:opacity-75 transition-opacity" 
-                                     onClick={() => handleAddTimelineItemRelativeTo(item.id, 'below')}
-                                   >
-                                     <ArrowDown className="w-3.5 h-3.5"/> Add
-                                   </button>
+                                <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-black/10 dark:border-white/10" onClick={(e) => e.stopPropagation()}>
+                                  <button 
+                                    type="button"
+                                    className="p-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white transition-colors cursor-pointer" 
+                                    title="위로 일정 추가"
+                                    onClick={() => handleAddTimelineItemRelativeTo(item.id, 'above')}
+                                  >
+                                    <ArrowUp className="w-3.5 h-3.5"/>
+                                  </button>
+                                  <button 
+                                    type="button"
+                                    className="p-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white transition-colors cursor-pointer" 
+                                    title="아래로 일정 추가"
+                                    onClick={() => handleAddTimelineItemRelativeTo(item.id, 'below')}
+                                  >
+                                    <ArrowDown className="w-3.5 h-3.5"/>
+                                  </button>
                                 </div>
                               )}
                             </div>
 
-                              {/* Cost Editor (only in editing mode) */}
-                              {isEditing && (
-                                <div className="flex flex-col items-end gap-1 shrink-0 ml-3 self-start" onClick={(e) => e.stopPropagation()}>
-                                  <span className="text-[8px] opacity-40 uppercase font-bold tracking-widest">Cost</span>
-                                  <SettlementExpenseInput
-                                    cost={item.cost}
-                                    currency={item.currency}
-                                    paidBy={item.paidBy}
-                                    members={tripToUse?.members || []}
-                                    isEditMode={isEditing}
-                                    vertical={true}
-                                    onUpdate={(updates) => {
-                                      if (updates.cost !== undefined) updateTimelineItem(item.id, 'cost', updates.cost);
-                                      if (updates.currency !== undefined) updateTimelineItem(item.id, 'currency', updates.currency);
-                                      if (updates.paidBy !== undefined) updateTimelineItem(item.id, 'paidBy', updates.paidBy);
-                                    }}
-                                    defaultCurrency={defaultCurrency}
-                                  />
-                                </div>
-                              )}
+                            {/* Compact Cost Badge (shown in view or closed mode so it never cramps title/memo) */}
+                            {item.cost && item.cost !== '-' && item.cost.trim() !== '' && !isActive && (
+                              <div className="flex items-center self-start shrink-0 ml-2 mt-0.5">
+                                <span className="text-[9px] md:text-[10px] font-mono font-bold text-black/60 dark:text-white/60 bg-black/5 dark:bg-white/5 px-1.5 py-0.5 border border-black/10 dark:border-white/10 shrink-0">
+                                  {item.currency || 'KRW'} {item.cost}
+                                </span>
+                              </div>
+                            )}
 
                             </div>
 
@@ -4172,6 +4162,29 @@ export function JourneyDetailPage({
                                   </span>
                                 )}
                               </div>
+
+                              {/* Cost & Expense Input (Inside Accordion for spacious, easy editing) */}
+                              {isEditing && (
+                                <div className="flex flex-col gap-1.5 pt-2.5 border-t border-black/10 dark:border-white/10" onClick={(e) => e.stopPropagation()}>
+                                  <span className="text-[9.5px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
+                                    비용 / 지출 (Cost & Expense)
+                                  </span>
+                                  <SettlementExpenseInput
+                                    cost={item.cost}
+                                    currency={item.currency}
+                                    paidBy={item.paidBy}
+                                    members={tripToUse?.members || []}
+                                    isEditMode={isEditing}
+                                    vertical={false}
+                                    onUpdate={(updates) => {
+                                      if (updates.cost !== undefined) updateTimelineItem(item.id, 'cost', updates.cost);
+                                      if (updates.currency !== undefined) updateTimelineItem(item.id, 'currency', updates.currency);
+                                      if (updates.paidBy !== undefined) updateTimelineItem(item.id, 'paidBy', updates.paidBy);
+                                    }}
+                                    defaultCurrency={defaultCurrency}
+                                  />
+                                </div>
+                              )}
 
                             </div>
                           </div>
