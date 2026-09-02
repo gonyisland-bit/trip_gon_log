@@ -3157,11 +3157,11 @@ export function JourneyDetailPage({
             const city = cleanAdministrativeDistricts(rawCity);
             
             return (
-              <div className="absolute top-8 left-8 z-[20] flex flex-col pointer-events-none select-none text-black dark:text-white drop-shadow-md animate-in fade-in duration-300">
-                <span className="text-[20px] md:text-[22px] font-black tracking-[0.3em] uppercase text-red-600 dark:text-amber-500 mb-1 leading-none font-satoshi">
+              <div className="absolute top-8 left-8 z-[20] flex flex-col pointer-events-none select-none text-black dark:text-white animate-in fade-in duration-300">
+                <span className="text-[13px] sm:text-sm md:text-base font-black tracking-[0.25em] uppercase text-red-600 dark:text-red-500 mb-1 leading-none font-sans">
                   {detectedCountry || country}
                 </span>
-                <h2 className="text-5xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter leading-none border-b-2 border-amber-600 pb-1.5 max-w-[390px] md:max-w-[510px] break-all font-satoshi">
+                <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter leading-[0.95] border-b-2 sm:border-b-4 border-black dark:border-white pb-2 max-w-[340px] sm:max-w-[480px] break-words font-sans text-black dark:text-white">
                   {city}
                 </h2>
               </div>
@@ -3350,15 +3350,15 @@ export function JourneyDetailPage({
           </div>
         </div>
         
-        {/* Tab Headers - Unified Single-line Sleek Design */}
-        <div className="flex overflow-x-auto hide-scrollbar flex-nowrap border-b border-black/15 dark:border-white/15 bg-white dark:bg-[#0A0A0A] transition-colors shrink-0 w-full h-9 sm:h-10">
+        {/* Tab Headers - Unified Single-line Sleek Design (SUM, TIME, FLIGHT, STAY, TRANS, PHOTO) */}
+        <div className="flex overflow-x-hidden flex-nowrap border-b border-black/15 dark:border-white/15 bg-white dark:bg-[#0A0A0A] transition-colors shrink-0 w-full h-9 sm:h-10">
           {[ 
-            { id: 'summary', label: 'Summary', icon: FileText },
-            { id: 'timeline', label: 'Log', icon: Clock }, 
-            { id: 'flights', label: 'Flights', icon: Plane }, 
-            { id: 'stays', label: 'Stays', icon: Bed }, 
-            { id: 'transit', label: 'Transit', icon: Train },
-            { id: 'gallery', label: 'Gallery', icon: ImageIcon }
+            { id: 'summary', label: 'SUM' },
+            { id: 'timeline', label: 'TIME' }, 
+            { id: 'flights', label: 'FLIGHT' }, 
+            { id: 'stays', label: 'STAY' }, 
+            { id: 'transit', label: 'TRANS' }, 
+            { id: 'gallery', label: 'PHOTO' }
           ].map(tab => (
             <button 
               key={tab.id} 
@@ -3366,14 +3366,13 @@ export function JourneyDetailPage({
                 setActiveTab(tab.id as TabType); 
                 setExpandedItemId(null); 
               }} 
-              className={`flex-1 h-full px-1.5 sm:px-3 flex flex-row items-center justify-center gap-1.5 text-[9.5px] sm:text-[11px] md:text-xs font-bold uppercase tracking-wider border-r border-black/15 dark:border-white/15 last:border-r-0 transition-colors whitespace-nowrap cursor-pointer ${
+              className={`flex-1 h-full px-0.5 sm:px-2 flex items-center justify-center text-[10px] sm:text-[11px] md:text-xs font-black uppercase tracking-wider border-r border-black/15 dark:border-white/15 last:border-r-0 transition-colors whitespace-nowrap cursor-pointer font-sans select-none ${
                 activeTab === tab.id 
                   ? 'bg-black text-white dark:bg-white dark:text-black font-black' 
-                  : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/75 dark:text-white/75'
+                  : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70'
               }`}
             >
-              <tab.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> 
-              <span className="truncate">{tab.label}</span>
+              <span>{tab.label}</span>
             </button>
           ))}
         </div>

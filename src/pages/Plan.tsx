@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, GripVertical, ChevronDown, ChevronUp, Tag, Search, X, LayoutGrid, StretchHorizontal, List, ArrowRight } from 'lucide-react';
+import { Plus, GripVertical, ChevronDown, ChevronUp, Tag, Search, X, LayoutGrid, StretchHorizontal, List, ArrowRight, ArrowUpDown } from 'lucide-react';
 import { Plan } from '../types';
 import { JourneyCardMenu } from './Home';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
@@ -79,6 +79,8 @@ export function PlanHubPage({
   const [activeLocationFilter, setActiveLocationFilter] = useState('All');
   const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
   const [tagSearchQuery, setTagSearchQuery] = useState('');
+  const [isSearchInputOpen, setIsSearchInputOpen] = useState(false);
+  const [hubSearchQuery, setHubSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'user' | 'date' | 'place'>('user');
   const [draggedPlanId, setDraggedPlanId] = useState<number | null>(null);
   const [localPlans, setLocalPlans] = useState<Plan[]>(plans);
@@ -160,6 +162,15 @@ export function PlanHubPage({
 
   const filteredPlans = useMemo(() => {
     return sortedPlans.filter(p => {
+      if (hubSearchQuery.trim()) {
+        const q = hubSearchQuery.trim().toLowerCase();
+        const matchTitle = (p.title || '').toLowerCase().includes(q);
+        const matchLoc = (p.locationStr || '').toLowerCase().includes(q);
+        const matchCountry = (p.country || '').toLowerCase().includes(q);
+        const matchDate = (p.date || '').toLowerCase().includes(q);
+        const matchTag = p.tags && p.tags.some(tag => tag.toLowerCase().includes(q));
+        if (!matchTitle && !matchLoc && !matchCountry && !matchDate && !matchTag) return false;
+      }
       if (activeFilter !== 'All' && (!p.tags || !p.tags.includes(activeFilter))) return false;
       if (activeYearFilter !== 'All') {
         const { year } = getYearAndMonth(p.date);
@@ -172,7 +183,7 @@ export function PlanHubPage({
       }
       return true;
     });
-  }, [sortedPlans, activeFilter, activeYearFilter, activeLocationFilter]);
+  }, [sortedPlans, activeFilter, activeYearFilter, activeLocationFilter, hubSearchQuery]);
 
   const handlePlanDragStart = (e: React.DragEvent, id: number) => {
     if (sortBy !== 'user') return;
@@ -229,8 +240,58 @@ export function PlanHubPage({
                   )}
                 </button>
 
-                {(activeFilter !== 'All' || activeYearFilter !== 'All' || activeLocationFilter !== 'All') && (
+                {/* Separated Search Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSearchInputOpen(v => !v);
+                    if (isSearchInputOpen) setHubSearchQuery('');
+                  }}
+                  className={`p-2 border transition-colors flex items-center justify-center rounded-none cursor-pointer relative ${
+                    isSearchInputOpen || hubSearchQuery
+                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                      : 'border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-transparent text-black dark:text-white'
+                  }`}
+                  title="플랜 검색"
+                >
+                  <Search className="w-3.5 h-3.5" />
+                  {hubSearchQuery && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-600" />
+                  )}
+                </button>
+
+                {/* Inline Search Input */}
+                {isSearchInputOpen && (
+                  <div className="relative flex items-center animate-in fade-in slide-in-from-left-2 duration-150">
+                    <input
+                      type="text"
+                      autoFocus
+                      value={hubSearchQuery}
+                      onChange={(e) => setHubSearchQuery(e.target.value)}
+                      placeholder="플랜 검색..."
+                      className="w-28 sm:w-44 pl-2.5 pr-6 py-1.5 text-xs bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 font-sans font-medium outline-none text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 rounded-none"
+                    />
+                    {hubSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setHubSearchQuery('')}
+                        className="absolute right-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white p-0.5 cursor-pointer"
+                        title="검색어 지우기"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {(activeFilter !== 'All' || activeYearFilter !== 'All' || activeLocationFilter !== 'All' || hubSearchQuery) && (
                   <div className="flex items-center gap-1.5 flex-wrap">
+                    {hubSearchQuery && (
+                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black dark:text-white flex items-center gap-1">
+                        "{hubSearchQuery}"
+                        <X className="w-3 h-3 cursor-pointer hover:text-red-500" onClick={() => setHubSearchQuery('')} />
+                      </span>
+                    )}
                     {activeFilter !== 'All' && (
                       <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black dark:text-white flex items-center gap-1">
                         #{activeFilter}
@@ -255,6 +316,7 @@ export function PlanHubPage({
                         setActiveFilter('All');
                         setActiveYearFilter('All');
                         setActiveLocationFilter('All');
+                        setHubSearchQuery('');
                       }}
                       className="text-[9px] px-1.5 py-0.5 uppercase font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
                     >
@@ -268,27 +330,6 @@ export function PlanHubPage({
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setIsTagDropdownOpen(false)} />
                   <div className="absolute left-0 mt-1.5 w-72 bg-[#F9F8F6] dark:bg-[#181818] border border-black/15 dark:border-white/15 shadow-2xl z-20 rounded-none p-3 flex flex-col gap-3 animate-in fade-in slide-in-from-top-1 duration-150 text-black dark:text-white">
-                    {/* Search Input */}
-                    <div className="relative flex items-center">
-                      <Search className="w-3 h-3 text-black/40 dark:text-white/40 absolute left-2 pointer-events-none" />
-                      <input
-                        type="text"
-                        value={tagSearchQuery}
-                        onChange={(e) => setTagSearchQuery(e.target.value)}
-                        placeholder="태그 검색..."
-                        className="w-full pl-7 pr-7 py-1 text-[10px] bg-white dark:bg-[#222222] border border-black/10 dark:border-white/10 rounded-none font-bold outline-none text-black dark:text-white placeholder:text-black/30 dark:placeholder:text-white/30"
-                      />
-                      {tagSearchQuery && (
-                        <button
-                          type="button"
-                          onClick={() => setTagSearchQuery('')}
-                          className="absolute right-2 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
-
                     {/* 1. Year Filter Section */}
                     {availableYears.length > 0 && (
                       <div className="flex flex-col gap-1">
@@ -428,16 +469,16 @@ export function PlanHubPage({
                 </button>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase font-bold tracking-widest text-black/40 dark:text-white/40">정렬:</span>
+              <div className="flex items-center gap-1.5">
+                <ArrowUpDown className="w-3.5 h-3.5 text-black/60 dark:text-white/60 shrink-0" />
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="bg-transparent text-[10px] font-bold uppercase tracking-widest border border-black/20 dark:border-white/20 px-3 py-1.5 focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                  className="bg-transparent text-[10px] sm:text-xs font-black uppercase tracking-widest border border-black/20 dark:border-white/20 px-2.5 py-1.5 focus:outline-none focus:border-black dark:focus:border-white transition-colors cursor-pointer rounded-none font-sans"
                 >
-                  <option value="user" className="bg-[#F9F8F6] dark:bg-[#111111]">사용자 순서</option>
-                  <option value="date" className="bg-[#F9F8F6] dark:bg-[#111111]">시간별 순서</option>
-                  <option value="place" className="bg-[#F9F8F6] dark:bg-[#111111]">장소별 순서</option>
+                  <option value="user" className="bg-[#F9F8F6] dark:bg-[#111111]">USER</option>
+                  <option value="date" className="bg-[#F9F8F6] dark:bg-[#111111]">TIME</option>
+                  <option value="place" className="bg-[#F9F8F6] dark:bg-[#111111]">PLACE</option>
                 </select>
               </div>
             </div>
