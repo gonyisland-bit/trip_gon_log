@@ -486,9 +486,9 @@ export function ManageHubPage({
       tripId: item.tripId,
       title: item.place || item.journeyTitle || 'UNTITLED MOMENT',
       date: item.date || '',
-      placeName: item.place || item.location || '',
-      location: item.place || item.location || item.journeyLocation || '',
-      caption: item.memo || item.imgNote || '',
+      placeName: item.place || '',
+      location: item.place || item.journeyLocation || '',
+      caption: item.imgNote || '',
       quote: '',
       img: item.img,
       order: momentsList.length,
@@ -963,37 +963,58 @@ export function ManageHubPage({
                     </div>
                   </div>
 
-                  {/* Candidate Timeline Images Grid */}
-                  <div className="flex flex-col gap-1.5 mt-1">
-                    <span className="text-[9px] font-mono text-black/50 dark:text-white/50">
-                      선택 가능한 타임라인 사진 ({candidateTimelineItems.length}개) — 클릭 시 잡지 목록에 바로 추가됩니다:
-                    </span>
+                  {/* Candidate Timeline Images Grid: Zero-Gap Swiss Editorial Grid */}
+                  <div className="flex flex-col gap-2 mt-2">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                        선택 가능한 타임라인 사진 ({candidateTimelineItems.length}개)
+                      </span>
+                      <span className="text-[9px] font-mono text-black/40 dark:text-white/40">
+                        * 클릭 시 잡지 목록에 바로 추가됩니다
+                      </span>
+                    </div>
+
                     {candidateTimelineItems.length === 0 ? (
-                      <div className="py-6 text-center text-xs font-mono text-black/40 dark:text-white/40">
+                      <div className="py-8 text-center text-xs font-mono text-black/40 dark:text-white/40 border border-black/10 dark:border-white/10 bg-white dark:bg-[#111]">
                         사진이 등록된 타임라인 항목이 없습니다.
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2 max-h-56 overflow-y-auto p-2 border border-black/10 dark:border-white/10 bg-white dark:bg-[#111]">
-                        {candidateTimelineItems.map((item, i) => (
-                          <div
-                            key={`cand-${item.id}-${i}`}
-                            onClick={() => handleAddMomentFromTimeline(item)}
-                            className="group relative aspect-square border border-black/10 dark:border-white/10 overflow-hidden cursor-pointer bg-black/5 hover:border-black dark:hover:border-white transition-all shadow-xs"
-                            title={`${item.place || ''} (${item.date || ''}) 추가`}
-                          >
-                            <img
-                              src={getEffectiveImageUrl(item.img || '')}
-                              alt={item.place || 'Timeline'}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                            />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white font-mono text-[9px] font-bold p-1 text-center">
-                              + 추가
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-px bg-black/20 dark:bg-white/20 border border-black/20 dark:border-white/20 max-h-80 overflow-y-auto">
+                        {candidateTimelineItems.slice(0, 48).map((item, i) => {
+                          const displayTitle = item.place || item.journeyTitle || 'MOMENT';
+                          return (
+                            <div
+                              key={`cand-${item.id}-${i}`}
+                              onClick={() => handleAddMomentFromTimeline(item)}
+                              className="group relative aspect-[4/3] sm:aspect-square bg-white dark:bg-[#121212] overflow-hidden cursor-pointer flex flex-col justify-end transition-transform select-none"
+                              title={`${displayTitle} (${item.date || ''}) 잡지 컬렉션에 추가`}
+                            >
+                              <img
+                                src={getEffectiveImageUrl(item.img || '')}
+                                alt={displayTitle}
+                                loading="lazy"
+                                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                              
+                              {/* Hover Highlight Overlay */}
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white font-mono text-xs font-black p-2 text-center z-10">
+                                + 추가 (ADD)
+                              </div>
+
+                              {/* Large Legible Bottom Title Bar */}
+                              <div className="relative z-10 w-full bg-gradient-to-t from-black/90 via-black/70 to-transparent p-2 pt-4 flex flex-col">
+                                <span className="text-[10px] sm:text-[11px] font-sans font-black text-white uppercase tracking-tight truncate leading-tight">
+                                  {displayTitle}
+                                </span>
+                                {item.date && (
+                                  <span className="text-[9px] font-mono text-white/70 truncate">
+                                    {item.date}
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[8px] font-mono px-1 py-0.5 truncate pointer-events-none">
-                              {item.place || item.journeyTitle}
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>

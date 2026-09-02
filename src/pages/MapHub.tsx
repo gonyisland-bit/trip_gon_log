@@ -1584,8 +1584,12 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
         map.removeLayer(selectPinRef.current);
         selectPinRef.current = null;
       }
-      // Restore South Korea center view
-      map.flyTo([36.0, 127.5], 3.2, { duration: 1.2 });
+      // Restore South Korea center view with layer sync
+      map.setView([36.0, 127.5], 3.2);
+      map.invalidateSize();
+      setTimeout(() => {
+        try { map.invalidateSize(); } catch (_) {}
+      }, 300);
     }
   };
 
@@ -1631,11 +1635,12 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
       ? 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
       : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
 
-    tileLayerRef.current = L.tileLayer(tileUrl, {
+    L.tileLayer(tileUrl, {
       attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
       maxZoom: 18,
-      keepBuffer: 16,
-      updateWhenIdle: false,
+      tileSize: 256,
+      zoomOffset: 0,
+      updateWhenIdle: true,
       updateWhenZooming: false,
       crossOrigin: true,
     }).addTo(map);
@@ -1672,7 +1677,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     }).addTo(map);
   }, [isDarkMode]);
 
-  // Reset to default global view (Clean reset to South Korea center view without bouncing)
+  // Reset to default global view (Clean reset to South Korea center view with complete mapping sync)
   const handleResetToDefaultView = () => {
     setSelectedCountry(null);
     setSelectedPinGroup(null);
@@ -1681,7 +1686,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     setSearchQuery('');
     const map = mapRef.current;
     if (map) {
-      map.stop(); // Immediately stop any in-flight animations/pans to avoid bounce
+      map.stop(); // Immediately stop any in-flight animations/pans
       if (highlightLayerRef.current) {
         map.removeLayer(highlightLayerRef.current);
         highlightLayerRef.current = null;
@@ -1690,17 +1695,11 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
         map.removeLayer(selectPinRef.current);
         selectPinRef.current = null;
       }
-      const currentCenter = map.getCenter();
-      const baseLng = 127.5;
-      const diff = (currentCenter ? currentCenter.lng : baseLng) - baseLng;
-      const wraps = Math.round(diff / 360);
-      const targetLng = baseLng + wraps * 360;
-
-      if (typeof map.flyTo === 'function') {
-        map.flyTo([36.0, targetLng], 3.2, { duration: 0.8, easeLinearity: 0.25 });
-      } else {
-        map.setView([36.0, targetLng], 3.2);
-      }
+      map.setView([36.0, 127.5], 3.2);
+      map.invalidateSize();
+      setTimeout(() => {
+        try { map.invalidateSize(); } catch (_) {}
+      }, 300);
     }
   };
 
@@ -1843,7 +1842,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
       <div className="absolute top-4 left-4 right-4 sm:left-6 sm:right-auto z-[500] flex flex-wrap items-center gap-2">
         
         {/* Country & Continent Search Bar with Integrated Wishlist Star Button */}
-        <div className="relative flex items-center bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/20 dark:border-white/20 shadow-2xl">
+        <div className="relative flex items-center bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/20 dark:border-white/20 shadow-2xl z-30">
           <div className="w-56 sm:w-72 flex items-center px-3 py-2">
             <Search className="w-3.5 h-3.5 text-black/50 dark:text-white/50 shrink-0 mr-2" />
             <input
@@ -1892,7 +1891,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                 className="fixed inset-0 z-40" 
                 onClick={() => setIsSearchDropdownOpen(false)}
               />
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white/95 dark:bg-[#121212]/95 backdrop-blur-md border border-black/15 dark:border-white/15 max-h-64 overflow-y-auto z-50 shadow-2xl divide-y divide-black/5 dark:divide-white/5">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white/95 dark:bg-[#121212]/95 backdrop-blur-md border border-black/15 dark:border-white/15 max-h-64 overflow-y-auto z-[600] shadow-2xl divide-y divide-black/5 dark:divide-white/5">
                 {filteredCountries.map(c => (
                   <div
                     key={c.code}
@@ -1926,7 +1925,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
         </div>
 
         {/* Swiss Minimal Monochrome Icon Toggles: Tag (Labels) / MapPin (Visited) / Bookmark (Wishlist) */}
-        <div className="flex items-center border border-black/20 dark:border-white/20 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md shadow-2xl divide-x divide-black/15 dark:divide-white/15">
+        <div className="flex items-center border border-black/20 dark:border-white/20 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md shadow-2xl divide-x divide-black/15 dark:divide-white/15 z-10">
           {/* 1. Label Toggle (Tag) */}
           <button
             type="button"
@@ -2058,19 +2057,19 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
               </div>
             </div>
 
-            {/* Actions: Wishlist Toggle & Create Journey Button */}
-            <div className="pt-2 border-t border-black/10 dark:border-white/10 flex flex-col gap-2">
+            {/* Actions: Wishlist Toggle & Create Journey Button (Clean Swiss Minimal Grid) */}
+            <div className="pt-2 border-t border-black/10 dark:border-white/10 grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => toggleFavoriteCountry(selectedCountry.code)}
-                className={`w-full py-2.5 text-xs font-black uppercase tracking-wider font-sans flex items-center justify-center gap-1.5 transition-colors cursor-pointer border ${
+                className={`w-full py-2.5 px-3 text-xs font-black uppercase tracking-widest font-sans flex items-center justify-center gap-1.5 transition-colors cursor-pointer border ${
                   isCurrentCountryFavorite
                     ? 'bg-amber-500 text-black border-amber-500 shadow-sm'
                     : 'bg-white dark:bg-[#161616] text-black dark:text-white border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white'
                 }`}
               >
-                <Star className={`w-3.5 h-3.5 ${isCurrentCountryFavorite ? 'fill-black' : ''}`} />
-                <span>{isCurrentCountryFavorite ? '★ WISHLIST SAVED (가고싶은 나라)' : '☆ ADD TO WISHLIST (가고싶은 나라 담기)'}</span>
+                <Star className={`w-3.5 h-3.5 ${isCurrentCountryFavorite ? 'fill-black text-black' : ''}`} />
+                <span>{isCurrentCountryFavorite ? 'SAVED WISH' : 'WISH'}</span>
               </button>
 
               {onCreateTripForCountry && (
@@ -2080,10 +2079,10 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                     onCreateTripForCountry(selectedCountry.name);
                     handleCloseCountry();
                   }}
-                  className="w-full py-2.5 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-widest font-sans flex items-center justify-center gap-1.5 hover:opacity-85 transition-opacity cursor-pointer shadow-sm"
+                  className="w-full py-2.5 px-3 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-widest font-sans flex items-center justify-center gap-1.5 hover:opacity-85 transition-opacity cursor-pointer shadow-sm"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>+ {selectedCountry.name} 여정 만들기</span>
+                  <span>TRIP</span>
                 </button>
               )}
             </div>

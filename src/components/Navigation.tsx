@@ -127,13 +127,13 @@ export function Navigation({
           {isLoggedIn && isAdmin && (
             <button
               type="button"
-              onClick={() => navigateTo('manage')}
+              onClick={() => navigateTo(currentView === 'manage' ? 'home' : 'manage')}
               className={`p-2 sm:p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center ${
                 currentView === 'manage'
                   ? 'text-red-600 dark:text-red-500 bg-black/5 dark:bg-white/5'
                   : 'text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white'
               }`}
-              title="수정 허브 (Management Hub)"
+              title={currentView === 'manage' ? "홈으로 돌아가기 (Close Manage Hub)" : "수정 허브 (Management Hub)"}
             >
               <SlidersHorizontal className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             </button>
@@ -269,7 +269,7 @@ export function Navigation({
 
             {isLoggedIn && isAdmin && (
               <button
-                onClick={() => handleMenuNavigate('manage')}
+                onClick={() => handleMenuNavigate(currentView === 'manage' ? 'home' : 'manage')}
                 className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-2"
               >
                 <span className="font-mono text-xs sm:text-sm font-bold text-red-600 dark:text-red-400 mr-4 sm:mr-6 select-none">

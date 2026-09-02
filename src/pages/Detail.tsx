@@ -4518,23 +4518,17 @@ export function JourneyDetailPage({
                 <div 
                   ref={el => { itemRefs.current[imgItem.id] = el; }}
                   key={`${imgItem.type}-${imgItem.url}-${idx}`} 
-                  className={`flex flex-col group/gallery transition-all duration-300 relative ${
+                  className={`flex flex-col group/gallery transition-all duration-300 relative border select-none ${
                     isPhotoActive 
-                      ? 'bg-neutral-100 dark:bg-[#1A1A1A] ring-2 ring-red-600 dark:ring-red-500 shadow-2xl z-20 scale-[1.015]' 
-                      : 'bg-white dark:bg-[#0E0E0E]'
+                      ? 'bg-white dark:bg-[#161616] border-black dark:border-white ring-2 ring-black dark:ring-white shadow-2xl z-20 scale-[1.015] opacity-100' 
+                      : (expandedItemId 
+                          ? 'bg-white dark:bg-[#0E0E0E] border-black/10 dark:border-white/10 opacity-40 hover:opacity-85' 
+                          : 'bg-white dark:bg-[#0E0E0E] border-black/10 dark:border-white/10 opacity-100 hover:border-black/30 dark:hover:border-white/30')
                   }`}
                 >
-                  {/* Selected Tag */}
-                  {isPhotoActive && (
-                    <div className="absolute top-2 left-2 z-20 pointer-events-none">
-                      <span className="bg-red-600 text-white font-mono text-[9px] font-black px-1.5 py-0.5 tracking-widest shadow-md">
-                        ACTIVE
-                      </span>
-                    </div>
-                  )}
                   {/* Film-photo styled image container */}
                   <div
-                    className={`relative overflow-hidden border-b transition-all duration-300 cursor-pointer aspect-[4/3] group ${isPhotoActive ? 'border-red-600 dark:border-red-500' : 'border-black/10 dark:border-white/10'}`}
+                    className="relative overflow-hidden border-b border-black/10 dark:border-white/10 transition-all duration-300 cursor-pointer aspect-[4/3] group"
                     onClick={() => {
                       const now = Date.now();
                       const lastTap = lastGalleryTapRef.current[imgItem.id] || 0;
@@ -4615,9 +4609,9 @@ export function JourneyDetailPage({
                     <div className="absolute inset-0 bg-black/0 group-hover/gallery:bg-black/10 transition-colors pointer-events-none" />
                   </div>
 
-                  {/* Note / description area below image (Swiss Minimal Style) */}
+                  {/* Note / description area below image (Unified Single Body Swiss Style) */}
                   <div className={`px-3 py-2.5 flex flex-col gap-1 transition-colors ${
-                    isPhotoActive ? 'bg-neutral-100 dark:bg-[#1A1A1A] border-t-2 border-red-600' : 'bg-white dark:bg-[#0E0E0E] text-black dark:text-white'
+                    isPhotoActive ? 'bg-white dark:bg-[#161616]' : 'bg-white dark:bg-[#0E0E0E] text-black dark:text-white'
                   }`}>
                     {/* Top Meta: Date and Time (Black / White high contrast, no emojis) */}
                     {imgItem.date && (
@@ -4635,49 +4629,34 @@ export function JourneyDetailPage({
                     {/* Title / Description */}
                     <div className="flex items-start justify-between gap-2 w-full mt-0.5">
                       <div className="flex-1 min-w-0">
-                        {/* 1. Main Title or Note */}
-                        {imgItem.type === 'timeline' && (imgItem as any).memo ? (
-                          <h4 className="text-xs sm:text-[13px] font-sans font-bold text-black dark:text-white leading-snug break-keep line-clamp-2 not-italic">
-                            {(imgItem as any).memo}
-                          </h4>
-                        ) : imgItem.type === 'timeline' && imgItem.imgNote ? (
+                        {/* 1. Main Title or Note (No timeline subtitle/memo) */}
+                        {imgItem.imgNote ? (
                           <h4 className="text-xs sm:text-[13px] font-sans font-bold text-black dark:text-white leading-snug break-keep line-clamp-2 not-italic">
                             {imgItem.imgNote}
                           </h4>
-                        ) : imgItem.type === 'gallery' ? (
-                          isEditing ? (
-                            <input
-                              type="text"
-                              value={imgItem.imgNote || ''}
-                              onChange={(e) => handleUpdateGalleryImageNote(imgItem.url, e.target.value)}
-                              placeholder="사진 설명 추가..."
-                              className="w-full bg-transparent outline-none text-xs sm:text-[13px] font-sans font-bold text-black dark:text-white placeholder-black/30 dark:placeholder-white/30 not-italic border-b border-black/20 dark:border-white/20 pb-0.5"
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                          ) : imgItem.imgNote ? (
-                            <h4 className="text-xs sm:text-[13px] font-sans font-bold text-black dark:text-white leading-snug break-keep line-clamp-2 not-italic">
-                              {imgItem.imgNote}
-                            </h4>
-                          ) : (
-                            <p className="text-[10.5px] font-sans font-medium text-black/35 dark:text-white/35 not-italic">기록된 메모 없음</p>
-                          )
+                        ) : imgItem.type === 'gallery' && isEditing ? (
+                          <input
+                            type="text"
+                            value={imgItem.imgNote || ''}
+                            onChange={(e) => handleUpdateGalleryImageNote(imgItem.url, e.target.value)}
+                            placeholder="사진 설명 추가..."
+                            className="w-full bg-transparent outline-none text-xs sm:text-[13px] font-sans font-bold text-black dark:text-white placeholder-black/30 dark:placeholder-white/30 not-italic border-b border-black/20 dark:border-white/20 pb-0.5"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        ) : imgItem.place ? (
+                          <h4 className="text-xs sm:text-[13px] font-sans font-bold text-black dark:text-white leading-snug break-keep line-clamp-2 not-italic">
+                            {imgItem.place}
+                          </h4>
                         ) : (
                           <p className="text-[10.5px] font-sans font-medium text-black/35 dark:text-white/35 not-italic">기록된 메모 없음</p>
                         )}
 
-                        {/* 2. Specified Place Name right below title (Swiss Minimal, Inter font, bold, not italic, >= 10px) */}
-                        {imgItem.place && (
-                          <div className="text-[10.5px] sm:text-xs font-sans font-semibold text-red-600 dark:text-red-400 tracking-tight flex items-center gap-1 mt-1 not-italic truncate">
-                            <MapPin className="w-3 h-3 shrink-0" />
+                        {/* 2. Specified Place Name right below title if different from main title */}
+                        {imgItem.place && imgItem.imgNote && (
+                          <div className="text-[10.5px] sm:text-xs font-sans font-semibold text-black/70 dark:text-white/70 tracking-tight flex items-center gap-1 mt-1 not-italic truncate">
+                            <MapPin className="w-3 h-3 shrink-0 text-red-600 dark:text-red-400" />
                             <span className="truncate">{imgItem.place}</span>
                           </div>
-                        )}
-
-                        {/* Secondary note if both memo and imgNote exist for timeline */}
-                        {imgItem.type === 'timeline' && (imgItem as any).memo && imgItem.imgNote && (
-                          <p className="text-[10.5px] font-sans text-black/65 dark:text-white/65 not-italic leading-relaxed mt-1 break-keep line-clamp-2 border-t border-black/5 dark:border-white/5 pt-1">
-                            {imgItem.imgNote}
-                          </p>
                         )}
                       </div>
 
