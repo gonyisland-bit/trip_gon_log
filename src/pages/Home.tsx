@@ -3,6 +3,7 @@ import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Menu, Edit2, Trash
 import { Trip, Plan } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { cleanAdministrativeDistricts } from '../components/SummaryView';
 
 interface HomePageProps {
   onNavigate: (view: string, tripId?: number | null) => void;
@@ -202,53 +203,53 @@ export function JourneyCardMenu({
         </button>
 
         {open && (
-          <div className={`absolute ${variant === 'minimal' ? 'top-full right-0 mt-1' : 'bottom-full right-0 mb-1'} w-44 bg-white dark:bg-[#161616] border border-black/15 dark:border-white/15 shadow-2xl rounded-none z-50 overflow-hidden divide-y divide-black/10 dark:divide-white/10 animate-in zoom-in-95 duration-150`}>
+          <div className={`absolute ${variant === 'minimal' ? 'top-full right-0 mt-1' : 'bottom-full right-0 mb-1'} w-48 bg-black text-white border border-white/20 shadow-2xl rounded-none z-50 overflow-hidden divide-y divide-white/10 animate-in zoom-in-95 duration-150`}>
             {onEdit && (
               <button
                 onClick={(e) => { e.stopPropagation(); setOpen(false); onEdit(); }}
-                className="w-full flex items-center justify-between px-3.5 py-2.5 text-[10.5px] font-black uppercase tracking-wider text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-black uppercase tracking-widest text-white hover:bg-white/15 transition-colors cursor-pointer"
               >
-                <div className="flex items-center gap-2">
-                  <Edit2 className="w-3.5 h-3.5 text-amber-500" />
+                <div className="flex items-center gap-2.5">
+                  <Edit2 className="w-3.5 h-3.5 text-white/80" />
                   <span>EDIT</span>
                 </div>
-                <span className="font-mono text-[9px] text-black/40 dark:text-white/40 border border-black/15 dark:border-white/15 px-1 py-0.2">E</span>
+                <span className="font-mono text-[9.5px] font-bold text-white/50 border border-white/20 px-1.5 py-0.5">E</span>
               </button>
             )}
             {onClone && (
               <button
                 onClick={(e) => { e.stopPropagation(); setOpen(false); onClone(); }}
-                className="w-full flex items-center justify-between px-3.5 py-2.5 text-[10.5px] font-black uppercase tracking-wider text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-black uppercase tracking-widest text-white hover:bg-white/15 transition-colors cursor-pointer"
               >
-                <div className="flex items-center gap-2">
-                  <Copy className="w-3.5 h-3.5 text-blue-500" />
+                <div className="flex items-center gap-2.5">
+                  <Copy className="w-3.5 h-3.5 text-white/80" />
                   <span>COPY</span>
                 </div>
-                <span className="font-mono text-[9px] text-black/40 dark:text-white/40 border border-black/15 dark:border-white/15 px-1 py-0.2">C</span>
+                <span className="font-mono text-[9.5px] font-bold text-white/50 border border-white/20 px-1.5 py-0.5">C</span>
               </button>
             )}
             {onMove && (
               <button
                 onClick={(e) => { e.stopPropagation(); setOpen(false); onMove(); }}
-                className="w-full flex items-center justify-between px-3.5 py-2.5 text-[10.5px] font-black uppercase tracking-wider text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-black uppercase tracking-widest text-white hover:bg-white/15 transition-colors cursor-pointer"
               >
-                <div className="flex items-center gap-2">
-                  <ArrowUp className="w-3.5 h-3.5 text-emerald-500" />
+                <div className="flex items-center gap-2.5">
+                  <ArrowUp className="w-3.5 h-3.5 text-white/80" />
                   <span>SWITCHING</span>
                 </div>
-                <span className="font-mono text-[9px] text-black/40 dark:text-white/40 border border-black/15 dark:border-white/15 px-1 py-0.2">S</span>
+                <span className="font-mono text-[9.5px] font-bold text-white/50 border border-white/20 px-1.5 py-0.5">S</span>
               </button>
             )}
             {onDelete && (
               <button
                 onClick={(e) => { e.stopPropagation(); setOpen(false); setShowDeleteConfirm(true); }}
-                className="w-full flex items-center justify-between px-3.5 py-2.5 text-[10.5px] font-black uppercase tracking-wider text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
+                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-black uppercase tracking-widest text-red-400 hover:bg-red-950/50 hover:text-red-300 transition-colors cursor-pointer"
               >
-                <div className="flex items-center gap-2">
-                  <Trash2 className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-2.5">
+                  <Trash2 className="w-3.5 h-3.5 text-red-400" />
                   <span>DELETE</span>
                 </div>
-                <span className="font-mono text-[9px] text-red-500/70 border border-red-500/30 px-1 py-0.2">D</span>
+                <span className="font-mono text-[9.5px] font-bold text-red-400/70 border border-red-500/30 px-1.5 py-0.5">D</span>
               </button>
             )}
           </div>
@@ -290,7 +291,9 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
     
     if (hasVideo && activeVideoUrl && videoRef.current) {
       if (isActive) {
-        videoRef.current.currentTime = 0;
+        if (videoRef.current.currentTime > 0.5) {
+          videoRef.current.currentTime = 0;
+        }
         const playPromise = videoRef.current.play();
         if (playPromise !== undefined) {
           playPromise.catch(error => {
@@ -327,10 +330,10 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
           loop
           muted
           playsInline
-          poster={activeImageUrl}
-          preload={isActive ? "auto" : "metadata"}
-          onLoadedData={() => { if (isActive && onMediaReady) onMediaReady(); }}
-          onCanPlay={() => { if (isActive && onMediaReady) onMediaReady(); }}
+          autoPlay={isActive}
+          preload="auto"
+          onLoadedData={() => { if (onMediaReady) onMediaReady(); }}
+          onCanPlay={() => { if (onMediaReady) onMediaReady(); }}
           className="w-full h-full object-cover"
         />
       ) : activeImageUrl ? (
@@ -765,12 +768,18 @@ export function HomePage({
                         {plan.title.replace(' (Plan)', '')}
                       </h3>
                       {plan.locationStr && (
-                        <div className="text-[3.8cqw] sm:text-[3.6cqw] font-sans font-bold uppercase tracking-wider text-white/95 truncate drop-shadow-sm mt-0.5">
-                          {plan.locationStr.replace(/,/g, ' · ')}
+                        <div className={cardViewMode === 'wide'
+                          ? "text-xs sm:text-sm font-sans font-bold uppercase tracking-wider text-white/95 truncate drop-shadow-sm mt-0.5"
+                          : "text-[11px] sm:text-xs md:text-[3.8cqw] font-sans font-black uppercase tracking-wider text-white/95 truncate drop-shadow-sm mt-0.5"
+                        }>
+                          {cleanAdministrativeDistricts(plan.locationStr).replace(/,/g, ' · ')}
                         </div>
                       )}
                       {plan.date && (
-                        <div className="text-[3.4cqw] sm:text-[3.2cqw] font-sans font-semibold text-white/80 tracking-wider truncate">
+                        <div className={cardViewMode === 'wide'
+                          ? "text-[11px] sm:text-xs font-sans font-semibold text-white/80 tracking-wider truncate"
+                          : "text-[10px] sm:text-[11px] md:text-[3.4cqw] font-sans font-bold text-white/85 tracking-wider truncate"
+                        }>
                           {compactDate || plan.date}
                         </div>
                       )}
@@ -1079,12 +1088,18 @@ export function HomePage({
                           {trip.title}
                         </h3>
                         {trip.locationStr && (
-                          <div className="text-[3.8cqw] sm:text-[3.6cqw] font-sans font-bold uppercase tracking-wider text-white/95 truncate drop-shadow-sm mt-0.5">
-                            {trip.locationStr.replace(/,/g, ' · ')}
+                          <div className={cardViewMode === 'wide'
+                            ? "text-xs sm:text-sm font-sans font-bold uppercase tracking-wider text-white/95 truncate drop-shadow-sm mt-0.5"
+                            : "text-[11px] sm:text-xs md:text-[3.8cqw] font-sans font-black uppercase tracking-wider text-white/95 truncate drop-shadow-sm mt-0.5"
+                          }>
+                            {cleanAdministrativeDistricts(trip.locationStr).replace(/,/g, ' · ')}
                           </div>
                         )}
                         {trip.date && (
-                          <div className="text-[3.4cqw] sm:text-[3.2cqw] font-sans font-semibold text-white/80 tracking-wider truncate">
+                          <div className={cardViewMode === 'wide'
+                            ? "text-[11px] sm:text-xs font-sans font-semibold text-white/80 tracking-wider truncate"
+                            : "text-[10px] sm:text-[11px] md:text-[3.4cqw] font-sans font-bold text-white/85 tracking-wider truncate"
+                          }>
                             {compactDate || trip.date}
                           </div>
                         )}

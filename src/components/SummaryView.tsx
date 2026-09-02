@@ -31,6 +31,54 @@ interface SummaryViewProps {
   onSelectTab?: (tab: string) => void;
 }
 
+// Clean administrative suffixes like '시', '도', '특별시', '광역시', '특별자치도', '부', '현'
+export function cleanAdministrativeDistricts(locationStr?: string): string {
+  if (!locationStr) return '';
+  const items = locationStr.split(/[,·/]+/).map(s => s.trim()).filter(Boolean);
+  const cleaned = items.map(name => {
+    let n = name;
+    n = n.replace(/(특별자치시|특별자치도|특별시|광역시|자치시|자치도)$/, '');
+    if (n.length > 2) {
+      n = n.replace(/(시|군|구|도|부|현)$/, '');
+    } else if (n.length === 2 && !['도시', '군청', '구청'].includes(n)) {
+      n = n.replace(/(시|부|현)$/, '');
+    }
+    return n.trim();
+  }).filter(Boolean);
+
+  return cleaned.join(', ');
+}
+
+// Extract season from date string (3-5: 봄, 6-8: 여름, 9-11: 가을, 12-2: 겨울)
+export function getSeason(dateStr?: string): string {
+  if (!dateStr) return '';
+  const match = dateStr.match(/[.-](\d{1,2})[.-]?/);
+  if (match) {
+    const month = parseInt(match[1], 10);
+    if (month >= 3 && month <= 5) return '봄';
+    if (month >= 6 && month <= 8) return '여름';
+    if (month >= 9 && month <= 11) return '가을';
+    if (month === 12 || month === 1 || month === 2) return '겨울';
+  }
+  return '';
+}
+
+// Generate journey message: {장소}에서 {계절} {기간} 동안의 여정
+export function generateJourneyMessage(locationStr?: string, dateStr?: string, days?: number): string {
+  const cleanLoc = cleanAdministrativeDistricts(locationStr) || '여행지';
+  const season = getSeason(dateStr);
+  const daysStr = days && days > 0 ? `${days}일` : '';
+
+  if (season && daysStr) {
+    return `${cleanLoc}에서 ${season} ${daysStr} 동안의 여정`;
+  } else if (daysStr) {
+    return `${cleanLoc}에서 ${daysStr} 동안의 여정`;
+  } else if (season) {
+    return `${cleanLoc}에서 ${season} 여정`;
+  }
+  return `${cleanLoc}에서의 여정`;
+}
+
 export function SummaryView({
   trip,
   timelineData,
@@ -92,7 +140,7 @@ export function SummaryView({
     if (!dateStr) return '';
     const date = parseDateParts(dateStr, defaultYear);
     if (!date) return '';
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
     return days[date.getDay()];
   };
 
@@ -349,7 +397,7 @@ export function SummaryView({
           </h1>
 
           <p className="text-sm sm:text-base text-black/80 dark:text-white/80 font-medium leading-relaxed max-w-2xl font-sans mt-0.5">
-            {trip.locationStr ? formatDestinations(trip.locationStr) : '여행지'}를 {totalDays}일 동안 기록한 여행 메모입니다.
+            {generateJourneyMessage(trip.locationStr, trip.date, totalDays)}
           </p>
 
           <div className="flex flex-wrap items-center justify-between gap-3 w-full pt-4 border-t border-black/15 dark:border-white/15">
@@ -577,7 +625,7 @@ export function SummaryView({
               onClick={() => setIsTransitExpanded(v => !v)}
               className="py-3 px-1 flex items-center justify-between cursor-pointer select-none group border-b border-black/15 dark:border-white/15"
             >
-              <span className="text-xs sm:text-sm font-mono font-bold text-black/80 dark:text-white/80 lowercase group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+              <span className="text-xs sm:text-sm font-sans font-bold text-black/90 dark:text-white/90 uppercase tracking-wider group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
                 {transitSummaryStr}
               </span>
               <span className="text-black/50 dark:text-white/50 group-hover:text-black dark:group-hover:text-white transition-transform duration-200">
@@ -596,11 +644,11 @@ export function SummaryView({
                         className="flex items-center justify-between gap-3 cursor-pointer select-none group"
                       >
                         <div className="flex items-center gap-3">
-                          <span className="font-bold text-sm text-black dark:text-white font-sans">
+                          <span className="font-bold text-sm text-black dark:text-white font-sans uppercase">
                             {t.title || t.ticketType}
                           </span>
                           {t.route && (
-                            <span className="text-xs text-black/50 dark:text-white/50 font-mono">
+                            <span className="text-xs text-black/60 dark:text-white/60 font-sans font-medium">
                               {t.route}
                             </span>
                           )}
@@ -614,6 +662,37 @@ export function SummaryView({
                           </span>
                         </div>
                       </div>
+
+                      {isOpen && (
+                        <div className="pt-3 pb-1 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono animate-in fade-in duration-150 border-t border-black/5 dark:border-white/5 mt-2">
+                          <div>
+                            <span className="text-[9px] uppercase tracking-wider text-black/40 dark:text-white/40 block font-sans font-bold">ROUTE / 경로</span>
+                            <span className="font-bold text-black dark:text-white">
+                              {t.departPlace && t.arrivePlace ? `${t.departPlace} → ${t.arrivePlace}` : (t.route || '—')}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[9px] uppercase tracking-wider text-black/40 dark:text-white/40 block font-sans font-bold">TIME / 시간</span>
+                            <span className="font-bold text-black dark:text-white">
+                              {t.time || '—'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[9px] uppercase tracking-wider text-black/40 dark:text-white/40 block font-sans font-bold">SEAT / 좌석</span>
+                            <span className="font-bold text-black dark:text-white">{t.seat || '—'}</span>
+                          </div>
+                          <div>
+                            <span className="text-[9px] uppercase tracking-wider text-black/40 dark:text-white/40 block font-sans font-bold">CONFIRMATION / 예약번호</span>
+                            <span className="font-bold text-red-600 dark:text-red-400">{t.bookingRef || '—'}</span>
+                          </div>
+                          {t.memo && (
+                            <div className="col-span-2 sm:col-span-4 pt-1">
+                              <span className="text-[9px] uppercase tracking-wider text-black/40 dark:text-white/40 block font-sans font-bold">MEMO / 메모</span>
+                              <p className="text-black/80 dark:text-white/80 whitespace-pre-wrap font-sans">{t.memo}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}

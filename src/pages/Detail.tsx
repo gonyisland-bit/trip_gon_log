@@ -14,7 +14,7 @@ import { StayCard } from '../components/StayCard';
 import { TransitCard } from '../components/TransitCard';
 import { SettlementExpenseInput, formatNumberWithCommas, getDefaultCurrencyForLocation } from '../components/SettlementExpenseInput';
 import { SettlementView } from '../components/SettlementView';
-import { SummaryView } from '../components/SummaryView';
+import { SummaryView, cleanAdministrativeDistricts, generateJourneyMessage } from '../components/SummaryView';
 import { Lightbox, LightboxImageMeta } from '../components/Lightbox';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { Footer } from '../components/Footer';
@@ -2793,19 +2793,21 @@ export function JourneyDetailPage({
 
           {/* Title & Date: 2-tier stacked on mobile, inline unclipped on web */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 min-w-0 flex-1">
-            <h1 className="text-xs sm:text-sm font-black uppercase tracking-tight text-black dark:text-white truncate font-satoshi">
+            <h1 
+              onClick={() => {
+                setActiveTab(prev => prev === 'summary' ? 'timeline' : 'summary');
+                setExpandedItemId(null);
+              }}
+              className="text-xs sm:text-sm font-black uppercase tracking-tight text-black dark:text-white truncate font-satoshi cursor-pointer hover:opacity-75 transition-opacity"
+              title="클릭하여 여정 요약(Summary) 보기"
+            >
               {(trip.title || '').replace(' (Plan)', '')}
             </h1>
 
             {/* Date & Destination summary - visible on mobile & web */}
             <div className="flex items-center gap-1 text-[8.5px] sm:text-[10px] font-mono text-black/50 dark:text-white/50 truncate shrink-0">
               <span className="hidden sm:inline text-black/25 dark:text-white/25">·</span>
-              <span className="truncate font-medium">{trip.date}</span>
-              {trip.locationStr && (
-                <span className="hidden md:inline truncate text-black/40 dark:text-white/40">
-                  · {formatDestinations(trip.locationStr)}
-                </span>
-              )}
+              <span className="truncate font-medium">{generateJourneyMessage(trip.locationStr, trip.date, generatedDates.length)}</span>
             </div>
           </div>
         </div>
@@ -3149,9 +3151,10 @@ export function JourneyDetailPage({
                 ? extractedFallback
                 : getCountryName(rawCountry);
             }
-            const city = hasMultipleLocations 
+            const rawCity = hasMultipleLocations 
               ? tripToUse?.locations?.map(l => l.name).join(', ') 
               : (parts.length >= 2 ? parts[0] : (loc || 'JOURNEY'));
+            const city = cleanAdministrativeDistricts(rawCity);
             
             return (
               <div className="absolute top-8 left-8 z-[20] flex flex-col pointer-events-none select-none text-black dark:text-white drop-shadow-md animate-in fade-in duration-300">

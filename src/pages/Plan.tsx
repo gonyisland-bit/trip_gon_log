@@ -3,6 +3,7 @@ import { Plus, GripVertical, ChevronDown, ChevronUp, Tag, Search, X, LayoutGrid,
 import { Plan } from '../types';
 import { JourneyCardMenu } from './Home';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
+import { cleanAdministrativeDistricts } from '../components/SummaryView';
 
 interface PlanHubPageProps {
   plans: Plan[];
@@ -578,12 +579,18 @@ export function PlanHubPage({
                       {plan.title.replace(' (Plan)', '')}
                     </h3>
                     {plan.locationStr && (
-                      <div className="text-[3.8cqw] sm:text-[3.6cqw] font-sans font-bold uppercase tracking-wider text-white/95 truncate drop-shadow-sm mt-0.5">
-                        {plan.locationStr.replace(/,/g, ' · ')}
+                      <div className={cardViewMode === 'wide'
+                        ? "text-xs sm:text-sm font-sans font-bold uppercase tracking-wider text-white/95 truncate drop-shadow-sm mt-0.5"
+                        : "text-[11px] sm:text-xs md:text-[3.8cqw] font-sans font-black uppercase tracking-wider text-white/95 truncate drop-shadow-sm mt-0.5"
+                      }>
+                        {cleanAdministrativeDistricts(plan.locationStr).replace(/,/g, ' · ')}
                       </div>
                     )}
                     {plan.date && (
-                      <div className="text-[3.4cqw] sm:text-[3.2cqw] font-sans font-semibold text-white/80 tracking-wider truncate">
+                      <div className={cardViewMode === 'wide'
+                        ? "text-[11px] sm:text-xs font-sans font-semibold text-white/80 tracking-wider truncate"
+                        : "text-[10px] sm:text-[11px] md:text-[3.4cqw] font-sans font-bold text-white/85 tracking-wider truncate"
+                      }>
                         {compactDate || plan.date}
                       </div>
                     )}
