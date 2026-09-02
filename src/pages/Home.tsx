@@ -674,14 +674,64 @@ export function HomePage({
         )}
       </section>
 
-      {/* Plans Section Preview */}
-      {localPlans.length > 0 && (
-        <section className="flex flex-col w-full overflow-hidden border-b border-black/20 dark:border-white/20 transition-colors">
-          <div className="p-4 sm:p-6 md:px-12 md:py-6 border-b border-black/20 dark:border-white/20 flex items-center justify-between gap-4 transition-colors bg-black/[0.02] dark:bg-white/[0.02]">
-            <h2 className="text-xl sm:text-2xl font-black tracking-tighter uppercase break-keep">Upcoming Plans</h2>
-            
-            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-              {/* Unified View Mode Toggle: Grid (기본) / Wide */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* 01. JOURNEYS & PLANS ARCHIVE (통합 아카이브 그리드 섹션)             */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      <section className="flex flex-col w-full overflow-hidden border-b border-black/20 dark:border-white/20 transition-colors">
+        <div className="p-6 md:px-12 border-b border-black/20 dark:border-white/20 flex flex-col md:flex-row md:items-end justify-between gap-4 transition-colors">
+          {/* Left: Section Header with Unified Weight & Noto Sans Korean Subtitle */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className="font-mono text-xs font-black text-red-600 dark:text-red-500 tracking-widest uppercase">
+                01 / JOURNEYS ARCHIVE
+              </span>
+              {isLoggedIn && (
+                <span className="text-[10px] font-mono text-black/40 dark:text-white/40 uppercase hidden sm:inline">
+                  [드래그로 순서 변경]
+                </span>
+              )}
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+              JOURNEYS & PLANS
+            </h2>
+            <p className="text-xs sm:text-sm font-sans font-medium text-black/70 dark:text-white/70 max-w-lg break-keep mt-0.5 leading-relaxed">
+              기록된 모든 여정과 다가오는 여행 계획을 하나의 아카이브 컬렉션으로 탐색합니다.
+            </p>
+          </div>
+
+          {/* Right: Controls (View Modes, Tag Filter, View All) */}
+          <div className="flex flex-col gap-2 w-full md:w-auto relative z-20">
+            <div className="flex items-center justify-between md:justify-end gap-2.5 w-full flex-wrap">
+              {/* 1. Simple Tag Filter Button */}
+              <button
+                type="button"
+                onClick={() => setIsTagAccordionOpen(prev => !prev)}
+                className={`text-[10px] sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                  activeFilter !== 'All'
+                    ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
+                    : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5'
+                }`}
+                title="태그 필터 열기/닫기"
+              >
+                <Tag className="w-3.5 h-3.5" />
+                <span>{activeFilter === 'All' ? 'TAG' : `#${activeFilter}`}</span>
+                {isTagAccordionOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
+
+              {/* Reset Tag filter button if not 'All' */}
+              {activeFilter !== 'All' && (
+                <button
+                  type="button"
+                  onClick={() => setActiveFilter('All')}
+                  className="text-[9px] px-1.5 py-1 uppercase font-bold tracking-wider text-red-600 dark:text-red-400 hover:underline cursor-pointer flex items-center gap-0.5"
+                  title="필터 초기화"
+                >
+                  <X className="w-3 h-3" />
+                  초기화
+                </button>
+              )}
+
+              {/* 2. View Mode Switcher (Grid / Wide / List) */}
               <div className="flex items-center border border-black/15 dark:border-white/15 rounded-xs p-0.5 bg-black/5 dark:bg-white/5 shrink-0">
                 <button
                   type="button"
@@ -691,7 +741,7 @@ export function HomePage({
                       ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
                       : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
                   }`}
-                  title="그리드 보기 (기본)"
+                  title="그리드 보기"
                 >
                   <LayoutGrid className="w-3.5 h-3.5" />
                 </button>
@@ -704,187 +754,6 @@ export function HomePage({
                       : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
                   }`}
                   title="와이드 보기"
-                >
-                  <StretchHorizontal className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {/* View All redirects to Archive Hub where all journeys and plans are managed together */}
-              <button 
-                onClick={() => onNavigate('archive')} 
-                className="text-[11px] sm:text-xs font-bold uppercase tracking-widest flex items-center hover:opacity-60 shrink-0 ml-1 cursor-pointer"
-                title="모든 여정 및 계획 보기"
-              >
-                View All <ArrowRight className="w-3.5 h-3.5 ml-1" />
-              </button>
-            </div>
-          </div>
-          <div className={`grid ${cardViewMode === 'wide' ? 'grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6' : 'grid-cols-2 md:grid-cols-4 gap-3 md:gap-6'} p-4 sm:p-6 md:p-12 w-full`}>
-            {localPlans.slice(0, 4).map((plan) => {
-              const { year, month, compactDate } = getYearAndMonth(plan.date);
-              return (
-                <div
-                  key={plan.id}
-                  style={{ containerType: 'inline-size' }}
-                  className={`group cursor-pointer ${cardViewMode === 'wide' ? 'aspect-[16/10]' : 'aspect-[3/4]'} w-full overflow-hidden transition-all border relative shadow-[0_0_15px_rgba(239,68,68,0.08)] ${
-                    activeCardId === plan.id
-                      ? 'border-red-600 dark:border-red-400 ring-2 ring-red-600/20 dark:ring-red-400/20 scale-[1.01] shadow-lg'
-                      : 'border-red-600/40 dark:border-red-500/40 bg-[#111]'
-                  }`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (activeCardId === plan.id) {
-                      onNavigate('detail', plan.id);
-                    } else {
-                      setActiveCardId(plan.id);
-                    }
-                  }}
-                >
-                  {/* Background cover image */}
-                  <img
-                    src={getEffectiveImageUrl(plan.img)}
-                    alt={plan.title}
-                    className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none group-hover:scale-105 ${
-                      activeCardId === plan.id ? 'scale-105 opacity-100' : 'opacity-85 group-hover:opacity-100'
-                    }`}
-                  />
-                  
-                  {/* Magazine Overlay Gradient */}
-                  <div className="absolute inset-0 magazine-card-gradient pointer-events-none" />
-
-                  {/* Swiss Editorial Poster Text Layout */}
-                  <div className="absolute inset-0 p-4 sm:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
-                    {/* Top Header Row: Giant Bold Year & Month / PLAN Badge */}
-                    <div className="flex justify-between items-start w-full">
-                      {year ? (
-                        <div className="flex flex-col leading-none">
-                          <span className="text-[10cqw] font-black font-sans tracking-tighter leading-none text-white drop-shadow-md">
-                            {year}
-                          </span>
-                          {month && (
-                            <span className="text-[7cqw] font-sans font-black tracking-tight text-white/95 uppercase mt-0.5 leading-none">
-                              {month}
-                            </span>
-                          )}
-                        </div>
-                      ) : <div />}
-
-                      {/* Trendy Black Duct Tape Style PLAN Label */}
-                      <div className="relative inline-flex items-center select-none transform -rotate-2 hover:rotate-0 transition-transform">
-                        <span className="px-2.5 sm:px-3 py-0.5 sm:py-1 bg-black text-white text-[3.2cqw] sm:text-[3cqw] font-black uppercase tracking-widest font-mono shadow-2xl border-y border-white/40">
-                          PLAN
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Bottom Footer Row: Title, Location, Date (3-tier clean stack) */}
-                    <div className="mt-auto flex flex-col gap-1 w-full max-w-[88%]">
-                      <h3 className="text-[5.8cqw] sm:text-[6.2cqw] font-black uppercase tracking-tight leading-tight font-sans text-white drop-shadow-md line-clamp-2">
-                        {plan.title.replace(' (Plan)', '')}
-                      </h3>
-                      {plan.locationStr && (
-                        <div className={cardViewMode === 'wide'
-                          ? "text-xs sm:text-sm font-sans font-bold uppercase tracking-wider text-white/95 truncate drop-shadow-sm mt-0.5"
-                          : "text-[11px] sm:text-xs md:text-[3.8cqw] font-sans font-black uppercase tracking-wider text-white/95 truncate drop-shadow-sm mt-0.5"
-                        }>
-                          {cleanAdministrativeDistricts(plan.locationStr).replace(/,/g, ' · ')}
-                        </div>
-                      )}
-                      {plan.date && (
-                        <div className={cardViewMode === 'wide'
-                          ? "text-[11px] sm:text-xs font-sans font-semibold text-white/80 tracking-wider truncate"
-                          : "text-[10px] sm:text-[11px] md:text-[3.4cqw] font-sans font-bold text-white/85 tracking-wider truncate"
-                        }>
-                          {compactDate || plan.date}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Hamburger menu */}
-                  <JourneyCardMenu
-                    className="absolute bottom-3 right-3 z-30"
-                    isLoggedIn={isLoggedIn}
-                    onEdit={onEditTrip ? () => onEditTrip(plan.id) : undefined}
-                    onDelete={onDeleteTrip ? () => onDeleteTrip(plan.id) : undefined}
-                    onClone={onClonePlan ? () => onClonePlan(plan.id) : undefined}
-                    onMove={() => handleMoveToArchive(plan)}
-                    moveLabel="아카이브로 이동"
-                  />
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* Archive Grid Section */}
-      <section className="flex flex-col w-full overflow-hidden">
-        <div className="p-6 md:px-12 border-b border-black/20 dark:border-white/20 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
-          <div className="flex items-center gap-4 shrink-0">
-            <h2 className="text-2xl font-black tracking-tighter uppercase break-keep">Journeys Archive</h2>
-            {isLoggedIn && (
-              <span className="text-[9px] text-black/30 dark:text-white/30 uppercase tracking-widest font-bold hidden md:inline">
-                드래그로 순서 변경
-              </span>
-            )}
-          </div>
-          <div className="flex flex-col gap-2 w-full md:w-auto relative z-20">
-            <div className="flex items-center justify-between md:justify-end gap-2 w-full">
-              <div className="flex items-center gap-2">
-                {/* Collapsible Tag Filter Trigger */}
-                <button
-                  type="button"
-                  onClick={() => setIsTagAccordionOpen(prev => !prev)}
-                  className={`text-[10px] px-3 py-1.5 uppercase font-bold tracking-wider border rounded-sm transition-all flex items-center gap-1.5 cursor-pointer ${
-                    activeFilter !== 'All'
-                      ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
-                      : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5'
-                  }`}
-                  title="태그 필터 열기/닫기"
-                >
-                  <Tag className="w-3 h-3" />
-                  <span>{activeFilter === 'All' ? '태그 필터 (All)' : `태그: #${activeFilter}`}</span>
-                  {isTagAccordionOpen ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
-                </button>
-
-                {/* Reset Tag filter button if not 'All' */}
-                {activeFilter !== 'All' && (
-                  <button
-                    type="button"
-                    onClick={() => setActiveFilter('All')}
-                    className="text-[9px] px-2 py-1 uppercase font-bold tracking-wider text-red-600 dark:text-red-400 hover:underline cursor-pointer flex items-center gap-0.5"
-                    title="필터 초기화"
-                  >
-                    <X className="w-3 h-3" />
-                    초기화
-                  </button>
-                )}
-              </div>
-
-              {/* View Mode Switcher: Grid (모바일 2열) / Wide (모바일 1열) / List */}
-              <div className="flex items-center border border-black/15 dark:border-white/15 rounded-sm p-0.5 bg-black/5 dark:bg-white/5 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => handleSetCardViewMode('grid')}
-                  className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
-                    cardViewMode === 'grid' 
-                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
-                      : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
-                  }`}
-                  title="그리드 보기 (모바일 2열)"
-                >
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSetCardViewMode('wide')}
-                  className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
-                    cardViewMode === 'wide' 
-                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
-                      : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
-                  }`}
-                  title="와이드 보기 (모바일 1열)"
                 >
                   <StretchHorizontal className="w-3.5 h-3.5" />
                 </button>
@@ -901,6 +770,16 @@ export function HomePage({
                   <List className="w-3.5 h-3.5" />
                 </button>
               </div>
+
+              {/* 3. View All Button */}
+              <button 
+                type="button"
+                onClick={() => onNavigate('archive')} 
+                className="text-[11px] sm:text-xs font-mono font-bold uppercase tracking-widest flex items-center hover:opacity-60 shrink-0 ml-1 cursor-pointer"
+                title="모든 여정 및 계획 보기"
+              >
+                VIEW ALL <ArrowRight className="w-3.5 h-3.5 ml-1" />
+              </button>
             </div>
 
             {/* Collapsible Content: Search input & Tag pills */}
@@ -1026,7 +905,7 @@ export function HomePage({
             ? "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 p-4 md:p-12 w-full"
             : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 p-3 sm:p-6 md:p-12 w-full"
           }>
-            {filteredTrips.slice(0, 4).map((trip, index) => {
+            {filteredTrips.slice(0, 8).map((trip, index) => {
               const { year, month, compactDate } = getYearAndMonth(trip.date);
               const days = calculateDays(trip.date);
               const isCardActive = activeCardId === trip.id;
@@ -1064,6 +943,15 @@ export function HomePage({
                     onDrop={handleTripDrop}
                     onDragEnd={() => setDraggedTripId(null)}
                   >
+                    {/* Top-Right Corner Flush Wide Bold PLAN Tag (그리드 가로 절반폭 와이드 사이즈) */}
+                    {((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) && (
+                      <div className="absolute top-0 right-0 z-20 w-1/2 bg-black text-white dark:bg-white dark:text-black py-1 sm:py-1.5 px-2.5 flex items-center justify-center border-b border-l border-white/20 dark:border-black/20 shadow-md pointer-events-none">
+                        <span className="font-mono text-[11px] sm:text-xs md:text-sm font-black tracking-widest uppercase">
+                          PLAN
+                        </span>
+                      </div>
+                    )}
+
                     {/* Background cover image/video */}
                     <CardMedia
                       img={trip.img}
@@ -1092,20 +980,14 @@ export function HomePage({
                           </div>
                         ) : <div />}
 
-                        {/* Status Badge or Trendy Black Tape PLAN Label */}
-                        {((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
-                          <div className="relative inline-flex items-center select-none transform -rotate-2 hover:rotate-0 transition-transform">
-                            <span className="px-2.5 sm:px-3 py-0.5 sm:py-1 bg-black text-white text-[3.2cqw] sm:text-[3cqw] font-black uppercase tracking-widest font-mono shadow-2xl border-y border-white/40">
-                              PLAN
-                            </span>
-                          </div>
-                        ) : trip.statusBadge ? (
+                        {/* Status Badge (NEW / EDITING) for non-plans */}
+                        {!((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) && trip.statusBadge && (
                           <span className={`px-1.5 py-0.5 text-[2.6cqw] font-black uppercase tracking-widest font-mono shadow-sm ${
                             trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
                           }`}>
                             {trip.statusBadge}
                           </span>
-                        ) : null}
+                        )}
                       </div>
 
                       {/* Bottom Footer Row: Title, Location, Date (3-tier clean stack) */}
@@ -1171,168 +1053,123 @@ export function HomePage({
 
           if (displayMoments.length === 0) return null;
 
-          const totalSpreads = Math.ceil(displayMoments.length / 4);
+          const MOMENTS_PER_SPREAD = 3;
+          const totalSpreads = Math.ceil(displayMoments.length / MOMENTS_PER_SPREAD);
           const currentSpread = Math.min(magazineSpreadIndex, Math.max(0, totalSpreads - 1));
-          const currentSlice = displayMoments.slice(currentSpread * 4, (currentSpread + 1) * 4);
-          const featured = currentSlice[0];
-          const subMoments = currentSlice.slice(1, 4);
+          const currentSlice = displayMoments.slice(currentSpread * MOMENTS_PER_SPREAD, (currentSpread + 1) * MOMENTS_PER_SPREAD);
 
           return (
             <div className="w-full border-t border-black/10 dark:border-white/10 mt-12 pt-12 px-4 sm:px-8 md:px-12 flex flex-col gap-8">
-              {/* Section Header: Swiss Minimal Magazine Header */}
+              {/* Section Header: Swiss Minimal Magazine Header (Weight unified with Archive) */}
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-black/15 dark:border-white/15">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2 mb-0.5">
                     <span className="font-mono text-xs font-black text-red-600 dark:text-red-500 tracking-widest uppercase">
-                      02 / EDITORIAL MOMENTS
+                      02 / EDITORIAL MAGAZINE
                     </span>
-                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40 uppercase">
+                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40 uppercase hidden sm:inline">
                       [잡지 연출 컬렉션]
                     </span>
                   </div>
                   <h2 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
-                    JOURNEY MAGAZINE & MEMORIES
+                    JOURNEY MAGAZINE
                   </h2>
-                </div>
-
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                  <p className="text-xs font-sans text-black/60 dark:text-white/60 max-w-md leading-relaxed break-keep">
-                    길 위에서 마주한 가장 선명한 순간들. 타임라인에 기록된 인상 깊은 기억과 사진들을 한 편의 미니멀 매거진처럼 엮어냅니다.
+                  <p className="text-xs sm:text-sm font-sans font-medium text-black/70 dark:text-white/70 max-w-lg break-keep mt-0.5 leading-relaxed">
+                    길 위에서 마주한 가장 선명한 순간들. 타임라인에 기록된 인상 깊은 기억과 사진들을 한 권의 포토북처럼 엮어냅니다.
                   </p>
-
-                  {/* Magazine Spread Switcher (Shown when more than 4 moments are registered) */}
-                  {totalSpreads > 1 && (
-                    <div className="flex items-center gap-2 font-mono text-xs font-bold shrink-0 self-start sm:self-auto bg-black/5 dark:bg-white/5 p-1 border border-black/10 dark:border-white/10">
-                      <span className="text-black/60 dark:text-white/60 text-[10px] tracking-widest px-2">
-                        SPREAD {String(currentSpread + 1).padStart(2, '0')} / {String(totalSpreads).padStart(2, '0')}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setMagazineSpreadIndex(prev => Math.max(0, prev - 1))}
-                        disabled={currentSpread === 0}
-                        className="p-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-colors cursor-pointer bg-white dark:bg-[#151515]"
-                        title="이전 화보 스프레드"
-                      >
-                        <ChevronLeft className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setMagazineSpreadIndex(prev => Math.min(totalSpreads - 1, prev + 1))}
-                        disabled={currentSpread >= totalSpreads - 1}
-                        className="p-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-colors cursor-pointer bg-white dark:bg-[#151515]"
-                        title="다음 화보 스프레드"
-                      >
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
                 </div>
-              </div>
 
-              {/* Magazine Editorial Spread Layout */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-                {/* 1. Large Hero Featured Spread (7 cols) */}
-                {featured && (
-                  <div 
-                    onClick={() => featured.tripId && onNavigate('detail', featured.tripId)}
-                    className="lg:col-span-7 group relative cursor-pointer overflow-hidden border border-black/15 dark:border-white/15 bg-[#111] flex flex-col justify-end min-h-[360px] sm:min-h-[460px] shadow-lg transition-transform duration-300 hover:shadow-2xl"
-                  >
-                    <img 
-                      src={getEffectiveImageUrl(featured.img)} 
-                      alt={featured.title} 
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
-
-                    {/* Editorial Text Overlay */}
-                    <div className="relative z-10 p-6 sm:p-8 flex flex-col gap-3 text-white pointer-events-none">
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-widest bg-red-600 text-white">
-                          FEATURED STORY
-                        </span>
-                        {featured.location && (
-                          <span className="text-xs font-mono font-bold uppercase text-white/80 tracking-wider">
-                            {cleanAdministrativeDistricts(featured.location)}
-                          </span>
-                        )}
-                      </div>
-
-                      <h3 className="text-xl sm:text-2xl md:text-3xl font-black uppercase tracking-tight leading-tight font-sans drop-shadow-md">
-                        {featured.title}
-                      </h3>
-
-                      {featured.quote && (
-                        <p className="text-xs sm:text-sm font-sans font-light italic text-white/90 max-w-xl leading-relaxed border-l-2 border-red-500 pl-3 my-1">
-                          {featured.quote}
-                        </p>
-                      )}
-
-                      {featured.caption && (
-                        <p className="text-[11px] sm:text-xs text-white/70 font-sans line-clamp-2">
-                          {featured.caption}
-                        </p>
-                      )}
-
-                      <div className="flex items-center justify-between pt-2 border-t border-white/20 text-[10px] font-mono text-white/60">
-                        <span>{featured.date || 'EDITORIAL LOG'}</span>
-                        <span className="flex items-center gap-1 group-hover:translate-x-1 group-hover:text-white transition-all text-white/80">
-                          READ STORY ➔
-                        </span>
-                      </div>
-                    </div>
+                {/* Big Bold Minimalist Swiss Spread Navigation Controls */}
+                {totalSpreads > 1 && (
+                  <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto bg-black/5 dark:bg-white/5 p-1.5 border border-black/15 dark:border-white/15">
+                    <span className="font-mono text-xs sm:text-sm font-black tracking-widest px-3 text-black dark:text-white">
+                      {String(currentSpread + 1).padStart(2, '0')} / {String(totalSpreads).padStart(2, '0')}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setMagazineSpreadIndex(prev => Math.max(0, prev - 1))}
+                      disabled={currentSpread === 0}
+                      className="w-10 h-10 sm:w-11 sm:h-11 border-2 border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-white dark:bg-[#121212] text-black dark:text-white font-bold"
+                      title="이전 화보 스프레드"
+                    >
+                      <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMagazineSpreadIndex(prev => Math.min(totalSpreads - 1, prev + 1))}
+                      disabled={currentSpread >= totalSpreads - 1}
+                      className="w-10 h-10 sm:w-11 sm:h-11 border-2 border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-white dark:bg-[#121212] text-black dark:text-white font-bold"
+                      title="다음 화보 스프레드"
+                    >
+                      <ChevronRight className="w-5 h-5 stroke-[2.5]" />
+                    </button>
                   </div>
                 )}
+              </div>
 
-                {/* 2. Sub-moments (5 cols: 1 or 2 stacked editorial cards) */}
-                <div className="lg:col-span-5 flex flex-col gap-6">
-                  {subMoments.map((moment, idx) => (
+              {/* Magazine Editorial Spread Layout: Uniform Album Photo Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 items-stretch">
+                {currentSlice.map((moment, idx) => {
+                  const globalIdx = currentSpread * MOMENTS_PER_SPREAD + idx + 1;
+                  return (
                     <div
                       key={moment.id || idx}
                       onClick={() => moment.tripId && onNavigate('detail', moment.tripId)}
-                      className="flex-1 group relative cursor-pointer overflow-hidden border border-black/15 dark:border-white/15 bg-[#141414] flex flex-col sm:flex-row items-stretch min-h-[170px] shadow-sm hover:shadow-xl transition-all"
+                      className="group relative cursor-pointer overflow-hidden border border-black/15 dark:border-white/15 bg-white dark:bg-[#121212] flex flex-col justify-between shadow-sm hover:shadow-xl transition-all duration-300 select-none"
                     >
-                      {/* Image Preview (Square or 4:3) */}
-                      <div className="sm:w-2/5 aspect-[4/3] sm:aspect-auto overflow-hidden relative shrink-0">
-                        <img 
-                          src={getEffectiveImageUrl(moment.img)} 
-                          alt={moment.title} 
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                      {/* 1. Album Photo Section: 4:3 Minimal Matte Photo Frame */}
+                      <div className="w-full aspect-[4/3] overflow-hidden relative bg-black/10 dark:bg-black/40 border-b border-black/10 dark:border-white/10">
+                        <img
+                          src={getEffectiveImageUrl(moment.img)}
+                          alt={moment.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                         />
+                        {/* Top pill badges: Page & Location */}
+                        <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+                          <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-widest bg-black text-white dark:bg-white dark:text-black shadow-md">
+                            PAGE #{String(globalIdx).padStart(2, '0')}
+                          </span>
+                          {moment.location && (
+                            <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider bg-white/90 dark:bg-black/90 text-black dark:text-white backdrop-blur-xs shadow-md truncate max-w-[55%]">
+                              {cleanAdministrativeDistricts(moment.location)}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
-                      {/* Text Column */}
-                      <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between bg-white dark:bg-[#111111] text-black dark:text-white">
-                        <div>
-                          <div className="flex items-center justify-between text-[9px] font-mono text-black/50 dark:text-white/50 mb-1">
-                            <span className="uppercase font-bold text-red-600 dark:text-red-400">
-                              MOMENT #{String(idx + 2).padStart(2, '0')}
-                            </span>
-                            <span>{moment.date || ''}</span>
+                      {/* 2. Editorial Album Text & Meta Section */}
+                      <div className="p-5 flex-1 flex flex-col justify-between gap-3 text-black dark:text-white">
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center justify-between text-[10px] font-mono text-black/40 dark:text-white/40">
+                            <span>{moment.date || 'EDITORIAL LOG'}</span>
+                            <span className="text-red-600 dark:text-red-400 font-bold uppercase tracking-wider">MOMENT</span>
                           </div>
-                          <h4 className="text-sm sm:text-base font-black uppercase tracking-tight line-clamp-1 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors font-sans">
+
+                          <h3 className="text-base sm:text-lg font-black uppercase tracking-tight line-clamp-1 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors font-sans">
                             {moment.title}
-                          </h4>
+                          </h3>
+
                           {moment.quote ? (
-                            <p className="text-[11px] font-serif italic text-black/70 dark:text-white/70 line-clamp-2 mt-1">
+                            <p className="text-xs font-sans font-light italic text-black/75 dark:text-white/75 line-clamp-2 border-l-2 border-red-500 pl-2.5 my-0.5 leading-relaxed">
                               {moment.quote}
                             </p>
                           ) : moment.caption ? (
-                            <p className="text-[11px] font-sans text-black/60 dark:text-white/60 line-clamp-2 mt-1">
+                            <p className="text-xs font-sans text-black/60 dark:text-white/60 line-clamp-2 leading-relaxed">
                               {moment.caption}
                             </p>
                           ) : null}
                         </div>
 
-                        <div className="pt-2 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-[10px] font-mono text-black/50 dark:text-white/50 mt-2">
-                          <span className="truncate max-w-[140px]">{cleanAdministrativeDistricts(moment.location || '')}</span>
-                          <span className="font-bold text-black dark:text-white group-hover:translate-x-1 transition-transform">
+                        <div className="pt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-[10px] font-mono text-black/50 dark:text-white/50 mt-1">
+                          <span className="truncate max-w-[150px]">{cleanAdministrativeDistricts(moment.location || '')}</span>
+                          <span className="font-bold text-black dark:text-white group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
                             VIEW ➔
                           </span>
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             </div>
           );

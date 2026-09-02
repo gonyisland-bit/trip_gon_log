@@ -389,9 +389,9 @@ export function ManageHubPage({
   // Keyboard Shortcuts: Enter / ESC / D in Unsaved Modal, and Ctrl+S to Save
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // 1. Unsaved changes modal shortcuts
+      // 1. Unsaved changes modal shortcuts: Yes (Y), No (N), Cancel (ESC)
       if (showUnsavedModal) {
-        if (e.key === 'Enter') {
+        if (e.key === 'y' || e.key === 'Y' || e.key === 'Enter') {
           e.preventDefault();
           (async () => {
             if (activeMode === 'HOME') await handleSaveHome();
@@ -399,13 +399,13 @@ export function ManageHubPage({
             setShowUnsavedModal(false);
             onNavigate('home');
           })();
-        } else if (e.key === 'Escape') {
-          e.preventDefault();
-          setShowUnsavedModal(false);
-        } else if (e.key === 'd' || e.key === 'D') {
+        } else if (e.key === 'n' || e.key === 'N') {
           e.preventDefault();
           setShowUnsavedModal(false);
           onNavigate('home');
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          setShowUnsavedModal(false);
         }
         return;
       }
@@ -1647,7 +1647,7 @@ export function ManageHubPage({
                 }}
                 className="w-full py-2.5 bg-black text-white dark:bg-white dark:text-black font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 hover:opacity-85 cursor-pointer rounded-none"
               >
-                저장 후 뷰 모드로 이동 (Enter)
+                저장 후 이동 (Y)
               </button>
               <button
                 type="button"
@@ -1657,7 +1657,7 @@ export function ManageHubPage({
                 }}
                 className="w-full py-2 border border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/5 font-mono font-bold text-xs uppercase tracking-wider cursor-pointer rounded-none"
               >
-                저장하지 않고 이동 (D)
+                저장하지 않고 이동 (N)
               </button>
               <button
                 type="button"
