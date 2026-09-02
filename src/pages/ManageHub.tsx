@@ -25,7 +25,7 @@ import {
   Search,
   GripVertical
 } from 'lucide-react';
-import { Trip, Plan } from '../types';
+import { Trip, Plan, MagazineMoment, TimelineData, TimelineItem } from '../types';
 import { getEffectiveImageUrl, uploadFileToR2 } from '../utils/storageHelper';
 import { compressImage } from '../utils/imageHelper';
 
@@ -58,6 +58,10 @@ interface ManageHubPageProps {
     marqueeSpd: number,
     heroMediaTypeParam?: 'image' | 'video'
   ) => Promise<void>;
+  // Magazine Highlights
+  magazineMoments?: MagazineMoment[];
+  timelineData?: TimelineData;
+  onSaveMagazineMoments?: (moments: MagazineMoment[]) => Promise<void>;
   // Trash bin
   trashedJourneys: Trip[];
   onRestoreJourney: (id: number) => Promise<void>;
@@ -90,6 +94,9 @@ export function ManageHubPage({
   onPermanentDeleteJourney,
   isLoggedIn,
   isDarkMode,
+  magazineMoments = [],
+  timelineData = {},
+  onSaveMagazineMoments,
 }: ManageHubPageProps) {
   // Top-level mode tabs ordered: 'HOME' | 'ARCHIVE' | 'MAP' | 'TRASH'
   const [activeMode, setActiveMode] = useState<'HOME' | 'ARCHIVE' | 'MAP' | 'TRASH'>('HOME');
@@ -100,6 +107,19 @@ export function ManageHubPage({
   // Combined Journeys for ARCHIVE management
   const [localJourneys, setLocalJourneys] = useState<(Trip | Plan)[]>([]);
   const [selectedJourneyId, setSelectedJourneyId] = useState<number | null>(null);
+
+  // Magazine highlights state
+  const [momentsList, setMomentsList] = useState<MagazineMoment[]>(magazineMoments || []);
+  const [selectedTripForMoments, setSelectedTripForMoments] = useState<number | null>(null);
+  const [momentSearchQuery, setMomentSearchQuery] = useState('');
+  const [isSavingMoments, setIsSavingMoments] = useState(false);
+  const [momentsSaveSuccess, setMomentsSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    if (magazineMoments && magazineMoments.length > 0) {
+      setMomentsList(magazineMoments);
+    }
+  }, [magazineMoments]);
 
   // Home configuration state
   const [title, setTitle] = useState(homeTitle || '');
@@ -342,6 +362,100 @@ export function ManageHubPage({
       j.country?.toLowerCase().includes(q)
     );
   }, [localJourneys, heroSearchQuery]);
+
+  // Extract all timeline items with images across timelineData
+  const allTimelineItemsWithImages = useMemo(() => {
+    const list: (TimelineItem & { journeyTitle?: string; journeyLocation?: string })[] = [];
+    const journeyMap = new Map(localJourneys.map(j => [j.id, j]));
+
+    Object.entries(timelineData).forEach(([date, items]) => {
+      items.forEach(item => {
+        if (item.img) {
+          const matchedJourney = item.tripId ? journeyMap.get(item.tripId) : undefined;
+          list.push({
+            ...item,
+            date: item.date || date,
+            journeyTitle: matchedJourney?.title.replace(' (Plan)', ''),
+            journeyLocation: matchedJourney?.locationStr || matchedJourney?.country,
+          });
+        }
+      });
+    });
+    return list;
+  }, [timelineData, localJourneys]);
+
+  // Filtered timeline candidate items based on selected trip OR search query
+  const candidateTimelineItems = useMemo(() => {
+    let result = allTimelineItemsWithImages;
+    if (selectedTripForMoments !== null) {
+      result = result.filter(item => Number(item.tripId) === Number(selectedTripForMoments));
+    }
+    if (momentSearchQuery.trim()) {
+      const q = momentSearchQuery.toLowerCase().trim();
+      result = result.filter(item => 
+        (item.place && item.place.toLowerCase().includes(q)) ||
+        (item.memo && item.memo.toLowerCase().includes(q)) ||
+        (item.journeyTitle && item.journeyTitle.toLowerCase().includes(q)) ||
+        (item.journeyLocation && item.journeyLocation.toLowerCase().includes(q)) ||
+        (item.location && item.location.toLowerCase().includes(q))
+      );
+    }
+    return result;
+  }, [allTimelineItemsWithImages, selectedTripForMoments, momentSearchQuery]);
+
+  // Add timeline item as a magazine moment
+  const handleAddMomentFromTimeline = (item: TimelineItem & { journeyTitle?: string; journeyLocation?: string }) => {
+    if (!item.img) return;
+    const newMoment: MagazineMoment = {
+      id: `moment-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      tripId: item.tripId,
+      title: item.place || item.journeyTitle || 'UNTITLED MOMENT',
+      date: item.date || '',
+      location: item.journeyLocation || item.location || '',
+      caption: item.memo || item.imgNote || '',
+      quote: '',
+      img: item.img,
+      order: momentsList.length,
+    };
+    setMomentsList(prev => [...prev, newMoment]);
+  };
+
+  // Move moment up/down
+  const handleMoveMoment = (index: number, direction: 'up' | 'down') => {
+    const targetIdx = direction === 'up' ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= momentsList.length) return;
+    const updated = [...momentsList];
+    const temp = updated[index];
+    updated[index] = updated[targetIdx];
+    updated[targetIdx] = temp;
+    setMomentsList(updated.map((m, i) => ({ ...m, order: i })));
+  };
+
+  // Remove moment
+  const handleRemoveMoment = (id: string) => {
+    setMomentsList(prev => prev.filter(m => m.id !== id));
+  };
+
+  // Update moment field
+  const handleUpdateMoment = (id: string, field: keyof MagazineMoment, value: any) => {
+    setMomentsList(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
+  };
+
+  // Save moments to Firebase
+  const handleSaveMagazineMomentsClick = async () => {
+    if (!onSaveMagazineMoments) return;
+    setIsSavingMoments(true);
+    try {
+      await onSaveMagazineMoments(momentsList);
+      setMomentsSaveSuccess(true);
+      setTimeout(() => setMomentsSaveSuccess(false), 2000);
+    } catch (err) {
+      console.error(err);
+      alert('잡지 연출 저장에 실패했습니다.');
+    } finally {
+      setIsSavingMoments(false);
+    }
+  };
 
   const isSelectedPlan = selectedJourney?.tags?.includes('Plan') || selectedJourney?.title.includes('(Plan)');
 
@@ -640,6 +754,206 @@ export function ManageHubPage({
                       );
                     })
                   )}
+                </div>
+              </div>
+
+              {/* ───────────────────────────────────────────────────────── */}
+              {/* MAGAZINE EDITORIAL MOMENTS CURATION (잡지 연출 선별 및 편집) */}
+              {/* ───────────────────────────────────────────────────────── */}
+              <div className="flex flex-col gap-4 pt-6 border-t border-black/15 dark:border-white/15">
+                <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
+                  <div>
+                    <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                      HOME EDITORIAL HIGHLIGHTS
+                    </span>
+                    <h3 className="text-sm sm:text-base font-black uppercase tracking-tight text-black dark:text-white">
+                      홈 잡지 연출 순간 선별 및 편집 ({momentsList.length})
+                    </h3>
+                  </div>
+                  <span className="text-[10px] font-sans text-black/50 dark:text-white/50">
+                    타임라인 사진을 직접 골라 홈 허브 잡지 화보로 연출합니다.
+                  </span>
+                </div>
+
+                {/* Currently Curated Moments List */}
+                {momentsList.length > 0 ? (
+                  <div className="flex flex-col gap-3">
+                    <div className="text-[10px] font-mono uppercase font-bold text-black/60 dark:text-white/60">
+                      현재 등록된 잡지 연출 목록:
+                    </div>
+                    <div className="flex flex-col gap-2 max-h-80 overflow-y-auto pr-1">
+                      {momentsList.map((m, idx) => (
+                        <div 
+                          key={m.id || idx}
+                          className="p-3 border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                        >
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className="w-14 h-14 aspect-square border border-black/10 dark:border-white/10 shrink-0 overflow-hidden bg-black/10 relative">
+                              <img src={getEffectiveImageUrl(m.img)} alt={m.title} className="w-full h-full object-cover" />
+                              <span className="absolute bottom-0 left-0 bg-black text-white text-[8px] font-mono px-1">
+                                #{idx + 1}
+                              </span>
+                            </div>
+                            <div className="flex-1 min-w-0 flex flex-col gap-1 w-full">
+                              <input 
+                                type="text"
+                                value={m.title}
+                                onChange={e => handleUpdateMoment(m.id, 'title', e.target.value)}
+                                placeholder="제목 (Title)"
+                                className="text-xs font-black uppercase tracking-tight bg-transparent border-b border-black/20 dark:border-white/20 outline-none pb-0.5"
+                              />
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <input 
+                                  type="text"
+                                  value={m.quote || ''}
+                                  onChange={e => handleUpdateMoment(m.id, 'quote', e.target.value)}
+                                  placeholder="인용구 (“감성 문구”)"
+                                  className="text-[10px] font-serif italic bg-transparent border-b border-black/10 dark:border-white/10 outline-none"
+                                />
+                                <input 
+                                  type="text"
+                                  value={m.caption || ''}
+                                  onChange={e => handleUpdateMoment(m.id, 'caption', e.target.value)}
+                                  placeholder="설명 / 캡션"
+                                  className="text-[10px] font-sans bg-transparent border-b border-black/10 dark:border-white/10 outline-none"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0 self-end sm:self-center">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveMoment(idx, 'up')}
+                              disabled={idx === 0}
+                              className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 cursor-pointer"
+                              title="위로 이동"
+                            >
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveMoment(idx, 'down')}
+                              disabled={idx === momentsList.length - 1}
+                              className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 cursor-pointer"
+                              title="아래로 이동"
+                            >
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveMoment(m.id)}
+                              className="p-1 text-red-500 hover:bg-red-500/10 border border-red-500/30 cursor-pointer ml-1"
+                              title="삭제"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 border border-dashed border-black/20 dark:border-white/20 text-center text-xs font-mono text-black/50 dark:text-white/50">
+                    아직 선별된 잡지 연출 순간이 없습니다. 아래 타임라인에서 인상적인 사진을 골라 추가해보세요.
+                  </div>
+                )}
+
+                {/* Selection Tool: Select from Journey OR Search */}
+                <div className="p-4 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] flex flex-col gap-3">
+                  <span className="text-[10px] font-mono font-black uppercase tracking-widest text-black/70 dark:text-white/70">
+                    타임라인에서 새로운 순간 선별하기
+                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* 1. Filter by Journey */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[9px] font-bold uppercase text-black/50 dark:text-white/50">
+                        여정별로 모아보기
+                      </label>
+                      <select
+                        value={selectedTripForMoments === null ? '' : selectedTripForMoments}
+                        onChange={e => setSelectedTripForMoments(e.target.value === '' ? null : Number(e.target.value))}
+                        className="px-2.5 py-2 text-xs font-sans font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none"
+                      >
+                        <option value="">모든 여정 ({allTimelineItemsWithImages.length}개 사진)</option>
+                        {localJourneys.map(j => (
+                          <option key={j.id} value={j.id}>
+                            {j.title.replace(' (Plan)', '')} ({j.locationStr})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* 2. Search Keyword */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[9px] font-bold uppercase text-black/50 dark:text-white/50">
+                        검색어로 찾기 (장소/메모/도시)
+                      </label>
+                      <div className="relative">
+                        <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
+                        <input
+                          type="text"
+                          value={momentSearchQuery}
+                          onChange={e => setMomentSearchQuery(e.target.value)}
+                          placeholder="검색어 입력..."
+                          className="w-full pl-8 pr-3 py-2 text-xs font-sans font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Candidate Timeline Images Grid */}
+                  <div className="flex flex-col gap-1.5 mt-1">
+                    <span className="text-[9px] font-mono text-black/50 dark:text-white/50">
+                      선택 가능한 타임라인 사진 ({candidateTimelineItems.length}개) — 클릭 시 잡지 목록에 바로 추가됩니다:
+                    </span>
+                    {candidateTimelineItems.length === 0 ? (
+                      <div className="py-6 text-center text-xs font-mono text-black/40 dark:text-white/40">
+                        사진이 등록된 타임라인 항목이 없습니다.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2 max-h-56 overflow-y-auto p-2 border border-black/10 dark:border-white/10 bg-white dark:bg-[#111]">
+                        {candidateTimelineItems.map((item, i) => (
+                          <div
+                            key={`cand-${item.id}-${i}`}
+                            onClick={() => handleAddMomentFromTimeline(item)}
+                            className="group relative aspect-square border border-black/10 dark:border-white/10 overflow-hidden cursor-pointer bg-black/5 hover:border-black dark:hover:border-white transition-all shadow-xs"
+                            title={`${item.place || ''} (${item.date || ''}) 추가`}
+                          >
+                            <img
+                              src={getEffectiveImageUrl(item.img || '')}
+                              alt={item.place || 'Timeline'}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white font-mono text-[9px] font-bold p-1 text-center">
+                              + 추가
+                            </div>
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[8px] font-mono px-1 py-0.5 truncate pointer-events-none">
+                              {item.place || item.journeyTitle}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Save Magazine Moments Button */}
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveMagazineMomentsClick}
+                      disabled={isSavingMoments}
+                      className={`px-4 py-2 text-xs font-black uppercase tracking-wider font-sans flex items-center gap-1.5 cursor-pointer border transition-colors ${
+                        momentsSaveSuccess
+                          ? 'bg-green-600 text-white border-green-600'
+                          : 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white hover:opacity-85'
+                      }`}
+                    >
+                      {momentsSaveSuccess ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+                      <span>{momentsSaveSuccess ? '잡지 설정 저장됨' : '잡지 연출 목록 저장'}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 

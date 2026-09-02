@@ -162,4 +162,14 @@ export interface TransitItem {
 
 export type TabType = 'summary' | 'timeline' | 'flights' | 'stays' | 'transit' | 'gallery' | 'settlement';
 
-
+export interface MagazineMoment {
+  id: string;
+  tripId?: number;
+  title: string;
+  date?: string;
+  location?: string;
+  caption?: string;
+  img: string;
+  quote?: string;
+  order?: number;
+}

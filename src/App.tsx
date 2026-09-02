@@ -30,7 +30,8 @@ import {
   TimelineItem, 
   FlightItem, 
   StayItem, 
-  TransitItem 
+  TransitItem,
+  MagazineMoment
 } from './types';
 import { auth, db } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -78,12 +79,16 @@ function applyJourneyOrder<T extends { id: number; displayOrder?: number }>(item
   return [...items].sort((a, b) => (a.displayOrder ?? a.id) - (b.displayOrder ?? b.id));
 }
 
+const ADMIN_EMAILS = ['gonyisland@google.com'];
+
 function App() {
   const [currentView, setCurrentView] = useState<string>('home'); 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     return localStorage.getItem('isDarkMode') === 'true';
   });
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [adminEmails, setAdminEmails] = useState<string[]>(ADMIN_EMAILS);
+  const [magazineMoments, setMagazineMoments] = useState<MagazineMoment[]>([]);
   const [showSettings, setShowSettings] = useState<boolean>(false);
   
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
@@ -185,6 +190,29 @@ function App() {
     window.addEventListener('keydown', handleModalKeyDown);
     return () => window.removeEventListener('keydown', handleModalKeyDown);
   }, [showUnsavedModal, pendingNavigation]);
+
+  const currentUserEmail = auth.currentUser?.email?.toLowerCase() || '';
+  const isAdmin = isLoggedIn && (adminEmails.includes(currentUserEmail) || currentUserEmail === 'gonyisland@google.com');
+
+  // Global shortcut Ctrl+K / Cmd+K for Unified Search Modal
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setIsSearchOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
+  // Redirect non-admin if they try to access Management Hub
+  useEffect(() => {
+    if (currentView === 'manage' && (!isLoggedIn || !isAdmin)) {
+      alert("관리자(Admin) 계정만 Management Hub를 이용할 수 있습니다. 여정은 상세 페이지에서 편집하실 수 있습니다.");
+      navigateTo('home', null, true);
+    }
+  }, [currentView, isLoggedIn, isAdmin]);
 
   // activeTrip: strictly match activeTripId. Do not automatically fall back to trips[0]
   // to avoid rendering one trip's map with another trip's details during sync.
@@ -434,9 +462,21 @@ function App() {
         if (data.marqueeShow !== undefined) setMarqueeShow(data.marqueeShow);
         if (data.marqueeMessage !== undefined) setMarqueeMessage(data.marqueeMessage);
         if (data.marqueeSpeed !== undefined) setMarqueeSpeed(data.marqueeSpeed);
+        if (Array.isArray(data.magazineMoments)) setMagazineMoments(data.magazineMoments);
       }
     }, (err) => {
       console.error("Settings snapshot subscription error:", err);
+    });
+
+    const unsubAdmin = onSnapshot(doc(db, 'users', uid, 'settings', 'admin'), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (Array.isArray(data.allowedAdmins)) {
+          setAdminEmails(Array.from(new Set([...ADMIN_EMAILS, ...data.allowedAdmins.map((e: string) => String(e).toLowerCase().trim())])));
+        }
+      }
+    }, (err) => {
+      console.warn("Admin snapshot subscription notice:", err);
     });
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -457,6 +497,7 @@ function App() {
       unsubTransit();
       unsubTrash();
       unsubSettings();
+      unsubAdmin();
     };
   }, []);
 
@@ -776,6 +817,23 @@ function App() {
       if (marqueeSpd !== undefined) setMarqueeSpeed(marqueeSpd);
     } catch (err) {
       console.error("Failed to save settings:", err);
+      throw err;
+    }
+  };
+
+  const handleSaveMagazineMoments = async (moments: MagazineMoment[]) => {
+    if (!isLoggedIn || !isAdmin) {
+      alert("관리자(Admin)만 잡지 연출 설정을 저장할 수 있습니다.");
+      return;
+    }
+    try {
+      await setDoc(doc(db, 'users', 'public', 'settings', 'home'), {
+        magazineMoments: cleanForFirestore(moments)
+      }, { merge: true });
+      setMagazineMoments(moments);
+    } catch (err) {
+      console.error("Failed to save magazine moments:", err);
+      alert("잡지 연출 저장에 실패했습니다.");
       throw err;
     }
   };
@@ -1300,6 +1358,7 @@ function App() {
           openAuthModal={(mode) => { setAuthModalMode(mode); setIsAuthModalOpen(true); }}
           openSettingModal={() => setIsManageModalOpen(true)}
           onSearchClick={() => setIsSearchOpen(true)}
+          isAdmin={isAdmin}
         />
 
         {/* Marquee Banner - Only on Home View */}
@@ -1409,6 +1468,7 @@ function App() {
                     await batch.commit();
                   }}
                   isLoggedIn={isLoggedIn}
+                  magazineMoments={magazineMoments}
                 />
               )}
               {currentView === 'archive' && (
@@ -1485,6 +1545,9 @@ function App() {
                   marqueeMessage={marqueeMessage}
                   marqueeSpeed={marqueeSpeed}
                   onSaveAllHomeSettings={handleSaveSettings}
+                  magazineMoments={magazineMoments}
+                  timelineData={timelineData}
+                  onSaveMagazineMoments={handleSaveMagazineMoments}
                   trashedJourneys={trashedJourneys}
                   onRestoreJourney={handleRestoreJourney}
                   onPermanentDeleteJourney={handlePermanentDeleteJourney}

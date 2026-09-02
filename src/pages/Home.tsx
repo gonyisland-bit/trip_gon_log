@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Menu, Edit2, Trash2, GripVertical, Copy, ArrowUp, Tag, ChevronDown, ChevronUp, Search, X, LayoutGrid, StretchHorizontal, List } from 'lucide-react';
-import { Trip, Plan } from '../types';
+import { Trip, Plan, MagazineMoment } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
@@ -23,6 +23,7 @@ interface HomePageProps {
   onReorderTrips?: (orderedIds: number[]) => void;
   onReorderPlans?: (orderedIds: number[]) => void;
   isLoggedIn?: boolean;
+  magazineMoments?: MagazineMoment[];
 }
 
 function parseDateParts(dateStr: string, defaultYear?: number): Date | null {
@@ -430,6 +431,7 @@ export function HomePage({
   onCloneTrip,
   onClonePlan,
   isLoggedIn = false,
+  magazineMoments = [],
 }: HomePageProps) {
   const [activeFilter, setActiveFilter] = useState('All');
   const [isTagAccordionOpen, setIsTagAccordionOpen] = useState(false);
@@ -1122,6 +1124,163 @@ export function HomePage({
             })}
           </div>
         )}
+        {/* ─────────────────────────────────────────────────────────────────── */}
+        {/* 02. EDITORIAL MAGAZINE MOMENTS (잡지 연출 섹션)                       */}
+        {/* ─────────────────────────────────────────────────────────────────── */}
+        {(() => {
+          // Display curated moments or fallback to top trips' imagery
+          const displayMoments: MagazineMoment[] = magazineMoments.length > 0 
+            ? magazineMoments 
+            : trips.slice(0, 3).map((t, idx) => ({
+                id: `fallback-${t.id}`,
+                tripId: t.id,
+                title: t.title,
+                date: t.date,
+                location: t.locationStr,
+                caption: t.locationStr ? `${cleanAdministrativeDistricts(t.locationStr)}에서의 기록된 기억` : '기억에 남은 순간',
+                quote: idx === 0 
+                  ? "“모든 여행은 우연을 가장한 필연이며, 남겨진 사진은 그날의 온도와 공기를 영원히 품는다.”" 
+                  : "“도시의 골목과 마주친 풍경, 그 찰나의 순간.”",
+                img: t.img,
+                order: idx,
+              }));
+
+          if (displayMoments.length === 0) return null;
+
+          const featured = displayMoments[0];
+          const subMoments = displayMoments.slice(1, 4);
+
+          return (
+            <div className="w-full border-t border-black/10 dark:border-white/10 mt-12 pt-12 px-4 sm:px-8 md:px-12 flex flex-col gap-8">
+              {/* Section Header: Swiss Minimal Magazine Header */}
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-black/15 dark:border-white/15">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-mono text-xs font-black text-red-600 dark:text-red-500 tracking-widest uppercase">
+                      02 / EDITORIAL MOMENTS
+                    </span>
+                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40 uppercase">
+                      [잡지 연출 컬렉션]
+                    </span>
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                    JOURNEY MAGAZINE & MEMORIES
+                  </h2>
+                </div>
+                <p className="text-xs font-sans text-black/60 dark:text-white/60 max-w-md leading-relaxed break-keep">
+                  길 위에서 마주한 가장 선명한 순간들. 타임라인에 기록된 인상 깊은 기억과 사진들을 한 편의 미니멀 매거진처럼 엮어냅니다.
+                </p>
+              </div>
+
+              {/* Magazine Editorial Spread Layout */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                {/* 1. Large Hero Featured Spread (7 cols) */}
+                {featured && (
+                  <div 
+                    onClick={() => featured.tripId && onNavigate('detail', featured.tripId)}
+                    className="lg:col-span-7 group relative cursor-pointer overflow-hidden border border-black/15 dark:border-white/15 bg-[#111] flex flex-col justify-end min-h-[360px] sm:min-h-[460px] shadow-lg transition-transform duration-300 hover:shadow-2xl"
+                  >
+                    <img 
+                      src={getEffectiveImageUrl(featured.img)} 
+                      alt={featured.title} 
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
+
+                    {/* Editorial Text Overlay */}
+                    <div className="relative z-10 p-6 sm:p-8 flex flex-col gap-3 text-white pointer-events-none">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-widest bg-red-600 text-white">
+                          FEATURED STORY
+                        </span>
+                        {featured.location && (
+                          <span className="text-xs font-mono font-bold uppercase text-white/80 tracking-wider">
+                            {cleanAdministrativeDistricts(featured.location)}
+                          </span>
+                        )}
+                      </div>
+
+                      <h3 className="text-xl sm:text-2xl md:text-3xl font-black uppercase tracking-tight leading-tight font-sans drop-shadow-md">
+                        {featured.title}
+                      </h3>
+
+                      {featured.quote && (
+                        <p className="text-xs sm:text-sm font-sans font-light italic text-white/90 max-w-xl leading-relaxed border-l-2 border-red-500 pl-3 my-1">
+                          {featured.quote}
+                        </p>
+                      )}
+
+                      {featured.caption && (
+                        <p className="text-[11px] sm:text-xs text-white/70 font-sans line-clamp-2">
+                          {featured.caption}
+                        </p>
+                      )}
+
+                      <div className="flex items-center justify-between pt-2 border-t border-white/20 text-[10px] font-mono text-white/60">
+                        <span>{featured.date || 'EDITORIAL LOG'}</span>
+                        <span className="flex items-center gap-1 group-hover:translate-x-1 group-hover:text-white transition-all text-white/80">
+                          READ STORY ➔
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. Sub-moments (5 cols: 1 or 2 stacked editorial cards) */}
+                <div className="lg:col-span-5 flex flex-col gap-6">
+                  {subMoments.map((moment, idx) => (
+                    <div
+                      key={moment.id || idx}
+                      onClick={() => moment.tripId && onNavigate('detail', moment.tripId)}
+                      className="flex-1 group relative cursor-pointer overflow-hidden border border-black/15 dark:border-white/15 bg-[#141414] flex flex-col sm:flex-row items-stretch min-h-[170px] shadow-sm hover:shadow-xl transition-all"
+                    >
+                      {/* Image Preview (Square or 4:3) */}
+                      <div className="sm:w-2/5 aspect-[4/3] sm:aspect-auto overflow-hidden relative shrink-0">
+                        <img 
+                          src={getEffectiveImageUrl(moment.img)} 
+                          alt={moment.title} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                        />
+                      </div>
+
+                      {/* Text Column */}
+                      <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between bg-white dark:bg-[#111111] text-black dark:text-white">
+                        <div>
+                          <div className="flex items-center justify-between text-[9px] font-mono text-black/50 dark:text-white/50 mb-1">
+                            <span className="uppercase font-bold text-red-600 dark:text-red-400">
+                              MOMENT #{String(idx + 2).padStart(2, '0')}
+                            </span>
+                            <span>{moment.date || ''}</span>
+                          </div>
+                          <h4 className="text-sm sm:text-base font-black uppercase tracking-tight line-clamp-1 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors font-sans">
+                            {moment.title}
+                          </h4>
+                          {moment.quote ? (
+                            <p className="text-[11px] font-serif italic text-black/70 dark:text-white/70 line-clamp-2 mt-1">
+                              {moment.quote}
+                            </p>
+                          ) : moment.caption ? (
+                            <p className="text-[11px] font-sans text-black/60 dark:text-white/60 line-clamp-2 mt-1">
+                              {moment.caption}
+                            </p>
+                          ) : null}
+                        </div>
+
+                        <div className="pt-2 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-[10px] font-mono text-black/50 dark:text-white/50 mt-2">
+                          <span className="truncate max-w-[140px]">{cleanAdministrativeDistricts(moment.location || '')}</span>
+                          <span className="font-bold text-black dark:text-white group-hover:translate-x-1 transition-transform">
+                            VIEW ➔
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         <div className="p-6 md:px-12 flex justify-center w-full">
           <button onClick={() => onNavigate('archive')} className="text-sm font-bold uppercase tracking-widest border border-black dark:border-white px-8 py-3 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors w-full md:w-auto">
             View Entire Archive

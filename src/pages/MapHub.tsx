@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, X, ArrowRight, Calendar, Star, Plus, Tag, MapPin, Bookmark } from 'lucide-react';
+import { Search, X, ArrowRight, Calendar, Star, Plus, Tag, MapPin, Bookmark, Home as HomeIcon } from 'lucide-react';
 import { Trip, Plan } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
 
-interface CountryInfo {
+export interface CountryInfo {
   code: string;
   name: string;
   nameKo: string;
@@ -1156,6 +1156,28 @@ const KNOWN_CITY_COORDS: { [key: string]: [number, number] } = {
   아부다비: [24.4539, 54.3773],
 };
 
+export function findCountryForGroup(countryStr?: string, cityStr?: string): CountryInfo | undefined {
+  if (!countryStr && !cityStr) return undefined;
+  const cClean = (countryStr || '').toUpperCase().trim();
+  const cityClean = (cityStr || '').toUpperCase().trim();
+
+  // 1. Direct code or name match
+  let found = COUNTRIES_DATA.find(c => 
+    c.code === cClean || 
+    c.name.toUpperCase() === cClean || 
+    c.nameKo === countryStr ||
+    cClean.includes(c.name.toUpperCase()) ||
+    (countryStr && countryStr.includes(c.nameKo))
+  );
+  if (found) return found;
+
+  // 2. City name match
+  found = COUNTRIES_DATA.find(c =>
+    c.cities.some(cty => cty.toUpperCase() === cityClean || cityClean.includes(cty.toUpperCase()))
+  );
+  return found;
+}
+
 interface MapPinGroup {
   city: string;
   country: string;
@@ -1300,24 +1322,149 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
 
       // Add each extracted point into the pin groups map, merging same cities
       pointsToPin.forEach(pt => {
-        const ptCityClean = cleanAdministrativeDistricts(pt.name).toUpperCase().trim();
-        
-        // Canonical city normalizer
-        let canonicalCity = ptCityClean;
-        if (['도쿄', '도쿄도', 'TOKYO', 'TOKYO-TO', 'SHINJUKU', 'SHIBUYA', 'GINZA', '신주쿠', '시부야', '긴자'].includes(canonicalCity)) {
-          canonicalCity = 'TOKYO';
-        } else if (['오사카', '오사카부', 'OSAKA', 'OSAKA-FU', 'UMEDA', 'NAMBA', '우메다', '난바'].includes(canonicalCity)) {
-          canonicalCity = 'OSAKA';
-        } else if (['교토', '교토부', 'KYOTO', 'KYOTO-FU'].includes(canonicalCity)) {
-          canonicalCity = 'KYOTO';
-        } else if (['후쿠오카', '후쿠오카현', 'FUKUOKA', 'HAKATA', '하카타'].includes(canonicalCity)) {
-          canonicalCity = 'FUKUOKA';
-        } else if (['서울', 'SEOUL', 'GANGNAM', '강남', '홍대', '명동'].includes(canonicalCity)) {
-          canonicalCity = 'SEOUL';
-        } else if (['부산', 'BUSAN', 'HAEUNDAE', '해운대'].includes(canonicalCity)) {
-          canonicalCity = 'BUSAN';
-        } else if (['제주', 'JEJU', 'SEOGWIPO', '서귀포'].includes(canonicalCity)) {
+        // 1. Strip trailing country strings like ", SOUTH KOREA", ", KOREA", ", JAPAN", etc.
+        let cityCleaned = ptCityClean
+          .replace(/,\s*(SOUTH KOREA|KOREA|대한민국|한국|JAPAN|일본|VIETNAM|베트남|THAILAND|태국|TAIWAN|대만|CHINA|중국|USA|미국|FRANCE|프랑스|ITALY|이탈리아|UK|영국|SPAIN|스페인).*$/i, '')
+          .replace(/\s+(SOUTH KOREA|KOREA|대한민국|한국|JAPAN|일본).*$/i, '')
+          .trim();
+
+        // 2. Canonical city normalizer with robust keyword matching
+        let canonicalCity = cityCleaned;
+        if (
+          canonicalCity.includes('JEJU') || 
+          canonicalCity.includes('제주') || 
+          canonicalCity.includes('SEOGWIPO') || 
+          canonicalCity.includes('서귀포')
+        ) {
           canonicalCity = 'JEJU';
+        } else if (
+          canonicalCity.includes('TOKYO') || 
+          canonicalCity.includes('도쿄') || 
+          canonicalCity.includes('SHINJUKU') || 
+          canonicalCity.includes('SHIBUYA') || 
+          canonicalCity.includes('GINZA') || 
+          canonicalCity.includes('신주쿠') || 
+          canonicalCity.includes('시부야') || 
+          canonicalCity.includes('긴자')
+        ) {
+          canonicalCity = 'TOKYO';
+        } else if (
+          canonicalCity.includes('OSAKA') || 
+          canonicalCity.includes('오사카') || 
+          canonicalCity.includes('UMEDA') || 
+          canonicalCity.includes('NAMBA') || 
+          canonicalCity.includes('우메다') || 
+          canonicalCity.includes('난바')
+        ) {
+          canonicalCity = 'OSAKA';
+        } else if (
+          canonicalCity.includes('KYOTO') || 
+          canonicalCity.includes('교토')
+        ) {
+          canonicalCity = 'KYOTO';
+        } else if (
+          canonicalCity.includes('FUKUOKA') || 
+          canonicalCity.includes('후쿠오카') || 
+          canonicalCity.includes('HAKATA') || 
+          canonicalCity.includes('하카타')
+        ) {
+          canonicalCity = 'FUKUOKA';
+        } else if (
+          canonicalCity.includes('SEOUL') || 
+          canonicalCity.includes('서울') || 
+          canonicalCity.includes('GANGNAM') || 
+          canonicalCity.includes('강남') || 
+          canonicalCity.includes('HONGDAE') || 
+          canonicalCity.includes('홍대') || 
+          canonicalCity.includes('MYEONGDONG') || 
+          canonicalCity.includes('명동')
+        ) {
+          canonicalCity = 'SEOUL';
+        } else if (
+          canonicalCity.includes('BUSAN') || 
+          canonicalCity.includes('부산') || 
+          canonicalCity.includes('HAEUNDAE') || 
+          canonicalCity.includes('해운대')
+        ) {
+          canonicalCity = 'BUSAN';
+        } else if (
+          canonicalCity.includes('GANGNEUNG') || 
+          canonicalCity.includes('강릉')
+        ) {
+          canonicalCity = 'GANGNEUNG';
+        } else if (
+          canonicalCity.includes('SOKCHO') || 
+          canonicalCity.includes('속초')
+        ) {
+          canonicalCity = 'SOKCHO';
+        } else if (
+          canonicalCity.includes('GYEONGJU') || 
+          canonicalCity.includes('경주')
+        ) {
+          canonicalCity = 'GYEONGJU';
+        } else if (
+          canonicalCity.includes('INCHEON') || 
+          canonicalCity.includes('인천')
+        ) {
+          canonicalCity = 'INCHEON';
+        } else if (
+          canonicalCity.includes('JEONJU') || 
+          canonicalCity.includes('전주')
+        ) {
+          canonicalCity = 'JEONJU';
+        } else if (
+          canonicalCity.includes('DANANG') || 
+          canonicalCity.includes('DA NANG') || 
+          canonicalCity.includes('다낭')
+        ) {
+          canonicalCity = 'DA NANG';
+        } else if (
+          canonicalCity.includes('HANOI') || 
+          canonicalCity.includes('하노이')
+        ) {
+          canonicalCity = 'HANOI';
+        } else if (
+          canonicalCity.includes('HOCHIMINH') || 
+          canonicalCity.includes('HO CHI MINH') || 
+          canonicalCity.includes('호치민')
+        ) {
+          canonicalCity = 'HO CHI MINH';
+        } else if (
+          canonicalCity.includes('BANGKOK') || 
+          canonicalCity.includes('방콕')
+        ) {
+          canonicalCity = 'BANGKOK';
+        } else if (
+          canonicalCity.includes('TAIPEI') || 
+          canonicalCity.includes('타이베이')
+        ) {
+          canonicalCity = 'TAIPEI';
+        } else if (
+          canonicalCity.includes('HONG KONG') || 
+          canonicalCity.includes('HONGKONG') || 
+          canonicalCity.includes('홍콩')
+        ) {
+          canonicalCity = 'HONG KONG';
+        } else if (
+          canonicalCity.includes('PARIS') || 
+          canonicalCity.includes('파리')
+        ) {
+          canonicalCity = 'PARIS';
+        } else if (
+          canonicalCity.includes('LONDON') || 
+          canonicalCity.includes('런던')
+        ) {
+          canonicalCity = 'LONDON';
+        } else if (
+          canonicalCity.includes('GUAM') || 
+          canonicalCity.includes('괌')
+        ) {
+          canonicalCity = 'GUAM';
+        } else if (
+          canonicalCity.includes('SAIPAN') || 
+          canonicalCity.includes('사이판')
+        ) {
+          canonicalCity = 'SAIPAN';
         }
 
         // Find existing group by canonical city name OR proximity (< 0.28 degrees ~ 30km)
@@ -1456,6 +1603,10 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     tileLayerRef.current = L.tileLayer(tileUrl, {
       attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
       maxZoom: 18,
+      keepBuffer: 16,
+      updateWhenIdle: false,
+      updateWhenZooming: false,
+      crossOrigin: true,
     }).addTo(map);
 
     mapRef.current = map;
@@ -1483,10 +1634,25 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     tileLayerRef.current = L.tileLayer(tileUrl, {
       attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
       maxZoom: 18,
+      keepBuffer: 16,
+      updateWhenIdle: false,
+      updateWhenZooming: false,
+      crossOrigin: true,
     }).addTo(map);
   }, [isDarkMode]);
 
-  // Render Red Pins for registered journeys (controlled by showVisitedPins)
+  // Reset to default global view
+  const handleResetToDefaultView = () => {
+    const map = mapRef.current;
+    if (map) {
+      if (typeof map.flyTo === 'function') {
+        map.flyTo([25, 125], 3.5, { duration: 1.2 });
+      } else {
+        map.setView([25, 125], 3.5);
+      }
+    }
+  };
+
   // Render Red Pins for registered journeys (controlled by showVisitedPins and showPinLabels)
   useEffect(() => {
     const L = (window as any).L;
@@ -1535,6 +1701,12 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
 
       marker.on('click', () => {
         setSelectedPinGroup(group);
+        // Also show country info for the visited region
+        const c = findCountryForGroup(group.country, group.city);
+        if (c) {
+          setSelectedCountry(c);
+          setSearchQuery(c.name);
+        }
       });
 
       markersRef.current.push(marker);
@@ -1745,6 +1917,16 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
           >
             <Bookmark className="w-3.5 h-3.5" />
           </button>
+
+          {/* 4. Reset to Global Home View Button */}
+          <button
+            type="button"
+            onClick={handleResetToDefaultView}
+            className="p-2 sm:px-2.5 sm:py-2 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center"
+            title="기본 위치로 돌아오기 (Reset View)"
+          >
+            <HomeIcon className="w-3.5 h-3.5" />
+          </button>
         </div>
 
       </div>
@@ -1755,9 +1937,9 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
         className="w-full h-full z-0" 
       />
 
-      {/* 3. Selected Country Card (Swiss Minimal Editorial Style) */}
+      {/* 3. Selected Country Card (Swiss Minimal Editorial Style - Mobile Bottom Sheet & Desktop Panel) */}
       {selectedCountry && (
-        <div className="absolute top-20 right-4 sm:right-6 w-80 sm:w-96 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/15 dark:border-white/15 shadow-2xl z-[500] p-5 sm:p-6 animate-in fade-in slide-in-from-right duration-200">
+        <div className="fixed sm:absolute bottom-0 sm:bottom-auto sm:top-20 left-0 right-0 sm:left-auto sm:right-6 w-full sm:w-96 max-h-[82vh] sm:max-h-[85vh] bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border-t sm:border border-black/15 dark:border-white/15 shadow-2xl z-[500] p-5 sm:p-6 overflow-y-auto animate-in fade-in slide-in-from-bottom sm:slide-in-from-right duration-200">
           
           <div className="flex items-start justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-4">
             <div>
@@ -1952,9 +2134,27 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                 <h3 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-black dark:text-white">
                   {selectedPinGroup.city}
                 </h3>
-                <span className="text-xs font-mono text-black/50 dark:text-white/50">
-                  {selectedPinGroup.country} · {selectedPinGroup.journeys.length} JOURNEYS RECORDED
-                </span>
+                <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                  <span className="text-xs font-mono text-black/50 dark:text-white/50">
+                    {selectedPinGroup.country} · {selectedPinGroup.journeys.length} JOURNEYS RECORDED
+                  </span>
+                  {(() => {
+                    const c = findCountryForGroup(selectedPinGroup.country, selectedPinGroup.city);
+                    if (!c) return null;
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedCountry(c);
+                          setSearchQuery(c.name);
+                        }}
+                        className="text-[10px] font-mono font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                      >
+                        [➔ {c.name} 국가 정보 보기]
+                      </button>
+                    );
+                  })()}
+                </div>
               </div>
               <button
                 onClick={() => setSelectedPinGroup(null)}

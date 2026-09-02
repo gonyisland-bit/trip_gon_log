@@ -15,6 +15,7 @@ interface NavigationProps {
   openAuthModal: (mode: 'login' | 'signup') => void;
   openSettingModal: () => void;
   onSearchClick: () => void;
+  isAdmin?: boolean;
 }
 
 export function Navigation({
@@ -29,6 +30,7 @@ export function Navigation({
   openAuthModal,
   openSettingModal,
   onSearchClick,
+  isAdmin = false,
 }: NavigationProps) {
   const currentUser = auth.currentUser;
   const displayName = currentUser?.displayName || currentUser?.email?.split('@')[0].toUpperCase() || 'USER';
@@ -116,13 +118,13 @@ export function Navigation({
             type="button"
             onClick={onSearchClick}
             className="p-2 sm:p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors cursor-pointer flex items-center justify-center"
-            title="통합 검색"
+            title="통합 검색 (Ctrl + K)"
           >
             <Search className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
           </button>
 
-          {/* Edit (Management Hub) Symbol Button */}
-          {isLoggedIn && (
+          {/* Edit (Management Hub) Symbol Button - Admin Only */}
+          {isLoggedIn && isAdmin && (
             <button
               type="button"
               onClick={() => navigateTo('manage')}
@@ -265,7 +267,7 @@ export function Navigation({
               </span>
             </button>
 
-            {isLoggedIn && (
+            {isLoggedIn && isAdmin && (
               <button
                 onClick={() => handleMenuNavigate('manage')}
                 className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-2"
@@ -288,7 +290,7 @@ export function Navigation({
               className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-2"
             >
               <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-4 sm:mr-6 select-none">
-                {isLoggedIn ? '05' : '04'}
+                {isLoggedIn && isAdmin ? '05' : '04'}
               </span>
               <div className="flex items-center gap-3">
                 <span className="font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white transition-colors">
