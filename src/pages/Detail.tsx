@@ -4150,7 +4150,8 @@ export function JourneyDetailPage({
                             ) : null}
                           </div>
                         </div>
-                      );
+                      </div>
+                    );
                   })
                 )}
 
