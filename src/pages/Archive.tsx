@@ -252,7 +252,7 @@ export function ArchiveHubPage({
 
   return (
     <main onClick={() => setActiveCardId(null)} className="animate-in fade-in duration-500 min-h-screen w-full">
-      <div className="p-6 md:px-12 md:py-12 border-b border-black/20 dark:border-white/20 bg-[#EAE8E3]/30 dark:bg-[#1a1a1a]/30 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+      <div className="p-6 md:px-12 md:py-12 border-b border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.02] flex flex-col sm:flex-row sm:items-end justify-between gap-6">
         <div className="flex-1">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tighter uppercase mb-2 sm:mb-3 break-keep" style={{ wordBreak: 'keep-all' }}>Journeys Archive</h1>
           <p className="max-w-xl text-xs sm:text-sm leading-relaxed opacity-70 break-keep">모든 여행의 감각적인 기록들입니다. 다녀온 곳을 회고하고 기록을 엑셀로 추출할 수 있습니다.</p>

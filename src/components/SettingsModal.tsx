@@ -215,7 +215,7 @@ export function SettingsModal({
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-3 text-xs md:text-sm font-bold text-black dark:text-white outline-none w-full focus:border-red-600 dark:focus:border-red-400 transition-colors"
+                  className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-3 text-xs md:text-sm font-bold text-black dark:text-white outline-none w-full focus:border-red-600 dark:focus:border-red-400 transition-colors"
                   placeholder="Your Personal Travel Magazine."
                   required
                 />
@@ -228,7 +228,7 @@ export function SettingsModal({
                 <textarea
                   value={subtitle}
                   onChange={(e) => setSubtitle(e.target.value)}
-                  className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-3 text-xs md:text-sm font-medium text-black dark:text-white outline-none w-full h-20 resize-none focus:border-red-600 dark:focus:border-red-400 transition-colors"
+                  className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-3 text-xs md:text-sm font-medium text-black dark:text-white outline-none w-full h-20 resize-none focus:border-red-600 dark:focus:border-red-400 transition-colors"
                   placeholder="나만의 감성으로 기록하고 보관하는 여행 아카이브."
                   required
                 />
@@ -333,7 +333,7 @@ export function SettingsModal({
                   <select
                     value={mediaType}
                     onChange={(e) => setMediaType(e.target.value as 'image' | 'video')}
-                    className="bg-[#EAE8E3] dark:bg-[#1a1a1a] border border-black/10 dark:border-white/10 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1.5 focus:outline-none text-black dark:text-white rounded-none border-none outline-none font-sans"
+                    className="bg-black/5 dark:bg-[#1a1a1a] border border-black/15 dark:border-white/15 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1.5 focus:outline-none text-black dark:text-white rounded-none outline-none font-sans"
                   >
                     <option value="image">Image (이미지)</option>
                     <option value="video">Video (동영상)</option>
@@ -394,7 +394,7 @@ export function SettingsModal({
                         type="text"
                         value={marqueeMsg}
                         onChange={(e) => setMarqueeMsg(e.target.value)}
-                        className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-bold text-black dark:text-white outline-none w-full focus:border-red-600 dark:focus:border-red-400 transition-colors"
+                        className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-bold text-black dark:text-white outline-none w-full focus:border-red-600 dark:focus:border-red-400 transition-colors"
                         placeholder="Enter marquee message..."
                         required={showMarquee}
                       />
@@ -410,7 +410,7 @@ export function SettingsModal({
                         max="120"
                         value={marqueeSpd}
                         onChange={(e) => setMarqueeSpd(Number(e.target.value))}
-                        className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-bold text-black dark:text-white outline-none w-full focus:border-red-600 dark:focus:border-red-400 transition-colors"
+                        className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-bold text-black dark:text-white outline-none w-full focus:border-red-600 dark:focus:border-red-400 transition-colors"
                         required={showMarquee}
                       />
                     </div>

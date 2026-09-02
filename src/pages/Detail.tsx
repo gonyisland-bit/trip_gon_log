@@ -4,7 +4,8 @@ import {
   Image as ImageIcon, ChevronUp, ChevronDown, MapPin, Map, Plus, Loader2, Search, ArrowLeft,
   ExternalLink, MapPinOff, Maximize2, Star, ChevronLeft, ChevronRight, ArrowUp, ArrowDown,
   Sun, Cloud, Cloudy, CloudRain, Snowflake, CloudLightning, ArrowRight, Calculator, FileText, Share2, GripVertical,
-  Play, Pause, SkipForward, SkipBack, X as CloseIcon, Check, Edit3, DollarSign
+  Play, Pause, SkipForward, SkipBack, X as CloseIcon, Check, Edit3, DollarSign,
+  Columns2, LayoutGrid
 } from 'lucide-react';
 import { MapArea } from '../components/MapArea';
 import { ImageEditOverlay } from '../components/ImageEditOverlay';
@@ -2712,7 +2713,7 @@ export function JourneyDetailPage({
 
   // Render Info Header ("여정배너"): Single-line compact top banner with collapsible accordion menu
   const renderInfoHeader = () => (
-    <div className="w-full border-b border-black/15 dark:border-white/15 z-20 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0 select-none">
+    <div className="w-full border-b border-black/15 dark:border-white/15 z-20 bg-white dark:bg-[#0A0A0A] transition-colors shrink-0 select-none">
       {/* 1. Single-line Compact Banner (h-12 sm:h-13) */}
       <div className="flex items-center justify-between px-3 md:px-5 h-12 sm:h-13 gap-2">
         {/* Left: Back button + Divider + Issue badge + Title & Date */}
@@ -2831,7 +2832,7 @@ export function JourneyDetailPage({
                   type="text"
                   value={draftTrip.title}
                   onChange={(e) => setDraftTrip({ ...draftTrip, title: e.target.value })}
-                  className="text-base sm:text-lg md:text-xl font-black uppercase bg-[#EAE8E3] dark:bg-white/10 border border-black/15 dark:border-white/15 px-2.5 py-1 outline-none w-full text-black dark:text-white rounded font-satoshi"
+                  className="text-base sm:text-lg md:text-xl font-black uppercase bg-black/5 dark:bg-white/10 border border-black/15 dark:border-white/15 px-2.5 py-1 outline-none w-full text-black dark:text-white rounded font-satoshi"
                   placeholder="JOURNEY TITLE"
                 />
               </div>
@@ -2909,14 +2910,14 @@ export function JourneyDetailPage({
                     type="date"
                     value={parseDateRange(draftTrip.date).start}
                     onChange={(e) => handleDateChange('start', e.target.value)}
-                    className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[9px] text-black dark:text-white rounded border border-black/15"
+                    className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[9px] text-black dark:text-white rounded border border-black/15"
                   />
                   <span>—</span>
                   <input
                     type="date"
                     value={parseDateRange(draftTrip.date).end}
                     onChange={(e) => handleDateChange('end', e.target.value)}
-                    className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[9px] text-black dark:text-white rounded border border-black/15"
+                    className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[9px] text-black dark:text-white rounded border border-black/15"
                   />
                 </div>
 
@@ -3105,7 +3106,7 @@ export function JourneyDetailPage({
           })()}
 
           <ErrorBoundary fallback={
-            <div className="flex-grow flex flex-col items-center justify-center bg-[#EAE8E3] dark:bg-[#1A1A1A] text-black/40 dark:text-white/40 p-6 relative h-full w-full">
+            <div className="flex-grow flex flex-col items-center justify-center bg-neutral-100 dark:bg-[#111111] text-black/40 dark:text-white/40 p-6 relative h-full w-full">
               <span className="text-[10px] uppercase tracking-widest font-bold z-10 mb-2">Map Temporary Unavailable</span>
               <img src={tripToUse?.mapImg || 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1600&auto=format&fit=crop'} className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none" />
             </div>
@@ -3262,13 +3263,13 @@ export function JourneyDetailPage({
       
       {/* Right: Record / Tabs Section (Responsive Bottom Sheet on Mobile) */}
       <section 
-        className={`w-full md:w-1/2 flex flex-col bg-[#F9F8F6] dark:bg-[#111111] transition-all duration-300 flex-grow md:h-full overflow-hidden ${
+        className={`w-full md:w-1/2 flex flex-col bg-white dark:bg-[#0A0A0A] transition-all duration-300 flex-grow md:h-full overflow-hidden ${
           mobileSheetSnap === 'expanded' ? 'max-md:h-[82dvh]' : 'max-md:h-[52dvh]'
         }`}
       >
         {/* Mobile Bottom Sheet Grab Handle */}
         <div 
-          className="md:hidden flex flex-col items-center justify-center py-2 px-4 bg-[#F9F8F6] dark:bg-[#111111] border-b border-black/10 dark:border-white/10 cursor-pointer select-none touch-none shrink-0 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group/grab"
+          className="md:hidden flex flex-col items-center justify-center py-2 px-4 bg-white dark:bg-[#0A0A0A] border-b border-black/10 dark:border-white/10 cursor-pointer select-none touch-none shrink-0 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group/grab"
           onTouchStart={handleSheetTouchStart}
           onTouchEnd={handleSheetTouchEnd}
           onClick={() => {
@@ -3287,7 +3288,7 @@ export function JourneyDetailPage({
         </div>
         
         {/* Tab Headers - Unified Single-line Sleek Design */}
-        <div className="flex overflow-x-auto hide-scrollbar flex-nowrap border-b border-black/15 dark:border-white/15 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0 w-full h-9 sm:h-10">
+        <div className="flex overflow-x-auto hide-scrollbar flex-nowrap border-b border-black/15 dark:border-white/15 bg-white dark:bg-[#0A0A0A] transition-colors shrink-0 w-full h-9 sm:h-10">
           {[ 
             { id: 'timeline', label: 'Log', icon: Clock }, 
             { id: 'flights', label: 'Flights', icon: Plane }, 
@@ -3316,7 +3317,7 @@ export function JourneyDetailPage({
         {/* Tab Contents */}
         <div 
           ref={tabContentRef}
-          className="flex-grow flex flex-col relative overflow-y-auto overflow-x-hidden w-full h-full bg-[#F9F8F6] dark:bg-[#111111]"
+          className="flex-grow flex flex-col relative overflow-y-auto overflow-x-hidden w-full h-full bg-white dark:bg-[#0A0A0A]"
         >
           {/* SUMMARY TAB */}
           {activeTab === 'summary' && (
@@ -3335,11 +3336,11 @@ export function JourneyDetailPage({
 
             <div className="animate-in fade-in duration-300 h-auto flex flex-col w-full relative">
               {/* Day filter selector bar - Slim and Sticky */}
-              <div className="sticky top-0 z-20 border-b border-black/15 dark:border-white/15 bg-[#F9F8F6] dark:bg-[#111111] transition-colors shrink-0 w-full flex items-center shadow-xs">
+              <div className="sticky top-0 z-20 border-b border-black/15 dark:border-white/15 bg-white dark:bg-[#0A0A0A] transition-colors shrink-0 w-full flex items-center shadow-xs">
                 {/* Scroll buttons for desktop/web */}
                 <button 
                   onClick={() => scrollDays('left')}
-                  className="absolute left-0 top-0 bottom-0 px-1.5 bg-gradient-to-r from-[#F9F8F6] via-[#F9F8F6] to-transparent dark:from-[#111111] dark:via-[#111111] z-10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer"
+                  className="absolute left-0 top-0 bottom-0 px-1.5 bg-gradient-to-r from-white via-white to-transparent dark:from-[#0A0A0A] dark:via-[#0A0A0A] z-10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer"
                   aria-label="Scroll left"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
@@ -3368,7 +3369,7 @@ export function JourneyDetailPage({
                         }} 
                         className={`flex-1 min-w-[58px] sm:min-w-[72px] md:min-w-[85px] h-full px-3 flex items-center justify-center border-r border-black/15 dark:border-white/15 last:border-r-0 transition-all whitespace-nowrap cursor-pointer font-['Inter',sans-serif] ${
                           selectedDate === d.date 
-                            ? 'bg-black text-[#F9F8F6] dark:bg-white dark:text-black font-black shadow-xs' 
+                            ? 'bg-black text-white dark:bg-white dark:text-black font-black shadow-xs' 
                             : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white font-extrabold'
                         }`}
                       >
@@ -3382,7 +3383,7 @@ export function JourneyDetailPage({
 
                 <button 
                   onClick={() => scrollDays('right')}
-                  className="absolute right-0 top-0 bottom-0 px-1.5 bg-gradient-to-l from-[#F9F8F6] via-[#F9F8F6] to-transparent dark:from-[#111111] dark:via-[#111111] z-10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer"
+                  className="absolute right-0 top-0 bottom-0 px-1.5 bg-gradient-to-l from-white via-white to-transparent dark:from-[#0A0A0A] dark:via-[#0A0A0A] z-10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer"
                   aria-label="Scroll right"
                 >
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -3671,9 +3672,10 @@ export function JourneyDetailPage({
                           onDrop={() => handleDropTimelineItem(item.id)}
                         >
                           <div 
-                            className="group flex flex-row items-start py-4 px-4 md:py-5 md:px-6 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer relative w-full" 
+                            className="group flex flex-row items-stretch hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors cursor-pointer relative w-full" 
                             onClick={() => handleItemToggle(item.id)}
                           >
+                            <div className="flex-1 flex flex-row items-start py-4 px-4 md:py-5 md:px-6 min-w-0">
                             {/* Left Column: Fixed Width in BOTH view and edit mode (w-20 sm:w-24 md:w-28 shrink-0 pr-2) */}
                             {isEditing ? (
                               <div className="w-20 sm:w-24 md:w-28 shrink-0 pr-2 flex flex-col gap-1 text-[10px] md:text-xs font-bold" onClick={(e) => e.stopPropagation()}>
@@ -3713,7 +3715,7 @@ export function JourneyDetailPage({
                                     scrollTargetItemIdRef.current = item.id;
                                     updateTimelineItem(item.id, 'time', time24hTo12h(val24h));
                                   }}
-                                  className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-[9px] md:text-[10px] text-black dark:text-white rounded border border-black/10 dark:border-white/10 w-full text-center"
+                                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-[9px] md:text-[10px] text-black dark:text-white rounded border border-black/10 dark:border-white/10 w-full text-center"
                                 />
 
                                 <select
@@ -3724,7 +3726,7 @@ export function JourneyDetailPage({
                                     updateTimelineItem(item.id, 'date', newDate);
                                     setSelectedDate(newDate);
                                   }}
-                                  className="bg-[#EAE8E3] dark:bg-white/10 border border-black/10 dark:border-white/10 text-[8.5px] md:text-[9.5px] font-bold p-0.5 outline-none text-black dark:text-white rounded w-full text-center"
+                                  className="bg-black/5 dark:bg-white/10 border border-black/10 dark:border-white/10 text-[8.5px] md:text-[9.5px] font-bold p-0.5 outline-none text-black dark:text-white rounded w-full text-center"
                                 >
                                   {allTripDates.map(d => (
                                     <option key={d} value={d}>{d.slice(5).replace('.', '/')}</option>
@@ -3855,7 +3857,7 @@ export function JourneyDetailPage({
                                     value={item.memo || ''}
                                     onChange={(e) => updateTimelineItem(item.id, 'memo', e.target.value)}
                                     onClick={(e) => e.stopPropagation()}
-                                    className="bg-[#EAE8E3] dark:bg-white/10 p-1 outline-none text-xs md:text-sm text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full resize-none select-text"
+                                    className="bg-black/5 dark:bg-white/10 p-1 outline-none text-xs md:text-sm text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full resize-none select-text"
                                     rows={item.memo ? Math.max(1, item.memo.split('\n').length) : 1}
                                     placeholder="Memo"
                                   />
@@ -3906,10 +3908,9 @@ export function JourneyDetailPage({
                               )}
                             </div>
 
-                            {/* Right Column: Cost Editor (only in editing mode) & Large Thumbnail (Flush with Grid) */}
-                            <div className="shrink-0 flex flex-col items-end gap-2 ml-2">
+                              {/* Cost Editor (only in editing mode) */}
                               {isEditing && (
-                                <div className="flex flex-col items-end gap-1">
+                                <div className="flex flex-col items-end gap-1 shrink-0 ml-3 self-start" onClick={(e) => e.stopPropagation()}>
                                   <span className="text-[8px] opacity-40 uppercase font-bold tracking-widest">Cost</span>
                                   <SettlementExpenseInput
                                     cost={item.cost}
@@ -3927,84 +3928,84 @@ export function JourneyDetailPage({
                                   />
                                 </div>
                               )}
-                              
-                              {/* Card thumbnail (fitted & flush with grid) */}
-                              {item.img ? (
-                                <div 
-                                  className={`w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 rounded-md overflow-hidden border transition-all relative shrink-0 ${isActive ? 'border-red-600 dark:border-red-400 shadow-md ring-2 ring-red-500/20' : 'border-black/15 dark:border-white/15'}`}
-                                  onClick={(e) => {
-                                    if (!isEditing) {
-                                      e.stopPropagation();
-                                      setActiveTab('gallery');
-                                      setExpandedItemId(600000000 + item.id);
-                                      setTimeout(() => {
-                                        const el = itemRefs.current[600000000 + item.id];
-                                        if (el) {
-                                          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                        }
-                                      }, 300);
-                                    }
-                                  }}
-                                >
-                                  <img src={getEffectiveImageUrl(item.img)} alt={item.place} className={`w-full h-full object-cover transition-all duration-300 ${isActive ? 'grayscale-0 scale-105' : 'grayscale group-hover:grayscale-0 group-hover:scale-105'}`} />
-                                  {/* Red dot badge: mark as timeline-attached photo */}
-                                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-600 rounded-full border border-white dark:border-black shadow z-10" />
-                                  <ImageEditOverlay 
-                                    isEditMode={isEditing} 
-                                    hasImage={true}
-                                    onImageRemoved={() => {
-                                      updateTimelineItemFields(item.id, { img: '' });
-                                    }}
-                                    onImageUploaded={async (url, gps) => {
-                                      if (gps) {
-                                        let addr = '';
-                                        try {
-                                          addr = await fetchAddressFromCoords(gps.lat, gps.lng) || '';
-                                        } catch (e) {
-                                          console.warn(e);
-                                        }
-                                        updateTimelineItemFields(item.id, { 
-                                          img: url, 
-                                          lat: gps.lat, 
-                                          lng: gps.lng,
-                                          location: addr || item.location,
-                                          place: addr ? addr.split(',')[0].trim() : item.place
-                                        });
-                                      } else {
-                                        updateTimelineItemFields(item.id, { img: url });
-                                      }
-                                    }} 
-                                  />
-                                </div>
-                              ) : (
-                                <div className={`w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 rounded-md border bg-black/5 dark:bg-white/5 flex items-center justify-center transition-colors relative shrink-0 ${isActive ? 'border-red-600 dark:border-red-400 text-red-600' : 'border-black/10 dark:border-white/10'}`}>
-                                  <ImageIcon className="w-5 h-5 text-black/30 dark:text-white/30" />
-                                  <ImageEditOverlay 
-                                    isEditMode={isEditing} 
-                                    hasImage={false}
-                                    onImageUploaded={async (url, gps) => {
-                                      if (gps) {
-                                        let addr = '';
-                                        try {
-                                          addr = await fetchAddressFromCoords(gps.lat, gps.lng) || '';
-                                        } catch (e) {
-                                          console.warn(e);
-                                        }
-                                        updateTimelineItemFields(item.id, { 
-                                          img: url, 
-                                          lat: gps.lat, 
-                                          lng: gps.lng,
-                                          location: addr || item.location,
-                                          place: addr ? addr.split(',')[0].trim() : item.place
-                                        });
-                                      } else {
-                                        updateTimelineItemFields(item.id, { img: url });
-                                      }
-                                    }} 
-                                  />
-                                </div>
-                              )}
                             </div>
+
+                            {/* Right Column: Full-Height 1:1 Edge-to-Edge Square Grid Thumbnail */}
+                            {item.img ? (
+                              <div 
+                                className={`w-24 sm:w-28 md:w-32 aspect-square self-stretch shrink-0 overflow-hidden border-l transition-all relative rounded-none ${isActive ? 'border-red-600 dark:border-red-400' : 'border-black/15 dark:border-white/15'}`}
+                                onClick={(e) => {
+                                  if (!isEditing) {
+                                    e.stopPropagation();
+                                    setActiveTab('gallery');
+                                    setExpandedItemId(600000000 + item.id);
+                                    setTimeout(() => {
+                                      const el = itemRefs.current[600000000 + item.id];
+                                      if (el) {
+                                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                      }
+                                    }, 300);
+                                  }
+                                }}
+                              >
+                                <img src={getEffectiveImageUrl(item.img)} alt={item.place} className={`w-full h-full object-cover transition-all duration-300 ${isActive ? 'grayscale-0 scale-105' : 'grayscale group-hover:grayscale-0 group-hover:scale-105'}`} />
+                                {/* Red dot badge: mark as timeline-attached photo */}
+                                <span className="absolute top-2 right-2 w-2 h-2 bg-red-600 rounded-full border border-white dark:border-black shadow z-10" />
+                                <ImageEditOverlay 
+                                  isEditMode={isEditing} 
+                                  hasImage={true}
+                                  onImageRemoved={() => {
+                                    updateTimelineItemFields(item.id, { img: '' });
+                                  }}
+                                  onImageUploaded={async (url, gps) => {
+                                    if (gps) {
+                                      let addr = '';
+                                      try {
+                                        addr = await fetchAddressFromCoords(gps.lat, gps.lng) || '';
+                                      } catch (e) {
+                                        console.warn(e);
+                                      }
+                                      updateTimelineItemFields(item.id, { 
+                                        img: url, 
+                                        lat: gps.lat, 
+                                        lng: gps.lng,
+                                        location: addr || item.location,
+                                        place: addr ? addr.split(',')[0].trim() : item.place
+                                      });
+                                    } else {
+                                      updateTimelineItemFields(item.id, { img: url });
+                                    }
+                                  }} 
+                                />
+                              </div>
+                            ) : isEditing ? (
+                              <div className={`w-24 sm:w-28 md:w-32 aspect-square self-stretch shrink-0 border-l bg-black/[0.02] dark:bg-white/[0.02] flex items-center justify-center transition-colors relative rounded-none ${isActive ? 'border-red-600 dark:border-red-400 text-red-600' : 'border-black/15 dark:border-white/15'}`}>
+                                <ImageIcon className="w-5 h-5 text-black/20 dark:text-white/20" />
+                                <ImageEditOverlay 
+                                  isEditMode={isEditing} 
+                                  hasImage={false}
+                                  onImageUploaded={async (url, gps) => {
+                                    if (gps) {
+                                      let addr = '';
+                                      try {
+                                        addr = await fetchAddressFromCoords(gps.lat, gps.lng) || '';
+                                      } catch (e) {
+                                        console.warn(e);
+                                      }
+                                      updateTimelineItemFields(item.id, { 
+                                        img: url, 
+                                        lat: gps.lat, 
+                                        lng: gps.lng,
+                                        location: addr || item.location,
+                                        place: addr ? addr.split(',')[0].trim() : item.place
+                                      });
+                                    } else {
+                                      updateTimelineItemFields(item.id, { img: url });
+                                    }
+                                  }} 
+                                />
+                              </div>
+                            ) : null}
                           </div>
                         
                         {/* Expanded Section Details (Edit mode only - no accordion expansion in view mode) */}
@@ -4050,7 +4051,7 @@ export function JourneyDetailPage({
                                           lng: coords?.lng ?? item.lng,
                                         });
                                       }}
-                                      className="bg-[#EAE8E3] dark:bg-white/10 px-2 py-1 outline-none text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
+                                      className="bg-black/5 dark:bg-white/10 px-2 py-1 outline-none text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
                                       placeholder="위치 지정 (예: 나리타공항)"
                                     />
                                   </div>
@@ -4086,7 +4087,7 @@ export function JourneyDetailPage({
                                     defaultValue={item.hours || ''}
                                     onBlur={(e) => updateTimelineItem(item.id, 'hours', e.target.value)}
                                     onClick={(e) => e.stopPropagation()}
-                                    className="bg-[#EAE8E3] dark:bg-white/10 px-2 py-1 outline-none text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
+                                    className="bg-black/5 dark:bg-white/10 px-2 py-1 outline-none text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
                                     placeholder="Hours e.g. 09:00 AM - 18:00 PM"
                                   />
                                 ) : (
@@ -4321,13 +4322,13 @@ export function JourneyDetailPage({
               <div className="flex justify-end gap-2 mb-4 text-[9px] md:text-[10px] font-bold uppercase tracking-widest select-none">
                 <button 
                   onClick={() => setTransitSortType('time')} 
-                  className={`px-2.5 py-1 border transition-colors rounded-sm ${transitSortType === 'time' ? 'bg-black text-[#F9F8F6] dark:bg-white dark:text-black border-black dark:border-white' : 'border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'}`}
+                  className={`px-2.5 py-1 border transition-colors rounded-sm ${transitSortType === 'time' ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' : 'border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'}`}
                 >
                   탑승시간순
                 </button>
                 <button 
                   onClick={() => setTransitSortType('type')} 
-                  className={`px-2.5 py-1 border transition-colors rounded-sm ${transitSortType === 'type' ? 'bg-black text-[#F9F8F6] dark:bg-white dark:text-black border-black dark:border-white' : 'border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'}`}
+                  className={`px-2.5 py-1 border transition-colors rounded-sm ${transitSortType === 'type' ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' : 'border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'}`}
                 >
                   탑승종류순
                 </button>
@@ -4672,27 +4673,31 @@ export function JourneyDetailPage({
                       {allGalleryImages.length} Photos
                     </span>
                     <div className="flex items-center gap-2">
-                      {/* 2 Cols / 4 Cols Toggle */}
-                      <div className="flex border border-black/10 dark:border-white/10 p-0.5 bg-black/5 dark:bg-white/5">
+                      {/* WIDE / GRID Toggle */}
+                      <div className="flex border border-black/15 dark:border-white/15 p-0.5 bg-black/5 dark:bg-white/5 rounded-none">
                         <button
                           onClick={() => setGalleryColumns(2)}
-                          className={`px-2.5 py-1 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                          className={`flex items-center gap-1.5 px-2.5 py-1 text-[9px] md:text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer ${
                             galleryColumns === 2
-                              ? 'bg-white dark:bg-[#1a1a1a] text-black dark:text-white shadow-sm'
-                              : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                              ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                              : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                           }`}
+                          title="Wide view (2 columns)"
                         >
-                          2 COLS (BIG)
+                          <Columns2 className="w-3.5 h-3.5" />
+                          <span>WIDE</span>
                         </button>
                         <button
                           onClick={() => setGalleryColumns(4)}
-                          className={`px-2.5 py-1 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                          className={`flex items-center gap-1.5 px-2.5 py-1 text-[9px] md:text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer ${
                             galleryColumns === 4
-                              ? 'bg-white dark:bg-[#1a1a1a] text-black dark:text-white shadow-sm'
-                              : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                              ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                              : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                           }`}
+                          title="Grid view (4 columns)"
                         >
-                          4 COLS
+                          <LayoutGrid className="w-3.5 h-3.5" />
+                          <span>GRID</span>
                         </button>
                       </div>
 
@@ -4968,7 +4973,7 @@ function TimelineItemPlaceInput({
           onChange={(e) => setLocalVal(e.target.value)}
           onFocus={() => setShowDropdown(true)}
           onBlur={handleBlur}
-          className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-sm md:text-base text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full select-text"
+          className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-sm md:text-base text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full select-text"
           placeholder="일정 이름"
         />
         <button 

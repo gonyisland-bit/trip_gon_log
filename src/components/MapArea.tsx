@@ -1029,7 +1029,7 @@ export function MapArea({
 
   if (!(window as any).L) {
     return (
-      <div className="flex-grow relative bg-[#EAE8E3] dark:bg-[#1A1A1A] overflow-hidden flex flex-col items-center justify-center text-black/40 dark:text-white/40 p-6">
+      <div className="flex-grow relative bg-neutral-100 dark:bg-[#111111] overflow-hidden flex flex-col items-center justify-center text-black/40 dark:text-white/40 p-6">
         <span className="text-[10px] uppercase tracking-widest font-bold z-10 mb-2">Loading Map Engine...</span>
       </div>
     );
@@ -1070,7 +1070,7 @@ export function MapArea({
   })();
 
   return (
-    <div className="flex-grow relative bg-[#EAE8E3] dark:bg-[#1A1A1A] overflow-hidden transition-colors duration-300">
+    <div className="flex-grow relative bg-neutral-100 dark:bg-[#111111] overflow-hidden transition-colors duration-300">
       {/* Leaflet map container */}
       <div
         ref={containerRef}

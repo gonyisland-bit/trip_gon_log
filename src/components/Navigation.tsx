@@ -61,7 +61,7 @@ export function Navigation({
   }, [showSettings, setShowSettings]);
 
   return (
-    <nav className="sticky top-0 z-40 w-full bg-[#F9F8F6] dark:bg-[#111111] border-b border-black/10 dark:border-white/10 transition-colors duration-300 select-none">
+    <nav className="sticky top-0 z-40 w-full bg-white dark:bg-[#0A0A0A] border-b border-black/10 dark:border-white/10 transition-colors duration-300 select-none">
       <div className="w-full px-5 sm:px-8 md:px-12 lg:px-16 h-14 sm:h-16 flex items-center justify-between">
         {/* Left: Brand Logo & Links */}
         <div className="flex items-center gap-6 md:gap-10 min-w-0">

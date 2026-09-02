@@ -238,7 +238,7 @@ function HeroMedia({ journey, isActive, mediaType }: HeroMediaProps) {
           className="w-full h-full object-cover"
         />
       ) : (
-        <div className="w-full h-full bg-gradient-to-br from-[#EAE8E3] via-[#F4F3EF] to-[#D5D3CC] dark:from-[#0E0E0E] dark:via-[#161616] dark:to-[#0A0A0A]" />
+        <div className="w-full h-full bg-gradient-to-br from-neutral-100 via-neutral-50 to-neutral-200 dark:from-[#0E0E0E] dark:via-[#161616] dark:to-[#0A0A0A]" />
       )}
     </div>
   );
@@ -430,7 +430,7 @@ export function HomePage({
       <section className="relative w-full h-[60vh] md:h-[80vh] overflow-hidden group border-b border-black/20 dark:border-white/20">
         {/* Background style */}
         {heroJourneys.length === 0 ? (
-          <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#EAE8E3] via-[#F4F3EF] to-[#D5D3CC] dark:from-[#0E0E0E] dark:via-[#161616] dark:to-[#0A0A0A]" />
+          <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-neutral-100 via-neutral-50 to-neutral-200 dark:from-[#0E0E0E] dark:via-[#161616] dark:to-[#0A0A0A]" />
         ) : (
           heroJourneys.map((journey, index) => (
             <HeroMedia
@@ -543,7 +543,7 @@ export function HomePage({
       {/* Plans Section Preview */}
       {localPlans.length > 0 && (
         <section className="flex flex-col w-full overflow-hidden border-b border-black/20 dark:border-white/20 transition-colors">
-          <div className="p-6 md:px-12 border-b border-black/20 dark:border-white/20 flex flex-col sm:flex-row justify-between sm:items-end gap-4 transition-colors bg-[#EAE8E3]/35 dark:bg-[#1a1a1a]/35">
+          <div className="p-6 md:px-12 border-b border-black/20 dark:border-white/20 flex flex-col sm:flex-row justify-between sm:items-end gap-4 transition-colors bg-black/[0.02] dark:bg-white/[0.02]">
             <div>
               <h2 className="text-2xl font-black tracking-tighter uppercase break-keep">Upcoming Plans</h2>
               <p className="text-sm text-black/50 dark:text-white/50 mt-1 break-keep">다가오는 여행 계획을 준비하고, 여행 후 아카이브로 전환하세요.</p>

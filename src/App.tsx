@@ -1230,7 +1230,7 @@ function App() {
 
   return (
     <div className={`${isDarkMode ? 'dark' : ''} overflow-x-hidden w-full`}>
-      <div className={`min-h-screen bg-[#F9F8F6] text-[#111111] dark:bg-[#111111] dark:text-[#F9F8F6] font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 w-full overflow-x-hidden flex flex-col ${currentView === 'detail' ? 'h-screen overflow-hidden' : ''}`}>
+      <div className={`min-h-screen bg-white text-black dark:bg-[#0A0A0A] dark:text-white font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 w-full overflow-x-hidden flex flex-col ${currentView === 'detail' ? 'h-screen overflow-hidden' : ''}`}>
         
         {/* Firebase Error/Status Banners */}
         {dbError && (
@@ -1570,19 +1570,32 @@ function App() {
         )}
       </div>
 
-      {/* Splash Screen */}
+      {/* Splash Screen V0.7 */}
       {showSplash && (
-        <div className={`fixed inset-0 z-[99999] flex flex-col justify-between items-center bg-[#F4F3EF] dark:bg-[#0E0E0E] splash-container ${fadeSplash ? 'splash-container-fade' : 'splash-container-active'}`}>
-          <div /> {/* Top spacing */}
-          <div className="flex flex-col items-center">
-            <h1 className="text-5xl sm:text-7xl md:text-9xl font-black tracking-tighter splash-title-shimmer splash-text-animate select-none pb-4 md:pb-8 leading-[1.15]">
-              Tripgon log
-            </h1>
+        <div className={`fixed inset-0 z-[99999] flex flex-col justify-between items-center bg-white dark:bg-[#0A0A0A] p-8 md:p-12 splash-container ${fadeSplash ? 'splash-container-fade' : 'splash-container-active'}`}>
+          {/* Top Micro Masthead */}
+          <div className="flex items-center gap-2 text-[10px] font-mono font-black uppercase tracking-[0.3em] text-black/60 dark:text-white/60">
+            <span>TRIP GON LOG</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
+            <span>AUTONOMOUS JOURNAL</span>
           </div>
-          <div className="pb-8">
-            <span className="text-[10px] md:text-xs font-bold tracking-widest text-black/40 dark:text-white/40 uppercase">
-              v0.6c
+
+          {/* Center Giant Satoshi Typography */}
+          <div className="flex flex-col items-center select-none text-center">
+            <h1 className="text-6xl sm:text-8xl md:text-9xl font-black font-satoshi uppercase tracking-tighter text-black dark:text-white leading-none">
+              TRIPGON
+            </h1>
+            <div className="h-[2px] w-16 bg-red-600 my-4" />
+            <span className="text-xs sm:text-sm font-mono font-bold uppercase tracking-[0.35em] text-black/40 dark:text-white/40">
+              EDITORIAL LOG SYSTEM
             </span>
+          </div>
+
+          {/* Bottom Version */}
+          <div className="flex items-center gap-3 text-[10px] font-mono text-black/40 dark:text-white/40 uppercase tracking-widest">
+            <span>V0.7</span>
+            <span>·</span>
+            <span>SYSTEM READY</span>
           </div>
         </div>
       )}

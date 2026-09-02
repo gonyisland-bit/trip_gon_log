@@ -345,7 +345,7 @@ export function EditTripModal({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-2.5 text-xs font-bold text-black dark:text-white outline-none w-full focus:border-red-600 dark:focus:border-red-400 transition-colors"
+              className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2.5 text-xs font-bold text-black dark:text-white outline-none w-full focus:border-red-600 dark:focus:border-red-400 transition-colors"
               placeholder="e.g. TOKYO, JAPAN"
               required
             />
@@ -360,7 +360,7 @@ export function EditTripModal({
               type="text"
               value={country}
               onChange={(e) => setCountry(e.target.value)}
-              className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-2.5 text-xs font-bold text-black dark:text-white outline-none w-full focus:border-red-600 dark:focus:border-red-400 transition-colors"
+              className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2.5 text-xs font-bold text-black dark:text-white outline-none w-full focus:border-red-600 dark:focus:border-red-400 transition-colors"
               placeholder="e.g. JAPAN, ITALY (여정 서머리 지도 오버레이에 영문 대문자로 노출)"
             />
           </div>
@@ -375,7 +375,7 @@ export function EditTripModal({
                 type="date"
                 value={parseDateRange(date).start}
                 onChange={(e) => handleDateChange('start', e.target.value)}
-                className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-bold text-black dark:text-white outline-none flex-1 focus:border-red-600 dark:focus:border-red-400 transition-colors"
+                className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-bold text-black dark:text-white outline-none flex-1 focus:border-red-600 dark:focus:border-red-400 transition-colors"
                 required
               />
               <span className="text-xs font-bold text-black/40 dark:text-white/40">—</span>
@@ -383,7 +383,7 @@ export function EditTripModal({
                 type="date"
                 value={parseDateRange(date).end}
                 onChange={(e) => handleDateChange('end', e.target.value)}
-                className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-bold text-black dark:text-white outline-none flex-1 focus:border-red-600 dark:focus:border-red-400 transition-colors"
+                className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-bold text-black dark:text-white outline-none flex-1 focus:border-red-600 dark:focus:border-red-400 transition-colors"
                 required
               />
             </div>
@@ -435,7 +435,7 @@ export function EditTripModal({
                       setLocationInput('');
                     }
                   }}
-                  className="w-full pl-10 pr-4 py-2.5 text-xs font-bold bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 focus:border-red-600 dark:focus:border-red-400 outline-none transition-colors rounded-none text-black dark:text-white"
+                  className="w-full pl-10 pr-4 py-2.5 text-xs font-bold bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 focus:border-red-600 dark:focus:border-red-400 outline-none transition-colors rounded-none text-black dark:text-white"
                   placeholder="도시 검색..."
                 />
               </div>
@@ -492,7 +492,7 @@ export function EditTripModal({
                 onChange={(e) => handleTagInputChange(e.target.value)}
                 onKeyDown={handleTagInputKeyDown}
                 placeholder="e.g. Tokyo, 2026, Summer"
-                className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-2.5 text-xs font-bold text-black dark:text-white outline-none w-full focus:border-red-600 dark:focus:border-red-400 transition-colors"
+                className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2.5 text-xs font-bold text-black dark:text-white outline-none w-full focus:border-red-600 dark:focus:border-red-400 transition-colors"
               />
             </div>
 
@@ -566,7 +566,7 @@ export function EditTripModal({
                   }
                 }}
                 placeholder="참석자 이름 입력 후 Enter..."
-                className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-bold text-black dark:text-white outline-none flex-grow focus:border-red-600 dark:focus:border-red-400 transition-colors"
+                className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-bold text-black dark:text-white outline-none flex-grow focus:border-red-600 dark:focus:border-red-400 transition-colors"
               />
               <button
                 type="button"
@@ -597,7 +597,7 @@ export function EditTripModal({
                 type="text"
                 value={imgUrl}
                 onChange={(e) => setImgUrl(e.target.value)}
-                className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-2.5 text-xs font-medium text-black dark:text-white outline-none flex-grow focus:border-red-600 dark:focus:border-red-400 transition-colors"
+                className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2.5 text-xs font-medium text-black dark:text-white outline-none flex-grow focus:border-red-600 dark:focus:border-red-400 transition-colors"
                 placeholder="Image URL"
                 required
               />
@@ -653,7 +653,7 @@ export function EditTripModal({
                 type="text"
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
-                className="bg-[#EAE8E3] dark:bg-white/5 border border-black/10 dark:border-white/10 p-2.5 text-xs font-medium text-black dark:text-white outline-none flex-grow focus:border-red-600 dark:focus:border-red-400 transition-colors"
+                className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2.5 text-xs font-medium text-black dark:text-white outline-none flex-grow focus:border-red-600 dark:focus:border-red-400 transition-colors"
                 placeholder="Video URL (e.g. mp4)"
               />
               <input

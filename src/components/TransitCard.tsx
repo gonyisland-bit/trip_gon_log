@@ -170,16 +170,16 @@ export function TransitCard({
   return (
     <div 
       onClick={onClick}
-      className={`border mb-6 font-sans text-black dark:text-white relative shadow-sm transition-all duration-300 ${
-        !isEditMode ? 'cursor-pointer hover:shadow-md' : ''
+      className={`border-b font-sans text-black dark:text-white relative transition-all duration-300 w-full ${
+        !isEditMode ? 'cursor-pointer hover:bg-black/[0.01] dark:hover:bg-white/[0.01]' : ''
       } ${
         isActive 
-          ? 'border-red-600 dark:border-red-400 ring-1 ring-red-600/30 bg-red-500/[0.01] dark:bg-red-400/[0.01] shadow-md' 
-          : 'border-black/10 dark:border-white/10 bg-white dark:bg-[#1a1a1a]'
+          ? 'border-red-600 dark:border-red-400 bg-red-500/[0.01] dark:bg-red-400/[0.01]' 
+          : 'border-black/15 dark:border-white/15 bg-white dark:bg-[#0A0A0A]'
       }`}
     >
       {/* Header bar */}
-      <div className="bg-[#EAE8E3]/50 dark:bg-white/10 px-4 py-2 border-b border-black/10 dark:border-white/10 flex justify-between items-center text-[10px] md:text-xs font-bold tracking-widest text-black/60 dark:text-white/60 gap-4">
+      <div className="bg-black/[0.03] dark:bg-white/5 px-4 py-2.5 border-b border-black/15 dark:border-white/15 flex justify-between items-center text-[10px] md:text-xs font-bold tracking-widest text-black/60 dark:text-white/60 gap-4">
         <div className="flex items-center gap-2">
           {(() => {
             const typeUpper = (transit.ticketType || '').toUpperCase();
@@ -203,7 +203,7 @@ export function TransitCard({
                 }
               }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm uppercase w-32 cursor-pointer"
+              className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm uppercase w-32 cursor-pointer"
             >
               <option value="TRAIN TICKET">TRAIN TICKET</option>
               <option value="BUS TICKET">BUS TICKET</option>
@@ -222,7 +222,7 @@ export function TransitCard({
               max={maxDate}
               onChange={(e) => onUpdate(transit.id, 'date', e.target.value.replace(/-/g, '.'))}
               onClick={(e) => e.stopPropagation()}
-              className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 text-right"
+              className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 text-right"
             />
           ) : (
             <span>{transit.date}</span>
@@ -256,7 +256,7 @@ export function TransitCard({
                 onChange={(e) => setLocalTitle(e.target.value)}
                 onBlur={() => onUpdate(transit.id, 'title', localTitle)}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none font-black text-lg md:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
+                className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-black text-lg md:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
                 placeholder="TRANSIT TITLE"
               />
             ) : (
@@ -283,7 +283,7 @@ export function TransitCard({
                         ...(coords ? { departLat: coords.lat, departLng: coords.lng } : {})
                       });
                     }}
-                    className="w-full bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm"
+                    className="w-full bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm"
                     placeholder="Departure terminal/station..."
                   />
                 </div>
@@ -305,7 +305,7 @@ export function TransitCard({
                         ...(coords ? { arriveLat: coords.lat, arriveLng: coords.lng } : {})
                       });
                     }}
-                    className="w-full bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm"
+                    className="w-full bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm"
                     placeholder="Arrival terminal/station..."
                   />
                 </div>
@@ -342,7 +342,7 @@ export function TransitCard({
                   type="time"
                   value={timeStrTo24h(transit.time)}
                   onChange={(e) => onUpdate(transit.id, 'time', time24hTo12h(e.target.value))}
-                  className="bg-[#EAE8E3] dark:bg-white/10 px-2 py-0.5 outline-none font-black text-xl md:text-2xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 md:w-40 text-center [&::-webkit-calendar-picker-indicator]:hidden"
+                  className="bg-black/5 dark:bg-white/10 px-2 py-0.5 outline-none font-black text-xl md:text-2xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 md:w-40 text-center [&::-webkit-calendar-picker-indicator]:hidden"
                 />
                 <button
                   type="button"
@@ -353,7 +353,7 @@ export function TransitCard({
                       console.warn(err);
                     }
                   }}
-                  className="p-1.5 md:p-2 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-[#EAE8E3] dark:bg-white/10 cursor-pointer flex items-center justify-center"
+                  className="p-1.5 md:p-2 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-black/5 dark:bg-white/10 cursor-pointer flex items-center justify-center"
                   title="시간 선택"
                 >
                   <Clock className="w-4 h-4 md:w-5 md:h-5 text-black/60 dark:text-white/60" />
@@ -377,7 +377,7 @@ export function TransitCard({
                   onChange={(e) => setLocalSeat(e.target.value)}
                   onBlur={() => onUpdate(transit.id, 'seat', localSeat)}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full"
+                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full"
                   placeholder="Car 0, 00A"
                 />
               ) : (
@@ -395,7 +395,7 @@ export function TransitCard({
                   onChange={(e) => setLocalBookingRef(e.target.value)}
                   onBlur={() => onUpdate(transit.id, 'bookingRef', localBookingRef)}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
+                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
                   placeholder="TRN-000"
                 />
               ) : (

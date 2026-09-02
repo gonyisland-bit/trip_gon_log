@@ -202,7 +202,7 @@ export function FlightCard({
       }`}
     >
       {/* Header bar */}
-      <div className="bg-[#EAE8E3]/50 dark:bg-white/10 px-4 py-2 flex justify-between items-center text-[10px] md:text-xs font-bold tracking-widest text-black/60 dark:text-white/60 border-b border-black/10 dark:border-white/10 gap-4">
+      <div className="bg-black/[0.03] dark:bg-white/5 px-4 py-2.5 flex justify-between items-center text-[10px] md:text-xs font-bold tracking-widest text-black/60 dark:text-white/60 border-b border-black/15 dark:border-white/15 gap-4">
         {isEditMode ? (
           <input
             type="text"
@@ -210,7 +210,7 @@ export function FlightCard({
             onChange={(e) => setLocalTitle(e.target.value.toUpperCase())}
             onBlur={() => onUpdate(flight.id, 'title', localTitle)}
             onClick={(e) => e.stopPropagation()}
-            className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm uppercase w-40"
+            className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm uppercase w-40"
             placeholder="FLIGHT TITLE"
           />
         ) : (
@@ -224,7 +224,7 @@ export function FlightCard({
             max={maxDate}
             onChange={(e) => onUpdate(flight.id, 'date', e.target.value.replace(/-/g, '.'))}
             onClick={(e) => e.stopPropagation()}
-            className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 text-right"
+            className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 text-right"
           />
         ) : (
           <span>{flight.date}</span>
@@ -258,7 +258,7 @@ export function FlightCard({
                     setTimeout(() => setActiveSearchField(null), 250);
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none font-black text-lg md:text-2xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-14"
+                  className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-black text-lg md:text-2xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-14"
                   placeholder="DEP"
                 />
                 
@@ -317,10 +317,10 @@ export function FlightCard({
                   onUpdate(flight.id, 'fromTerminal', `TER ${val}`);
                 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-[#1a1a1a] px-1 py-0.5 outline-none text-[8px] md:text-[10px] font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-14 mt-1 cursor-pointer"
+                className="bg-black/5 dark:bg-[#1a1a1a] px-1 py-0.5 outline-none text-[8px] md:text-[10px] font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-14 mt-1 cursor-pointer"
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                  <option key={num} value={num} className="bg-[#EAE8E3] dark:bg-[#1a1a1a]">TER {num}</option>
+                  <option key={num} value={num} className="bg-white dark:bg-[#1a1a1a]">TER {num}</option>
                 ))}
               </select>
             ) : (
@@ -336,7 +336,7 @@ export function FlightCard({
                   type="time"
                   value={timeStrTo24h(flight.fromTime)}
                   onChange={(e) => onUpdate(flight.id, 'fromTime', time24hTo12h(e.target.value))}
-                  className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-[9px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-[72px] [&::-webkit-calendar-picker-indicator]:hidden"
+                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-[9px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-[72px] [&::-webkit-calendar-picker-indicator]:hidden"
                 />
                 <button
                   type="button"
@@ -347,7 +347,7 @@ export function FlightCard({
                       console.warn(err);
                     }
                   }}
-                  className="p-1 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-[#EAE8E3] dark:bg-white/10 cursor-pointer flex items-center justify-center"
+                  className="p-1 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-black/5 dark:bg-white/10 cursor-pointer flex items-center justify-center"
                   title="시간 선택"
                 >
                   <Clock className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
@@ -438,7 +438,7 @@ export function FlightCard({
                     setTimeout(() => setActiveSearchField(null), 250);
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none font-black text-lg md:text-2xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-14"
+                  className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-black text-lg md:text-2xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-14"
                   placeholder="ARR"
                 />
                 
@@ -497,10 +497,10 @@ export function FlightCard({
                   onUpdate(flight.id, 'toTerminal', `TER ${val}`);
                 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-[#1a1a1a] px-1 py-0.5 outline-none text-[8px] md:text-[10px] font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-14 mt-1 cursor-pointer"
+                className="bg-black/5 dark:bg-[#1a1a1a] px-1 py-0.5 outline-none text-[8px] md:text-[10px] font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-14 mt-1 cursor-pointer"
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                  <option key={num} value={num} className="bg-[#EAE8E3] dark:bg-[#1a1a1a]">TER {num}</option>
+                  <option key={num} value={num} className="bg-white dark:bg-[#1a1a1a]">TER {num}</option>
                 ))}
               </select>
             ) : (
@@ -516,7 +516,7 @@ export function FlightCard({
                   type="time"
                   value={timeStrTo24h(flight.toTime)}
                   onChange={(e) => onUpdate(flight.id, 'toTime', time24hTo12h(e.target.value))}
-                  className="bg-[#EAE8E3] dark:bg-white/10 px-1 py-0.5 outline-none text-[9px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-[72px] [&::-webkit-calendar-picker-indicator]:hidden"
+                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-[9px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-[72px] [&::-webkit-calendar-picker-indicator]:hidden"
                 />
                 <button
                   type="button"
@@ -527,7 +527,7 @@ export function FlightCard({
                       console.warn(err);
                     }
                   }}
-                  className="p-1 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-[#EAE8E3] dark:bg-white/10 cursor-pointer flex items-center justify-center"
+                  className="p-1 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-black/5 dark:bg-white/10 cursor-pointer flex items-center justify-center"
                   title="시간 선택"
                 >
                   <Clock className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
@@ -556,7 +556,7 @@ export function FlightCard({
                 onChange={(e) => setLocalSeat(e.target.value.toUpperCase())}
                 onBlur={() => onUpdate(flight.id, 'seat', localSeat)}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full text-center md:text-left uppercase"
+                className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full text-center md:text-left uppercase"
                 placeholder="00A"
               />
             ) : (
@@ -574,7 +574,7 @@ export function FlightCard({
                 onChange={(e) => setLocalPnr(e.target.value.toUpperCase())}
                 onBlur={() => onUpdate(flight.id, 'pnr', localPnr)}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#EAE8E3] dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full text-center md:text-left uppercase"
+                className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full text-center md:text-left uppercase"
                 placeholder="XXXXXX"
               />
             ) : (

@@ -341,46 +341,46 @@ export function SummaryView({
         </div>
 
         {/* 2. Giant Typographic Metrics Grid (Reference "12 Team Members", "6 Advisory Board" Style) */}
-        <div className="py-6 border-y border-black dark:border-white grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
+        <div className="py-6 border-y border-black dark:border-white grid grid-cols-2 lg:grid-cols-4 gap-y-6 gap-x-4 sm:gap-6 w-full">
           {/* Metric 1: Total Days */}
-          <div className="flex items-baseline gap-2.5 sm:gap-3">
-            <span className="text-5xl sm:text-6xl md:text-7xl font-black font-satoshi tracking-tighter text-black dark:text-white leading-none">
+          <div className="flex items-baseline gap-2 sm:gap-2.5 min-w-0">
+            <span className="text-4xl sm:text-5xl lg:text-6xl font-black font-satoshi tracking-tighter text-black dark:text-white leading-none shrink-0">
               {totalDays < 10 ? `0${totalDays}` : totalDays}
             </span>
-            <div className="flex flex-col text-left font-satoshi font-bold text-xs sm:text-sm leading-tight text-black/70 dark:text-white/70">
+            <div className="flex flex-col text-left font-satoshi font-bold text-xs sm:text-sm leading-tight text-black/70 dark:text-white/70 min-w-0">
               <span>Total</span>
               <span>Days</span>
             </div>
           </div>
 
           {/* Metric 2: Recorded Spots */}
-          <div className="flex items-baseline gap-2.5 sm:gap-3">
-            <span className="text-5xl sm:text-6xl md:text-7xl font-black font-satoshi tracking-tighter text-black dark:text-white leading-none">
+          <div className="flex items-baseline gap-2 sm:gap-2.5 min-w-0">
+            <span className="text-4xl sm:text-5xl lg:text-6xl font-black font-satoshi tracking-tighter text-black dark:text-white leading-none shrink-0">
               {recordedSpotsCount < 10 ? `0${recordedSpotsCount}` : recordedSpotsCount}
             </span>
-            <div className="flex flex-col text-left font-satoshi font-bold text-xs sm:text-sm leading-tight text-black/70 dark:text-white/70">
+            <div className="flex flex-col text-left font-satoshi font-bold text-xs sm:text-sm leading-tight text-black/70 dark:text-white/70 min-w-0">
               <span>Recorded</span>
               <span>Spots</span>
             </div>
           </div>
 
           {/* Metric 3: Flight Legs */}
-          <div className="flex items-baseline gap-2.5 sm:gap-3">
-            <span className="text-5xl sm:text-6xl md:text-7xl font-black font-satoshi tracking-tighter text-black dark:text-white leading-none">
+          <div className="flex items-baseline gap-2 sm:gap-2.5 min-w-0">
+            <span className="text-4xl sm:text-5xl lg:text-6xl font-black font-satoshi tracking-tighter text-black dark:text-white leading-none shrink-0">
               {flights.length < 10 ? `0${flights.length}` : flights.length}
             </span>
-            <div className="flex flex-col text-left font-satoshi font-bold text-xs sm:text-sm leading-tight text-black/70 dark:text-white/70">
+            <div className="flex flex-col text-left font-satoshi font-bold text-xs sm:text-sm leading-tight text-black/70 dark:text-white/70 min-w-0">
               <span>Flight</span>
               <span>Legs</span>
             </div>
           </div>
 
           {/* Metric 4: Total Estimated Budget (Point Red Accent) */}
-          <div className="flex items-baseline gap-2.5 sm:gap-3">
-            <span className="text-4xl sm:text-5xl md:text-6xl font-black font-mono tracking-tight text-red-600 dark:text-red-500 leading-none">
+          <div className="flex items-baseline gap-2 sm:gap-2.5 min-w-0">
+            <span className="text-3xl sm:text-4xl lg:text-5xl font-black font-mono tracking-tight text-red-600 dark:text-red-500 leading-none shrink-0">
               ₩{totalInBaseCurrency >= 1000000 ? `${(totalInBaseCurrency / 1000000).toFixed(1)}M` : totalInBaseCurrency >= 10000 ? `${Math.round(totalInBaseCurrency / 10000)}만` : totalInBaseCurrency.toLocaleString()}
             </span>
-            <div className="flex flex-col text-left font-satoshi font-bold text-xs sm:text-sm leading-tight text-black/70 dark:text-white/70">
+            <div className="flex flex-col text-left font-satoshi font-bold text-xs sm:text-sm leading-tight text-black/70 dark:text-white/70 min-w-0">
               <span>Estimated</span>
               <span>Budget</span>
             </div>
