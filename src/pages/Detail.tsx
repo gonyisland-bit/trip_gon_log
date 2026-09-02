@@ -3353,6 +3353,7 @@ export function JourneyDetailPage({
         {/* Tab Headers - Unified Single-line Sleek Design */}
         <div className="flex overflow-x-auto hide-scrollbar flex-nowrap border-b border-black/15 dark:border-white/15 bg-white dark:bg-[#0A0A0A] transition-colors shrink-0 w-full h-9 sm:h-10">
           {[ 
+            { id: 'summary', label: 'Summary', icon: FileText },
             { id: 'timeline', label: 'Log', icon: Clock }, 
             { id: 'flights', label: 'Flights', icon: Plane }, 
             { id: 'stays', label: 'Stays', icon: Bed }, 

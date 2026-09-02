@@ -1312,7 +1312,7 @@ function App() {
         )}
 
         {/* View Routing */}
-        <div className={`w-full flex-grow ${currentView === 'detail' ? 'overflow-hidden flex flex-col' : ''}`}>
+        <div className={`w-full flex-grow ${currentView === 'detail' ? 'overflow-hidden flex flex-col h-full flex-1 min-h-0' : ''}`}>
           {!isLoggedIn && !isShareMode ? (
             <div className="min-h-[60vh] md:min-h-[70vh] flex flex-col items-center justify-center p-8 bg-[#F4F3EF] dark:bg-[#0E0E0E] transition-colors text-center w-full">
               <div className="max-w-md flex flex-col items-center gap-5">
@@ -1332,7 +1332,7 @@ function App() {
               </div>
             </div>
           ) : (
-            <div key={`${currentView}-${activeTripId || ''}`} className="animate-in fade-in zoom-in-[0.99] duration-200 ease-out w-full">
+            <>
               {currentView === 'home' && (
                 <HomePage 
                   onNavigate={navigateTo} 
@@ -1453,7 +1453,7 @@ function App() {
                   </div>
                 )
               )}
-            </div>
+            </>
           )}
         </div>
         

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { 
   FileText, Share2, Download, X, Calendar, MapPin, 
   Bed, Plane, Train, Landmark, ChevronDown, ChevronUp, ArrowDownRight, ArrowRight
@@ -322,14 +322,24 @@ export function SummaryView({
     });
   });
 
+  useEffect(() => {
+    if (!capturedImg) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setCapturedImg(null);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [capturedImg]);
+
   const handleCapture = async () => {
     setIsCapturing(true);
     setTimeout(async () => {
       if (printRef.current) {
         try {
+          const isDark = document.documentElement.classList.contains('dark');
           const canvas = await html2canvas(printRef.current, {
             useCORS: true,
-            backgroundColor: document.documentElement.classList.contains('dark') ? '#121212' : '#ffffff',
+            backgroundColor: isDark ? '#0A0A0A' : '#ffffff',
             scale: 2,
             ignoreElements: (element) => element.id === 'capture-exclude-btn',
           });
@@ -765,48 +775,52 @@ export function SummaryView({
 
       {/* Image Share / Download Modal (Rendered in Portal) */}
       {capturedImg && createPortal(
-        <div className="fixed inset-0 z-[100000] bg-black/80 flex flex-col items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#1a1a1a] p-5 rounded-lg max-w-2xl w-full flex flex-col gap-4 shadow-xl text-left border border-black/10 dark:border-white/10 animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center border-b pb-2.5 border-black/5 dark:border-white/10">
-              <span className="text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70 flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-amber-600 dark:text-amber-500" />
-                여정 요약 이미지 저장 및 공유
+        <div 
+          onClick={() => setCapturedImg(null)}
+          className="fixed inset-0 z-[100000] bg-black/80 backdrop-blur-xs flex flex-col items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-[#0E0E0E] max-w-xl w-full flex flex-col shadow-2xl text-left border border-black/20 dark:border-white/20 animate-in zoom-in-95 duration-150 rounded-none overflow-hidden"
+          >
+            {/* Modal Header */}
+            <div className="flex justify-between items-center px-4 sm:px-5 py-3 border-b border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02]">
+              <span className="text-xs font-black uppercase tracking-widest text-black dark:text-white font-sans">
+                MEMORANDUM SUMMARY
               </span>
-              <button onClick={() => setCapturedImg(null)} className="text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white p-1 transition-colors cursor-pointer">
+              <button 
+                onClick={() => setCapturedImg(null)} 
+                className="text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-1 transition-colors cursor-pointer"
+                title="닫기 (ESC)"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
             
-            <div className="border border-black/10 dark:border-white/10 rounded-sm overflow-hidden max-h-[75vh] overflow-y-auto bg-black/5 dark:bg-black/40 flex justify-center p-2">
-              <img src={capturedImg} alt="여정 요약 결과" className="max-w-full h-auto object-contain max-h-[70vh] shadow-md bg-white" />
+            {/* Edge-to-Edge Image Container */}
+            <div className="p-3 sm:p-4 max-h-[70vh] overflow-y-auto bg-neutral-100 dark:bg-black/60 flex items-center justify-center border-b border-black/15 dark:border-white/15">
+              <img 
+                src={capturedImg} 
+                alt="여정 요약" 
+                className="w-auto max-w-full h-auto object-contain max-h-[64vh] shadow-lg border border-black/10 dark:border-white/10" 
+              />
             </div>
             
-            <p className="text-[9px] text-black/50 dark:text-white/50 text-center leading-relaxed">
-              💡 모바일 기기(카카오톡 등)에서는 이미지를 길게 누르면 저장하거나 공유할 수 있습니다.
-            </p>
-            
-            <div className="flex gap-2">
+            {/* Action Buttons: ONLY SAVE & SHARE, Inter Bold Minimalist */}
+            <div className="flex items-stretch divide-x divide-black/15 dark:divide-white/15 bg-white dark:bg-[#0E0E0E]">
               <button
                 onClick={handleSaveImage}
-                className="flex-1 bg-black text-white dark:bg-white dark:text-black py-2.5 rounded-sm text-xs font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center justify-center gap-1.5 cursor-pointer"
+                className="flex-1 py-3 sm:py-3.5 bg-black text-white dark:bg-white dark:text-black text-xs sm:text-sm font-black uppercase tracking-widest font-sans hover:opacity-85 transition-opacity flex items-center justify-center gap-2 cursor-pointer rounded-none"
               >
-                <Download className="w-3.5 h-3.5" />
-                저장 (다운로드)
+                <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span>SAVE</span>
               </button>
-              {typeof navigator.share !== 'undefined' && (
-                <button
-                  onClick={handleShareImage}
-                  className="flex-1 bg-amber-600 text-white py-2.5 rounded-sm text-xs font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <Share2 className="w-3.5 h-3.5" />
-                  보내기 (공유)
-                </button>
-              )}
               <button
-                onClick={() => setCapturedImg(null)}
-                className="flex-1 border border-black/20 dark:border-white/20 py-2.5 rounded-sm text-xs font-bold hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                onClick={handleShareImage}
+                className="flex-1 py-3 sm:py-3.5 bg-transparent text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 text-xs sm:text-sm font-black uppercase tracking-widest font-sans transition-colors flex items-center justify-center gap-2 cursor-pointer rounded-none"
               >
-                닫기
+                <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span>SHARE</span>
               </button>
             </div>
           </div>
