@@ -3866,6 +3866,8 @@ export function JourneyDetailPage({
                                   >
                                     {isExcluded ? <MapPinOff className="w-3 h-3 mr-0.5" /> : <MapPin className="w-3 h-3 mr-0.5" style={dayColor ? { color: dayColor } : undefined} />}
                                     <span>{isExcluded ? "OFF" : "ON"}</span>
+                                  </button>
+                                )}
                               </div>
                             ) : (
                               <div className={`w-24 sm:w-28 md:w-32 shrink-0 pr-2.5 flex flex-col tracking-tight mt-0.5 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/80 dark:text-white/80'}`}>
@@ -4146,12 +4148,9 @@ export function JourneyDetailPage({
                                 />
                               </div>
                             ) : null}
-                              </div>
-                            ) : null}
                           </div>
                         </div>
-                      </div>
-                    );
+                      );
                   })
                 )}
 
