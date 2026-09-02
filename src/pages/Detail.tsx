@@ -44,6 +44,18 @@ const dayColors = [
   '#4b5563', // Day 8: Gray
 ];
 
+function getDayOfWeek(dateStr: string): string {
+  if (!dateStr) return '';
+  const match = dateStr.trim().match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})/);
+  if (match) {
+    const d = new Date(parseInt(match[1], 10), parseInt(match[2], 10) - 1, parseInt(match[3], 10));
+    if (!isNaN(d.getTime())) {
+      return ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][d.getDay()];
+    }
+  }
+  return '';
+}
+
 
 
 interface JourneyDetailPageProps {
@@ -2761,7 +2773,7 @@ export function JourneyDetailPage({
             }}
             className={`p-1.5 rounded transition-colors cursor-pointer flex items-center justify-center ${
               activeTab === 'summary'
-                ? 'bg-amber-600 text-white shadow-xs'
+                ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
                 : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'
             }`}
             title="Summary View (요약 보기)"
@@ -3494,10 +3506,22 @@ export function JourneyDetailPage({
                                 setCollapsedDays(prev => [...prev, dVal]);
                               }
                             }}
-                            className="bg-[#EAE8E3]/60 dark:bg-white/5 py-1.5 md:py-2 px-4 md:px-6 border-b border-t border-black/10 dark:border-white/10 text-[10px] md:text-xs font-bold uppercase tracking-widest text-black/60 dark:text-white/60 flex items-center justify-between cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors select-none"
+                            className="bg-white dark:bg-[#0A0A0A] py-3.5 px-4 md:px-6 border-b border-t border-black/15 dark:border-white/15 flex items-center justify-between cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors select-none"
                           >
-                            <div className="flex flex-wrap items-center gap-3">
-                              <span>Day {dayIndex} — {item.date}</span>
+                            <div className="flex items-baseline gap-2.5 sm:gap-3">
+                              <span className="text-2xl sm:text-3xl font-black font-satoshi tracking-tighter text-black dark:text-white leading-none">
+                                {dayIndex < 10 ? `0${dayIndex}` : dayIndex}
+                              </span>
+                              <div className="flex flex-col text-left font-satoshi leading-tight">
+                                <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-black dark:text-white">
+                                  DAY {dayIndex}
+                                </span>
+                                <span className="text-[8.5px] sm:text-[9.5px] font-mono text-black/50 dark:text-white/50">
+                                  {item.date} {getDayOfWeek(item.date || '') ? `· ${getDayOfWeek(item.date || '')}` : ''}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
                               {isEditing ? (
                                 <div className="flex items-center gap-1 ml-2" onClick={(e) => e.stopPropagation()}>
                                   {/* Sunny */}
