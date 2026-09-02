@@ -467,104 +467,206 @@ const COUNTRIES_DATA: CountryInfo[] = [
 ];
 
 const KNOWN_CITY_COORDS: { [key: string]: [number, number] } = {
+  // Korean and English City Dictionary
   tokyo: [35.6762, 139.6503],
+  도쿄: [35.6762, 139.6503],
   osaka: [34.6937, 135.5023],
+  오사카: [34.6937, 135.5023],
   kyoto: [35.0116, 135.7681],
+  교토: [35.0116, 135.7681],
   fukuoka: [33.5902, 130.4017],
+  후쿠오카: [33.5902, 130.4017],
   sapporo: [43.0618, 141.3545],
+  삿포로: [43.0618, 141.3545],
   nagoya: [35.1815, 136.9066],
+  나고야: [35.1815, 136.9066],
   okinawa: [26.2124, 127.6809],
+  오키나와: [26.2124, 127.6809],
   kobe: [34.6901, 135.1955],
+  고베: [34.6901, 135.1955],
   nara: [34.6851, 135.8048],
+  나라: [34.6851, 135.8048],
   seoul: [37.5665, 126.9780],
+  서울: [37.5665, 126.9780],
   busan: [35.1796, 129.0756],
+  부산: [35.1796, 129.0756],
   jeju: [33.4996, 126.5312],
+  제주: [33.4996, 126.5312],
   gangneung: [37.7519, 128.8761],
+  강릉: [37.7519, 128.8761],
   sokcho: [38.2070, 128.5918],
+  속초: [38.2070, 128.5918],
   gyeongju: [35.8562, 129.2247],
+  경주: [35.8562, 129.2247],
   incheon: [37.4563, 126.7052],
+  인천: [37.4563, 126.7052],
+  jeonju: [35.8242, 127.1480],
+  전주: [35.8242, 127.1480],
   danang: [16.0544, 108.2022],
+  다낭: [16.0544, 108.2022],
   hanoi: [21.0285, 105.8542],
+  하노이: [21.0285, 105.8542],
   hochiminh: [10.8231, 106.6297],
+  호치민: [10.8231, 106.6297],
   nhatrang: [12.2388, 109.1967],
+  나트랑: [12.2388, 109.1967],
   phuquoc: [10.2899, 103.9840],
+  푸꾸옥: [10.2899, 103.9840],
   hoian: [15.8801, 108.3380],
+  호이안: [15.8801, 108.3380],
   bangkok: [13.7563, 100.5018],
+  방콕: [13.7563, 100.5018],
   chiangmai: [18.7883, 98.9853],
+  치앙마이: [18.7883, 98.9853],
   phuket: [7.8804, 98.3923],
+  푸켓: [7.8804, 98.3923],
   pattaya: [12.9276, 100.8771],
+  파타야: [12.9276, 100.8771],
   cebu: [10.3157, 123.8854],
+  세부: [10.3157, 123.8854],
   boracay: [11.9674, 121.9248],
+  보라카이: [11.9674, 121.9248],
   bohol: [9.8500, 124.1435],
+  보홀: [9.8500, 124.1435],
   manila: [14.5995, 120.9842],
+  마닐라: [14.5995, 120.9842],
   taipei: [25.0330, 121.5654],
+  타이베이: [25.0330, 121.5654],
   kaohsiung: [22.6273, 120.3014],
+  가오슝: [22.6273, 120.3014],
   taichung: [24.1477, 120.6736],
+  타이중: [24.1477, 120.6736],
   singapore: [1.3521, 103.8198],
+  싱가포르: [1.3521, 103.8198],
   kualalumpur: [3.1390, 101.6869],
+  쿠알라룸푸르: [3.1390, 101.6869],
   kotakinabalu: [5.9804, 116.0735],
+  코타키나발루: [5.9804, 116.0735],
   bali: [-8.3405, 115.0920],
+  발리: [-8.3405, 115.0920],
   jakarta: [-6.2088, 106.8456],
+  자카르타: [-6.2088, 106.8456],
   paris: [48.8566, 2.3522],
+  파리: [48.8566, 2.3522],
   nice: [43.7102, 7.2620],
+  니스: [43.7102, 7.2620],
   lyon: [45.7640, 4.8357],
+  리옹: [45.7640, 4.8357],
   rome: [41.9028, 12.4964],
+  로마: [41.9028, 12.4964],
   florence: [43.7696, 11.2558],
+  피렌체: [43.7696, 11.2558],
   venice: [45.4408, 12.3155],
+  베네치아: [45.4408, 12.3155],
   milan: [45.4642, 9.1900],
+  밀라노: [45.4642, 9.1900],
   naples: [40.8518, 14.2681],
+  나폴리: [40.8518, 14.2681],
   barcelona: [41.3879, 2.1699],
+  바르셀로나: [41.3879, 2.1699],
   madrid: [40.4168, -3.7038],
+  마드리드: [40.4168, -3.7038],
   seville: [37.3891, -5.9845],
+  세비야: [37.3891, -5.9845],
   london: [51.5074, -0.1278],
+  런던: [51.5074, -0.1278],
   edinburgh: [55.9533, -3.1883],
+  에든버러: [55.9533, -3.1883],
   zurich: [47.3769, 8.5417],
+  취리히: [47.3769, 8.5417],
   interlaken: [46.6863, 7.8632],
+  인터라켄: [46.6863, 7.8632],
   geneva: [46.2044, 6.1432],
+  제네바: [46.2044, 6.1432],
   lucerne: [47.0502, 8.3093],
+  루체른: [47.0502, 8.3093],
   zermatt: [45.9765, 7.7491],
+  체르마트: [45.9765, 7.7491],
   berlin: [52.5200, 13.4050],
+  베를린: [52.5200, 13.4050],
   munich: [48.1351, 11.5820],
+  뮌헨: [48.1351, 11.5820],
   frankfurt: [50.1109, 8.6821],
+  프랑크푸르트: [50.1109, 8.6821],
   vienna: [48.2082, 16.3738],
+  비엔나: [48.2082, 16.3738],
+  빈: [48.2082, 16.3738],
   salzburg: [47.8095, 13.0550],
+  잘츠부르크: [47.8095, 13.0550],
   hallstatt: [47.5622, 13.6493],
+  할슈타트: [47.5622, 13.6493],
   prague: [50.0755, 14.4378],
+  프라하: [50.0755, 14.4378],
   ceskykrumlov: [48.8127, 14.3175],
+  체스키크롬로프: [48.8127, 14.3175],
   budapest: [47.4979, 19.0402],
+  부다페스트: [47.4979, 19.0402],
   dubrovnik: [42.6507, 18.0944],
+  두브로브니크: [42.6507, 18.0944],
   zagreb: [45.8150, 15.9819],
+  자그레브: [45.8150, 15.9819],
   split: [43.5081, 16.4402],
+  스플리트: [43.5081, 16.4402],
   lisbon: [38.7223, -9.1393],
+  리스본: [38.7223, -9.1393],
   porto: [41.1579, -8.6291],
+  포르투: [41.1579, -8.6291],
   athens: [37.9838, 23.7275],
+  아테네: [37.9838, 23.7275],
   santorini: [36.3932, 25.4615],
+  산토리니: [36.3932, 25.4615],
   amsterdam: [52.3676, 4.9041],
+  암스테르담: [52.3676, 4.9041],
   brussels: [50.8503, 4.3517],
+  브뤼셀: [50.8503, 4.3517],
   bruges: [51.2093, 3.2247],
+  브뤼헤: [51.2093, 3.2247],
   istanbul: [41.0082, 28.9784],
+  이스탄불: [41.0082, 28.9784],
   cappadocia: [38.6431, 34.8289],
+  카파도키아: [38.6431, 34.8289],
   reykjavik: [64.1466, -21.9426],
+  레이캬비크: [64.1466, -21.9426],
   newyork: [40.7128, -74.0060],
+  뉴욕: [40.7128, -74.0060],
   losangeles: [34.0522, -118.2437],
+  로스앤젤레스: [34.0522, -118.2437],
   sanfrancisco: [37.7749, -122.4194],
+  샌프란시스코: [37.7749, -122.4194],
   lasvegas: [36.1699, -115.1398],
+  라스베이거스: [36.1699, -115.1398],
   honolulu: [21.3069, -157.8583],
+  호놀룰루: [21.3069, -157.8583],
   hawaii: [21.3069, -157.8583],
+  하와이: [21.3069, -157.8583],
   guam: [13.4443, 144.7937],
+  괌: [13.4443, 144.7937],
   tumon: [13.5137, 144.8058],
+  투몬: [13.5137, 144.8058],
   saipan: [15.1850, 145.7467],
+  사이판: [15.1850, 145.7467],
   garapan: [15.2078, 145.7198],
+  가라판: [15.2078, 145.7198],
   vancouver: [49.2827, -123.1207],
+  밴쿠버: [49.2827, -123.1207],
   toronto: [43.6532, -79.3832],
+  토론토: [43.6532, -79.3832],
   banff: [51.1784, -115.5708],
+  밴프: [51.1784, -115.5708],
   sydney: [-33.8688, 151.2093],
+  시드니: [-33.8688, 151.2093],
   melbourne: [-37.8136, 144.9631],
+  멜버른: [-37.8136, 144.9631],
   auckland: [-36.8485, 174.7633],
+  오클랜드: [-36.8485, 174.7633],
   queenstown: [-45.0312, 168.6626],
+  퀸스타운: [-45.0312, 168.6626],
   cancun: [21.1619, -86.8515],
+  칸쿤: [21.1619, -86.8515],
   dubai: [25.2048, 55.2708],
+  두바이: [25.2048, 55.2708],
   abudhabi: [24.4539, 54.3773],
+  아부다비: [24.4539, 54.3773],
 };
 
 interface MapPinGroup {
@@ -622,50 +724,92 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
 
   const allJourneys = useMemo(() => [...trips, ...plans], [trips, plans]);
 
-  // Group journeys into geographic pins
+  // Group journeys into geographic pins (Multi-city per country support)
   const pinGroups: MapPinGroup[] = useMemo(() => {
     const map = new Map<string, MapPinGroup>();
 
     allJourneys.forEach(journey => {
-      const loc = journey.locationStr || journey.country || '';
-      if (!loc) return;
+      const pointsToPin: { name: string; lat: number; lng: number }[] = [];
 
-      const cleanLoc = cleanAdministrativeDistricts(loc);
-      const parts = cleanLoc.split(/[,·/]/).map(p => p.trim()).filter(Boolean);
-      const cityRaw = parts[0] || 'Unknown';
-      const countryRaw = parts.length > 1 ? parts[parts.length - 1] : (journey.country || '');
-
-      const cityKey = cityRaw.toLowerCase().replace(/\s+/g, '');
-      let coords: [number, number] | null = null;
-
-      // Check known city dictionary
-      if (KNOWN_CITY_COORDS[cityKey]) {
-        coords = KNOWN_CITY_COORDS[cityKey];
-      } else {
-        // Search country match
-        const matchedCountry = COUNTRIES_DATA.find(c => 
-          c.name.toLowerCase().includes(countryRaw.toLowerCase()) ||
-          c.nameKo.includes(countryRaw) ||
-          cleanLoc.toUpperCase().includes(c.name)
-        );
-        if (matchedCountry) {
-          coords = matchedCountry.center;
-        }
+      // 1. Check locations array on journey
+      if (journey.locations && journey.locations.length > 0) {
+        journey.locations.forEach(locObj => {
+          if (locObj.lat && locObj.lng) {
+            pointsToPin.push({ name: locObj.name, lat: locObj.lat, lng: locObj.lng });
+          } else if (locObj.name) {
+            const clean = cleanAdministrativeDistricts(locObj.name).trim();
+            const key = clean.toLowerCase().replace(/\s+/g, '');
+            const coords = KNOWN_CITY_COORDS[key] || KNOWN_CITY_COORDS[clean];
+            if (coords) {
+              pointsToPin.push({ name: clean, lat: coords[0], lng: coords[1] });
+            }
+          }
+        });
       }
 
-      if (coords) {
-        const groupKey = `${coords[0].toFixed(2)}_${coords[1].toFixed(2)}`;
+      // 2. Parse locationStr (split multiple cities e.g. "도쿄, 오사카")
+      const locStr = journey.locationStr || journey.country || '';
+      if (locStr) {
+        const cleanLoc = cleanAdministrativeDistricts(locStr);
+        const parts = cleanLoc.split(/[,·/|]/).map(p => p.trim()).filter(Boolean);
+
+        parts.forEach(part => {
+          const cleanPart = cleanAdministrativeDistricts(part).trim();
+          const key = cleanPart.toLowerCase().replace(/\s+/g, '');
+
+          let coords: [number, number] | null = null;
+          if (KNOWN_CITY_COORDS[key]) {
+            coords = KNOWN_CITY_COORDS[key];
+          } else if (KNOWN_CITY_COORDS[cleanPart]) {
+            coords = KNOWN_CITY_COORDS[cleanPart];
+          } else if (journey.lat && journey.lng && parts.length === 1) {
+            coords = [journey.lat, journey.lng];
+          } else {
+            // Match against country
+            const matchedCountry = COUNTRIES_DATA.find(c =>
+              c.name.toLowerCase() === key ||
+              c.nameKo === cleanPart ||
+              c.cities.some(cty => cty.toLowerCase() === key)
+            );
+            if (matchedCountry) {
+              coords = matchedCountry.center;
+            }
+          }
+
+          if (coords) {
+            if (!pointsToPin.some(p => Math.abs(p.lat - coords![0]) < 0.05 && Math.abs(p.lng - coords![1]) < 0.05)) {
+              pointsToPin.push({ name: cleanPart, lat: coords[0], lng: coords[1] });
+            }
+          }
+        });
+      }
+
+      // 3. Fallback to direct journey lat/lng
+      if (pointsToPin.length === 0 && journey.lat && journey.lng) {
+        pointsToPin.push({
+          name: journey.locationStr || journey.country || 'Unknown',
+          lat: journey.lat,
+          lng: journey.lng,
+        });
+      }
+
+      // Add each extracted point into the pin groups map
+      pointsToPin.forEach(pt => {
+        const groupKey = `${pt.lat.toFixed(2)}_${pt.lng.toFixed(2)}`;
         if (!map.has(groupKey)) {
           map.set(groupKey, {
-            city: cityRaw.toUpperCase(),
-            country: countryRaw.toUpperCase(),
-            lat: coords[0],
-            lng: coords[1],
+            city: pt.name.toUpperCase(),
+            country: (journey.country || '').toUpperCase(),
+            lat: pt.lat,
+            lng: pt.lng,
             journeys: [],
           });
         }
-        map.get(groupKey)!.journeys.push(journey);
-      }
+        const grp = map.get(groupKey)!;
+        if (!grp.journeys.some(j => j.id === journey.id)) {
+          grp.journeys.push(journey);
+        }
+      });
     });
 
     return Array.from(map.values());
@@ -680,7 +824,6 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     const map = mapRef.current;
     const L = (window as any).L;
     if (map && L) {
-      // 1. Remove previous highlight and selection pin
       if (highlightLayerRef.current) {
         map.removeLayer(highlightLayerRef.current);
         highlightLayerRef.current = null;
@@ -690,7 +833,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
         selectPinRef.current = null;
       }
 
-      // 2. Add boundary/area highlight circle around country center
+      // Boundary highlight circle
       const radiusMeters = Math.max(140000, (11 - country.zoom) * 95000);
       highlightLayerRef.current = L.circle(country.center, {
         radius: radiusMeters,
@@ -701,7 +844,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
         fillOpacity: 0.12,
       }).addTo(map);
 
-      // 3. Add selection radar pin
+      // Selected country pulse pin
       const selectHtml = `
         <div class="relative flex items-center justify-center select-none" style="transform: translate(-50%, -50%);">
           <span class="absolute w-12 h-12 rounded-full bg-red-600/30 animate-ping"></span>
@@ -717,12 +860,11 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
       });
       selectPinRef.current = L.marker(country.center, { icon: selectIcon, zIndexOffset: 1200 }).addTo(map);
 
-      // 4. Fly to country
       map.flyTo(country.center, country.zoom, { duration: 1.2 });
     }
   };
 
-  // Close country handler: removes highlight and restores full world view zoom
+  // Close country handler: removes highlight and restores South Korea center view
   const handleCloseCountry = () => {
     setSelectedCountry(null);
     setSearchQuery('');
@@ -736,8 +878,8 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
         map.removeLayer(selectPinRef.current);
         selectPinRef.current = null;
       }
-      // Restore full world view zoom
-      map.flyTo([25, 20], 2.7, { duration: 1.2 });
+      // Restore South Korea center view
+      map.flyTo([36.0, 127.5], 3.2, { duration: 1.2 });
     }
   };
 
@@ -755,14 +897,14 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedCountry, selectedPinGroup, isWishlistModalOpen]);
 
-  // Initialize Leaflet Map
+  // Initialize Leaflet Map centered on South Korea
   useEffect(() => {
     const L = (window as any).L;
     if (!L || !mapContainerRef.current || mapRef.current) return;
 
     const map = L.map(mapContainerRef.current, {
-      center: [25, 20],
-      zoom: 2.7,
+      center: [36.0, 127.5], // Centered on South Korea
+      zoom: 3.2,
       minZoom: 2,
       maxZoom: 18,
       zoomControl: false,

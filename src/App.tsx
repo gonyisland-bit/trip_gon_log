@@ -62,6 +62,22 @@ function cleanForFirestore(obj: any): any {
   return cleaned;
 }
 
+function applyJourneyOrder<T extends { id: number; displayOrder?: number }>(items: T[]): T[] {
+  try {
+    const saved = localStorage.getItem('journey_order');
+    if (saved) {
+      const order: number[] = JSON.parse(saved);
+      const idMap = new Map(order.map((id, idx) => [id, idx]));
+      return [...items].sort((a, b) => {
+        const orderA = idMap.has(a.id) ? idMap.get(a.id)! : (a.displayOrder ?? 999999);
+        const orderB = idMap.has(b.id) ? idMap.get(b.id)! : (b.displayOrder ?? 999999);
+        return orderA - orderB;
+      });
+    }
+  } catch (_) {}
+  return [...items].sort((a, b) => (a.displayOrder ?? a.id) - (b.displayOrder ?? b.id));
+}
+
 function App() {
   const [currentView, setCurrentView] = useState<string>('home'); 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -298,7 +314,7 @@ function App() {
       snapshot.forEach(doc => {
         list.push(doc.data() as Trip);
       });
-      setTrips(list.sort((a, b) => (a.displayOrder ?? a.id) - (b.displayOrder ?? b.id)));
+      setTrips(applyJourneyOrder(list));
       setTripsLoaded(true);
       setDbError(null);
     }, (err) => {
@@ -312,7 +328,7 @@ function App() {
       snapshot.forEach(doc => {
         list.push(doc.data() as Plan);
       });
-      setPlans(list.sort((a, b) => (a.displayOrder ?? a.id) - (b.displayOrder ?? b.id)));
+      setPlans(applyJourneyOrder(list));
       setPlansLoaded(true);
       setDbError(null);
     }, (err) => {
@@ -467,14 +483,23 @@ function App() {
       initialTripId = Number(idParam);
       setIsShareMode(true);
     } else {
-      if (path === '/archive') {
+      if (path === '/archive' || window.location.hash === '#archive') {
         initialView = 'archive';
-      } else if (path === '/plan') {
+      } else if (path === '/plan' || window.location.hash === '#plan') {
         initialView = 'plan';
+      } else if (path === '/map' || window.location.hash === '#map') {
+        initialView = 'map';
+      } else if (path === '/manage' || window.location.hash === '#manage') {
+        initialView = 'manage';
       } else if (path === '/detail' || idParam) {
         initialView = 'detail';
         if (idParam) {
           initialTripId = Number(idParam);
+        }
+      } else {
+        const lastView = sessionStorage.getItem('lastView');
+        if (lastView && ['home', 'archive', 'plan', 'map', 'manage'].includes(lastView)) {
+          initialView = lastView;
         }
       }
     }
@@ -548,10 +573,17 @@ function App() {
     setCurrentView(view);
     setSelectedTagFilter(tagFilter);
 
+    sessionStorage.setItem('lastView', view);
+    if (tripId || activeTripId) {
+      sessionStorage.setItem('lastTripId', String(tripId || activeTripId));
+    }
+
     if (pushHistory) {
       let path = '/';
       if (view === 'archive') path = '/archive';
       else if (view === 'plan') path = '/plan';
+      else if (view === 'map') path = '/map';
+      else if (view === 'manage') path = '/manage';
       else if (view === 'detail') {
         const idToUse = tripId || activeTripId;
         const isShare = (view === 'detail' && (tripId === activeTripId || tripId === null || tripId === idToUse)) ? isShareMode : false;
@@ -1422,14 +1454,27 @@ function App() {
                   onMoveToPlans={handleMoveToPlans}
                   onMoveToArchive={handleMoveToArchive}
                   onReorderTrips={async (orderedIds) => {
-                    if (!isLoggedIn) return;
-                    const batch = writeBatch(db);
-                    orderedIds.forEach((id, idx) => {
-                      const isPlan = plans.some(p => p.id === id);
-                      const col = isPlan ? 'plans' : 'trips';
-                      batch.update(doc(db, 'users', 'public', col, String(id)), { displayOrder: idx });
-                    });
-                    await batch.commit();
+                    try {
+                      localStorage.setItem('journey_order', JSON.stringify(orderedIds));
+                    } catch (_) {}
+
+                    const idMap = new Map(orderedIds.map((id, idx) => [id, idx]));
+                    setTrips(prev => [...prev].sort((a, b) => (idMap.get(a.id) ?? 9999) - (idMap.get(b.id) ?? 9999)));
+                    setPlans(prev => [...prev].sort((a, b) => (idMap.get(a.id) ?? 9999) - (idMap.get(b.id) ?? 9999)));
+
+                    if (isLoggedIn) {
+                      try {
+                        const batch = writeBatch(db);
+                        orderedIds.forEach((id, idx) => {
+                          const isPlan = plans.some(p => p.id === id);
+                          const col = isPlan ? 'plans' : 'trips';
+                          batch.update(doc(db, 'users', 'public', col, String(id)), { displayOrder: idx });
+                        });
+                        await batch.commit();
+                      } catch (e) {
+                        console.warn('Background Firestore order update skipped/failed:', e);
+                      }
+                    }
                   }}
                   homeTitle={homeTitle}
                   homeSubtitle={homeSubtitle}

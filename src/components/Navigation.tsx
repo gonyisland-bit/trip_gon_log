@@ -137,17 +137,7 @@ export function Navigation({
             </button>
           )}
 
-          {/* Setting Modal Button - Desktop Only */}
-          {isLoggedIn && (
-            <button
-              type="button"
-              onClick={openSettingModal}
-              className="hidden md:flex p-2 sm:p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors cursor-pointer items-center justify-center"
-              title="설정 (Settings)"
-            >
-              <Settings className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-            </button>
-          )}
+
 
           {/* Night Mode Button - Desktop Only */}
           <button

@@ -206,7 +206,21 @@ export function ArchiveHubPage({
         });
       });
     }
-    return list;
+
+    try {
+      const saved = localStorage.getItem('journey_order');
+      if (saved) {
+        const order: number[] = JSON.parse(saved);
+        const idMap = new Map(order.map((id, idx) => [id, idx]));
+        return list.sort((a, b) => {
+          const orderA = idMap.has(a.id) ? idMap.get(a.id)! : (a.displayOrder ?? 999999);
+          const orderB = idMap.has(b.id) ? idMap.get(b.id)! : (b.displayOrder ?? 999999);
+          return orderA - orderB;
+        });
+      }
+    } catch (_) {}
+
+    return list.sort((a, b) => (a.displayOrder ?? 999999) - (b.displayOrder ?? 999999));
   }, [trips, plans]);
 
   const [localTrips, setLocalTrips] = useState<Trip[]>(combinedTrips);
