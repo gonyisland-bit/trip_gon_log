@@ -5,6 +5,7 @@ import { HomePage } from './pages/Home';
 import { ArchiveHubPage } from './pages/Archive';
 import { PlanHubPage } from './pages/Plan';
 import { MapHubPage } from './pages/MapHub';
+import { ManageHubPage } from './pages/ManageHub';
 import { JourneyDetailPage } from './pages/Detail';
 import { AuthModal } from './components/AuthModal';
 import { CreateTripModal } from './components/CreateTripModal';
@@ -1397,6 +1398,43 @@ function App() {
                   trips={trips}
                   plans={plans}
                   onNavigate={navigateTo}
+                  isDarkMode={isDarkMode}
+                />
+              )}
+              {currentView === 'manage' && (
+                <ManageHubPage
+                  trips={trips}
+                  plans={plans}
+                  onNavigate={navigateTo}
+                  onSaveTrip={handleEditTripSave}
+                  onDeleteTrip={handleDeleteJourney}
+                  onCloneTrip={handleCloneJourney}
+                  onMoveToPlans={handleMoveToPlans}
+                  onMoveToArchive={handleMoveToArchive}
+                  onReorderTrips={async (orderedIds) => {
+                    if (!isLoggedIn) return;
+                    const batch = writeBatch(db);
+                    orderedIds.forEach((id, idx) => {
+                      const isPlan = plans.some(p => p.id === id);
+                      const col = isPlan ? 'plans' : 'trips';
+                      batch.update(doc(db, 'users', 'public', col, String(id)), { displayOrder: idx });
+                    });
+                    await batch.commit();
+                  }}
+                  onSaveHomeSettings={async (marqueeMsg, marqueeSpd) => {
+                    await handleSaveSettings(
+                      homeTitle,
+                      homeSubtitle,
+                      heroJourneyIds,
+                      heroAutoSlide,
+                      marqueeShow,
+                      marqueeMsg,
+                      marqueeSpd
+                    );
+                  }}
+                  marqueeMessage={marqueeMessage}
+                  marqueeSpeed={marqueeSpeed}
+                  isLoggedIn={isLoggedIn}
                   isDarkMode={isDarkMode}
                 />
               )}

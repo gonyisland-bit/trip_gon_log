@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, LogOut, User, Sun, Moon, Settings, Search, Home, Archive as ArchiveIcon, Compass, X } from 'lucide-react';
+import { Menu, LogOut, User, Sun, Moon, Settings, Search, Home, Archive as ArchiveIcon, Compass, X, SlidersHorizontal } from 'lucide-react';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 
@@ -121,13 +121,29 @@ export function Navigation({
             <Search className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
           </button>
 
-          {/* Edit (구 Setting) Button - Desktop Only */}
+          {/* Edit (Management Hub) Symbol Button */}
+          {isLoggedIn && (
+            <button
+              type="button"
+              onClick={() => navigateTo('manage')}
+              className={`p-2 sm:p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center ${
+                currentView === 'manage'
+                  ? 'text-red-600 dark:text-red-500 bg-black/5 dark:bg-white/5'
+                  : 'text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white'
+              }`}
+              title="수정 허브 (Management Hub)"
+            >
+              <SlidersHorizontal className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+            </button>
+          )}
+
+          {/* Setting Modal Button - Desktop Only */}
           {isLoggedIn && (
             <button
               type="button"
               onClick={openSettingModal}
               className="hidden md:flex p-2 sm:p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors cursor-pointer items-center justify-center"
-              title="편집 및 설정 (Edit / Setting)"
+              title="설정 (Settings)"
             >
               <Settings className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             </button>
@@ -261,14 +277,18 @@ export function Navigation({
 
             {isLoggedIn && (
               <button
-                onClick={() => { setShowSettings(false); openSettingModal(); }}
+                onClick={() => handleMenuNavigate('manage')}
                 className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-2"
               >
-                <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-4 sm:mr-6 select-none">
+                <span className="font-mono text-xs sm:text-sm font-bold text-red-600 dark:text-red-400 mr-4 sm:mr-6 select-none">
                   04
                 </span>
-                <span className="font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white transition-colors">
-                  EDIT
+                <span className={`font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight transition-colors ${
+                  currentView === 'manage' 
+                    ? 'text-black dark:text-white underline decoration-2 underline-offset-8' 
+                    : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
+                }`}>
+                  MANAGE
                 </span>
               </button>
             )}
