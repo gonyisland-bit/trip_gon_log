@@ -111,6 +111,70 @@ function getYearAndMonth(dateRangeStr: string): { year: string; month: string; c
   return { year, month, compactDate };
 }
 
+// Helper to extract large bold uppercase English city/region name for magazine
+function getEnglishCityName(locationStr?: string): string {
+  if (!locationStr) return '';
+  const cleaned = cleanAdministrativeDistricts(locationStr);
+  const cityMap: Record<string, string> = {
+    '도쿄': 'TOKYO',
+    '동경': 'TOKYO',
+    '오사카': 'OSAKA',
+    '교토': 'KYOTO',
+    '후쿠오카': 'FUKUOKA',
+    '삿포로': 'SAPPORO',
+    '오키나와': 'OKINAWA',
+    '제주': 'JEJU',
+    '제주시': 'JEJU',
+    '서귀포': 'SEOGWIPO',
+    '서울': 'SEOUL',
+    '부산': 'BUSAN',
+    '강릉': 'GANGNEUNG',
+    '속초': 'SOKCHO',
+    '경주': 'GYEONGJU',
+    '인천': 'INCHEON',
+    '대구': 'DAEGU',
+    '대전': 'DAEJEON',
+    '방콕': 'BANGKOK',
+    '치앙마이': 'CHIANG MAI',
+    '다낭': 'DA NANG',
+    '하노이': 'HANOI',
+    '호치민': 'HO CHI MINH',
+    '싱가포르': 'SINGAPORE',
+    '타이베이': 'TAIPEI',
+    '대만': 'TAIWAN',
+    '홍콩': 'HONG KONG',
+    '마카오': 'MACAU',
+    '파리': 'PARIS',
+    '런던': 'LONDON',
+    '로마': 'ROME',
+    '피렌체': 'FLORENCE',
+    '베네치아': 'VENICE',
+    '바르셀로나': 'BARCELONA',
+    '마드리드': 'MADRID',
+    '인터라켄': 'INTERLAKEN',
+    '취리히': 'ZURICH',
+    '뉴욕': 'NEW YORK',
+    '로스앤젤레스': 'LOS ANGELES',
+    '샌프란시스코': 'SAN FRANCISCO',
+    '하와이': 'HAWAII',
+    '괌': 'GUAM',
+    '사이판': 'SAIPAN',
+    '시드니': 'SYDNEY',
+    '멜버른': 'MELBOURNE',
+  };
+
+  for (const [kr, en] of Object.entries(cityMap)) {
+    if (cleaned.includes(kr)) return en;
+  }
+
+  const englishMatch = cleaned.match(/[a-zA-Z\s]+/);
+  if (englishMatch && englishMatch[0].trim().length > 1) {
+    return englishMatch[0].trim().toUpperCase();
+  }
+
+  return cleaned.toUpperCase();
+}
+
 // Journey card hamburger menu
 export function JourneyCardMenu({
   onEdit,
@@ -718,8 +782,8 @@ export function HomePage({
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
               JOURNEYS & PLANS
             </h2>
-            <p className="text-xs sm:text-sm font-sans font-medium text-black/70 dark:text-white/70 max-w-lg break-keep mt-0.5 leading-relaxed">
-              기록된 모든 여정과 다가오는 여행 계획을 하나의 아카이브 컬렉션으로 탐색합니다.
+            <p className="text-xs sm:text-sm font-sans font-medium text-black/70 dark:text-white/70 whitespace-nowrap truncate mt-0.5 leading-relaxed">
+              모든 여정과 여행 계획을 담아낸 컬렉션
             </p>
           </div>
 
@@ -886,11 +950,11 @@ export function HomePage({
                         {trip.title}
                       </h3>
                       {((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
-                        <span className="text-[8px] font-black px-1.5 py-0.5 font-mono uppercase bg-black text-white dark:bg-white dark:text-black border border-white/30 dark:border-black/30 tracking-widest">
+                        <span className="text-[10px] sm:text-[11px] font-black px-2 py-0.5 font-mono uppercase bg-black text-white dark:bg-white dark:text-black border border-white/40 dark:border-black/40 tracking-wider shadow-xs">
                           PLAN
                         </span>
                       ) : trip.statusBadge ? (
-                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-none font-mono uppercase ${
+                        <span className={`text-[10px] sm:text-[11px] font-black px-2 py-0.5 rounded-none font-mono uppercase tracking-wider shadow-xs ${
                           trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
                         }`}>
                           {trip.statusBadge}
@@ -1062,6 +1126,7 @@ export function HomePage({
                 title: t.title,
                 date: t.date,
                 location: t.locationStr,
+                placeName: (t.locations && t.locations[0]?.name) || '',
                 caption: t.locationStr ? `${cleanAdministrativeDistricts(t.locationStr)}에서의 기록된 기억` : '기억에 남은 순간',
                 quote: idx === 0 
                   ? "“모든 여행은 우연을 가장한 필연이며, 남겨진 사진은 그날의 온도와 공기를 영원히 품는다.”" 
@@ -1093,8 +1158,8 @@ export function HomePage({
                   <h2 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
                     JOURNEY MAGAZINE
                   </h2>
-                  <p className="text-xs sm:text-sm font-sans font-medium text-black/70 dark:text-white/70 max-w-lg break-keep mt-0.5 leading-relaxed">
-                    길 위에서 마주한 가장 선명한 순간들. 타임라인에 기록된 인상 깊은 기억과 사진들을 한 권의 포토북처럼 엮어냅니다.
+                  <p className="text-xs sm:text-sm font-sans font-medium text-black/70 dark:text-white/70 whitespace-nowrap truncate mt-0.5 leading-relaxed">
+                    지난 여정에서 인상적인 추억들
                   </p>
                 </div>
 
@@ -1143,25 +1208,26 @@ export function HomePage({
                           alt={moment.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                         />
-                        {/* Top pill badges: Page & Location */}
-                        <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
-                          <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-widest bg-black text-white dark:bg-white dark:text-black shadow-md">
-                            PAGE #{String(globalIdx).padStart(2, '0')}
-                          </span>
-                          {(moment.placeName || moment.location) && (
-                            <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider bg-white/90 dark:bg-black/90 text-black dark:text-white backdrop-blur-xs shadow-md truncate max-w-[55%]">
-                              {moment.placeName || cleanAdministrativeDistricts(moment.location || '')}
-                            </span>
-                          )}
-                        </div>
+                        {/* Top-Right: Grand English Satoshi Region/City Tag (No Page Numbering) */}
+                        {(() => {
+                          const engCity = getEnglishCityName(moment.location || '');
+                          if (!engCity) return null;
+                          return (
+                            <div className="absolute top-3.5 right-3.5 pointer-events-none z-10">
+                              <span className="px-2.5 py-1 text-xs sm:text-sm font-black font-satoshi uppercase tracking-[0.18em] bg-black/80 dark:bg-black/90 text-white backdrop-blur-md border border-white/30 shadow-lg leading-none inline-block">
+                                {engCity}
+                              </span>
+                            </div>
+                          );
+                        })()}
                       </div>
 
-                      {/* 2. Editorial Album Text & Meta Section */}
+                      {/* 2. Editorial Album Text & Meta Section (Swiss Minimal Inter Typography) */}
                       <div className="p-5 flex-1 flex flex-col justify-between gap-3 text-black dark:text-white">
                         <div className="flex flex-col gap-2">
-                          <div className="flex items-center justify-between text-[10px] font-mono text-black/40 dark:text-white/40">
-                            <span>{moment.date || 'EDITORIAL LOG'}</span>
-                            <span className="text-red-600 dark:text-red-400 font-bold uppercase tracking-wider">MOMENT</span>
+                          <div className="flex items-center justify-between text-xs font-sans font-bold text-black/50 dark:text-white/50">
+                            <span className="font-mono">{moment.date || 'EDITORIAL LOG'}</span>
+                            <span className="text-red-600 dark:text-red-400 font-extrabold tracking-wider font-mono">MOMENT</span>
                           </div>
 
                           <h3 className="text-base sm:text-lg font-black uppercase tracking-tight line-clamp-1 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors font-sans">
@@ -1169,21 +1235,27 @@ export function HomePage({
                           </h3>
 
                           {moment.quote ? (
-                            <p className="text-xs font-sans font-light italic text-black/75 dark:text-white/75 line-clamp-2 border-l-2 border-red-500 pl-2.5 my-0.5 leading-relaxed">
+                            <p className="text-xs sm:text-[13px] font-sans font-light italic text-black/75 dark:text-white/75 line-clamp-2 border-l-2 border-red-500 pl-2.5 my-0.5 leading-relaxed">
                               {moment.quote}
                             </p>
                           ) : moment.caption ? (
-                            <p className="text-xs font-sans text-black/60 dark:text-white/60 line-clamp-2 leading-relaxed">
+                            <p className="text-xs sm:text-[13px] font-sans text-black/65 dark:text-white/65 line-clamp-2 leading-relaxed">
                               {moment.caption}
                             </p>
                           ) : null}
                         </div>
 
-                        <div className="pt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-[10px] font-mono text-black/50 dark:text-white/50 mt-1">
-                          <span className="truncate max-w-[160px] font-medium" title={moment.placeName || moment.location || ''}>
-                            {moment.placeName || cleanAdministrativeDistricts(moment.location || '')}
-                          </span>
-                          <span className="font-bold text-black dark:text-white group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                        {/* Bottom Row: Specific Timeline Place Name & View Link */}
+                        <div className="pt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-xs font-sans mt-1">
+                          {(() => {
+                            const displayPlace = moment.placeName || (moment.title !== '기록된 여정' && moment.title !== 'UNTITLED MOMENT' ? moment.title : '') || cleanAdministrativeDistricts(moment.location || '') || 'MOMENT';
+                            return (
+                              <span className="truncate max-w-[65%] font-bold text-black dark:text-white tracking-tight" title={displayPlace}>
+                                {displayPlace}
+                              </span>
+                            );
+                          })()}
+                          <span className="font-bold text-black dark:text-white group-hover:translate-x-1 transition-transform inline-flex items-center gap-1 shrink-0 text-xs font-sans">
                             VIEW ➔
                           </span>
                         </div>

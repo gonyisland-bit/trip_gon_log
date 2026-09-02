@@ -659,11 +659,11 @@ export function ArchiveHubPage({
                       {trip.title}
                     </h3>
                     {((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
-                      <span className="text-[8px] font-black px-1.5 py-0.5 font-mono uppercase bg-black text-white dark:bg-white dark:text-black border border-white/30 dark:border-black/30 tracking-widest">
+                      <span className="text-[10px] sm:text-[11px] font-black px-2 py-0.5 font-mono uppercase bg-black text-white dark:bg-white dark:text-black border border-white/40 dark:border-black/40 tracking-wider shadow-xs">
                         PLAN
                       </span>
                     ) : trip.statusBadge ? (
-                      <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-none font-mono uppercase ${
+                      <span className={`text-[10px] sm:text-[11px] font-black px-2 py-0.5 rounded-none font-mono uppercase tracking-wider shadow-xs ${
                         trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
                       }`}>
                         {trip.statusBadge}

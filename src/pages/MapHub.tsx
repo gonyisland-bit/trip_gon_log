@@ -1672,14 +1672,28 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     }).addTo(map);
   }, [isDarkMode]);
 
-  // Reset to default global view
+  // Reset to default global view (Clean reset to South Korea center view without bouncing)
   const handleResetToDefaultView = () => {
+    setSelectedCountry(null);
+    setSelectedPinGroup(null);
+    setIsPlaceListModalOpen(false);
+    setIsWishlistModalOpen(false);
+    setSearchQuery('');
     const map = mapRef.current;
     if (map) {
+      map.stop(); // Immediately stop any in-flight animations/pans to avoid bounce
+      if (highlightLayerRef.current) {
+        map.removeLayer(highlightLayerRef.current);
+        highlightLayerRef.current = null;
+      }
+      if (selectPinRef.current) {
+        map.removeLayer(selectPinRef.current);
+        selectPinRef.current = null;
+      }
       if (typeof map.flyTo === 'function') {
-        map.flyTo([25, 125], 3.5, { duration: 1.2 });
+        map.flyTo([36.0, 127.5], 3.2, { duration: 0.8, easeLinearity: 0.25 });
       } else {
-        map.setView([25, 125], 3.5);
+        map.setView([36.0, 127.5], 3.2);
       }
     }
   };
