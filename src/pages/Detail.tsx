@@ -3672,10 +3672,9 @@ export function JourneyDetailPage({
                           onDrop={() => handleDropTimelineItem(item.id)}
                         >
                           <div 
-                            className="group flex flex-row items-stretch hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors cursor-pointer relative w-full" 
+                            className="group flex flex-row items-start py-4 px-4 md:py-5 md:px-6 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors cursor-pointer relative w-full" 
                             onClick={() => handleItemToggle(item.id)}
                           >
-                            <div className="flex-1 flex flex-row items-start py-4 px-4 md:py-5 md:px-6 min-w-0">
                             {/* Left Column: Fixed Width in BOTH view and edit mode (w-20 sm:w-24 md:w-28 shrink-0 pr-2) */}
                             {isEditing ? (
                               <div className="w-20 sm:w-24 md:w-28 shrink-0 pr-2 flex flex-col gap-1 text-[10px] md:text-xs font-bold" onClick={(e) => e.stopPropagation()}>
@@ -3938,12 +3937,11 @@ export function JourneyDetailPage({
                                   />
                                 </div>
                               )}
-                            </div>
 
-                            {/* Right Column: Full-Height 1:1 Edge-to-Edge Square Grid Thumbnail */}
+                            {/* Card thumbnail (fitted & flush with grid) */}
                             {item.img ? (
                               <div 
-                                className={`w-24 sm:w-28 md:w-32 aspect-square self-stretch shrink-0 overflow-hidden border-l transition-all relative rounded-none ${isActive ? 'border-l-[2px] border-l-red-600 dark:border-l-red-500' : 'border-black/15 dark:border-white/15'}`}
+                                className={`w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 rounded-md overflow-hidden border transition-all relative shrink-0 ${isActive ? 'border-red-600 dark:border-red-400 shadow-md ring-2 ring-red-500/20' : 'border-black/15 dark:border-white/15'}`}
                                 onClick={(e) => {
                                   if (!isEditing) {
                                     e.stopPropagation();
@@ -3987,8 +3985,8 @@ export function JourneyDetailPage({
                                 />
                               </div>
                             ) : isEditing ? (
-                              <div className={`w-24 sm:w-28 md:w-32 aspect-square self-stretch shrink-0 border-l bg-black/[0.02] dark:bg-white/[0.02] flex items-center justify-center transition-colors relative rounded-none ${isActive ? 'border-red-600 dark:border-red-400 text-red-600' : 'border-black/15 dark:border-white/15'}`}>
-                                <ImageIcon className="w-5 h-5 text-black/20 dark:text-white/20" />
+                              <div className={`w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 rounded-md border border-dashed flex items-center justify-center transition-colors relative shrink-0 ${isActive ? 'border-red-600 dark:border-red-400 text-red-600' : 'border-black/20 dark:border-white/20 text-black/40 dark:text-white/40 hover:border-black/40 dark:hover:border-white/40'}`}>
+                                <ImageIcon className="w-5 h-5" />
                                 <ImageEditOverlay 
                                   isEditMode={isEditing} 
                                   hasImage={false}
