@@ -411,37 +411,43 @@ export function PlanHubPage({
                 {/* Magazine Overlay Gradient */}
                 <div className="absolute inset-0 magazine-card-gradient pointer-events-none" />
 
-                {/* Magazine Cover Text Layout */}
-                <div className="absolute inset-0 p-4 md:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
-                  {/* Top Header Row: Title & Issue Date */}
-                  <div className="flex justify-between items-start gap-3 w-full">
-                    <h3
-                      className="text-[5.5cqw] font-black uppercase tracking-tight leading-none font-satoshi text-white drop-shadow-md max-w-[70%] line-clamp-2"
-                      style={{ fontFamily: "'Satoshi', sans-serif" }}
-                    >
-                      {plan.title}
-                    </h3>
-                    {month && year && (
-                      <div className="flex flex-col items-end shrink-0 text-right leading-none font-mono">
-                        <span className="text-[5.5cqw] font-black tracking-tight leading-none text-white">{year}</span>
-                        <span className="text-[3cqw] font-black tracking-widest text-amber-400 uppercase mt-0.5">{month}</span>
+                {/* Swiss Editorial Poster Text Layout */}
+                <div className="absolute inset-0 p-4 sm:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
+                  {/* Top Header Row: Giant Bold Year & Month / PLAN Badge */}
+                  <div className="flex justify-between items-start w-full">
+                    {year ? (
+                      <div className="flex flex-col leading-none">
+                        <span className="text-[10cqw] font-black font-satoshi tracking-tighter leading-none text-white drop-shadow-md">
+                          {year}
+                        </span>
+                        {month && (
+                          <span className="text-[3.6cqw] font-mono font-bold tracking-widest text-red-400 uppercase mt-0.5">
+                            {month}
+                          </span>
+                        )}
                       </div>
-                    )}
+                    ) : <div />}
+
+                    <span className="px-1.5 py-0.5 bg-red-600 text-white text-[2.6cqw] font-black uppercase tracking-widest font-mono shadow-sm">
+                      PLAN
+                    </span>
                   </div>
 
-                  {/* Bottom Footer Row: Date & Status */}
-                  <div className="mt-auto flex flex-col gap-1.5">
-                    {plan.tags && plan.tags.filter(t => t !== 'Plan' && t !== 'Archived').length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {plan.tags.filter(t => t !== 'Plan' && t !== 'Archived').slice(0, 2).map(tag => (
-                          <span key={tag} className="text-[2.6cqw] uppercase font-bold tracking-widest bg-white/10 px-1.5 py-0.5 rounded-sm text-white/95">{tag}</span>
-                        ))}
+                  {/* Bottom Footer Row: Title, Location, Date (3-tier clean stack) */}
+                  <div className="mt-auto flex flex-col gap-1 w-full max-w-[86%]">
+                    <h3 className="text-[5.8cqw] sm:text-[6.2cqw] font-black uppercase tracking-tight leading-tight font-satoshi text-white drop-shadow-md line-clamp-2">
+                      {plan.title.replace(' (Plan)', '')}
+                    </h3>
+                    {plan.locationStr && (
+                      <div className="text-[3.2cqw] font-mono font-bold uppercase tracking-wider text-white/90 truncate drop-shadow-sm mt-0.5">
+                        {plan.locationStr.replace(/,/g, ' · ')}
                       </div>
                     )}
-                    <div className="flex flex-col gap-0.5">
-                      <div className="text-[3cqw] tracking-widest text-white/70 font-mono truncate uppercase">{plan.date}</div>
-                      <div className="text-[2.6cqw] tracking-[0.25em] font-black text-red-400 uppercase">PLAN</div>
-                    </div>
+                    {plan.date && (
+                      <div className="text-[2.8cqw] font-mono font-medium text-white/60 tracking-wider truncate">
+                        {plan.date}
+                      </div>
+                    )}
                   </div>
                 </div>
 

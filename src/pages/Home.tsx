@@ -334,6 +334,13 @@ export function HomePage({
     localStorage.setItem('cardViewMode', mode);
   };
 
+  const [planViewMode, setPlanViewMode] = useState<'grid' | 'wide'>(() => (localStorage.getItem('planViewMode') as any) || 'grid');
+
+  const handleSetPlanViewMode = (mode: 'grid' | 'wide') => {
+    setPlanViewMode(mode);
+    localStorage.setItem('planViewMode', mode);
+  };
+
   // Drag-reorder state for archive cards
   const [draggedTripId, setDraggedTripId] = useState<number | null>(null);
   const [localTrips, setLocalTrips] = useState<Trip[]>(trips);
@@ -548,21 +555,53 @@ export function HomePage({
               <h2 className="text-2xl font-black tracking-tighter uppercase break-keep">Upcoming Plans</h2>
               <p className="text-sm text-black/50 dark:text-white/50 mt-1 break-keep">다가오는 여행 계획을 준비하고, 여행 후 아카이브로 전환하세요.</p>
             </div>
-            <button onClick={() => onNavigate('plan')} className="text-xs font-bold uppercase tracking-widest flex items-center hover:opacity-60 shrink-0">
-              View All Plans <ArrowRight className="w-4 h-4 ml-2" />
-            </button>
+            <div className="flex items-center gap-3 shrink-0">
+              {/* Plan View Mode Toggle: GRID (default) vs WIDE */}
+              <div className="flex items-center gap-0.5 border border-black/15 dark:border-white/15 p-0.5 bg-white dark:bg-[#121212]">
+                <button
+                  type="button"
+                  onClick={() => handleSetPlanViewMode('grid')}
+                  className={`flex items-center gap-1 px-2 py-1 text-[9px] font-black uppercase tracking-wider transition-colors cursor-pointer ${
+                    planViewMode === 'grid'
+                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                      : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                  }`}
+                  title="그리드 보기 (기본)"
+                >
+                  <LayoutGrid className="w-3 h-3" />
+                  <span>GRID</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetPlanViewMode('wide')}
+                  className={`flex items-center gap-1 px-2 py-1 text-[9px] font-black uppercase tracking-wider transition-colors cursor-pointer ${
+                    planViewMode === 'wide'
+                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                      : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                  }`}
+                  title="와이드 보기"
+                >
+                  <StretchHorizontal className="w-3 h-3" />
+                  <span>WIDE</span>
+                </button>
+              </div>
+
+              <button onClick={() => onNavigate('plan')} className="text-xs font-bold uppercase tracking-widest flex items-center hover:opacity-60 shrink-0 ml-1">
+                View All Plans <ArrowRight className="w-4 h-4 ml-1.5" />
+              </button>
+            </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 p-6 md:p-12 w-full">
+          <div className={`grid ${planViewMode === 'wide' ? 'grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6' : 'grid-cols-2 md:grid-cols-4 gap-3 md:gap-6'} p-4 sm:p-6 md:p-12 w-full`}>
             {localPlans.slice(0, 4).map((plan) => {
               const { year, month } = getYearAndMonth(plan.date);
               return (
                 <div
                   key={plan.id}
                   style={{ containerType: 'inline-size' }}
-                  className={`group cursor-pointer aspect-[3/4] w-full overflow-hidden transition-all border relative shadow-[0_0_15px_rgba(239,68,68,0.08)] ${
+                  className={`group cursor-pointer ${planViewMode === 'wide' ? 'aspect-[16/10]' : 'aspect-[3/4]'} w-full overflow-hidden transition-all border relative shadow-[0_0_15px_rgba(239,68,68,0.08)] ${
                     activeCardId === plan.id
                       ? 'border-red-600 dark:border-red-400 ring-2 ring-red-600/20 dark:ring-red-400/20 scale-[1.01] shadow-lg'
-                      : 'border-red-600/50 dark:border-red-400/50 bg-[#111]'
+                      : 'border-red-600/40 dark:border-red-500/40 bg-[#111]'
                   }`}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -575,7 +614,7 @@ export function HomePage({
                 >
                   {/* Background cover image */}
                   <img
-                    src={plan.img}
+                    src={getEffectiveImageUrl(plan.img)}
                     alt={plan.title}
                     className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 pointer-events-none group-hover:scale-105 ${
                       activeCardId === plan.id ? 'scale-105 opacity-100' : 'opacity-85 group-hover:opacity-100'
@@ -585,25 +624,43 @@ export function HomePage({
                   {/* Magazine Overlay Gradient */}
                   <div className="absolute inset-0 magazine-card-gradient pointer-events-none" />
 
-                  {/* Magazine Cover Text Layout */}
-                  <div className="absolute inset-0 p-4 md:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
-                    {/* Top Header Row: Title & Issue Date */}
-                    <div className="flex justify-between items-start gap-3 w-full">
-                      <h3 className="text-[5.5cqw] font-black uppercase tracking-tight leading-none font-satoshi text-white drop-shadow-md max-w-[70%] line-clamp-2" style={{ fontFamily: "'Satoshi', sans-serif" }}>
-                        {plan.title}
-                      </h3>
-                      {month && year && (
-                        <div className="flex flex-col items-end shrink-0 text-right leading-none font-mono">
-                          <span className="text-[5.5cqw] font-black tracking-tight leading-none text-white">{year}</span>
-                          <span className="text-[3cqw] font-black tracking-widest text-amber-400 uppercase mt-0.5">{month}</span>
+                  {/* Swiss Editorial Poster Text Layout */}
+                  <div className="absolute inset-0 p-4 sm:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
+                    {/* Top Header Row: Giant Bold Year & Month / PLAN Badge */}
+                    <div className="flex justify-between items-start w-full">
+                      {year ? (
+                        <div className="flex flex-col leading-none">
+                          <span className="text-[10cqw] font-black font-satoshi tracking-tighter leading-none text-white drop-shadow-md">
+                            {year}
+                          </span>
+                          {month && (
+                            <span className="text-[3.6cqw] font-mono font-bold tracking-widest text-red-400 uppercase mt-0.5">
+                              {month}
+                            </span>
+                          )}
                         </div>
-                      )}
+                      ) : <div />}
+
+                      <span className="px-1.5 py-0.5 bg-red-600 text-white text-[2.6cqw] font-black uppercase tracking-widest font-mono shadow-sm">
+                        PLAN
+                      </span>
                     </div>
 
-                    {/* Bottom Footer Row: Date & Status */}
-                    <div className="mt-auto flex flex-col gap-0.5">
-                      <div className="text-[3cqw] tracking-widest text-white/70 font-mono truncate uppercase">{plan.date}</div>
-                      <div className="text-[2.6cqw] tracking-[0.25em] font-black text-red-400 uppercase">PLAN</div>
+                    {/* Bottom Footer Row: Title, Location, Date (3-tier clean stack) */}
+                    <div className="mt-auto flex flex-col gap-1 w-full max-w-[86%]">
+                      <h3 className="text-[5.8cqw] sm:text-[6.2cqw] font-black uppercase tracking-tight leading-tight font-satoshi text-white drop-shadow-md line-clamp-2">
+                        {plan.title.replace(' (Plan)', '')}
+                      </h3>
+                      {plan.locationStr && (
+                        <div className="text-[3.2cqw] font-mono font-bold uppercase tracking-wider text-white/90 truncate drop-shadow-sm mt-0.5">
+                          {plan.locationStr.replace(/,/g, ' · ')}
+                        </div>
+                      )}
+                      {plan.date && (
+                        <div className="text-[2.8cqw] font-mono font-medium text-white/60 tracking-wider truncate">
+                          {plan.date}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -885,65 +942,51 @@ export function HomePage({
                       isActive={isCardActive}
                     />
 
-                    {/* Status Badge (NEW / EDITING) */}
-                    {trip.statusBadge && (
-                      <div className={`absolute bottom-3.5 right-11 z-[15] px-2 py-0.5 text-[8px] font-black tracking-widest uppercase shadow-md pointer-events-none select-none ${
-                        trip.statusBadge === 'NEW'
-                          ? 'bg-red-600 text-white'
-                          : 'bg-amber-600 text-white'
-                      }`}>
-                        {trip.statusBadge}
-                      </div>
-                    )}
-
                     {/* Magazine Overlay Gradient */}
                     <div className="absolute inset-0 magazine-card-gradient pointer-events-none" />
 
-                    {/* Magazine Cover Text Layout */}
-                    <div className="absolute inset-0 p-4 md:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
-                      {/* Top Header Section */}
-                      <div className="w-full">
-                        {/* Editorial Masthead & Barcode Bar */}
-                        <div className="flex items-center justify-between text-[2.2cqw] font-mono tracking-widest text-white/80 uppercase border-b border-white/20 pb-1.5 mb-2 w-full">
-                          <div className="flex items-center gap-1.5">
-                            <span className="bg-white/25 px-1 py-0.5 rounded-[1px] font-black text-white">
-                              ISSUE #{issueNumber}
+                    {/* Swiss Editorial Poster Text Layout */}
+                    <div className="absolute inset-0 p-4 sm:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
+                      {/* Top Header Row: Giant Bold Year & Month / Status Badge */}
+                      <div className="flex justify-between items-start w-full">
+                        {year ? (
+                          <div className="flex flex-col leading-none">
+                            <span className="text-[10cqw] font-black font-satoshi tracking-tighter leading-none text-white drop-shadow-md">
+                              {year}
                             </span>
-                            <span className="tracking-wider text-white/90">TRIPGON</span>
+                            {month && (
+                              <span className="text-[3.6cqw] font-mono font-bold tracking-widest text-amber-400 uppercase mt-0.5">
+                                {month}
+                              </span>
+                            )}
                           </div>
-                          <span className="font-bold tracking-widest text-white/60">AUTONOMOUS RECORD</span>
-                        </div>
+                        ) : <div />}
 
-                        {/* Magazine Title & Destination */}
-                        <div className="flex items-baseline justify-between gap-2">
-                          <h3 className="text-[5.5cqw] font-black tracking-tight leading-tight uppercase font-satoshi drop-shadow-md truncate max-w-[80%]">
-                            {trip.title}
-                          </h3>
-                          {month && year && (
-                            <div className="flex flex-col items-end shrink-0 text-right leading-none font-mono">
-                              <span className="text-[5.5cqw] font-black tracking-tight leading-none text-white">{year}</span>
-                              <span className="text-[3cqw] font-black tracking-widest text-amber-400 uppercase mt-0.5">{month}</span>
-                            </div>
-                          )}
-                        </div>
+                        {trip.statusBadge && (
+                          <span className={`px-1.5 py-0.5 text-[2.6cqw] font-black uppercase tracking-widest font-mono shadow-sm ${
+                            trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
+                          }`}>
+                            {trip.statusBadge}
+                          </span>
+                        )}
                       </div>
 
-                      {/* Bottom Footer Row: Date, Tags & Status */}
-                      <div className="mt-auto flex flex-col gap-1.5">
-                        {trip.tags && trip.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {trip.tags.slice(0, 2).map(tag => (
-                              <span key={tag} className="text-[2.6cqw] uppercase font-bold tracking-widest bg-white/10 px-1.5 py-0.5 rounded-sm text-white/95">{tag}</span>
-                            ))}
+                      {/* Bottom Footer Row: Title, Location, Date (3-tier clean stack) */}
+                      <div className="mt-auto flex flex-col gap-1 w-full max-w-[86%]">
+                        <h3 className="text-[5.8cqw] sm:text-[6.2cqw] font-black uppercase tracking-tight leading-tight font-satoshi text-white drop-shadow-md line-clamp-2">
+                          {trip.title}
+                        </h3>
+                        {trip.locationStr && (
+                          <div className="text-[3.2cqw] font-mono font-bold uppercase tracking-wider text-white/90 truncate drop-shadow-sm mt-0.5">
+                            {trip.locationStr.replace(/,/g, ' · ')}
                           </div>
                         )}
-                        <div className="flex flex-col gap-0.5">
-                          <div className="text-[3cqw] tracking-widest text-white/70 font-mono truncate uppercase">
+                        {trip.date && (
+                          <div className="text-[2.8cqw] font-mono font-medium text-white/60 tracking-wider truncate">
                             {trip.date}
-                            {days > 0 && ` · ${days} DAYS`}
+                            {days > 0 && ` · ${days}D`}
                           </div>
-                          <div className="text-[2.6cqw] tracking-[0.25em] font-black text-amber-400 uppercase">ARCHIVE</div>
-                        </div>
+                        )}
                       </div>
                     </div>
 

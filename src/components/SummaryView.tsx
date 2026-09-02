@@ -294,7 +294,7 @@ export function SummaryView({
   const recordedSpotsCount = Object.values(timelineData).flat().length;
 
   return (
-    <div className="w-full h-full flex flex-col overflow-y-auto overflow-x-hidden text-left text-black dark:text-white bg-white dark:bg-[#0A0A0A] animate-in fade-in duration-300">
+    <div className="w-full flex flex-col text-left text-black dark:text-white bg-white dark:bg-[#0A0A0A] animate-in fade-in duration-300">
       
       {/* Full-bleed Minimal Editorial Canvas */}
       <div 
@@ -602,16 +602,6 @@ export function SummaryView({
               </div>
             </div>
           </div>
-        </div>
-
-        {/* 7. Footer Editorial Masthead */}
-        <div className="pt-6 border-t border-black/20 dark:border-white/20 flex flex-col sm:flex-row justify-between items-center gap-2 text-[10px] font-mono text-black/50 dark:text-white/50">
-          <div className="flex items-center gap-2">
-            <span className="font-black tracking-widest text-black dark:text-white">TRIP GON LOG</span>
-            <span>·</span>
-            <span>AUTONOMOUS TRAVEL RECORD</span>
-          </div>
-          <span>v0.6c</span>
         </div>
       </div>
 
