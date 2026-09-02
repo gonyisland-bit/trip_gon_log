@@ -194,7 +194,7 @@ export function StayCard({
       onClick={onClick}
       className={`border-b font-sans text-black dark:text-white relative transition-all duration-300 cursor-pointer w-full ${
         isActive 
-          ? 'border-red-600 dark:border-red-400 bg-red-500/[0.01] dark:bg-red-400/[0.01]' 
+          ? 'border-l-4 border-l-red-600 dark:border-l-red-500 bg-neutral-100/50 dark:bg-white/[0.04]' 
           : 'border-black/15 dark:border-white/15 bg-white dark:bg-[#0A0A0A]'
       }`}
     >

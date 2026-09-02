@@ -727,7 +727,7 @@ export function JourneyDetailPage({
   const [saving, setSaving] = useState(false);
   const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
   const [galleryViewMode, setGalleryViewMode] = useState<'grid' | 'accordion'>('accordion');
-  const [galleryColumns, setGalleryColumns] = useState<2 | 4>(2);
+  const [galleryColumns, setGalleryColumns] = useState<2 | 4>(4);
   const [collapsedGalleryDays, setCollapsedGalleryDays] = useState<string[]>([]);
   const [detailLocInput, setDetailLocInput] = useState('');
   
@@ -3657,7 +3657,7 @@ export function JourneyDetailPage({
                         <div 
                           id={`timeline-item-${item.id}`}
                           ref={el => { itemRefs.current[item.id] = el; }} 
-                          className={`flex flex-col border-b border-black/10 dark:border-white/10 transition-all w-full ${isActive ? 'bg-red-500/[0.02] dark:bg-red-500/[0.02] border-l-2 border-l-red-600 dark:border-l-red-400' : 'border-l-2 border-l-transparent'} ${collapsedDays.includes(item.date || '') && selectedDate === 'ALL' ? 'hidden' : ''}`}
+                          className={`flex flex-col border-b border-black/15 dark:border-white/15 transition-all w-full ${isActive ? 'bg-neutral-100 dark:bg-white/[0.08] border-l-[5px] border-l-red-600 dark:border-l-red-500' : 'border-l-[5px] border-l-transparent'} ${collapsedDays.includes(item.date || '') && selectedDate === 'ALL' ? 'hidden' : ''}`}
                           draggable={isEditing}
                           onDragStart={(e) => {
                             const target = e.target as HTMLElement;
@@ -3752,27 +3752,37 @@ export function JourneyDetailPage({
                             ) : (
                               <div className={`w-24 sm:w-28 md:w-30 shrink-0 pr-2.5 flex flex-col tracking-tight mt-0.5 transition-colors ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black/80 dark:text-white/80'}`}>
                                 <div>
-                                  <span className={`text-xs sm:text-[13px] md:text-sm font-black font-mono tracking-tight ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black dark:text-white'}`}>
-                                    {item.time}
-                                  </span>
-                                </div>
-                                <div className="flex flex-col mt-0.5" onClick={(e) => e.stopPropagation()}>
-                                  {selectedDate === 'ALL' && item.date && (
-                                    <div className="mt-1">
-                                      <span 
-                                        className="inline-flex items-center px-1.5 py-0.5 rounded text-[9.5px] md:text-[10.5px] font-black font-mono tracking-tight shadow-2xs border select-none whitespace-nowrap"
-                                        style={dayColor ? { 
-                                          backgroundColor: `${dayColor}18`, 
-                                          color: dayColor, 
-                                          borderColor: `${dayColor}35` 
-                                        } : {
-                                          backgroundColor: 'rgba(0,0,0,0.06)',
-                                          color: 'inherit',
-                                          borderColor: 'rgba(0,0,0,0.1)'
-                                        }}
-                                      >
-                                        {dayIndex}day, {Number(item.date.slice(5, 7))}/{Number(item.date.slice(8, 10))}
+                                  {(() => {
+                                    const match = (item.time || '').match(/^(\d{1,2}:\d{2})\s*(AM|PM)?$/i);
+                                    if (match) {
+                                      return (
+                                        <div className="flex items-baseline gap-1 leading-none">
+                                          <span className={`text-base sm:text-lg md:text-xl font-black font-satoshi tracking-tight leading-none ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black dark:text-white'}`}>
+                                            {match[1]}
+                                          </span>
+                                          {match[2] && (
+                                            <span className="text-[8.5px] sm:text-[9.5px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
+                                              {match[2].toUpperCase()}
+                                            </span>
+                                          )}
+                                        </div>
+                                      );
+                                    }
+                                    return (
+                                      <span className={`text-base sm:text-lg md:text-xl font-black font-satoshi tracking-tight leading-none ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black dark:text-white'}`}>
+                                        {item.time}
                                       </span>
+                                    );
+                                  })()}
+                                </div>
+                                <div className="flex flex-col mt-1" onClick={(e) => e.stopPropagation()}>
+                                  {selectedDate === 'ALL' && item.date && (
+                                    <div className="flex items-center gap-1.5 text-[9.5px] sm:text-[10px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 select-none">
+                                      <span className={`font-black ${isActive ? 'text-red-600 dark:text-red-400' : 'text-black dark:text-white'}`}>
+                                        DAY {dayIndex}
+                                      </span>
+                                      <span className="text-black/30 dark:text-white/30">·</span>
+                                      <span>{item.date ? item.date.slice(5).replace('-', '.') : ''}</span>
                                     </div>
                                   )}
                                   
@@ -3933,7 +3943,7 @@ export function JourneyDetailPage({
                             {/* Right Column: Full-Height 1:1 Edge-to-Edge Square Grid Thumbnail */}
                             {item.img ? (
                               <div 
-                                className={`w-24 sm:w-28 md:w-32 aspect-square self-stretch shrink-0 overflow-hidden border-l transition-all relative rounded-none ${isActive ? 'border-red-600 dark:border-red-400' : 'border-black/15 dark:border-white/15'}`}
+                                className={`w-24 sm:w-28 md:w-32 aspect-square self-stretch shrink-0 overflow-hidden border-l transition-all relative rounded-none ${isActive ? 'border-l-[2px] border-l-red-600 dark:border-l-red-500' : 'border-black/15 dark:border-white/15'}`}
                                 onClick={(e) => {
                                   if (!isEditing) {
                                     e.stopPropagation();
@@ -3949,8 +3959,6 @@ export function JourneyDetailPage({
                                 }}
                               >
                                 <img src={getEffectiveImageUrl(item.img)} alt={item.place} className={`w-full h-full object-cover transition-all duration-300 ${isActive ? 'grayscale-0 scale-105' : 'grayscale group-hover:grayscale-0 group-hover:scale-105'}`} />
-                                {/* Red dot badge: mark as timeline-attached photo */}
-                                <span className="absolute top-2 right-2 w-2 h-2 bg-red-600 rounded-full border border-white dark:border-black shadow z-10" />
                                 <ImageEditOverlay 
                                   isEditMode={isEditing} 
                                   hasImage={true}
@@ -4673,20 +4681,8 @@ export function JourneyDetailPage({
                       {allGalleryImages.length} Photos
                     </span>
                     <div className="flex items-center gap-2">
-                      {/* WIDE / GRID Toggle */}
+                      {/* GRID / WIDE Toggle */}
                       <div className="flex border border-black/15 dark:border-white/15 p-0.5 bg-black/5 dark:bg-white/5 rounded-none">
-                        <button
-                          onClick={() => setGalleryColumns(2)}
-                          className={`flex items-center gap-1.5 px-2.5 py-1 text-[9px] md:text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer ${
-                            galleryColumns === 2
-                              ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
-                              : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-                          }`}
-                          title="Wide view (2 columns)"
-                        >
-                          <Columns2 className="w-3.5 h-3.5" />
-                          <span>WIDE</span>
-                        </button>
                         <button
                           onClick={() => setGalleryColumns(4)}
                           className={`flex items-center gap-1.5 px-2.5 py-1 text-[9px] md:text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer ${
@@ -4698,6 +4694,18 @@ export function JourneyDetailPage({
                         >
                           <LayoutGrid className="w-3.5 h-3.5" />
                           <span>GRID</span>
+                        </button>
+                        <button
+                          onClick={() => setGalleryColumns(2)}
+                          className={`flex items-center gap-1.5 px-2.5 py-1 text-[9px] md:text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer ${
+                            galleryColumns === 2
+                              ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                              : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                          }`}
+                          title="Wide view (2 columns)"
+                        >
+                          <Columns2 className="w-3.5 h-3.5" />
+                          <span>WIDE</span>
                         </button>
                       </div>
 
@@ -4733,7 +4741,7 @@ export function JourneyDetailPage({
                     등록된 갤러리 사진이 없습니다.
                   </div>
                 ) : galleryViewMode === 'accordion' ? (
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col w-full">
                     {/* Date Accordions */}
                     {allTripDates.map((date, idx) => {
                       const items = galleryGroups[date] || [];
@@ -4741,7 +4749,7 @@ export function JourneyDetailPage({
                       if (items.length === 0) return null;
 
                       return (
-                        <div key={date} className="border border-black/10 dark:border-white/10">
+                        <div key={date} className="w-full border-b border-black/15 dark:border-white/15">
                           <button
                             onClick={() => {
                               if (isCollapsed) {
@@ -4750,15 +4758,19 @@ export function JourneyDetailPage({
                                 setCollapsedGalleryDays(prev => [...prev, date]);
                               }
                             }}
-                            className="w-full flex items-center justify-between py-2.5 px-4 bg-black/3 dark:bg-white/3 text-[10px] md:text-xs font-black uppercase tracking-widest text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                            className="w-full flex items-center justify-between py-2.5 px-3 sm:px-4 bg-black/[0.02] dark:bg-white/[0.02] text-[10px] sm:text-xs font-black uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
                           >
-                            <span>Day {idx + 1} — {date} ({items.length} Photos)</span>
-                            <span className="text-[8px] md:text-[9px] text-black/45 dark:text-white/45">
-                              {isCollapsed ? '▼ EXPAND' : '▲ COLLAPSE'}
+                            <div className="flex items-center gap-2">
+                              <span className="font-black">DAY {idx + 1}</span>
+                              <span className="text-black/30 dark:text-white/30">·</span>
+                              <span className="font-mono text-black/70 dark:text-white/70">{date}</span>
+                            </div>
+                            <span className="text-[9px] font-mono font-bold text-black/40 dark:text-white/40 tracking-wider">
+                              {items.length} PHOTOS {isCollapsed ? '▼' : '▲'}
                             </span>
                           </button>
                           {!isCollapsed && (
-                            <div className={`p-3 md:p-5 grid ${galleryColumns === 2 ? 'grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 md:gap-3'} border-t border-black/10 dark:border-white/10`}>
+                            <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 sm:grid-cols-2 gap-3 p-3' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1 p-1'} bg-white dark:bg-[#0A0A0A]`}>
                               {items.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
                             </div>
                           )}
@@ -4771,7 +4783,7 @@ export function JourneyDetailPage({
                       const items = galleryGroups['NO_DATE'];
                       const isCollapsed = collapsedGalleryDays.includes('NO_DATE');
                       return (
-                        <div className="border border-black/10 dark:border-white/10">
+                        <div className="w-full border-b border-black/15 dark:border-white/15">
                           <button
                             onClick={() => {
                               if (isCollapsed) {
@@ -4780,15 +4792,15 @@ export function JourneyDetailPage({
                                 setCollapsedGalleryDays(prev => [...prev, 'NO_DATE']);
                               }
                             }}
-                            className="w-full flex items-center justify-between py-2.5 px-4 bg-black/3 dark:bg-white/3 text-[10px] md:text-xs font-black uppercase tracking-widest text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                            className="w-full flex items-center justify-between py-2.5 px-3 sm:px-4 bg-black/[0.02] dark:bg-white/[0.02] text-[10px] sm:text-xs font-black uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
                           >
-                            <span>No Date ({items.length} Photos)</span>
-                            <span className="text-[8px] md:text-[9px] text-black/45 dark:text-white/45">
-                              {isCollapsed ? '▼ EXPAND' : '▲ COLLAPSE'}
+                            <span className="font-black">NO DATE</span>
+                            <span className="text-[9px] font-mono font-bold text-black/40 dark:text-white/40 tracking-wider">
+                              {items.length} PHOTOS {isCollapsed ? '▼' : '▲'}
                             </span>
                           </button>
                           {!isCollapsed && (
-                            <div className={`p-3 md:p-5 grid ${galleryColumns === 2 ? 'grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 md:gap-3'} border-t border-black/10 dark:border-white/10`}>
+                            <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 sm:grid-cols-2 gap-3 p-3' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1 p-1'} bg-white dark:bg-[#0A0A0A]`}>
                               {items.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
                             </div>
                           )}

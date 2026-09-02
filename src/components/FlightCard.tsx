@@ -195,10 +195,10 @@ export function FlightCard({
   return (
     <div 
       onClick={onClick}
-      className={`border mb-6 font-sans text-black dark:text-white relative shadow-sm transition-all duration-300 cursor-pointer ${
+      className={`border-b font-sans text-black dark:text-white relative transition-all duration-300 cursor-pointer w-full ${
         isActive 
-          ? 'border-red-600 dark:border-red-400 ring-1 ring-red-600/30 bg-red-500/[0.01] dark:bg-red-400/[0.01]' 
-          : 'border-black/10 dark:border-white/10 bg-white dark:bg-[#1a1a1a]'
+          ? 'border-b-red-600 dark:border-b-red-500 bg-neutral-100/50 dark:bg-white/[0.04]' 
+          : 'border-b-black/15 dark:border-b-white/15 bg-white dark:bg-[#0A0A0A]'
       }`}
     >
       {/* Header bar */}

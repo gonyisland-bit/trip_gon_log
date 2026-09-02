@@ -1582,8 +1582,8 @@ function App() {
 
           {/* Center Giant Satoshi Typography */}
           <div className="flex flex-col items-center select-none text-center">
-            <h1 className="text-6xl sm:text-8xl md:text-9xl font-black font-satoshi uppercase tracking-tighter text-black dark:text-white leading-none">
-              TRIPGON
+            <h1 className="text-5xl sm:text-7xl md:text-9xl font-black font-satoshi tracking-tighter text-black dark:text-white leading-none">
+              Tripgon log
             </h1>
             <div className="h-[2px] w-16 bg-red-600 my-4" />
             <span className="text-xs sm:text-sm font-mono font-bold uppercase tracking-[0.35em] text-black/40 dark:text-white/40">
