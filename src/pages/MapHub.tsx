@@ -1322,6 +1322,8 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
 
       // Add each extracted point into the pin groups map, merging same cities
       pointsToPin.forEach(pt => {
+        const ptCityClean = cleanAdministrativeDistricts(pt.name).toUpperCase().trim();
+
         // 1. Strip trailing country strings like ", SOUTH KOREA", ", KOREA", ", JAPAN", etc.
         let cityCleaned = ptCityClean
           .replace(/,\s*(SOUTH KOREA|KOREA|대한민국|한국|JAPAN|일본|VIETNAM|베트남|THAILAND|태국|TAIWAN|대만|CHINA|중국|USA|미국|FRANCE|프랑스|ITALY|이탈리아|UK|영국|SPAIN|스페인).*$/i, '')
