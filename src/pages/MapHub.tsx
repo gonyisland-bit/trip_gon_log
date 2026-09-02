@@ -1198,38 +1198,21 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
   });
 
   // View toggles: Pin Labels, Visited (Red pins), Wishlist (Yellow pins)
-  const [showPinLabels, setShowPinLabels] = useState<boolean>(() => {
-    return localStorage.getItem('map_view_labels_v2') !== 'false';
-  });
-  const [showVisitedPins, setShowVisitedPins] = useState<boolean>(() => {
-    return localStorage.getItem('map_view_visited') !== 'false';
-  });
-  const [showWishlistPins, setShowWishlistPins] = useState<boolean>(() => {
-    return localStorage.getItem('map_view_wishlist') !== 'false';
-  });
+  // Pin labels are ALWAYS shown by default from the start
+  const [showPinLabels, setShowPinLabels] = useState<boolean>(true);
+  const [showVisitedPins, setShowVisitedPins] = useState<boolean>(true);
+  const [showWishlistPins, setShowWishlistPins] = useState<boolean>(true);
 
   const togglePinLabels = () => {
-    setShowPinLabels(prev => {
-      const next = !prev;
-      try { localStorage.setItem('map_view_labels_v2', String(next)); } catch (_) {}
-      return next;
-    });
+    setShowPinLabels(prev => !prev);
   };
 
   const toggleVisitedPins = () => {
-    setShowVisitedPins(prev => {
-      const next = !prev;
-      try { localStorage.setItem('map_view_visited', String(next)); } catch (_) {}
-      return next;
-    });
+    setShowVisitedPins(prev => !prev);
   };
 
   const toggleWishlistPins = () => {
-    setShowWishlistPins(prev => {
-      const next = !prev;
-      try { localStorage.setItem('map_view_wishlist', String(next)); } catch (_) {}
-      return next;
-    });
+    setShowWishlistPins(prev => !prev);
   };
 
   const toggleFavoriteCountry = (code: string) => {
@@ -1504,6 +1487,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
   }, [isDarkMode]);
 
   // Render Red Pins for registered journeys (controlled by showVisitedPins)
+  // Render Red Pins for registered journeys (controlled by showVisitedPins and showPinLabels)
   useEffect(() => {
     const L = (window as any).L;
     const map = mapRef.current;
@@ -1518,12 +1502,13 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     pinGroups.forEach(group => {
       const pinHtml = `
         <div class="relative cursor-pointer group select-none flex justify-center" style="width: 26px; height: 34px;">
-          <!-- Swiss Minimal City Badge floating above the pin -->
-          <div class="pin-label">
-            <span class="swiss-pin-badge">
-              ${group.city}
-            </span>
-          </div>
+          ${showPinLabels ? `
+            <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 5px; pointer-events: none; white-space: nowrap; z-index: 1000;">
+              <span style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 8.5px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1.5px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 5.5px; line-height: 1.2; display: inline-block; box-shadow: none; border-radius: 0;">
+                ${group.city}
+              </span>
+            </div>
+          ` : ''}
           <!-- Red SVG Pin: Sharp bottom tip is precisely at (13, 34) -->
           <div class="relative w-full h-full drop-shadow-md transition-transform duration-150 group-hover:scale-110 origin-bottom">
             <svg viewBox="0 0 24 34" width="26" height="34" fill="none" xmlns="http://www.w3.org/2000/svg" class="block">
@@ -1554,9 +1539,9 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
 
       markersRef.current.push(marker);
     });
-  }, [pinGroups, showVisitedPins]);
+  }, [pinGroups, showVisitedPins, showPinLabels, isDarkMode]);
 
-  // Render Yellow Pins for favorite countries (Wishlist, controlled by showWishlistPins)
+  // Render Yellow Pins for favorite countries (Wishlist, controlled by showWishlistPins and showPinLabels)
   useEffect(() => {
     const L = (window as any).L;
     const map = mapRef.current;
@@ -1573,12 +1558,13 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
 
       const yellowPinHtml = `
         <div class="relative cursor-pointer group select-none flex justify-center" style="width: 26px; height: 34px;">
-          <!-- Swiss Minimal Country Badge floating above the pin -->
-          <div class="pin-label">
-            <span class="swiss-wishlist-badge">
-              ★ ${country.name}
-            </span>
-          </div>
+          ${showPinLabels ? `
+            <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 5px; pointer-events: none; white-space: nowrap; z-index: 1000;">
+              <span style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 8px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1.5px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 5px; line-height: 1.2; display: inline-block; box-shadow: none; border-radius: 0;">
+                ★ ${country.name}
+              </span>
+            </div>
+          ` : ''}
           <!-- Yellow SVG Pin: Sharp bottom tip is precisely at (13, 34) -->
           <div class="relative w-full h-full drop-shadow-md transition-transform duration-150 group-hover:scale-110 origin-bottom">
             <svg viewBox="0 0 24 34" width="26" height="34" fill="none" xmlns="http://www.w3.org/2000/svg" class="block">
@@ -1603,7 +1589,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
 
       yellowMarkersRef.current.push(marker);
     });
-  }, [favoriteCountries, showWishlistPins]);
+  }, [favoriteCountries, showWishlistPins, showPinLabels, isDarkMode]);
 
   // Filtered countries for search (Supports continent search e.g. "아시아", "유럽", "아프리카", "남미")
   const filteredCountries = useMemo(() => {
