@@ -1332,7 +1332,7 @@ function App() {
               </div>
             </div>
           ) : (
-            <>
+            <div key={`${currentView}-${activeTripId || ''}`} className="animate-in fade-in zoom-in-[0.99] duration-200 ease-out w-full">
               {currentView === 'home' && (
                 <HomePage 
                   onNavigate={navigateTo} 
@@ -1453,7 +1453,7 @@ function App() {
                   </div>
                 )
               )}
-            </>
+            </div>
           )}
         </div>
         

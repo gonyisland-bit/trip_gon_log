@@ -73,22 +73,40 @@ function calculateDays(dateRangeStr: string): number {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 }
 
-// Helper to extract year and English short month for magazine styling
-function getYearAndMonth(dateRangeStr: string): { year: string; month: string } {
-  if (!dateRangeStr) return { year: '', month: '' };
-  const parts = dateRangeStr.split(/\s*[-—–]\s*/);
-  const cleanFirst = parts[0]?.trim();
-  if (cleanFirst) {
-    const dots = cleanFirst.split('.');
-    if (dots.length >= 2) {
-      const year = dots[0];
-      const monthNum = parseInt(dots[1], 10);
-      const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-      const month = months[monthNum - 1] || dots[1];
-      return { year, month };
+// Helper to extract year, English short month, and compact date for magazine styling
+function getYearAndMonth(dateRangeStr: string): { year: string; month: string; compactDate: string } {
+  if (!dateRangeStr) return { year: '', month: '', compactDate: '' };
+  const parts = dateRangeStr.split(/\s*[-—–~]\s*/).map(p => p.trim());
+  const parsePart = (str: string) => {
+    const match = str.match(/(\d{4})?[.-]?(\d{1,2})[.-](\d{1,2})/);
+    if (match) {
+      const y = match[1];
+      const m = match[2].padStart(2, '0');
+      const d = match[3].padStart(2, '0');
+      return { y, m, d, dateObj: new Date(parseInt(y || '2026', 10), parseInt(m, 10) - 1, parseInt(d, 10)) };
     }
+    return null;
+  };
+
+  const p1 = parsePart(parts[0]);
+  const p2 = parts[1] ? parsePart(parts[1]) : null;
+
+  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  const year = p1?.y || (p2?.y ?? '');
+  const monthNum = p1 ? p1.dateObj.getMonth() : (p2 ? p2.dateObj.getMonth() : -1);
+  const month = monthNum >= 0 ? months[monthNum] : '';
+
+  let compactDate = '';
+  if (p1 && p2) {
+    const diffDays = Math.max(1, Math.round((p2.dateObj.getTime() - p1.dateObj.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+    compactDate = `${p1.m}.${p1.d}-${p2.m}.${p2.d} / ${diffDays}d`;
+  } else if (p1) {
+    compactDate = `${p1.m}.${p1.d} / 1d`;
+  } else {
+    compactDate = dateRangeStr;
   }
-  return { year: '', month: '' };
+
+  return { year, month, compactDate };
 }
 
 // Journey card hamburger menu
@@ -257,17 +275,21 @@ interface HeroMediaProps {
   journey: Trip | Plan;
   isActive: boolean;
   mediaType: 'image' | 'video';
+  onMediaReady?: () => void;
 }
 
-function HeroMedia({ journey, isActive, mediaType }: HeroMediaProps) {
+function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  const activeVideoUrl = journey.heroVideoUrl || journey.videoUrl;
+  const activeImageUrl = getEffectiveImageUrl(journey.heroImg || journey.img);
+  const hasVideo = mediaType === 'video' && Boolean(activeVideoUrl);
 
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
     
-    if (mediaType === 'video' && journey.videoUrl && videoRef.current) {
+    if (hasVideo && activeVideoUrl && videoRef.current) {
       if (isActive) {
-        // Reset to start and play immediately when active
         videoRef.current.currentTime = 0;
         const playPromise = videoRef.current.play();
         if (playPromise !== undefined) {
@@ -276,7 +298,6 @@ function HeroMedia({ journey, isActive, mediaType }: HeroMediaProps) {
           });
         }
       } else {
-        // Delay pausing for 1.5s to let the fade-out transition complete while playing
         timeoutId = setTimeout(() => {
           if (videoRef.current) {
             videoRef.current.pause();
@@ -290,10 +311,7 @@ function HeroMedia({ journey, isActive, mediaType }: HeroMediaProps) {
         clearTimeout(timeoutId);
       }
     };
-  }, [isActive, mediaType, journey.videoUrl]);
-
-  const hasVideo = mediaType === 'video' && journey.videoUrl;
-  const imageUrl = getEffectiveImageUrl(journey.img);
+  }, [isActive, hasVideo, activeVideoUrl]);
 
   return (
     <div
@@ -302,24 +320,27 @@ function HeroMedia({ journey, isActive, mediaType }: HeroMediaProps) {
         transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)'
       }}
     >
-      {hasVideo ? (
+      {hasVideo && activeVideoUrl ? (
         <video
           ref={videoRef}
-          src={journey.videoUrl}
+          src={activeVideoUrl}
           loop
           muted
           playsInline
-          poster={imageUrl}
+          poster={activeImageUrl}
           preload={isActive ? "auto" : "metadata"}
+          onLoadedData={() => { if (isActive && onMediaReady) onMediaReady(); }}
+          onCanPlay={() => { if (isActive && onMediaReady) onMediaReady(); }}
           className="w-full h-full object-cover"
         />
-      ) : imageUrl ? (
+      ) : activeImageUrl ? (
         <img
-          src={imageUrl}
+          src={activeImageUrl}
           alt={journey.title || "Hero Trip"}
           loading={isActive ? "eager" : "lazy"}
           decoding="async"
           fetchPriority={isActive ? "high" : "low"}
+          onLoad={() => { if (isActive && onMediaReady) onMediaReady(); }}
           className="w-full h-full object-cover"
         />
       ) : (
@@ -461,12 +482,15 @@ export function HomePage({
     ? heroJourneyIds.map(id => allJourneys.find(j => j.id === id)).filter(Boolean) as (Trip | Plan)[]
     : (localTrips[0] ? [localTrips[0]] : []);
 
+  const [isHeroMediaReady, setIsHeroMediaReady] = useState(false);
+
   const currentHero = heroJourneys[heroSlide] || heroJourneys[0];
-  const isCurrentHeroVideo = heroMediaType === 'video' && currentHero && 'videoUrl' in currentHero && currentHero.videoUrl;
+  const isCurrentHeroVideo = heroMediaType === 'video' && currentHero && (('heroVideoUrl' in currentHero && currentHero.heroVideoUrl) || ('videoUrl' in currentHero && currentHero.videoUrl));
   const heroSlideDuration = isCurrentHeroVideo ? 10000 : 6000;
 
   const goToSlide = useCallback((idx: number) => {
     if (idx === heroSlide) return;
+    setIsHeroMediaReady(false);
     setHeroSlide(idx);
   }, [heroSlide]);
 
@@ -475,10 +499,10 @@ export function HomePage({
 
   // Auto-advance carousel with dynamic duration (10s for video, 6s for image) when multiple heroes and auto-slide is enabled
   useEffect(() => {
-    if (!heroAutoSlide || heroJourneys.length <= 1) return;
+    if (!heroAutoSlide || heroJourneys.length <= 1 || !isHeroMediaReady) return;
     
     const currentHeroItem = heroJourneys[heroSlide];
-    const isVideo = heroMediaType === 'video' && currentHeroItem && 'videoUrl' in currentHeroItem && currentHeroItem.videoUrl;
+    const isVideo = heroMediaType === 'video' && currentHeroItem && (('heroVideoUrl' in currentHeroItem && currentHeroItem.heroVideoUrl) || ('videoUrl' in currentHeroItem && currentHeroItem.videoUrl));
     const duration = isVideo ? 10000 : 6000;
 
     const timer = setTimeout(() => {
@@ -486,9 +510,12 @@ export function HomePage({
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [heroJourneys.length, heroSlide, heroAutoSlide, heroMediaType, heroJourneys, goToNext]);
+  }, [heroJourneys.length, heroSlide, heroAutoSlide, heroMediaType, heroJourneys, isHeroMediaReady, goToNext]);
 
-  useEffect(() => { setHeroSlide(0); }, [heroJourneyIds.join(',')]);
+  useEffect(() => { 
+    setHeroSlide(0); 
+    setIsHeroMediaReady(false);
+  }, [heroJourneyIds.join(',')]);
 
   // ── Drag-to-reorder for trip archive cards ──────────────────────────────
   const handleTripDragStart = (e: React.DragEvent, id: number) => {
@@ -530,6 +557,11 @@ export function HomePage({
               journey={journey}
               isActive={index === heroSlide}
               mediaType={heroMediaType}
+              onMediaReady={() => {
+                if (index === heroSlide) {
+                  setIsHeroMediaReady(true);
+                }
+              }}
             />
           ))
         )}
@@ -602,8 +634,8 @@ export function HomePage({
                         key={`${heroSlide}-${heroSlideDuration}`}
                         className="h-full bg-gradient-to-r from-amber-500 to-amber-300"
                         style={{
-                          animation: heroAutoSlide ? `heroGauge ${heroSlideDuration}ms linear forwards` : 'none',
-                          width: heroAutoSlide ? undefined : '100%',
+                          animation: (heroAutoSlide && isHeroMediaReady) ? `heroGauge ${heroSlideDuration}ms linear forwards` : 'none',
+                          width: (heroAutoSlide && !isHeroMediaReady) ? '0%' : (heroAutoSlide ? undefined : '100%'),
                         }}
                       />
                     ) : idx < heroSlide ? (
@@ -674,7 +706,7 @@ export function HomePage({
           </div>
           <div className={`grid ${planViewMode === 'wide' ? 'grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6' : 'grid-cols-2 md:grid-cols-4 gap-3 md:gap-6'} p-4 sm:p-6 md:p-12 w-full`}>
             {localPlans.slice(0, 4).map((plan) => {
-              const { year, month } = getYearAndMonth(plan.date);
+              const { year, month, compactDate } = getYearAndMonth(plan.date);
               return (
                 <div
                   key={plan.id}
@@ -711,11 +743,11 @@ export function HomePage({
                     <div className="flex justify-between items-start w-full">
                       {year ? (
                         <div className="flex flex-col leading-none">
-                          <span className="text-[10cqw] font-black font-satoshi tracking-tighter leading-none text-white drop-shadow-md">
+                          <span className="text-[10cqw] font-black font-sans tracking-tighter leading-none text-white drop-shadow-md">
                             {year}
                           </span>
                           {month && (
-                            <span className="text-[3.6cqw] font-mono font-bold tracking-widest text-red-400 uppercase mt-0.5">
+                            <span className="text-[7cqw] font-sans font-black tracking-tight text-white/95 uppercase mt-0.5 leading-none">
                               {month}
                             </span>
                           )}
@@ -728,18 +760,18 @@ export function HomePage({
                     </div>
 
                     {/* Bottom Footer Row: Title, Location, Date (3-tier clean stack) */}
-                    <div className="mt-auto flex flex-col gap-1 w-full max-w-[86%]">
-                      <h3 className="text-[5.8cqw] sm:text-[6.2cqw] font-black uppercase tracking-tight leading-tight font-satoshi text-white drop-shadow-md line-clamp-2">
+                    <div className="mt-auto flex flex-col gap-1 w-full max-w-[88%]">
+                      <h3 className="text-[5.8cqw] sm:text-[6.2cqw] font-black uppercase tracking-tight leading-tight font-sans text-white drop-shadow-md line-clamp-2">
                         {plan.title.replace(' (Plan)', '')}
                       </h3>
                       {plan.locationStr && (
-                        <div className="text-[3.2cqw] font-mono font-bold uppercase tracking-wider text-white/90 truncate drop-shadow-sm mt-0.5">
+                        <div className="text-[3.8cqw] sm:text-[3.6cqw] font-sans font-bold uppercase tracking-wider text-white/95 truncate drop-shadow-sm mt-0.5">
                           {plan.locationStr.replace(/,/g, ' · ')}
                         </div>
                       )}
                       {plan.date && (
-                        <div className="text-[2.8cqw] font-mono font-medium text-white/60 tracking-wider truncate">
-                          {plan.date}
+                        <div className="text-[3.4cqw] sm:text-[3.2cqw] font-sans font-semibold text-white/80 tracking-wider truncate">
+                          {compactDate || plan.date}
                         </div>
                       )}
                     </div>
@@ -967,7 +999,7 @@ export function HomePage({
             : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 p-3 sm:p-6 md:p-12 w-full"
           }>
             {filteredTrips.slice(0, 4).map((trip, index) => {
-              const { year, month } = getYearAndMonth(trip.date);
+              const { year, month, compactDate } = getYearAndMonth(trip.date);
               const days = calculateDays(trip.date);
               const isCardActive = activeCardId === trip.id;
               const issueNumber = String((trip.displayOrder ?? index) + 1).padStart(2, '0');
@@ -1021,11 +1053,11 @@ export function HomePage({
                       <div className="flex justify-between items-start w-full">
                         {year ? (
                           <div className="flex flex-col leading-none">
-                            <span className="text-[10cqw] font-black font-satoshi tracking-tighter leading-none text-white drop-shadow-md">
+                            <span className="text-[10cqw] font-black font-sans tracking-tighter leading-none text-white drop-shadow-md">
                               {year}
                             </span>
                             {month && (
-                              <span className="text-[3.6cqw] font-mono font-bold tracking-widest text-amber-400 uppercase mt-0.5">
+                              <span className="text-[7cqw] font-sans font-black tracking-tight text-white/95 uppercase mt-0.5 leading-none">
                                 {month}
                               </span>
                             )}
@@ -1042,19 +1074,18 @@ export function HomePage({
                       </div>
 
                       {/* Bottom Footer Row: Title, Location, Date (3-tier clean stack) */}
-                      <div className="mt-auto flex flex-col gap-1 w-full max-w-[86%]">
-                        <h3 className="text-[5.8cqw] sm:text-[6.2cqw] font-black uppercase tracking-tight leading-tight font-satoshi text-white drop-shadow-md line-clamp-2">
+                      <div className="mt-auto flex flex-col gap-1 w-full max-w-[88%]">
+                        <h3 className="text-[5.8cqw] sm:text-[6.2cqw] font-black uppercase tracking-tight leading-tight font-sans text-white drop-shadow-md line-clamp-2">
                           {trip.title}
                         </h3>
                         {trip.locationStr && (
-                          <div className="text-[3.2cqw] font-mono font-bold uppercase tracking-wider text-white/90 truncate drop-shadow-sm mt-0.5">
+                          <div className="text-[3.8cqw] sm:text-[3.6cqw] font-sans font-bold uppercase tracking-wider text-white/95 truncate drop-shadow-sm mt-0.5">
                             {trip.locationStr.replace(/,/g, ' · ')}
                           </div>
                         )}
                         {trip.date && (
-                          <div className="text-[2.8cqw] font-mono font-medium text-white/60 tracking-wider truncate">
-                            {trip.date}
-                            {days > 0 && ` · ${days}D`}
+                          <div className="text-[3.4cqw] sm:text-[3.2cqw] font-sans font-semibold text-white/80 tracking-wider truncate">
+                            {compactDate || trip.date}
                           </div>
                         )}
                       </div>

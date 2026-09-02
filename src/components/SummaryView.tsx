@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { 
   FileText, Share2, Download, X, Calendar, MapPin, 
   Bed, Plane, Train, Landmark, ChevronDown, ChevronUp, ArrowDownRight, ArrowRight
@@ -45,6 +45,8 @@ export function SummaryView({
   const [expandedStayId, setExpandedStayId] = useState<number | null>(0);
   const [expandedFlightId, setExpandedFlightId] = useState<number | null>(0);
   const [expandedTransitId, setExpandedTransitId] = useState<number | null>(null);
+  const [isTransitExpanded, setIsTransitExpanded] = useState(false);
+  const [isCostExpanded, setIsCostExpanded] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   // Safe date parser helper to prevent browser-specific bugs (e.g. Safari parsing dash format or timezone offset issues)
@@ -128,6 +130,38 @@ export function SummaryView({
   };
 
   const { days: totalDays, formatted: formattedDateRange } = parseDateStr(trip.date);
+
+  const calculateStayNights = (dateRangeStr?: string): number => {
+    if (!dateRangeStr) return 1;
+    const parts = dateRangeStr.split(/\s*[-—–~]\s*/).map(p => p.trim());
+    if (parts.length >= 2) {
+      const d1 = parseDateParts(parts[0]);
+      const defaultYear = d1 ? d1.getFullYear() : undefined;
+      const d2 = parseDateParts(parts[1], defaultYear);
+      if (d1 && d2) {
+        const diffDays = Math.round((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays > 0) return diffDays;
+      }
+    }
+    return 1;
+  };
+
+  const transitSummaryStr = useMemo(() => {
+    let train = 0, bus = 0, taxi = 0, other = 0;
+    transits.forEach(t => {
+      const type = (t.transitType || t.ticketType || t.title || '').toLowerCase();
+      if (type.includes('train') || type.includes('기차') || type.includes('철도') || type.includes('지하철')) train++;
+      else if (type.includes('bus') || type.includes('버스')) bus++;
+      else if (type.includes('taxi') || type.includes('택시') || type.includes('car') || type.includes('렌트')) taxi++;
+      else other++;
+    });
+    const parts: string[] = [];
+    if (train > 0) parts.push(`train ${train}`);
+    if (bus > 0) parts.push(`bus ${bus}`);
+    if (taxi > 0) parts.push(`taxi ${taxi}`);
+    if (other > 0 && parts.length === 0) parts.push(`other ${other}`);
+    return parts.join(', ') || `${transits.length} passes`;
+  }, [transits]);
 
   // Format destinations dynamically: e.g. "Osaka, Kyoto, Japan" -> "JAPAN (OSAKA, KYOTO)"
   const formatDestinations = (locStr?: string) => {
@@ -349,10 +383,9 @@ export function SummaryView({
             <span className="text-4xl sm:text-5xl lg:text-6xl font-black font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
               {totalDays < 10 ? `0${totalDays}` : totalDays}
             </span>
-            <div className="flex flex-col text-left font-sans font-bold text-xs sm:text-sm leading-tight text-black/70 dark:text-white/70 min-w-0">
-              <span>Total</span>
-              <span>Days</span>
-            </div>
+            <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase">
+              days
+            </span>
           </div>
 
           {/* Metric 2: Recorded Spots */}
@@ -360,10 +393,9 @@ export function SummaryView({
             <span className="text-4xl sm:text-5xl lg:text-6xl font-black font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
               {recordedSpotsCount < 10 ? `0${recordedSpotsCount}` : recordedSpotsCount}
             </span>
-            <div className="flex flex-col text-left font-sans font-bold text-xs sm:text-sm leading-tight text-black/70 dark:text-white/70 min-w-0">
-              <span>Recorded</span>
-              <span>Spots</span>
-            </div>
+            <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase">
+              spots
+            </span>
           </div>
 
           {/* Metric 3: Flight Legs */}
@@ -371,21 +403,19 @@ export function SummaryView({
             <span className="text-4xl sm:text-5xl lg:text-6xl font-black font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
               {flights.length < 10 ? `0${flights.length}` : flights.length}
             </span>
-            <div className="flex flex-col text-left font-sans font-bold text-xs sm:text-sm leading-tight text-black/70 dark:text-white/70 min-w-0">
-              <span>Flight</span>
-              <span>Legs</span>
-            </div>
+            <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase">
+              flights
+            </span>
           </div>
 
-          {/* Metric 4: Total Estimated Budget (Inter font, identical size & weight) */}
+          {/* Metric 4: Total Estimated Budget ('240,-' European/Swiss editorial format) */}
           <div className="flex items-baseline gap-2 sm:gap-2.5 min-w-0">
             <span className="text-4xl sm:text-5xl lg:text-6xl font-black font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
-              ₩{totalInBaseCurrency >= 1000000 ? `${(totalInBaseCurrency / 1000000).toFixed(1)}M` : totalInBaseCurrency >= 10000 ? `${Math.round(totalInBaseCurrency / 10000)}만` : totalInBaseCurrency.toLocaleString()}
+              {Math.round(totalInBaseCurrency / 1000).toLocaleString()},-
             </span>
-            <div className="flex flex-col text-left font-sans font-bold text-xs sm:text-sm leading-tight text-black/70 dark:text-white/70 min-w-0">
-              <span>Estimated</span>
-              <span>Budget</span>
-            </div>
+            <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase">
+              cost
+            </span>
           </div>
         </div>
 
@@ -409,6 +439,7 @@ export function SummaryView({
               stays.map((s, idx) => {
                 const isOpen = expandedStayId === idx;
                 const isDefaultMemo = !s.memo || s.memo.trim() === '' || s.memo.includes('일정을 입력') || s.memo.includes('메모를 입력');
+                const nights = calculateStayNights(s.dateRange);
                 return (
                   <div key={idx} className="py-3.5 transition-colors">
                     <div 
@@ -419,11 +450,9 @@ export function SummaryView({
                         {s.title}
                       </span>
                       <div className="flex items-center gap-3 shrink-0">
-                        {s.cost && (
-                          <span className="text-xs font-mono font-bold text-black/70 dark:text-white/70">
-                            {CURRENCY_SYMBOLS[s.currency || 'KRW'] || s.currency} {parseCost(s.cost).toLocaleString()}
-                          </span>
-                        )}
+                        <span className="text-xs font-mono font-bold text-black/60 dark:text-white/60">
+                          {nights} {nights === 1 ? 'NIGHT' : 'NIGHTS'}
+                        </span>
                         <span className="text-black/50 dark:text-white/50 group-hover:text-black dark:group-hover:text-white transition-transform duration-200">
                           {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </span>
@@ -543,38 +572,53 @@ export function SummaryView({
               <span className="text-[10px] sm:text-xs font-mono font-bold text-black/50 dark:text-white/50">{transits.length} PASSES</span>
             </div>
 
-            <div className="divide-y divide-black/15 dark:divide-white/15">
-              {transits.map((t, idx) => {
-                const isOpen = expandedTransitId === idx;
-                return (
-                  <div key={idx} className="py-3 transition-colors">
-                    <div 
-                      onClick={() => setExpandedTransitId(isOpen ? null : idx)}
-                      className="flex items-center justify-between gap-3 cursor-pointer select-none group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="font-bold text-sm text-black dark:text-white font-sans">
-                          {t.title || t.ticketType}
-                        </span>
-                        {t.route && (
-                          <span className="text-xs text-black/50 dark:text-white/50 font-mono">
-                            {t.route}
+            {/* Collapsed 1-line summary toggle */}
+            <div 
+              onClick={() => setIsTransitExpanded(v => !v)}
+              className="py-3 px-1 flex items-center justify-between cursor-pointer select-none group border-b border-black/15 dark:border-white/15"
+            >
+              <span className="text-xs sm:text-sm font-mono font-bold text-black/80 dark:text-white/80 lowercase group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                {transitSummaryStr}
+              </span>
+              <span className="text-black/50 dark:text-white/50 group-hover:text-black dark:group-hover:text-white transition-transform duration-200">
+                {isTransitExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </span>
+            </div>
+
+            {isTransitExpanded && (
+              <div className="divide-y divide-black/15 dark:divide-white/15 animate-in fade-in duration-150 pl-1">
+                {transits.map((t, idx) => {
+                  const isOpen = expandedTransitId === idx;
+                  return (
+                    <div key={idx} className="py-3 transition-colors">
+                      <div 
+                        onClick={() => setExpandedTransitId(isOpen ? null : idx)}
+                        className="flex items-center justify-between gap-3 cursor-pointer select-none group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-sm text-black dark:text-white font-sans">
+                            {t.title || t.ticketType}
                           </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        <span className="text-xs font-mono text-black/60 dark:text-white/60">
-                          {t.date}
-                        </span>
-                        <span className="text-black/50 dark:text-white/50">
-                          {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        </span>
+                          {t.route && (
+                            <span className="text-xs text-black/50 dark:text-white/50 font-mono">
+                              {t.route}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="text-xs font-mono text-black/60 dark:text-white/60">
+                            {t.date}
+                          </span>
+                          <span className="text-black/50 dark:text-white/50">
+                            {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -590,41 +634,53 @@ export function SummaryView({
               <span>COST</span>
               <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all text-red-600 dark:text-red-400" />
             </button>
-            <span className="text-[10px] sm:text-xs font-mono font-bold text-black/50 dark:text-white/50">CURRENCY BREAKDOWN</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 pt-2">
-            {/* By Currency Ledger */}
-            <div className="flex flex-col divide-y divide-black/10 dark:divide-white/10 font-sans text-xs">
-              {Object.keys(budgetSummary).length > 0 ? (
-                Object.entries(budgetSummary).map(([curr, amt]) => (
-                  <div key={curr} className="py-2.5 flex justify-between items-center">
-                    <span className="text-black/60 dark:text-white/60 font-medium">{curr}</span>
-                    <span className="font-bold text-black dark:text-white font-sans">
-                      {CURRENCY_SYMBOLS[curr] || curr} {amt.toLocaleString()}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <div className="py-3 italic text-black/40 dark:text-white/40">등록된 지출 내역 없음</div>
-              )}
-            </div>
-
-            {/* Total Converted (Point Clean Accent Box) */}
-            <div className="p-4 sm:p-5 border border-black/15 dark:border-white/15 flex flex-col justify-between gap-3 bg-black/[0.02] dark:bg-white/[0.02]">
-              <div className="flex justify-between items-start">
-                <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest font-sans text-black/60 dark:text-white/60">
-                  TOTAL ESTIMATED
-                </span>
-                <span className="text-[9px] font-sans text-black/40 dark:text-white/40 uppercase font-bold">
-                  KRW BASE
-                </span>
-              </div>
-              <div className="text-2xl sm:text-3xl lg:text-4xl font-black font-sans text-black dark:text-white leading-none">
+            <div 
+              onClick={() => setIsCostExpanded(v => !v)}
+              className="flex items-center gap-2 cursor-pointer select-none group"
+            >
+              <span className="text-xs sm:text-sm font-mono font-bold text-black/80 dark:text-white/80">
                 ₩{Math.round(totalInBaseCurrency).toLocaleString()}
-              </div>
+              </span>
+              <span className="text-black/50 dark:text-white/50 group-hover:text-black dark:group-hover:text-white transition-transform duration-200">
+                {isCostExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </span>
             </div>
           </div>
+
+          {isCostExpanded && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 pt-2 animate-in fade-in duration-150">
+              {/* By Currency Ledger */}
+              <div className="flex flex-col divide-y divide-black/10 dark:divide-white/10 font-sans text-xs">
+                {Object.keys(budgetSummary).length > 0 ? (
+                  Object.entries(budgetSummary).map(([curr, amt]) => (
+                    <div key={curr} className="py-2.5 flex justify-between items-center">
+                      <span className="text-black/60 dark:text-white/60 font-medium">{curr}</span>
+                      <span className="font-bold text-black dark:text-white font-sans">
+                        {CURRENCY_SYMBOLS[curr] || curr} {amt.toLocaleString()}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-3 italic text-black/40 dark:text-white/40">등록된 지출 내역 없음</div>
+                )}
+              </div>
+
+              {/* Total Converted (Point Clean Accent Box) */}
+              <div className="p-4 sm:p-5 border border-black/15 dark:border-white/15 flex flex-col justify-between gap-3 bg-black/[0.02] dark:bg-white/[0.02]">
+                <div className="flex justify-between items-start">
+                  <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest font-sans text-black/60 dark:text-white/60">
+                    TOTAL ESTIMATED
+                  </span>
+                  <span className="text-[9px] font-sans text-black/40 dark:text-white/40 uppercase font-bold">
+                    KRW BASE
+                  </span>
+                </div>
+                <div className="text-2xl sm:text-3xl lg:text-4xl font-black font-sans text-black dark:text-white leading-none">
+                  ₩{Math.round(totalInBaseCurrency).toLocaleString()}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

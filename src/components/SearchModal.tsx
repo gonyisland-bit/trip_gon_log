@@ -37,12 +37,14 @@ export function SearchModal({
   onResultClick,
 }: SearchModalProps) {
   const [query, setQuery] = useState('');
+  const [searchCategory, setSearchCategory] = useState<'journeys' | 'timeline'>('journeys');
   const [results, setResults] = useState<SearchResult[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       setQuery('');
+      setSearchCategory('journeys');
       setResults([]);
       setTimeout(() => inputRef.current?.focus(), 100);
     }
@@ -74,123 +76,125 @@ export function SearchModal({
       return found ? found.title : `Trip #${id}`;
     };
 
-    // 1. Search Trips & Plans
-    allTrips.forEach(t => {
-      const matchTitle = t.title.toLowerCase().includes(q);
-      const matchLoc = t.locationStr?.toLowerCase().includes(q);
-      const matchTags = (t.tags || []).some(tag => tag.toLowerCase().includes(q));
+    if (searchCategory === 'journeys') {
+      // 1. Search Trips & Plans
+      allTrips.forEach(t => {
+        const matchTitle = t.title.toLowerCase().includes(q);
+        const matchLoc = t.locationStr?.toLowerCase().includes(q);
+        const matchTags = (t.tags || []).some(tag => tag.toLowerCase().includes(q));
 
-      if (matchTitle || matchLoc || matchTags) {
-        searchResults.push({
-          id: `trip-${t.id}`,
-          tripId: t.id,
-          tripTitle: t.title,
-          type: plans.some(p => p.id === t.id) ? 'plan' : 'trip',
-          title: t.title,
-          subtitle: `${t.locationStr || ''} • ${t.date || ''}`,
-          tab: 'timeline',
-          itemId: null,
-        });
-      }
-    });
-
-    // 2. Search Timeline Items
-    Object.entries(timelineData).forEach(([_, items]) => {
-      (items || []).forEach(item => {
-        const matchPlace = item.place?.toLowerCase().includes(q);
-        const matchMemo = item.memo?.toLowerCase().includes(q);
-        const matchLoc = item.location?.toLowerCase().includes(q);
-
-        if (matchPlace || matchMemo || matchLoc) {
-          const tripId = item.tripId || 0;
+        if (matchTitle || matchLoc || matchTags) {
           searchResults.push({
-            id: `timeline-${item.id}`,
-            tripId,
-            tripTitle: getTripTitle(tripId),
-            type: 'timeline',
-            title: item.place || 'Timeline Event',
-            subtitle: `${item.time || ''} • ${item.memo || ''}`,
+            id: `trip-${t.id}`,
+            tripId: t.id,
+            tripTitle: t.title,
+            type: plans.some(p => p.id === t.id) ? 'plan' : 'trip',
+            title: t.title,
+            subtitle: `${t.locationStr || ''} • ${t.date || ''}`,
             tab: 'timeline',
-            itemId: item.id,
+            itemId: null,
           });
         }
       });
-    });
+    } else {
+      // 2. Search Timeline Items
+      Object.entries(timelineData).forEach(([_, items]) => {
+        (items || []).forEach(item => {
+          const matchPlace = item.place?.toLowerCase().includes(q);
+          const matchMemo = item.memo?.toLowerCase().includes(q);
+          const matchLoc = item.location?.toLowerCase().includes(q);
 
-    // 3. Search Flights
-    Object.entries(flightsByTrip).forEach(([tripIdStr, items]) => {
-      const tripId = Number(tripIdStr);
-      (items || []).forEach(item => {
-        const matchTitle = item.title?.toLowerCase().includes(q);
-        const matchNo = item.flightNo?.toLowerCase().includes(q);
-        const matchFrom = item.fromCode?.toLowerCase().includes(q);
-        const matchTo = item.toCode?.toLowerCase().includes(q);
-
-        if (matchTitle || matchNo || matchFrom || matchTo) {
-          searchResults.push({
-            id: `flight-${item.id}`,
-            tripId,
-            tripTitle: getTripTitle(tripId),
-            type: 'flight',
-            title: `${item.title || 'Flight'} (${item.flightNo || ''})`,
-            subtitle: `${item.fromCode || ''} → ${item.toCode || ''} • Seat ${item.seat || ''}`,
-            tab: 'flights',
-            itemId: item.id,
-          });
-        }
+          if (matchPlace || matchMemo || matchLoc) {
+            const tripId = item.tripId || 0;
+            searchResults.push({
+              id: `timeline-${item.id}`,
+              tripId,
+              tripTitle: getTripTitle(tripId),
+              type: 'timeline',
+              title: item.place || 'Timeline Event',
+              subtitle: `${item.time || ''} • ${item.memo || ''}`,
+              tab: 'timeline',
+              itemId: item.id,
+            });
+          }
+        });
       });
-    });
 
-    // 4. Search Stays
-    Object.entries(staysByTrip).forEach(([tripIdStr, items]) => {
-      const tripId = Number(tripIdStr);
-      (items || []).forEach(item => {
-        const matchTitle = item.title?.toLowerCase().includes(q);
-        const matchAddr = item.address?.toLowerCase().includes(q);
-        const matchMemo = item.memo?.toLowerCase().includes(q);
+      // 3. Search Flights
+      Object.entries(flightsByTrip).forEach(([tripIdStr, items]) => {
+        const tripId = Number(tripIdStr);
+        (items || []).forEach(item => {
+          const matchTitle = item.title?.toLowerCase().includes(q);
+          const matchNo = item.flightNo?.toLowerCase().includes(q);
+          const matchFrom = item.fromCode?.toLowerCase().includes(q);
+          const matchTo = item.toCode?.toLowerCase().includes(q);
 
-        if (matchTitle || matchAddr || matchMemo) {
-          searchResults.push({
-            id: `stay-${item.id}`,
-            tripId,
-            tripTitle: getTripTitle(tripId),
-            type: 'stay',
-            title: item.title || 'Hotel Stay',
-            subtitle: `${item.address || ''} • Conf: ${item.confNo || ''}`,
-            tab: 'stays',
-            itemId: item.id,
-          });
-        }
+          if (matchTitle || matchNo || matchFrom || matchTo) {
+            searchResults.push({
+              id: `flight-${item.id}`,
+              tripId,
+              tripTitle: getTripTitle(tripId),
+              type: 'flight',
+              title: `${item.title || 'Flight'} (${item.flightNo || ''})`,
+              subtitle: `${item.fromCode || ''} → ${item.toCode || ''} • Seat ${item.seat || ''}`,
+              tab: 'flights',
+              itemId: item.id,
+            });
+          }
+        });
       });
-    });
 
-    // 5. Search Transits
-    Object.entries(transitByTrip).forEach(([tripIdStr, items]) => {
-      const tripId = Number(tripIdStr);
-      (items || []).forEach(item => {
-        const matchTitle = item.title?.toLowerCase().includes(q);
-        const matchRoute = item.route?.toLowerCase().includes(q);
-        const matchDepart = item.departPlace?.toLowerCase().includes(q);
-        const matchArrive = item.arrivePlace?.toLowerCase().includes(q);
-        const matchBoarding = item.boardingPlace?.toLowerCase().includes(q);
+      // 4. Search Stays
+      Object.entries(staysByTrip).forEach(([tripIdStr, items]) => {
+        const tripId = Number(tripIdStr);
+        (items || []).forEach(item => {
+          const matchTitle = item.title?.toLowerCase().includes(q);
+          const matchAddr = item.address?.toLowerCase().includes(q);
+          const matchMemo = item.memo?.toLowerCase().includes(q);
 
-        if (matchTitle || matchRoute || matchDepart || matchArrive || matchBoarding) {
-          searchResults.push({
-            id: `transit-${item.id}`,
-            tripId,
-            tripTitle: getTripTitle(tripId),
-            type: 'transit',
-            title: item.title || 'Transit',
-            subtitle: `${item.route || ''} • Seat ${item.seat || ''} • Conf ${item.bookingRef || ''}`,
-            tab: 'transit',
-            itemId: item.id,
-          });
-        }
+          if (matchTitle || matchAddr || matchMemo) {
+            searchResults.push({
+              id: `stay-${item.id}`,
+              tripId,
+              tripTitle: getTripTitle(tripId),
+              type: 'stay',
+              title: item.title || 'Hotel Stay',
+              subtitle: `${item.address || ''} • Conf: ${item.confNo || ''}`,
+              tab: 'stays',
+              itemId: item.id,
+            });
+          }
+        });
       });
-    });
 
-    setResults(searchResults.slice(0, 30)); // limit to 30 items
-  }, [query, trips, plans, timelineData, flightsByTrip, staysByTrip, transitByTrip]);
+      // 5. Search Transits
+      Object.entries(transitByTrip).forEach(([tripIdStr, items]) => {
+        const tripId = Number(tripIdStr);
+        (items || []).forEach(item => {
+          const matchTitle = item.title?.toLowerCase().includes(q);
+          const matchRoute = item.route?.toLowerCase().includes(q);
+          const matchDepart = item.departPlace?.toLowerCase().includes(q);
+          const matchArrive = item.arrivePlace?.toLowerCase().includes(q);
+          const matchBoarding = item.boardingPlace?.toLowerCase().includes(q);
+
+          if (matchTitle || matchRoute || matchDepart || matchArrive || matchBoarding) {
+            searchResults.push({
+              id: `transit-${item.id}`,
+              tripId,
+              tripTitle: getTripTitle(tripId),
+              type: 'transit',
+              title: item.title || 'Transit',
+              subtitle: `${item.route || ''} • Seat ${item.seat || ''} • Conf ${item.bookingRef || ''}`,
+              tab: 'transit',
+              itemId: item.id,
+            });
+          }
+        });
+      });
+    }
+
+    setResults(searchResults.slice(0, 40)); // limit to 40 items
+  }, [query, searchCategory, trips, plans, timelineData, flightsByTrip, staysByTrip, transitByTrip]);
 
   if (!isOpen) return null;
 
@@ -243,15 +247,47 @@ export function SearchModal({
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search journeys, places, flights, stays, transit routes..."
+            placeholder={
+              searchCategory === 'journeys' 
+                ? "Search journeys, plans, countries, tags..." 
+                : "Search timeline spots, memos, flights, stays, transit routes..."
+            }
             className="flex-grow bg-transparent border-none outline-none text-sm md:text-base placeholder-black/40 dark:placeholder-white/40 font-medium"
           />
           <button
             onClick={onClose}
-            className="p-1 hover:bg-black/5 dark:hover:bg-white/5 transition-colors shrink-0"
+            className="p-1 hover:bg-black/5 dark:hover:bg-white/5 transition-colors shrink-0 cursor-pointer"
             title="Close Search"
           >
             <X className="w-5 h-5 opacity-55" />
+          </button>
+        </div>
+
+        {/* Category Switcher Tabs: Journeys (default) vs Timeline */}
+        <div className="flex border-b border-black/10 dark:border-white/10 px-4 bg-black/[0.02] dark:bg-white/[0.02]">
+          <button
+            type="button"
+            onClick={() => setSearchCategory('journeys')}
+            className={`py-2 px-3 text-[11px] font-black uppercase tracking-wider transition-colors border-b-2 -mb-px cursor-pointer flex items-center gap-1.5 ${
+              searchCategory === 'journeys'
+                ? 'border-black dark:border-white text-black dark:text-white'
+                : 'border-transparent text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
+            }`}
+          >
+            <Compass className="w-3.5 h-3.5" />
+            <span>JOURNEYS (여정/플랜)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSearchCategory('timeline')}
+            className={`py-2 px-3 text-[11px] font-black uppercase tracking-wider transition-colors border-b-2 -mb-px cursor-pointer flex items-center gap-1.5 ${
+              searchCategory === 'timeline'
+                ? 'border-black dark:border-white text-black dark:text-white'
+                : 'border-transparent text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5" />
+            <span>TIMELINE / SPOTS (타임라인/스팟)</span>
           </button>
         </div>
 

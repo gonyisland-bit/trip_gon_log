@@ -25,22 +25,40 @@ function getTripStartDate(dateRangeStr: string): Date {
   return isNaN(d.getTime()) ? new Date(0) : d;
 }
 
-// Helper to extract year and English short month for magazine styling
-function getYearAndMonth(dateRangeStr: string): { year: string; month: string } {
-  if (!dateRangeStr) return { year: '', month: '' };
-  const parts = dateRangeStr.split(/\s*[-—–]\s*/);
-  const cleanFirst = parts[0]?.trim();
-  if (cleanFirst) {
-    const dots = cleanFirst.split('.');
-    if (dots.length >= 2) {
-      const year = dots[0];
-      const monthNum = parseInt(dots[1], 10);
-      const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-      const month = months[monthNum - 1] || dots[1];
-      return { year, month };
+// Helper to extract year, English short month, and compact date for magazine styling
+function getYearAndMonth(dateRangeStr: string): { year: string; month: string; compactDate: string } {
+  if (!dateRangeStr) return { year: '', month: '', compactDate: '' };
+  const parts = dateRangeStr.split(/\s*[-—–~]\s*/).map(p => p.trim());
+  const parsePart = (str: string) => {
+    const match = str.match(/(\d{4})?[.-]?(\d{1,2})[.-](\d{1,2})/);
+    if (match) {
+      const y = match[1];
+      const m = match[2].padStart(2, '0');
+      const d = match[3].padStart(2, '0');
+      return { y, m, d, dateObj: new Date(parseInt(y || '2026', 10), parseInt(m, 10) - 1, parseInt(d, 10)) };
     }
+    return null;
+  };
+
+  const p1 = parsePart(parts[0]);
+  const p2 = parts[1] ? parsePart(parts[1]) : null;
+
+  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  const year = p1?.y || (p2?.y ?? '');
+  const monthNum = p1 ? p1.dateObj.getMonth() : (p2 ? p2.dateObj.getMonth() : -1);
+  const month = monthNum >= 0 ? months[monthNum] : '';
+
+  let compactDate = '';
+  if (p1 && p2) {
+    const diffDays = Math.max(1, Math.round((p2.dateObj.getTime() - p1.dateObj.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+    compactDate = `${p1.m}.${p1.d}-${p2.m}.${p2.d} / ${diffDays}d`;
+  } else if (p1) {
+    compactDate = `${p1.m}.${p1.d} / 1d`;
+  } else {
+    compactDate = dateRangeStr;
   }
-  return { year: '', month: '' };
+
+  return { year, month, compactDate };
 }
 
 export function PlanHubPage({
@@ -56,6 +74,8 @@ export function PlanHubPage({
   initialTagFilter,
 }: PlanHubPageProps) {
   const [activeFilter, setActiveFilter] = useState(initialTagFilter || 'All');
+  const [activeYearFilter, setActiveYearFilter] = useState('All');
+  const [activeLocationFilter, setActiveLocationFilter] = useState('All');
   const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
   const [tagSearchQuery, setTagSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'user' | 'date' | 'place'>('user');
@@ -78,6 +98,29 @@ export function PlanHubPage({
       setActiveFilter(initialTagFilter);
     }
   }, [initialTagFilter]);
+
+  const availableYears = useMemo(() => {
+    const years = new Set<string>();
+    localPlans.forEach(p => {
+      const { year } = getYearAndMonth(p.date);
+      if (year) years.add(year);
+    });
+    return Array.from(years).sort().reverse();
+  }, [localPlans]);
+
+  const availableLocations = useMemo(() => {
+    const locs = new Set<string>();
+    localPlans.forEach(p => {
+      if (p.country?.trim()) {
+        locs.add(p.country.trim().toUpperCase());
+      } else if (p.locationStr) {
+        const parts = p.locationStr.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+        const last = parts[parts.length - 1];
+        if (last) locs.add(last);
+      }
+    });
+    return Array.from(locs).sort();
+  }, [localPlans]);
 
   const filters = useMemo(() => {
     const uniqueTags = new Set<string>();
@@ -114,7 +157,21 @@ export function PlanHubPage({
     return localPlans;
   }, [localPlans, sortBy]);
 
-  const filteredPlans = activeFilter === 'All' ? sortedPlans : sortedPlans.filter(p => p.tags.includes(activeFilter));
+  const filteredPlans = useMemo(() => {
+    return sortedPlans.filter(p => {
+      if (activeFilter !== 'All' && (!p.tags || !p.tags.includes(activeFilter))) return false;
+      if (activeYearFilter !== 'All') {
+        const { year } = getYearAndMonth(p.date);
+        if (year !== activeYearFilter) return false;
+      }
+      if (activeLocationFilter !== 'All') {
+        const matchCountry = p.country && p.country.trim().toUpperCase() === activeLocationFilter;
+        const matchLoc = p.locationStr && p.locationStr.toUpperCase().includes(activeLocationFilter);
+        if (!matchCountry && !matchLoc) return false;
+      }
+      return true;
+    });
+  }, [sortedPlans, activeFilter, activeYearFilter, activeLocationFilter]);
 
   const handlePlanDragStart = (e: React.DragEvent, id: number) => {
     if (sortBy !== 'user') return;
@@ -152,42 +209,65 @@ export function PlanHubPage({
           
           {/* Active Filter and Sorting Layout */}
           <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
-            {/* Tag Filter Collapsible Trigger & Search Dropdown */}
+            {/* Tag Filter Minimal Icon Button & Multi-Filter Dropdown */}
             <div className="relative inline-block text-left z-20">
               <div className="flex items-center gap-2">
                 <button 
                   type="button"
                   onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}
-                  className={`text-[10px] px-3 py-1.5 uppercase font-bold tracking-wider border transition-colors flex items-center gap-1.5 rounded-sm cursor-pointer ${
-                    activeFilter !== 'All'
-                      ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
+                  className={`p-2 border transition-colors flex items-center justify-center rounded-none cursor-pointer relative ${
+                    activeFilter !== 'All' || activeYearFilter !== 'All' || activeLocationFilter !== 'All'
+                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
                       : 'border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-transparent text-black dark:text-white'
                   }`}
-                  title="태그 필터 열기/닫기"
+                  title="필터 열기 (태그, 연도, 장소)"
                 >
-                  <Tag className="w-3 h-3" />
-                  <span>{activeFilter === 'All' ? '태그 필터 (All)' : `태그: #${activeFilter}`}</span>
-                  {isTagDropdownOpen ? <ChevronUp className="w-3 h-3 transition-transform" /> : <ChevronDown className="w-3 h-3 transition-transform" />}
+                  <Tag className="w-3.5 h-3.5" />
+                  {(activeFilter !== 'All' || activeYearFilter !== 'All' || activeLocationFilter !== 'All') && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-600" />
+                  )}
                 </button>
 
-                {activeFilter !== 'All' && (
-                  <button
-                    type="button"
-                    onClick={() => setActiveFilter('All')}
-                    className="text-[9px] px-2 py-1 uppercase font-bold tracking-wider text-red-600 dark:text-red-400 hover:underline cursor-pointer flex items-center gap-0.5"
-                    title="필터 초기화"
-                  >
-                    <X className="w-3 h-3" />
-                    초기화
-                  </button>
+                {(activeFilter !== 'All' || activeYearFilter !== 'All' || activeLocationFilter !== 'All') && (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {activeFilter !== 'All' && (
+                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black dark:text-white flex items-center gap-1">
+                        #{activeFilter}
+                        <X className="w-3 h-3 cursor-pointer hover:text-red-500" onClick={() => setActiveFilter('All')} />
+                      </span>
+                    )}
+                    {activeYearFilter !== 'All' && (
+                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black dark:text-white flex items-center gap-1">
+                        {activeYearFilter}
+                        <X className="w-3 h-3 cursor-pointer hover:text-red-500" onClick={() => setActiveYearFilter('All')} />
+                      </span>
+                    )}
+                    {activeLocationFilter !== 'All' && (
+                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black dark:text-white flex items-center gap-1">
+                        {activeLocationFilter}
+                        <X className="w-3 h-3 cursor-pointer hover:text-red-500" onClick={() => setActiveLocationFilter('All')} />
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveFilter('All');
+                        setActiveYearFilter('All');
+                        setActiveLocationFilter('All');
+                      }}
+                      className="text-[9px] px-1.5 py-0.5 uppercase font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                    >
+                      RESET
+                    </button>
+                  </div>
                 )}
               </div>
               
               {isTagDropdownOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setIsTagDropdownOpen(false)} />
-                  <div className="absolute left-0 mt-1.5 w-64 bg-[#F9F8F6] dark:bg-[#181818] border border-black/15 dark:border-white/15 shadow-2xl z-20 rounded-sm p-2.5 flex flex-col gap-2 animate-in fade-in slide-in-from-top-1 duration-150">
-                    {/* Tag Search Input */}
+                  <div className="absolute left-0 mt-1.5 w-72 bg-[#F9F8F6] dark:bg-[#181818] border border-black/15 dark:border-white/15 shadow-2xl z-20 rounded-none p-3 flex flex-col gap-3 animate-in fade-in slide-in-from-top-1 duration-150 text-black dark:text-white">
+                    {/* Search Input */}
                     <div className="relative flex items-center">
                       <Search className="w-3 h-3 text-black/40 dark:text-white/40 absolute left-2 pointer-events-none" />
                       <input
@@ -195,7 +275,7 @@ export function PlanHubPage({
                         value={tagSearchQuery}
                         onChange={(e) => setTagSearchQuery(e.target.value)}
                         placeholder="태그 검색..."
-                        className="w-full pl-7 pr-7 py-1 text-[10px] bg-white dark:bg-[#222222] border border-black/10 dark:border-white/10 rounded-sm font-bold outline-none text-black dark:text-white placeholder:text-black/30 dark:placeholder:text-white/30"
+                        className="w-full pl-7 pr-7 py-1 text-[10px] bg-white dark:bg-[#222222] border border-black/10 dark:border-white/10 rounded-none font-bold outline-none text-black dark:text-white placeholder:text-black/30 dark:placeholder:text-white/30"
                       />
                       {tagSearchQuery && (
                         <button
@@ -208,30 +288,98 @@ export function PlanHubPage({
                       )}
                     </div>
 
-                    {/* Tag List */}
-                    <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pt-1">
-                      {visibleTags.map(f => (
-                        <button
-                          key={f}
-                          type="button"
-                          onClick={() => {
-                            setActiveFilter(f);
-                            setIsTagDropdownOpen(false);
-                          }}
-                          className={`text-[9.5px] px-2.5 py-1 uppercase font-bold tracking-wider border rounded-sm transition-colors shrink-0 cursor-pointer ${
-                            activeFilter === f 
-                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' 
-                              : 'border-black/15 bg-black/4 dark:bg-white/5 text-black/70 dark:text-white/70 hover:border-black/40 dark:hover:border-white/40'
-                          }`}
-                        >
-                          {f === 'All' ? '전체 (All)' : `#${f}`}
-                        </button>
-                      ))}
-                      {visibleTags.length === 0 && (
-                        <span className="text-[10px] text-black/40 dark:text-white/40 py-1 italic">
-                          검색 결과가 없습니다.
+                    {/* 1. Year Filter Section */}
+                    {availableYears.length > 0 && (
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[9px] font-black uppercase tracking-wider text-black/50 dark:text-white/50">
+                          YEAR (연도)
                         </span>
-                      )}
+                        <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                          <button
+                            type="button"
+                            onClick={() => { setActiveYearFilter('All'); }}
+                            className={`text-[9px] px-2 py-0.5 uppercase font-bold border transition-colors cursor-pointer ${
+                              activeYearFilter === 'All' ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-black/15 dark:border-white/15 hover:bg-black/5'
+                            }`}
+                          >
+                            All
+                          </button>
+                          {availableYears.map(yr => (
+                            <button
+                              key={yr}
+                              type="button"
+                              onClick={() => { setActiveYearFilter(yr === activeYearFilter ? 'All' : yr); }}
+                              className={`text-[9px] px-2 py-0.5 uppercase font-bold border transition-colors cursor-pointer ${
+                                activeYearFilter === yr ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-black/15 dark:border-white/15 hover:bg-black/5'
+                              }`}
+                            >
+                              {yr}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 2. Location Section */}
+                    {availableLocations.length > 0 && (
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[9px] font-black uppercase tracking-wider text-black/50 dark:text-white/50">
+                          LOCATION (장소 / 국가)
+                        </span>
+                        <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                          <button
+                            type="button"
+                            onClick={() => { setActiveLocationFilter('All'); }}
+                            className={`text-[9px] px-2 py-0.5 uppercase font-bold border transition-colors cursor-pointer ${
+                              activeLocationFilter === 'All' ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-black/15 dark:border-white/15 hover:bg-black/5'
+                            }`}
+                          >
+                            All
+                          </button>
+                          {availableLocations.map(loc => (
+                            <button
+                              key={loc}
+                              type="button"
+                              onClick={() => { setActiveLocationFilter(loc === activeLocationFilter ? 'All' : loc); }}
+                              className={`text-[9px] px-2 py-0.5 uppercase font-bold border transition-colors cursor-pointer ${
+                                activeLocationFilter === loc ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-black/15 dark:border-white/15 hover:bg-black/5'
+                              }`}
+                            >
+                              {loc}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 3. Tags Section */}
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[9px] font-black uppercase tracking-wider text-black/50 dark:text-white/50">
+                        TAGS (태그)
+                      </span>
+                      <div className="flex flex-wrap gap-1 max-h-28 overflow-y-auto pt-0.5">
+                        {visibleTags.map(f => (
+                          <button
+                            key={f}
+                            type="button"
+                            onClick={() => {
+                              setActiveFilter(f === activeFilter ? 'All' : f);
+                            }}
+                            className={`text-[9px] px-2 py-0.5 uppercase font-bold border transition-colors cursor-pointer ${
+                              activeFilter === f 
+                                ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' 
+                                : 'border-black/15 dark:border-white/15 hover:bg-black/5'
+                            }`}
+                          >
+                            {f === 'All' ? '전체 (All)' : `#${f}`}
+                          </button>
+                        ))}
+                        {visibleTags.length === 0 && (
+                          <span className="text-[10px] text-black/40 dark:text-white/40 py-1 italic">
+                            검색 결과가 없습니다.
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </>
@@ -364,7 +512,7 @@ export function PlanHubPage({
           : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 p-3 sm:p-6 md:p-12 w-full"
         }>
           {filteredPlans.map((plan) => {
-            const { year, month } = getYearAndMonth(plan.date);
+            const { year, month, compactDate } = getYearAndMonth(plan.date);
             return (
               <div
                 key={plan.id}
@@ -408,11 +556,11 @@ export function PlanHubPage({
                   <div className="flex justify-between items-start w-full">
                     {year ? (
                       <div className="flex flex-col leading-none">
-                        <span className="text-[10cqw] font-black font-satoshi tracking-tighter leading-none text-white drop-shadow-md">
+                        <span className="text-[10cqw] font-black font-sans tracking-tighter leading-none text-white drop-shadow-md">
                           {year}
                         </span>
                         {month && (
-                          <span className="text-[3.6cqw] font-mono font-bold tracking-widest text-red-400 uppercase mt-0.5">
+                          <span className="text-[7cqw] font-sans font-black tracking-tight text-white/95 uppercase mt-0.5 leading-none">
                             {month}
                           </span>
                         )}
@@ -425,18 +573,18 @@ export function PlanHubPage({
                   </div>
 
                   {/* Bottom Footer Row: Title, Location, Date (3-tier clean stack) */}
-                  <div className="mt-auto flex flex-col gap-1 w-full max-w-[86%]">
-                    <h3 className="text-[5.8cqw] sm:text-[6.2cqw] font-black uppercase tracking-tight leading-tight font-satoshi text-white drop-shadow-md line-clamp-2">
+                  <div className="mt-auto flex flex-col gap-1 w-full max-w-[88%]">
+                    <h3 className="text-[5.8cqw] sm:text-[6.2cqw] font-black uppercase tracking-tight leading-tight font-sans text-white drop-shadow-md line-clamp-2">
                       {plan.title.replace(' (Plan)', '')}
                     </h3>
                     {plan.locationStr && (
-                      <div className="text-[3.2cqw] font-mono font-bold uppercase tracking-wider text-white/90 truncate drop-shadow-sm mt-0.5">
+                      <div className="text-[3.8cqw] sm:text-[3.6cqw] font-sans font-bold uppercase tracking-wider text-white/95 truncate drop-shadow-sm mt-0.5">
                         {plan.locationStr.replace(/,/g, ' · ')}
                       </div>
                     )}
                     {plan.date && (
-                      <div className="text-[2.8cqw] font-mono font-medium text-white/60 tracking-wider truncate">
-                        {plan.date}
+                      <div className="text-[3.4cqw] sm:text-[3.2cqw] font-sans font-semibold text-white/80 tracking-wider truncate">
+                        {compactDate || plan.date}
                       </div>
                     )}
                   </div>

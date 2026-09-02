@@ -36,6 +36,8 @@ export interface Trip {
   country?: string;
   locations?: { name: string; lat?: number; lng?: number; country?: string }[];
   videoUrl?: string;
+  heroImg?: string;
+  heroVideoUrl?: string;
   gallery?: (string | GalleryImageMeta)[];
   deletedAt?: number | null; // Soft-delete timestamp (null = active)
   displayOrder?: number;
