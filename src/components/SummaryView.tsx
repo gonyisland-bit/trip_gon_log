@@ -337,12 +337,25 @@ export function SummaryView({
       if (printRef.current) {
         try {
           const isDark = document.documentElement.classList.contains('dark');
-          const canvas = await html2canvas(printRef.current, {
+          const el = printRef.current;
+          const origMaxWidth = el.style.maxWidth;
+          const origWidth = el.style.width;
+
+          // Temporarily fix width to 480px for consistent long receipt proportions
+          el.style.maxWidth = '480px';
+          el.style.width = '480px';
+
+          const canvas = await html2canvas(el, {
             useCORS: true,
             backgroundColor: isDark ? '#0A0A0A' : '#ffffff',
             scale: 2,
+            windowWidth: 480,
             ignoreElements: (element) => element.id === 'capture-exclude-btn',
           });
+
+          el.style.maxWidth = origMaxWidth;
+          el.style.width = origWidth;
+
           const imgData = canvas.toDataURL('image/png');
           setCapturedImg(imgData);
         } catch (err) {
@@ -777,15 +790,15 @@ export function SummaryView({
       {capturedImg && createPortal(
         <div 
           onClick={() => setCapturedImg(null)}
-          className="fixed inset-0 z-[100000] bg-black/80 backdrop-blur-xs flex flex-col items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150"
+          className="fixed inset-0 z-[100000] bg-black/85 backdrop-blur-xs flex flex-col items-center justify-center p-2 sm:p-4 md:p-6 animate-in fade-in duration-150"
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-[#0E0E0E] max-w-xl w-full flex flex-col shadow-2xl text-left border border-black/20 dark:border-white/20 animate-in zoom-in-95 duration-150 rounded-none overflow-hidden"
+            className="bg-white dark:bg-[#0E0E0E] max-w-2xl lg:max-w-3xl w-full h-[92vh] max-h-[94vh] flex flex-col shadow-2xl text-left border border-black/20 dark:border-white/20 animate-in zoom-in-95 duration-150 rounded-none overflow-hidden"
           >
             {/* Modal Header */}
-            <div className="flex justify-between items-center px-4 sm:px-5 py-3 border-b border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02]">
-              <span className="text-xs font-black uppercase tracking-widest text-black dark:text-white font-sans">
+            <div className="flex justify-between items-center px-4 sm:px-6 py-3.5 border-b border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] shrink-0">
+              <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-black dark:text-white font-sans">
                 MEMORANDUM SUMMARY
               </span>
               <button 
@@ -797,29 +810,29 @@ export function SummaryView({
               </button>
             </div>
             
-            {/* Edge-to-Edge Image Container */}
-            <div className="p-3 sm:p-4 max-h-[70vh] overflow-y-auto bg-neutral-100 dark:bg-black/60 flex items-center justify-center border-b border-black/15 dark:border-white/15">
+            {/* Edge-to-Edge Scrollable Long Receipt Container */}
+            <div className="flex-1 p-3 sm:p-6 overflow-y-auto bg-neutral-100 dark:bg-black/70 flex items-start justify-center border-b border-black/15 dark:border-white/15">
               <img 
                 src={capturedImg} 
-                alt="여정 요약" 
-                className="w-auto max-w-full h-auto object-contain max-h-[64vh] shadow-lg border border-black/10 dark:border-white/10" 
+                alt="여정 요약 영수증" 
+                className="w-full max-w-[440px] sm:max-w-[480px] h-auto object-contain shadow-2xl border border-black/10 dark:border-white/10 my-auto" 
               />
             </div>
             
             {/* Action Buttons: ONLY SAVE & SHARE, Inter Bold Minimalist */}
-            <div className="flex items-stretch divide-x divide-black/15 dark:divide-white/15 bg-white dark:bg-[#0E0E0E]">
+            <div className="flex items-stretch divide-x divide-black/15 dark:divide-white/15 bg-white dark:bg-[#0E0E0E] shrink-0">
               <button
                 onClick={handleSaveImage}
-                className="flex-1 py-3 sm:py-3.5 bg-black text-white dark:bg-white dark:text-black text-xs sm:text-sm font-black uppercase tracking-widest font-sans hover:opacity-85 transition-opacity flex items-center justify-center gap-2 cursor-pointer rounded-none"
+                className="flex-1 py-3.5 sm:py-4 bg-black text-white dark:bg-white dark:text-black text-xs sm:text-sm font-black uppercase tracking-widest font-sans hover:opacity-85 transition-opacity flex items-center justify-center gap-2 cursor-pointer rounded-none"
               >
-                <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <Download className="w-4 h-4" />
                 <span>SAVE</span>
               </button>
               <button
                 onClick={handleShareImage}
-                className="flex-1 py-3 sm:py-3.5 bg-transparent text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 text-xs sm:text-sm font-black uppercase tracking-widest font-sans transition-colors flex items-center justify-center gap-2 cursor-pointer rounded-none"
+                className="flex-1 py-3.5 sm:py-4 bg-transparent text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 text-xs sm:text-sm font-black uppercase tracking-widest font-sans transition-colors flex items-center justify-center gap-2 cursor-pointer rounded-none"
               >
-                <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <Share2 className="w-4 h-4" />
                 <span>SHARE</span>
               </button>
             </div>

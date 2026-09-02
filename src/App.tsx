@@ -4,6 +4,7 @@ import { Footer } from './components/Footer';
 import { HomePage } from './pages/Home';
 import { ArchiveHubPage } from './pages/Archive';
 import { PlanHubPage } from './pages/Plan';
+import { MapHubPage } from './pages/MapHub';
 import { JourneyDetailPage } from './pages/Detail';
 import { AuthModal } from './components/AuthModal';
 import { CreateTripModal } from './components/CreateTripModal';
@@ -1371,6 +1372,7 @@ function App() {
               {currentView === 'archive' && (
                 <ArchiveHubPage 
                   trips={trips} 
+                  plans={plans}
                   onNavigate={navigateTo} 
                   onAddArchive={handleAddArchive}
                   isLoggedIn={isLoggedIn}
@@ -1378,6 +1380,7 @@ function App() {
                   onEditTrip={(id) => setEditingTripId(id)}
                   onCloneTrip={handleCloneJourney}
                   onMoveToPlans={handleMoveToPlans}
+                  onMoveToArchive={handleMoveToArchive}
                   onReorderTrips={async (orderedIds) => {
                     if (!isLoggedIn) return;
                     const batch = writeBatch(db);
@@ -1387,6 +1390,14 @@ function App() {
                     await batch.commit();
                   }}
                   initialTagFilter={selectedTagFilter}
+                />
+              )}
+              {currentView === 'map' && (
+                <MapHubPage
+                  trips={trips}
+                  plans={plans}
+                  onNavigate={navigateTo}
+                  isDarkMode={isDarkMode}
                 />
               )}
               {currentView === 'plan' && (

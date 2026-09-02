@@ -97,14 +97,14 @@ export function Navigation({
               ARCHIVE
             </button>
             <button 
-              onClick={() => navigateTo('plan')} 
+              onClick={() => navigateTo('map')} 
               className={`text-xs md:text-sm font-black tracking-widest uppercase transition-colors cursor-pointer py-1 ${
-                currentView === 'plan' 
+                currentView === 'map' 
                   ? 'text-black dark:text-white border-b-2 border-black dark:border-white' 
                   : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
               }`}
             >
-              PLAN
+              MAP
             </button>
           </div>
         </div>
@@ -244,18 +244,18 @@ export function Navigation({
             </button>
 
             <button
-              onClick={() => handleMenuNavigate('plan')}
+              onClick={() => handleMenuNavigate('map')}
               className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-2"
             >
               <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-4 sm:mr-6 select-none">
                 03
               </span>
               <span className={`font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight transition-colors ${
-                currentView === 'plan' 
+                currentView === 'map' 
                   ? 'text-black dark:text-white underline decoration-2 underline-offset-8' 
                   : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
               }`}>
-                PLAN
+                MAP
               </span>
             </button>
 

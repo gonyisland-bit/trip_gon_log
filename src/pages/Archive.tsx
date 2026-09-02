@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Plus, GripVertical, ChevronDown, ChevronUp, Tag, Search, X, LayoutGrid, StretchHorizontal, List, ArrowRight, ArrowUpDown } from 'lucide-react';
-import { Trip } from '../types';
+import { Trip, Plan } from '../types';
 import { JourneyCardMenu } from './Home';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
@@ -66,6 +66,7 @@ function CardMedia({ img, title, videoUrl, isActive }: CardMediaProps) {
 
 interface ArchiveHubPageProps {
   trips: Trip[];
+  plans?: Plan[];
   onNavigate: (view: string, tripId?: number | null) => void;
   onAddArchive: () => void;
   isLoggedIn: boolean;
@@ -73,6 +74,7 @@ interface ArchiveHubPageProps {
   onEditTrip?: (id: number) => void;
   onCloneTrip?: (id: number) => void;
   onMoveToPlans?: (trip: Trip) => void;
+  onMoveToArchive?: (plan: Plan) => void;
   onReorderTrips?: (orderedIds: number[]) => void;
   initialTagFilter?: string | null;
 }
@@ -171,6 +173,7 @@ function getYearAndMonth(dateRangeStr: string): { year: string; month: string; c
 
 export function ArchiveHubPage({
   trips,
+  plans = [],
   onNavigate,
   onAddArchive,
   isLoggedIn,
@@ -178,6 +181,7 @@ export function ArchiveHubPage({
   onEditTrip,
   onCloneTrip,
   onMoveToPlans,
+  onMoveToArchive,
   onReorderTrips,
   initialTagFilter,
 }: ArchiveHubPageProps) {
@@ -190,7 +194,22 @@ export function ArchiveHubPage({
   const [hubSearchQuery, setHubSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'user' | 'date' | 'place'>('user');
   const [draggedTripId, setDraggedTripId] = useState<number | null>(null);
-  const [localTrips, setLocalTrips] = useState<Trip[]>(trips);
+
+  const combinedTrips = useMemo(() => {
+    const list: Trip[] = [...trips];
+    if (plans && plans.length > 0) {
+      plans.forEach(p => {
+        const hasPlanTag = p.tags?.includes('Plan');
+        list.push({
+          ...p,
+          tags: hasPlanTag ? p.tags : [...(p.tags || []), 'Plan'],
+        });
+      });
+    }
+    return list;
+  }, [trips, plans]);
+
+  const [localTrips, setLocalTrips] = useState<Trip[]>(combinedTrips);
   const [activeCardId, setActiveCardId] = useState<number | null>(null);
   const [cardViewMode, setCardViewMode] = useState<'grid' | 'wide' | 'list'>(() => (localStorage.getItem('cardViewMode') as any) || 'grid');
 
@@ -200,8 +219,8 @@ export function ArchiveHubPage({
   };
 
   useEffect(() => {
-    setLocalTrips(trips);
-  }, [trips]);
+    setLocalTrips(combinedTrips);
+  }, [combinedTrips]);
 
   useEffect(() => {
     if (initialTagFilter) {
@@ -324,7 +343,7 @@ export function ArchiveHubPage({
       <div className="p-4 sm:p-6 md:px-12 md:py-8 border-b border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.02] flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6">
         <div className="flex-1">
           <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter uppercase mb-1 sm:mb-1.5 break-keep">Journeys Archive</h1>
-          <p className="max-w-xl text-xs sm:text-sm leading-relaxed opacity-70 break-keep">모든 여행의 감각적인 기록들입니다. 다녀온 곳을 회고하고 기록을 엑셀로 추출할 수 있습니다.</p>
+          <p className="max-w-xl text-xs sm:text-sm leading-relaxed opacity-70 break-keep">모든 여행의 감각적인 기록과 다음 여정 계획들을 한눈에 총괄 관리합니다.</p>
           
           {/* Active Filter and Sorting Layout */}
           <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
@@ -624,13 +643,17 @@ export function ArchiveHubPage({
                     <h3 className="font-black text-sm sm:text-base md:text-lg text-black dark:text-white uppercase font-satoshi truncate">
                       {trip.title}
                     </h3>
-                    {trip.statusBadge && (
+                    {trip.statusBadge ? (
                       <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-none font-mono uppercase ${
                         trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
                       }`}>
                         {trip.statusBadge}
                       </span>
-                    )}
+                    ) : (trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
+                      <span className="text-[8px] font-black px-1.5 py-0.5 rounded-none font-mono uppercase bg-blue-600 text-white">
+                        PLAN
+                      </span>
+                    ) : null}
                   </div>
                   <div className="flex items-center gap-2 text-[10.5px] sm:text-xs text-black/60 dark:text-white/60 font-mono flex-wrap mt-0.5">
                     <span className="font-bold text-black/80 dark:text-white/80">{trip.date}</span>
@@ -645,15 +668,24 @@ export function ArchiveHubPage({
 
                 {/* Right Menu (Unboxed, NO right arrow button) */}
                 <div className="flex items-center pr-2 sm:pr-4 md:pr-6 shrink-0" onClick={(e) => e.stopPropagation()}>
-                  <JourneyCardMenu
-                    isLoggedIn={isLoggedIn}
-                    onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
-                    onDelete={() => onDeleteTrip(trip.id)}
-                    onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
-                    onMove={onMoveToPlans ? () => onMoveToPlans(trip) : undefined}
-                    moveLabel="계획으로 이동"
-                    variant="minimal"
-                  />
+                  {(() => {
+                    const isPlan = trip.tags?.includes('Plan') || trip.title.includes('(Plan)');
+                    return (
+                      <JourneyCardMenu
+                        isLoggedIn={isLoggedIn}
+                        onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
+                        onDelete={() => onDeleteTrip(trip.id)}
+                        onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
+                        onMove={
+                          isPlan
+                            ? (onMoveToArchive ? () => onMoveToArchive(trip as Plan) : undefined)
+                            : (onMoveToPlans ? () => onMoveToPlans(trip) : undefined)
+                        }
+                        moveLabel={isPlan ? "아카이브로 이동" : "계획으로 이동"}
+                        variant="minimal"
+                      />
+                    );
+                  })()}
                 </div>
               </div>
             );
@@ -730,13 +762,17 @@ export function ArchiveHubPage({
                         </div>
                       ) : <div />}
 
-                      {trip.statusBadge && (
+                      {trip.statusBadge ? (
                         <span className={`px-1.5 py-0.5 text-[2.6cqw] font-black uppercase tracking-widest font-mono shadow-sm ${
                           trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
                         }`}>
                           {trip.statusBadge}
                         </span>
-                      )}
+                      ) : (trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
+                        <span className="px-1.5 py-0.5 text-[2.6cqw] font-black uppercase tracking-widest font-mono shadow-sm bg-blue-600 text-white">
+                          PLAN
+                        </span>
+                      ) : null}
                     </div>
 
                     {/* Bottom Footer Row: Title, Location, Date (3-tier clean stack) */}
@@ -764,15 +800,24 @@ export function ArchiveHubPage({
                   </div>
 
                   {/* Hamburger menu */}
-                  <JourneyCardMenu
-                    className="absolute bottom-3 right-3 z-30"
-                    isLoggedIn={isLoggedIn}
-                    onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
-                    onDelete={() => onDeleteTrip(trip.id)}
-                    onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
-                    onMove={onMoveToPlans ? () => onMoveToPlans(trip) : undefined}
-                    moveLabel="계획으로 이동"
-                  />
+                  {(() => {
+                    const isPlan = trip.tags?.includes('Plan') || trip.title.includes('(Plan)');
+                    return (
+                      <JourneyCardMenu
+                        className="absolute bottom-3 right-3 z-30"
+                        isLoggedIn={isLoggedIn}
+                        onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
+                        onDelete={() => onDeleteTrip(trip.id)}
+                        onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
+                        onMove={
+                          isPlan
+                            ? (onMoveToArchive ? () => onMoveToArchive(trip as Plan) : undefined)
+                            : (onMoveToPlans ? () => onMoveToPlans(trip) : undefined)
+                        }
+                        moveLabel={isPlan ? "아카이브로 이동" : "계획으로 이동"}
+                      />
+                    );
+                  })()}
                 </div>
               </div>
             );
