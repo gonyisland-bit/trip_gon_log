@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Menu, Edit2, Trash2, GripVertical, Copy, ArrowUp, Tag, ChevronDown, ChevronUp, Search, X, LayoutGrid, StretchHorizontal, List } from 'lucide-react';
 import { Trip, Plan } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
+import { ConfirmModal } from '../components/ConfirmModal';
 
 interface HomePageProps {
   onNavigate: (view: string, tripId?: number | null) => void;
@@ -111,69 +112,144 @@ export function JourneyCardMenu({
   variant?: 'card' | 'minimal';
 }) {
   const [open, setOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false);
+
+    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setOpen(false);
+      } else if (e.key === 'e' || e.key === 'E') {
+        if (onEdit) {
+          e.preventDefault();
+          setOpen(false);
+          onEdit();
+        }
+      } else if (e.key === 'c' || e.key === 'C') {
+        if (onClone) {
+          e.preventDefault();
+          setOpen(false);
+          onClone();
+        }
+      } else if (e.key === 's' || e.key === 'S') {
+        if (onMove) {
+          e.preventDefault();
+          setOpen(false);
+          onMove();
+        }
+      } else if (e.key === 'd' || e.key === 'D') {
+        if (onDelete) {
+          e.preventDefault();
+          setOpen(false);
+          setShowDeleteConfirm(true);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('touchstart', handleOutsideClick);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open, onEdit, onClone, onMove, onDelete]);
 
   if (!isLoggedIn) return null;
 
   return (
-    <div ref={menuRef} className={`${className || (variant === 'minimal' ? 'relative' : "absolute bottom-3 right-3 z-30")} pointer-events-auto`}>
-      <button
-        onClick={(e) => { e.stopPropagation(); setOpen(v => !v); }}
-        className={variant === 'minimal'
-          ? "p-2 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer bg-transparent border-0 shadow-none"
-          : "p-1.5 bg-black/60 hover:bg-black/90 text-white rounded-md transition-all shadow-md backdrop-blur-sm border border-white/20 opacity-90 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 flex items-center justify-center cursor-pointer active:scale-95"
-        }
-        title="카드 관리 메뉴"
-        aria-label="Journey menu"
-      >
-        <Menu className="w-3.5 h-3.5" />
-      </button>
-      {open && (
-        <div className={`absolute ${variant === 'minimal' ? 'top-full right-0 mt-1' : 'bottom-full right-0 mb-1'} w-32 bg-white dark:bg-[#1a1a1a] border border-black/15 dark:border-white/15 shadow-xl rounded-none z-50 overflow-hidden animate-in zoom-in-95 duration-150`}>
-          {onEdit && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onEdit(); setOpen(false); }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
-            >
-              <Edit2 className="w-3 h-3 text-amber-600" /> 수정
-            </button>
-          )}
-          {onClone && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onClone(); setOpen(false); }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
-            >
-              <Copy className="w-3 h-3 text-blue-500" /> 복제
-            </button>
-          )}
-          {onMove && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onMove(); setOpen(false); }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
-            >
-              <ArrowUp className="w-3 h-3 text-emerald-500" /> {moveLabel || '이동'}
-            </button>
-          )}
-          {onDelete && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onDelete(); setOpen(false); }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer"
-            >
-              <Trash2 className="w-3 h-3" /> 삭제
-            </button>
-          )}
-        </div>
-      )}
-    </div>
+    <>
+      <div ref={menuRef} className={`${className || (variant === 'minimal' ? 'relative' : "absolute bottom-3 right-3 z-30")} pointer-events-auto`}>
+        <button
+          onClick={(e) => { e.stopPropagation(); setOpen(v => !v); }}
+          className={variant === 'minimal'
+            ? "p-2 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer bg-transparent border-0 shadow-none"
+            : "p-1.5 bg-black/60 hover:bg-black/90 text-white rounded-md transition-all shadow-md backdrop-blur-sm border border-white/20 opacity-90 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 flex items-center justify-center cursor-pointer active:scale-95"
+          }
+          title="카드 관리 메뉴"
+          aria-label="Journey menu"
+        >
+          <Menu className="w-3.5 h-3.5" />
+        </button>
+
+        {open && (
+          <div className={`absolute ${variant === 'minimal' ? 'top-full right-0 mt-1' : 'bottom-full right-0 mb-1'} w-44 bg-white dark:bg-[#161616] border border-black/15 dark:border-white/15 shadow-2xl rounded-none z-50 overflow-hidden divide-y divide-black/10 dark:divide-white/10 animate-in zoom-in-95 duration-150`}>
+            {onEdit && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setOpen(false); onEdit(); }}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 text-[10.5px] font-black uppercase tracking-wider text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Edit2 className="w-3.5 h-3.5 text-amber-500" />
+                  <span>EDIT</span>
+                </div>
+                <span className="font-mono text-[9px] text-black/40 dark:text-white/40 border border-black/15 dark:border-white/15 px-1 py-0.2">E</span>
+              </button>
+            )}
+            {onClone && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setOpen(false); onClone(); }}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 text-[10.5px] font-black uppercase tracking-wider text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Copy className="w-3.5 h-3.5 text-blue-500" />
+                  <span>COPY</span>
+                </div>
+                <span className="font-mono text-[9px] text-black/40 dark:text-white/40 border border-black/15 dark:border-white/15 px-1 py-0.2">C</span>
+              </button>
+            )}
+            {onMove && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setOpen(false); onMove(); }}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 text-[10.5px] font-black uppercase tracking-wider text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <ArrowUp className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>SWITCHING</span>
+                </div>
+                <span className="font-mono text-[9px] text-black/40 dark:text-white/40 border border-black/15 dark:border-white/15 px-1 py-0.2">S</span>
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setOpen(false); setShowDeleteConfirm(true); }}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 text-[10.5px] font-black uppercase tracking-wider text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>DELETE</span>
+                </div>
+                <span className="font-mono text-[9px] text-red-500/70 border border-red-500/30 px-1 py-0.2">D</span>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        title="DELETE CONFIRMATION"
+        message="정말 이 여정을 삭제하시겠습니까? 삭제 후 복구할 수 없습니다."
+        confirmLabel="YES [Y]"
+        cancelLabel="NO [N]"
+        onConfirm={() => {
+          setShowDeleteConfirm(false);
+          if (onDelete) onDelete();
+        }}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
+    </>
   );
 }
 
@@ -217,7 +293,7 @@ function HeroMedia({ journey, isActive, mediaType }: HeroMediaProps) {
   }, [isActive, mediaType, journey.videoUrl]);
 
   const hasVideo = mediaType === 'video' && journey.videoUrl;
-  const hasImage = journey.img;
+  const imageUrl = getEffectiveImageUrl(journey.img);
 
   return (
     <div
@@ -233,13 +309,17 @@ function HeroMedia({ journey, isActive, mediaType }: HeroMediaProps) {
           loop
           muted
           playsInline
-          preload="auto"
+          poster={imageUrl}
+          preload={isActive ? "auto" : "metadata"}
           className="w-full h-full object-cover"
         />
-      ) : hasImage ? (
+      ) : imageUrl ? (
         <img
-          src={journey.img}
+          src={imageUrl}
           alt={journey.title || "Hero Trip"}
+          loading={isActive ? "eager" : "lazy"}
+          decoding="async"
+          fetchPriority={isActive ? "high" : "low"}
           className="w-full h-full object-cover"
         />
       ) : (

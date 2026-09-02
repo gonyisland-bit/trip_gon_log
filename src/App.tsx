@@ -1441,6 +1441,8 @@ function App() {
                         }}
                         onEditModeChange={setIsDetailEditing}
                         saveRef={detailSaveRef}
+                        allTrips={trips}
+                        allPlans={plans}
                       />
                     </ErrorBoundary>
                   );

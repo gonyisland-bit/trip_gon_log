@@ -5,7 +5,7 @@ import {
   ExternalLink, MapPinOff, Maximize2, Star, ChevronLeft, ChevronRight, ArrowUp, ArrowDown,
   Sun, Cloud, Cloudy, CloudRain, Snowflake, CloudLightning, ArrowRight, Calculator, FileText, Share2, GripVertical,
   Play, Pause, SkipForward, SkipBack, X as CloseIcon, Check, Edit3, DollarSign,
-  Columns2, LayoutGrid
+  Columns2, LayoutGrid, ArrowRightLeft, X
 } from 'lucide-react';
 import { MapArea } from '../components/MapArea';
 import { ImageEditOverlay } from '../components/ImageEditOverlay';
@@ -18,8 +18,10 @@ import { SummaryView } from '../components/SummaryView';
 import { Lightbox, LightboxImageMeta } from '../components/Lightbox';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { Footer } from '../components/Footer';
+import { ConfirmModal } from '../components/ConfirmModal';
 import { 
   Trip, 
+  Plan,
   TimelineItem, 
   TimelineData, 
   FlightItem, 
@@ -82,6 +84,8 @@ interface JourneyDetailPageProps {
   onClearSearchFocus?: () => void;
   onEditModeChange?: (editing: boolean) => void;
   saveRef?: React.MutableRefObject<(() => Promise<void>) | null>;
+  allTrips?: Trip[];
+  allPlans?: Plan[];
 }
 
 
@@ -674,6 +678,8 @@ export function JourneyDetailPage({
   onClearSearchFocus,
   onEditModeChange,
   saveRef,
+  allTrips = [],
+  allPlans = [],
 }: JourneyDetailPageProps) {
   // All hooks must be called before conditional return
   const [activeTab, setActiveTab] = useState<TabType>('summary');
@@ -681,6 +687,54 @@ export function JourneyDetailPage({
   const [selectedDate, setSelectedDate] = useState<string>('ALL');
   const [collapsedDays, setCollapsedDays] = useState<string[]>([]);
   const [expandedItemId, setExpandedItemId] = useState<number | null>(null);
+
+  // Quick Switcher & Delete Confirm States
+  const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
+  const [switcherSearch, setSwitcherSearch] = useState('');
+  const [showTripDeleteConfirm, setShowTripDeleteConfirm] = useState(false);
+
+  useEffect(() => {
+    if (!isSwitcherOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsSwitcherOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSwitcherOpen]);
+
+  const switcherJourneys = useMemo(() => {
+    const list: Array<{ id: number; title: string; date: string; locationStr: string; img?: string; type: 'ARCHIVE' | 'PLAN' }> = [];
+    (allTrips || []).forEach(t => {
+      list.push({
+        id: t.id,
+        title: t.title || 'UNTITLED JOURNEY',
+        date: t.date || '',
+        locationStr: t.locationStr || '',
+        img: t.img,
+        type: 'ARCHIVE'
+      });
+    });
+    (allPlans || []).forEach(p => {
+      list.push({
+        id: p.id,
+        title: p.title || 'UNTITLED PLAN',
+        date: p.date || '',
+        locationStr: p.locationStr || '',
+        img: p.img,
+        type: 'PLAN'
+      });
+    });
+
+    if (!switcherSearch.trim()) return list;
+    const q = switcherSearch.toLowerCase().trim();
+    return list.filter(item => 
+      item.title.toLowerCase().includes(q) ||
+      item.locationStr.toLowerCase().includes(q) ||
+      item.date.toLowerCase().includes(q)
+    );
+  }, [allTrips, allPlans, switcherSearch]);
 
   // Edit / Draft state
   const [isEditing, setIsEditing] = useState(false);
@@ -2766,6 +2820,19 @@ export function JourneyDetailPage({
             </div>
           )}
 
+          {/* Quick Journey Switcher Button */}
+          <button
+            onClick={() => {
+              setIsSwitcherOpen(true);
+              setSwitcherSearch('');
+            }}
+            className="p-1.5 rounded transition-colors cursor-pointer flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60"
+            title="다른 여정으로 바로 이동 (Quick Switcher)"
+            aria-label="Switch journey"
+          >
+            <ArrowRightLeft className="w-3.5 h-3.5" />
+          </button>
+
           {/* Quick Summary Icon Button (Unified Icon on Web & Mobile) */}
           <button
             onClick={() => {
@@ -2838,16 +2905,13 @@ export function JourneyDetailPage({
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold text-red-600 dark:text-red-400 tracking-wider">
-                  ISSUE #{String((trip.displayOrder ?? (trip.id % 99)) + 1).padStart(2, '0')}
-                </span>
-                <span className="text-sm sm:text-base font-black uppercase text-black dark:text-white font-satoshi">
+                <span className="text-sm sm:text-base font-black uppercase text-black dark:text-white font-sans">
                   {trip.title}
                 </span>
               </div>
             )}
 
-            {/* Actions: Settlement, Share, Delete */}
+            {/* Actions: Cost, Share, Delete */}
             <div className="flex items-center gap-1.5 flex-wrap shrink-0">
               <button
                 onClick={() => {
@@ -2859,10 +2923,10 @@ export function JourneyDetailPage({
                     ? 'bg-emerald-600 text-white border-emerald-600'
                     : 'border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70'
                 }`}
-                title="정산 관리"
+                title="비용/정산 관리"
               >
                 <DollarSign className="w-3 h-3" />
-                <span>Settlement</span>
+                <span>Cost</span>
               </button>
 
               <button
@@ -2883,13 +2947,9 @@ export function JourneyDetailPage({
                 </button>
               )}
 
-              {isEditing && onDelete && (
+              {isEditing && (
                 <button
-                  onClick={async () => {
-                    if (window.confirm("정말 이 여정을 삭제하시겠습니까? 복구할 수 없습니다.")) {
-                      await onDelete(trip.id);
-                    }
-                  }}
+                  onClick={() => setShowTripDeleteConfirm(true)}
                   className="px-2.5 py-1 border border-red-600/30 text-red-600 hover:bg-red-600 hover:text-white rounded text-[9px] font-bold uppercase tracking-wider transition-colors flex items-center gap-1 cursor-pointer"
                   title="여정 삭제"
                 >
@@ -3328,6 +3388,10 @@ export function JourneyDetailPage({
               stays={isEditing ? draftStays : stays}
               transits={isEditing ? draftTransits : transits}
               defaultCurrency={getDefaultCurrencyForLocation(tripToUse?.locationStr || '')}
+              onSelectTab={(tab) => {
+                setActiveTab(tab as TabType);
+                setExpandedItemId(null);
+              }}
             />
           )}
           
@@ -4932,6 +4996,135 @@ export function JourneyDetailPage({
           </div>
         </div>
       )}
+      {/* Quick Journey Switcher Modal */}
+      {isSwitcherOpen && (
+        <div 
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={() => setIsSwitcherOpen(false)}
+        >
+          <div 
+            className="w-full max-w-lg bg-white dark:bg-[#141414] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col max-h-[80vh] overflow-hidden text-black dark:text-white animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-4 border-b border-black/15 dark:border-white/15 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ArrowRightLeft className="w-4 h-4 text-red-600 dark:text-red-400" />
+                <span className="text-xs sm:text-sm font-black uppercase tracking-widest font-sans">
+                  SWITCH JOURNEY
+                </span>
+              </div>
+              <button 
+                onClick={() => setIsSwitcherOpen(false)}
+                className="p-1 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Search Box */}
+            <div className="p-3 border-b border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] flex items-center gap-2">
+              <Search className="w-4 h-4 text-black/40 dark:text-white/40 shrink-0" />
+              <input
+                type="text"
+                autoFocus
+                value={switcherSearch}
+                onChange={(e) => setSwitcherSearch(e.target.value)}
+                placeholder="여정 제목, 도시, 국가 검색..."
+                className="w-full bg-transparent border-none outline-none text-xs sm:text-sm font-medium text-black dark:text-white placeholder:text-black/40 dark:placeholder:text-white/40"
+              />
+              {switcherSearch && (
+                <button 
+                  onClick={() => setSwitcherSearch('')}
+                  className="text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Journey List */}
+            <div className="flex-1 overflow-y-auto divide-y divide-black/10 dark:divide-white/10">
+              {switcherJourneys.length > 0 ? (
+                switcherJourneys.map((item) => {
+                  const isCurrent = trip && item.id === trip.id;
+                  const itemImg = getEffectiveImageUrl(item.img);
+                  return (
+                    <button
+                      key={`${item.type}-${item.id}`}
+                      onClick={() => {
+                        setIsSwitcherOpen(false);
+                        if (!isCurrent) {
+                          onNavigate('detail', item.id);
+                        }
+                      }}
+                      className={`w-full flex items-stretch text-left transition-colors cursor-pointer group hover:bg-black/[0.03] dark:hover:bg-white/[0.03] ${
+                        isCurrent ? 'bg-red-50/50 dark:bg-red-950/20' : ''
+                      }`}
+                    >
+                      {/* 1:1 Thumbnail */}
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 aspect-square bg-black/5 dark:bg-white/5 border-r border-black/10 dark:border-white/10 relative overflow-hidden">
+                        {itemImg ? (
+                          <img src={itemImg} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-black/20 dark:text-white/20 text-xs font-mono">
+                            NO IMG
+                          </div>
+                        )}
+                        <span className="absolute top-1 left-1 text-[8px] font-mono font-bold px-1 py-0.2 bg-black/70 text-white rounded-none">
+                          {item.type}
+                        </span>
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 p-2.5 sm:p-3 flex flex-col justify-center min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs sm:text-sm font-black truncate font-sans ${isCurrent ? 'text-red-600 dark:text-red-400' : 'text-black dark:text-white'}`}>
+                            {item.title}
+                          </span>
+                          {isCurrent && (
+                            <span className="text-[8px] font-bold px-1 py-0.2 bg-red-600 text-white shrink-0">
+                              CURRENT
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[10px] sm:text-xs text-black/50 dark:text-white/50 font-mono truncate mt-0.5">
+                          {item.date || 'DATE TBD'} {item.locationStr ? `· ${item.locationStr}` : ''}
+                        </div>
+                      </div>
+
+                      {/* Right indicator */}
+                      <div className="px-3 flex items-center text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0">
+                        <ArrowRight className="w-4 h-4 -translate-x-1 group-hover:translate-x-0 transition-transform" />
+                      </div>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="py-12 text-center text-xs text-black/40 dark:text-white/40 font-sans">
+                  검색 결과와 일치하는 여정이 없습니다.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showTripDeleteConfirm}
+        title="DELETE JOURNEY"
+        message="정말 이 여정을 완전히 삭제하시겠습니까? 기록된 타임라인, 항공, 숙소, 교통 데이터가 모두 영구 삭제됩니다."
+        confirmLabel="YES [Y]"
+        cancelLabel="NO [N]"
+        onConfirm={async () => {
+          setShowTripDeleteConfirm(false);
+          if (trip && onDelete) {
+            await onDelete(trip.id);
+          }
+        }}
+        onCancel={() => setShowTripDeleteConfirm(false)}
+      />
     </main>
   );
 }

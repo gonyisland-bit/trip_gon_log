@@ -67,13 +67,10 @@ export function Navigation({
         <div className="flex items-center gap-6 md:gap-10 min-w-0">
           <button 
             onClick={() => navigateTo('home')} 
-            className="flex flex-col text-left cursor-pointer group shrink-0"
+            className="flex items-center cursor-pointer group shrink-0"
           >
-            <span className="font-black text-lg sm:text-xl md:text-2xl tracking-tight font-['Inter',sans-serif] leading-tight text-black dark:text-white group-hover:opacity-80 transition-opacity">
+            <span className="font-black text-lg sm:text-xl md:text-2xl tracking-tight font-['Inter',sans-serif] leading-none text-black dark:text-white group-hover:opacity-80 transition-opacity">
               Tripgon log
-            </span>
-            <span className="text-[7.5px] sm:text-[8px] font-mono tracking-widest text-black/40 dark:text-white/40 uppercase leading-none mt-0.5">
-              TRAVEL MEMOIR
             </span>
           </button>
 
@@ -192,12 +189,9 @@ export function Navigation({
         <div className="fixed inset-0 z-[100] bg-white dark:bg-[#111111] flex flex-col justify-between p-8 sm:p-12 md:hidden animate-in fade-in duration-150">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-5">
-            <div className="flex flex-col">
+            <div className="flex items-center">
               <span className="font-black text-2xl tracking-tight font-['Inter',sans-serif] text-black dark:text-white">
                 Tripgon log
-              </span>
-              <span className="text-[9px] font-mono tracking-widest text-black/40 dark:text-white/40 uppercase">
-                INDEX MENU
               </span>
             </div>
             <button

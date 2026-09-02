@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { 
   FileText, Share2, Download, X, Calendar, MapPin, 
-  Bed, Plane, Train, Landmark, ChevronDown, ChevronUp, ArrowDownRight
+  Bed, Plane, Train, Landmark, ChevronDown, ChevronUp, ArrowDownRight, ArrowRight
 } from 'lucide-react';
 import { Trip, TimelineItem, FlightItem, StayItem, TransitItem } from '../types';
 import html2canvas from 'html2canvas';
@@ -28,6 +28,7 @@ interface SummaryViewProps {
   stays: StayItem[];
   transits: TransitItem[];
   defaultCurrency?: string;
+  onSelectTab?: (tab: string) => void;
 }
 
 export function SummaryView({
@@ -36,7 +37,8 @@ export function SummaryView({
   flights,
   stays,
   transits,
-  defaultCurrency = 'KRW'
+  defaultCurrency = 'KRW',
+  onSelectTab,
 }: SummaryViewProps) {
   const [isCapturing, setIsCapturing] = useState(false);
   const [capturedImg, setCapturedImg] = useState<string | null>(null);
@@ -308,12 +310,12 @@ export function SummaryView({
             <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
           </div>
 
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black font-satoshi uppercase tracking-tight leading-[1.05] text-black dark:text-white mt-1">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black font-sans uppercase tracking-tight leading-[1.05] text-black dark:text-white mt-1">
             {trip.title ? trip.title.replace(' (Plan)', '') : 'UNTITLED JOURNEY'}
           </h1>
 
-          <p className="text-sm sm:text-base text-black/75 dark:text-white/75 font-normal leading-relaxed max-w-2xl font-sans mt-1">
-            A minimalist autonomous travel record covering {totalDays} days across {formatDestinations(trip.locationStr)}. Outlining key flight legs, reserved accommodations, daily transit connections, and estimated expenditure.
+          <p className="text-sm sm:text-base text-black/80 dark:text-white/80 font-medium leading-relaxed max-w-2xl font-sans mt-0.5">
+            {trip.locationStr ? formatDestinations(trip.locationStr) : '여행지'}를 {totalDays}일 동안 기록한 여행 메모입니다.
           </p>
 
           <div className="flex flex-wrap items-center justify-between gap-3 w-full pt-4 border-t border-black/15 dark:border-white/15">
@@ -340,14 +342,14 @@ export function SummaryView({
           </div>
         </div>
 
-        {/* 2. Giant Typographic Metrics Grid (Reference "12 Team Members", "6 Advisory Board" Style) */}
-        <div className="py-6 border-y border-black dark:border-white grid grid-cols-2 lg:grid-cols-4 gap-y-6 gap-x-4 sm:gap-6 w-full">
+        {/* 2. Giant Typographic Metrics Grid (Inter Font, Consistent Size & Weight) */}
+        <div className="py-6 border-y border-black dark:border-white grid grid-cols-2 lg:grid-cols-4 gap-y-6 gap-x-4 sm:gap-6 w-full font-sans">
           {/* Metric 1: Total Days */}
           <div className="flex items-baseline gap-2 sm:gap-2.5 min-w-0">
-            <span className="text-4xl sm:text-5xl lg:text-6xl font-black font-satoshi tracking-tighter text-black dark:text-white leading-none shrink-0">
+            <span className="text-4xl sm:text-5xl lg:text-6xl font-black font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
               {totalDays < 10 ? `0${totalDays}` : totalDays}
             </span>
-            <div className="flex flex-col text-left font-satoshi font-bold text-xs sm:text-sm leading-tight text-black/70 dark:text-white/70 min-w-0">
+            <div className="flex flex-col text-left font-sans font-bold text-xs sm:text-sm leading-tight text-black/70 dark:text-white/70 min-w-0">
               <span>Total</span>
               <span>Days</span>
             </div>
@@ -355,10 +357,10 @@ export function SummaryView({
 
           {/* Metric 2: Recorded Spots */}
           <div className="flex items-baseline gap-2 sm:gap-2.5 min-w-0">
-            <span className="text-4xl sm:text-5xl lg:text-6xl font-black font-satoshi tracking-tighter text-black dark:text-white leading-none shrink-0">
+            <span className="text-4xl sm:text-5xl lg:text-6xl font-black font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
               {recordedSpotsCount < 10 ? `0${recordedSpotsCount}` : recordedSpotsCount}
             </span>
-            <div className="flex flex-col text-left font-satoshi font-bold text-xs sm:text-sm leading-tight text-black/70 dark:text-white/70 min-w-0">
+            <div className="flex flex-col text-left font-sans font-bold text-xs sm:text-sm leading-tight text-black/70 dark:text-white/70 min-w-0">
               <span>Recorded</span>
               <span>Spots</span>
             </div>
@@ -366,48 +368,54 @@ export function SummaryView({
 
           {/* Metric 3: Flight Legs */}
           <div className="flex items-baseline gap-2 sm:gap-2.5 min-w-0">
-            <span className="text-4xl sm:text-5xl lg:text-6xl font-black font-satoshi tracking-tighter text-black dark:text-white leading-none shrink-0">
+            <span className="text-4xl sm:text-5xl lg:text-6xl font-black font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
               {flights.length < 10 ? `0${flights.length}` : flights.length}
             </span>
-            <div className="flex flex-col text-left font-satoshi font-bold text-xs sm:text-sm leading-tight text-black/70 dark:text-white/70 min-w-0">
+            <div className="flex flex-col text-left font-sans font-bold text-xs sm:text-sm leading-tight text-black/70 dark:text-white/70 min-w-0">
               <span>Flight</span>
               <span>Legs</span>
             </div>
           </div>
 
-          {/* Metric 4: Total Estimated Budget (Point Red Accent) */}
+          {/* Metric 4: Total Estimated Budget (Inter font, identical size & weight) */}
           <div className="flex items-baseline gap-2 sm:gap-2.5 min-w-0">
-            <span className="text-3xl sm:text-4xl lg:text-5xl font-black font-mono tracking-tight text-red-600 dark:text-red-500 leading-none shrink-0">
+            <span className="text-4xl sm:text-5xl lg:text-6xl font-black font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
               ₩{totalInBaseCurrency >= 1000000 ? `${(totalInBaseCurrency / 1000000).toFixed(1)}M` : totalInBaseCurrency >= 10000 ? `${Math.round(totalInBaseCurrency / 10000)}만` : totalInBaseCurrency.toLocaleString()}
             </span>
-            <div className="flex flex-col text-left font-satoshi font-bold text-xs sm:text-sm leading-tight text-black/70 dark:text-white/70 min-w-0">
+            <div className="flex flex-col text-left font-sans font-bold text-xs sm:text-sm leading-tight text-black/70 dark:text-white/70 min-w-0">
               <span>Estimated</span>
               <span>Budget</span>
             </div>
           </div>
         </div>
 
-        {/* 3. Accommodations: Full-Width Hairline Accordion List (Reference Adam Griffin Style) */}
-        <div className="flex flex-col">
+        {/* 3. Stays: Full-Width Hairline Accordion List */}
+        <div className="flex flex-col font-sans">
           <div className="flex items-center justify-between pb-2 border-b border-black dark:border-white">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-black uppercase tracking-widest text-black dark:text-white font-satoshi">ACCOMMODATIONS</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
-            </div>
-            <span className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50">{stays.length} PROPERTIES</span>
+            <button
+              type="button"
+              onClick={() => onSelectTab && onSelectTab('stays')}
+              className="flex items-center gap-2 text-sm sm:text-base font-black uppercase tracking-widest text-black dark:text-white font-sans hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer group"
+              title="숙박 탭으로 이동"
+            >
+              <span>STAYS</span>
+              <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all text-red-600 dark:text-red-400" />
+            </button>
+            <span className="text-[10px] sm:text-xs font-mono font-bold text-black/50 dark:text-white/50">{stays.length} PROPERTIES</span>
           </div>
 
           <div className="divide-y divide-black/15 dark:divide-white/15">
             {stays.length > 0 ? (
               stays.map((s, idx) => {
                 const isOpen = expandedStayId === idx;
+                const isDefaultMemo = !s.memo || s.memo.trim() === '' || s.memo.includes('일정을 입력') || s.memo.includes('메모를 입력');
                 return (
                   <div key={idx} className="py-3.5 transition-colors">
                     <div 
                       onClick={() => setExpandedStayId(isOpen ? null : idx)}
                       className="flex items-center justify-between gap-3 cursor-pointer select-none group"
                     >
-                      <span className="font-bold text-sm sm:text-base text-black dark:text-white font-satoshi group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                      <span className="font-bold text-sm sm:text-base text-black dark:text-white font-sans group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
                         {s.title}
                       </span>
                       <div className="flex items-center gap-3 shrink-0">
@@ -429,8 +437,8 @@ export function SummaryView({
                           {s.confNo && <span className="text-red-600 dark:text-red-400 font-bold"># {s.confNo}</span>}
                           {s.address && <span>📍 {s.address}</span>}
                         </div>
-                        {s.memo && (
-                          <p className="text-black/60 dark:text-white/60 font-sans leading-relaxed pt-1">
+                        {!isDefaultMemo && (
+                          <p className="text-black/60 dark:text-white/60 font-sans leading-relaxed pt-1 text-xs">
                             {s.memo}
                           </p>
                         )}
@@ -445,14 +453,19 @@ export function SummaryView({
           </div>
         </div>
 
-        {/* 4. Flight Itinerary: Hairline Boarding Rows */}
-        <div className="flex flex-col">
+        {/* 4. Flights: Hairline Boarding Rows */}
+        <div className="flex flex-col font-sans">
           <div className="flex items-center justify-between pb-2 border-b border-black dark:border-white">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-black uppercase tracking-widest text-black dark:text-white font-satoshi">FLIGHT ITINERARY</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
-            </div>
-            <span className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50">{flights.length} SEGMENTS</span>
+            <button
+              type="button"
+              onClick={() => onSelectTab && onSelectTab('flights')}
+              className="flex items-center gap-2 text-sm sm:text-base font-black uppercase tracking-widest text-black dark:text-white font-sans hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer group"
+              title="항공 탭으로 이동"
+            >
+              <span>FLIGHTS</span>
+              <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all text-red-600 dark:text-red-400" />
+            </button>
+            <span className="text-[10px] sm:text-xs font-mono font-bold text-black/50 dark:text-white/50">{flights.length} SEGMENTS</span>
           </div>
 
           <div className="divide-y divide-black/15 dark:divide-white/15">
@@ -466,7 +479,7 @@ export function SummaryView({
                       className="flex items-center justify-between gap-3 cursor-pointer select-none group"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="text-base sm:text-lg font-black font-mono tracking-tight text-black dark:text-white">
+                        <span className="text-base sm:text-lg font-black font-sans tracking-tight text-black dark:text-white">
                           {f.fromCode || 'DEP'} ➔ {f.toCode || 'ARR'}
                         </span>
                         <span className="text-[11px] font-mono font-bold px-1.5 py-0.5 bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70 rounded-xs">
@@ -516,13 +529,18 @@ export function SummaryView({
 
         {/* 5. Transit & Transfers: Hairline Accordion List */}
         {transits.length > 0 && (
-          <div className="flex flex-col">
+          <div className="flex flex-col font-sans">
             <div className="flex items-center justify-between pb-2 border-b border-black dark:border-white">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black uppercase tracking-widest text-black dark:text-white font-satoshi">TRANSIT & MOBILITY</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
-              </div>
-              <span className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50">{transits.length} PASSES</span>
+              <button
+                type="button"
+                onClick={() => onSelectTab && onSelectTab('transit')}
+                className="flex items-center gap-2 text-sm sm:text-base font-black uppercase tracking-widest text-black dark:text-white font-sans hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer group"
+                title="교통 탭으로 이동"
+              >
+                <span>TRANSIT</span>
+                <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all text-red-600 dark:text-red-400" />
+              </button>
+              <span className="text-[10px] sm:text-xs font-mono font-bold text-black/50 dark:text-white/50">{transits.length} PASSES</span>
             </div>
 
             <div className="divide-y divide-black/15 dark:divide-white/15">
@@ -535,7 +553,7 @@ export function SummaryView({
                       className="flex items-center justify-between gap-3 cursor-pointer select-none group"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="font-bold text-sm text-black dark:text-white font-satoshi">
+                        <span className="font-bold text-sm text-black dark:text-white font-sans">
                           {t.title || t.ticketType}
                         </span>
                         {t.route && (
@@ -561,44 +579,49 @@ export function SummaryView({
         )}
 
         {/* 6. Estimated Budget & Settlement Summary */}
-        <div className="flex flex-col pt-4 border-t border-black dark:border-white">
-          <div className="flex items-center justify-between pb-2 mb-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-black uppercase tracking-widest text-black dark:text-white font-satoshi">BUDGET & EXPENSES</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
-            </div>
-            <span className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50">CURRENCY BREAKDOWN</span>
+        <div className="flex flex-col pt-4 border-t border-black dark:border-white font-sans">
+          <div className="flex items-center justify-between pb-2 mb-2 border-b border-black dark:border-white">
+            <button
+              type="button"
+              onClick={() => onSelectTab && onSelectTab('settlement')}
+              className="flex items-center gap-2 text-sm sm:text-base font-black uppercase tracking-widest text-black dark:text-white font-sans hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer group"
+              title="비용/정산 탭으로 이동"
+            >
+              <span>COST</span>
+              <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all text-red-600 dark:text-red-400" />
+            </button>
+            <span className="text-[10px] sm:text-xs font-mono font-bold text-black/50 dark:text-white/50">CURRENCY BREAKDOWN</span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 pt-2">
             {/* By Currency Ledger */}
-            <div className="flex flex-col divide-y divide-black/10 dark:divide-white/10 font-mono text-xs">
+            <div className="flex flex-col divide-y divide-black/10 dark:divide-white/10 font-sans text-xs">
               {Object.keys(budgetSummary).length > 0 ? (
                 Object.entries(budgetSummary).map(([curr, amt]) => (
-                  <div key={curr} className="py-2 flex justify-between items-center">
-                    <span className="text-black/60 dark:text-white/60">{curr}</span>
-                    <span className="font-bold text-black dark:text-white">
+                  <div key={curr} className="py-2.5 flex justify-between items-center">
+                    <span className="text-black/60 dark:text-white/60 font-medium">{curr}</span>
+                    <span className="font-bold text-black dark:text-white font-sans">
                       {CURRENCY_SYMBOLS[curr] || curr} {amt.toLocaleString()}
                     </span>
                   </div>
                 ))
               ) : (
-                <div className="py-2 italic text-black/40 dark:text-white/40">등록된 지출 내역 없음</div>
+                <div className="py-3 italic text-black/40 dark:text-white/40">등록된 지출 내역 없음</div>
               )}
             </div>
 
-            {/* Total Converted (Point Red Accent Box) */}
-            <div className="p-5 border border-black dark:border-white flex flex-col justify-between gap-3 bg-black/[0.02] dark:bg-white/[0.02]">
+            {/* Total Converted (Point Clean Accent Box) */}
+            <div className="p-4 sm:p-5 border border-black/15 dark:border-white/15 flex flex-col justify-between gap-3 bg-black/[0.02] dark:bg-white/[0.02]">
               <div className="flex justify-between items-start">
-                <span className="text-[10px] font-black uppercase tracking-widest font-mono text-black dark:text-white">
-                  TOTAL CONVERTED (KRW BASE)
+                <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest font-sans text-black/60 dark:text-white/60">
+                  TOTAL ESTIMATED
                 </span>
-                <span className="text-[9px] font-mono text-black/50 dark:text-white/50 uppercase">
-                  EX.RATES STANDARD
+                <span className="text-[9px] font-sans text-black/40 dark:text-white/40 uppercase font-bold">
+                  KRW BASE
                 </span>
               </div>
-              <div className="text-3xl sm:text-4xl font-black font-mono text-red-600 dark:text-red-500 leading-none">
-                ₩ {Math.round(totalInBaseCurrency).toLocaleString()}
+              <div className="text-2xl sm:text-3xl lg:text-4xl font-black font-sans text-black dark:text-white leading-none">
+                ₩{Math.round(totalInBaseCurrency).toLocaleString()}
               </div>
             </div>
           </div>
