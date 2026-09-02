@@ -1199,7 +1199,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
 
   // View toggles: Pin Labels, Visited (Red pins), Wishlist (Yellow pins)
   const [showPinLabels, setShowPinLabels] = useState<boolean>(() => {
-    return localStorage.getItem('map_view_labels') !== 'false';
+    return localStorage.getItem('map_view_labels_v2') !== 'false';
   });
   const [showVisitedPins, setShowVisitedPins] = useState<boolean>(() => {
     return localStorage.getItem('map_view_visited') !== 'false';
@@ -1211,7 +1211,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
   const togglePinLabels = () => {
     setShowPinLabels(prev => {
       const next = !prev;
-      try { localStorage.setItem('map_view_labels', String(next)); } catch (_) {}
+      try { localStorage.setItem('map_view_labels_v2', String(next)); } catch (_) {}
       return next;
     });
   };
@@ -1518,9 +1518,11 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     pinGroups.forEach(group => {
       const pinHtml = `
         <div class="relative cursor-pointer group select-none flex justify-center" style="width: 26px; height: 34px;">
-          <!-- City Badge floating above the pin -->
-          <div class="pin-label absolute bottom-full left-1/2 -translate-x-1/2 mb-1 pointer-events-none whitespace-nowrap bg-black text-white font-sans text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 border border-white/20 shadow-sm opacity-90 group-hover:opacity-100 transition-opacity">
-            ${group.city}
+          <!-- Swiss Minimal City Badge floating above the pin -->
+          <div class="pin-label">
+            <span class="swiss-pin-badge">
+              ${group.city}
+            </span>
           </div>
           <!-- Red SVG Pin: Sharp bottom tip is precisely at (13, 34) -->
           <div class="relative w-full h-full drop-shadow-md transition-transform duration-150 group-hover:scale-110 origin-bottom">
@@ -1571,9 +1573,11 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
 
       const yellowPinHtml = `
         <div class="relative cursor-pointer group select-none flex justify-center" style="width: 26px; height: 34px;">
-          <!-- Country Badge floating above the pin -->
-          <div class="pin-label absolute bottom-full left-1/2 -translate-x-1/2 mb-1 pointer-events-none whitespace-nowrap bg-amber-500 text-black font-sans text-[8.5px] font-black uppercase tracking-wider px-1.5 py-0.5 border border-black/20 shadow-sm">
-            ★ ${country.name}
+          <!-- Swiss Minimal Country Badge floating above the pin -->
+          <div class="pin-label">
+            <span class="swiss-wishlist-badge">
+              ★ ${country.name}
+            </span>
           </div>
           <!-- Yellow SVG Pin: Sharp bottom tip is precisely at (13, 34) -->
           <div class="relative w-full h-full drop-shadow-md transition-transform duration-150 group-hover:scale-110 origin-bottom">
@@ -2026,15 +2030,46 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
         </div>
       )}
 
-      {/* Marker CSS Overrides & Label Toggle Rules */}
+      {/* Marker CSS Overrides, Swiss Minimal Typography & Label Toggle Rules */}
       <style>{`
         .custom-map-pin, .custom-yellow-pin, .custom-select-pin {
           background: transparent !important;
           border: none !important;
           overflow: visible !important;
         }
-        .map-hide-pin-labels .custom-map-pin .pin-label,
-        .map-hide-pin-labels .custom-yellow-pin .pin-label {
+        .pin-label {
+          position: absolute;
+          bottom: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          margin-bottom: 5px;
+          pointer-events: none;
+          white-space: nowrap;
+          display: block !important;
+          z-index: 1000;
+        }
+        .swiss-pin-badge, .swiss-wishlist-badge {
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+          font-size: 8.5px;
+          font-weight: 900;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: #000000;
+          background-color: #FFFFFF;
+          border: 1px solid #000000;
+          padding: 1.5px 5px;
+          line-height: 1.25;
+          display: inline-block;
+          box-shadow: none !important;
+          border-radius: 0 !important;
+        }
+        .dark .swiss-pin-badge,
+        .dark .swiss-wishlist-badge {
+          color: #FFFFFF;
+          background-color: #000000;
+          border: 1px solid #FFFFFF;
+        }
+        .map-hide-pin-labels .pin-label {
           display: none !important;
         }
       `}</style>
