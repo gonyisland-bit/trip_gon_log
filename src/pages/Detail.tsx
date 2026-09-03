@@ -1953,6 +1953,16 @@ export function JourneyDetailPage({
           }
         }
       }
+      // 6. F key: Toggle browser fullscreen
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+        return;
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -3552,7 +3562,7 @@ export function JourneyDetailPage({
             {visitedTabs.has('timeline') && (
               <>
                 {/* Day filter selector bar - Slim and Sticky */}
-                <div className="sticky top-0 z-20 border-b border-black/15 dark:border-white/15 bg-white dark:bg-[#0A0A0A] transition-colors shrink-0 w-full flex items-center shadow-xs">
+                <div className="sticky top-0 z-[35] border-b border-black/15 dark:border-white/15 bg-white dark:bg-[#0A0A0A] transition-colors shrink-0 w-full flex items-center shadow-xs">
                 {/* Scroll buttons for desktop/web */}
                 <button 
                   onClick={() => scrollDays('left')}

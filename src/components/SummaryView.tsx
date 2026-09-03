@@ -560,12 +560,12 @@ export function SummaryView({
                           <span className="font-bold">{s.dateRange || 'DATES TBD'}</span>
                           {s.confNo && <span className="text-red-600 dark:text-red-400 font-bold font-mono"># {s.confNo}</span>}
                           {s.address && (
-                            <div className="inline-flex items-center gap-1.5 bg-black/5 dark:bg-white/5 px-2 py-0.5 border border-black/10 dark:border-white/10 text-xs font-sans rounded-none">
-                              <span className="truncate max-w-[240px] sm:max-w-md font-medium">{s.address}</span>
+                            <div className="inline-flex items-start gap-1.5 bg-black/5 dark:bg-white/5 px-2 py-1 border border-black/10 dark:border-white/10 text-xs font-sans rounded-none w-full">
+                              <span className="break-all whitespace-normal font-medium flex-1">{s.address}</span>
                               <button
                                 type="button"
                                 onClick={(e) => handleCopyAddress(e, s.address)}
-                                className="p-0.5 hover:text-red-600 dark:hover:text-red-400 text-black/50 dark:text-white/50 transition-colors cursor-pointer shrink-0"
+                                className="p-0.5 hover:text-red-600 dark:hover:text-red-400 text-black/50 dark:text-white/50 transition-colors cursor-pointer shrink-0 mt-0.5"
                                 title="주소 복사"
                               >
                                 {copiedAddress === s.address ? (
