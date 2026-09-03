@@ -11,10 +11,11 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Satoshi', 'Inter', 'sans-serif'],
-        satoshi: ['Satoshi', 'sans-serif'],
-        inter: ['Inter', 'sans-serif'],
-        serif: ['Satoshi', 'Inter', 'sans-serif'],
+        sans: ['Satoshi', 'Inter', '"Noto Sans KR"', 'sans-serif'],
+        satoshi: ['Satoshi', '"Noto Sans KR"', 'sans-serif'],
+        inter: ['Inter', '"Noto Sans KR"', 'sans-serif'],
+        noto: ['"Noto Sans KR"', 'sans-serif'],
+        serif: ['Satoshi', 'Inter', '"Noto Sans KR"', 'sans-serif'],
       },
     },
   },
