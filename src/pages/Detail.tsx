@@ -2827,8 +2827,7 @@ export function JourneyDetailPage({
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <button
             onClick={() => {
-              const isPlan = trip?.tags.includes('Plan') || trip?.title.includes('(Plan)');
-              onNavigate(isPlan ? 'plan' : 'archive');
+              onNavigate('archive');
             }}
             className="flex items-center gap-1 text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wider text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white transition-colors cursor-pointer shrink-0"
             title="Go back"

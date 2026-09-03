@@ -165,6 +165,7 @@ export function ManageHubPage({
   const [isMainDragActive, setIsMainDragActive] = useState(false);
   const [isHeroDragActive, setIsHeroDragActive] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const [pendingJourneyId, setPendingJourneyId] = useState<number | null>(null);
 
   // Drag and Drop state
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -410,17 +411,31 @@ export function ManageHubPage({
         if (e.key === 'y' || e.key === 'Y' || e.key === 'Enter') {
           e.preventDefault();
           (async () => {
-            if (activeMode === 'HOME') await handleSaveHome();
-            else if (activeMode === 'ARCHIVE') await handleSaveJourney();
+            if (pendingJourneyId !== null) {
+              await handleSaveJourney();
+              setSelectedJourneyId(pendingJourneyId);
+              setPendingJourneyId(null);
+              setMobileArchiveTab('EDIT');
+            } else {
+              if (activeMode === 'HOME') await handleSaveHome();
+              else if (activeMode === 'ARCHIVE') await handleSaveJourney();
+              onNavigate('home');
+            }
             setShowUnsavedModal(false);
-            onNavigate('home');
           })();
         } else if (e.key === 'n' || e.key === 'N') {
           e.preventDefault();
+          if (pendingJourneyId !== null) {
+            setSelectedJourneyId(pendingJourneyId);
+            setPendingJourneyId(null);
+            setMobileArchiveTab('EDIT');
+          } else {
+            onNavigate('home');
+          }
           setShowUnsavedModal(false);
-          onNavigate('home');
         } else if (e.key === 'Escape') {
           e.preventDefault();
+          setPendingJourneyId(null);
           setShowUnsavedModal(false);
         }
         return;
@@ -435,7 +450,7 @@ export function ManageHubPage({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showUnsavedModal, activeMode, isHomeDirty, isArchiveDirty, title, subtitle, selectedHeroIds, autoSlide, showMarquee, homeMarquee, homeSpeed, mediaType, momentsList, selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge]);
+  }, [showUnsavedModal, pendingJourneyId, activeMode, isHomeDirty, isArchiveDirty, title, subtitle, selectedHeroIds, autoSlide, showMarquee, homeMarquee, homeSpeed, mediaType, momentsList, selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge]);
 
   // Save Map Settings
   const handleSaveMapSettings = () => {
@@ -1682,8 +1697,13 @@ export function ManageHubPage({
                       onDragOver={e => handleDragOver(e, idx)}
                       onDrop={e => handleDrop(e, idx)}
                       onClick={() => {
-                        setSelectedJourneyId(journey.id);
-                        setMobileArchiveTab('EDIT');
+                        if (selectedJourneyId !== journey.id && isArchiveDirty) {
+                          setPendingJourneyId(journey.id);
+                          setShowUnsavedModal(true);
+                        } else {
+                          setSelectedJourneyId(journey.id);
+                          setMobileArchiveTab('EDIT');
+                        }
                       }}
                       className={`p-2.5 border transition-all flex items-center gap-2.5 cursor-pointer rounded-none ${
                         isSelected
@@ -1991,7 +2011,10 @@ export function ManageHubPage({
             <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-black/10 dark:border-white/10 font-sans text-xs font-black uppercase tracking-wider">
               <button
                 type="button"
-                onClick={() => setShowUnsavedModal(false)}
+                onClick={() => {
+                  setPendingJourneyId(null);
+                  setShowUnsavedModal(false);
+                }}
                 className="px-2 py-2.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60 uppercase tracking-wider cursor-pointer text-center whitespace-nowrap text-[11px]"
               >
                 CANCEL (ESC)
@@ -1999,8 +2022,14 @@ export function ManageHubPage({
               <button
                 type="button"
                 onClick={() => {
+                  if (pendingJourneyId !== null) {
+                    setSelectedJourneyId(pendingJourneyId);
+                    setPendingJourneyId(null);
+                    setMobileArchiveTab('EDIT');
+                  } else {
+                    onNavigate('home');
+                  }
                   setShowUnsavedModal(false);
-                  onNavigate('home');
                 }}
                 className="px-2 py-2.5 border border-red-600/30 text-red-600 dark:text-red-400 hover:bg-red-600/10 font-bold uppercase tracking-wider cursor-pointer text-center whitespace-nowrap text-[11px]"
               >
@@ -2009,10 +2038,17 @@ export function ManageHubPage({
               <button
                 type="button"
                 onClick={async () => {
-                  if (activeMode === 'HOME') await handleSaveHome();
-                  else if (activeMode === 'ARCHIVE') await handleSaveJourney();
+                  if (pendingJourneyId !== null) {
+                    await handleSaveJourney();
+                    setSelectedJourneyId(pendingJourneyId);
+                    setPendingJourneyId(null);
+                    setMobileArchiveTab('EDIT');
+                  } else {
+                    if (activeMode === 'HOME') await handleSaveHome();
+                    else if (activeMode === 'ARCHIVE') await handleSaveJourney();
+                    onNavigate('home');
+                  }
                   setShowUnsavedModal(false);
-                  onNavigate('home');
                 }}
                 className="px-2 py-2.5 bg-black text-white dark:bg-white dark:text-black font-bold uppercase tracking-wider flex items-center justify-center gap-1 hover:opacity-85 cursor-pointer shadow-sm whitespace-nowrap text-[11px]"
               >
