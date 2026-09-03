@@ -785,7 +785,7 @@ export function HomePage({
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* 01. JOURNEYS & PLANS ARCHIVE (통합 아카이브 그리드 섹션)             */}
       {/* ─────────────────────────────────────────────────────────────────── */}
-      <section className="flex flex-col w-full overflow-hidden border-b border-black/20 dark:border-white/20 transition-colors">
+      <section className="flex flex-col w-full overflow-hidden transition-colors">
         <div className="p-6 md:px-12 border-b border-black/20 dark:border-white/20 flex flex-col md:flex-row md:items-end justify-between gap-4 transition-colors">
           {/* Left: Section Header with Unified Weight & Noto Sans Korean Subtitle */}
           <div className="flex flex-col gap-1">

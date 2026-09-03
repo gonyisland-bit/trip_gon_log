@@ -300,6 +300,7 @@ export function EditTripModal({
       const storagePath = `users/public/covers/${Date.now()}_${file.name}`;
       const downloadUrl = await uploadFileToR2(file, storagePath);
       setVideoUrl(downloadUrl);
+      setImgUrl(''); // 1개 미디어 전용: 기존 이미지 초기화
     } catch (error) {
       console.error("Cover video upload failed:", error);
       alert("커버 영상 업로드에 실패했습니다.");
@@ -320,6 +321,7 @@ export function EditTripModal({
       const storagePath = `users/public/covers/hero_${Date.now()}_${file.name}`;
       const downloadUrl = await uploadFileToR2(file, storagePath);
       setHeroVideoUrl(downloadUrl);
+      setHeroImgUrl(''); // 1개 미디어 전용: 기존 히어로 이미지 초기화
     } catch (error) {
       console.error("Hero cover video upload failed:", error);
       alert("히어로 동영상 업로드에 실패했습니다.");
@@ -369,6 +371,7 @@ export function EditTripModal({
       const storagePath = `users/public/covers/hero_${Date.now()}_${file.name}`;
       const downloadUrl = await uploadFileToR2(compressedBlob, storagePath);
       setHeroImgUrl(downloadUrl);
+      setHeroVideoUrl(''); // 1개 미디어 전용: 기존 히어로 비디오 초기화
     } catch (error) {
       console.error("Hero cover image upload failed:", error);
       alert("히어로 커버 이미지 업로드에 실패했습니다.");
@@ -418,6 +421,7 @@ export function EditTripModal({
       const storagePath = `users/public/covers/${Date.now()}_${file.name}`;
       const downloadUrl = await uploadFileToR2(compressedBlob, storagePath);
       setImgUrl(downloadUrl);
+      setVideoUrl(''); // 1개 미디어 전용: 기존 비디오 초기화
     } catch (error) {
       console.error("Cover image upload failed:", error);
       alert("커버 이미지 업로드에 실패했습니다.");
@@ -769,10 +773,15 @@ export function EditTripModal({
                       value={videoUrl || imgUrl}
                       onChange={(e) => {
                         const val = e.target.value;
-                        if (val.match(/\.(mp4|webm|mov)(\?.*)?$/i)) {
+                        if (!val) {
+                          setVideoUrl('');
+                          setImgUrl('');
+                        } else if (val.match(/\.(mp4|webm|mov)(\?.*)?$/i)) {
                           setVideoUrl(val);
+                          setImgUrl('');
                         } else {
                           setImgUrl(val);
+                          setVideoUrl('');
                         }
                       }}
                       className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-mono font-bold text-black dark:text-white outline-none flex-grow focus:border-black dark:focus:border-white transition-colors"
@@ -829,6 +838,7 @@ export function EditTripModal({
                           const storagePath = `users/public/covers/${Date.now()}_${file.name}`;
                           const downloadUrl = await uploadFileToR2(compressedBlob, storagePath);
                           setImgUrl(downloadUrl);
+                          setVideoUrl(''); // 1개 미디어 전용
                         } catch (err) {
                           console.error(err);
                           alert("이미지 업로드에 실패했습니다.");
@@ -847,7 +857,10 @@ export function EditTripModal({
                       <video src={videoUrl} controls muted className="w-full h-full object-cover" />
                       <button
                         type="button"
-                        onClick={() => setVideoUrl('')}
+                        onClick={() => {
+                          setVideoUrl('');
+                          setImgUrl('');
+                        }}
                         className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
                       >
                         Delete Video
@@ -858,7 +871,10 @@ export function EditTripModal({
                       <img src={imgUrl} alt="Cover Preview" className="w-full h-full object-cover" />
                       <button
                         type="button"
-                        onClick={() => setImgUrl('')}
+                        onClick={() => {
+                          setImgUrl('');
+                          setVideoUrl('');
+                        }}
                         className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
                       >
                         Delete Image
@@ -902,10 +918,15 @@ export function EditTripModal({
                       value={heroVideoUrl || heroImgUrl}
                       onChange={(e) => {
                         const val = e.target.value;
-                        if (val.match(/\.(mp4|webm|mov)(\?.*)?$/i)) {
+                        if (!val) {
+                          setHeroVideoUrl('');
+                          setHeroImgUrl('');
+                        } else if (val.match(/\.(mp4|webm|mov)(\?.*)?$/i)) {
                           setHeroVideoUrl(val);
+                          setHeroImgUrl('');
                         } else {
                           setHeroImgUrl(val);
+                          setHeroVideoUrl('');
                         }
                       }}
                       className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-mono font-bold text-black dark:text-white outline-none flex-grow focus:border-red-600 dark:focus:border-red-400 transition-colors"
@@ -962,6 +983,7 @@ export function EditTripModal({
                           const storagePath = `users/public/covers/hero_${Date.now()}_${file.name}`;
                           const downloadUrl = await uploadFileToR2(compressedBlob, storagePath);
                           setHeroImgUrl(downloadUrl);
+                          setHeroVideoUrl(''); // 1개 미디어 전용
                         } catch (err) {
                           console.error(err);
                           alert("히어로 이미지 업로드에 실패했습니다.");
@@ -980,7 +1002,10 @@ export function EditTripModal({
                       <video src={heroVideoUrl} controls muted className="w-full h-full object-cover" />
                       <button
                         type="button"
-                        onClick={() => setHeroVideoUrl('')}
+                        onClick={() => {
+                          setHeroVideoUrl('');
+                          setHeroImgUrl('');
+                        }}
                         className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
                       >
                         Delete Video
@@ -991,7 +1016,10 @@ export function EditTripModal({
                       <img src={heroImgUrl} alt="Hero Cover Preview" className="w-full h-full object-cover" />
                       <button
                         type="button"
-                        onClick={() => setHeroImgUrl('')}
+                        onClick={() => {
+                          setHeroImgUrl('');
+                          setHeroVideoUrl('');
+                        }}
                         className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
                       >
                         Delete Image

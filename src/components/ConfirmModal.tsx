@@ -18,9 +18,9 @@ export function ConfirmModal({
   isOpen,
   title = "UNSAVED CHANGES",
   message = "수정사항이 있는데 저장하시겠습니까?",
-  confirmLabel = "YES (저장 후 나가기)",
-  cancelLabel = "취소 (계속 편집)",
-  discardLabel,
+  confirmLabel = "YES (Y)",
+  cancelLabel = "CANCEL (ESC)",
+  discardLabel = "NO (N)",
   onConfirm,
   onCancel,
   onDiscard,
@@ -73,12 +73,12 @@ export function ConfirmModal({
           {message}
         </p>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-3 border-t border-black/10 dark:border-white/10 font-sans text-xs font-black uppercase tracking-wider">
+        {/* Action Buttons: Clean 1-Row Grid with Short Labels */}
+        <div className="grid grid-cols-3 gap-1.5 pt-3 border-t border-black/10 dark:border-white/10 font-sans text-xs font-black uppercase tracking-wider">
           <button
             type="button"
             onClick={onCancel}
-            className="px-3 py-2 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60 transition-colors cursor-pointer text-center"
+            className="px-2 py-2.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60 transition-colors cursor-pointer text-center whitespace-nowrap text-[11px]"
           >
             {cancelLabel}
           </button>
@@ -86,15 +86,15 @@ export function ConfirmModal({
             <button
               type="button"
               onClick={onDiscard}
-              className="px-3 py-2 border border-red-600/30 text-red-600 dark:text-red-400 hover:bg-red-600/10 transition-colors cursor-pointer text-center"
+              className="px-2 py-2.5 border border-red-600/30 text-red-600 dark:text-red-400 hover:bg-red-600/10 transition-colors cursor-pointer text-center whitespace-nowrap text-[11px]"
             >
-              {discardLabel || "NO (저장 안 함)"}
+              {discardLabel}
             </button>
           )}
           <button
             type="button"
             onClick={onConfirm}
-            className={`px-4 py-2 text-center transition-colors cursor-pointer shadow-sm ${
+            className={`px-2 py-2.5 text-center transition-colors cursor-pointer shadow-sm whitespace-nowrap text-[11px] ${
               confirmVariant === 'danger'
                 ? 'bg-red-600 hover:bg-red-700 text-white'
                 : 'bg-black text-white dark:bg-white dark:text-black hover:opacity-85'
