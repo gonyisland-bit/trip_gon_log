@@ -56,7 +56,9 @@ export function Lightbox({
   const isFirstScrollRef = useRef(true);
   const isProgrammaticScrollRef = useRef(false);
   const isTouchingThumbsRef = useRef(false);
+  const isUserScrollingThumbsRef = useRef(false);
   const thumbScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resetUserScrollingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
 
   const scaleRef = useRef(scale);
@@ -87,12 +89,18 @@ export function Lightbox({
   useEffect(() => {
     if (isOpen) {
       isFirstScrollRef.current = true;
+      isUserScrollingThumbsRef.current = false;
     }
   }, [isOpen]);
 
-  // Auto-scroll active thumbnail to center immediately on index change
+  // Auto-scroll active thumbnail to center immediately on index change (only when not directly scrolled by user)
   useEffect(() => {
     if (!isOpen || isSlideshow) return;
+
+    if (isUserScrollingThumbsRef.current) {
+      // User is scrolling thumbnail bar; do NOT fight momentum with scrollTo!
+      return;
+    }
 
     const container = thumbnailsContainerRef.current;
     const activeBtn = activeThumbnailRef.current;
@@ -110,41 +118,74 @@ export function Lightbox({
     }
   }, [currentIndex, isOpen, isSlideshow]);
 
+  // Settle helper to compute nearest thumbnail at exact final stop position
+  const settleThumbnailImmediate = useCallback(() => {
+    const container = thumbnailsContainerRef.current;
+    const inner = thumbnailsInnerRef.current;
+    if (!container || !inner) return;
+
+    const containerCenter = container.scrollLeft + container.clientWidth / 2;
+    let closestIndex = currentIndex;
+    let minDistance = Infinity;
+
+    const buttons = inner.querySelectorAll('button');
+    buttons.forEach((btn, idx) => {
+      const btnCenter = btn.offsetLeft + btn.clientWidth / 2;
+      const dist = Math.abs(btnCenter - containerCenter);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestIndex = idx;
+      }
+    });
+
+    if (closestIndex !== currentIndex && closestIndex >= 0 && closestIndex < images.length) {
+      isUserScrollingThumbsRef.current = true;
+      onNavigate(closestIndex);
+      if (resetUserScrollingTimeoutRef.current) clearTimeout(resetUserScrollingTimeoutRef.current);
+      resetUserScrollingTimeoutRef.current = setTimeout(() => {
+        isUserScrollingThumbsRef.current = false;
+      }, 300);
+    } else {
+      if (resetUserScrollingTimeoutRef.current) clearTimeout(resetUserScrollingTimeoutRef.current);
+      resetUserScrollingTimeoutRef.current = setTimeout(() => {
+        isUserScrollingThumbsRef.current = false;
+      }, 200);
+    }
+  }, [currentIndex, images.length, onNavigate]);
+
   // Schedule settle calculation when momentum scroll ends
   const scheduleThumbnailSettle = useCallback(() => {
     if (thumbScrollTimeoutRef.current) clearTimeout(thumbScrollTimeoutRef.current);
 
     thumbScrollTimeoutRef.current = setTimeout(() => {
       if (isTouchingThumbsRef.current) return;
-      const container = thumbnailsContainerRef.current;
-      const inner = thumbnailsInnerRef.current;
-      if (!container || !inner) return;
-
-      const containerCenter = container.scrollLeft + container.clientWidth / 2;
-      let closestIndex = currentIndex;
-      let minDistance = Infinity;
-
-      const buttons = inner.querySelectorAll('button');
-      buttons.forEach((btn, idx) => {
-        const btnCenter = btn.offsetLeft + btn.clientWidth / 2;
-        const dist = Math.abs(btnCenter - containerCenter);
-        if (dist < minDistance) {
-          minDistance = dist;
-          closestIndex = idx;
-        }
-      });
-
-      if (closestIndex !== currentIndex && closestIndex >= 0 && closestIndex < images.length) {
-        onNavigate(closestIndex);
-      }
-    }, 180);
-  }, [currentIndex, images.length, onNavigate]);
+      settleThumbnailImmediate();
+    }, 140);
+  }, [settleThumbnailImmediate]);
 
   // Handle user drag/scroll on thumbnail bar
   const handleThumbnailsScroll = () => {
     if (!isOpen || isSlideshow || isProgrammaticScrollRef.current) return;
+    isUserScrollingThumbsRef.current = true;
     scheduleThumbnailSettle();
   };
+
+  // Native scrollend listener for instantaneous and perfect settle on mobile
+  useEffect(() => {
+    const container = thumbnailsContainerRef.current;
+    if (!container || !isOpen) return;
+
+    const onScrollEnd = () => {
+      if (isTouchingThumbsRef.current) return;
+      if (thumbScrollTimeoutRef.current) clearTimeout(thumbScrollTimeoutRef.current);
+      settleThumbnailImmediate();
+    };
+
+    container.addEventListener('scrollend', onScrollEnd);
+    return () => {
+      container.removeEventListener('scrollend', onScrollEnd);
+    };
+  }, [isOpen, settleThumbnailImmediate]);
 
   // ── Native Non-Passive Pinch-to-Zoom Listener on Mobile ──
   useEffect(() => {
@@ -865,6 +906,7 @@ export function Lightbox({
           onScroll={handleThumbnailsScroll}
           onTouchStart={() => {
             isTouchingThumbsRef.current = true;
+            isUserScrollingThumbsRef.current = true;
             if (thumbScrollTimeoutRef.current) clearTimeout(thumbScrollTimeoutRef.current);
           }}
           onTouchEnd={() => {
@@ -873,13 +915,19 @@ export function Lightbox({
           }}
           onMouseDown={() => {
             isTouchingThumbsRef.current = true;
+            isUserScrollingThumbsRef.current = true;
             if (thumbScrollTimeoutRef.current) clearTimeout(thumbScrollTimeoutRef.current);
           }}
           onMouseUp={() => {
             isTouchingThumbsRef.current = false;
             scheduleThumbnailSettle();
           }}
-          className="w-full bg-black/60 py-2.5 border-t border-white/10 overflow-x-auto hide-scrollbar z-20 shrink-0 touch-pan-x select-none"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehaviorX: 'contain',
+            touchAction: 'pan-x',
+          }}
+          className="w-full bg-black/60 py-2.5 border-t border-white/10 overflow-x-auto hide-scrollbar z-20 shrink-0 select-none"
         >
           <div 
             ref={thumbnailsInnerRef} 
@@ -895,7 +943,10 @@ export function Lightbox({
                 <button
                   key={idx}
                   ref={isActive ? activeThumbnailRef : null}
-                  onClick={() => onNavigate(idx)}
+                  onClick={() => {
+                    isUserScrollingThumbsRef.current = false;
+                    onNavigate(idx);
+                  }}
                   className={`relative overflow-hidden transition-all duration-150 focus:outline-none shrink-0 w-12 h-12 md:w-14 md:h-14 rounded-[2px] cursor-pointer ${
                     isActive 
                       ? 'border-2 border-orange-500 ring-2 ring-orange-500/50 opacity-100 scale-105 z-10 shadow-xl' 
