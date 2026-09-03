@@ -31,7 +31,7 @@ import {
 } from '../types';
 import { fetchCoordinates, fetchPlacePredictions, fetchCoordinatesByPlaceId } from '../utils/googleMapsHelper';
 import { fetchAddressFromCoords, fetchCountryFromCoords } from '../utils/googleMapsHelper';
-import { readExif } from '../utils/exifHelper';
+import { readExif, extractGpsFromImage } from '../utils/exifHelper';
 import { uploadFileToR2, deleteFileFromR2, getEffectiveImageUrl } from '../utils/storageHelper';
 import { auth, db } from '../firebase';
 import { compressImage } from '../utils/imageHelper';
@@ -2272,6 +2272,68 @@ export function JourneyDetailPage({
     );
   };
 
+  const uploadTimelineImageFile = async (itemId: number, file: File) => {
+    const user = auth.currentUser;
+    if (!user) {
+      alert("이미지를 업로드하려면 로그인이 필요합니다.");
+      return;
+    }
+    try {
+      const gps = await extractGpsFromImage(file);
+      const compressedBlob = await compressImage(file);
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const storagePath = `users/public/images/${Date.now()}_${safeName}`;
+      const downloadUrl = await uploadFileToR2(compressedBlob, storagePath);
+
+      if (gps) {
+        let addr = '';
+        try {
+          addr = await fetchAddressFromCoords(gps.lat, gps.lng) || '';
+        } catch (e) {
+          console.warn(e);
+        }
+        const currentItem = draftTimelineRef.current.find((t: any) => t.id === itemId);
+        updateTimelineItemFields(itemId, {
+          img: downloadUrl,
+          lat: gps.lat,
+          lng: gps.lng,
+          location: addr || currentItem?.location,
+          place: addr ? addr.split(',')[0].trim() : currentItem?.place
+        });
+      } else {
+        updateTimelineItemFields(itemId, { img: downloadUrl });
+      }
+    } catch (err) {
+      console.error("Paste image upload failed:", err);
+      alert("이미지 업로드에 실패했습니다.");
+    }
+  };
+
+  // Global Ctrl+V / Cmd+V paste handler for active timeline item
+  useEffect(() => {
+    if (!isEditing || activeTab !== 'timeline' || expandedItemId === null) return;
+
+    const handlePaste = async (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            e.preventDefault();
+            await uploadTimelineImageFile(expandedItemId, file);
+            return;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [isEditing, activeTab, expandedItemId]);
+
   // Frequent places helpers
   const toggleFrequentPlace = (item: TimelineItem) => {
     const exists = frequentPlaces.some(p => p.place === item.place);
@@ -3815,12 +3877,23 @@ export function JourneyDetailPage({
                         >
                           <div 
                             className="group flex flex-row items-stretch hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors cursor-pointer relative w-full" 
-                            onClick={() => handleItemToggle(item.id)}
+                            onClick={() => {
+                              if (expandedItemId !== item.id) {
+                                setExpandedItemId(item.id);
+                              } else if (!isEditing) {
+                                setExpandedItemId(null);
+                              }
+                            }}
+                            onFocusCapture={() => {
+                              if (isEditing && expandedItemId !== item.id) {
+                                setExpandedItemId(item.id);
+                              }
+                            }}
                           >
                             <div className="flex-1 flex flex-row items-start py-4 px-4 md:py-5 md:px-6 min-w-0">
                             {/* Left Column: Fixed Width in BOTH view and edit mode (w-24 sm:w-28 md:w-32 shrink-0 pr-2.5) */}
                             {isEditing ? (
-                              <div className="w-24 sm:w-28 md:w-32 shrink-0 pr-2.5 flex flex-col gap-1.5 text-[10px] md:text-xs font-bold" onClick={(e) => e.stopPropagation()}>
+                              <div className="w-24 sm:w-28 md:w-32 shrink-0 pr-2.5 flex flex-col gap-1.5 text-[10px] md:text-xs font-bold">
                                 {/* Compact action row: Grip, Checkbox, Trash (Swiss Minimal) */}
                                 <div className="flex items-center justify-between w-full py-1 px-1.5 bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15">
                                   <div className="drag-handle cursor-grab active:cursor-grabbing text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white p-0.5" title="순서 이동">
@@ -3995,7 +4068,7 @@ export function JourneyDetailPage({
                               
                               {/* 2. Place Input in Edit mode (Replaced subtitle memo with Place Autocomplete Input) */}
                               {isEditing ? (
-                                <div className="w-full flex flex-col gap-1.5 mt-0.5" onClick={(e) => e.stopPropagation()}>
+                                <div className="w-full flex flex-col gap-1.5 mt-0.5">
                                   <div className="flex items-center gap-2">
                                     <MapPin className="w-3.5 h-3.5 text-red-500 shrink-0" />
                                     <PlaceAutocompleteInput
@@ -4029,7 +4102,7 @@ export function JourneyDetailPage({
                                         });
                                       }}
                                       className="bg-black/5 dark:bg-white/10 px-2 py-1 outline-none text-xs text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full"
-                                      placeholder="장소 지정 (예: 나리타공항, 도쿄 타워)"
+                                      placeholder="장소 입력"
                                     />
                                   </div>
 
@@ -4072,24 +4145,26 @@ export function JourneyDetailPage({
                                 )
                               )}
 
-                              {/* Actions (Edit mode) - Swiss Minimal Icon Only Buttons */}
+                              {/* Actions (Edit mode) - Swiss Minimal Icon & ADD Buttons */}
                               {isEditing && isActive && (
                                 <div className="flex items-center gap-2 mt-2 pt-2 border-t border-black/10 dark:border-white/10" onClick={(e) => e.stopPropagation()}>
                                   <button 
                                     type="button"
-                                    className="p-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white transition-colors cursor-pointer" 
+                                    className="px-2 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white transition-colors cursor-pointer flex items-center gap-1 text-[10px] font-mono font-bold uppercase tracking-wider" 
                                     title="위로 일정 추가"
                                     onClick={() => handleAddTimelineItemRelativeTo(item.id, 'above')}
                                   >
-                                    <ArrowUp className="w-3.5 h-3.5"/>
+                                    <ArrowUp className="w-3 h-3"/>
+                                    <span>ADD</span>
                                   </button>
                                   <button 
                                     type="button"
-                                    className="p-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white transition-colors cursor-pointer" 
+                                    className="px-2 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white transition-colors cursor-pointer flex items-center gap-1 text-[10px] font-mono font-bold uppercase tracking-wider" 
                                     title="아래로 일정 추가"
                                     onClick={() => handleAddTimelineItemRelativeTo(item.id, 'below')}
                                   >
-                                    <ArrowDown className="w-3.5 h-3.5"/>
+                                    <ArrowDown className="w-3 h-3"/>
+                                    <span>ADD</span>
                                   </button>
                                 </div>
                               )}
@@ -5260,7 +5335,7 @@ function TimelineItemPlaceInput({
   );
 
   return (
-    <div className="w-full relative" onClick={(e) => e.stopPropagation()}>
+    <div className="w-full relative">
       <div className="flex items-center gap-1.5 w-full relative">
         <input
           id={`title-input-${itemId}`}

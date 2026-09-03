@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { ImagePlus, Loader2, Trash2 } from 'lucide-react';
+import { ImagePlus, Loader2, Trash2, ClipboardPaste } from 'lucide-react';
 import { uploadFileToR2 } from '../utils/storageHelper';
 import { auth } from '../firebase';
 import { compressImage } from '../utils/imageHelper';
@@ -27,6 +27,29 @@ export function ImageEditOverlay({
   const handleChangeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     fileInputRef.current?.click();
+  };
+
+  const handlePasteClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      if (navigator.clipboard && navigator.clipboard.read) {
+        const clipboardItems = await navigator.clipboard.read();
+        for (const item of clipboardItems) {
+          const imageType = item.types.find(t => t.startsWith('image/'));
+          if (imageType) {
+            const blob = await item.getType(imageType);
+            const ext = imageType.split('/')[1] || 'png';
+            const file = new File([blob], `pasted_${Date.now()}.${ext}`, { type: imageType });
+            await uploadFile(file);
+            return;
+          }
+        }
+      }
+      alert("클립보드에 복사된 이미지가 없습니다. 이미지를 복사한 후 다시 시도해 주세요.");
+    } catch (err) {
+      console.warn("Clipboard read error:", err);
+      alert("클립보드 이미지를 붙여넣으려면 키보드 단축키 Ctrl+V를 사용해주세요.");
+    }
   };
 
   const uploadFile = async (file: File) => {
@@ -124,9 +147,16 @@ export function ImageEditOverlay({
           <button
             onClick={handleChangeClick}
             className="p-1 bg-white/20 hover:bg-red-600 text-white rounded transition-colors shadow-sm"
-            title="사진 변경"
+            title="사진 선택 / 파일 업로드"
           >
             <ImagePlus className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={handlePasteClick}
+            className="p-1 bg-white/20 hover:bg-red-600 text-white rounded transition-colors shadow-sm"
+            title="클립보드 사진 붙여넣기 (Ctrl+V)"
+          >
+            <ClipboardPaste className="w-3.5 h-3.5" />
           </button>
           {hasImage && onImageRemoved && (
             <button
