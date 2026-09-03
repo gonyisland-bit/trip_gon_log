@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, Edit2, Loader2, Upload, Tag, MapPin } from 'lucide-react';
 import { Trip } from '../types';
-import { uploadFileToR2, getEffectiveImageUrl } from '../utils/storageHelper';
+import { uploadFileToR2, deleteFileFromR2, getEffectiveImageUrl } from '../utils/storageHelper';
 import { compressImage } from '../utils/imageHelper';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { ImageEditOverlay } from './ImageEditOverlay';

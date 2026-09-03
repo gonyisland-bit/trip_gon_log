@@ -45,7 +45,18 @@ export function Navigation({
 
   const handleMenuNavigate = (view: string) => {
     setShowSettings(false);
-    navigateTo(view);
+    if (view === 'manage') {
+      if (currentView === 'manage') {
+        const returnView = sessionStorage.getItem('lastNonManageView') || 'home';
+        navigateTo(returnView);
+      } else {
+        sessionStorage.setItem('lastNonManageView', currentView);
+        sessionStorage.setItem('initialManageTab', currentView.toUpperCase());
+        navigateTo('manage');
+      }
+    } else {
+      navigateTo(view);
+    }
   };
 
   // Close menu on Escape key
@@ -127,7 +138,16 @@ export function Navigation({
           {isLoggedIn && isAdmin && (
             <button
               type="button"
-              onClick={() => navigateTo(currentView === 'manage' ? 'home' : 'manage')}
+              onClick={() => {
+                if (currentView === 'manage') {
+                  const returnView = sessionStorage.getItem('lastNonManageView') || 'home';
+                  navigateTo(returnView);
+                } else {
+                  sessionStorage.setItem('lastNonManageView', currentView);
+                  sessionStorage.setItem('initialManageTab', currentView.toUpperCase());
+                  navigateTo('manage');
+                }
+              }}
               className={`p-2 sm:p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center ${
                 currentView === 'manage'
                   ? 'text-red-600 dark:text-red-500 bg-black/5 dark:bg-white/5'

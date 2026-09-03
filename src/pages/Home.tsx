@@ -348,10 +348,25 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isReady, setIsReady] = useState(false);
 
-  // HERO section media has top priority. If neither is set, fallback to MAIN cover media.
-  const activeVideoUrl = journey.heroVideoUrl || (journey.heroImg ? '' : journey.videoUrl);
-  const activeImageUrl = journey.heroImg ? getEffectiveImageUrl(journey.heroImg) : (journey.heroVideoUrl ? '' : getEffectiveImageUrl(journey.img));
-  const hasVideo = mediaType === 'video' && Boolean(activeVideoUrl);
+  // Priority 1: Specific Hero Section Media (Video or Image)
+  // Priority 2: Fallback to Main Section Media according to mediaType preference
+  let finalVideoUrl = '';
+  let finalImageUrl = '';
+
+  if (journey.heroVideoUrl) {
+    finalVideoUrl = journey.heroVideoUrl;
+  } else if (journey.heroImg) {
+    finalImageUrl = getEffectiveImageUrl(journey.heroImg);
+  } else {
+    // Neither specific hero media is set, fallback to main media
+    if (mediaType === 'video' && journey.videoUrl) {
+      finalVideoUrl = journey.videoUrl;
+    } else {
+      finalImageUrl = getEffectiveImageUrl(journey.img);
+    }
+  }
+
+  const isVideo = Boolean(finalVideoUrl);
 
   const handleMediaReady = useCallback(() => {
     setIsReady(true);
@@ -367,19 +382,20 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
       videoRef.current.setAttribute('playsinline', '');
       videoRef.current.setAttribute('webkit-playsinline', '');
     }
-  }, [activeVideoUrl, hasVideo]);
+  }, [finalVideoUrl, isVideo]);
 
   useEffect(() => {
     setIsReady(false);
-  }, [activeVideoUrl, activeImageUrl, isActive]);
+  }, [finalVideoUrl, finalImageUrl, isActive]);
 
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
     
-    if (hasVideo && activeVideoUrl && videoRef.current) {
+    if (isVideo && finalVideoUrl && videoRef.current) {
       const vid = videoRef.current;
       vid.muted = true;
       vid.defaultMuted = true;
+      vid.playsInline = true;
 
       if (isActive) {
         vid.currentTime = 0;
@@ -409,7 +425,7 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
         clearTimeout(timeoutId);
       }
     };
-  }, [isActive, hasVideo, activeVideoUrl, handleMediaReady]);
+  }, [isActive, isVideo, finalVideoUrl, handleMediaReady]);
 
   return (
     <div
@@ -417,10 +433,10 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
         isActive && isReady ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none -z-10'
       }`}
     >
-      {hasVideo && activeVideoUrl ? (
+      {isVideo && finalVideoUrl ? (
         <video
           ref={videoRef}
-          src={activeVideoUrl}
+          src={finalVideoUrl}
           loop
           muted
           playsInline
@@ -433,9 +449,9 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
           onError={handleMediaReady}
           className="w-full h-full object-cover"
         />
-      ) : activeImageUrl ? (
+      ) : finalImageUrl ? (
         <img
-          src={activeImageUrl}
+          src={finalImageUrl}
           alt={journey.title || "Hero Trip"}
           loading={isActive ? "eager" : "lazy"}
           decoding="async"
@@ -622,7 +638,12 @@ export function HomePage({
   const [isHeroMediaReady, setIsHeroMediaReady] = useState(false);
 
   const currentHero = heroJourneys[heroSlide] || heroJourneys[0];
-  const isCurrentHeroVideo = heroMediaType === 'video' && currentHero && (('heroVideoUrl' in currentHero && currentHero.heroVideoUrl) || ('videoUrl' in currentHero && currentHero.videoUrl));
+  const isCurrentHeroVideo = Boolean(
+    currentHero && (
+      currentHero.heroVideoUrl ||
+      (!currentHero.heroImg && heroMediaType === 'video' && currentHero.videoUrl)
+    )
+  );
   const heroSlideDuration = isCurrentHeroVideo ? 10000 : 6000;
 
   const goToSlide = useCallback((idx: number) => {
@@ -639,7 +660,12 @@ export function HomePage({
     if (!heroAutoSlide || heroJourneys.length <= 1 || !isHeroMediaReady) return;
     
     const currentHeroItem = heroJourneys[heroSlide];
-    const isVideo = heroMediaType === 'video' && currentHeroItem && (('heroVideoUrl' in currentHeroItem && currentHeroItem.heroVideoUrl) || ('videoUrl' in currentHeroItem && currentHeroItem.videoUrl));
+    const isVideo = Boolean(
+      currentHeroItem && (
+        currentHeroItem.heroVideoUrl ||
+        (!currentHeroItem.heroImg && heroMediaType === 'video' && currentHeroItem.videoUrl)
+      )
+    );
     const duration = isVideo ? 10000 : 6000;
 
     const timer = setTimeout(() => {

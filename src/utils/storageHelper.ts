@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
 const ACCOUNT_ID = import.meta.env.VITE_R2_ACCOUNT_ID || 'bd0c90c36c628664f396ac294fa0e863';
 const ACCESS_KEY_ID = import.meta.env.VITE_R2_ACCESS_KEY_ID || 'bd3036bba21c44bb0a777a530a045598';
@@ -15,6 +15,36 @@ const s3Client = new S3Client({
     secretAccessKey: SECRET_ACCESS_KEY,
   },
 });
+
+/**
+ * Deletes a file from Cloudflare R2 using its public URL or key.
+ */
+export async function deleteFileFromR2(url: string | undefined | null): Promise<boolean> {
+  if (!url) return false;
+  try {
+    let key = url;
+    if (key.startsWith(R2_PUBLIC_URL)) {
+      key = key.slice(R2_PUBLIC_URL.length).replace(/^\/+/, '');
+    } else if (key.includes('r2.dev/') || key.includes('.cloudflarestorage.com/')) {
+      const parts = key.split(/r2\.dev\/|\.cloudflarestorage\.com\//);
+      if (parts[1]) key = parts[1].replace(/^\/+/, '');
+    } else {
+      return false;
+    }
+    const cleanKey = decodeURIComponent(key.split('?')[0]);
+    if (!cleanKey) return false;
+
+    const command = new DeleteObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: cleanKey,
+    });
+    await s3Client.send(command);
+    return true;
+  } catch (error) {
+    console.warn("R2 file deletion warning (ignoring):", error);
+    return false;
+  }
+}
 
 /**
  * Uploads a File or Blob directly to Cloudflare R2.

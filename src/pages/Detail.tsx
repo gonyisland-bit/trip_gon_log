@@ -32,7 +32,7 @@ import {
 import { fetchCoordinates, fetchPlacePredictions, fetchCoordinatesByPlaceId } from '../utils/googleMapsHelper';
 import { fetchAddressFromCoords, fetchCountryFromCoords } from '../utils/googleMapsHelper';
 import { readExif } from '../utils/exifHelper';
-import { uploadFileToR2, getEffectiveImageUrl } from '../utils/storageHelper';
+import { uploadFileToR2, deleteFileFromR2, getEffectiveImageUrl } from '../utils/storageHelper';
 import { auth, db } from '../firebase';
 import { compressImage } from '../utils/imageHelper';
 import { doc, setDoc } from 'firebase/firestore';
@@ -2725,6 +2725,9 @@ export function JourneyDetailPage({
     e.stopPropagation();
     if (!window.confirm("이 이미지를 갤러리에서 삭제하시겠습니까?")) return;
 
+    // Delete actual file from R2
+    deleteFileFromR2(imageUrl);
+
     const filterGallery = (gallery: (string | any)[]) =>
       gallery.filter(item => {
         const itemUrl = typeof item === 'string' ? item : item.url;
@@ -4529,6 +4532,10 @@ export function JourneyDetailPage({
                   <div
                     className="relative overflow-hidden border-b border-black/10 dark:border-white/10 transition-all duration-300 cursor-pointer aspect-[4/3] group"
                     onClick={() => {
+                      setExpandedItemId(prev => prev === imgItem.id ? null : imgItem.id);
+                    }}
+                    onDoubleClick={(e) => {
+                      e.stopPropagation();
                       const globalIdx = galleryAllMeta.findIndex(m => m.url === imgItem.url);
                       setLightboxIndex(globalIdx !== -1 ? globalIdx : 0);
                       setIsLightboxOpen(true);
@@ -4538,6 +4545,8 @@ export function JourneyDetailPage({
                     <img
                       src={imgItem.url}
                       alt={imgItem.place || 'Gallery Photo'}
+                      loading="lazy"
+                      decoding="async"
                       data-pin-nopin="true"
                       data-pin-no-hover="true"
                       draggable="false"

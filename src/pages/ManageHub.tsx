@@ -28,7 +28,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { Trip, Plan, MagazineMoment, TimelineData, TimelineItem } from '../types';
-import { getEffectiveImageUrl, uploadFileToR2 } from '../utils/storageHelper';
+import { getEffectiveImageUrl, uploadFileToR2, deleteFileFromR2 } from '../utils/storageHelper';
 import { compressImage } from '../utils/imageHelper';
 
 interface ManageHubPageProps {
@@ -102,7 +102,23 @@ export function ManageHubPage({
   onSaveMagazineMoments,
 }: ManageHubPageProps) {
   // Top-level mode tabs ordered: 'HOME' | 'ARCHIVE' | 'MAP' | 'TRASH'
-  const [activeMode, setActiveMode] = useState<'HOME' | 'ARCHIVE' | 'MAP' | 'TRASH'>('HOME');
+  const [activeMode, setActiveMode] = useState<'HOME' | 'ARCHIVE' | 'MAP' | 'TRASH'>(() => {
+    const fromSession = sessionStorage.getItem('initialManageTab');
+    if (fromSession && ['HOME', 'ARCHIVE', 'MAP', 'TRASH'].includes(fromSession)) {
+      sessionStorage.removeItem('initialManageTab');
+      return fromSession as any;
+    }
+    return 'HOME';
+  });
+
+  const handleMoveHeroOrder = (index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= selectedHeroIds.length) return;
+    const next = [...selectedHeroIds];
+    const [moved] = next.splice(index, 1);
+    next.splice(targetIndex, 0, moved);
+    setSelectedHeroIds(next);
+  };
 
   // Mobile Archive Switcher: 'LIST' or 'EDIT'
   const [mobileArchiveTab, setMobileArchiveTab] = useState<'LIST' | 'EDIT'>('LIST');
@@ -557,9 +573,12 @@ export function ManageHubPage({
       <div className="border-b border-black/15 dark:border-white/15 px-4 sm:px-8 py-3 bg-white dark:bg-[#111111] flex flex-wrap items-center justify-between gap-4 sticky top-0 z-30">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => onNavigate('archive')}
+            onClick={() => {
+              const returnView = sessionStorage.getItem('lastNonManageView') || 'archive';
+              onNavigate(returnView);
+            }}
             className="p-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer rounded-none"
-            title="아카이브로 이동"
+            title="돌아가기"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -797,6 +816,82 @@ export function ManageHubPage({
                     SELECTED ({selectedHeroIds.length})
                   </span>
                 </div>
+
+                {/* Selected Hero Slides Reorder List */}
+                {selectedHeroIds.length > 0 && (
+                  <div className="flex flex-col gap-1.5 p-2 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02]">
+                    <div className="flex justify-between items-center px-1 mb-1">
+                      <span className="text-[10px] font-mono font-black uppercase tracking-wider text-black/60 dark:text-white/60">
+                        SLIDE ORDER (노출 순서 변경: ▲ 위로 / ▼ 아래로)
+                      </span>
+                      <span className="text-[9px] font-mono text-black/40 dark:text-white/40">
+                        총 {selectedHeroIds.length}개 슬라이드
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      {selectedHeroIds.map((id, idx) => {
+                        const journey = localJourneys.find(j => j.id === id);
+                        if (!journey) return null;
+                        return (
+                          <div
+                            key={id}
+                            className="p-1.5 bg-white dark:bg-[#161616] border border-black/15 dark:border-white/15 flex items-center justify-between gap-2 shadow-xs"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="font-mono text-xs font-black text-red-600 dark:text-red-500 w-6 shrink-0 text-center">
+                                {String(idx + 1).padStart(2, '0')}
+                              </span>
+                              <div className="w-8 h-8 aspect-square border border-black/10 dark:border-white/10 shrink-0 overflow-hidden bg-black/10">
+                                <img
+                                  src={getEffectiveImageUrl(journey.img)}
+                                  alt={journey.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div className="min-w-0">
+                                <h6 className="text-xs font-black uppercase font-sans truncate text-black dark:text-white">
+                                  {journey.title.replace(' (Plan)', '')}
+                                </h6>
+                                <span className="text-[9px] font-mono text-black/40 dark:text-white/40 block truncate">
+                                  {journey.date}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                disabled={idx === 0}
+                                onClick={() => handleMoveHeroOrder(idx, 'up')}
+                                className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+                                title="위로 이동"
+                              >
+                                <ChevronUp className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                disabled={idx === selectedHeroIds.length - 1}
+                                onClick={() => handleMoveHeroOrder(idx, 'down')}
+                                className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+                                title="아래로 이동"
+                              >
+                                <ChevronDown className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedHeroIds(selectedHeroIds.filter(item => item !== id))}
+                                className="p-1 border border-black/15 dark:border-white/15 hover:bg-red-500 hover:text-white text-black/40 dark:text-white/40 transition-colors cursor-pointer"
+                                title="히어로에서 제거"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Search Bar */}
                 <div className="relative">
