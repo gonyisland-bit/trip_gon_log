@@ -48,6 +48,7 @@ interface ManageHubPageProps {
   heroJourneyIds: number[];
   heroAutoSlide: boolean;
   heroMediaType: 'image' | 'video';
+  heroSlideDuration?: number;
   marqueeShow: boolean;
   marqueeMessage: string;
   marqueeSpeed: number;
@@ -60,7 +61,8 @@ interface ManageHubPageProps {
     marqueeMsg: string,
     marqueeSpd: number,
     heroMediaTypeParam?: 'image' | 'video',
-    magazineMomentsParam?: MagazineMoment[]
+    magazineMomentsParam?: MagazineMoment[],
+    heroSlideDurationParam?: number
   ) => Promise<void>;
   // Magazine Highlights
   magazineMoments?: MagazineMoment[];
@@ -72,6 +74,8 @@ interface ManageHubPageProps {
   onPermanentDeleteJourney: (id: number) => Promise<void>;
   isLoggedIn: boolean;
   isDarkMode: boolean;
+  onDirtyChange?: (isDirty: boolean) => void;
+  saveRef?: React.MutableRefObject<(() => Promise<void>) | null>;
 }
 
 export function ManageHubPage({
@@ -89,6 +93,7 @@ export function ManageHubPage({
   heroJourneyIds,
   heroAutoSlide,
   heroMediaType,
+  heroSlideDuration = 6,
   marqueeShow,
   marqueeMessage,
   marqueeSpeed,
@@ -101,6 +106,8 @@ export function ManageHubPage({
   magazineMoments = [],
   timelineData = {},
   onSaveMagazineMoments,
+  onDirtyChange,
+  saveRef,
 }: ManageHubPageProps) {
   // Top-level mode tabs ordered: 'HOME' | 'ARCHIVE' | 'MAP' | 'TRASH'
   const [activeMode, setActiveMode] = useState<'HOME' | 'ARCHIVE' | 'MAP' | 'TRASH'>(() => {
@@ -146,6 +153,7 @@ export function ManageHubPage({
   const [subtitle, setSubtitle] = useState(homeSubtitle || '');
   const [selectedHeroIds, setSelectedHeroIds] = useState<number[]>(heroJourneyIds || []);
   const [autoSlide, setAutoSlide] = useState(heroAutoSlide);
+  const [slideDuration, setSlideDuration] = useState<number>(heroSlideDuration || 6);
   const [mediaType, setMediaType] = useState<'image' | 'video'>(heroMediaType || 'image');
   const [showMarquee, setShowMarquee] = useState(marqueeShow);
   const [homeMarquee, setHomeMarquee] = useState(marqueeMessage || '');
@@ -200,13 +208,14 @@ export function ManageHubPage({
       homeJourneyLimit !== parseInt(localStorage.getItem('home_journey_limit') || '4', 10) ||
       JSON.stringify(selectedHeroIds) !== JSON.stringify(heroJourneyIds || []) ||
       autoSlide !== heroAutoSlide ||
+      slideDuration !== heroSlideDuration ||
       mediaType !== heroMediaType ||
       showMarquee !== marqueeShow ||
       homeMarquee !== (marqueeMessage || '') ||
       homeSpeed !== (marqueeSpeed || 50) ||
       JSON.stringify(momentsList) !== JSON.stringify(magazineMoments || [])
     );
-  }, [title, homeTitle, subtitle, homeSubtitle, selectedHeroIds, heroJourneyIds, autoSlide, heroAutoSlide, mediaType, heroMediaType, showMarquee, marqueeShow, homeMarquee, marqueeMessage, homeSpeed, marqueeSpeed, momentsList, magazineMoments]);
+  }, [title, homeTitle, subtitle, homeSubtitle, selectedHeroIds, heroJourneyIds, autoSlide, heroAutoSlide, slideDuration, heroSlideDuration, mediaType, heroMediaType, showMarquee, marqueeShow, homeMarquee, marqueeMessage, homeSpeed, marqueeSpeed, momentsList, magazineMoments]);
 
   // Dirty tracking for currently selected journey in ARCHIVE mode
   const isArchiveDirty = useMemo(() => {
@@ -226,6 +235,12 @@ export function ManageHubPage({
   }, [selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge]);
 
   const isCurrentDirty = (activeMode === 'HOME' && isHomeDirty) || (activeMode === 'ARCHIVE' && isArchiveDirty);
+
+  useEffect(() => {
+    if (onDirtyChange) {
+      onDirtyChange(isCurrentDirty);
+    }
+  }, [isCurrentDirty, onDirtyChange]);
 
   // Sync journeys from props with localStorage order preservation
   useEffect(() => {
@@ -398,6 +413,7 @@ export function ManageHubPage({
     try {
       localStorage.setItem('playVideoOnActivate', String(playVideoOnActivate));
       localStorage.setItem('home_journey_limit', String(homeJourneyLimit));
+      localStorage.setItem('hero_slide_duration', String(slideDuration));
       window.dispatchEvent(new CustomEvent('homeConfigChanged'));
       await onSaveAllHomeSettings(
         title,
@@ -408,7 +424,8 @@ export function ManageHubPage({
         homeMarquee,
         homeSpeed,
         mediaType,
-        momentsList
+        momentsList,
+        slideDuration
       );
       setHomeSaveSuccess(true);
       setTimeout(() => setHomeSaveSuccess(false), 2000);
@@ -419,6 +436,13 @@ export function ManageHubPage({
       setIsSavingHome(false);
     }
   };
+
+  // Bind saveRef for App.tsx unsaved changes navigation
+  useEffect(() => {
+    if (saveRef) {
+      saveRef.current = activeMode === 'HOME' ? handleSaveHome : handleSaveJourney;
+    }
+  }, [activeMode, title, subtitle, selectedHeroIds, autoSlide, showMarquee, homeMarquee, homeSpeed, mediaType, momentsList, slideDuration, selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge, saveRef]);
 
   // Keyboard Shortcuts: Enter / ESC / D in Unsaved Modal, and Ctrl+S to Save
   useEffect(() => {
@@ -660,55 +684,85 @@ export function ManageHubPage({
                 </div>
               </div>
 
-              {/* Hero Media Type & Auto Slide */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-black/10 dark:border-white/10">
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70">
-                    HERO MEDIA TYPE (히어로 미디어 형태)
-                  </label>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setMediaType('image')}
-                      className={`flex-1 py-2 text-xs font-bold uppercase border transition-colors cursor-pointer rounded-none flex items-center justify-center gap-1.5 ${
-                        mediaType === 'image'
-                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                          : 'bg-white dark:bg-[#161616] border-black/20 dark:border-white/20'
-                      }`}
-                    >
-                      <ImageIcon className="w-3.5 h-3.5" />
-                      <span>IMAGE</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setMediaType('video')}
-                      className={`flex-1 py-2 text-xs font-bold uppercase border transition-colors cursor-pointer rounded-none flex items-center justify-center gap-1.5 ${
-                        mediaType === 'video'
-                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                          : 'bg-white dark:bg-[#161616] border-black/20 dark:border-white/20'
-                      }`}
-                    >
-                      <Film className="w-3.5 h-3.5" />
-                      <span>VIDEO</span>
-                    </button>
+              {/* Hero Media Smart Mode & Auto Slide & Duration */}
+              <div className="flex flex-col gap-4 pt-4 border-t border-black/10 dark:border-white/10">
+                {/* Auto Smart Media Info */}
+                <div className="flex items-center justify-between p-3.5 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02]">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-black text-white dark:bg-white dark:text-black rounded-none">
+                      <Film className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-black uppercase tracking-wider block text-black dark:text-white">
+                        HERO MEDIA AUTO-SMART (미디어 자동 스마트 적용)
+                      </span>
+                      <span className="text-[10px] text-black/60 dark:text-white/60">
+                        여정별로 지정된 히어로 미디어(비디오 또는 이미지)가 타입 선택 없이 자동으로 최적 렌더링됩니다.
+                      </span>
+                    </div>
                   </div>
+                  <span className="text-[10px] font-mono font-bold px-2 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                    AUTO ACTIVE
+                  </span>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70">
-                    HERO AUTO SLIDE (자동 롤링)
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setAutoSlide(!autoSlide)}
-                    className={`w-full py-2 text-xs font-bold uppercase border transition-colors cursor-pointer rounded-none flex items-center justify-center gap-2 ${
-                      autoSlide
-                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                        : 'bg-white dark:bg-[#161616] border-black/20 dark:border-white/20 text-black/60 dark:text-white/60'
-                    }`}
-                  >
-                    <span>{autoSlide ? 'AUTO SLIDE: ON' : 'AUTO SLIDE: OFF'}</span>
-                  </button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Hero Auto Slide Toggle */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70">
+                      HERO AUTO SLIDE (자동 롤링 토글)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setAutoSlide(!autoSlide)}
+                      className={`w-full py-2.5 text-xs font-bold uppercase border transition-colors cursor-pointer rounded-none flex items-center justify-center gap-2 ${
+                        autoSlide
+                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                          : 'bg-white dark:bg-[#161616] border-black/20 dark:border-white/20 text-black/60 dark:text-white/60'
+                      }`}
+                    >
+                      <span>{autoSlide ? 'AUTO SLIDE: ON' : 'AUTO SLIDE: OFF'}</span>
+                    </button>
+                  </div>
+
+                  {/* Hero Slide Duration (3s ~ 9s) */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70">
+                        SLIDE DURATION (슬라이드 롤링 간격)
+                      </label>
+                      <span className="font-mono text-xs font-black text-red-600 dark:text-red-500">
+                        {slideDuration}s
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min={3}
+                        max={9}
+                        step={1}
+                        value={slideDuration}
+                        onChange={e => setSlideDuration(parseInt(e.target.value, 10))}
+                        className="flex-1 accent-black dark:accent-white cursor-pointer"
+                      />
+                      <div className="flex items-center gap-1">
+                        {[3, 5, 7, 9].map(sec => (
+                          <button
+                            key={sec}
+                            type="button"
+                            onClick={() => setSlideDuration(sec)}
+                            className={`px-2 py-1 text-[10px] font-mono font-bold border transition-colors cursor-pointer ${
+                              slideDuration === sec
+                                ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                                : 'bg-white dark:bg-[#161616] border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-black'
+                            }`}
+                          >
+                            {sec}s
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 

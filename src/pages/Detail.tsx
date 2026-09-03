@@ -1857,7 +1857,9 @@ export function JourneyDetailPage({
 
   // Global Keyboard Shortcuts (Space play/pause, ArrowLeft/Right tour, ArrowUp/Down timeline navigation, Esc)
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+      // 0. If Lightbox is open, delegate all keyboard shortcuts to Lightbox component
+      if (lightboxIndex !== null) return;
+
       // 1. mapConfirm shortcut: Y (confirm) / N or Escape (cancel)
       if (mapConfirm) {
         if (e.key === 'Escape' || e.key === 'n' || e.key === 'N') {
@@ -1967,7 +1969,7 @@ export function JourneyDetailPage({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [mapConfirm, isCinematicMode, cinematicItems, expandedItemId, currentTimeline]);
+  }, [mapConfirm, isCinematicMode, cinematicItems, expandedItemId, currentTimeline, lightboxIndex]);
 
   const mapPoints = (() => {
     // Collect gallery photo points that have valid coordinates

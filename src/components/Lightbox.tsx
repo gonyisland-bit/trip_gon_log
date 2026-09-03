@@ -444,7 +444,7 @@ export function Lightbox({
     onNavigate(nextIndex);
   }, [currentIndex, images.length, onNavigate]);
 
-  // ESC & Arrow key handling
+  // ESC & Arrow & Space key handling
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isOpen) return;
@@ -456,8 +456,14 @@ export function Lightbox({
         }
       }
       if (!isSlideshow) {
-        if (e.key === 'ArrowLeft') handlePrev();
-        if (e.key === 'ArrowRight') handleNext();
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          handlePrev();
+        }
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          handleNext();
+        }
         if (e.key === '+' || e.key === '=' || e.code === 'NumpadAdd') {
           e.preventDefault();
           handleZoomIn();
@@ -471,14 +477,23 @@ export function Lightbox({
           resetZoom();
         }
       }
-      if (isSlideshow && e.key === ' ') {
+      if (e.key === ' ' || e.code === 'Space') {
         e.preventDefault();
-        handleTogglePause();
+        if (!isSlideshow) {
+          handleStartSlideshow();
+        } else {
+          handleTogglePause();
+        }
       }
     };
 
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      // Clear any remaining focus on clicked thumbnail buttons
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+      window.focus();
       window.addEventListener('keydown', handleKeyDown);
     }
 
@@ -486,7 +501,7 @@ export function Lightbox({
       document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, handlePrev, handleNext, onClose, isSlideshow]);
+  }, [isOpen, handlePrev, handleNext, onClose, isSlideshow, handleStartSlideshow, handleTogglePause, handleStopSlideshow]);
 
   // Reset zoom on image change
   useEffect(() => {

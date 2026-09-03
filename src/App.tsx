@@ -122,6 +122,10 @@ function App() {
   const [editingTripId, setEditingTripId] = useState<number | null>(null);
   const [heroMediaType, setHeroMediaType] = useState<'image' | 'video'>('image');
   
+  const [heroSlideDuration, setHeroSlideDuration] = useState<number>(() => {
+    const saved = localStorage.getItem('hero_slide_duration');
+    return saved ? parseInt(saved, 10) : 6;
+  });
   const [heroAutoSlide, setHeroAutoSlide] = useState<boolean>(true);
   const [marqueeShow, setMarqueeShow] = useState<boolean>(() => {
     const saved = localStorage.getItem('marqueeShow');
@@ -133,21 +137,31 @@ function App() {
   const [searchFocusItemId, setSearchFocusItemId] = useState<number | null>(null);
   const [searchFocusTab, setSearchFocusTab] = useState<string | null>(null);
   const [isDetailEditing, setIsDetailEditing] = useState<boolean>(false);
+  const [isManageDirty, setIsManageDirty] = useState<boolean>(false);
   const [marqueeOverrideText, setMarqueeOverrideText] = useState<string | null>(null);
   const [showSaveCompleteModal, setShowSaveCompleteModal] = useState<boolean>(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState<boolean>(false);
   const [pendingNavigation, setPendingNavigation] = useState<{ view: string; tripId: number | null } | null>(null);
   const detailSaveRef = useRef<(() => Promise<void>) | null>(null);
+  const manageSaveRef = useRef<(() => Promise<void>) | null>(null);
 
   const handleSaveAndNavigate = async () => {
     setShowUnsavedModal(false);
-    if (detailSaveRef.current) {
-      await detailSaveRef.current();
+    try {
+      if (isDetailEditing && detailSaveRef.current) {
+        await detailSaveRef.current();
+      }
+      if (isManageDirty && manageSaveRef.current) {
+        await manageSaveRef.current();
+      }
+    } catch (err) {
+      console.warn("Save before navigation error:", err);
     }
     if (pendingNavigation) {
       const { view, tripId } = pendingNavigation;
       setPendingNavigation(null);
       setIsDetailEditing(false);
+      setIsManageDirty(false);
       setTimeout(() => {
         navigateTo(view, tripId, true, null, true);
       }, 100);
@@ -157,6 +171,7 @@ function App() {
   const handleDiscardAndNavigate = () => {
     setShowUnsavedModal(false);
     setIsDetailEditing(false);
+    setIsManageDirty(false);
     if (pendingNavigation) {
       const { view, tripId } = pendingNavigation;
       setPendingNavigation(null);
@@ -196,12 +211,28 @@ function App() {
   // Guest accounts can only edit journeys, while admin accounts (including other admin accounts) have full hub management rights
   const isAdmin = isLoggedIn && !isGuest;
 
-  // Global shortcut Ctrl+K / Cmd+K for Unified Search Modal
+  // Global shortcuts: Ctrl+K (Search), F (Fullscreen)
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // 1. Search shortcut Ctrl+K / Cmd+K
       if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
         e.preventDefault();
         setIsSearchOpen(prev => !prev);
+        return;
+      }
+
+      // 2. Ignore single-key shortcuts if user is currently typing
+      const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName) || (e.target as HTMLElement)?.isContentEditable;
+      if (isInput) return;
+
+      // 3. F key: Toggle Fullscreen across whole app
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
       }
     };
     window.addEventListener('keydown', handleGlobalKeyDown);
@@ -464,6 +495,10 @@ function App() {
         if (data.marqueeShow !== undefined) setMarqueeShow(data.marqueeShow);
         if (data.marqueeMessage !== undefined) setMarqueeMessage(data.marqueeMessage);
         if (data.marqueeSpeed !== undefined) setMarqueeSpeed(data.marqueeSpeed);
+        if (data.heroSlideDuration !== undefined) {
+          setHeroSlideDuration(data.heroSlideDuration);
+          localStorage.setItem('hero_slide_duration', String(data.heroSlideDuration));
+        }
         if (Array.isArray(data.magazineMoments)) setMagazineMoments(data.magazineMoments);
       }
     }, (err) => {
@@ -572,7 +607,7 @@ function App() {
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
       const state = event.state;
-      if (isDetailEditing) {
+      if (isDetailEditing || isManageDirty) {
         // Lock page transition and show unsaved changes modal
         window.history.pushState({ view: currentView, tripId: activeTripId }, '', window.location.pathname + window.location.search);
         if (state && state.view) {
@@ -599,10 +634,10 @@ function App() {
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [isDetailEditing, currentView, activeTripId]);
+  }, [isDetailEditing, isManageDirty, currentView, activeTripId]);
 
   const navigateTo = (view: string, tripId: number | null = null, pushHistory = true, tagFilter: string | null = null, force = false) => {
-    if (!force && isDetailEditing && (view !== 'detail' || (tripId !== null && tripId !== activeTripId))) {
+    if (!force && (isDetailEditing || isManageDirty) && (view !== 'detail' || (tripId !== null && tripId !== activeTripId))) {
       setPendingNavigation({ view, tripId });
       setShowUnsavedModal(true);
       return;
@@ -798,7 +833,8 @@ function App() {
     marqueeMsg?: string,
     marqueeSpd?: number,
     heroMediaTypeParam?: 'image' | 'video',
-    magazineMomentsParam?: MagazineMoment[]
+    magazineMomentsParam?: MagazineMoment[],
+    heroSlideDurationParam?: number
   ) => {
     if (!isLoggedIn) return;
     try {
@@ -812,6 +848,7 @@ function App() {
         marqueeShow: showMarquee ?? marqueeShow,
         marqueeMessage: marqueeMsg ?? marqueeMessage,
         marqueeSpeed: marqueeSpd ?? marqueeSpeed,
+        heroSlideDuration: heroSlideDurationParam ?? heroSlideDuration,
         magazineMoments: cleanForFirestore(momentsToSave)
       }), { merge: true });
 
@@ -821,6 +858,10 @@ function App() {
       if (showMarquee !== undefined) setMarqueeShow(showMarquee);
       if (marqueeMsg !== undefined) setMarqueeMessage(marqueeMsg);
       if (marqueeSpd !== undefined) setMarqueeSpeed(marqueeSpd);
+      if (heroSlideDurationParam !== undefined) {
+        setHeroSlideDuration(heroSlideDurationParam);
+        localStorage.setItem('hero_slide_duration', String(heroSlideDurationParam));
+      }
       if (magazineMomentsParam !== undefined) setMagazineMoments(magazineMomentsParam);
     } catch (err) {
       console.error("Failed to save settings:", err);
@@ -1456,6 +1497,7 @@ function App() {
                   heroJourneyIds={heroJourneyIds}
                   heroAutoSlide={heroAutoSlide}
                   heroMediaType={heroMediaType}
+                  heroSlideDuration={heroSlideDuration}
                   onEditTrip={(id) => setEditingTripId(id)}
                   onDeleteTrip={(id) => handleDeleteJourney(id)}
                   onReorderTrips={async (orderedIds) => {
@@ -1481,7 +1523,7 @@ function App() {
               {currentView === 'archive' && (
                 <ArchiveHubPage 
                   trips={trips} 
-                  plans={plans}
+                  plans={plans} 
                   onNavigate={navigateTo} 
                   onAddArchive={handleAddArchive}
                   isLoggedIn={isLoggedIn}
@@ -1548,6 +1590,7 @@ function App() {
                   heroJourneyIds={heroJourneyIds}
                   heroAutoSlide={heroAutoSlide}
                   heroMediaType={heroMediaType}
+                  heroSlideDuration={heroSlideDuration}
                   marqueeShow={marqueeShow}
                   marqueeMessage={marqueeMessage}
                   marqueeSpeed={marqueeSpeed}
@@ -1560,6 +1603,8 @@ function App() {
                   onPermanentDeleteJourney={handlePermanentDeleteJourney}
                   isLoggedIn={isLoggedIn}
                   isDarkMode={isDarkMode}
+                  onDirtyChange={setIsManageDirty}
+                  saveRef={manageSaveRef}
                 />
               )}
               {currentView === 'plan' && (
