@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useTransition, useCallback } from 'react';
 import { 
   Clock, Plane, Bed, Train, Bus, Car, User, Edit2, Trash2, 
   Image as ImageIcon, ChevronUp, ChevronDown, MapPin, Plus, Loader2, Search, ArrowLeft,
@@ -683,6 +683,8 @@ export function JourneyDetailPage({
 }: JourneyDetailPageProps) {
   // All hooks must be called before conditional return
   const [activeTab, setActiveTab] = useState<TabType>('summary');
+  // useTransition allows tab label to update instantly while deferred-rendering heavy tab content
+  const [, startTabTransition] = useTransition();
   const [detectedCountry, setDetectedCountry] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string>('ALL');
   const [collapsedDays, setCollapsedDays] = useState<string[]>([]);
@@ -3426,9 +3428,13 @@ export function JourneyDetailPage({
           ].map(tab => (
             <button 
               key={tab.id} 
-              onClick={() => { 
-                setActiveTab(tab.id as TabType); 
-                setExpandedItemId(null); 
+              onClick={() => {
+                // Mark the tab as active immediately (for visual highlight)
+                // then defer the heavy content render inside transition
+                startTabTransition(() => {
+                  setActiveTab(tab.id as TabType);
+                  setExpandedItemId(null);
+                });
               }} 
               className={`flex-1 h-full px-0.5 sm:px-2 flex items-center justify-center text-[10px] sm:text-[11px] md:text-xs font-black uppercase tracking-wider border-r border-black/15 dark:border-white/15 last:border-r-0 transition-colors whitespace-nowrap cursor-pointer font-sans select-none ${
                 activeTab === tab.id 
@@ -4547,8 +4553,10 @@ export function JourneyDetailPage({
                       e.stopPropagation();
                       const globalIdx = galleryUrlIndexMap.get(imgItem.url) ?? 0;
                       setLightboxIndex(globalIdx);
-                      setIsLightboxOpen(true);
                       setExpandedItemId(imgItem.id);
+                      startTabTransition(() => {
+                        setIsLightboxOpen(true);
+                      });
                     }}
                   >
                     <img
@@ -4601,7 +4609,9 @@ export function JourneyDetailPage({
                         e.stopPropagation();
                         const globalIdx = galleryUrlIndexMap.get(imgItem.url) ?? 0;
                         setLightboxIndex(globalIdx);
-                        setIsLightboxOpen(true);
+                        startTabTransition(() => {
+                          setIsLightboxOpen(true);
+                        });
                       }}
                       className={`absolute bottom-2 right-2 p-1.5 bg-black/75 hover:bg-black text-white transition-colors z-10 rounded-none ${isPhotoActive ? 'opacity-100' : 'opacity-0 group-hover/gallery:opacity-100 focus:opacity-100'}`}
                       title="전체화면"
