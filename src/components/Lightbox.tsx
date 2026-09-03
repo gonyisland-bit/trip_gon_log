@@ -49,17 +49,20 @@ export function Lightbox({
 
   const dragStart = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const imgRef = useRef<HTMLImageElement>(null);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
   const activeThumbnailRef = useRef<HTMLButtonElement>(null);
   const thumbnailsContainerRef = useRef<HTMLDivElement>(null);
   const thumbnailsInnerRef = useRef<HTMLDivElement>(null);
   const isFirstScrollRef = useRef(true);
   const isProgrammaticScrollRef = useRef(false);
-  const scrollEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isTouchingThumbsRef = useRef(false);
+  const thumbScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
 
-  // 2-finger pinch gesture refs
-  const initialPinchDistRef = useRef<number | null>(null);
-  const initialPinchScaleRef = useRef<number>(1);
+  const scaleRef = useRef(scale);
+  const positionRef = useRef(position);
+  useEffect(() => { scaleRef.current = scale; }, [scale]);
+  useEffect(() => { positionRef.current = position; }, [position]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -107,12 +110,12 @@ export function Lightbox({
     }
   }, [currentIndex, isOpen, isSlideshow]);
 
-  // Handle user drag/scroll on thumbnail bar -> navigate to centered image on stop
-  const handleThumbnailsScroll = () => {
-    if (!isOpen || isSlideshow || isProgrammaticScrollRef.current) return;
-    if (scrollEndTimerRef.current) clearTimeout(scrollEndTimerRef.current);
+  // Schedule settle calculation when momentum scroll ends
+  const scheduleThumbnailSettle = useCallback(() => {
+    if (thumbScrollTimeoutRef.current) clearTimeout(thumbScrollTimeoutRef.current);
 
-    scrollEndTimerRef.current = setTimeout(() => {
+    thumbScrollTimeoutRef.current = setTimeout(() => {
+      if (isTouchingThumbsRef.current) return;
       const container = thumbnailsContainerRef.current;
       const inner = thumbnailsInnerRef.current;
       if (!container || !inner) return;
@@ -134,8 +137,90 @@ export function Lightbox({
       if (closestIndex !== currentIndex && closestIndex >= 0 && closestIndex < images.length) {
         onNavigate(closestIndex);
       }
-    }, 120);
+    }, 180);
+  }, [currentIndex, images.length, onNavigate]);
+
+  // Handle user drag/scroll on thumbnail bar
+  const handleThumbnailsScroll = () => {
+    if (!isOpen || isSlideshow || isProgrammaticScrollRef.current) return;
+    scheduleThumbnailSettle();
   };
+
+  // ── Native Non-Passive Pinch-to-Zoom Listener on Mobile ──
+  useEffect(() => {
+    const el = imageContainerRef.current;
+    if (!el || !isOpen || isSlideshow) return;
+
+    let startPinchDist = 0;
+    let startScaleVal = 1;
+    let isPinching = false;
+    let isPanning = false;
+    let panStart = { x: 0, y: 0 };
+    let posStart = { x: 0, y: 0 };
+
+    const handleNativeTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        isPinching = true;
+        isPanning = false;
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        startPinchDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        startScaleVal = scaleRef.current;
+      } else if (e.touches.length === 1 && scaleRef.current > 1) {
+        isPanning = true;
+        isPinching = false;
+        panStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        posStart = { ...positionRef.current };
+      }
+    };
+
+    const handleNativeTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && isPinching && startPinchDist > 0) {
+        e.preventDefault();
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const curDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        const ratio = curDist / startPinchDist;
+        const targetScale = Math.max(0.7, Math.min(5.0, startScaleVal * ratio));
+        setScale(targetScale);
+      } else if (e.touches.length === 1 && isPanning && scaleRef.current > 1) {
+        e.preventDefault();
+        const dx = e.touches[0].clientX - panStart.x;
+        const dy = e.touches[0].clientY - panStart.y;
+        const newX = posStart.x + dx;
+        const newY = posStart.y + dy;
+        setPosition(limitPosition(newX, newY, scaleRef.current));
+      }
+    };
+
+    const handleNativeTouchEnd = (e: TouchEvent) => {
+      if (isPinching) {
+        isPinching = false;
+        startPinchDist = 0;
+        if (scaleRef.current < 1.05) {
+          resetZoom();
+        } else {
+          setPosition(prev => limitPosition(prev.x, prev.y, scaleRef.current));
+        }
+      }
+      if (isPanning) {
+        isPanning = false;
+      }
+    };
+
+    el.addEventListener('touchstart', handleNativeTouchStart, { passive: false });
+    el.addEventListener('touchmove', handleNativeTouchMove, { passive: false });
+    el.addEventListener('touchend', handleNativeTouchEnd, { passive: false });
+    el.addEventListener('touchcancel', handleNativeTouchEnd, { passive: false });
+
+    return () => {
+      el.removeEventListener('touchstart', handleNativeTouchStart);
+      el.removeEventListener('touchmove', handleNativeTouchMove);
+      el.removeEventListener('touchend', handleNativeTouchEnd);
+      el.removeEventListener('touchcancel', handleNativeTouchEnd);
+    };
+  }, [isOpen, isSlideshow]);
 
   // ── Slideshow engine ──
   const stopSlideshow = useCallback(() => {
@@ -243,19 +328,6 @@ export function Lightbox({
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
-      // 2-finger pinch gesture start
-      const t1 = e.touches[0];
-      const t2 = e.touches[1];
-      const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-      initialPinchDistRef.current = dist;
-      initialPinchScaleRef.current = scale;
-      setIsDragging(false);
-      touchStartX.current = null;
-      touchStartY.current = null;
-      return;
-    }
-
     if (e.touches.length === 1) {
       const touch = e.touches[0];
       touchStartX.current = touch.clientX;
@@ -268,17 +340,6 @@ export function Lightbox({
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (e.touches.length === 2 && initialPinchDistRef.current !== null) {
-      // 2-finger pinch active
-      const t1 = e.touches[0];
-      const t2 = e.touches[1];
-      const currentDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-      const ratio = currentDist / initialPinchDistRef.current;
-      const targetScale = Math.max(0.7, Math.min(5.0, initialPinchScaleRef.current * ratio));
-      setScale(targetScale);
-      return;
-    }
-
     if (e.touches.length === 1 && isDragging && scale > 1) {
       const touch = e.touches[0];
       const newX = touch.clientX - dragStart.current.x;
@@ -291,19 +352,6 @@ export function Lightbox({
   const lastTouchZoomTimeRef = useRef<number>(0);
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (initialPinchDistRef.current !== null) {
-      initialPinchDistRef.current = null;
-      if (scale < 1.05) {
-        resetZoom();
-      } else {
-        setPosition(prev => limitPosition(prev.x, prev.y, scale));
-      }
-      setIsDragging(false);
-      touchStartX.current = null;
-      touchStartY.current = null;
-      return;
-    }
-
     if (touchStartX.current !== null && touchStartY.current !== null) {
       const touch = e.changedTouches[0];
       const distanceX = touch.clientX - touchStartX.current;
@@ -711,7 +759,8 @@ export function Lightbox({
 
         {/* Center: Main Image with crossfade */}
         <div
-          className="relative flex items-center justify-center w-full h-full cursor-grab active:cursor-grabbing"
+          ref={imageContainerRef}
+          className="relative flex items-center justify-center w-full h-full cursor-grab active:cursor-grabbing touch-none select-none"
           onMouseDown={isSlideshow ? undefined : handleMouseDown}
           onMouseMove={isSlideshow ? undefined : handleMouseMove}
         >
@@ -814,7 +863,23 @@ export function Lightbox({
         <div 
           ref={thumbnailsContainerRef} 
           onScroll={handleThumbnailsScroll}
-          className="w-full bg-black/60 py-2.5 border-t border-white/10 overflow-x-auto hide-scrollbar z-20 shrink-0 scroll-smooth touch-pan-x select-none"
+          onTouchStart={() => {
+            isTouchingThumbsRef.current = true;
+            if (thumbScrollTimeoutRef.current) clearTimeout(thumbScrollTimeoutRef.current);
+          }}
+          onTouchEnd={() => {
+            isTouchingThumbsRef.current = false;
+            scheduleThumbnailSettle();
+          }}
+          onMouseDown={() => {
+            isTouchingThumbsRef.current = true;
+            if (thumbScrollTimeoutRef.current) clearTimeout(thumbScrollTimeoutRef.current);
+          }}
+          onMouseUp={() => {
+            isTouchingThumbsRef.current = false;
+            scheduleThumbnailSettle();
+          }}
+          className="w-full bg-black/60 py-2.5 border-t border-white/10 overflow-x-auto hide-scrollbar z-20 shrink-0 touch-pan-x select-none"
         >
           <div 
             ref={thumbnailsInnerRef} 
