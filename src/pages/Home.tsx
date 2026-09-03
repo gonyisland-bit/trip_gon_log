@@ -610,22 +610,20 @@ export function HomePage({
   const filteredTrips = activeFilter === 'All' ? combinedArchiveList : combinedArchiveList.filter(t => t.tags?.includes(activeFilter));
 
   // Resolve hero journeys from heroJourneyIds. Fallback to trips[0] if nothing selected.
-  const allJourneys: (Trip | Plan)[] = [...localTrips, ...localPlans];
-  const heroJourneys: (Trip | Plan)[] = heroJourneyIds.length > 0
-    ? heroJourneyIds.map(id => allJourneys.find(j => j.id === id)).filter(Boolean) as (Trip | Plan)[]
-    : (localTrips[0] ? [localTrips[0]] : []);
+  const heroJourneys = useMemo(() => {
+    const all = [...localTrips, ...localPlans];
+    if (heroJourneyIds.length > 0) {
+      const filtered = heroJourneyIds.map(id => all.find(j => j.id === id)).filter(Boolean) as (Trip | Plan)[];
+      if (filtered.length > 0) return filtered;
+    }
+    return localTrips[0] ? [localTrips[0]] : [];
+  }, [localTrips, localPlans, heroJourneyIds]);
 
   const [isHeroMediaReady, setIsHeroMediaReady] = useState(false);
 
   const currentHero = heroJourneys[heroSlide] || heroJourneys[0];
-  const isCurrentHeroVideo = Boolean(
-    currentHero && (
-      currentHero.heroVideoUrl ||
-      (!currentHero.heroImg && currentHero.videoUrl)
-    )
-  );
-  const configuredSlideDurationMs = (heroSlideDuration || 6) * 1000;
-  const effectiveHeroSlideDuration = isCurrentHeroVideo ? Math.max(configuredSlideDurationMs, 8000) : configuredSlideDurationMs;
+  // Exact user-configured duration in ms (strictly follows 3s ~ 9s setting)
+  const exactSlideDuration = (heroSlideDuration && heroSlideDuration >= 3 ? heroSlideDuration : 6) * 1000;
 
   const goToSlide = useCallback((idx: number) => {
     if (idx === heroSlide) return;
@@ -634,32 +632,35 @@ export function HomePage({
   }, [heroSlide]);
 
   const goToPrev = () => goToSlide((heroSlide - 1 + heroJourneys.length) % heroJourneys.length);
-  const goToNext = () => goToSlide((heroSlide + 1) % heroJourneys.length);
+  const goToNext = useCallback(() => {
+    goToSlide((heroSlide + 1) % heroJourneys.length);
+  }, [goToSlide, heroSlide, heroJourneys.length]);
 
-  // Auto-advance carousel with configurable duration when multiple heroes and auto-slide is enabled
+  // Safety fallback: if media ready doesn't fire within 800ms, force ready so carousel never gets stuck
+  useEffect(() => {
+    if (!isHeroMediaReady) {
+      const fallbackTimer = setTimeout(() => {
+        setIsHeroMediaReady(true);
+      }, 800);
+      return () => clearTimeout(fallbackTimer);
+    }
+  }, [heroSlide, isHeroMediaReady]);
+
+  // Auto-advance carousel with exact configured duration when multiple heroes and auto-slide is enabled
   useEffect(() => {
     if (!heroAutoSlide || heroJourneys.length <= 1 || !isHeroMediaReady) return;
-    
-    const currentHeroItem = heroJourneys[heroSlide];
-    const isVideo = Boolean(
-      currentHeroItem && (
-        currentHeroItem.heroVideoUrl ||
-        (!currentHeroItem.heroImg && currentHeroItem.videoUrl)
-      )
-    );
-    const duration = isVideo ? Math.max((heroSlideDuration || 6) * 1000, 8000) : (heroSlideDuration || 6) * 1000;
 
     const timer = setTimeout(() => {
       goToNext();
-    }, duration);
+    }, exactSlideDuration);
 
     return () => clearTimeout(timer);
-  }, [heroJourneys.length, heroSlide, heroAutoSlide, heroSlideDuration, heroJourneys, isHeroMediaReady, goToNext]);
+  }, [heroJourneys.length, heroSlide, heroAutoSlide, exactSlideDuration, isHeroMediaReady, goToNext]);
 
   useEffect(() => { 
     setHeroSlide(0); 
     setIsHeroMediaReady(false);
-  }, [heroJourneyIds.join(',')]);
+  }, [heroJourneyIds]);
 
   // ── Drag-to-reorder for trip archive cards ──────────────────────────────
   const handleTripDragStart = (e: React.DragEvent, id: number) => {
@@ -779,10 +780,10 @@ export function HomePage({
                   >
                     {idx === heroSlide ? (
                       <div
-                        key={`${heroSlide}-${effectiveHeroSlideDuration}`}
+                        key={`${heroSlide}-${exactSlideDuration}`}
                         className="h-full bg-gradient-to-r from-amber-500 to-amber-300"
                         style={{
-                          animation: (heroAutoSlide && isHeroMediaReady) ? `heroGauge ${effectiveHeroSlideDuration}ms linear forwards` : 'none',
+                          animation: (heroAutoSlide && isHeroMediaReady) ? `heroGauge ${exactSlideDuration}ms linear forwards` : 'none',
                           width: (heroAutoSlide && !isHeroMediaReady) ? '0%' : (heroAutoSlide ? undefined : '100%'),
                         }}
                       />

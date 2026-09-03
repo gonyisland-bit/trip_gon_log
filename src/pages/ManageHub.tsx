@@ -447,32 +447,22 @@ export function ManageHubPage({
   // Keyboard Shortcuts: Enter / ESC / D in Unsaved Modal, and Ctrl+S to Save
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // 1. Unsaved changes modal shortcuts: Yes (Y), No (N), Cancel (ESC)
-      if (showUnsavedModal) {
+      // 1. Unsaved changes modal shortcuts: Yes (Y), No (N), Cancel (ESC) (Only for internal journey switching)
+      if (showUnsavedModal && pendingJourneyId !== null) {
         if (e.key === 'y' || e.key === 'Y' || e.key === 'Enter') {
           e.preventDefault();
           (async () => {
-            if (pendingJourneyId !== null) {
-              await handleSaveJourney();
-              setSelectedJourneyId(pendingJourneyId);
-              setPendingJourneyId(null);
-              setMobileArchiveTab('EDIT');
-            } else {
-              if (activeMode === 'HOME') await handleSaveHome();
-              else if (activeMode === 'ARCHIVE') await handleSaveJourney();
-              onNavigate('home');
-            }
+            await handleSaveJourney();
+            setSelectedJourneyId(pendingJourneyId);
+            setPendingJourneyId(null);
+            setMobileArchiveTab('EDIT');
             setShowUnsavedModal(false);
           })();
         } else if (e.key === 'n' || e.key === 'N') {
           e.preventDefault();
-          if (pendingJourneyId !== null) {
-            setSelectedJourneyId(pendingJourneyId);
-            setPendingJourneyId(null);
-            setMobileArchiveTab('EDIT');
-          } else {
-            onNavigate('home');
-          }
+          setSelectedJourneyId(pendingJourneyId);
+          setPendingJourneyId(null);
+          setMobileArchiveTab('EDIT');
           setShowUnsavedModal(false);
         } else if (e.key === 'Escape') {
           e.preventDefault();
@@ -2132,11 +2122,7 @@ export function ManageHubPage({
         <button
           type="button"
           onClick={() => {
-            if (isCurrentDirty) {
-              setShowUnsavedModal(true);
-            } else {
-              onNavigate('home');
-            }
+            onNavigate('home');
           }}
           className="w-12 h-12 rounded-full flex items-center justify-center shadow-2xl bg-white dark:bg-[#1a1a1a] text-black dark:text-white border border-black/15 dark:border-white/15 hover:scale-110 active:scale-95 transition-all cursor-pointer"
           title="홈 뷰 모드로 이동"
@@ -2145,11 +2131,14 @@ export function ManageHubPage({
         </button>
       </div>
 
-      {/* 4. Common Minimal Unsaved Changes Modal */}
-      {showUnsavedModal && (
+      {/* 4. Common Minimal Unsaved Changes Modal (Only for internal journey switching in Archive tab) */}
+      {showUnsavedModal && pendingJourneyId !== null && (
         <div 
           className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
-          onClick={() => setShowUnsavedModal(false)}
+          onClick={() => {
+            setPendingJourneyId(null);
+            setShowUnsavedModal(false);
+          }}
         >
           <div 
             className="w-full max-w-sm bg-white dark:bg-[#111] border border-black/20 dark:border-white/20 shadow-2xl p-6 select-none flex flex-col gap-4"
@@ -2184,8 +2173,6 @@ export function ManageHubPage({
                     setSelectedJourneyId(pendingJourneyId);
                     setPendingJourneyId(null);
                     setMobileArchiveTab('EDIT');
-                  } else {
-                    onNavigate('home');
                   }
                   setShowUnsavedModal(false);
                 }}
@@ -2201,10 +2188,6 @@ export function ManageHubPage({
                     setSelectedJourneyId(pendingJourneyId);
                     setPendingJourneyId(null);
                     setMobileArchiveTab('EDIT');
-                  } else {
-                    if (activeMode === 'HOME') await handleSaveHome();
-                    else if (activeMode === 'ARCHIVE') await handleSaveJourney();
-                    onNavigate('home');
                   }
                   setShowUnsavedModal(false);
                 }}
