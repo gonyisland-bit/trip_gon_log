@@ -1720,7 +1720,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
         <div class="relative cursor-pointer group select-none flex justify-center" style="width: 26px; height: 34px;">
           ${showPinLabels ? `
             <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 5px; pointer-events: none; white-space: nowrap; z-index: 1000;">
-              <span style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 8.5px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1.5px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 5.5px; line-height: 1.2; display: inline-block; box-shadow: none; border-radius: 0;">
+              <span style="font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 9.5px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1.5px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 6px; line-height: 1.2; display: inline-block; box-shadow: none; border-radius: 0;">
                 ${group.city}
               </span>
             </div>
@@ -1732,7 +1732,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
               <circle cx="12" cy="11" r="4.5" fill="#FFFFFF"/>
             </svg>
             ${group.journeys.length > 1 ? `
-              <span class="absolute -top-1 -right-1 bg-black text-white dark:bg-white dark:text-black font-mono font-black text-[9px] w-4 h-4 rounded-full flex items-center justify-center border border-white dark:border-black shadow-xs">
+              <span class="absolute -top-1 -right-1 bg-black text-white dark:bg-white dark:text-black font-mono font-black text-[9.5px] w-4 h-4 rounded-full flex items-center justify-center border border-white dark:border-black shadow-xs">
                 ${group.journeys.length}
               </span>
             ` : ''}
@@ -1782,7 +1782,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
         <div class="relative cursor-pointer group select-none flex justify-center" style="width: 26px; height: 34px;">
           ${showPinLabels ? `
             <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 5px; pointer-events: none; white-space: nowrap; z-index: 1000;">
-              <span style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 8px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1.5px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 5px; line-height: 1.2; display: inline-block; box-shadow: none; border-radius: 0;">
+              <span style="font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 9.5px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1.5px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 6px; line-height: 1.2; display: inline-block; box-shadow: none; border-radius: 0;">
                 ★ ${country.name}
               </span>
             </div>
@@ -1906,11 +1906,11 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                         <span className="text-[10px] font-sans text-black/50 dark:text-white/50">
                           ({c.nameKo})
                         </span>
-                        <span className="px-1 py-0.2 text-[8px] font-mono font-bold bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60">
+                        <span className="px-1.5 py-0.5 text-[9.5px] font-mono font-bold bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60">
                           {c.continentKo}
                         </span>
                       </div>
-                      <span className="text-[9px] font-mono text-black/40 dark:text-white/40 block mt-0.5 truncate">
+                      <span className="text-[10px] font-mono text-black/40 dark:text-white/40 block mt-0.5 truncate">
                         {c.cities.slice(0, 3).join(', ')}
                       </span>
                     </div>
@@ -2027,7 +2027,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
           <div className="flex flex-col gap-4">
             {/* Currency & Exchange Info */}
             <div className="p-3 bg-black/[0.03] dark:bg-white/[0.03] border border-black/10 dark:border-white/10">
-              <div className="text-[9px] font-mono font-black uppercase tracking-widest text-black/50 dark:text-white/50 mb-1">
+              <div className="text-[10px] font-mono font-black uppercase tracking-widest text-black/50 dark:text-white/50 mb-1">
                 CURRENCY & RATE (현지 통화)
               </div>
               <div className="flex items-baseline justify-between">
@@ -2042,7 +2042,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
 
             {/* Main Cities Guide */}
             <div>
-              <div className="text-[9px] font-mono font-black uppercase tracking-widest text-black/50 dark:text-white/50 mb-2">
+              <div className="text-[10px] font-mono font-black uppercase tracking-widest text-black/50 dark:text-white/50 mb-2">
                 MAJOR DESTINATIONS (주요 여행 도시)
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -2102,7 +2102,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
           >
             <div className="flex items-start justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-4">
               <div>
-                <span className="text-[9px] font-mono font-black uppercase tracking-widest text-amber-500 block mb-0.5">
+                <span className="text-[10px] font-mono font-black uppercase tracking-widest text-amber-500 block mb-0.5">
                   MY TRAVEL WISHLIST
                 </span>
                 <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white">
@@ -2141,7 +2141,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                           ({c.nameKo})
                         </span>
                       </div>
-                      <span className="text-[9px] font-mono text-black/40 dark:text-white/40 block truncate">
+                      <span className="text-[10px] font-mono text-black/40 dark:text-white/40 block truncate">
                         {c.cities.slice(0, 3).join(', ')}
                       </span>
                     </div>
@@ -2188,7 +2188,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
           >
             <div className="flex items-start justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-4">
               <div>
-                <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                <span className="text-[10px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
                   JOURNEY ARCHIVE
                 </span>
                 <h3 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-black dark:text-white">
@@ -2252,11 +2252,11 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                           {cleanTitle}
                         </h4>
                         {isPlan ? (
-                          <span className="px-1 py-0.5 bg-blue-600 text-white font-mono text-[8px] font-black uppercase tracking-widest shrink-0">
+                          <span className="px-1.5 py-0.5 bg-blue-600 text-white font-mono text-[9.5px] font-black uppercase tracking-widest shrink-0">
                             PLAN
                           </span>
                         ) : (
-                          <span className="px-1 py-0.5 bg-black text-white dark:bg-white dark:text-black font-mono text-[8px] font-black uppercase tracking-widest shrink-0">
+                          <span className="px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black font-mono text-[9.5px] font-black uppercase tracking-widest shrink-0">
                             LOG
                           </span>
                         )}
@@ -2289,7 +2289,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-black/15 dark:border-white/15">
               <div>
-                <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                <span className="text-[10px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
                   VISITED LOCATIONS DIRECTORY
                 </span>
                 <h3 className="text-lg sm:text-xl font-black uppercase tracking-tight text-black dark:text-white font-sans">

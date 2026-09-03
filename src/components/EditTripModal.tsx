@@ -716,32 +716,33 @@ export function EditTripModal({
               </button>
             </div>
           </div>
-          {/* Cover Media Section with Swiss Minimal Tabs */}
+          {/* Cover Media Section with Swiss Minimal Tabs (MAIN / HERO) */}
           <div className="flex flex-col gap-2 pt-2 border-t border-black/10 dark:border-white/10">
             <div className="flex border-b border-black/15 dark:border-white/15 mb-2">
               <button
                 type="button"
                 onClick={() => setCoverTab('main')}
-                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer border-b-2 -mb-px flex items-center justify-center gap-1.5 ${
+                className={`flex-1 py-2 text-xs font-black uppercase tracking-widest transition-colors cursor-pointer border-b-2 -mb-px flex items-center justify-center gap-1.5 ${
                   coverTab === 'main'
                     ? 'border-black dark:border-white text-black dark:text-white'
                     : 'border-transparent text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
                 }`}
               >
-                <span>MAIN COVER</span>
-                <span className="text-[8px] font-mono opacity-60">(카드/기본)</span>
+                <span>MAIN</span>
+                {(imgUrl || videoUrl) && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white" />
+                )}
               </button>
               <button
                 type="button"
                 onClick={() => setCoverTab('hero')}
-                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer border-b-2 -mb-px flex items-center justify-center gap-1.5 ${
+                className={`flex-1 py-2 text-xs font-black uppercase tracking-widest transition-colors cursor-pointer border-b-2 -mb-px flex items-center justify-center gap-1.5 ${
                   coverTab === 'hero'
                     ? 'border-red-600 text-red-600 dark:border-red-400 dark:text-red-400'
                     : 'border-transparent text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
                 }`}
               >
-                <span>HERO COVER</span>
-                <span className="text-[8px] font-mono opacity-60">(홈 히어로)</span>
+                <span>HERO</span>
                 {(heroImgUrl || heroVideoUrl) && (
                   <span className="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-400" />
                 )}
@@ -749,269 +750,265 @@ export function EditTripModal({
             </div>
 
             {coverTab === 'main' ? (
-              <div className="flex flex-col gap-4 animate-in fade-in duration-150">
-                {/* Main Cover Image */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
-                    Main Cover Image (URL or Upload)
-                  </label>
+              <div className="flex flex-col gap-3 animate-in fade-in duration-150">
+                {/* Unified Media URL Input */}
+                <div className="flex flex-col gap-1">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[9.5px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white font-sans">
+                      Main Media (Image or Video)
+                    </label>
+                    {(uploading || videoUploading) && (
+                      <span className="text-[9.5px] font-mono font-bold text-red-600 flex items-center gap-1">
+                        <Loader2 className="w-3 h-3 animate-spin" /> 업로드 중...
+                      </span>
+                    )}
+                  </div>
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      value={imgUrl}
-                      onChange={(e) => setImgUrl(e.target.value)}
-                      className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2.5 text-xs font-medium text-black dark:text-white outline-none flex-grow focus:border-red-600 dark:focus:border-red-400 transition-colors"
-                      placeholder="Image URL"
-                      required
+                      value={videoUrl || imgUrl}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val.match(/\.(mp4|webm|mov)(\?.*)?$/i)) {
+                          setVideoUrl(val);
+                        } else {
+                          setImgUrl(val);
+                        }
+                      }}
+                      className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-mono font-bold text-black dark:text-white outline-none flex-grow focus:border-black dark:focus:border-white transition-colors"
+                      placeholder="이미지 또는 영상 URL 입력 / 파일 드롭"
                     />
                     <input
                       type="file"
                       ref={fileInputRef}
-                      onChange={handleImageUpload}
-                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.type.startsWith('video/')) {
+                          await uploadVideoFile(file);
+                        } else {
+                          await handleImageUpload(e);
+                        }
+                      }}
+                      accept="image/*,video/*"
                       className="hidden"
                     />
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      disabled={uploading}
-                      className="px-3 bg-black text-white dark:bg-white dark:text-black text-[10px] font-black uppercase tracking-widest hover:opacity-80 transition-opacity flex items-center gap-1.5 disabled:opacity-50 shrink-0 cursor-pointer"
+                      disabled={uploading || videoUploading}
+                      className="px-3 bg-black text-white dark:bg-white dark:text-black text-[10px] font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-1.5 disabled:opacity-50 shrink-0 cursor-pointer"
                     >
-                      {uploading ? (
+                      {uploading || videoUploading ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       ) : (
                         <Upload className="w-3 h-3" />
                       )}
-                      Upload
+                      UPLOAD
                     </button>
-                  </div>
-                  
-                  {/* Image Preview */}
-                  <div className="mt-2 border border-black/10 dark:border-white/10 aspect-[16/9] overflow-hidden bg-black/5 relative group flex items-center justify-center">
-                    {imgUrl ? (
-                      <div className="relative w-full h-full">
-                        <img src={imgUrl} alt="Cover Preview" className="w-full h-full object-cover" />
-                      </div>
-                    ) : (
-                      <div className="text-black/45 dark:text-white/45 text-[10px] font-bold uppercase tracking-widest text-center flex flex-col items-center justify-center p-4">
-                        이미지를 드래그 앤 드롭하거나<br />위의 Upload 버튼을 눌러주세요
-                      </div>
-                    )}
-                    <ImageEditOverlay
-                      isEditMode={isLoggedIn}
-                      onImageUploaded={(url) => setImgUrl(url)}
-                      hasImage={!!imgUrl}
-                      onImageRemoved={() => setImgUrl('')}
-                    />
                   </div>
                 </div>
 
-                {/* Main Cover Video */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
-                    Main Cover Video (URL or Upload)
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={videoUrl}
-                      onChange={(e) => setVideoUrl(e.target.value)}
-                      className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2.5 text-xs font-medium text-black dark:text-white outline-none flex-grow focus:border-red-600 dark:focus:border-red-400 transition-colors"
-                      placeholder="Video URL (e.g. mp4)"
-                    />
-                    <input
-                      type="file"
-                      ref={videoFileInputRef}
-                      onChange={handleVideoUpload}
-                      accept="video/*"
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => videoFileInputRef.current?.click()}
-                      disabled={videoUploading}
-                      className="px-3 bg-black text-white dark:bg-white dark:text-black text-[10px] font-black uppercase tracking-widest hover:opacity-80 transition-opacity flex items-center gap-1.5 disabled:opacity-50 shrink-0 cursor-pointer"
-                    >
-                      {videoUploading ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
+                {/* Unified Dropzone & Preview */}
+                <div 
+                  onDragEnter={handleVideoDrag}
+                  onDragOver={handleVideoDrag}
+                  onDragLeave={handleVideoDrag}
+                  onDrop={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsVideoDragActive(false);
+                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                      const file = e.dataTransfer.files[0];
+                      if (file.type.startsWith('video/')) {
+                        await uploadVideoFile(file);
+                      } else if (file.type.startsWith('image/')) {
+                        setUploading(true);
+                        try {
+                          const compressedBlob = await compressImage(file, 3840, 3840, 0.75);
+                          const storagePath = `users/public/covers/${Date.now()}_${file.name}`;
+                          const downloadUrl = await uploadFileToR2(compressedBlob, storagePath);
+                          setImgUrl(downloadUrl);
+                        } catch (err) {
+                          console.error(err);
+                          alert("이미지 업로드에 실패했습니다.");
+                        } finally {
+                          setUploading(false);
+                        }
+                      }
+                    }
+                  }}
+                  className={`border border-black/10 dark:border-white/10 aspect-[16/9] overflow-hidden bg-black/5 relative group flex items-center justify-center transition-all ${
+                    isVideoDragActive ? 'border-dashed border-red-600 bg-red-500/10 scale-[1.01]' : ''
+                  }`}
+                >
+                  {videoUrl ? (
+                    <div className="relative w-full h-full">
+                      <video src={videoUrl} controls muted className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setVideoUrl('')}
+                        className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
+                      >
+                        Delete Video
+                      </button>
+                    </div>
+                  ) : imgUrl ? (
+                    <div className="relative w-full h-full">
+                      <img src={imgUrl} alt="Cover Preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setImgUrl('')}
+                        className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
+                      >
+                        Delete Image
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-black/45 dark:text-white/45 text-[10px] font-bold uppercase tracking-wider text-center flex flex-col items-center justify-center p-4">
+                      {uploading || videoUploading ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <span>미디어를 업로드 중입니다...</span>
+                        </div>
                       ) : (
-                        <Upload className="w-3 h-3" />
+                        <span>이미지 또는 동영상을 드래그 앤 드롭하거나<br />위의 UPLOAD 버튼을 눌러주세요</span>
                       )}
-                      Upload
-                    </button>
-                  </div>
-
-                  {/* Video Preview & Dropzone */}
-                  <div 
-                    onDragEnter={handleVideoDrag}
-                    onDragOver={handleVideoDrag}
-                    onDragLeave={handleVideoDrag}
-                    onDrop={handleVideoDrop}
-                    className={`mt-2 border border-black/10 dark:border-white/10 aspect-[16/9] overflow-hidden bg-black/5 relative group flex items-center justify-center transition-all duration-300
-                      ${isVideoDragActive ? 'border-dashed border-red-600 bg-black/10 dark:bg-white/10 scale-[1.01]' : ''}
-                    `}
-                  >
-                    {videoUrl ? (
-                      <>
-                        <video src={videoUrl} controls muted className="w-full h-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => setVideoUrl('')}
-                          className="absolute top-2 right-2 bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 hover:bg-red-700 transition-colors shadow-md rounded-sm z-10 cursor-pointer"
-                        >
-                          Delete Video
-                        </button>
-                      </>
-                    ) : (
-                      <div className="text-black/45 dark:text-white/45 text-[10px] font-bold uppercase tracking-widest text-center flex flex-col items-center justify-center p-4 pointer-events-none">
-                        {videoUploading ? (
-                          <div className="flex flex-col items-center gap-2">
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            <span>동영상을 업로드 중입니다...</span>
-                          </div>
-                        ) : (
-                          <>
-                            동영상을 드래그 앤 드롭하거나<br />위의 Upload 버튼을 눌러주세요
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col gap-4 animate-in fade-in duration-150">
-                <p className="text-[10px] text-black/60 dark:text-white/60 font-medium leading-relaxed bg-black/[0.03] dark:bg-white/[0.03] p-2.5 border border-black/10 dark:border-white/10">
-                  홈 화면 상단 대형 히어로 슬라이더에 단독으로 노출할 고화질 미디어입니다. (미등록 시 Main Cover가 자동 표시됩니다)
+              <div className="flex flex-col gap-3 animate-in fade-in duration-150">
+                <p className="text-[10px] text-black/60 dark:text-white/60 font-medium leading-relaxed bg-black/[0.03] dark:bg-white/[0.03] p-2 border border-black/10 dark:border-white/10">
+                  홈 화면 상단 히어로 슬라이더에 우선 노출할 미디어입니다. (미등록 시 MAIN 미디어가 표시됩니다)
                 </p>
 
-                {/* Hero Cover Image */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
-                    Hero Cover Image (URL or Upload)
-                  </label>
+                {/* Unified Hero Media URL Input */}
+                <div className="flex flex-col gap-1">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[9.5px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white font-sans">
+                      Hero Media (Image or Video)
+                    </label>
+                    {(heroUploading || heroVideoUploading) && (
+                      <span className="text-[9.5px] font-mono font-bold text-red-600 flex items-center gap-1">
+                        <Loader2 className="w-3 h-3 animate-spin" /> 업로드 중...
+                      </span>
+                    )}
+                  </div>
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      value={heroImgUrl}
-                      onChange={(e) => setHeroImgUrl(e.target.value)}
-                      className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2.5 text-xs font-medium text-black dark:text-white outline-none flex-grow focus:border-red-600 dark:focus:border-red-400 transition-colors"
-                      placeholder="Hero Image URL (16:9 추천)"
+                      value={heroVideoUrl || heroImgUrl}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val.match(/\.(mp4|webm|mov)(\?.*)?$/i)) {
+                          setHeroVideoUrl(val);
+                        } else {
+                          setHeroImgUrl(val);
+                        }
+                      }}
+                      className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2 text-xs font-mono font-bold text-black dark:text-white outline-none flex-grow focus:border-red-600 dark:focus:border-red-400 transition-colors"
+                      placeholder="히어로 이미지 또는 영상 URL 입력 / 파일 드롭"
                     />
                     <input
                       type="file"
                       ref={heroFileInputRef}
-                      onChange={handleHeroImageUpload}
-                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.type.startsWith('video/')) {
+                          await uploadHeroVideoFile(file);
+                        } else {
+                          await handleHeroImageUpload(e);
+                        }
+                      }}
+                      accept="image/*,video/*"
                       className="hidden"
                     />
                     <button
                       type="button"
                       onClick={() => heroFileInputRef.current?.click()}
-                      disabled={heroUploading}
-                      className="px-3 bg-black text-white dark:bg-white dark:text-black text-[10px] font-black uppercase tracking-widest hover:opacity-80 transition-opacity flex items-center gap-1.5 disabled:opacity-50 shrink-0 cursor-pointer"
+                      disabled={heroUploading || heroVideoUploading}
+                      className="px-3 bg-black text-white dark:bg-white dark:text-black text-[10px] font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-1.5 disabled:opacity-50 shrink-0 cursor-pointer"
                     >
-                      {heroUploading ? (
+                      {heroUploading || heroVideoUploading ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       ) : (
                         <Upload className="w-3 h-3" />
                       )}
-                      Upload
+                      UPLOAD
                     </button>
-                  </div>
-                  
-                  {/* Hero Image Preview */}
-                  <div className="mt-2 border border-black/10 dark:border-white/10 aspect-[16/9] overflow-hidden bg-black/5 relative group flex items-center justify-center">
-                    {heroImgUrl ? (
-                      <div className="relative w-full h-full">
-                        <img src={heroImgUrl} alt="Hero Cover Preview" className="w-full h-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => setHeroImgUrl('')}
-                          className="absolute top-2 right-2 bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 hover:bg-red-700 transition-colors shadow-md rounded-sm z-10 cursor-pointer"
-                        >
-                          Delete Image
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="text-black/45 dark:text-white/45 text-[10px] font-bold uppercase tracking-widest text-center flex flex-col items-center justify-center p-4">
-                        히어로 이미지를 드래그 앤 드롭하거나<br />위의 Upload 버튼을 눌러주세요
-                      </div>
-                    )}
                   </div>
                 </div>
 
-                {/* Hero Cover Video */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
-                    Hero Cover Video (URL or Upload)
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={heroVideoUrl}
-                      onChange={(e) => setHeroVideoUrl(e.target.value)}
-                      className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-2.5 text-xs font-medium text-black dark:text-white outline-none flex-grow focus:border-red-600 dark:focus:border-red-400 transition-colors"
-                      placeholder="Hero Video URL (e.g. mp4)"
-                    />
-                    <input
-                      type="file"
-                      ref={heroVideoFileInputRef}
-                      onChange={handleHeroVideoUpload}
-                      accept="video/*"
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => heroVideoFileInputRef.current?.click()}
-                      disabled={heroVideoUploading}
-                      className="px-3 bg-black text-white dark:bg-white dark:text-black text-[10px] font-black uppercase tracking-widest hover:opacity-80 transition-opacity flex items-center gap-1.5 disabled:opacity-50 shrink-0 cursor-pointer"
-                    >
-                      {heroVideoUploading ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
+                {/* Unified Hero Dropzone & Preview */}
+                <div 
+                  onDragEnter={handleHeroVideoDrag}
+                  onDragOver={handleHeroVideoDrag}
+                  onDragLeave={handleHeroVideoDrag}
+                  onDrop={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsHeroVideoDragActive(false);
+                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                      const file = e.dataTransfer.files[0];
+                      if (file.type.startsWith('video/')) {
+                        await uploadHeroVideoFile(file);
+                      } else if (file.type.startsWith('image/')) {
+                        setHeroUploading(true);
+                        try {
+                          const compressedBlob = await compressImage(file, 2048, 2048, 0.85);
+                          const storagePath = `users/public/covers/hero_${Date.now()}_${file.name}`;
+                          const downloadUrl = await uploadFileToR2(compressedBlob, storagePath);
+                          setHeroImgUrl(downloadUrl);
+                        } catch (err) {
+                          console.error(err);
+                          alert("히어로 이미지 업로드에 실패했습니다.");
+                        } finally {
+                          setHeroUploading(false);
+                        }
+                      }
+                    }
+                  }}
+                  className={`border border-black/10 dark:border-white/10 aspect-[16/9] overflow-hidden bg-black/5 relative group flex items-center justify-center transition-all ${
+                    isHeroVideoDragActive ? 'border-dashed border-red-600 bg-red-500/10 scale-[1.01]' : ''
+                  }`}
+                >
+                  {heroVideoUrl ? (
+                    <div className="relative w-full h-full">
+                      <video src={heroVideoUrl} controls muted className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setHeroVideoUrl('')}
+                        className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
+                      >
+                        Delete Video
+                      </button>
+                    </div>
+                  ) : heroImgUrl ? (
+                    <div className="relative w-full h-full">
+                      <img src={heroImgUrl} alt="Hero Cover Preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setHeroImgUrl('')}
+                        className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 transition-colors z-20 cursor-pointer"
+                      >
+                        Delete Image
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-black/45 dark:text-white/45 text-[10px] font-bold uppercase tracking-wider text-center flex flex-col items-center justify-center p-4">
+                      {heroUploading || heroVideoUploading ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <span>히어로 미디어를 업로드 중입니다...</span>
+                        </div>
                       ) : (
-                        <Upload className="w-3 h-3" />
+                        <span>히어로 이미지 또는 동영상을 드래그 앤 드롭하거나<br />위의 UPLOAD 버튼을 눌러주세요</span>
                       )}
-                      Upload
-                    </button>
-                  </div>
-
-                  {/* Hero Video Preview & Dropzone */}
-                  <div 
-                    onDragEnter={handleHeroVideoDrag}
-                    onDragOver={handleHeroVideoDrag}
-                    onDragLeave={handleHeroVideoDrag}
-                    onDrop={handleHeroVideoDrop}
-                    className={`mt-2 border border-black/10 dark:border-white/10 aspect-[16/9] overflow-hidden bg-black/5 relative group flex items-center justify-center transition-all duration-300
-                      ${isHeroVideoDragActive ? 'border-dashed border-red-600 bg-black/10 dark:bg-white/10 scale-[1.01]' : ''}
-                    `}
-                  >
-                    {heroVideoUrl ? (
-                      <>
-                        <video src={heroVideoUrl} controls muted className="w-full h-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => setHeroVideoUrl('')}
-                          className="absolute top-2 right-2 bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 hover:bg-red-700 transition-colors shadow-md rounded-sm z-10 cursor-pointer"
-                        >
-                          Delete Video
-                        </button>
-                      </>
-                    ) : (
-                      <div className="text-black/45 dark:text-white/45 text-[10px] font-bold uppercase tracking-widest text-center flex flex-col items-center justify-center p-4 pointer-events-none">
-                        {heroVideoUploading ? (
-                          <div className="flex flex-col items-center gap-2">
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            <span>동영상을 업로드 중입니다...</span>
-                          </div>
-                        ) : (
-                          <>
-                            히어로 동영상을 드래그 앤 드롭하거나<br />위의 Upload 버튼을 눌러주세요
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1040,19 +1037,20 @@ export function EditTripModal({
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-black/10 dark:border-white/10 mt-6 shrink-0">
+          {/* Action buttons: Cancel & Save */}
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-black/10 dark:border-white/10 shrink-0">
             <button
-               type="button"
-               onClick={handleAttemptClose}
-               className="px-4 py-2 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[10px] font-black uppercase tracking-widest transition-all text-black/60 dark:text-white/60 cursor-pointer"
+              type="button"
+              onClick={handleAttemptClose}
+              disabled={saving}
+              className="px-4 py-2 border border-black/20 dark:border-white/20 text-xs font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer text-black dark:text-white disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={saving || uploading || videoUploading || heroUploading || heroVideoUploading}
-              className="px-5 py-2 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+              disabled={saving || !title.trim() || uploading || videoUploading || heroUploading || heroVideoUploading}
+              className="px-5 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-wider hover:opacity-85 transition-opacity flex items-center gap-2 disabled:opacity-50 cursor-pointer shadow-md"
             >
               {saving ? (
                 <>
@@ -1075,10 +1073,15 @@ export function EditTripModal({
       <ConfirmModal
         isOpen={showUnsavedConfirm}
         title="UNSAVED CHANGES"
-        message="수정 중인 내용이 있습니다. 저장하지 않고 나가시겠습니까?"
-        confirmLabel="YES [Y]"
-        cancelLabel="NO [N]"
-        onConfirm={() => {
+        message="수정사항이 있는데 저장하시겠습니까?"
+        confirmLabel="YES (저장 후 나가기)"
+        discardLabel="NO (저장 안 함)"
+        cancelLabel="취소 (계속 편집)"
+        onConfirm={async () => {
+          setShowUnsavedConfirm(false);
+          await handleSubmit({ preventDefault: () => {} } as any);
+        }}
+        onDiscard={() => {
           setShowUnsavedConfirm(false);
           onClose();
         }}

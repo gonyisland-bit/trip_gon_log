@@ -737,11 +737,7 @@ export function ArchiveHubPage({
                   }`}
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (activeCardId === trip.id) {
-                      onNavigate('detail', trip.id);
-                    } else {
-                      setActiveCardId(trip.id);
-                    }
+                    onNavigate('detail', trip.id);
                   }}
                   draggable={isLoggedIn && sortBy === 'user'}
                   onDragStart={(e) => handleTripDragStart(e, trip.id)}

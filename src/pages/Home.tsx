@@ -346,23 +346,27 @@ interface HeroMediaProps {
 
 function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [isReady, setIsReady] = useState(false);
 
-  const activeVideoUrl = journey.heroVideoUrl || journey.videoUrl;
-  const activeImageUrl = getEffectiveImageUrl(journey.heroImg || journey.img);
+  // HERO section media has top priority. If neither is set, fallback to MAIN cover media.
+  const activeVideoUrl = journey.heroVideoUrl || (journey.heroImg ? '' : journey.videoUrl);
+  const activeImageUrl = journey.heroImg ? getEffectiveImageUrl(journey.heroImg) : (journey.heroVideoUrl ? '' : getEffectiveImageUrl(journey.img));
   const hasVideo = mediaType === 'video' && Boolean(activeVideoUrl);
+
+  useEffect(() => {
+    setIsReady(false);
+  }, [activeVideoUrl, activeImageUrl, isActive]);
 
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
     
     if (hasVideo && activeVideoUrl && videoRef.current) {
       if (isActive) {
-        if (videoRef.current.currentTime > 0.5) {
-          videoRef.current.currentTime = 0;
-        }
+        videoRef.current.currentTime = 0;
         const playPromise = videoRef.current.play();
         if (playPromise !== undefined) {
           playPromise.catch(error => {
-            console.log("Playback prevented or error:", error);
+            console.log("Hero video playback error/prevented:", error);
           });
         }
       } else {
@@ -370,7 +374,7 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
           if (videoRef.current) {
             videoRef.current.pause();
           }
-        }, 1500);
+        }, 1000);
       }
     }
 
@@ -381,12 +385,16 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
     };
   }, [isActive, hasVideo, activeVideoUrl]);
 
+  const handleMediaReady = () => {
+    setIsReady(true);
+    if (onMediaReady) onMediaReady();
+  };
+
   return (
     <div
-      className={`absolute inset-0 w-full h-full transition-opacity duration-[1500ms] ${isActive ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none -z-10'}`}
-      style={{ 
-        transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)'
-      }}
+      className={`absolute inset-0 w-full h-full transition-opacity duration-700 ease-out ${
+        isActive && isReady ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none -z-10'
+      }`}
     >
       {hasVideo && activeVideoUrl ? (
         <video
@@ -397,8 +405,9 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
           playsInline
           autoPlay={isActive}
           preload="auto"
-          onLoadedData={() => { if (onMediaReady) onMediaReady(); }}
-          onCanPlay={() => { if (onMediaReady) onMediaReady(); }}
+          onCanPlay={handleMediaReady}
+          onLoadedData={handleMediaReady}
+          onPlaying={handleMediaReady}
           className="w-full h-full object-cover"
         />
       ) : activeImageUrl ? (
@@ -408,7 +417,7 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
           loading={isActive ? "eager" : "lazy"}
           decoding="async"
           fetchPriority={isActive ? "high" : "low"}
-          onLoad={() => { if (isActive && onMediaReady) onMediaReady(); }}
+          onLoad={handleMediaReady}
           className="w-full h-full object-cover"
         />
       ) : (
@@ -510,6 +519,17 @@ export function HomePage({
   };
 
   const [magazineSpreadIndex, setMagazineSpreadIndex] = useState(0);
+  const [journeyLimit, setJourneyLimit] = useState<number>(() => {
+    return parseInt(localStorage.getItem('home_journey_limit') || '4', 10);
+  });
+
+  useEffect(() => {
+    const handleConfigChange = () => {
+      setJourneyLimit(parseInt(localStorage.getItem('home_journey_limit') || '4', 10));
+    };
+    window.addEventListener('homeConfigChanged', handleConfigChange);
+    return () => window.removeEventListener('homeConfigChanged', handleConfigChange);
+  }, []);
 
   // Drag-reorder state for archive cards
   const [draggedTripId, setDraggedTripId] = useState<number | null>(null);
@@ -993,7 +1013,7 @@ export function HomePage({
             ? "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 p-4 md:p-12 w-full"
             : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 p-3 sm:p-6 md:p-12 w-full"
           }>
-            {filteredTrips.slice(0, 8).map((trip, index) => {
+            {filteredTrips.slice(0, journeyLimit).map((trip, index) => {
               const { year, month, compactDate } = getYearAndMonth(trip.date);
               const days = calculateDays(trip.date);
               const isCardActive = activeCardId === trip.id;
@@ -1019,11 +1039,7 @@ export function HomePage({
                     }`}
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (activeCardId === trip.id) {
-                        onNavigate('detail', trip.id);
-                      } else {
-                        setActiveCardId(trip.id);
-                      }
+                      onNavigate('detail', trip.id);
                     }}
                     draggable={isLoggedIn}
                     onDragStart={(e) => handleTripDragStart(e, trip.id)}
@@ -1113,12 +1129,27 @@ export function HomePage({
             })}
           </div>
         )}
+
+        {/* VIEW ALL Button (유도 버튼: 여정이 한도보다 많을 때 노출) */}
+        {filteredTrips.length > journeyLimit && (
+          <div className="flex justify-center pt-6 pb-2 px-4 sm:px-6 md:px-12 w-full">
+            <button
+              type="button"
+              onClick={() => onNavigate('archive')}
+              className="px-8 py-3 bg-black text-white dark:bg-white dark:text-black border border-black dark:border-white text-xs font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-2.5 cursor-pointer shadow-md"
+            >
+              <span>VIEW ALL ({filteredTrips.length})</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* ─────────────────────────────────────────────────────────────────── */}
         {/* 02. EDITORIAL MAGAZINE MOMENTS (잡지 연출 섹션)                       */}
         {/* ─────────────────────────────────────────────────────────────────── */}
         {(() => {
           // Display curated moments or fallback to top trips' imagery
-          const displayMoments: MagazineMoment[] = magazineMoments.length > 0 
+          const displayMoments: MagazineMoment[] = magazineMoments && magazineMoments.length > 0 
             ? magazineMoments 
             : trips.slice(0, 3).map((t, idx) => ({
                 id: `fallback-${t.id}`,
@@ -1127,10 +1158,8 @@ export function HomePage({
                 date: t.date,
                 location: t.locationStr,
                 placeName: (t.locations && t.locations[0]?.name) || '',
-                caption: t.locationStr ? `${cleanAdministrativeDistricts(t.locationStr)}에서의 기록된 기억` : '기억에 남은 순간',
-                quote: idx === 0 
-                  ? "“모든 여행은 우연을 가장한 필연이며, 남겨진 사진은 그날의 온도와 공기를 영원히 품는다.”" 
-                  : "“도시의 골목과 마주친 풍경, 그 찰나의 순간.”",
+                caption: '',
+                quote: '',
                 img: t.img,
                 order: idx,
               }));
@@ -1144,7 +1173,7 @@ export function HomePage({
 
           return (
             <div className="w-full border-t border-black/10 dark:border-white/10 mt-12 pt-12 px-4 sm:px-8 md:px-12 flex flex-col gap-8">
-              {/* Section Header: Swiss Minimal Magazine Header (Weight unified with Archive) */}
+              {/* Section Header: Swiss Minimal Magazine Header */}
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-black/15 dark:border-white/15">
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-2 mb-0.5">
@@ -1163,38 +1192,57 @@ export function HomePage({
                   </p>
                 </div>
 
-                {/* Big Bold Minimalist Swiss Spread Navigation Controls */}
+                {/* Swiss Minimal Spread Navigation Controls (No Gray Box, Hero-Style Indicators) */}
                 {totalSpreads > 1 && (
-                  <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto bg-black/5 dark:bg-white/5 p-1.5 border border-black/15 dark:border-white/15">
-                    <span className="font-mono text-xs sm:text-sm font-black tracking-widest px-3 text-black dark:text-white">
-                      {String(currentSpread + 1).padStart(2, '0')} / {String(totalSpreads).padStart(2, '0')}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setMagazineSpreadIndex(prev => Math.max(0, prev - 1))}
-                      disabled={currentSpread === 0}
-                      className="w-10 h-10 sm:w-11 sm:h-11 border-2 border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-white dark:bg-[#121212] text-black dark:text-white font-bold"
-                      title="이전 화보 스프레드"
-                    >
-                      <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setMagazineSpreadIndex(prev => Math.min(totalSpreads - 1, prev + 1))}
-                      disabled={currentSpread >= totalSpreads - 1}
-                      className="w-10 h-10 sm:w-11 sm:h-11 border-2 border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-white dark:bg-[#121212] text-black dark:text-white font-bold"
-                      title="다음 화보 스프레드"
-                    >
-                      <ChevronRight className="w-5 h-5 stroke-[2.5]" />
-                    </button>
+                  <div className="flex items-center gap-3.5 shrink-0 self-start sm:self-auto">
+                    {/* Minimal Hero-Style Indicator Bars */}
+                    <div className="flex items-center gap-1.5">
+                      {Array.from({ length: totalSpreads }).map((_, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setMagazineSpreadIndex(i)}
+                          className={`h-1.5 transition-all duration-300 cursor-pointer ${
+                            currentSpread === i 
+                              ? 'w-6 bg-black dark:bg-white' 
+                              : 'w-2 bg-black/20 dark:bg-white/20 hover:bg-black/50 dark:hover:bg-white/50'
+                          }`}
+                          title={`화보 스프레드 ${i + 1}`}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Minimal Left / Right Arrows */}
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setMagazineSpreadIndex(prev => Math.max(0, prev - 1))}
+                        disabled={currentSpread === 0}
+                        className="w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-white dark:bg-[#121212] text-black dark:text-white"
+                        title="이전 화보 스프레드"
+                      >
+                        <ChevronLeft className="w-4 h-4 stroke-[2]" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMagazineSpreadIndex(prev => Math.min(totalSpreads - 1, prev + 1))}
+                        disabled={currentSpread >= totalSpreads - 1}
+                        className="w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-white dark:bg-[#121212] text-black dark:text-white"
+                        title="다음 화보 스프레드"
+                      >
+                        <ChevronRight className="w-4 h-4 stroke-[2]" />
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Magazine Editorial Spread Layout: Uniform Album Photo Cards Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 items-stretch">
+              {/* Magazine Editorial Spread Layout: Smooth Animated Grid */}
+              <div 
+                key={currentSpread}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 items-stretch animate-in fade-in duration-500"
+              >
                 {currentSlice.map((moment, idx) => {
-                  const globalIdx = currentSpread * MOMENTS_PER_SPREAD + idx + 1;
                   return (
                     <div
                       key={moment.id || idx}
@@ -1223,7 +1271,7 @@ export function HomePage({
                           alt={moment.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                         />
-                        {/* Top-Right: Grand English Satoshi Region/City Tag (No Page Numbering) */}
+                        {/* Top-Right: Grand English Satoshi Region/City Tag */}
                         {(() => {
                           const engCity = getEnglishCityName(moment.location || '');
                           if (!engCity) return null;
@@ -1237,36 +1285,26 @@ export function HomePage({
                         })()}
                       </div>
 
-                      {/* 2. Editorial Album Text & Meta Section (Swiss Minimal Inter Typography) */}
-                      <div className="p-5 flex-1 flex flex-col justify-between gap-3 text-black dark:text-white">
+                      {/* 2. Editorial Album Text & Meta Section */}
+                      <div className="p-5 flex-1 flex flex-col justify-between gap-4 text-black dark:text-white">
                         <div className="flex flex-col gap-2">
                           <div className="flex items-center justify-between text-xs font-sans font-bold text-black/50 dark:text-white/50">
                             <span className="font-mono">{moment.date || 'EDITORIAL LOG'}</span>
                             <span className="text-red-600 dark:text-red-400 font-extrabold tracking-wider font-mono">MOMENT</span>
                           </div>
 
-                          <h3 className="text-base sm:text-lg font-black uppercase tracking-tight line-clamp-1 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors font-sans">
+                          <h3 className="text-base sm:text-lg font-black uppercase tracking-tight line-clamp-2 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors font-sans">
                             {moment.title}
                           </h3>
-
-                          {moment.quote ? (
-                            <p className="text-xs sm:text-[13px] font-sans font-light italic text-black/75 dark:text-white/75 line-clamp-2 border-l-2 border-red-500 pl-2.5 my-0.5 leading-relaxed">
-                              {moment.quote}
-                            </p>
-                          ) : moment.caption ? (
-                            <p className="text-xs sm:text-[13px] font-sans text-black/65 dark:text-white/65 line-clamp-2 leading-relaxed">
-                              {moment.caption}
-                            </p>
-                          ) : null}
                         </div>
 
-                        {/* Bottom Row: Specific Timeline Place Name & View Link */}
-                        <div className="pt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-xs font-sans mt-1">
+                        {/* Bottom Row: Specific Timeline GPS Place Name & View Link */}
+                        <div className="pt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-xs font-sans mt-auto">
                           {(() => {
-                            const displayPlace = moment.placeName || (moment.title !== '기록된 여정' && moment.title !== 'UNTITLED MOMENT' ? moment.title : '') || cleanAdministrativeDistricts(moment.location || '') || 'MOMENT';
+                            const displayPlace = moment.placeName || cleanAdministrativeDistricts(moment.location || '') || 'VISITED PLACE';
                             return (
-                              <span className="truncate max-w-[65%] font-bold text-black dark:text-white tracking-tight" title={displayPlace}>
-                                {displayPlace}
+                              <span className="truncate max-w-[70%] font-bold text-black/75 dark:text-white/75 tracking-tight font-sans" title={displayPlace}>
+                                📍 {displayPlace}
                               </span>
                             );
                           })()}
@@ -1282,12 +1320,6 @@ export function HomePage({
             </div>
           );
         })()}
-
-        <div className="p-6 md:px-12 flex justify-center w-full">
-          <button onClick={() => onNavigate('archive')} className="text-sm font-bold uppercase tracking-widest border border-black dark:border-white px-8 py-3 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors w-full md:w-auto">
-            View Entire Archive
-          </button>
-        </div>
       </section>
     </main>
   );

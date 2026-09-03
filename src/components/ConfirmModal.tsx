@@ -7,24 +7,30 @@ interface ConfirmModalProps {
   message?: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  discardLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
+  onDiscard?: () => void;
+  confirmVariant?: 'danger' | 'primary' | 'black';
 }
 
 export function ConfirmModal({
   isOpen,
-  title = "CONFIRM DELETION",
-  message = "정말 이 항목을 삭제하시겠습니까? 삭제 후 복구할 수 없습니다.",
-  confirmLabel = "YES [Y]",
-  cancelLabel = "NO [N]",
+  title = "UNSAVED CHANGES",
+  message = "수정사항이 있는데 저장하시겠습니까?",
+  confirmLabel = "YES (저장 후 나가기)",
+  cancelLabel = "취소 (계속 편집)",
+  discardLabel,
   onConfirm,
   onCancel,
+  onDiscard,
+  confirmVariant = 'black',
 }: ConfirmModalProps) {
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' || e.key === 'n' || e.key === 'N') {
+      if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
         onCancel();
@@ -32,18 +38,22 @@ export function ConfirmModal({
         e.preventDefault();
         e.stopPropagation();
         onConfirm();
+      } else if ((e.key === 'n' || e.key === 'N') && onDiscard) {
+        e.preventDefault();
+        e.stopPropagation();
+        onDiscard();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onConfirm, onCancel]);
+  }, [isOpen, onConfirm, onCancel, onDiscard]);
 
   if (!isOpen) return null;
 
   return (
     <div 
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-xs animate-in fade-in duration-150"
+      className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-xs animate-in fade-in duration-150 select-none"
       onClick={onCancel}
     >
       <div 
@@ -59,23 +69,36 @@ export function ConfirmModal({
         </div>
 
         {/* Message */}
-        <p className="text-xs sm:text-sm text-black/70 dark:text-white/70 font-sans leading-relaxed break-keep">
+        <p className="text-xs sm:text-sm text-black/75 dark:text-white/75 font-sans leading-relaxed break-keep font-medium">
           {message}
         </p>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-2 pt-2 border-t border-black/10 dark:border-white/10 font-sans text-xs font-black uppercase tracking-wider">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-3 border-t border-black/10 dark:border-white/10 font-sans text-xs font-black uppercase tracking-wider">
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 transition-colors cursor-pointer"
+            className="px-3 py-2 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60 transition-colors cursor-pointer text-center"
           >
             {cancelLabel}
           </button>
+          {onDiscard && (
+            <button
+              type="button"
+              onClick={onDiscard}
+              className="px-3 py-2 border border-red-600/30 text-red-600 dark:text-red-400 hover:bg-red-600/10 transition-colors cursor-pointer text-center"
+            >
+              {discardLabel || "NO (저장 안 함)"}
+            </button>
+          )}
           <button
             type="button"
             onClick={onConfirm}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white transition-colors cursor-pointer shadow-sm"
+            className={`px-4 py-2 text-center transition-colors cursor-pointer shadow-sm ${
+              confirmVariant === 'danger'
+                ? 'bg-red-600 hover:bg-red-700 text-white'
+                : 'bg-black text-white dark:bg-white dark:text-black hover:opacity-85'
+            }`}
           >
             {confirmLabel}
           </button>

@@ -154,6 +154,10 @@ export function ManageHubPage({
   const [editHeroImg, setEditHeroImg] = useState('');
   const [editHeroVideoUrl, setEditHeroVideoUrl] = useState('');
   const [editStatusBadge, setEditStatusBadge] = useState<'' | 'NEW' | 'EDITING'>('');
+  const [archiveMediaTab, setArchiveMediaTab] = useState<'main' | 'hero'>('main');
+  const [homeJourneyLimit, setHomeJourneyLimit] = useState<number>(() => {
+    return parseInt(localStorage.getItem('home_journey_limit') || '4', 10);
+  });
   const [isSavingTrip, setIsSavingTrip] = useState(false);
   const [tripSaveSuccess, setTripSaveSuccess] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -172,6 +176,7 @@ export function ManageHubPage({
     return (
       title !== (homeTitle || '') ||
       subtitle !== (homeSubtitle || '') ||
+      homeJourneyLimit !== parseInt(localStorage.getItem('home_journey_limit') || '4', 10) ||
       JSON.stringify(selectedHeroIds) !== JSON.stringify(heroJourneyIds || []) ||
       autoSlide !== heroAutoSlide ||
       mediaType !== heroMediaType ||
@@ -365,6 +370,8 @@ export function ManageHubPage({
     setIsSavingHome(true);
     try {
       localStorage.setItem('playVideoOnActivate', String(playVideoOnActivate));
+      localStorage.setItem('home_journey_limit', String(homeJourneyLimit));
+      window.dispatchEvent(new CustomEvent('homeConfigChanged'));
       await onSaveAllHomeSettings(
         title,
         subtitle,
@@ -684,45 +691,76 @@ export function ManageHubPage({
                 </button>
               </div>
 
-              {/* Marquee Banner Text */}
-              <div className="flex flex-col gap-1.5 pt-4 border-t border-black/10 dark:border-white/10">
+              {/* Marquee Banner Toggle & Speed (도시 자동 롤링 전광판) */}
+              <div className="flex flex-col gap-3 pt-4 border-t border-black/10 dark:border-white/10">
                 <div className="flex justify-between items-center">
-                  <label className="text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70">
-                    MARQUEE BANNER TEXT (전광판 롤링 문구)
-                  </label>
-                  <label className="text-[10px] font-bold text-black/60 dark:text-white/60 flex items-center gap-1 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={showMarquee}
-                      onChange={e => setShowMarquee(e.target.checked)}
-                      className="accent-black dark:accent-white"
-                    />
-                    <span>전광판 노출</span>
-                  </label>
+                  <div className="flex flex-col">
+                    <label className="text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70">
+                      MARQUEE BANNER (전광판 롤링)
+                    </label>
+                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                      등록된 여정의 도시명들이 상단에 자동 롤링됩니다
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowMarquee(!showMarquee)}
+                    className={`px-3 py-1.5 text-xs font-mono font-bold tracking-wider uppercase border transition-colors cursor-pointer ${
+                      showMarquee
+                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                        : 'bg-white dark:bg-[#161616] border-black/20 dark:border-white/20 text-black/40 dark:text-white/40'
+                    }`}
+                  >
+                    {showMarquee ? 'ON (표시)' : 'OFF (숨김)'}
+                  </button>
                 </div>
-                <textarea
-                  rows={2}
-                  value={homeMarquee}
-                  onChange={e => setHomeMarquee(e.target.value)}
-                  placeholder="홈 상단에 흐르는 문구를 입력하세요..."
-                  className="px-3.5 py-2 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none leading-relaxed"
-                />
+
+                {showMarquee && (
+                  <div className="flex flex-col gap-1.5 pt-1">
+                    <div className="flex justify-between items-center text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70">
+                      <span>MARQUEE SPEED (흘러가는 속도)</span>
+                      <span className="font-mono text-red-600 dark:text-red-500">{homeSpeed}s</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={15}
+                      max={120}
+                      value={homeSpeed}
+                      onChange={e => setHomeSpeed(parseInt(e.target.value, 10))}
+                      className="w-full accent-black dark:accent-white cursor-pointer"
+                    />
+                  </div>
+                )}
               </div>
 
-              {/* Marquee Speed */}
-              <div className="flex flex-col gap-2">
-                <div className="flex justify-between items-center text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70">
-                  <span>MARQUEE SPEED (흘러가는 속도)</span>
-                  <span className="font-mono text-red-600 dark:text-red-500">{homeSpeed}s</span>
+              {/* Home Journeys Display Limit */}
+              <div className="flex flex-col gap-2 pt-4 border-t border-black/10 dark:border-white/10">
+                <div className="flex justify-between items-center">
+                  <div className="flex flex-col">
+                    <label className="text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70">
+                      JOURNEYS DISPLAY LIMIT (홈 여정 표시 개수)
+                    </label>
+                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                      설정 개수 초과 시 'VIEW ALL' 버튼으로 아카이브 유도
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {[4, 6, 8, 999].map(limit => (
+                      <button
+                        key={limit}
+                        type="button"
+                        onClick={() => setHomeJourneyLimit(limit)}
+                        className={`px-2.5 py-1 text-xs font-mono font-bold border transition-colors cursor-pointer ${
+                          homeJourneyLimit === limit
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                            : 'bg-white dark:bg-[#161616] border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-black'
+                        }`}
+                      >
+                        {limit === 999 ? 'ALL' : limit}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <input
-                  type="range"
-                  min={15}
-                  max={120}
-                  value={homeSpeed}
-                  onChange={e => setHomeSpeed(parseInt(e.target.value, 10))}
-                  className="w-full accent-black dark:accent-white cursor-pointer"
-                />
               </div>
 
               {/* Hero Journeys Selection: Swiss Minimal Editorial Search List */}
@@ -1232,48 +1270,181 @@ export function ManageHubPage({
                       </div>
                     </div>
 
-                    {/* Main Cover Image */}
-                    <div className="sm:col-span-2 flex flex-col gap-1.5">
-                      <div className="flex justify-between items-center">
-                        <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60">
-                          Cover Image URL (카드 메인 커버)
-                        </label>
-                        <label className="text-[9px] font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer flex items-center gap-1">
-                          <Upload className="w-3 h-3" />
-                          <span>업로드</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={e => handleFileUpload(e, 'img')}
-                            className="hidden"
-                          />
-                        </label>
+                    {/* Media Tabs: MAIN / HERO (Unified Single Dropzone per Section) */}
+                    <div className="sm:col-span-2 flex flex-col gap-2 pt-2 border-t border-black/10 dark:border-white/10">
+                      <div className="flex border-b border-black/15 dark:border-white/15 mb-2">
+                        <button
+                          type="button"
+                          onClick={() => setArchiveMediaTab('main')}
+                          className={`flex-1 py-1.5 text-xs font-black uppercase tracking-widest transition-colors cursor-pointer border-b-2 -mb-px flex items-center justify-center gap-1.5 ${
+                            archiveMediaTab === 'main'
+                              ? 'border-black dark:border-white text-black dark:text-white'
+                              : 'border-transparent text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
+                          }`}
+                        >
+                          <span>MAIN</span>
+                          {(editImg || editVideoUrl) && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white" />
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setArchiveMediaTab('hero')}
+                          className={`flex-1 py-1.5 text-xs font-black uppercase tracking-widest transition-colors cursor-pointer border-b-2 -mb-px flex items-center justify-center gap-1.5 ${
+                            archiveMediaTab === 'hero'
+                              ? 'border-red-600 text-red-600 dark:border-red-400 dark:text-red-400'
+                              : 'border-transparent text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
+                          }`}
+                        >
+                          <span>HERO</span>
+                          {(editHeroImg || editHeroVideoUrl) && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-400" />
+                          )}
+                        </button>
                       </div>
-                      <input
-                        type="text"
-                        value={editImg}
-                        onChange={e => setEditImg(e.target.value)}
-                        className="px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none"
-                      />
-                      {editImg && (
-                        <div className="w-32 h-20 border border-black/15 dark:border-white/15 overflow-hidden mt-1">
-                          <img src={getEffectiveImageUrl(editImg)} alt="Cover preview" className="w-full h-full object-cover" />
+
+                      {archiveMediaTab === 'main' ? (
+                        <div className="flex flex-col gap-2">
+                          <div className="flex justify-between items-center">
+                            <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60">
+                              MAIN MEDIA (이미지 또는 비디오)
+                            </label>
+                            <label className="text-[9.5px] font-bold text-black dark:text-white hover:underline cursor-pointer flex items-center gap-1">
+                              <Upload className="w-3 h-3" />
+                              <span>{isUploading ? '업로드 중...' : '업로드'}</span>
+                              <input
+                                type="file"
+                                accept="image/*,video/*"
+                                onChange={e => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  if (file.type.startsWith('video/')) {
+                                    (async () => {
+                                      setIsUploading(true);
+                                      try {
+                                        const url = await uploadFileToR2(file, `covers/${Date.now()}_${file.name}`);
+                                        setEditVideoUrl(url);
+                                      } catch (err) {
+                                        alert('비디오 업로드 실패');
+                                      } finally {
+                                        setIsUploading(false);
+                                      }
+                                    })();
+                                  } else {
+                                    handleFileUpload(e, 'img');
+                                  }
+                                }}
+                                className="hidden"
+                              />
+                            </label>
+                          </div>
+                          <input
+                            type="text"
+                            value={editVideoUrl || editImg}
+                            onChange={e => {
+                              const val = e.target.value;
+                              if (val.match(/\.(mp4|webm|mov)(\?.*)?$/i)) {
+                                setEditVideoUrl(val);
+                              } else {
+                                setEditImg(val);
+                              }
+                            }}
+                            placeholder="이미지 또는 영상 URL 입력 / 파일 선택"
+                            className="px-3 py-2 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none"
+                          />
+                          {(editVideoUrl || editImg) && (
+                            <div className="relative w-40 h-24 border border-black/15 dark:border-white/15 overflow-hidden mt-1 bg-black/10">
+                              {editVideoUrl ? (
+                                <video src={editVideoUrl} controls muted className="w-full h-full object-cover" />
+                              ) : (
+                                <img src={getEffectiveImageUrl(editImg)} alt="Cover preview" className="w-full h-full object-cover" />
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (editVideoUrl) setEditVideoUrl('');
+                                  else setEditImg('');
+                                }}
+                                className="absolute top-1 right-1 bg-black/80 hover:bg-red-600 text-white text-[8px] font-black uppercase px-1.5 py-0.5 cursor-pointer"
+                              >
+                                DELETE
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          <p className="text-[10px] text-black/60 dark:text-white/60 font-medium leading-relaxed bg-black/[0.03] dark:bg-white/[0.03] p-2 border border-black/10 dark:border-white/10">
+                            홈 상단 히어로 슬라이더에 우선 노출할 미디어입니다. (미등록 시 MAIN 미디어 사용)
+                          </p>
+                          <div className="flex justify-between items-center">
+                            <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60">
+                              HERO MEDIA (이미지 또는 비디오)
+                            </label>
+                            <label className="text-[9.5px] font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer flex items-center gap-1">
+                              <Upload className="w-3 h-3" />
+                              <span>{isUploading ? '업로드 중...' : '업로드'}</span>
+                              <input
+                                type="file"
+                                accept="image/*,video/*"
+                                onChange={e => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  if (file.type.startsWith('video/')) {
+                                    (async () => {
+                                      setIsUploading(true);
+                                      try {
+                                        const url = await uploadFileToR2(file, `covers/hero_${Date.now()}_${file.name}`);
+                                        setEditHeroVideoUrl(url);
+                                      } catch (err) {
+                                        alert('비디오 업로드 실패');
+                                      } finally {
+                                        setIsUploading(false);
+                                      }
+                                    })();
+                                  } else {
+                                    handleFileUpload(e, 'heroImg');
+                                  }
+                                }}
+                                className="hidden"
+                              />
+                            </label>
+                          </div>
+                          <input
+                            type="text"
+                            value={editHeroVideoUrl || editHeroImg}
+                            onChange={e => {
+                              const val = e.target.value;
+                              if (val.match(/\.(mp4|webm|mov)(\?.*)?$/i)) {
+                                setEditHeroVideoUrl(val);
+                              } else {
+                                setEditHeroImg(val);
+                              }
+                            }}
+                            placeholder="히어로 이미지 또는 영상 URL 입력 / 파일 선택"
+                            className="px-3 py-2 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none"
+                          />
+                          {(editHeroVideoUrl || editHeroImg) && (
+                            <div className="relative w-40 h-24 border border-black/15 dark:border-white/15 overflow-hidden mt-1 bg-black/10">
+                              {editHeroVideoUrl ? (
+                                <video src={editHeroVideoUrl} controls muted className="w-full h-full object-cover" />
+                              ) : (
+                                <img src={getEffectiveImageUrl(editHeroImg)} alt="Hero preview" className="w-full h-full object-cover" />
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (editHeroVideoUrl) setEditHeroVideoUrl('');
+                                  else setEditHeroImg('');
+                                }}
+                                className="absolute top-1 right-1 bg-black/80 hover:bg-red-600 text-white text-[8px] font-black uppercase px-1.5 py-0.5 cursor-pointer"
+                              >
+                                DELETE
+                              </button>
+                            </div>
+                          )}
                         </div>
                       )}
-                    </div>
-
-                    {/* Cover Video URL */}
-                    <div className="sm:col-span-2 flex flex-col gap-1">
-                      <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60">
-                        Cover Video URL (호버 시 재생 비디오)
-                      </label>
-                      <input
-                        type="text"
-                        value={editVideoUrl}
-                        onChange={e => setEditVideoUrl(e.target.value)}
-                        placeholder="https://..."
-                        className="px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none"
-                      />
                     </div>
                   </div>
 
@@ -1651,14 +1822,14 @@ export function ManageHubPage({
               <span className="text-[10px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500">
                 UNSAVED CHANGES
               </span>
-              <h3 className="text-base font-black uppercase tracking-tight text-black dark:text-white">
-                수정사항이 저장되지 않았습니다
+              <h3 className="text-sm sm:text-base font-black uppercase tracking-tight text-black dark:text-white">
+                수정사항이 있는데 저장하시겠습니까?
               </h3>
               <p className="text-xs text-black/60 dark:text-white/60 font-sans mt-0.5 leading-relaxed">
-                저장하지 않고 뷰 모드로 이동하면 편집 중인 내용이 유실될 수 있습니다. 저장 후 이동하시겠습니까?
+                저장하지 않고 이동하면 편집 중인 내용이 유실될 수 있습니다.
               </p>
             </div>
-            <div className="flex flex-col gap-2 pt-2 border-t border-black/10 dark:border-white/10">
+            <div className="flex flex-col gap-2 pt-2 border-t border-black/10 dark:border-white/10 font-sans">
               <button
                 type="button"
                 onClick={async () => {
@@ -1667,9 +1838,9 @@ export function ManageHubPage({
                   setShowUnsavedModal(false);
                   onNavigate('home');
                 }}
-                className="w-full py-2.5 bg-black text-white dark:bg-white dark:text-black font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 hover:opacity-85 cursor-pointer rounded-none"
+                className="w-full py-2.5 bg-black text-white dark:bg-white dark:text-black font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 hover:opacity-85 cursor-pointer rounded-none shadow-sm"
               >
-                저장 후 이동 (Y)
+                YES (저장 후 이동)
               </button>
               <button
                 type="button"
@@ -1677,16 +1848,16 @@ export function ManageHubPage({
                   setShowUnsavedModal(false);
                   onNavigate('home');
                 }}
-                className="w-full py-2 border border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/5 font-mono font-bold text-xs uppercase tracking-wider cursor-pointer rounded-none"
+                className="w-full py-2 border border-red-600/30 text-red-600 dark:text-red-400 hover:bg-red-600/10 font-bold text-xs uppercase tracking-wider cursor-pointer rounded-none"
               >
-                저장하지 않고 이동 (N)
+                NO (저장 안 함)
               </button>
               <button
                 type="button"
                 onClick={() => setShowUnsavedModal(false)}
-                className="w-full py-1.5 text-[11px] font-mono text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white uppercase tracking-wider cursor-pointer text-center"
+                className="w-full py-1.5 text-[11px] text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white uppercase tracking-wider cursor-pointer text-center"
               >
-                계속 편집하기 (ESC)
+                취소 (계속 편집)
               </button>
             </div>
           </div>
