@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   Clock, Plane, Bed, Train, Bus, Car, User, Edit2, Trash2, 
-  Image as ImageIcon, ChevronUp, ChevronDown, MapPin, Map, Plus, Loader2, Search, ArrowLeft,
+  Image as ImageIcon, ChevronUp, ChevronDown, MapPin, Plus, Loader2, Search, ArrowLeft,
   ExternalLink, MapPinOff, Maximize2, Star, ChevronLeft, ChevronRight, ArrowUp, ArrowDown,
   Sun, Cloud, Cloudy, CloudRain, Snowflake, CloudLightning, ArrowRight, Calculator, FileText, Share2, GripVertical,
   Play, Pause, SkipForward, SkipBack, X as CloseIcon, Check, Edit3, DollarSign,
@@ -1715,6 +1715,15 @@ export function JourneyDetailPage({
       memo: item.type === 'timeline' ? (item as any).memo : undefined
     }));
   }, [allGalleryImages]);
+
+  // Fast O(1) Map for opening Lightbox immediately without findIndex array traversal
+  const galleryUrlIndexMap = useMemo(() => {
+    const map = new Map<string, number>();
+    galleryAllMeta.forEach((item, idx) => {
+      map.set(item.url, idx);
+    });
+    return map;
+  }, [galleryAllMeta]);
 
   const galleryGroups = useMemo(() => {
     const groups: { [date: string]: typeof allGalleryImages } = {};
@@ -4536,8 +4545,8 @@ export function JourneyDetailPage({
                     }}
                     onDoubleClick={(e) => {
                       e.stopPropagation();
-                      const globalIdx = galleryAllMeta.findIndex(m => m.url === imgItem.url);
-                      setLightboxIndex(globalIdx !== -1 ? globalIdx : 0);
+                      const globalIdx = galleryUrlIndexMap.get(imgItem.url) ?? 0;
+                      setLightboxIndex(globalIdx);
                       setIsLightboxOpen(true);
                       setExpandedItemId(imgItem.id);
                     }}
@@ -4590,8 +4599,8 @@ export function JourneyDetailPage({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        const globalIdx = galleryAllMeta.findIndex(m => m.url === imgItem.url);
-                        setLightboxIndex(globalIdx !== -1 ? globalIdx : 0);
+                        const globalIdx = galleryUrlIndexMap.get(imgItem.url) ?? 0;
+                        setLightboxIndex(globalIdx);
                         setIsLightboxOpen(true);
                       }}
                       className={`absolute bottom-2 right-2 p-1.5 bg-black/75 hover:bg-black text-white transition-colors z-10 rounded-none ${isPhotoActive ? 'opacity-100' : 'opacity-0 group-hover/gallery:opacity-100 focus:opacity-100'}`}

@@ -648,6 +648,7 @@ export function Lightbox({
               ref={imgRef}
               src={currentMeta.url}
               alt="Fullscreen Gallery"
+              decoding="async"
               onDoubleClick={isSlideshow ? undefined : handleDoubleClick}
               data-pin-nopin="true"
               style={{
@@ -747,6 +748,8 @@ export function Lightbox({
                   <img
                     src={img.url}
                     alt={`Thumb ${idx + 1}`}
+                    loading="lazy"
+                    decoding="async"
                     data-pin-nopin="true"
                     className="w-full h-full object-cover"
                   />

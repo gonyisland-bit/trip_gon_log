@@ -346,8 +346,6 @@ interface HeroMediaProps {
 
 function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const imgRef = useRef<HTMLImageElement>(null);
-  const [isReady, setIsReady] = useState(false);
 
   // Priority 1: Specific Hero Section Media (Video or Image)
   // Priority 2: Fallback to Main Section Media according to mediaType preference
@@ -355,24 +353,19 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
   let finalImageUrl = '';
 
   if (journey.heroVideoUrl) {
-    finalVideoUrl = journey.heroVideoUrl;
+    finalVideoUrl = getEffectiveImageUrl(journey.heroVideoUrl);
   } else if (journey.heroImg) {
     finalImageUrl = getEffectiveImageUrl(journey.heroImg);
   } else {
     // Neither specific hero media is set, fallback to main media
     if (mediaType === 'video' && journey.videoUrl) {
-      finalVideoUrl = journey.videoUrl;
+      finalVideoUrl = getEffectiveImageUrl(journey.videoUrl);
     } else {
       finalImageUrl = getEffectiveImageUrl(journey.img);
     }
   }
 
   const isVideo = Boolean(finalVideoUrl);
-
-  const handleMediaReady = useCallback(() => {
-    setIsReady(true);
-    if (onMediaReady) onMediaReady();
-  }, [onMediaReady]);
 
   // Mobile WebKit / iOS autoplay policy: DOM properties must be explicitly set before play()
   useEffect(() => {
@@ -385,24 +378,6 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
     }
   }, [finalVideoUrl, isVideo]);
 
-  // If image is already cached by browser, onLoad won't fire again on slide switch. Detect complete state.
-  useEffect(() => {
-    if (!isVideo && finalImageUrl) {
-      if (imgRef.current && (imgRef.current.complete || imgRef.current.naturalWidth > 0)) {
-        handleMediaReady();
-      }
-    }
-  }, [finalImageUrl, isVideo, isActive, handleMediaReady]);
-
-  useEffect(() => {
-    // If it's a video, reset ready status on slide change until it can play
-    if (isVideo) {
-      setIsReady(false);
-    } else if (imgRef.current && (imgRef.current.complete || imgRef.current.naturalWidth > 0)) {
-      setIsReady(true);
-    }
-  }, [finalVideoUrl, finalImageUrl, isActive, isVideo]);
-
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
     
@@ -413,19 +388,16 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
       vid.playsInline = true;
 
       if (isActive) {
-        vid.currentTime = 0;
+        if (vid.currentTime > 0.5) {
+          vid.currentTime = 0;
+        }
         const playPromise = vid.play();
         if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              handleMediaReady();
-            })
-            .catch(error => {
-              console.log("Hero video autoplay prevented/delayed:", error);
-              // On mobile, if autoplay is delayed/restricted, still reveal the video frame
-              handleMediaReady();
-            });
+          playPromise.catch(error => {
+            console.log("Hero video autoplay prevented/delayed:", error);
+          });
         }
+        if (onMediaReady) onMediaReady();
       } else {
         timeoutId = setTimeout(() => {
           if (videoRef.current) {
@@ -433,6 +405,8 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
           }
         }, 1000);
       }
+    } else if (isActive && onMediaReady) {
+      onMediaReady();
     }
 
     return () => {
@@ -440,12 +414,12 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
         clearTimeout(timeoutId);
       }
     };
-  }, [isActive, isVideo, finalVideoUrl, handleMediaReady]);
+  }, [isActive, isVideo, finalVideoUrl, onMediaReady]);
 
   return (
     <div
       className={`absolute inset-0 w-full h-full transition-opacity duration-700 ease-out ${
-        isActive && isReady ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none -z-10'
+        isActive ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none -z-10'
       }`}
     >
       {isVideo && finalVideoUrl ? (
@@ -457,26 +431,15 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
           playsInline
           autoPlay={isActive}
           preload="auto"
-          onCanPlay={handleMediaReady}
-          onLoadedData={handleMediaReady}
-          onLoadedMetadata={handleMediaReady}
-          onPlaying={handleMediaReady}
-          onError={handleMediaReady}
           className="w-full h-full object-cover"
-        >
-          <source src={finalVideoUrl} type={finalVideoUrl.toLowerCase().includes('.mov') ? 'video/quicktime' : 'video/mp4'} />
-          <source src={finalVideoUrl} />
-        </video>
+        />
       ) : finalImageUrl ? (
         <img
-          ref={imgRef}
           src={finalImageUrl}
           alt={journey.title || "Hero Trip"}
           loading={isActive ? "eager" : "lazy"}
           decoding="async"
           fetchPriority={isActive ? "high" : "low"}
-          onLoad={handleMediaReady}
-          onError={handleMediaReady}
           className="w-full h-full object-cover"
         />
       ) : (
