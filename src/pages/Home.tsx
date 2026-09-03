@@ -178,59 +178,101 @@ function getEnglishCityName(locationStr?: string): string {
 // Journey card hamburger menu
 export function JourneyCardMenu({
   onEdit,
-  onClone,
-  onMoveToPlans,
-  onMoveToArchive,
   onDelete,
-  isPlan = false,
-  isLoggedIn = false,
+  isLoggedIn,
+  onClone,
+  onMove,
+  moveLabel,
+  className,
+  variant = 'card',
 }: {
   onEdit?: () => void;
-  onClone?: () => void;
-  onMoveToPlans?: () => void;
-  onMoveToArchive?: () => void;
   onDelete?: () => void;
-  isPlan?: boolean;
-  isLoggedIn?: boolean;
+  isLoggedIn: boolean;
+  onClone?: () => void;
+  onMove?: () => void;
+  moveLabel?: string;
+  className?: string;
+  variant?: 'card' | 'minimal';
 }) {
   const [open, setOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    if (!open) return;
+
+    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     };
-    if (open) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setOpen(false);
+      } else if (e.key === 'e' || e.key === 'E') {
+        if (onEdit) {
+          e.preventDefault();
+          setOpen(false);
+          onEdit();
+        }
+      } else if (e.key === 'c' || e.key === 'C') {
+        if (onClone) {
+          e.preventDefault();
+          setOpen(false);
+          onClone();
+        }
+      } else if (e.key === 's' || e.key === 'S') {
+        if (onMove) {
+          e.preventDefault();
+          setOpen(false);
+          onMove();
+        }
+      } else if (e.key === 'd' || e.key === 'D') {
+        if (onDelete) {
+          e.preventDefault();
+          setOpen(false);
+          setShowDeleteConfirm(true);
+        }
+      }
     };
-  }, [open]);
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('touchstart', handleOutsideClick);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open, onEdit, onClone, onMove, onDelete]);
 
   if (!isLoggedIn) return null;
 
   return (
     <>
-      <div ref={menuRef} className="relative z-30" onClick={(e) => e.stopPropagation()}>
+      <div ref={menuRef} className={`${className || (variant === 'minimal' ? 'relative' : "absolute bottom-3 right-3 z-30")} pointer-events-auto`}>
         <button
-          onClick={(e) => { e.stopPropagation(); setOpen(prev => !prev); }}
-          className="p-1.5 bg-black/60 hover:bg-black/90 text-white rounded-full transition-all backdrop-blur-sm cursor-pointer border border-white/20 shadow-md"
-          title="옵션 더보기"
-          aria-label="옵션 더보기"
+          onClick={(e) => { e.stopPropagation(); setOpen(v => !v); }}
+          className={variant === 'minimal'
+            ? "p-2 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer bg-transparent border-0 shadow-none"
+            : "p-1.5 bg-black/60 hover:bg-black/90 text-white rounded-md transition-all shadow-md backdrop-blur-sm border border-white/20 opacity-90 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 flex items-center justify-center cursor-pointer active:scale-95"
+          }
+          title="카드 관리 메뉴"
+          aria-label="Journey menu"
         >
-          <MoreVertical className="w-3.5 h-3.5" />
+          <Menu className="w-3.5 h-3.5" />
         </button>
 
         {open && (
-          <div className="absolute right-0 top-full mt-1.5 w-44 bg-neutral-900 border border-white/20 rounded-none shadow-2xl py-1 z-50 animate-in fade-in zoom-in-95 duration-150 divide-y divide-white/10">
+          <div className={`absolute ${variant === 'minimal' ? 'top-full right-0 mt-1' : 'bottom-full right-0 mb-1'} w-48 bg-black text-white border border-white/20 shadow-2xl rounded-none z-50 overflow-hidden divide-y divide-white/10 animate-in zoom-in-95 duration-150`}>
             {onEdit && (
               <button
                 onClick={(e) => { e.stopPropagation(); setOpen(false); onEdit(); }}
-                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-black uppercase tracking-widest text-white/90 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-black uppercase tracking-widest text-white hover:bg-white/15 transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-2.5">
                   <Edit2 className="w-3.5 h-3.5 text-white/80" />
@@ -242,37 +284,37 @@ export function JourneyCardMenu({
             {onClone && (
               <button
                 onClick={(e) => { e.stopPropagation(); setOpen(false); onClone(); }}
-                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-black uppercase tracking-widest text-white/90 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-black uppercase tracking-widest text-white hover:bg-white/15 transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-2.5">
                   <Copy className="w-3.5 h-3.5 text-white/80" />
-                  <span>CLONE</span>
+                  <span>COPY</span>
                 </div>
                 <span className="font-mono text-[9.5px] font-bold text-white/50 border border-white/20 px-1.5 py-0.5">C</span>
               </button>
             )}
-            {isPlan && onMoveToArchive && (
+            {onMove && (
               <button
-                onClick={(e) => { e.stopPropagation(); setOpen(false); onMoveToArchive(); }}
-                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-black uppercase tracking-widest text-white/90 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-2.5">
-                  <ArrowRight className="w-3.5 h-3.5 text-white/80" />
-                  <span>MOVE TO LOG</span>
-                </div>
-                <span className="font-mono text-[9.5px] font-bold text-white/50 border border-white/20 px-1.5 py-0.5">M</span>
-              </button>
-            )}
-            {!isPlan && onMoveToPlans && (
-              <button
-                onClick={(e) => { e.stopPropagation(); setOpen(false); onMoveToPlans(); }}
-                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-black uppercase tracking-widest text-white/90 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+                onClick={(e) => { e.stopPropagation(); setOpen(false); onMove(); }}
+                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-black uppercase tracking-widest text-white hover:bg-white/15 transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-2.5">
                   <ArrowUp className="w-3.5 h-3.5 text-white/80" />
-                  <span>SWITCHING</span>
+                  <span>{moveLabel || "MOVE"}</span>
                 </div>
                 <span className="font-mono text-[9.5px] font-bold text-white/50 border border-white/20 px-1.5 py-0.5">S</span>
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setOpen(false); setShowDeleteConfirm(true); }}
+                className="w-full flex items-center justify-between px-4 py-3 text-xs sm:text-[13px] font-black uppercase tracking-widest text-red-400 hover:bg-red-950/50 hover:text-red-300 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                  <span>DELETE</span>
+                </div>
+                <span className="font-mono text-[9.5px] font-bold text-red-400/70 border border-red-500/30 px-1.5 py-0.5">D</span>
               </button>
             )}
           </div>
