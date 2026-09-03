@@ -346,6 +346,7 @@ interface HeroMediaProps {
 
 function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const [isReady, setIsReady] = useState(false);
 
   // Priority 1: Specific Hero Section Media (Video or Image)
@@ -384,9 +385,23 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
     }
   }, [finalVideoUrl, isVideo]);
 
+  // If image is already cached by browser, onLoad won't fire again on slide switch. Detect complete state.
   useEffect(() => {
-    setIsReady(false);
-  }, [finalVideoUrl, finalImageUrl, isActive]);
+    if (!isVideo && finalImageUrl) {
+      if (imgRef.current && (imgRef.current.complete || imgRef.current.naturalWidth > 0)) {
+        handleMediaReady();
+      }
+    }
+  }, [finalImageUrl, isVideo, isActive, handleMediaReady]);
+
+  useEffect(() => {
+    // If it's a video, reset ready status on slide change until it can play
+    if (isVideo) {
+      setIsReady(false);
+    } else if (imgRef.current && (imgRef.current.complete || imgRef.current.naturalWidth > 0)) {
+      setIsReady(true);
+    }
+  }, [finalVideoUrl, finalImageUrl, isActive, isVideo]);
 
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
@@ -448,15 +463,20 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
           onPlaying={handleMediaReady}
           onError={handleMediaReady}
           className="w-full h-full object-cover"
-        />
+        >
+          <source src={finalVideoUrl} type={finalVideoUrl.toLowerCase().includes('.mov') ? 'video/quicktime' : 'video/mp4'} />
+          <source src={finalVideoUrl} />
+        </video>
       ) : finalImageUrl ? (
         <img
+          ref={imgRef}
           src={finalImageUrl}
           alt={journey.title || "Hero Trip"}
           loading={isActive ? "eager" : "lazy"}
           decoding="async"
           fetchPriority={isActive ? "high" : "low"}
           onLoad={handleMediaReady}
+          onError={handleMediaReady}
           className="w-full h-full object-cover"
         />
       ) : (

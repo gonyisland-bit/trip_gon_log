@@ -854,7 +854,7 @@ export function EditTripModal({
                 >
                   {videoUrl ? (
                     <div className="relative w-full h-full">
-                      <video src={videoUrl} controls muted className="w-full h-full object-cover" />
+                      <video src={videoUrl} controls muted playsInline preload="metadata" className="w-full h-full object-cover" />
                       <button
                         type="button"
                         onClick={() => {
@@ -999,7 +999,7 @@ export function EditTripModal({
                 >
                   {heroVideoUrl ? (
                     <div className="relative w-full h-full">
-                      <video src={heroVideoUrl} controls muted className="w-full h-full object-cover" />
+                      <video src={heroVideoUrl} controls muted playsInline preload="metadata" className="w-full h-full object-cover" />
                       <button
                         type="button"
                         onClick={() => {

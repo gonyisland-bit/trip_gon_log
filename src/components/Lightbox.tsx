@@ -405,7 +405,7 @@ export function Lightbox({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[10000] bg-black flex flex-col select-none animate-in fade-in duration-150 will-change-transform"
+      className="fixed inset-0 z-[10000] bg-black flex flex-col select-none animate-in fade-in duration-75 will-change-transform"
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       onTouchStart={handleTouchStart}

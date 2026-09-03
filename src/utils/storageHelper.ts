@@ -55,7 +55,19 @@ export async function uploadFileToR2(file: File | Blob, path: string): Promise<s
   const arrayBuffer = await file.arrayBuffer();
   const uint8Array = new Uint8Array(arrayBuffer);
 
-  const contentType = file.type || 'application/octet-stream';
+  // Enforce proper MIME Content-Type header so iOS Safari and browsers can stream videos & display images
+  let contentType = file.type;
+  if (!contentType || contentType === 'application/octet-stream') {
+    const ext = cleanPath.split('.').pop()?.toLowerCase();
+    if (ext === 'mov') contentType = 'video/quicktime';
+    else if (ext === 'mp4') contentType = 'video/mp4';
+    else if (ext === 'webm') contentType = 'video/webm';
+    else if (ext === 'jpg' || ext === 'jpeg') contentType = 'image/jpeg';
+    else if (ext === 'png') contentType = 'image/png';
+    else if (ext === 'webp') contentType = 'image/webp';
+    else if (ext === 'gif') contentType = 'image/gif';
+    else contentType = 'application/octet-stream';
+  }
 
   const command = new PutObjectCommand({
     Bucket: BUCKET_NAME,

@@ -1526,7 +1526,7 @@ export function ManageHubPage({
                           >
                             {editVideoUrl ? (
                               <div className="relative w-full h-full">
-                                <video src={editVideoUrl} controls muted className="w-full h-full object-cover" />
+                                <video src={editVideoUrl} controls muted playsInline preload="metadata" className="w-full h-full object-cover" />
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1673,7 +1673,7 @@ export function ManageHubPage({
                           >
                             {editHeroVideoUrl ? (
                               <div className="relative w-full h-full">
-                                <video src={editHeroVideoUrl} controls muted className="w-full h-full object-cover" />
+                                <video src={editHeroVideoUrl} controls muted playsInline preload="metadata" className="w-full h-full object-cover" />
                                 <button
                                   type="button"
                                   onClick={() => {
