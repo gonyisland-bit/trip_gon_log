@@ -683,20 +683,6 @@ export function JourneyDetailPage({
 }: JourneyDetailPageProps) {
   // All hooks must be called before conditional return
   const [activeTab, setActiveTab] = useState<TabType>('summary');
-  // Progressive chunked rendering for gallery to ensure 0ms instant tab switching on mobile
-  const [galleryRenderLimit, setGalleryRenderLimit] = useState<number>(24);
-
-  useEffect(() => {
-    if (activeTab === 'gallery') {
-      setGalleryRenderLimit(24);
-      const timer = setTimeout(() => {
-        setGalleryRenderLimit(9999);
-      }, 100);
-      return () => clearTimeout(timer);
-    } else {
-      setGalleryRenderLimit(24);
-    }
-  }, [activeTab]);
 
   const [detectedCountry, setDetectedCountry] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string>('ALL');
@@ -3462,7 +3448,7 @@ export function JourneyDetailPage({
           className="flex-grow flex flex-col relative overflow-y-auto overflow-x-hidden w-full h-full bg-white dark:bg-[#0A0A0A]"
         >
           {/* SUMMARY TAB */}
-          {activeTab === 'summary' && (
+          <div className={activeTab === 'summary' ? 'contents' : 'hidden'}>
             <SummaryView 
               trip={tripToUse!}
               timelineData={timelineData}
@@ -3475,13 +3461,11 @@ export function JourneyDetailPage({
                 setExpandedItemId(null);
               }}
             />
-          )}
+          </div>
           
           {/* LOG TAB */}
-          {activeTab === 'timeline' && (
-
-            <div className="animate-in fade-in duration-300 h-auto flex flex-col w-full relative">
-              {/* Day filter selector bar - Slim and Sticky */}
+          <div className={`h-auto flex flex-col w-full relative ${activeTab === 'timeline' ? 'block' : 'hidden'}`}>
+            {/* Day filter selector bar - Slim and Sticky */}
               <div className="sticky top-0 z-20 border-b border-black/15 dark:border-white/15 bg-white dark:bg-[#0A0A0A] transition-colors shrink-0 w-full flex items-center shadow-xs">
                 {/* Scroll buttons for desktop/web */}
                 <button 
@@ -4215,11 +4199,9 @@ export function JourneyDetailPage({
                 )}
               </div>
             </div>
-          )}
 
           {/* FLIGHTS TAB */}
-          {activeTab === 'flights' && (
-            <div className="w-full flex flex-col animate-in fade-in duration-300">
+          <div className={`w-full flex flex-col ${activeTab === 'flights' ? 'block' : 'hidden'}`}>
               {(() => {
                 const flightsToUse = isEditing ? draftFlights : flights;
                 if (flightsToUse.length === 0) {
@@ -4343,11 +4325,9 @@ export function JourneyDetailPage({
                 </div>
               )}
             </div>
-          )}
 
           {/* STAYS TAB */}
-          {activeTab === 'stays' && (
-            <div className="w-full flex flex-col animate-in fade-in duration-300">
+          <div className={`w-full flex flex-col ${activeTab === 'stays' ? 'block' : 'hidden'}`}>
               {(isEditing ? draftStays : stays).length === 0 ? (
                 <div className="text-center py-16 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
                   등록된 숙소 정보가 없습니다.
@@ -4387,11 +4367,9 @@ export function JourneyDetailPage({
                 </div>
               )}
             </div>
-          )}
 
           {/* TRANSIT TAB */}
-          {activeTab === 'transit' && (
-            <div className="w-full flex flex-col animate-in fade-in duration-300">
+          <div className={`w-full flex flex-col ${activeTab === 'transit' ? 'block' : 'hidden'}`}>
               {/* Sort Type Control */}
               <div className="w-full flex justify-end items-center gap-2 py-2 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/15 dark:border-white/15 text-[9px] md:text-[10px] font-bold uppercase tracking-widest select-none">
                 <button 
@@ -4532,11 +4510,11 @@ export function JourneyDetailPage({
                 </div>
               )}
             </div>
-          )}
 
           {/* GALLERY TAB */}
-          {activeTab === 'gallery' && (() => {
-            // Helper function to render a single gallery item
+          <div className={`h-auto flex flex-col w-full relative pb-16 ${activeTab === 'gallery' ? 'block' : 'hidden'}`}>
+            {(() => {
+              // Helper function to render a single gallery item
             const renderGalleryItem = (imgItem: typeof allGalleryImages[0], idx: number) => {
               const isPhotoActive = expandedItemId === imgItem.id;
               
@@ -4813,97 +4791,78 @@ export function JourneyDetailPage({
                   <div className="text-center py-16 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
                     등록된 갤러리 사진이 없습니다.
                   </div>
-                ) : galleryViewMode === 'accordion' ? (() => {
-                  let renderedCount = 0;
-                  return (
-                    <div className="flex flex-col w-full">
-                      {/* Date Accordions */}
-                      {allTripDates.map((date, idx) => {
-                        const items = galleryGroups[date] || [];
-                        const isCollapsed = collapsedGalleryDays.includes(date);
-                        if (items.length === 0) return null;
+                ) : galleryViewMode === 'accordion' ? (
+                  <div className="flex flex-col w-full">
+                    {/* Date Accordions */}
+                    {allTripDates.map((date, idx) => {
+                      const items = galleryGroups[date] || [];
+                      const isCollapsed = collapsedGalleryDays.includes(date);
+                      if (items.length === 0) return null;
 
-                        const visibleItems = items.filter(() => {
-                          if (renderedCount < galleryRenderLimit) {
-                            renderedCount++;
-                            return true;
-                          }
-                          return false;
-                        });
+                      return (
+                        <div key={date} className="w-full border-b border-black/15 dark:border-white/15">
+                          <button
+                            onClick={() => {
+                              if (isCollapsed) {
+                                setCollapsedGalleryDays(prev => prev.filter(d => d !== date));
+                              } else {
+                                setCollapsedGalleryDays(prev => [...prev, date]);
+                              }
+                            }}
+                            className="w-full flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] text-[10px] sm:text-xs font-black uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="font-black">DAY {idx + 1}</span>
+                              <span className="text-black/30 dark:text-white/30">·</span>
+                              <span className="font-mono text-black/70 dark:text-white/70">{date}</span>
+                            </div>
+                            <span className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50 tracking-wider">
+                              {items.length} PHOTOS {isCollapsed ? '▼' : '▲'}
+                            </span>
+                          </button>
+                          {!isCollapsed && (
+                            <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 md:grid-cols-2 gap-[1px]' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[1px]'} bg-black/15 dark:bg-white/15 border-b border-black/15 dark:border-white/15`}>
+                              {items.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
 
-                        return (
-                          <div key={date} className="w-full border-b border-black/15 dark:border-white/15">
-                            <button
-                              onClick={() => {
-                                if (isCollapsed) {
-                                  setCollapsedGalleryDays(prev => prev.filter(d => d !== date));
-                                } else {
-                                  setCollapsedGalleryDays(prev => [...prev, date]);
-                                }
-                              }}
-                              className="w-full flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] text-[10px] sm:text-xs font-black uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className="font-black">DAY {idx + 1}</span>
-                                <span className="text-black/30 dark:text-white/30">·</span>
-                                <span className="font-mono text-black/70 dark:text-white/70">{date}</span>
-                              </div>
-                              <span className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50 tracking-wider">
-                                {items.length} PHOTOS {isCollapsed ? '▼' : '▲'}
-                              </span>
-                            </button>
-                            {!isCollapsed && visibleItems.length > 0 && (
-                              <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 md:grid-cols-2 gap-[1px]' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[1px]'} bg-black/15 dark:bg-white/15 border-b border-black/15 dark:border-white/15`}>
-                                {visibleItems.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-
-                      {/* No Date Accordion */}
-                      {galleryGroups['NO_DATE'] && galleryGroups['NO_DATE'].length > 0 && (() => {
-                        const items = galleryGroups['NO_DATE'];
-                        const isCollapsed = collapsedGalleryDays.includes('NO_DATE');
-                        const visibleItems = items.filter(() => {
-                          if (renderedCount < galleryRenderLimit) {
-                            renderedCount++;
-                            return true;
-                          }
-                          return false;
-                        });
-
-                        return (
-                          <div className="w-full border-b border-black/15 dark:border-white/15">
-                            <button
-                              onClick={() => {
-                                if (isCollapsed) {
-                                  setCollapsedGalleryDays(prev => prev.filter(d => d !== 'NO_DATE'));
-                                } else {
-                                  setCollapsedGalleryDays(prev => [...prev, 'NO_DATE']);
-                                }
-                              }}
-                              className="w-full flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] text-[10px] sm:text-xs font-black uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
-                            >
-                              <span className="font-black">NO DATE</span>
-                              <span className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50 tracking-wider">
-                                {items.length} PHOTOS {isCollapsed ? '▼' : '▲'}
-                              </span>
-                            </button>
-                            {!isCollapsed && visibleItems.length > 0 && (
-                              <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 md:grid-cols-2 gap-[1px]' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[1px]'} bg-black/15 dark:bg-white/15 border-b border-black/15 dark:border-white/15`}>
-                                {visibleItems.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  );
-                })() : (
+                    {/* No Date Accordion */}
+                    {galleryGroups['NO_DATE'] && galleryGroups['NO_DATE'].length > 0 && (() => {
+                      const items = galleryGroups['NO_DATE'];
+                      const isCollapsed = collapsedGalleryDays.includes('NO_DATE');
+                      return (
+                        <div className="w-full border-b border-black/15 dark:border-white/15">
+                          <button
+                            onClick={() => {
+                              if (isCollapsed) {
+                                setCollapsedGalleryDays(prev => prev.filter(d => d !== 'NO_DATE'));
+                              } else {
+                                setCollapsedGalleryDays(prev => [...prev, 'NO_DATE']);
+                              }
+                            }}
+                            className="w-full flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] text-[10px] sm:text-xs font-black uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
+                          >
+                            <span className="font-black">NO DATE</span>
+                            <span className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50 tracking-wider">
+                              {items.length} PHOTOS {isCollapsed ? '▼' : '▲'}
+                            </span>
+                          </button>
+                          {!isCollapsed && (
+                            <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 md:grid-cols-2 gap-[1px]' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[1px]'} bg-black/15 dark:bg-white/15 border-b border-black/15 dark:border-white/15`}>
+                              {items.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                ) : (
                   /* Timeline Grid View */
                   <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 md:grid-cols-2 gap-[1px]' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[1px]'} bg-black/15 dark:bg-white/15 border-b border-black/15 dark:border-white/15`}>
-                    {allGalleryImages.slice(0, galleryRenderLimit).map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
+                    {allGalleryImages.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
                   </div>
                 )}
                 {/* Gallery footer */}
@@ -4913,48 +4872,49 @@ export function JourneyDetailPage({
               </div>
             );
           })()}
+        </div>
 
-          {/* SETTLEMENT TAB */}
-          {activeTab === 'settlement' && (
-            <SettlementView
-              isLoggedIn={isLoggedIn}
-              trip={tripToUse!}
-              timelineData={groupedTimelineData}
-              flights={isEditing ? draftFlights : flights}
-              stays={isEditing ? draftStays : stays}
-              transits={isEditing ? draftTransits : transits}
-              isEditing={isEditing}
-              onUpdateMembers={(newMembers) => {
-                if (isEditing && draftTrip) {
-                  setDraftTrip({ ...draftTrip, members: newMembers });
-                }
-              }}
-              onJumpToItem={(itemType, id, date) => {
-                setActiveTab(itemType);
-                setExpandedItemId(id);
-                if (date) {
-                  setSelectedDate(date);
-                }
-                setTimeout(() => {
-                  const el = itemRefs.current[id];
-                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 300);
-              }}
-              defaultCurrency={defaultCurrency}
-              onUpdateExpense={updateExpenseItem}
-              onUpdateCustomExpenses={(items) => {
-                if (isEditing && draftTrip) {
-                  setDraftTrip({ ...draftTrip, customExpenses: items });
-                } else if (trip) {
-                  // Save immediately even outside editing mode
-                  const updated = { ...tripToUse!, customExpenses: items };
-                  const uid = auth.currentUser?.uid || 'public';
-                  setDoc(doc(db, 'users', uid, 'trips', String(trip.id)), { customExpenses: items }, { merge: true })
-                    .catch(e => console.error('Failed to save custom expenses:', e));
-                }
-              }}
-            />
-          )}
+        {/* SETTLEMENT TAB */}
+        <div className={activeTab === 'settlement' ? 'contents' : 'hidden'}>
+          <SettlementView
+            isLoggedIn={isLoggedIn}
+            trip={tripToUse!}
+            timelineData={groupedTimelineData}
+            flights={isEditing ? draftFlights : flights}
+            stays={isEditing ? draftStays : stays}
+            transits={isEditing ? draftTransits : transits}
+            isEditing={isEditing}
+            onUpdateMembers={(newMembers) => {
+              if (isEditing && draftTrip) {
+                setDraftTrip({ ...draftTrip, members: newMembers });
+              }
+            }}
+            onJumpToItem={(itemType, id, date) => {
+              setActiveTab(itemType);
+              setExpandedItemId(id);
+              if (date) {
+                setSelectedDate(date);
+              }
+              setTimeout(() => {
+                const el = itemRefs.current[id];
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 300);
+            }}
+            defaultCurrency={defaultCurrency}
+            onUpdateExpense={updateExpenseItem}
+            onUpdateCustomExpenses={(items) => {
+              if (isEditing && draftTrip) {
+                setDraftTrip({ ...draftTrip, customExpenses: items });
+              } else if (trip) {
+                // Save immediately even outside editing mode
+                const updated = { ...tripToUse!, customExpenses: items };
+                const uid = auth.currentUser?.uid || 'public';
+                setDoc(doc(db, 'users', uid, 'trips', String(trip.id)), { customExpenses: items }, { merge: true })
+                  .catch(e => console.error('Failed to save custom expenses:', e));
+              }
+            }}
+          />
+        </div>
 
           {/* Footer inside Detail scroll container */}
           {activeTab !== 'settlement' && activeTab !== 'gallery' && (

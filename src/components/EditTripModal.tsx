@@ -3,6 +3,7 @@ import { X, Save, Edit2, Loader2, Upload, Tag, MapPin } from 'lucide-react';
 import { Trip } from '../types';
 import { uploadFileToR2, deleteFileFromR2, getEffectiveImageUrl } from '../utils/storageHelper';
 import { compressImage } from '../utils/imageHelper';
+import { inspectAndPrepareVideo } from '../utils/videoHelper';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { ImageEditOverlay } from './ImageEditOverlay';
 import { ConfirmModal } from './ConfirmModal';
@@ -297,6 +298,11 @@ export function EditTripModal({
 
     setVideoUploading(true);
     try {
+      const inspection = await inspectAndPrepareVideo(file);
+      if (!inspection.isCompatible) {
+        alert("경고: 선택하신 동영상은 모바일(아이폰)에서 지원되지 않는 비표준 코덱(VP9/AV1/ProRes 등)을 포함하고 있습니다. 모바일 정상 재생을 위해 표준 H.264 MP4 형식의 영상을 권장합니다.");
+      }
+
       const storagePath = `users/public/covers/${Date.now()}_${file.name}`;
       const downloadUrl = await uploadFileToR2(file, storagePath);
       setVideoUrl(downloadUrl);
@@ -318,6 +324,11 @@ export function EditTripModal({
 
     setHeroVideoUploading(true);
     try {
+      const inspection = await inspectAndPrepareVideo(file);
+      if (!inspection.isCompatible) {
+        alert("경고: 선택하신 동영상은 모바일(아이폰)에서 지원되지 않는 비표준 코덱(VP9/AV1/ProRes 등)을 포함하고 있습니다. 모바일 정상 재생을 위해 표준 H.264 MP4 형식의 영상을 권장합니다.");
+      }
+
       const storagePath = `users/public/covers/hero_${Date.now()}_${file.name}`;
       const downloadUrl = await uploadFileToR2(file, storagePath);
       setHeroVideoUrl(downloadUrl);
