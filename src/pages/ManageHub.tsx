@@ -667,8 +667,8 @@ export function ManageHubPage({
               </h2>
             </div>
 
-            {/* Sub Section Filter: ALL / MAIN / ARCHIVE / MAGAZINE */}
-            <div className="pt-2 pb-2 border-b border-black/15 dark:border-white/15 flex items-center gap-2 overflow-x-auto">
+            {/* Sub Section Filter: ALL / MAIN / ARCHIVE / MAGAZINE (Protected from shrinking & Sticky) */}
+            <div className="shrink-0 sticky -top-4 sm:-top-8 bg-white/95 dark:bg-[#0e0e0e]/95 backdrop-blur-sm z-20 pt-3 pb-3 border-b border-black/15 dark:border-white/15 flex items-center gap-2 overflow-x-auto">
               {[
                 { id: 'ALL', label: 'ALL' },
                 { id: 'MAIN', label: 'MAIN' },
@@ -679,10 +679,10 @@ export function ManageHubPage({
                   key={tab.id}
                   type="button"
                   onClick={() => setHomeSubTab(tab.id as any)}
-                  className={`px-4 py-2 text-xs font-mono font-bold transition-all cursor-pointer whitespace-nowrap border ${
+                  className={`shrink-0 h-9 px-4 text-xs font-mono font-bold transition-all cursor-pointer whitespace-nowrap border flex items-center justify-center ${
                     homeSubTab === tab.id
                       ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
-                      : 'bg-transparent text-black/60 dark:text-white/60 border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white'
+                      : 'bg-white dark:bg-[#161616] text-black/60 dark:text-white/60 border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white'
                   }`}
                 >
                   {tab.label}

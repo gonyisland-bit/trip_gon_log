@@ -540,6 +540,13 @@ export function HomePage({
   };
 
   const [magazineSpreadIndex, setMagazineSpreadIndex] = useState(0);
+
+  // Flatten all timeline items from timelineData ({ [date: string]: TimelineItem[] })
+  const allTimelineItems = useMemo(() => {
+    if (!timelineData) return [];
+    return Object.values(timelineData).flat();
+  }, [timelineData]);
+
   const [journeyLimit, setJourneyLimit] = useState<number>(() => {
     return parseInt(localStorage.getItem('home_journey_limit') || '4', 10);
   });
@@ -1335,13 +1342,17 @@ export function HomePage({
                         <div className="pt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-xs font-sans mt-auto">
                           {(() => {
                             let resolvedLocation = '';
-                            if (timelineData && moment.tripId) {
-                              const tripItems = timelineData[moment.tripId] || [];
-                              const matched = tripItems.find(it => it.img && it.img === moment.img);
-                              if (matched) {
+                            if (allTimelineItems.length > 0 && moment.img) {
+                              const momentEffImg = getEffectiveImageUrl(moment.img);
+                              const matched = allTimelineItems.find(it => {
+                                if (!it.img) return false;
+                                if (it.img === moment.img) return true;
+                                return getEffectiveImageUrl(it.img) === momentEffImg;
+                              });
+                              if (matched && matched.location) {
                                 if (typeof matched.location === 'string' && matched.location.trim()) {
                                   resolvedLocation = matched.location.trim();
-                                } else if (matched.location && typeof matched.location === 'object' && (matched.location as any).name) {
+                                } else if (typeof matched.location === 'object' && (matched.location as any)?.name) {
                                   resolvedLocation = (matched.location as any).name;
                                 }
                               }
