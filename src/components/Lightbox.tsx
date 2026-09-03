@@ -663,11 +663,16 @@ export function Lightbox({
                   {formatFilmDate(currentMeta.date)}
                 </div>
               )}
-              {(currentMeta.memo || currentMeta.imgNote) && (
-                <div className="text-white/60 text-xs mt-1 max-w-lg truncate">
-                  {currentMeta.memo || currentMeta.imgNote}
+              {currentMeta.location ? (
+                <div className="text-white/70 text-xs mt-1 max-w-lg truncate flex items-center justify-center gap-1 font-sans">
+                  <MapPin className="w-3 h-3 text-orange-400 shrink-0" />
+                  <span>{currentMeta.location}</span>
                 </div>
-              )}
+              ) : currentMeta.imgNote ? (
+                <div className="text-white/60 text-xs mt-1 max-w-lg truncate">
+                  {currentMeta.imgNote}
+                </div>
+              ) : null}
             </div>
 
             {/* Progress bar */}
