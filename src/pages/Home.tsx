@@ -353,6 +353,22 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
   const activeImageUrl = journey.heroImg ? getEffectiveImageUrl(journey.heroImg) : (journey.heroVideoUrl ? '' : getEffectiveImageUrl(journey.img));
   const hasVideo = mediaType === 'video' && Boolean(activeVideoUrl);
 
+  const handleMediaReady = useCallback(() => {
+    setIsReady(true);
+    if (onMediaReady) onMediaReady();
+  }, [onMediaReady]);
+
+  // Mobile WebKit / iOS autoplay policy: DOM properties must be explicitly set before play()
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = true;
+      videoRef.current.defaultMuted = true;
+      videoRef.current.playsInline = true;
+      videoRef.current.setAttribute('playsinline', '');
+      videoRef.current.setAttribute('webkit-playsinline', '');
+    }
+  }, [activeVideoUrl, hasVideo]);
+
   useEffect(() => {
     setIsReady(false);
   }, [activeVideoUrl, activeImageUrl, isActive]);
@@ -361,13 +377,23 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
     let timeoutId: ReturnType<typeof setTimeout>;
     
     if (hasVideo && activeVideoUrl && videoRef.current) {
+      const vid = videoRef.current;
+      vid.muted = true;
+      vid.defaultMuted = true;
+
       if (isActive) {
-        videoRef.current.currentTime = 0;
-        const playPromise = videoRef.current.play();
+        vid.currentTime = 0;
+        const playPromise = vid.play();
         if (playPromise !== undefined) {
-          playPromise.catch(error => {
-            console.log("Hero video playback error/prevented:", error);
-          });
+          playPromise
+            .then(() => {
+              handleMediaReady();
+            })
+            .catch(error => {
+              console.log("Hero video autoplay prevented/delayed:", error);
+              // On mobile, if autoplay is delayed/restricted, still reveal the video frame
+              handleMediaReady();
+            });
         }
       } else {
         timeoutId = setTimeout(() => {
@@ -383,12 +409,7 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
         clearTimeout(timeoutId);
       }
     };
-  }, [isActive, hasVideo, activeVideoUrl]);
-
-  const handleMediaReady = () => {
-    setIsReady(true);
-    if (onMediaReady) onMediaReady();
-  };
+  }, [isActive, hasVideo, activeVideoUrl, handleMediaReady]);
 
   return (
     <div
@@ -407,7 +428,9 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
           preload="auto"
           onCanPlay={handleMediaReady}
           onLoadedData={handleMediaReady}
+          onLoadedMetadata={handleMediaReady}
           onPlaying={handleMediaReady}
+          onError={handleMediaReady}
           className="w-full h-full object-cover"
         />
       ) : activeImageUrl ? (

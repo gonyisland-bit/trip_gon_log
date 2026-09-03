@@ -4529,24 +4529,10 @@ export function JourneyDetailPage({
                   <div
                     className="relative overflow-hidden border-b border-black/10 dark:border-white/10 transition-all duration-300 cursor-pointer aspect-[4/3] group"
                     onClick={() => {
-                      const now = Date.now();
-                      const lastTap = lastGalleryTapRef.current[imgItem.id] || 0;
-                      if (now - lastTap < 350) {
-                        // Double tap detected on mobile!
-                        const globalIdx = galleryAllMeta.findIndex(m => m.url === imgItem.url);
-                        setLightboxIndex(globalIdx !== -1 ? globalIdx : 0);
-                        setIsLightboxOpen(true);
-                        lastGalleryTapRef.current[imgItem.id] = 0;
-                        return;
-                      }
-                      lastGalleryTapRef.current[imgItem.id] = now;
-                      setExpandedItemId(imgItem.id);
-                    }}
-                    onDoubleClick={(e) => {
-                      e.stopPropagation();
                       const globalIdx = galleryAllMeta.findIndex(m => m.url === imgItem.url);
                       setLightboxIndex(globalIdx !== -1 ? globalIdx : 0);
                       setIsLightboxOpen(true);
+                      setExpandedItemId(imgItem.id);
                     }}
                   >
                     <img

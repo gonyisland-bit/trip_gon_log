@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Search, X, ArrowRight, Calendar, Star, Plus, Tag, MapPin, Bookmark, Home as HomeIcon, List } from 'lucide-react';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import { Trip, Plan } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
@@ -1211,7 +1213,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
   const [isPlaceListModalOpen, setIsPlaceListModalOpen] = useState(false);
   const [placeSearchQuery, setPlaceSearchQuery] = useState('');
 
-  // Favorite countries (Wishlist) state stored in localStorage
+  // Favorite countries (Wishlist) state with Firebase Firestore synchronization & local fallback
   const [favoriteCountries, setFavoriteCountries] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('wishlist_countries');
@@ -1220,6 +1222,25 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
       return [];
     }
   });
+
+  // Real-time synchronization of Wishlist from Firebase
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'users', 'public', 'settings', 'map_wishlist'), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (Array.isArray(data.countries)) {
+          setFavoriteCountries(data.countries);
+          try {
+            localStorage.setItem('wishlist_countries', JSON.stringify(data.countries));
+          } catch (_) {}
+        }
+      }
+    }, (error) => {
+      console.warn("Firestore map_wishlist sync error:", error);
+    });
+
+    return () => unsub();
+  }, []);
 
   // View toggles: Pin Labels, Visited (Red pins), Wishlist (Yellow pins)
   // Pin labels are ALWAYS shown by default from the start
@@ -1239,16 +1260,24 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     setShowWishlistPins(prev => !prev);
   };
 
-  const toggleFavoriteCountry = (code: string) => {
-    setFavoriteCountries(prev => {
-      const updated = prev.includes(code)
-        ? prev.filter(c => c !== code)
-        : [...prev, code];
-      try {
-        localStorage.setItem('wishlist_countries', JSON.stringify(updated));
-      } catch (_) {}
-      return updated;
-    });
+  const toggleFavoriteCountry = async (code: string) => {
+    const updated = favoriteCountries.includes(code)
+      ? favoriteCountries.filter(c => c !== code)
+      : [...favoriteCountries, code];
+
+    setFavoriteCountries(updated);
+    try {
+      localStorage.setItem('wishlist_countries', JSON.stringify(updated));
+    } catch (_) {}
+
+    try {
+      await setDoc(doc(db, 'users', 'public', 'settings', 'map_wishlist'), {
+        countries: updated,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+    } catch (err) {
+      console.error("Failed to save wishlist to server:", err);
+    }
   };
 
   const allJourneys = useMemo(() => [...trips, ...plans], [trips, plans]);

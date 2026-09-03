@@ -61,6 +61,19 @@ export function Lightbox({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Preload adjacent images for instantaneous navigation
+  useEffect(() => {
+    if (!isOpen || !images || images.length === 0) return;
+    const prevIdx = (currentIndex - 1 + images.length) % images.length;
+    const nextIdx = (currentIndex + 1) % images.length;
+    [images[prevIdx]?.url, images[nextIdx]?.url].forEach(url => {
+      if (url) {
+        const img = new Image();
+        img.src = url;
+      }
+    });
+  }, [currentIndex, isOpen, images]);
+
   // Reset first-scroll flag when lightbox opens
   useEffect(() => {
     if (isOpen) {
@@ -392,7 +405,7 @@ export function Lightbox({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[10000] bg-black flex flex-col select-none animate-in fade-in duration-300"
+      className="fixed inset-0 z-[10000] bg-black flex flex-col select-none animate-in fade-in duration-150 will-change-transform"
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       onTouchStart={handleTouchStart}
