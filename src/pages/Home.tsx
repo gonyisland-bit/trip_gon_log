@@ -345,6 +345,8 @@ interface HeroMediaProps {
 }
 
 function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
   // Priority 1: Specific Hero Section Media (Video or Image)
   // Priority 2: Fallback to Main Section Media according to mediaType preference
   let finalVideoUrl = '';
@@ -364,58 +366,54 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
 
   const isVideo = Boolean(finalVideoUrl);
 
-  // iOS Safari critical fix: use ref callback to synchronously set all WebKit video attributes
-  // BEFORE the element is inserted into the DOM. This is the only reliable way on iOS.
-  const videoRefCallback = useCallback((el: HTMLVideoElement | null) => {
-    if (!el) return;
-    el.muted = true;
-    (el as any).defaultMuted = true;
-    el.playsInline = true;
-    el.setAttribute('playsinline', '');
-    el.setAttribute('webkit-playsinline', '');
-    el.setAttribute('x-webkit-airplay', 'deny');
-    // Start loading immediately
-    el.load();
-  }, []);
-
-  // Drive playback imperatively when active state changes
+  // Mobile WebKit / iOS autoplay policy: DOM properties must be explicitly set before play()
   useEffect(() => {
-    if (!isVideo || !finalVideoUrl) {
-      if (isActive && onMediaReady) onMediaReady();
-      return;
+    if (videoRef.current) {
+      videoRef.current.muted = true;
+      videoRef.current.defaultMuted = true;
+      videoRef.current.playsInline = true;
+      videoRef.current.setAttribute('playsinline', '');
+      videoRef.current.setAttribute('webkit-playsinline', '');
     }
-  }, [isActive, isVideo, finalVideoUrl, onMediaReady]);
+  }, [finalVideoUrl, isVideo]);
 
-  const handleVideoRef = useCallback((el: HTMLVideoElement | null) => {
-    if (!el) return;
-    videoRefCallback(el);
-    if (isActive) {
-      const tryPlay = () => {
-        el.muted = true;
-        (el as any).defaultMuted = true;
-        const p = el.play();
-        if (p) p.catch(() => {
-          // Retry once after short delay on iOS
-          setTimeout(() => {
-            el.muted = true;
-            el.play().catch(() => {});
-          }, 300);
-        });
-      };
-      if (el.readyState >= 3) {
-        tryPlay();
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    
+    if (isVideo && finalVideoUrl && videoRef.current) {
+      const vid = videoRef.current;
+      vid.muted = true;
+      vid.defaultMuted = true;
+      vid.playsInline = true;
+
+      if (isActive) {
+        if (vid.currentTime > 0.5) {
+          vid.currentTime = 0;
+        }
+        const playPromise = vid.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(error => {
+            console.log("Hero video autoplay prevented/delayed:", error);
+          });
+        }
+        if (onMediaReady) onMediaReady();
       } else {
-        el.addEventListener('canplay', tryPlay, { once: true });
+        timeoutId = setTimeout(() => {
+          if (videoRef.current) {
+            videoRef.current.pause();
+          }
+        }, 1000);
       }
-    }
-  }, [isActive, videoRefCallback]);
-
-  // Signal ready immediately to parent when active (don't gate on video events)
-  useEffect(() => {
-    if (isActive && onMediaReady) {
+    } else if (isActive && onMediaReady) {
       onMediaReady();
     }
-  }, [isActive, onMediaReady]);
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [isActive, isVideo, finalVideoUrl, onMediaReady]);
 
   return (
     <div
@@ -423,37 +421,23 @@ function HeroMedia({ journey, isActive, mediaType, onMediaReady }: HeroMediaProp
         isActive ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none -z-10'
       }`}
     >
-      {/* iOS Safari critical: only mount video DOM when active or adjacent. Unmounting avoids
-          the multi-video conflict that prevents specific videos from playing on iPhone. */}
-      {isVideo && finalVideoUrl && isActive ? (
+      {isVideo && finalVideoUrl ? (
         <video
-          ref={handleVideoRef}
-          key={finalVideoUrl}
+          ref={videoRef}
           src={finalVideoUrl}
           loop
           muted
           playsInline
+          autoPlay={isActive}
           preload="auto"
-          autoPlay
           className="w-full h-full object-cover"
-          style={{ WebkitTransform: 'translateZ(0)' } as React.CSSProperties}
-        />
-      ) : isVideo && finalVideoUrl && !isActive ? (
-        // Preload video metadata for next slide without playing
-        <video
-          key={`preload-${finalVideoUrl}`}
-          src={finalVideoUrl}
-          muted
-          playsInline
-          preload="metadata"
-          className="w-full h-full object-cover opacity-0 pointer-events-none absolute"
         />
       ) : finalImageUrl ? (
         <img
           src={finalImageUrl}
           alt={journey.title || "Hero Trip"}
           loading={isActive ? "eager" : "lazy"}
-          decoding={isActive ? "sync" : "async"}
+          decoding="async"
           fetchPriority={isActive ? "high" : "low"}
           className="w-full h-full object-cover"
         />

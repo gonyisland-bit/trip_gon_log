@@ -51,7 +51,12 @@ export async function deleteFileFromR2(url: string | undefined | null): Promise<
  * Returns the public accessible HTTPS URL.
  */
 export async function uploadFileToR2(file: File | Blob, path: string): Promise<string> {
-  const cleanPath = path.replace(/^\/+/, '');
+  // Sanitize path segments to prevent iOS Safari/WebKit URL parsing errors with spaces/special characters
+  const segments = path.replace(/^\/+/, '').split('/');
+  const rawFileName = segments.pop() || 'file';
+  const safeFileName = rawFileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const cleanPath = [...segments, safeFileName].join('/');
+
   const arrayBuffer = await file.arrayBuffer();
   const uint8Array = new Uint8Array(arrayBuffer);
 
@@ -100,9 +105,15 @@ export function convertFirebaseStorageUrlToR2(url: string): string {
 
 /**
  * Returns the effective image or media URL.
- * Automatically translates legacy Firebase Storage links to Cloudflare R2.
+ * Automatically translates legacy Firebase Storage links to Cloudflare R2
+ * and safely encodes spaces/special characters for iOS Safari.
  */
 export function getEffectiveImageUrl(url: string | undefined | null): string {
   if (!url) return '';
-  return convertFirebaseStorageUrlToR2(url);
+  const converted = convertFirebaseStorageUrlToR2(url);
+  try {
+    return encodeURI(decodeURI(converted));
+  } catch (_) {
+    return converted;
+  }
 }

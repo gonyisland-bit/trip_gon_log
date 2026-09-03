@@ -683,8 +683,21 @@ export function JourneyDetailPage({
 }: JourneyDetailPageProps) {
   // All hooks must be called before conditional return
   const [activeTab, setActiveTab] = useState<TabType>('summary');
-  // useTransition allows tab label to update instantly while deferred-rendering heavy tab content
-  const [, startTabTransition] = useTransition();
+  // Progressive chunked rendering for gallery to ensure 0ms instant tab switching on mobile
+  const [galleryRenderLimit, setGalleryRenderLimit] = useState<number>(24);
+
+  useEffect(() => {
+    if (activeTab === 'gallery') {
+      setGalleryRenderLimit(24);
+      const timer = setTimeout(() => {
+        setGalleryRenderLimit(9999);
+      }, 100);
+      return () => clearTimeout(timer);
+    } else {
+      setGalleryRenderLimit(24);
+    }
+  }, [activeTab]);
+
   const [detectedCountry, setDetectedCountry] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string>('ALL');
   const [collapsedDays, setCollapsedDays] = useState<string[]>([]);
@@ -3429,12 +3442,8 @@ export function JourneyDetailPage({
             <button 
               key={tab.id} 
               onClick={() => {
-                // Mark the tab as active immediately (for visual highlight)
-                // then defer the heavy content render inside transition
-                startTabTransition(() => {
-                  setActiveTab(tab.id as TabType);
-                  setExpandedItemId(null);
-                });
+                setActiveTab(tab.id as TabType);
+                setExpandedItemId(null);
               }} 
               className={`flex-1 h-full px-0.5 sm:px-2 flex items-center justify-center text-[10px] sm:text-[11px] md:text-xs font-black uppercase tracking-wider border-r border-black/15 dark:border-white/15 last:border-r-0 transition-colors whitespace-nowrap cursor-pointer font-sans select-none ${
                 activeTab === tab.id 
@@ -4554,9 +4563,7 @@ export function JourneyDetailPage({
                       const globalIdx = galleryUrlIndexMap.get(imgItem.url) ?? 0;
                       setLightboxIndex(globalIdx);
                       setExpandedItemId(imgItem.id);
-                      startTabTransition(() => {
-                        setIsLightboxOpen(true);
-                      });
+                      setIsLightboxOpen(true);
                     }}
                   >
                     <img
@@ -4609,9 +4616,7 @@ export function JourneyDetailPage({
                         e.stopPropagation();
                         const globalIdx = galleryUrlIndexMap.get(imgItem.url) ?? 0;
                         setLightboxIndex(globalIdx);
-                        startTabTransition(() => {
-                          setIsLightboxOpen(true);
-                        });
+                        setIsLightboxOpen(true);
                       }}
                       className={`absolute bottom-2 right-2 p-1.5 bg-black/75 hover:bg-black text-white transition-colors z-10 rounded-none ${isPhotoActive ? 'opacity-100' : 'opacity-0 group-hover/gallery:opacity-100 focus:opacity-100'}`}
                       title="전체화면"
@@ -4808,78 +4813,97 @@ export function JourneyDetailPage({
                   <div className="text-center py-16 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
                     등록된 갤러리 사진이 없습니다.
                   </div>
-                ) : galleryViewMode === 'accordion' ? (
-                  <div className="flex flex-col w-full">
-                    {/* Date Accordions */}
-                    {allTripDates.map((date, idx) => {
-                      const items = galleryGroups[date] || [];
-                      const isCollapsed = collapsedGalleryDays.includes(date);
-                      if (items.length === 0) return null;
+                ) : galleryViewMode === 'accordion' ? (() => {
+                  let renderedCount = 0;
+                  return (
+                    <div className="flex flex-col w-full">
+                      {/* Date Accordions */}
+                      {allTripDates.map((date, idx) => {
+                        const items = galleryGroups[date] || [];
+                        const isCollapsed = collapsedGalleryDays.includes(date);
+                        if (items.length === 0) return null;
 
-                      return (
-                        <div key={date} className="w-full border-b border-black/15 dark:border-white/15">
-                          <button
-                            onClick={() => {
-                              if (isCollapsed) {
-                                setCollapsedGalleryDays(prev => prev.filter(d => d !== date));
-                              } else {
-                                setCollapsedGalleryDays(prev => [...prev, date]);
-                              }
-                            }}
-                            className="w-full flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] text-[10px] sm:text-xs font-black uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="font-black">DAY {idx + 1}</span>
-                              <span className="text-black/30 dark:text-white/30">·</span>
-                              <span className="font-mono text-black/70 dark:text-white/70">{date}</span>
-                            </div>
-                            <span className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50 tracking-wider">
-                              {items.length} PHOTOS {isCollapsed ? '▼' : '▲'}
-                            </span>
-                          </button>
-                          {!isCollapsed && (
-                            <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 md:grid-cols-2 gap-[1px]' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[1px]'} bg-black/15 dark:bg-white/15 border-b border-black/15 dark:border-white/15`}>
-                              {items.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                        const visibleItems = items.filter(() => {
+                          if (renderedCount < galleryRenderLimit) {
+                            renderedCount++;
+                            return true;
+                          }
+                          return false;
+                        });
 
-                    {/* No Date Accordion */}
-                    {galleryGroups['NO_DATE'] && galleryGroups['NO_DATE'].length > 0 && (() => {
-                      const items = galleryGroups['NO_DATE'];
-                      const isCollapsed = collapsedGalleryDays.includes('NO_DATE');
-                      return (
-                        <div className="w-full border-b border-black/15 dark:border-white/15">
-                          <button
-                            onClick={() => {
-                              if (isCollapsed) {
-                                setCollapsedGalleryDays(prev => prev.filter(d => d !== 'NO_DATE'));
-                              } else {
-                                setCollapsedGalleryDays(prev => [...prev, 'NO_DATE']);
-                              }
-                            }}
-                            className="w-full flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] text-[10px] sm:text-xs font-black uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
-                          >
-                            <span className="font-black">NO DATE</span>
-                            <span className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50 tracking-wider">
-                              {items.length} PHOTOS {isCollapsed ? '▼' : '▲'}
-                            </span>
-                          </button>
-                          {!isCollapsed && (
-                            <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 md:grid-cols-2 gap-[1px]' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[1px]'} bg-black/15 dark:bg-white/15 border-b border-black/15 dark:border-white/15`}>
-                              {items.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                ) : (
+                        return (
+                          <div key={date} className="w-full border-b border-black/15 dark:border-white/15">
+                            <button
+                              onClick={() => {
+                                if (isCollapsed) {
+                                  setCollapsedGalleryDays(prev => prev.filter(d => d !== date));
+                                } else {
+                                  setCollapsedGalleryDays(prev => [...prev, date]);
+                                }
+                              }}
+                              className="w-full flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] text-[10px] sm:text-xs font-black uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="font-black">DAY {idx + 1}</span>
+                                <span className="text-black/30 dark:text-white/30">·</span>
+                                <span className="font-mono text-black/70 dark:text-white/70">{date}</span>
+                              </div>
+                              <span className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50 tracking-wider">
+                                {items.length} PHOTOS {isCollapsed ? '▼' : '▲'}
+                              </span>
+                            </button>
+                            {!isCollapsed && visibleItems.length > 0 && (
+                              <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 md:grid-cols-2 gap-[1px]' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[1px]'} bg-black/15 dark:bg-white/15 border-b border-black/15 dark:border-white/15`}>
+                                {visibleItems.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* No Date Accordion */}
+                      {galleryGroups['NO_DATE'] && galleryGroups['NO_DATE'].length > 0 && (() => {
+                        const items = galleryGroups['NO_DATE'];
+                        const isCollapsed = collapsedGalleryDays.includes('NO_DATE');
+                        const visibleItems = items.filter(() => {
+                          if (renderedCount < galleryRenderLimit) {
+                            renderedCount++;
+                            return true;
+                          }
+                          return false;
+                        });
+
+                        return (
+                          <div className="w-full border-b border-black/15 dark:border-white/15">
+                            <button
+                              onClick={() => {
+                                if (isCollapsed) {
+                                  setCollapsedGalleryDays(prev => prev.filter(d => d !== 'NO_DATE'));
+                                } else {
+                                  setCollapsedGalleryDays(prev => [...prev, 'NO_DATE']);
+                                }
+                              }}
+                              className="w-full flex items-center justify-between py-2.5 px-4 md:px-6 bg-black/[0.02] dark:bg-white/[0.02] text-[10px] sm:text-xs font-black uppercase tracking-widest text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer select-none"
+                            >
+                              <span className="font-black">NO DATE</span>
+                              <span className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50 tracking-wider">
+                                {items.length} PHOTOS {isCollapsed ? '▼' : '▲'}
+                              </span>
+                            </button>
+                            {!isCollapsed && visibleItems.length > 0 && (
+                              <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 md:grid-cols-2 gap-[1px]' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[1px]'} bg-black/15 dark:bg-white/15 border-b border-black/15 dark:border-white/15`}>
+                                {visibleItems.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  );
+                })() : (
                   /* Timeline Grid View */
                   <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 md:grid-cols-2 gap-[1px]' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[1px]'} bg-black/15 dark:bg-white/15 border-b border-black/15 dark:border-white/15`}>
-                    {allGalleryImages.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
+                    {allGalleryImages.slice(0, galleryRenderLimit).map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
                   </div>
                 )}
                 {/* Gallery footer */}

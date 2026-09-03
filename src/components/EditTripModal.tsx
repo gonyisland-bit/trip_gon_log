@@ -854,7 +854,7 @@ export function EditTripModal({
                 >
                   {videoUrl ? (
                     <div className="relative w-full h-full">
-                      <video src={videoUrl} controls muted playsInline preload="metadata" className="w-full h-full object-cover" />
+                      <video src={getEffectiveImageUrl(videoUrl)} controls muted playsInline preload="metadata" className="w-full h-full object-cover" />
                       <button
                         type="button"
                         onClick={() => {
@@ -868,7 +868,7 @@ export function EditTripModal({
                     </div>
                   ) : imgUrl ? (
                     <div className="relative w-full h-full">
-                      <img src={imgUrl} alt="Cover Preview" className="w-full h-full object-cover" />
+                      <img src={getEffectiveImageUrl(imgUrl)} alt="Cover Preview" className="w-full h-full object-cover" />
                       <button
                         type="button"
                         onClick={() => {
@@ -999,7 +999,7 @@ export function EditTripModal({
                 >
                   {heroVideoUrl ? (
                     <div className="relative w-full h-full">
-                      <video src={heroVideoUrl} controls muted playsInline preload="metadata" className="w-full h-full object-cover" />
+                      <video src={getEffectiveImageUrl(heroVideoUrl)} controls muted playsInline preload="metadata" className="w-full h-full object-cover" />
                       <button
                         type="button"
                         onClick={() => {
@@ -1013,7 +1013,7 @@ export function EditTripModal({
                     </div>
                   ) : heroImgUrl ? (
                     <div className="relative w-full h-full">
-                      <img src={heroImgUrl} alt="Hero Cover Preview" className="w-full h-full object-cover" />
+                      <img src={getEffectiveImageUrl(heroImgUrl)} alt="Hero Cover Preview" className="w-full h-full object-cover" />
                       <button
                         type="button"
                         onClick={() => {
