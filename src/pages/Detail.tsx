@@ -1857,6 +1857,7 @@ export function JourneyDetailPage({
 
   // Global Keyboard Shortcuts (Space play/pause, ArrowLeft/Right tour, ArrowUp/Down timeline navigation, Esc)
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       // 0. If Lightbox is open, delegate all keyboard shortcuts to Lightbox component
       if (lightboxIndex !== null) return;
 
