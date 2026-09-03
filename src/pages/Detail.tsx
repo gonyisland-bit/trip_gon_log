@@ -565,7 +565,8 @@ function PlaceAutocompleteInput({
     if (e.key === 'Enter') {
       e.preventDefault();
       e.stopPropagation();
-      onChange(localVal);
+      const val = (e.target as HTMLInputElement).value || localVal;
+      onChange(val);
     }
   };
 
@@ -609,14 +610,16 @@ function PlaceAutocompleteInput({
     };
   }, []);
 
-  const handleBlur = () => {
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const finalVal = e.target.value;
+    setLocalVal(finalVal);
     // Delay the blur action slightly to allow the place_changed listener to run first
     setTimeout(() => {
       if (hasSelectedRef.current) {
         hasSelectedRef.current = false; // Reset the flag
         if (onBlur) onBlur();
       } else {
-        onChange(localVal);
+        onChange(finalVal);
         if (onBlur) onBlur();
       }
     }, 250);
@@ -629,7 +632,15 @@ function PlaceAutocompleteInput({
           ref={inputRef}
           type="text"
           value={localVal}
-          onChange={(e) => setLocalVal(e.target.value)}
+          onChange={(e) => {
+            setLocalVal(e.target.value);
+            onChange(e.target.value);
+          }}
+          onCompositionEnd={(e) => {
+            const val = (e.target as HTMLInputElement).value;
+            setLocalVal(val);
+            onChange(val);
+          }}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           className={className}
@@ -5319,8 +5330,22 @@ function TimelineItemPlaceInput({
     setLocalVal(initialValue);
   }, [initialValue]);
 
-  const handleBlur = () => {
-    onUpdatePlace(itemId, localVal);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setLocalVal(val);
+    onUpdatePlace(itemId, val);
+  };
+
+  const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
+    const val = (e.target as HTMLInputElement).value;
+    setLocalVal(val);
+    onUpdatePlace(itemId, val);
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setLocalVal(val);
+    onUpdatePlace(itemId, val);
     setTimeout(() => setShowDropdown(false), 250);
   };
 
@@ -5341,7 +5366,8 @@ function TimelineItemPlaceInput({
           id={`title-input-${itemId}`}
           type="text"
           value={localVal}
-          onChange={(e) => setLocalVal(e.target.value)}
+          onChange={handleChange}
+          onCompositionEnd={handleCompositionEnd}
           onFocus={() => setShowDropdown(true)}
           onBlur={handleBlur}
           className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-sm md:text-base text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full select-text"

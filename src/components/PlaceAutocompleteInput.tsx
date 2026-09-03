@@ -27,7 +27,8 @@ export function PlaceAutocompleteInput({
     if (e.key === 'Enter') {
       e.preventDefault();
       e.stopPropagation();
-      onChange(localValue);
+      const val = (e.target as HTMLInputElement).value || localValue;
+      onChange(val);
     }
   };
 
@@ -83,14 +84,16 @@ export function PlaceAutocompleteInput({
     setLocalValue(value);
   }, [value]);
 
-  const handleBlur = () => {
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const finalVal = e.target.value;
+    setLocalValue(finalVal);
     // Delay the blur action slightly to allow the place_changed listener to run first
     setTimeout(() => {
       if (hasSelectedRef.current) {
         hasSelectedRef.current = false; // Reset the flag
         if (onBlur) onBlur();
       } else {
-        onChange(localValue);
+        onChange(finalVal);
         if (onBlur) onBlur();
       }
     }, 250);
@@ -103,7 +106,15 @@ export function PlaceAutocompleteInput({
           ref={inputRef}
           type="text"
           value={localValue}
-          onChange={(e) => setLocalValue(e.target.value)}
+          onChange={(e) => {
+            setLocalValue(e.target.value);
+            onChange(e.target.value);
+          }}
+          onCompositionEnd={(e) => {
+            const val = (e.target as HTMLInputElement).value;
+            setLocalValue(val);
+            onChange(val);
+          }}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           className={className}
