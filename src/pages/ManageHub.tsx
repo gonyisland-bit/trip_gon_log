@@ -567,9 +567,9 @@ export function ManageHubPage({
       tripId: item.tripId,
       title: pName || jTitle || 'UNTITLED MOMENT',
       date: safeStr(item.date),
-      placeName: pName,
+      placeName: locStr,
       location: locStr,
-      caption: safeStr(item.imgNote),
+      caption: '',
       quote: '',
       img: item.img,
       order: momentsList.length,
@@ -656,36 +656,33 @@ export function ManageHubPage({
         {/* MODE: HOME (Full App & Home Settings Integration)                   */}
         {/* ─────────────────────────────────────────────────────────────────── */}
         {activeMode === 'HOME' && (
-          <div className="w-full max-w-3xl mx-auto p-4 sm:p-10 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200">
+          <div className="w-full max-w-3xl mx-auto p-4 sm:p-8 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200">
             {/* Header */}
             <div className="border-b border-black/15 dark:border-white/15 pb-4">
               <span className="text-[10px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-1">
-                APP & HOME GENERAL SETTINGS
+                SETTINGS
               </span>
               <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
-                홈 메인 및 앱 환경설정
+                HOME SETTINGS
               </h2>
-              <p className="text-xs font-noto text-black/60 dark:text-white/60 mt-1 leading-relaxed">
-                홈 화면의 메인 히어로, 아카이브 노출 및 매거진 화보를 영역별로 직관적으로 설정합니다.
-              </p>
             </div>
 
             {/* Sub Section Filter: ALL / MAIN / ARCHIVE / MAGAZINE */}
-            <div className="flex items-center gap-1.5 border-b border-black/15 dark:border-white/15 pb-3 overflow-x-auto">
+            <div className="pt-2 pb-2 border-b border-black/15 dark:border-white/15 flex items-center gap-2 overflow-x-auto">
               {[
-                { id: 'ALL', label: 'ALL (전체보기)' },
-                { id: 'MAIN', label: '01. MAIN (메인·히어로)' },
-                { id: 'ARCHIVE', label: '02. ARCHIVE (아카이브·전광판)' },
-                { id: 'MAGAZINE', label: '03. MAGAZINE (홈 매거진)' },
+                { id: 'ALL', label: 'ALL' },
+                { id: 'MAIN', label: 'MAIN' },
+                { id: 'ARCHIVE', label: 'ARCHIVE' },
+                { id: 'MAGAZINE', label: 'MAGAZINE' },
               ].map(tab => (
                 <button
                   key={tab.id}
                   type="button"
                   onClick={() => setHomeSubTab(tab.id as any)}
-                  className={`px-3.5 py-1.5 text-xs font-noto font-bold transition-all cursor-pointer whitespace-nowrap border ${
+                  className={`px-4 py-2 text-xs font-mono font-bold transition-all cursor-pointer whitespace-nowrap border ${
                     homeSubTab === tab.id
                       ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
-                      : 'bg-black/[0.03] dark:bg-white/[0.03] text-black/60 dark:text-white/60 border-black/10 dark:border-white/10 hover:border-black/30 dark:hover:border-white/30'
+                      : 'bg-transparent text-black/60 dark:text-white/60 border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white'
                   }`}
                 >
                   {tab.label}
@@ -695,180 +692,139 @@ export function ManageHubPage({
 
             <div className="flex flex-col gap-8">
               {/* ═══════════════════════════════════════════════════════════════ */}
-              {/* SECTION 01: MAIN SETTINGS (메인 히어로 & 전반 설정)              */}
+              {/* SECTION: MAIN (메인 & 히어로 설정)                             */}
               {/* ═══════════════════════════════════════════════════════════════ */}
               {(homeSubTab === 'ALL' || homeSubTab === 'MAIN') && (
-                <section className="p-5 sm:p-7 border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] flex flex-col gap-6 shadow-xs animate-in fade-in duration-200">
-                  {/* Section Title Header */}
-                  <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3.5">
-                    <div className="flex items-center gap-2.5">
-                      <span className="px-2 py-0.5 bg-red-600 text-white font-mono text-[10px] font-black">
-                        01
-                      </span>
-                      <h3 className="text-sm sm:text-base font-black uppercase tracking-tight text-black dark:text-white font-sans">
-                        MAIN SETTINGS (메인 & 히어로 설정)
-                      </h3>
-                    </div>
-                    <span className="text-[11px] font-noto text-black/50 dark:text-white/50 hidden sm:inline leading-normal">
-                      홈 메인 타이틀, 히어로 슬라이드 및 미디어 제어
-                    </span>
+                <section className="flex flex-col gap-6 pt-2">
+                  <div className="flex items-center justify-between border-b-2 border-black dark:border-white pb-2">
+                    <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-mono">
+                      MAIN
+                    </h3>
                   </div>
 
                   {/* Home Title & Subtitle */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-noto font-bold uppercase tracking-wider text-black/80 dark:text-white/80">
-                        HOME TITLE (메인 타이틀)
+                      <label className="text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                        HOME TITLE
                       </label>
                       <input
                         type="text"
                         value={title}
                         onChange={e => setTitle(e.target.value)}
-                        placeholder="예: TRIP GON LOG"
-                        className="px-3.5 py-2.5 text-xs font-noto font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
+                        placeholder="TRIP GON LOG"
+                        className="px-3 py-2 text-xs font-bold bg-transparent border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white text-black dark:text-white"
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-noto font-bold uppercase tracking-wider text-black/80 dark:text-white/80">
-                        HOME SUBTITLE (서브 타이틀)
+                      <label className="text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                        HOME SUBTITLE
                       </label>
                       <input
                         type="text"
                         value={subtitle}
                         onChange={e => setSubtitle(e.target.value)}
-                        placeholder="예: 나만의 여행 아카이브"
-                        className="px-3.5 py-2.5 text-xs font-noto font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
+                        placeholder="Your Personal Travel Magazine"
+                        className="px-3 py-2 text-xs font-bold bg-transparent border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white text-black dark:text-white"
                       />
                     </div>
                   </div>
 
-                  {/* Hero Media Smart Mode & Auto Slide & Duration */}
-                  <div className="flex flex-col gap-4 pt-2">
-                    {/* Auto Smart Media Info */}
-                    <div className="flex items-center justify-between p-3.5 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02]">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-black text-white dark:bg-white dark:text-black rounded-none shrink-0">
-                          <Film className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <span className="text-xs font-noto font-bold block text-black dark:text-white">
-                            HERO MEDIA AUTO-SMART (미디어 자동 스마트 적용)
-                          </span>
-                          <span className="text-[11px] font-noto text-black/60 dark:text-white/60 leading-relaxed block">
-                            여정별로 등록된 대표 미디어(비디오 또는 이미지)가 타입 선택 없이 자동으로 최적 렌더링됩니다.
-                          </span>
-                        </div>
-                      </div>
-                      <span className="text-[9px] font-mono font-bold px-2 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 whitespace-nowrap">
-                        AUTO ACTIVE
-                      </span>
+                  {/* Hero Auto Slide & Slide Limit */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                    {/* Hero Auto Slide Toggle */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                        HERO AUTO SLIDE
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setAutoSlide(!autoSlide)}
+                        className={`w-full py-2 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer rounded-none flex items-center justify-center ${
+                          autoSlide
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                            : 'bg-transparent border-black/20 dark:border-white/20 text-black/50 dark:text-white/50'
+                        }`}
+                      >
+                        {autoSlide ? 'AUTO SLIDE: ON' : 'AUTO SLIDE: OFF'}
+                      </button>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* Hero Auto Slide Toggle */}
-                      <div className="flex flex-col gap-2">
-                        <label className="text-xs font-noto font-bold text-black/70 dark:text-white/70">
-                          HERO AUTO SLIDE (자동 롤링 토글)
+                    {/* Hero Slide Limit (3s ~ 9s) */}
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between items-center">
+                        <label className="text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                          SLIDE LIMIT
                         </label>
-                        <button
-                          type="button"
-                          onClick={() => setAutoSlide(!autoSlide)}
-                          className={`w-full py-2.5 text-xs font-noto font-bold uppercase border transition-colors cursor-pointer rounded-none flex items-center justify-center gap-2 ${
-                            autoSlide
-                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                              : 'bg-white dark:bg-[#161616] border-black/20 dark:border-white/20 text-black/60 dark:text-white/60'
-                          }`}
-                        >
-                          <span>{autoSlide ? 'AUTO SLIDE: ON (자동 롤링 켜짐)' : 'AUTO SLIDE: OFF (자동 롤링 꺼짐)'}</span>
-                        </button>
+                        <span className="font-mono text-xs font-bold text-red-600 dark:text-red-500">
+                          {slideDuration}s
+                        </span>
                       </div>
-
-                      {/* Hero Slide Duration (3s ~ 9s) */}
-                      <div className="flex flex-col gap-2">
-                        <div className="flex justify-between items-center">
-                          <label className="text-xs font-noto font-bold text-black/70 dark:text-white/70">
-                            SLIDE DURATION (슬라이드 롤링 간격)
-                          </label>
-                          <span className="font-mono text-xs font-black text-red-600 dark:text-red-500">
-                            {slideDuration}s
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="range"
-                            min={3}
-                            max={9}
-                            step={1}
-                            value={slideDuration}
-                            onChange={e => setSlideDuration(parseInt(e.target.value, 10))}
-                            className="flex-1 accent-black dark:accent-white cursor-pointer"
-                          />
-                          <div className="flex items-center gap-1">
-                            {[3, 5, 7, 9].map(sec => (
-                              <button
-                                key={sec}
-                                type="button"
-                                onClick={() => setSlideDuration(sec)}
-                                className={`px-2 py-1 text-[10px] font-mono font-bold border transition-colors cursor-pointer ${
-                                  slideDuration === sec
-                                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                                    : 'bg-white dark:bg-[#161616] border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-black'
-                                }`}
-                              >
-                                {sec}s
-                              </button>
-                            ))}
-                          </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="range"
+                          min={3}
+                          max={9}
+                          step={1}
+                          value={slideDuration}
+                          onChange={e => setSlideDuration(parseInt(e.target.value, 10))}
+                          className="flex-1 accent-black dark:accent-white cursor-pointer"
+                        />
+                        <div className="flex items-center gap-1">
+                          {[3, 5, 7, 9].map(sec => (
+                            <button
+                              key={sec}
+                              type="button"
+                              onClick={() => setSlideDuration(sec)}
+                              className={`px-2 py-1 text-[10px] font-mono font-bold border transition-colors cursor-pointer ${
+                                slideDuration === sec
+                                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                                  : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-black'
+                              }`}
+                            >
+                              {sec}s
+                            </button>
+                          ))}
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Video Autoplay On Hover Toggle */}
-                  <div className="flex items-center justify-between p-3.5 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02]">
-                    <div>
-                      <span className="text-xs font-noto font-bold block text-black dark:text-white">
-                        카드 호버 시 비디오 자동 재생
-                      </span>
-                      <span className="text-[11px] font-noto text-black/60 dark:text-white/60 leading-relaxed block">
-                        여정 카드에 마우스를 올렸을 때 비디오를 자동으로 재생합니다.
-                      </span>
-                    </div>
+                  <div className="flex items-center justify-between py-2 border-t border-black/10 dark:border-white/10">
+                    <span className="text-xs font-mono font-bold uppercase text-black/80 dark:text-white/80">
+                      VIDEO AUTOPLAY ON HOVER
+                    </span>
                     <button
                       type="button"
                       onClick={() => setPlayVideoOnActivate(!playVideoOnActivate)}
-                      className={`px-3 py-1.5 text-xs font-mono font-bold border transition-colors cursor-pointer rounded-none ${
+                      className={`px-3 py-1 text-xs font-mono font-bold border transition-colors cursor-pointer rounded-none ${
                         playVideoOnActivate
                           ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                          : 'bg-white dark:bg-[#161616] border-black/20 dark:border-white/20 text-black/60'
+                          : 'border-black/20 dark:border-white/20 text-black/50 dark:text-white/50'
                       }`}
                     >
                       {playVideoOnActivate ? 'ENABLED' : 'DISABLED'}
                     </button>
                   </div>
 
-                  {/* Hero Journeys Selection: Swiss Minimal Editorial Search List */}
-                  <div className="flex flex-col gap-3 pt-2">
+                  {/* Hero Journeys Selection */}
+                  <div className="flex flex-col gap-3 pt-2 border-t border-black/10 dark:border-white/10">
                     <div className="flex justify-between items-baseline">
-                      <label className="text-xs font-noto font-bold text-black/70 dark:text-white/70">
-                        HERO JOURNEYS (히어로 노출 여정 및 순서 선택)
+                      <label className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                        HERO JOURNEYS
                       </label>
-                      <span className="text-[11px] font-mono text-red-600 dark:text-red-500 font-bold">
-                        선택됨 ({selectedHeroIds.length})
+                      <span className="text-xs font-mono font-bold text-red-600 dark:text-red-500">
+                        {selectedHeroIds.length} ITEMS
                       </span>
                     </div>
 
                     {/* Selected Hero Slides Reorder List */}
                     {selectedHeroIds.length > 0 && (
-                      <div className="flex flex-col gap-1.5 p-2.5 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02]">
-                        <div className="flex justify-between items-center px-1 mb-1">
-                          <span className="text-[11px] font-noto font-bold text-black/70 dark:text-white/70">
-                            SLIDE ORDER (노출 순서 변경: ▲ 위로 / ▼ 아래로)
-                          </span>
-                          <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
-                            총 {selectedHeroIds.length}개 슬라이드
-                          </span>
-                        </div>
+                      <div className="flex flex-col gap-1.5 p-2 border border-black/15 dark:border-white/15">
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 px-1">
+                          SLIDE ORDER
+                        </span>
                         <div className="flex flex-col gap-1">
                           {selectedHeroIds.map((id, idx) => {
                             const journey = localJourneys.find(j => j.id === id);
@@ -876,13 +832,13 @@ export function ManageHubPage({
                             return (
                               <div
                                 key={id}
-                                className="p-2 bg-white dark:bg-[#161616] border border-black/15 dark:border-white/15 flex items-center justify-between gap-2 shadow-xs"
+                                className="p-1.5 bg-white dark:bg-[#161616] border border-black/15 dark:border-white/15 flex items-center justify-between gap-2"
                               >
                                 <div className="flex items-center gap-2.5 min-w-0">
-                                  <span className="font-mono text-xs font-black text-red-600 dark:text-red-500 w-6 shrink-0 text-center">
+                                  <span className="font-mono text-xs font-bold text-red-600 dark:text-red-500 w-5 shrink-0 text-center">
                                     {String(idx + 1).padStart(2, '0')}
                                   </span>
-                                  <div className="w-9 h-9 aspect-square border border-black/10 dark:border-white/10 shrink-0 overflow-hidden bg-black/10">
+                                  <div className="w-8 h-8 aspect-square border border-black/10 dark:border-white/10 shrink-0 overflow-hidden bg-black/10">
                                     <img
                                       src={getEffectiveImageUrl(journey.img)}
                                       alt={journey.title}
@@ -890,7 +846,7 @@ export function ManageHubPage({
                                     />
                                   </div>
                                   <div className="min-w-0">
-                                    <h6 className="text-xs font-noto font-bold truncate text-black dark:text-white">
+                                    <h6 className="text-xs font-bold truncate text-black dark:text-white">
                                       {journey.title.replace(' (Plan)', '')}
                                     </h6>
                                     <span className="text-[10px] font-mono text-black/50 dark:text-white/50 block truncate">
@@ -922,7 +878,7 @@ export function ManageHubPage({
                                     type="button"
                                     onClick={() => setSelectedHeroIds(selectedHeroIds.filter(item => item !== id))}
                                     className="p-1.5 border border-black/15 dark:border-white/15 hover:bg-red-500 hover:text-white text-black/40 dark:text-white/40 transition-colors cursor-pointer"
-                                    title="히어로에서 제거"
+                                    title="제거"
                                   >
                                     <X className="w-3.5 h-3.5" />
                                   </button>
@@ -941,8 +897,8 @@ export function ManageHubPage({
                         type="text"
                         value={heroSearchQuery}
                         onChange={e => setHeroSearchQuery(e.target.value)}
-                        placeholder="여정 제목 또는 도시명 검색으로 바로 찾기..."
-                        className="w-full pl-8 pr-8 py-2.5 text-xs font-noto font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
+                        placeholder="Search journey..."
+                        className="w-full pl-8 pr-8 py-2 text-xs font-mono font-bold bg-transparent border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white text-black dark:text-white"
                       />
                       {heroSearchQuery && (
                         <button
@@ -955,11 +911,11 @@ export function ManageHubPage({
                       )}
                     </div>
 
-                    {/* Editorial List of Candidates */}
-                    <div className="flex flex-col gap-1 max-h-64 overflow-y-auto p-1.5 border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616]">
+                    {/* Candidate List */}
+                    <div className="flex flex-col gap-1 max-h-56 overflow-y-auto p-1 border border-black/15 dark:border-white/15">
                       {filteredHeroCandidates.length === 0 ? (
-                        <div className="py-8 text-center text-xs font-noto text-black/50 dark:text-white/50">
-                          검색된 여정이 없습니다.
+                        <div className="py-6 text-center text-xs font-mono text-black/40 dark:text-white/40">
+                          NO RESULTS
                         </div>
                       ) : (
                         filteredHeroCandidates.map(j => {
@@ -974,14 +930,14 @@ export function ManageHubPage({
                                   setSelectedHeroIds([...selectedHeroIds, j.id]);
                                 }
                               }}
-                              className={`p-2 border transition-all flex items-center justify-between gap-3 cursor-pointer rounded-none ${
+                              className={`p-1.5 border transition-all flex items-center justify-between gap-2 cursor-pointer rounded-none ${
                                 isSelected
-                                  ? 'bg-black/5 dark:bg-white/10 border-black dark:border-white shadow-xs'
+                                  ? 'bg-black/5 dark:bg-white/10 border-black dark:border-white'
                                   : 'border-transparent hover:border-black/20 dark:hover:border-white/20'
                               }`}
                             >
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <div className="w-10 h-10 aspect-square border border-black/10 dark:border-white/10 shrink-0 overflow-hidden bg-black/10">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="w-8 h-8 aspect-square border border-black/10 dark:border-white/10 shrink-0 overflow-hidden bg-black/10">
                                   <img
                                     src={getEffectiveImageUrl(j.img)}
                                     alt={j.title}
@@ -989,7 +945,7 @@ export function ManageHubPage({
                                   />
                                 </div>
                                 <div className="min-w-0">
-                                  <h5 className="text-xs font-noto font-bold text-black dark:text-white truncate">
+                                  <h5 className="text-xs font-bold text-black dark:text-white truncate">
                                     {j.title.replace(' (Plan)', '')}
                                   </h5>
                                   <span className="text-[10px] font-mono text-black/50 dark:text-white/50 block truncate">
@@ -998,15 +954,13 @@ export function ManageHubPage({
                                 </div>
                               </div>
 
-                              <div className="shrink-0 flex items-center gap-1.5">
-                                <span className={`px-2 py-0.5 text-[9px] font-mono font-black uppercase border ${
-                                  isSelected
-                                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                                    : 'border-black/20 dark:border-white/20 text-black/50 dark:text-white/50'
-                                }`}>
-                                  {isSelected ? '✓ SELECTED' : '+ SELECT'}
-                                </span>
-                              </div>
+                              <span className={`px-2 py-0.5 text-[9px] font-mono font-bold uppercase border shrink-0 ${
+                                isSelected
+                                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                                  : 'border-black/20 dark:border-white/20 text-black/50 dark:text-white/50'
+                              }`}>
+                                {isSelected ? '✓ SELECTED' : '+ SELECT'}
+                              </span>
                             </div>
                           );
                         })
@@ -1017,45 +971,31 @@ export function ManageHubPage({
               )}
 
               {/* ═══════════════════════════════════════════════════════════════ */}
-              {/* SECTION 02: ARCHIVE SETTINGS (아카이브 노출 & 배너 설정)        */}
+              {/* SECTION: ARCHIVE (아카이브 & 전광판)                           */}
               {/* ═══════════════════════════════════════════════════════════════ */}
               {(homeSubTab === 'ALL' || homeSubTab === 'ARCHIVE') && (
-                <section className="p-5 sm:p-7 border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] flex flex-col gap-6 shadow-xs animate-in fade-in duration-200">
-                  {/* Section Title Header */}
-                  <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3.5">
-                    <div className="flex items-center gap-2.5">
-                      <span className="px-2 py-0.5 bg-black dark:bg-white text-white dark:text-black font-mono text-[10px] font-black">
-                        02
-                      </span>
-                      <h3 className="text-sm sm:text-base font-black uppercase tracking-tight text-black dark:text-white font-sans">
-                        ARCHIVE SETTINGS (홈 아카이브 & 전광판 설정)
-                      </h3>
-                    </div>
-                    <span className="text-[11px] font-noto text-black/50 dark:text-white/50 hidden sm:inline leading-normal">
-                      홈 카드 노출 개수 및 상단 도시 전광판 제어
-                    </span>
+                <section className="flex flex-col gap-6 pt-6 border-t border-black/20 dark:border-white/20">
+                  <div className="flex items-center justify-between border-b-2 border-black dark:border-white pb-2">
+                    <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-mono">
+                      ARCHIVE
+                    </h3>
                   </div>
 
-                  {/* Home Journeys Display Limit */}
-                  <div className="flex items-center justify-between p-3.5 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02]">
-                    <div>
-                      <span className="text-xs font-noto font-bold block text-black dark:text-white">
-                        JOURNEYS DISPLAY LIMIT (홈 여정 표시 개수)
-                      </span>
-                      <span className="text-[11px] font-noto text-black/60 dark:text-white/60 leading-relaxed block">
-                        설정 개수 초과 시 'VIEW ALL' 버튼으로 아카이브 페이지로 유도합니다.
-                      </span>
-                    </div>
+                  {/* Journeys Display Limit */}
+                  <div className="flex items-center justify-between py-2">
+                    <span className="text-xs font-mono font-bold uppercase text-black/80 dark:text-white/80">
+                      JOURNEYS DISPLAY LIMIT
+                    </span>
                     <div className="flex items-center gap-1">
                       {[4, 6, 8, 999].map(limit => (
                         <button
                           key={limit}
                           type="button"
                           onClick={() => setHomeJourneyLimit(limit)}
-                          className={`px-3 py-1.5 text-xs font-mono font-bold border transition-colors cursor-pointer ${
+                          className={`px-3 py-1 text-xs font-mono font-bold border transition-colors cursor-pointer ${
                             homeJourneyLimit === limit
                               ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                              : 'bg-white dark:bg-[#161616] border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-black'
+                              : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-black'
                           }`}
                         >
                           {limit === 999 ? 'ALL' : limit}
@@ -1064,43 +1004,37 @@ export function ManageHubPage({
                     </div>
                   </div>
 
-                  {/* Marquee Banner Toggle & Speed (도시 자동 롤링 전광판) */}
-                  <div className="flex flex-col gap-3 p-3.5 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02]">
+                  {/* Marquee Banner */}
+                  <div className="flex flex-col gap-2.5 pt-3 border-t border-black/10 dark:border-white/10">
                     <div className="flex justify-between items-center">
-                      <div className="flex flex-col">
-                        <span className="text-xs font-noto font-bold block text-black dark:text-white">
-                          MARQUEE BANNER (전광판 롤링 배너)
-                        </span>
-                        <span className="text-[11px] font-noto text-black/60 dark:text-white/60 leading-relaxed block">
-                          등록된 여정의 도시명들이 화면 상단에 자동으로 롤링됩니다.
-                        </span>
-                      </div>
+                      <span className="text-xs font-mono font-bold uppercase text-black/80 dark:text-white/80">
+                        MARQUEE BANNER
+                      </span>
                       <button
                         type="button"
                         onClick={() => setShowMarquee(!showMarquee)}
-                        className={`px-3 py-1.5 text-xs font-noto font-bold uppercase border transition-colors cursor-pointer ${
+                        className={`px-3 py-1 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer ${
                           showMarquee
                             ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                            : 'bg-white dark:bg-[#161616] border-black/20 dark:border-white/20 text-black/50 dark:text-white/50'
+                            : 'border-black/20 dark:border-white/20 text-black/40 dark:text-white/40'
                         }`}
                       >
-                        {showMarquee ? 'ON (표시)' : 'OFF (숨김)'}
+                        {showMarquee ? 'ON' : 'OFF'}
                       </button>
                     </div>
 
                     {showMarquee && (
-                      <div className="flex flex-col gap-1.5 pt-2 border-t border-black/10 dark:border-white/10">
-                        <div className="flex justify-between items-center text-xs font-noto font-bold text-black/70 dark:text-white/70">
-                          <span>MARQUEE SPEED (전광판 속도)</span>
-                          <span className="font-mono text-red-600 dark:text-red-500">{homeSpeed}s</span>
-                        </div>
+                      <div className="flex items-center justify-between gap-4 pt-1">
+                        <span className="text-[11px] font-mono font-bold text-black/60 dark:text-white/60 shrink-0">
+                          SPEED: {homeSpeed}s
+                        </span>
                         <input
                           type="range"
                           min={15}
                           max={120}
                           value={homeSpeed}
                           onChange={e => setHomeSpeed(parseInt(e.target.value, 10))}
-                          className="w-full accent-black dark:accent-white cursor-pointer"
+                          className="flex-1 accent-black dark:accent-white cursor-pointer"
                         />
                       </div>
                     )}
@@ -1109,170 +1043,127 @@ export function ManageHubPage({
               )}
 
               {/* ═══════════════════════════════════════════════════════════════ */}
-              {/* SECTION 03: MAGAZINE EDITORIAL (홈 매거진 화보 선별 & 편집)    */}
+              {/* SECTION: MAGAZINE (홈 매거진 순간 선별)                         */}
               {/* ═══════════════════════════════════════════════════════════════ */}
               {(homeSubTab === 'ALL' || homeSubTab === 'MAGAZINE') && (
-                <section className="p-5 sm:p-7 border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] flex flex-col gap-6 shadow-xs animate-in fade-in duration-200">
-                  {/* Section Title Header */}
-                  <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3.5">
-                    <div className="flex items-center gap-2.5">
-                      <span className="px-2 py-0.5 bg-amber-500 text-black font-mono text-[10px] font-black">
-                        03
-                      </span>
-                      <h3 className="text-sm sm:text-base font-black uppercase tracking-tight text-black dark:text-white font-sans">
-                        MAGAZINE EDITORIAL (홈 매거진 화보 순간 선별 & 편집)
-                      </h3>
-                    </div>
-                    <span className="text-[11px] font-noto text-black/50 dark:text-white/50 hidden sm:inline leading-normal">
-                      타임라인 사진을 직접 골라 홈 허브 잡지 화보로 연출 ({momentsList.length})
+                <section className="flex flex-col gap-6 pt-6 border-t border-black/20 dark:border-white/20">
+                  <div className="flex items-center justify-between border-b-2 border-black dark:border-white pb-2">
+                    <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-mono">
+                      MAGAZINE
+                    </h3>
+                    <span className="text-xs font-mono font-bold text-red-600 dark:text-red-500">
+                      {momentsList.length} ITEMS
                     </span>
                   </div>
 
-                  {/* Currently Curated Moments List */}
-                  {momentsList.length > 0 ? (
-                    <div className="flex flex-col gap-3">
-                      <div className="text-xs font-noto font-bold text-black/70 dark:text-white/70">
-                        현재 등록된 잡지 연출 목록 ({momentsList.length}개):
-                      </div>
-                      <div className="flex flex-col gap-2.5 max-h-80 overflow-y-auto pr-1">
-                        {momentsList.map((m, idx) => (
-                          <div 
-                            key={m.id || idx}
-                            className="p-3 border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs"
-                          >
-                            <div className="flex items-center gap-3 min-w-0 flex-1 w-full">
-                              <div className="w-14 h-14 aspect-square border border-black/10 dark:border-white/10 shrink-0 overflow-hidden bg-black/10 relative">
-                                <img src={getEffectiveImageUrl(m.img)} alt={m.title} className="w-full h-full object-cover" />
-                                <span className="absolute bottom-0 left-0 bg-black text-white text-[8px] font-mono px-1">
-                                  #{idx + 1}
-                                </span>
-                              </div>
-                              <div className="flex-1 min-w-0 flex flex-col gap-1.5 w-full">
-                                <input 
-                                  type="text"
-                                  value={m.title}
-                                  onChange={e => handleUpdateMoment(m.id, 'title', e.target.value)}
-                                  placeholder="화보 제목 (Title)"
-                                  className="text-xs font-noto font-bold bg-transparent border-b border-black/20 dark:border-white/20 outline-none pb-0.5 focus:border-black dark:focus:border-white"
-                                />
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                  <input 
-                                    type="text"
-                                    value={m.quote || ''}
-                                    onChange={e => handleUpdateMoment(m.id, 'quote', e.target.value)}
-                                    placeholder="인용구 (“감성 문구”)"
-                                    className="text-[11px] font-noto italic bg-transparent border-b border-black/10 dark:border-white/10 outline-none"
-                                  />
-                                  <input 
-                                    type="text"
-                                    value={m.caption || ''}
-                                    onChange={e => handleUpdateMoment(m.id, 'caption', e.target.value)}
-                                    placeholder="설명 / 캡션"
-                                    className="text-[11px] font-noto bg-transparent border-b border-black/10 dark:border-white/10 outline-none"
-                                  />
-                                </div>
-                              </div>
+                  {/* Curated Moments: Slim Card without caption/subtitle */}
+                  {momentsList.length > 0 && (
+                    <div className="flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
+                      {momentsList.map((m, idx) => (
+                        <div 
+                          key={m.id || idx}
+                          className="p-2 border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616] flex items-center justify-between gap-3"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <div className="w-10 h-10 aspect-square border border-black/10 dark:border-white/10 shrink-0 overflow-hidden bg-black/10 relative">
+                              <img src={getEffectiveImageUrl(m.img)} alt={m.title} className="w-full h-full object-cover" />
+                              <span className="absolute bottom-0 left-0 bg-black text-white text-[8px] font-mono px-1">
+                                #{idx + 1}
+                              </span>
                             </div>
-
-                            <div className="flex items-center gap-1 shrink-0 self-end sm:self-center">
-                              <button
-                                type="button"
-                                onClick={() => handleMoveMoment(idx, 'up')}
-                                disabled={idx === 0}
-                                className="p-1.5 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
-                                title="위로 이동"
-                              >
-                                <ChevronUp className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleMoveMoment(idx, 'down')}
-                                disabled={idx === momentsList.length - 1}
-                                className="p-1.5 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
-                                title="아래로 이동"
-                              >
-                                <ChevronDown className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveMoment(m.id)}
-                                className="p-1.5 text-red-500 hover:bg-red-500/10 border border-red-500/30 cursor-pointer ml-1"
-                                title="삭제"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                            <div className="flex-1 min-w-0 flex flex-col gap-1">
+                              <input 
+                                type="text"
+                                value={m.title}
+                                onChange={e => handleUpdateMoment(m.id, 'title', e.target.value)}
+                                placeholder="Title"
+                                className="text-xs font-bold bg-transparent border-b border-black/20 dark:border-white/20 outline-none pb-0.5 focus:border-black dark:focus:border-white text-black dark:text-white"
+                              />
+                              <input 
+                                type="text"
+                                value={m.quote || ''}
+                                onChange={e => handleUpdateMoment(m.id, 'quote', e.target.value)}
+                                placeholder="“Quote / Phrase”"
+                                className="text-[11px] font-serif italic bg-transparent border-b border-black/10 dark:border-white/10 outline-none text-black/80 dark:text-white/80"
+                              />
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-5 border border-dashed border-black/20 dark:border-white/20 text-center text-xs font-noto text-black/50 dark:text-white/50 leading-relaxed">
-                      아직 선별된 잡지 연출 순간이 없습니다. 아래 타임라인에서 인상적인 사진을 골라 추가해보세요.
+
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveMoment(idx, 'up')}
+                              disabled={idx === 0}
+                              className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
+                              title="위로 이동"
+                            >
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveMoment(idx, 'down')}
+                              disabled={idx === momentsList.length - 1}
+                              className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
+                              title="아래로 이동"
+                            >
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveMoment(m.id)}
+                              className="p-1 text-red-500 hover:bg-red-500/10 border border-red-500/30 cursor-pointer ml-1"
+                              title="삭제"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
 
-                  {/* Selection Tool: Select from Journey OR Search */}
-                  <div className="p-4 sm:p-5 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] flex flex-col gap-4">
-                    <span className="text-xs font-noto font-bold text-black/80 dark:text-white/80">
-                      타임라인에서 새로운 순간 선별하기
-                    </span>
-
+                  {/* Selection Tool */}
+                  <div className="flex flex-col gap-3 pt-2">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {/* 1. Filter by Journey */}
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[11px] font-noto font-bold text-black/60 dark:text-white/60">
-                          여정별로 모아보기
-                        </label>
-                        <select
-                          value={selectedTripForMoments === null ? '' : selectedTripForMoments}
-                          onChange={e => setSelectedTripForMoments(e.target.value === '' ? null : Number(e.target.value))}
-                          className="px-3 py-2.5 text-xs font-noto font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
-                        >
-                          <option value="">모든 여정 ({allTimelineItemsWithImages.length}개 사진)</option>
-                          {localJourneys.map(j => (
-                            <option key={j.id} value={j.id}>
-                              {j.title.replace(' (Plan)', '')} ({j.locationStr})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      {/* Filter by Journey */}
+                      <select
+                        value={selectedTripForMoments === null ? '' : selectedTripForMoments}
+                        onChange={e => setSelectedTripForMoments(e.target.value === '' ? null : Number(e.target.value))}
+                        className="px-3 py-2 text-xs font-mono font-bold bg-transparent border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white text-black dark:text-white"
+                      >
+                        <option value="" className="text-black bg-white dark:bg-[#161616] dark:text-white">ALL JOURNEYS ({allTimelineItemsWithImages.length})</option>
+                        {localJourneys.map(j => (
+                          <option key={j.id} value={j.id} className="text-black bg-white dark:bg-[#161616] dark:text-white">
+                            {j.title.replace(' (Plan)', '')} ({j.locationStr})
+                          </option>
+                        ))}
+                      </select>
 
-                      {/* 2. Search Keyword */}
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[11px] font-noto font-bold text-black/60 dark:text-white/60">
-                          검색어로 찾기 (장소 / 메모 / 도시)
-                        </label>
-                        <div className="relative">
-                          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
-                          <input
-                            type="text"
-                            value={momentSearchQuery}
-                            onChange={e => setMomentSearchQuery(e.target.value)}
-                            placeholder="검색어 입력..."
-                            className="w-full pl-8 pr-3 py-2.5 text-xs font-noto font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
-                          />
-                        </div>
+                      {/* Search Keyword */}
+                      <div className="relative">
+                        <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
+                        <input
+                          type="text"
+                          value={momentSearchQuery}
+                          onChange={e => setMomentSearchQuery(e.target.value)}
+                          placeholder="Search place, memo, location..."
+                          className="w-full pl-8 pr-3 py-2 text-xs font-mono font-bold bg-transparent border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white text-black dark:text-white"
+                        />
                       </div>
                     </div>
 
-                    {/* Candidate Timeline Images Grid: Fix mobile overlap & crash */}
+                    {/* Candidate Timeline Images Grid */}
                     <div className="flex flex-col gap-2 mt-1">
-                      <div className="flex items-baseline justify-between">
-                        <span className="text-xs font-noto font-bold text-black/70 dark:text-white/70">
-                          선택 가능한 타임라인 사진 ({candidateTimelineItems.length}개)
-                        </span>
-                        <span className="text-[10px] font-noto text-black/50 dark:text-white/50">
-                          * 사진을 클릭하면 잡지 목록에 바로 추가됩니다
-                        </span>
-                      </div>
+                      <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                        TIMELINE PHOTO ({candidateTimelineItems.length})
+                      </span>
 
                       {candidateTimelineItems.length === 0 ? (
-                        <div className="py-8 text-center text-xs font-noto text-black/50 dark:text-white/50 border border-black/10 dark:border-white/10 bg-white dark:bg-[#111]">
-                          사진이 등록된 타임라인 항목이 없습니다.
+                        <div className="py-8 text-center text-xs font-mono text-black/40 dark:text-white/40 border border-black/10 dark:border-white/10">
+                          NO PHOTOS FOUND
                         </div>
                       ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 sm:gap-3 max-h-96 overflow-y-auto p-2 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02]">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-80 overflow-y-auto p-1 border border-black/15 dark:border-white/15">
                           {candidateTimelineItems.slice(0, 60).map((item, i) => {
                             const pName = safeStr(item.place);
                             const jTitle = safeStr(item.journeyTitle);
@@ -1282,8 +1173,8 @@ export function ManageHubPage({
                               <div
                                 key={`cand-${item.id || i}-${i}`}
                                 onClick={() => handleAddMomentFromTimeline(item)}
-                                className="group relative h-36 sm:h-44 bg-white dark:bg-[#121212] border border-black/15 dark:border-white/15 overflow-hidden cursor-pointer flex flex-col justify-end transition-all shadow-xs hover:shadow-md select-none rounded-none active:scale-95"
-                                title={`${displayTitle} (${itemDate}) 잡지 컬렉션에 추가`}
+                                className="group relative h-32 sm:h-40 bg-white dark:bg-[#121212] border border-black/15 dark:border-white/15 overflow-hidden cursor-pointer flex flex-col justify-end transition-all select-none rounded-none active:scale-95"
+                                title={`${displayTitle} (${itemDate})`}
                               >
                                 <img
                                   src={getEffectiveImageUrl(item.img || '')}
@@ -1292,14 +1183,12 @@ export function ManageHubPage({
                                   className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                 />
                                 
-                                {/* Hover / Touch Highlight Overlay */}
                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white font-mono text-xs font-black p-2 text-center z-10">
-                                  + 추가 (ADD)
+                                  + ADD
                                 </div>
 
-                                {/* Legible Bottom Title Bar */}
-                                <div className="relative z-10 w-full bg-gradient-to-t from-black/95 via-black/80 to-transparent p-2.5 pt-6 flex flex-col gap-0.5">
-                                  <span className="text-[11px] sm:text-xs font-noto font-bold text-white truncate leading-tight">
+                                <div className="relative z-10 w-full bg-gradient-to-t from-black/95 via-black/80 to-transparent p-2 pt-4 flex flex-col gap-0.5">
+                                  <span className="text-[11px] font-bold text-white truncate leading-tight">
                                     {displayTitle}
                                   </span>
                                   {itemDate && (
@@ -1314,27 +1203,22 @@ export function ManageHubPage({
                         </div>
                       )}
                     </div>
-
-                    {/* Unified Save Notice */}
-                    <div className="flex items-center justify-between pt-2 text-[11px] font-noto text-black/50 dark:text-white/50 border-t border-black/10 dark:border-white/10 mt-1 leading-relaxed">
-                      <span>* 변경된 잡지 연출 목록은 하단의 'SAVE ALL SETTINGS' 또는 좌측 하단 플로팅 저장 버튼을 누를 때 홈 설정과 함께 한 번에 저장됩니다.</span>
-                    </div>
                   </div>
                 </section>
               )}
 
               {/* Save Button */}
-              <div className="pt-2 flex justify-end">
+              <div className="pt-6 border-t border-black/20 dark:border-white/20 flex justify-end">
                 <button
                   type="button"
                   onClick={handleSaveHome}
                   disabled={isSavingHome}
-                  className={`px-6 py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-noto font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity ${
+                  className={`px-8 py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity ${
                     homeSaveSuccess ? '!bg-green-600 !text-white' : ''
                   }`}
                 >
                   {homeSaveSuccess ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                  <span>{homeSaveSuccess ? 'SAVED (저장 완료)' : 'SAVE ALL SETTINGS (전체 설정 저장)'}</span>
+                  <span>{homeSaveSuccess ? 'SAVED' : 'SAVE'}</span>
                 </button>
               </div>
             </div>

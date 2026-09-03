@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Menu, Edit2, Trash2, GripVertical, Copy, ArrowUp, Tag, ChevronDown, ChevronUp, Search, X, LayoutGrid, StretchHorizontal, List } from 'lucide-react';
-import { Trip, Plan, MagazineMoment } from '../types';
+import { Trip, Plan, MagazineMoment, TimelineData } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
@@ -25,6 +25,7 @@ interface HomePageProps {
   onReorderPlans?: (orderedIds: number[]) => void;
   isLoggedIn?: boolean;
   magazineMoments?: MagazineMoment[];
+  timelineData?: TimelineData;
 }
 
 function parseDateParts(dateStr: string, defaultYear?: number): Date | null {
@@ -524,6 +525,7 @@ export function HomePage({
   onClonePlan,
   isLoggedIn = false,
   magazineMoments = [],
+  timelineData,
 }: HomePageProps) {
   const [activeFilter, setActiveFilter] = useState('All');
   const [isTagAccordionOpen, setIsTagAccordionOpen] = useState(false);
@@ -1332,7 +1334,19 @@ export function HomePage({
                         {/* Bottom Row: Specific Timeline GPS Place Name & View Link */}
                         <div className="pt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-xs font-sans mt-auto">
                           {(() => {
-                            const displayPlace = moment.placeName || cleanAdministrativeDistricts(moment.location || '') || 'VISITED PLACE';
+                            let resolvedLocation = '';
+                            if (timelineData && moment.tripId) {
+                              const tripItems = timelineData[moment.tripId] || [];
+                              const matched = tripItems.find(it => it.img && it.img === moment.img);
+                              if (matched) {
+                                if (typeof matched.location === 'string' && matched.location.trim()) {
+                                  resolvedLocation = matched.location.trim();
+                                } else if (matched.location && typeof matched.location === 'object' && (matched.location as any).name) {
+                                  resolvedLocation = (matched.location as any).name;
+                                }
+                              }
+                            }
+                            const displayPlace = resolvedLocation || moment.location || moment.placeName || cleanAdministrativeDistricts(moment.location || '') || 'VISITED PLACE';
                             return (
                               <span className="truncate max-w-[70%] font-bold text-black/75 dark:text-white/75 tracking-tight font-sans" title={displayPlace}>
                                 📍 {displayPlace}

@@ -1518,6 +1518,7 @@ function App() {
                   }}
                   isLoggedIn={isLoggedIn}
                   magazineMoments={magazineMoments}
+                  timelineData={timelineData}
                 />
               )}
               {currentView === 'archive' && (
