@@ -6,7 +6,7 @@ export interface LightboxImageMeta {
   url: string;
   date?: string;
   place?: string;
-  memo?: string;
+  location?: string;
   imgNote?: string;
   type?: 'gallery' | 'timeline';
 }
@@ -971,20 +971,20 @@ export function Lightbox({
       {/* Bottom captions panel (normal mode only) */}
       {showLog && !isSlideshow && (
         <div className="relative z-20 bg-black/90 border-t border-white/10 px-4 py-2.5 md:px-8 md:py-3 flex flex-col items-center justify-center gap-1 shrink-0 min-h-16 md:min-h-20 text-center w-full">
-          {/* Main Photo Title / Note */}
-          {(currentMeta.imgNote || currentMeta.memo) ? (
-            <h4 className="text-white font-bold text-xs md:text-sm tracking-wide truncate max-w-2xl">
-              {currentMeta.imgNote || currentMeta.memo}
+          {/* Main Photo Title: 일정 제목 (place) */}
+          {(currentMeta.place || currentMeta.imgNote) ? (
+            <h4 className="text-white font-bold text-xs md:text-sm tracking-wide truncate max-w-2xl font-sans">
+              {currentMeta.place || currentMeta.imgNote}
             </h4>
           ) : null}
 
-          {/* Place Info (Always prominent right below title, replacing old subtitle) */}
-          {currentMeta.place ? (
+          {/* Place Info: 구글 자동완성으로 입력된 위치명 (location) */}
+          {currentMeta.location ? (
             <div className="text-orange-400 dark:text-orange-300 font-semibold text-[11px] md:text-xs tracking-tight flex items-center justify-center gap-1 truncate max-w-xl">
               <MapPin className="w-3.5 h-3.5 shrink-0 text-orange-500" />
-              <span className="truncate">{currentMeta.place}</span>
+              <span className="truncate">{currentMeta.location}</span>
             </div>
-          ) : (!currentMeta.imgNote && !currentMeta.memo) ? (
+          ) : (!currentMeta.place && !currentMeta.imgNote) ? (
             <div className="text-white/30 font-bold text-[10px] md:text-xs tracking-widest uppercase">
               No Location Tagged
             </div>

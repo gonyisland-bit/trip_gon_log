@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Save, Edit2, Loader2, Upload, Tag, MapPin } from 'lucide-react';
+import { X, Save, Edit2, Loader2, Upload, Tag, MapPin, ClipboardPaste } from 'lucide-react';
 import { Trip } from '../types';
 import { uploadFileToR2, deleteFileFromR2, getEffectiveImageUrl } from '../utils/storageHelper';
 import { compressImage } from '../utils/imageHelper';
@@ -422,14 +422,12 @@ export function EditTripModal({
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const uploadCoverImageFile = async (file: File) => {
     setUploading(true);
     try {
       const compressedBlob = await compressImage(file, 3840, 3840, 0.75);
-      const storagePath = `users/public/covers/${Date.now()}_${file.name}`;
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const storagePath = `users/public/covers/${Date.now()}_${safeName}`;
       const downloadUrl = await uploadFileToR2(compressedBlob, storagePath);
       setImgUrl(downloadUrl);
       setVideoUrl(''); // 1개 미디어 전용: 기존 비디오 초기화
@@ -439,6 +437,78 @@ export function EditTripModal({
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const uploadHeroImageFile = async (file: File) => {
+    setHeroUploading(true);
+    try {
+      const compressedBlob = await compressImage(file, 3840, 3840, 0.75);
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const storagePath = `users/public/covers/${Date.now()}_hero_${safeName}`;
+      const downloadUrl = await uploadFileToR2(compressedBlob, storagePath);
+      setHeroImgUrl(downloadUrl);
+      setHeroVideoUrl('');
+    } catch (error) {
+      console.error("Hero image upload failed:", error);
+      alert("히어로 이미지 업로드에 실패했습니다.");
+    } finally {
+      setHeroUploading(false);
+      if (heroFileInputRef.current) heroFileInputRef.current.value = '';
+    }
+  };
+
+  const handlePasteImage = async (target: 'main' | 'hero' = coverTab) => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.read) {
+        const clipboardItems = await navigator.clipboard.read();
+        for (const item of clipboardItems) {
+          const imageType = item.types.find(t => t.startsWith('image/'));
+          if (imageType) {
+            const blob = await item.getType(imageType);
+            const ext = imageType.split('/')[1] || 'png';
+            const file = new File([blob], `pasted_${Date.now()}.${ext}`, { type: imageType });
+            if (target === 'hero') {
+              await uploadHeroImageFile(file);
+            } else {
+              await uploadCoverImageFile(file);
+            }
+            return;
+          }
+        }
+      }
+      alert("클립보드에 복사된 이미지가 없습니다. 이미지를 복사한 후 다시 시도해 주세요.");
+    } catch (err) {
+      console.warn("Clipboard read error:", err);
+      alert("클립보드 이미지를 붙여넣으려면 키보드 단축키 Ctrl+V를 사용해주세요.");
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadCoverImageFile(file);
+  };
+
+  // Global onPaste listener for modal container
+  const handleModalPaste = async (e: React.ClipboardEvent) => {
+    const target = e.target as HTMLElement;
+    // If typing in input or textarea, let default paste proceed
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+      return;
+    }
+
+    if (e.clipboardData && e.clipboardData.files && e.clipboardData.files.length > 0) {
+      const file = e.clipboardData.files[0];
+      if (file.type.startsWith('image/')) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (coverTab === 'hero') {
+          await uploadHeroImageFile(file);
+        } else {
+          await uploadCoverImageFile(file);
+        }
+      }
     }
   };
 
@@ -456,6 +526,7 @@ export function EditTripModal({
       onClick={handleAttemptClose}
     >
       <div
+        onPaste={handleModalPaste}
         className="bg-[#F9F8F6] dark:bg-[#161616] border border-black/20 dark:border-white/20 w-full max-w-md relative transition-colors duration-300 shadow-2xl rounded-none flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
@@ -826,6 +897,16 @@ export function EditTripModal({
                       )}
                       UPLOAD
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePasteImage('main')}
+                      disabled={uploading || videoUploading}
+                      className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1.5 disabled:opacity-50 shrink-0 cursor-pointer"
+                      title="클립보드에 복사된 이미지 붙여넣기 (Ctrl+V)"
+                    >
+                      <ClipboardPaste className="w-3 h-3" />
+                      PASTE
+                    </button>
                   </div>
                 </div>
 
@@ -970,6 +1051,16 @@ export function EditTripModal({
                         <Upload className="w-3 h-3" />
                       )}
                       UPLOAD
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePasteImage('hero')}
+                      disabled={heroUploading || heroVideoUploading}
+                      className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1.5 disabled:opacity-50 shrink-0 cursor-pointer"
+                      title="클립보드에 복사된 이미지 붙여넣기 (Ctrl+V)"
+                    >
+                      <ClipboardPaste className="w-3 h-3" />
+                      PASTE
                     </button>
                   </div>
                 </div>

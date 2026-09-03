@@ -1664,9 +1664,9 @@ export function JourneyDetailPage({
       .map(item => ({
         url: getEffectiveImageUrl(item.img as string),
         place: item.place,
+        location: item.location,
         date: item.date || '',
         time: item.time || '',
-        memo: item.memo,
         imgNote: item.imgNote || '',
         type: 'timeline' as const,
         itemId: item.id,
@@ -1686,8 +1686,9 @@ export function JourneyDetailPage({
     const tls = timelineImages.map((t) => ({
       url: t.url,
       place: t.place,
+      location: t.location,
       date: t.date,
-      imgNote: t.imgNote || t.memo || '',
+      imgNote: t.imgNote || '',
       type: 'timeline' as const,
       id: 600000000 + t.itemId,
       lat: t.lat,
@@ -1731,10 +1732,10 @@ export function JourneyDetailPage({
     return allGalleryImages.map(item => ({
       url: item.url,
       place: item.place,
+      location: (item as any).location,
       date: item.date,
       imgNote: item.imgNote || '',
       type: item.type,
-      memo: item.type === 'timeline' ? (item as any).memo : undefined
     }));
   }, [allGalleryImages]);
 
@@ -4736,10 +4737,10 @@ export function JourneyDetailPage({
                     {/* Title / Description */}
                     <div className="flex items-start justify-between gap-2 w-full mt-0.5">
                       <div className="flex-1 min-w-0">
-                        {/* 1. Main Title or Note (No timeline subtitle/memo) */}
-                        {imgItem.imgNote ? (
+                        {/* 1. Main Title: 일정 제목 (place) */}
+                        {imgItem.place ? (
                           <h4 className="text-xs sm:text-[13px] font-sans font-bold text-black dark:text-white leading-snug break-keep line-clamp-2 not-italic">
-                            {imgItem.imgNote}
+                            {imgItem.place}
                           </h4>
                         ) : imgItem.type === 'gallery' && isEditing ? (
                           <input
@@ -4750,19 +4751,19 @@ export function JourneyDetailPage({
                             className="w-full bg-transparent outline-none text-xs sm:text-[13px] font-sans font-bold text-black dark:text-white placeholder-black/30 dark:placeholder-white/30 not-italic border-b border-black/20 dark:border-white/20 pb-0.5"
                             onClick={(e) => e.stopPropagation()}
                           />
-                        ) : imgItem.place ? (
+                        ) : imgItem.imgNote ? (
                           <h4 className="text-xs sm:text-[13px] font-sans font-bold text-black dark:text-white leading-snug break-keep line-clamp-2 not-italic">
-                            {imgItem.place}
+                            {imgItem.imgNote}
                           </h4>
                         ) : (
-                          <p className="text-[10.5px] font-sans font-medium text-black/35 dark:text-white/35 not-italic">기록된 메모 없음</p>
+                          <p className="text-[10.5px] font-sans font-medium text-black/35 dark:text-white/35 not-italic">기록된 제목 없음</p>
                         )}
 
-                        {/* 2. Specified Place Name right below title if different from main title */}
-                        {imgItem.place && imgItem.imgNote && (
+                        {/* 2. Specified Location Name: 구글 자동완성 위치명 (location) */}
+                        {((imgItem as any).location || (imgItem.type === 'gallery' && imgItem.place && imgItem.imgNote)) && (
                           <div className="text-[10.5px] sm:text-xs font-sans font-semibold text-black/70 dark:text-white/70 tracking-tight flex items-center gap-1 mt-1 not-italic truncate">
                             <MapPin className="w-3 h-3 shrink-0 text-red-600 dark:text-red-400" />
-                            <span className="truncate">{imgItem.place}</span>
+                            <span className="truncate">{(imgItem as any).location || imgItem.place}</span>
                           </div>
                         )}
                       </div>
