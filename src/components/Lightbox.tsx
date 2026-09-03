@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, MessageSquare, Play, Pause, SkipBack } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, MessageSquare, Play, Pause, SkipBack, MapPin } from 'lucide-react';
 
 export interface LightboxImageMeta {
   url: string;
@@ -53,7 +53,13 @@ export function Lightbox({
   const thumbnailsContainerRef = useRef<HTMLDivElement>(null);
   const thumbnailsInnerRef = useRef<HTMLDivElement>(null);
   const isFirstScrollRef = useRef(true);
+  const isProgrammaticScrollRef = useRef(false);
+  const scrollEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
+
+  // 2-finger pinch gesture refs
+  const initialPinchDistRef = useRef<number | null>(null);
+  const initialPinchScaleRef = useRef<number>(1);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -85,16 +91,51 @@ export function Lightbox({
   useEffect(() => {
     if (!isOpen || isSlideshow) return;
 
+    const container = thumbnailsContainerRef.current;
     const activeBtn = activeThumbnailRef.current;
-    if (activeBtn) {
-      activeBtn.scrollIntoView({
+    if (container && activeBtn) {
+      isProgrammaticScrollRef.current = true;
+      const targetScrollLeft = activeBtn.offsetLeft - (container.clientWidth / 2) + (activeBtn.clientWidth / 2);
+      container.scrollTo({
+        left: targetScrollLeft,
         behavior: isFirstScrollRef.current ? 'auto' : 'smooth',
-        inline: 'center',
-        block: 'nearest',
       });
       isFirstScrollRef.current = false;
+      setTimeout(() => {
+        isProgrammaticScrollRef.current = false;
+      }, 350);
     }
   }, [currentIndex, isOpen, isSlideshow]);
+
+  // Handle user drag/scroll on thumbnail bar -> navigate to centered image on stop
+  const handleThumbnailsScroll = () => {
+    if (!isOpen || isSlideshow || isProgrammaticScrollRef.current) return;
+    if (scrollEndTimerRef.current) clearTimeout(scrollEndTimerRef.current);
+
+    scrollEndTimerRef.current = setTimeout(() => {
+      const container = thumbnailsContainerRef.current;
+      const inner = thumbnailsInnerRef.current;
+      if (!container || !inner) return;
+
+      const containerCenter = container.scrollLeft + container.clientWidth / 2;
+      let closestIndex = currentIndex;
+      let minDistance = Infinity;
+
+      const buttons = inner.querySelectorAll('button');
+      buttons.forEach((btn, idx) => {
+        const btnCenter = btn.offsetLeft + btn.clientWidth / 2;
+        const dist = Math.abs(btnCenter - containerCenter);
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestIndex = idx;
+        }
+      });
+
+      if (closestIndex !== currentIndex && closestIndex >= 0 && closestIndex < images.length) {
+        onNavigate(closestIndex);
+      }
+    }, 120);
+  };
 
   // ── Slideshow engine ──
   const stopSlideshow = useCallback(() => {
@@ -202,27 +243,67 @@ export function Lightbox({
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    touchStartX.current = touch.clientX;
-    touchStartY.current = touch.clientY;
-    if (scale > 1) {
-      setIsDragging(true);
-      dragStart.current = { x: touch.clientX - position.x, y: touch.clientY - position.y };
+    if (e.touches.length === 2) {
+      // 2-finger pinch gesture start
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+      initialPinchDistRef.current = dist;
+      initialPinchScaleRef.current = scale;
+      setIsDragging(false);
+      touchStartX.current = null;
+      touchStartY.current = null;
+      return;
+    }
+
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      touchStartX.current = touch.clientX;
+      touchStartY.current = touch.clientY;
+      if (scale > 1) {
+        setIsDragging(true);
+        dragStart.current = { x: touch.clientX - position.x, y: touch.clientY - position.y };
+      }
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging || scale <= 1) return;
-    const touch = e.touches[0];
-    const newX = touch.clientX - dragStart.current.x;
-    const newY = touch.clientY - dragStart.current.y;
-    setPosition(limitPosition(newX, newY, scale));
+    if (e.touches.length === 2 && initialPinchDistRef.current !== null) {
+      // 2-finger pinch active
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const currentDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+      const ratio = currentDist / initialPinchDistRef.current;
+      const targetScale = Math.max(0.7, Math.min(5.0, initialPinchScaleRef.current * ratio));
+      setScale(targetScale);
+      return;
+    }
+
+    if (e.touches.length === 1 && isDragging && scale > 1) {
+      const touch = e.touches[0];
+      const newX = touch.clientX - dragStart.current.x;
+      const newY = touch.clientY - dragStart.current.y;
+      setPosition(limitPosition(newX, newY, scale));
+    }
   };
 
   const lastTouchTimeRef = useRef<number>(0);
   const lastTouchZoomTimeRef = useRef<number>(0);
 
   const handleTouchEnd = (e: React.TouchEvent) => {
+    if (initialPinchDistRef.current !== null) {
+      initialPinchDistRef.current = null;
+      if (scale < 1.05) {
+        resetZoom();
+      } else {
+        setPosition(prev => limitPosition(prev.x, prev.y, scale));
+      }
+      setIsDragging(false);
+      touchStartX.current = null;
+      touchStartY.current = null;
+      return;
+    }
+
     if (touchStartX.current !== null && touchStartY.current !== null) {
       const touch = e.changedTouches[0];
       const distanceX = touch.clientX - touchStartX.current;
@@ -730,8 +811,19 @@ export function Lightbox({
 
       {/* Bottom Thumbnails Strip (hidden in slideshow mode) */}
       {images.length > 1 && !isSlideshow && (
-        <div ref={thumbnailsContainerRef} className="w-full bg-black/50 py-2 border-t border-white/10 overflow-x-auto hide-scrollbar z-20 shrink-0">
-          <div ref={thumbnailsInnerRef} className="flex gap-2 w-max px-6 min-w-full justify-center">
+        <div 
+          ref={thumbnailsContainerRef} 
+          onScroll={handleThumbnailsScroll}
+          className="w-full bg-black/60 py-2.5 border-t border-white/10 overflow-x-auto hide-scrollbar z-20 shrink-0 scroll-smooth touch-pan-x select-none"
+        >
+          <div 
+            ref={thumbnailsInnerRef} 
+            className="flex gap-2 w-max items-center"
+            style={{
+              paddingLeft: 'calc(50vw - 28px)',
+              paddingRight: 'calc(50vw - 28px)',
+            }}
+          >
             {images.map((img, idx) => {
               const isActive = idx === currentIndex;
               return (
@@ -739,10 +831,10 @@ export function Lightbox({
                   key={idx}
                   ref={isActive ? activeThumbnailRef : null}
                   onClick={() => onNavigate(idx)}
-                  className={`relative overflow-hidden transition-all duration-150 focus:outline-none shrink-0 w-11 h-11 md:w-13 md:h-13 rounded-[2px] ${
+                  className={`relative overflow-hidden transition-all duration-150 focus:outline-none shrink-0 w-12 h-12 md:w-14 md:h-14 rounded-[2px] cursor-pointer ${
                     isActive 
-                      ? 'border-2 border-orange-500 ring-2 ring-orange-500/40 opacity-100 scale-105 z-10 shadow-lg' 
-                      : 'border border-white/20 opacity-45 hover:opacity-85 scale-100'
+                      ? 'border-2 border-orange-500 ring-2 ring-orange-500/50 opacity-100 scale-105 z-10 shadow-xl' 
+                      : 'border border-white/20 opacity-45 hover:opacity-85 scale-95 hover:scale-100'
                   }`}
                 >
                   <img
@@ -751,7 +843,7 @@ export function Lightbox({
                     loading="lazy"
                     decoding="async"
                     data-pin-nopin="true"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover pointer-events-none"
                   />
                 </button>
               );
@@ -762,29 +854,25 @@ export function Lightbox({
 
       {/* Bottom captions panel (normal mode only) */}
       {showLog && !isSlideshow && (
-        <div className="relative z-20 bg-black/90 border-t border-white/10 px-4 py-2.5 md:px-8 md:py-3 flex flex-col items-center justify-center gap-0.5 shrink-0 h-16 md:h-20 text-center w-full">
+        <div className="relative z-20 bg-black/90 border-t border-white/10 px-4 py-2.5 md:px-8 md:py-3 flex flex-col items-center justify-center gap-1 shrink-0 min-h-16 md:min-h-20 text-center w-full">
+          {/* Main Photo Title / Note */}
+          {(currentMeta.imgNote || currentMeta.memo) ? (
+            <h4 className="text-white font-bold text-xs md:text-sm tracking-wide truncate max-w-2xl">
+              {currentMeta.imgNote || currentMeta.memo}
+            </h4>
+          ) : null}
+
+          {/* Place Info (Always prominent right below title, replacing old subtitle) */}
           {currentMeta.place ? (
-            <div className="text-white font-bold text-xs md:text-sm tracking-wide truncate max-w-2xl uppercase">
-              {currentMeta.place}
+            <div className="text-orange-400 dark:text-orange-300 font-semibold text-[11px] md:text-xs tracking-tight flex items-center justify-center gap-1 truncate max-w-xl">
+              <MapPin className="w-3.5 h-3.5 shrink-0 text-orange-500" />
+              <span className="truncate">{currentMeta.place}</span>
             </div>
-          ) : (
-            <div className="text-white/25 font-bold text-[10px] md:text-xs tracking-widest uppercase">
+          ) : (!currentMeta.imgNote && !currentMeta.memo) ? (
+            <div className="text-white/30 font-bold text-[10px] md:text-xs tracking-widest uppercase">
               No Location Tagged
             </div>
-          )}
-          {currentMeta.memo ? (
-            <div className="text-white/70 text-[10px] md:text-xs font-medium tracking-wide text-center max-w-xl truncate">
-              {currentMeta.memo}
-            </div>
-          ) : currentMeta.imgNote ? (
-            <p className="text-orange-300/90 text-[10px] md:text-[11px] font-mono italic leading-relaxed text-center max-w-xl truncate">
-              "{currentMeta.imgNote}"
-            </p>
-          ) : (
-            <p className="text-white/25 text-[10px] md:text-[11px] font-mono italic">
-              "No description added"
-            </p>
-          )}
+          ) : null}
         </div>
       )}
 
