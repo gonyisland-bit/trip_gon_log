@@ -618,11 +618,52 @@ export function HomePage({
     return localStorage.getItem('home_gradient_enabled') === 'true';
   });
   const [gradientFrom, setGradientFrom] = useState<string>(() => {
-    return homeGradientFrom || localStorage.getItem('home_gradient_from') || '#FAF8F5';
+    return homeGradientFrom || localStorage.getItem('home_gradient_from') || '#F7F2EB';
   });
   const [gradientTo, setGradientTo] = useState<string>(() => {
-    return homeGradientTo || localStorage.getItem('home_gradient_to') || '#F1ECE1';
+    return homeGradientTo || localStorage.getItem('home_gradient_to') || '#E7DEC8';
   });
+
+  // Magazine Touch Swipe Gesture Tracking
+  const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
+  const isSwipingRef = useRef<boolean>(false);
+
+  const handleMagazineTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+    touchStartYRef.current = e.touches[0].clientY;
+    isSwipingRef.current = false;
+  };
+
+  const handleMagazineTouchMove = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null || touchStartYRef.current === null) return;
+    const deltaX = e.touches[0].clientX - touchStartXRef.current;
+    if (Math.abs(deltaX) > 10) {
+      isSwipingRef.current = true;
+    }
+  };
+
+  const handleMagazineTouchEnd = (e: React.TouchEvent, totalSpreads: number) => {
+    if (touchStartXRef.current === null || touchStartYRef.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartXRef.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartYRef.current;
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+
+    // Horizontal swipe threshold: 40px and dominant horizontal axis
+    if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      if (deltaX < 0) {
+        // Swipe Left -> Next Spread
+        setMagazineSpreadIndex(prev => Math.min(totalSpreads - 1, prev + 1));
+      } else {
+        // Swipe Right -> Prev Spread
+        setMagazineSpreadIndex(prev => Math.max(0, prev - 1));
+      }
+    }
+    setTimeout(() => {
+      isSwipingRef.current = false;
+    }, 80);
+  };
 
   useEffect(() => {
     if (homeGradientEnabled !== undefined) setGradientEnabled(homeGradientEnabled);
@@ -649,36 +690,16 @@ export function HomePage({
         setGradientEnabled(localStorage.getItem('home_gradient_enabled') === 'true');
       }
       if (e?.detail?.gradientFrom) setGradientFrom(e.detail.gradientFrom);
-      else setGradientFrom(localStorage.getItem('home_gradient_from') || '#FAF8F5');
+      else setGradientFrom(localStorage.getItem('home_gradient_from') || '#F7F2EB');
       if (e?.detail?.gradientTo) setGradientTo(e.detail.gradientTo);
-      else setGradientTo(localStorage.getItem('home_gradient_to') || '#F1ECE1');
+      else setGradientTo(localStorage.getItem('home_gradient_to') || '#E7DEC8');
     };
     window.addEventListener('homeConfigChanged', handleConfigChange);
     return () => window.removeEventListener('homeConfigChanged', handleConfigChange);
   }, []);
 
   const gradientBackgroundStyle = useMemo(() => {
-    if (!gradientEnabled) return undefined;
-    if (isDarkMode) {
-      const f = (gradientFrom || '').toLowerCase();
-      const t = (gradientTo || '').toLowerCase();
-      if (f.includes('fbfbfa') || f.includes('faf8f5') || t.includes('f1ece1')) {
-        return { background: 'linear-gradient(135deg, #1d1a16 0%, #12110f 100%)' };
-      }
-      if (f.includes('faf9fd') || f.includes('ece9f2') || t.includes('ece9f2')) {
-        return { background: 'linear-gradient(135deg, #1c1825 0%, #111018 100%)' };
-      }
-      if (f.includes('f8faf8') || f.includes('e9efe8') || t.includes('e9efe8')) {
-        return { background: 'linear-gradient(135deg, #161c17 0%, #101411 100%)' };
-      }
-      if (f.includes('f8f9fa') || f.includes('eaeff5') || t.includes('eaeff5')) {
-        return { background: 'linear-gradient(135deg, #171c24 0%, #101217 100%)' };
-      }
-      if (f.includes('faf6ee') || f.includes('efe8da') || t.includes('efe8da')) {
-        return { background: 'linear-gradient(135deg, #201b13 0%, #13110d 100%)' };
-      }
-      return { background: 'linear-gradient(135deg, #1d1b18 0%, #121212 100%)' };
-    }
+    if (!gradientEnabled || isDarkMode) return undefined;
     return {
       background: `linear-gradient(135deg, ${gradientFrom} 0%, ${gradientTo} 100%)`,
     };
@@ -833,7 +854,7 @@ export function HomePage({
     >
 
       {/* ===== Hero Section: 3-Column Swiss Editorial Layout (Matching Reference) ===== */}
-      <section className={`relative w-full border-b border-black/15 dark:border-white/15 ${gradientEnabled ? 'bg-transparent' : 'bg-[#FBFBFA] dark:bg-[#141414]'} overflow-hidden transition-colors`}>
+      <section className={`relative w-full border-b border-black/15 dark:border-white/15 ${gradientEnabled && !isDarkMode ? 'bg-transparent' : 'bg-[#FBFBFA] dark:bg-[#141414]'} overflow-hidden transition-colors`}>
         {currentHero ? (
           (() => {
             const { year, month, days, dateRange, cities } = getHeroDetails(currentHero);
@@ -1428,8 +1449,13 @@ export function HomePage({
                 )}
               </div>
 
-              {/* Magazine Editorial Spread Layout: 3:4 Vertical Cards (Boundary-free Swiss Minimal) with Smooth Horizontal Slide */}
-              <div className="w-full overflow-hidden">
+              {/* Magazine Editorial Spread Layout: 3:4 Vertical Cards (Boundary-free Swiss Minimal) with Smooth Horizontal Slide & Mobile Touch Swipe */}
+              <div 
+                className="w-full overflow-hidden touch-pan-y"
+                onTouchStart={handleMagazineTouchStart}
+                onTouchMove={handleMagazineTouchMove}
+                onTouchEnd={(e) => handleMagazineTouchEnd(e, totalSpreads)}
+              >
                 <div 
                   className="flex transition-transform duration-500 ease-out"
                   style={{ transform: `translateX(-${currentSpread * 100}%)` }}
@@ -1473,6 +1499,7 @@ export function HomePage({
                             <div
                               key={moment.id || idx}
                               onClick={() => {
+                                if (isSwipingRef.current) return;
                                 if (moment.tripId) {
                                   try {
                                     localStorage.setItem('pending_detail_jump', JSON.stringify({

@@ -155,10 +155,10 @@ export function ManageHubPage({
     return localStorage.getItem('home_gradient_enabled') === 'true';
   });
   const [gradientFrom, setGradientFrom] = useState<string>(() => {
-    return homeGradientFrom || localStorage.getItem('home_gradient_from') || '#FAF8F5';
+    return homeGradientFrom || localStorage.getItem('home_gradient_from') || '#F7F2EB';
   });
   const [gradientTo, setGradientTo] = useState<string>(() => {
-    return homeGradientTo || localStorage.getItem('home_gradient_to') || '#F1ECE1';
+    return homeGradientTo || localStorage.getItem('home_gradient_to') || '#E7DEC8';
   });
 
   useEffect(() => {
@@ -250,8 +250,8 @@ export function ManageHubPage({
       homeMarquee !== (marqueeMessage || '') ||
       homeSpeed !== (marqueeSpeed || 50) ||
       gradientEnabled !== (homeGradientEnabled ?? false) ||
-      gradientFrom !== (homeGradientFrom || '#FAF8F5') ||
-      gradientTo !== (homeGradientTo || '#F1ECE1') ||
+      gradientFrom !== (homeGradientFrom || '#F7F2EB') ||
+      gradientTo !== (homeGradientTo || '#E7DEC8') ||
       JSON.stringify(momentsList) !== JSON.stringify(magazineMoments || [])
     );
   }, [title, homeTitle, subtitle, homeSubtitle, selectedHeroIds, heroJourneyIds, autoSlide, heroAutoSlide, slideDuration, heroSlideDuration, mediaType, heroMediaType, showMarquee, marqueeShow, homeMarquee, marqueeMessage, homeSpeed, marqueeSpeed, gradientEnabled, homeGradientEnabled, gradientFrom, homeGradientFrom, gradientTo, homeGradientTo, momentsList, magazineMoments]);
@@ -660,6 +660,47 @@ export function ManageHubPage({
       }
     });
 
+    // Sort candidate items strictly in chronological order (earliest date & time first)
+    const parseDateTimeScore = (item: { date?: string; time?: string }) => {
+      const rawDate = safeStr(item.date).trim();
+      const rawTime = safeStr(item.time).trim();
+
+      // Extract Year, Month, Day
+      const dateMatch = rawDate.match(/(\d{4})[./\-](\d{1,2})[./\-](\d{1,2})/);
+      let year = 9999, month = 99, day = 99;
+      if (dateMatch) {
+        year = parseInt(dateMatch[1], 10);
+        month = parseInt(dateMatch[2], 10);
+        day = parseInt(dateMatch[3], 10);
+      } else {
+        const dayMatch = rawDate.match(/day\s*(\d+)/i);
+        if (dayMatch) {
+          year = 2000;
+          month = 1;
+          day = parseInt(dayMatch[1], 10);
+        }
+      }
+
+      // Extract Hours, Minutes
+      let hours = 12, minutes = 0;
+      const timeMatch = rawTime.match(/(\d{1,2}):(\d{2})/);
+      if (timeMatch) {
+        hours = parseInt(timeMatch[1], 10);
+        minutes = parseInt(timeMatch[2], 10);
+        if (/pm/i.test(rawTime) && hours < 12) hours += 12;
+        if (/am/i.test(rawTime) && hours === 12) hours = 0;
+      }
+
+      return year * 100000000 + month * 1000000 + day * 10000 + hours * 100 + minutes;
+    };
+
+    list.sort((a, b) => {
+      const scoreA = parseDateTimeScore(a);
+      const scoreB = parseDateTimeScore(b);
+      if (scoreA !== scoreB) return scoreA - scoreB;
+      return (Number(a.id) || 0) - (Number(b.id) || 0);
+    });
+
     return list;
   }, [timelineData, localJourneys, selectedTripForMoments, momentSearchQuery]);
 
@@ -906,11 +947,11 @@ export function ManageHubPage({
                           </label>
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
                             {[
-                              { name: 'Minimal Sand', from: '#FAF8F5', to: '#F1ECE1' },
-                              { name: 'Soft Lavender', from: '#FAF9FD', to: '#ECE9F2' },
-                              { name: 'Misty Sage', from: '#F8FAF8', to: '#E9EFE8' },
-                              { name: 'Slate Cool', from: '#F8F9FA', to: '#EAEFF5' },
-                              { name: 'Warm Paper', from: '#FAF6EE', to: '#EFE8DA' },
+                              { name: 'Minimal Sand', from: '#F7F2EB', to: '#E7DEC8' },
+                              { name: 'Soft Lavender', from: '#F4F0F9', to: '#DFD5EB' },
+                              { name: 'Misty Sage', from: '#F0F5F1', to: '#D4E3D2' },
+                              { name: 'Slate Cool', from: '#EFF3F8', to: '#D3DFEE' },
+                              { name: 'Warm Sunset', from: '#FBF1E6', to: '#F0D8C3' },
                             ].map((p, idx) => {
                               const isSelected = gradientFrom.toLowerCase() === p.from.toLowerCase() && gradientTo.toLowerCase() === p.to.toLowerCase();
                               return (

@@ -16,6 +16,7 @@ interface NavigationProps {
   openSettingModal: () => void;
   onSearchClick: () => void;
   isAdmin?: boolean;
+  isHomeGradientActive?: boolean;
 }
 
 export function Navigation({
@@ -31,6 +32,7 @@ export function Navigation({
   openSettingModal,
   onSearchClick,
   isAdmin = false,
+  isHomeGradientActive = false,
 }: NavigationProps) {
   const currentUser = auth.currentUser;
   const displayName = currentUser?.displayName || currentUser?.email?.split('@')[0].toUpperCase() || 'USER';
@@ -74,7 +76,7 @@ export function Navigation({
   }, [showSettings, setShowSettings]);
 
   return (
-    <nav className="sticky top-0 z-40 w-full bg-white dark:bg-[#141414] border-b border-black/10 dark:border-white/10 transition-colors duration-300 select-none">
+    <nav className={`sticky top-0 z-40 w-full ${isHomeGradientActive ? 'bg-white/30 backdrop-blur-md' : 'bg-white dark:bg-[#141414]'} border-b border-black/10 dark:border-white/10 transition-colors duration-300 select-none`}>
       <div className="w-full px-5 sm:px-8 md:px-12 lg:px-16 h-14 sm:h-16 flex items-center justify-between">
         {/* Left: Brand Logo & Links */}
         <div className="flex items-center gap-6 md:gap-10 min-w-0">

@@ -134,8 +134,8 @@ function App() {
   const [marqueeMessage, setMarqueeMessage] = useState<string>("🎉 WELCOME TO TRIPGON LOG! PLAN YOUR JOURNEY OR EXPLORE ARCHIVED LOGS.");
   const [marqueeSpeed, setMarqueeSpeed] = useState<number>(30);
   const [homeGradientEnabled, setHomeGradientEnabled] = useState<boolean>(() => localStorage.getItem('home_gradient_enabled') === 'true');
-  const [homeGradientFrom, setHomeGradientFrom] = useState<string>(() => localStorage.getItem('home_gradient_from') || '#FAF8F5');
-  const [homeGradientTo, setHomeGradientTo] = useState<string>(() => localStorage.getItem('home_gradient_to') || '#F1ECE1');
+  const [homeGradientFrom, setHomeGradientFrom] = useState<string>(() => localStorage.getItem('home_gradient_from') || '#F7F2EB');
+  const [homeGradientTo, setHomeGradientTo] = useState<string>(() => localStorage.getItem('home_gradient_to') || '#E7DEC8');
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [searchFocusItemId, setSearchFocusItemId] = useState<number | null>(null);
   const [searchFocusTab, setSearchFocusTab] = useState<string | null>(null);
@@ -1440,19 +1440,9 @@ function App() {
     new Set([...trips, ...plans].flatMap(t => t.tags || []))
   ).filter(t => t !== 'Plan' && t !== 'Personal');
 
-  const appGradientStyle = (currentView === 'home' && homeGradientEnabled)
-    ? (isDarkMode
-        ? (() => {
-            const f = (homeGradientFrom || '').toLowerCase();
-            const t = (homeGradientTo || '').toLowerCase();
-            if (f.includes('fbfbfa') || f.includes('faf8f5') || t.includes('f1ece1')) return { background: 'linear-gradient(135deg, #1d1a16 0%, #12110f 100%)' };
-            if (f.includes('faf9fd') || f.includes('ece9f2') || t.includes('ece9f2')) return { background: 'linear-gradient(135deg, #1c1825 0%, #111018 100%)' };
-            if (f.includes('f8faf8') || f.includes('e9efe8') || t.includes('e9efe8')) return { background: 'linear-gradient(135deg, #161c17 0%, #101411 100%)' };
-            if (f.includes('f8f9fa') || f.includes('eaeff5') || t.includes('eaeff5')) return { background: 'linear-gradient(135deg, #171c24 0%, #101217 100%)' };
-            if (f.includes('faf6ee') || f.includes('efe8da') || t.includes('efe8da')) return { background: 'linear-gradient(135deg, #201b13 0%, #13110d 100%)' };
-            return { background: 'linear-gradient(135deg, #1d1b18 0%, #121212 100%)' };
-          })()
-        : { background: `linear-gradient(135deg, ${homeGradientFrom} 0%, ${homeGradientTo} 100%)` })
+  const isHomeGradientActive = currentView === 'home' && homeGradientEnabled && !isDarkMode;
+  const appGradientStyle = isHomeGradientActive
+    ? { background: `linear-gradient(135deg, ${homeGradientFrom} 0%, ${homeGradientTo} 100%)` }
     : undefined;
 
   return (
@@ -1488,6 +1478,7 @@ function App() {
           openSettingModal={() => setIsManageModalOpen(true)}
           onSearchClick={() => setIsSearchOpen(true)}
           isAdmin={isAdmin}
+          isHomeGradientActive={isHomeGradientActive}
         />
 
         {/* Marquee Banner - Only on Home View */}
