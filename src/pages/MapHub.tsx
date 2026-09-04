@@ -1560,8 +1560,15 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
         selectPinRef.current = null;
       }
 
-      // Boundary highlight circle
-      const radiusMeters = Math.max(140000, (11 - country.zoom) * 95000);
+      // Boundary highlight circle (proportional to country size/zoom)
+      const radiusMeters = country.zoom >= 11
+        ? 15000 // Hong Kong, Macau, Singapore
+        : country.zoom >= 9
+          ? 35000 // Small island nations / city states
+          : country.zoom >= 7
+            ? 75000 // Taiwan, Maldives, Nepal, etc.
+            : Math.max(110000, (10.5 - country.zoom) * 85000);
+
       highlightLayerRef.current = L.circle(country.center, {
         radius: radiusMeters,
         color: '#DC2626',
@@ -1779,12 +1786,11 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
       const marker = L.marker([group.lat, group.lng], { icon }).addTo(map);
 
       marker.on('click', () => {
-        setSelectedPinGroup(group);
-        // Also show country info for the visited region
         const c = findCountryForGroup(group.country, group.city);
         if (c) {
-          setSelectedCountry(c);
-          setSearchQuery(c.name);
+          handleSelectCountry(c);
+        } else {
+          setSelectedPinGroup(group);
         }
       });
 
@@ -2032,15 +2038,18 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
           
           <div className="flex items-start justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-4">
             <div>
-              <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-[10px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500">
-                  {selectedCountry.code} · {selectedCountry.continentKo}
+              <div className="flex items-center gap-2 mb-0.5 font-['Inter',sans-serif]">
+                <span className="text-[10px] font-black uppercase tracking-widest text-red-600 dark:text-red-500">
+                  {selectedCountry.code}
+                </span>
+                <span className="text-[10px] font-bold text-black/40 dark:text-white/40 font-['Noto_Sans_KR',sans-serif]">
+                  · {selectedCountry.continentKo}
                 </span>
               </div>
-              <h3 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-black dark:text-white">
+              <h3 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-black dark:text-white font-['Inter',sans-serif]">
                 {selectedCountry.name}
               </h3>
-              <span className="text-xs font-sans text-black/50 dark:text-white/50">
+              <span className="text-xs font-medium text-black/60 dark:text-white/60 font-['Noto_Sans_KR',sans-serif]">
                 {selectedCountry.nameKo}
               </span>
             </div>
@@ -2054,16 +2063,52 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
           </div>
 
           <div className="flex flex-col gap-4">
+            {/* 1. Recorded Journey Cities in this Country (Tabs with counts) */}
+            {(() => {
+              const countryPinGroups = pinGroups.filter(g => {
+                const matched = findCountryForGroup(g.country, g.city);
+                return matched?.code === selectedCountry.code;
+              });
+
+              if (countryPinGroups.length === 0) return null;
+
+              return (
+                <div className="p-3 bg-red-600/5 dark:bg-red-500/10 border border-red-600/20 dark:border-red-500/20">
+                  <div className="text-[10px] font-['Inter',sans-serif] font-black uppercase tracking-widest text-red-600 dark:text-red-400 mb-2 flex items-center justify-between">
+                    <span>RECORDED JOURNEYS</span>
+                    <span className="text-[9px] font-['Noto_Sans_KR',sans-serif] font-bold text-black/50 dark:text-white/50">
+                      여정 지역 선택
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 font-['Inter',sans-serif]">
+                    {countryPinGroups.map(group => (
+                      <button
+                        key={group.city}
+                        type="button"
+                        onClick={() => setSelectedPinGroup(group)}
+                        className="px-2.5 py-1 text-xs font-black uppercase tracking-wider bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-black dark:text-white transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+                      >
+                        <span>{group.city}</span>
+                        <span className="text-[10px] px-1 py-0.2 bg-black/10 dark:bg-white/20 rounded-xs">
+                          {group.journeys.length}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Currency & Exchange Info */}
             <div className="p-3 bg-black/[0.03] dark:bg-white/[0.03] border border-black/10 dark:border-white/10">
-              <div className="text-[10px] font-mono font-black uppercase tracking-widest text-black/50 dark:text-white/50 mb-1">
-                CURRENCY & RATE (현지 통화)
+              <div className="text-[10px] font-['Inter',sans-serif] font-black uppercase tracking-widest text-black/50 dark:text-white/50 mb-1">
+                CURRENCY & RATE <span className="font-['Noto_Sans_KR',sans-serif] font-normal text-[9.5px]">(현지 통화)</span>
               </div>
-              <div className="flex items-baseline justify-between">
-                <span className="text-base font-black font-mono">
+              <div className="flex items-baseline justify-between font-['Inter',sans-serif]">
+                <span className="text-base font-black">
                   {selectedCountry.currencySymbol} {selectedCountry.currency}
                 </span>
-                <span className="text-xs font-mono font-bold text-black/70 dark:text-white/70">
+                <span className="text-xs font-bold text-black/70 dark:text-white/70">
                   1 {selectedCountry.currency} ≈ ₩{selectedCountry.rateToKRW.toLocaleString()}
                 </span>
               </div>
@@ -2071,14 +2116,14 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
 
             {/* Main Cities Guide */}
             <div>
-              <div className="text-[10px] font-mono font-black uppercase tracking-widest text-black/50 dark:text-white/50 mb-2">
-                MAJOR DESTINATIONS (주요 여행 도시)
+              <div className="text-[10px] font-['Inter',sans-serif] font-black uppercase tracking-widest text-black/50 dark:text-white/50 mb-2">
+                MAJOR DESTINATIONS <span className="font-['Noto_Sans_KR',sans-serif] font-normal text-[9.5px]">(주요 여행 도시)</span>
               </div>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1.5 font-['Inter',sans-serif]">
                 {selectedCountry.cities.map(city => (
                   <span
                     key={city}
-                    className="px-2 py-0.5 text-[10px] font-mono font-bold uppercase bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-black/80 dark:text-white/80"
+                    className="px-2 py-0.5 text-[10px] font-bold uppercase bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-black/80 dark:text-white/80"
                   >
                     {city}
                   </span>

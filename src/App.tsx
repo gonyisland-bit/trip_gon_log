@@ -1676,8 +1676,8 @@ function App() {
           )}
         </div>
         
-        {/* Footer */}
-        {currentView !== 'detail' && <Footer />}
+        {/* Footer: Hidden on MapHub (which is full viewport) and JourneyDetail */}
+        {currentView !== 'detail' && currentView !== 'map' && <Footer />}
 
         {/* Auth Modal Popup */}
         <AuthModal 

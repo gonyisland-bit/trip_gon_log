@@ -760,8 +760,8 @@ export function ArchiveHubPage({
         </div>
       ) : (
         <div className={cardViewMode === 'wide' 
-          ? "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 p-4 md:p-12 w-full"
-          : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 p-3 sm:p-6 md:p-12 w-full"
+          ? "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 px-4 pt-4 pb-0 md:px-12 md:pt-12 md:pb-0 w-full"
+          : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 px-3 pt-3 pb-0 sm:px-6 sm:pt-6 sm:pb-0 md:px-12 md:pt-12 md:pb-0 w-full"
         }>
           {filteredTrips.map((trip, index) => {
             const { year, month, compactDate } = getYearAndMonth(trip.date);
@@ -889,15 +889,15 @@ export function ArchiveHubPage({
       )}
       </div>
 
-      {/* ===== Bottom Bold Typography Statistics Banner ===== */}
-      <footer className="w-full border-t border-black/15 dark:border-white/15 bg-black/[0.03] dark:bg-white/[0.03] py-10 sm:py-16 px-6 sm:px-12 md:px-16 mt-16 transition-colors">
-        <div className="max-w-7xl mx-auto flex flex-col gap-3">
-          <span className="font-mono text-xs font-black text-black/40 dark:text-white/40 tracking-[0.25em] uppercase">
+      {/* ===== Bottom Bold Typography Statistics Banner (Seamlessly attached without white gap) ===== */}
+      <footer className="w-full border-t border-black/15 dark:border-white/15 bg-black/[0.03] dark:bg-white/[0.03] py-10 sm:py-16 px-6 sm:px-12 md:px-16 mt-0 transition-colors">
+        <div className="max-w-7xl mx-auto flex flex-col gap-3 font-['Inter',sans-serif]">
+          <span className="text-xs font-black text-black/40 dark:text-white/40 tracking-[0.25em] uppercase">
             TOTAL TRAVEL RECORD
           </span>
           <div 
-            className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black font-satoshi uppercase tracking-tight leading-[1.05] text-black dark:text-white"
-            style={{ fontFamily: "'Satoshi', sans-serif", wordBreak: 'keep-all' }}
+            className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-tighter leading-[1.05] text-black dark:text-white"
+            style={{ wordBreak: 'keep-all' }}
           >
             <span>{tripStats.totalTrips} {tripStats.totalTrips === 1 ? 'TRIP' : 'TRIPS'}</span>
             <span className="text-black/30 dark:text-white/30 mx-2 sm:mx-3">·</span>

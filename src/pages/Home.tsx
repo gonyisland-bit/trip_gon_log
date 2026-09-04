@@ -774,41 +774,41 @@ export function HomePage({
             return (
               <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-0 items-center">
                 {/* 1. Left Column: Top branding, Big Title, Month/Year (Overlapping onto center media) */}
-                <div className="md:col-span-5 flex flex-col justify-between h-full order-2 md:order-1 relative z-20 md:-mr-16 lg:-mr-24 pointer-events-none">
+                <div className="md:col-span-4 flex flex-col justify-between h-full order-2 md:order-1 relative z-20 md:-mr-12 lg:-mr-16 pointer-events-none">
                   <div>
-                    {/* Minimal Branding / Title */}
-                    <div className="text-[11px] font-mono font-bold tracking-[0.25em] text-black/40 dark:text-white/40 uppercase mb-4 sm:mb-6 pointer-events-auto">
+                    {/* Minimal Branding / Title in Inter */}
+                    <div className="text-[11px] font-['Inter',sans-serif] font-bold tracking-[0.25em] text-black/40 dark:text-white/40 uppercase mb-4 sm:mb-6 pointer-events-auto">
                       {homeTitle ? homeTitle.replace(/\\n|\n/g, ' ') : 'JOURNAL'}
                     </div>
 
-                    {/* Massive Bold Magazine Title (Overlaps onto center frame) */}
+                    {/* Massive Bold Magazine Title in Inter (Overlaps onto center frame) */}
                     <h2
                       onClick={() => onNavigate('detail', currentHero.id)}
-                      className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black font-satoshi uppercase tracking-tight leading-[0.92] text-black dark:text-white cursor-pointer hover:opacity-85 transition-opacity select-none drop-shadow-sm pointer-events-auto"
-                      style={{ fontFamily: "'Satoshi', sans-serif", wordBreak: 'keep-all' }}
+                      className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black font-['Inter',sans-serif] uppercase tracking-tighter leading-[0.92] text-black dark:text-white cursor-pointer hover:opacity-85 transition-opacity select-none drop-shadow-sm pointer-events-auto"
+                      style={{ wordBreak: 'keep-all' }}
                     >
                       {currentHero.title}
                     </h2>
                   </div>
 
                   {/* Year & Month + Minimal Subtitle */}
-                  <div className="mt-8 sm:mt-12 flex flex-col gap-1 pointer-events-auto">
-                    <div className="text-xl sm:text-2xl font-mono font-black tracking-widest text-black dark:text-white uppercase">
+                  <div className="mt-8 sm:mt-12 flex flex-col gap-1 pointer-events-auto font-['Inter',sans-serif]">
+                    <div className="text-xl sm:text-2xl font-black tracking-widest text-black dark:text-white uppercase">
                       {month} {year}
                     </div>
                     {homeSubtitle && (
-                      <p className="text-xs font-sans text-black/50 dark:text-white/50 uppercase tracking-wider leading-relaxed max-w-xs mt-1">
+                      <p className="text-xs font-medium text-black/50 dark:text-white/50 uppercase tracking-wider leading-relaxed max-w-xs mt-1">
                         {homeSubtitle}
                       </p>
                     )}
                   </div>
                 </div>
 
-                {/* 2. Center Column: Vertical Hero Media Frame (aspect-[3/4]) */}
-                <div className="md:col-span-4 flex flex-col items-center justify-center order-1 md:order-2 relative z-10">
+                {/* 2. Center Column: Exact 1/3 Width Borderless Hero Media Frame */}
+                <div className="md:col-span-4 flex flex-col items-center justify-center order-1 md:order-2 relative z-10 w-full px-0 sm:px-2">
                   <div 
                     onClick={() => onNavigate('detail', currentHero.id)}
-                    className="relative w-full max-w-[340px] sm:max-w-[380px] aspect-[3/4] overflow-hidden shadow-2xl bg-neutral-900 group cursor-pointer border border-black/10 dark:border-white/15 select-none"
+                    className="relative w-full aspect-[3/4] overflow-hidden bg-neutral-900 group cursor-pointer select-none"
                   >
                     {heroJourneys.map((journey, index) => (
                       <HeroMedia
@@ -828,11 +828,11 @@ export function HomePage({
                 </div>
 
                 {/* 3. Right Column: Date range / Days duration, Cities, Minimal circular arrow button */}
-                <div className="md:col-span-3 flex flex-col justify-between h-full order-3 text-left md:text-right items-start md:items-end relative z-20 md:pl-6">
+                <div className="md:col-span-4 flex flex-col justify-between h-full order-3 text-left md:text-right items-start md:items-end relative z-20 md:pl-8 font-['Inter',sans-serif]">
                   {/* Top Slide Indicator (e.g. 01 / 03) with minimal gauge & arrows */}
                   {heroJourneys.length > 1 ? (
                     <div className="flex items-center gap-2.5 mb-6">
-                      <span className="text-xs font-mono font-black tracking-widest text-black dark:text-white">
+                      <span className="text-xs font-black tracking-widest text-black dark:text-white">
                         {String(heroSlide + 1).padStart(2, '0')}
                       </span>
                       <div className="flex items-center gap-1">
@@ -849,7 +849,7 @@ export function HomePage({
                           />
                         ))}
                       </div>
-                      <span className="text-xs font-mono font-bold tracking-widest text-black/40 dark:text-white/40">
+                      <span className="text-xs font-bold tracking-widest text-black/40 dark:text-white/40">
                         {String(heroJourneys.length).padStart(2, '0')}
                       </span>
 
@@ -877,11 +877,11 @@ export function HomePage({
 
                   {/* Middle: Duration & Dates (e.g. 18 — 20 / 3 DAYS) */}
                   <div className="my-auto flex flex-col items-start md:items-end">
-                    <div className="text-3xl sm:text-4xl md:text-5xl font-black font-mono tracking-tight text-black dark:text-white leading-none">
+                    <div className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter text-black dark:text-white leading-none font-['Inter',sans-serif]">
                       {dateRange}
                     </div>
                     {days && (
-                      <div className="text-xs sm:text-sm font-mono font-bold text-black/50 dark:text-white/50 tracking-widest uppercase mt-2">
+                      <div className="text-xs sm:text-sm font-bold text-black/50 dark:text-white/50 tracking-widest uppercase mt-2">
                         {days}
                       </div>
                     )}
@@ -889,7 +889,7 @@ export function HomePage({
 
                   {/* Bottom: Cities and Circular Arrow ( → ) */}
                   <div className="mt-8 sm:mt-12 flex flex-col items-start md:items-end gap-4">
-                    <div className="text-xs sm:text-sm font-mono font-bold text-black/70 dark:text-white/70 uppercase tracking-widest leading-relaxed">
+                    <div className="text-xs sm:text-sm font-bold text-black/70 dark:text-white/70 uppercase tracking-widest leading-relaxed">
                       {cities}
                     </div>
 
@@ -1083,7 +1083,7 @@ export function HomePage({
                   {/* Meta */}
                   <div className="flex-1 min-w-0 py-2.5 px-3 sm:px-4 md:px-6 flex flex-col justify-center gap-0.5">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-black text-sm sm:text-base md:text-lg text-black dark:text-white uppercase font-satoshi truncate">
+                      <h3 className="font-black text-sm sm:text-base md:text-lg text-black dark:text-white uppercase font-['Inter',sans-serif] tracking-tight truncate">
                         {trip.title}
                       </h3>
                       {((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
@@ -1410,7 +1410,7 @@ export function HomePage({
                         {/* Top-Right: Swiss Minimal Black Label (여행지명: TOKYO, OSAKA, etc.) */}
                         {engCity && (
                           <div className="absolute top-3 right-3 pointer-events-none z-10">
-                            <span className="px-2.5 py-1 text-[11px] sm:text-xs font-black font-satoshi uppercase tracking-[0.2em] bg-black text-white leading-none inline-block shadow-sm">
+                            <span className="px-2.5 py-1 text-[11px] sm:text-xs font-black font-['Inter',sans-serif] uppercase tracking-[0.2em] bg-black text-white leading-none inline-block shadow-sm">
                               {engCity}
                             </span>
                           </div>
