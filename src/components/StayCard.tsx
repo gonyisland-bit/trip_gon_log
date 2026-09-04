@@ -108,23 +108,38 @@ export function StayCard({
     setLocalMemo(stay.memo);
   }, [stay.memo]);
 
-  const uploadAdditionalImage = async (file: File) => {
+  const uploadMultipleAdditionalImages = async (files: File[]) => {
     const user = auth.currentUser;
     if (!user) {
       alert("이미지를 업로드하려면 로그인이 필요합니다.");
       return;
     }
+    const imageFiles = files.filter(f => f.type.startsWith('image/'));
+    if (imageFiles.length === 0) return;
+
     setUploadingImage(true);
     try {
-      const compressedBlob = await compressImage(file);
-      const storagePath = `users/public/images/stays/${Date.now()}_${file.name}`;
-      const downloadUrl = await uploadFileToR2(compressedBlob, storagePath);
-      
-      const currentList = stay.additionalImages || [];
-      const newList = [...currentList, downloadUrl];
-      onUpdate(stay.id, 'additionalImages', newList);
+      const uploadedUrls: string[] = [];
+      for (const file of imageFiles) {
+        try {
+          const compressedBlob = await compressImage(file);
+          const safeName = file.name ? file.name.replace(/[^a-zA-Z0-9._-]/g, '_') : 'pasted_image.jpg';
+          const storagePath = `users/public/images/stays/${Date.now()}_${Math.random().toString(36).substring(2, 6)}_${safeName}`;
+          const downloadUrl = await uploadFileToR2(compressedBlob, storagePath);
+          if (downloadUrl) {
+            uploadedUrls.push(downloadUrl);
+          }
+        } catch (err) {
+          console.error("Single image upload failed:", err);
+        }
+      }
+
+      if (uploadedUrls.length > 0) {
+        const currentList = stay.additionalImages || [];
+        onUpdate(stay.id, 'additionalImages', [...currentList, ...uploadedUrls]);
+      }
     } catch (error) {
-      console.error("Additional image upload failed:", error);
+      console.error("Additional images upload failed:", error);
       alert("이미지 업로드에 실패했습니다.");
     } finally {
       setUploadingImage(false);
@@ -134,21 +149,46 @@ export function StayCard({
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
-      for (const file of files) {
-        if (file.type.startsWith('image/')) {
-          await uploadAdditionalImage(file);
+      await uploadMultipleAdditionalImages(files);
+      e.target.value = '';
+    }
+  };
+
+  const handlePaste = async (e: React.ClipboardEvent) => {
+    if (!isEditMode) return;
+    const items = e.clipboardData?.items;
+    const filesFromClipboard: File[] = [];
+
+    if (items) {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.indexOf('image') !== -1) {
+          const file = item.getAsFile();
+          if (file) {
+            filesFromClipboard.push(file);
+          }
         }
       }
+    }
+
+    if (filesFromClipboard.length === 0 && e.clipboardData?.files) {
+      const directFiles = Array.from(e.clipboardData.files).filter(f => f.type.startsWith('image/'));
+      filesFromClipboard.push(...directFiles);
+    }
+
+    if (filesFromClipboard.length > 0) {
+      e.preventDefault();
+      e.stopPropagation();
+      await uploadMultipleAdditionalImages(filesFromClipboard);
     }
   };
 
   const removeAdditionalImage = (e: React.MouseEvent, indexToRemove: number) => {
+    e.preventDefault();
     e.stopPropagation();
-    if (confirm("이 이미지를 삭제하시겠습니까?")) {
-      const currentList = stay.additionalImages || [];
-      const newList = currentList.filter((_, idx) => idx !== indexToRemove);
-      onUpdate(stay.id, 'additionalImages', newList);
-    }
+    const currentList = stay.additionalImages || [];
+    const newList = currentList.filter((_, idx) => idx !== indexToRemove);
+    onUpdate(stay.id, 'additionalImages', newList);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -172,11 +212,7 @@ export function StayCard({
     if (!isEditMode) return;
     if (e.dataTransfer.files) {
       const files = Array.from(e.dataTransfer.files);
-      for (const file of files) {
-        if (file.type.startsWith('image/')) {
-          await uploadAdditionalImage(file);
-        }
-      }
+      await uploadMultipleAdditionalImages(files);
     }
   };
 
@@ -193,7 +229,9 @@ export function StayCard({
   return (
     <div 
       onClick={onClick}
-      className={`border-b font-sans text-black dark:text-white relative transition-all duration-300 cursor-pointer w-full ${
+      onPaste={handlePaste}
+      tabIndex={isEditMode ? 0 : undefined}
+      className={`border-b font-sans text-black dark:text-white relative transition-all duration-300 cursor-pointer w-full outline-none ${
         isActive 
           ? 'border-l-4 border-l-red-600 dark:border-l-red-500 bg-neutral-100/50 dark:bg-white/[0.04]' 
           : 'border-black/15 dark:border-white/15 bg-white dark:bg-[#0A0A0A]'
@@ -469,7 +507,7 @@ export function StayCard({
               </div>
 
               {/* Grid of thumbnails */}
-              <div className="flex flex-wrap gap-2.5">
+              <div onPaste={handlePaste} className="flex flex-wrap gap-2.5">
                 {(stay.additionalImages || []).map((imgUrl, idx) => (
                   <div key={idx} className="relative w-16 h-16 border border-black/10 dark:border-white/10 overflow-hidden group/thumb">
                     <img
@@ -483,8 +521,9 @@ export function StayCard({
                     />
                     {isEditMode && (
                       <button
+                        type="button"
                         onClick={(e) => removeAdditionalImage(e, idx)}
-                        className="absolute top-0.5 right-0.5 p-0.5 bg-black/70 hover:bg-red-600 text-white rounded-sm transition-colors opacity-0 group-hover/thumb:opacity-100"
+                        className="absolute top-0.5 right-0.5 p-1 bg-black/80 hover:bg-red-600 text-white transition-colors sm:opacity-0 group-hover/thumb:opacity-100 opacity-100 cursor-pointer z-10"
                         title="Delete image"
                       >
                         <X className="w-3 h-3" />
@@ -501,7 +540,7 @@ export function StayCard({
 
                 {!(stay.additionalImages?.length) && !uploadingImage && (
                   <span className="text-[10px] text-black/30 dark:text-white/30 italic py-2">
-                    {isEditMode ? "Drag and drop photos here or click Add Photo" : "No additional photos"}
+                    {isEditMode ? "Drag & drop, paste (Ctrl+V) or click Add Photo" : "No additional photos"}
                   </span>
                 )}
               </div>

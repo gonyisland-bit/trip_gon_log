@@ -75,8 +75,12 @@ export function Navigation({
     };
   }, [showSettings, setShowSettings]);
 
+  const navBgClass = showSettings 
+    ? 'bg-white dark:bg-[#141414]' 
+    : (isHomeGradientActive ? 'bg-white/30 backdrop-blur-md' : 'bg-white dark:bg-[#141414]');
+
   return (
-    <nav className={`sticky top-0 z-40 w-full ${isHomeGradientActive ? 'bg-white/30 backdrop-blur-md' : 'bg-white dark:bg-[#141414]'} border-b border-black/10 dark:border-white/10 transition-colors duration-300 select-none`}>
+    <nav className={`sticky top-0 z-40 w-full ${navBgClass} border-b border-black/10 dark:border-white/10 transition-colors duration-300 select-none`}>
       <div className="w-full px-5 sm:px-8 md:px-12 lg:px-16 h-14 sm:h-16 flex items-center justify-between">
         {/* Left: Brand Logo & Links */}
         <div className="flex items-center gap-6 md:gap-10 min-w-0">
@@ -216,7 +220,8 @@ export function Navigation({
 
       {/* Editorial Typography Hamburger Menu (Smooth 200ms Fade & Slide In/Out) */}
       <div 
-        className={`fixed inset-0 z-[100] bg-white dark:bg-[#111111] flex flex-col justify-between p-8 sm:p-12 md:hidden transition-all duration-200 ease-out ${
+        style={{ backgroundColor: isDarkMode ? '#111111' : '#FFFFFF' }}
+        className={`fixed inset-0 z-[100] !bg-white dark:!bg-[#111111] flex flex-col justify-between p-8 sm:p-12 md:hidden transition-all duration-200 ease-out shadow-2xl ${
           showSettings 
             ? 'opacity-100 translate-y-0 pointer-events-auto' 
             : 'opacity-0 -translate-y-2 pointer-events-none'

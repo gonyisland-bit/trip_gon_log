@@ -1846,6 +1846,82 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedCountry, selectedPinGroup, isWishlistModalOpen, isPlaceListModalOpen]);
 
+  const handleSelectCountryRef = useRef(handleSelectCountry);
+  useEffect(() => {
+    handleSelectCountryRef.current = handleSelectCountry;
+  });
+
+  // Geocoder & distance based country selector for direct map clicks
+  const matchCountryFromLatLng = (latlng: { lat: number; lng: number }) => {
+    const L = (window as any).L;
+    if (!L) return;
+
+    // Helper: geometric distance match within country influence radius
+    const matchByDistance = () => {
+      let closestCountry: CountryInfo | null = null;
+      let minDistance = Infinity;
+
+      for (const country of COUNTRIES_DATA) {
+        const cLatLng = L.latLng(country.center[0], country.center[1]);
+        const dist = cLatLng.distanceTo(L.latLng(latlng.lat, latlng.lng));
+
+        const maxRadius = country.zoom >= 11
+          ? 45000
+          : country.zoom >= 9
+            ? 90000
+            : country.zoom >= 7
+              ? 300000
+              : country.zoom >= 5
+                ? 800000
+                : country.zoom >= 4
+                  ? 1400000
+                  : 2000000;
+
+        if (dist <= maxRadius && dist < minDistance) {
+          minDistance = dist;
+          closestCountry = country;
+        }
+      }
+
+      if (closestCountry) {
+        handleSelectCountryRef.current(closestCountry);
+      }
+    };
+
+    // 1. Try Google Reverse Geocoder for high-precision country matching
+    if ((window as any).google && (window as any).google.maps && (window as any).google.maps.Geocoder) {
+      try {
+        const geocoder = new (window as any).google.maps.Geocoder();
+        geocoder.geocode({ location: { lat: latlng.lat, lng: latlng.lng } }, (results: any[], status: string) => {
+          if (status === 'OK' && results && results.length > 0) {
+            for (const result of results) {
+              const countryComp = result.address_components?.find((c: any) => c.types?.includes('country'));
+              if (countryComp) {
+                const code = countryComp.short_name;
+                const name = countryComp.long_name;
+                const matched = COUNTRIES_DATA.find(c => 
+                  c.code === code || 
+                  c.name.toUpperCase() === name.toUpperCase() || 
+                  c.nameKo === name ||
+                  (result.formatted_address && c.cities.some(city => result.formatted_address.toUpperCase().includes(city)))
+                );
+                if (matched) {
+                  handleSelectCountryRef.current(matched);
+                  return;
+                }
+              }
+            }
+          }
+          matchByDistance();
+        });
+      } catch (_) {
+        matchByDistance();
+      }
+    } else {
+      matchByDistance();
+    }
+  };
+
   // Initialize Leaflet Map centered on South Korea
   useEffect(() => {
     const L = (window as any).L;
@@ -1864,6 +1940,13 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     });
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+    // Direct map click to select country
+    map.on('click', (e: any) => {
+      if (e && e.latlng) {
+        matchCountryFromLatLng(e.latlng);
+      }
+    });
 
     const getTileConfig = (style: 'esri' | 'google', dark: boolean) => {
       if (style === 'google') {
