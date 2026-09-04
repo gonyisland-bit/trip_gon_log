@@ -1158,6 +1158,119 @@ const KNOWN_CITY_COORDS: { [key: string]: [number, number] } = {
   아부다비: [24.4539, 54.3773],
 };
 
+// Korean city to English city canonical mapping for search
+export const CITY_KO_MAP: Record<string, string> = {
+  '뉴욕': 'NEW YORK',
+  '로스앤젤레스': 'LOS ANGELES',
+  '엘에이': 'LOS ANGELES',
+  '샌프란시스코': 'SAN FRANCISCO',
+  '라스베이거스': 'LAS VEGAS',
+  '라스베가스': 'LAS VEGAS',
+  '시애틀': 'SEATTLE',
+  '시카고': 'CHICAGO',
+  '호놀룰루': 'HONOLULU',
+  '하와이': 'HONOLULU',
+  '보스턴': 'BOSTON',
+  '워싱턴': 'WASHINGTON',
+  '마이애미': 'MIAMI',
+  '밴쿠버': 'VANCOUVER',
+  '토론토': 'TORONTO',
+  '몬트리올': 'MONTREAL',
+  '퀘벡': 'QUEBEC',
+  '밴프': 'BANFF',
+  '캘거리': 'CALGARY',
+  '칸쿤': 'CANCUN',
+  '멕시코시티': 'MEXICO CITY',
+  '파리': 'PARIS',
+  '니스': 'NICE',
+  '리옹': 'LYON',
+  '런던': 'LONDON',
+  '에든버러': 'EDINBURGH',
+  '로마': 'ROME',
+  '밀라노': 'MILAN',
+  '피렌체': 'FLORENCE',
+  '베네치아': 'VENICE',
+  '나폴리': 'NAPLES',
+  '바르셀로나': 'BARCELONA',
+  '마드리드': 'MADRID',
+  '세비야': 'SEVILLE',
+  '취리히': 'ZURICH',
+  '인터라켄': 'INTERLAKEN',
+  '제네바': 'GENEVA',
+  '루체른': 'LUCERNE',
+  '체르마트': 'ZERMATT',
+  '프라하': 'PRAGUE',
+  '비엔나': 'VIENNA',
+  '부다페스트': 'BUDAPEST',
+  '베를린': 'BERLIN',
+  '뮌헨': 'MUNICH',
+  '프랑크푸르트': 'FRANKFURT',
+  '암스테르담': 'AMSTERDAM',
+  '브뤼셀': 'BRUSSELS',
+  '코펜하겐': 'COPENHAGEN',
+  '오슬로': 'OSLO',
+  '스톡홀름': 'STOCKHOLM',
+  '헬싱키': 'HELSINKI',
+  '바르샤바': 'WARSAW',
+  '더블린': 'DUBLIN',
+  '리스본': 'LISBON',
+  '포르투': 'PORTO',
+  '아테네': 'ATHENS',
+  '산토리니': 'SANTORINI',
+  '이스탄불': 'ISTANBUL',
+  '카파도키아': 'CAPPADOCIA',
+  '두바이': 'DUBAI',
+  '아부다비': 'ABU DHABI',
+  '시드니': 'SYDNEY',
+  '멜버른': 'MELBOURNE',
+  '브리즈번': 'BRISBANE',
+  '퍼스': 'PERTH',
+  '오클랜드': 'AUCKLAND',
+  '퀸스타운': 'QUEENSTOWN',
+  '방콕': 'BANGKOK',
+  '치앙마이': 'CHIANG MAI',
+  '푸켓': 'PHUKET',
+  '파타야': 'PATTAYA',
+  '다낭': 'DA NANG',
+  '하노이': 'HANOI',
+  '호치민': 'HO CHI MINH',
+  '나트랑': 'NHA TRANG',
+  '푸꾸옥': 'PHU QUOC',
+  '세부': 'CEBU',
+  '보라카이': 'BORACAY',
+  '보홀': 'BOHOL',
+  '마닐라': 'MANILA',
+  '싱가포르': 'SINGAPORE',
+  '쿠알라룸푸르': 'KUALA LUMPUR',
+  '코타키나발루': 'KOTA KINABALU',
+  '발리': 'BALI',
+  '자카르타': 'JAKARTA',
+  '타이베이': 'TAIPEI',
+  '가오슝': 'KAOHSIUNG',
+  '홍콩': 'HONG KONG',
+  '마카오': 'MACAU',
+  '도쿄': 'TOKYO',
+  '오사카': 'OSAKA',
+  '교토': 'KYOTO',
+  '후쿠오카': 'FUKUOKA',
+  '삿포로': 'SAPPORO',
+  '나고야': 'NAGOYA',
+  '오키나와': 'OKINAWA',
+  '고베': 'KOBE',
+  '나라': 'NARA',
+  '서울': 'SEOUL',
+  '부산': 'BUSAN',
+  '제주': 'JEJU',
+  '인천': 'INCHEON',
+  '강릉': 'GANGNEUNG',
+  '속초': 'SOKCHO',
+  '경주': 'GYEONGJU',
+  '전주': 'JEONJU',
+  '괌': 'GUAM',
+  '투몬': 'TUMON',
+  '사이판': 'SAIPAN',
+};
+
 export function findCountryForGroup(countryStr?: string, cityStr?: string): CountryInfo | undefined {
   if (!countryStr && !cityStr) return undefined;
   const cClean = (countryStr || '').toUpperCase().trim();
@@ -1210,6 +1323,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
   const [selectedPinGroup, setSelectedPinGroup] = useState<MapPinGroup | null>(null);
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
   const [isWishlistModalOpen, setIsWishlistModalOpen] = useState(false);
+  const [wishlistTab, setWishlistTab] = useState<'countries' | 'cities'>('countries');
   const [isPlaceListModalOpen, setIsPlaceListModalOpen] = useState(false);
   const [placeSearchQuery, setPlaceSearchQuery] = useState('');
 
@@ -1217,6 +1331,16 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
   const [favoriteCountries, setFavoriteCountries] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('wishlist_countries');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Favorite cities (Wishlist) state with Firebase Firestore synchronization & local fallback
+  const [favoriteCities, setFavoriteCities] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('wishlist_cities');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -1232,6 +1356,12 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
           setFavoriteCountries(data.countries);
           try {
             localStorage.setItem('wishlist_countries', JSON.stringify(data.countries));
+          } catch (_) {}
+        }
+        if (Array.isArray(data.cities)) {
+          setFavoriteCities(data.cities);
+          try {
+            localStorage.setItem('wishlist_cities', JSON.stringify(data.cities));
           } catch (_) {}
         }
       }
@@ -1273,10 +1403,33 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     try {
       await setDoc(doc(db, 'users', 'public', 'settings', 'map_wishlist'), {
         countries: updated,
+        cities: favoriteCities,
         updatedAt: new Date().toISOString()
       }, { merge: true });
     } catch (err) {
       console.error("Failed to save wishlist to server:", err);
+    }
+  };
+
+  const toggleFavoriteCity = async (cityName: string) => {
+    const cityUpper = cityName.toUpperCase();
+    const updated = favoriteCities.includes(cityUpper)
+      ? favoriteCities.filter(c => c !== cityUpper)
+      : [...favoriteCities, cityUpper];
+
+    setFavoriteCities(updated);
+    try {
+      localStorage.setItem('wishlist_cities', JSON.stringify(updated));
+    } catch (_) {}
+
+    try {
+      await setDoc(doc(db, 'users', 'public', 'settings', 'map_wishlist'), {
+        countries: favoriteCountries,
+        cities: updated,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+    } catch (err) {
+      console.error("Failed to save city wishlist to server:", err);
     }
   };
 
@@ -1848,16 +2001,21 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     });
   }, [favoriteCountries, showWishlistPins, showPinLabels, isDarkMode]);
 
-  // Filtered countries for search (Supports continent search e.g. "아시아", "유럽", "아프리카", "남미")
+  // Filtered countries for search (Supports continent search e.g. "아시아", "유럽", "아프리카", "남미" and Korean city search e.g. "뉴욕", "파리", "로스앤젤레스")
   const filteredCountries = useMemo(() => {
     if (!searchQuery.trim()) return COUNTRIES_DATA;
     const q = searchQuery.trim().toLowerCase();
+    
+    // Check if query matches any mapped Korean city
+    const mappedEngCity = Object.entries(CITY_KO_MAP).find(([ko]) => ko.toLowerCase().includes(q) || q.includes(ko.toLowerCase()))?.[1];
+
     return COUNTRIES_DATA.filter(c =>
       c.name.toLowerCase().includes(q) ||
       c.nameKo.includes(q) ||
       c.continent.toLowerCase().includes(q) ||
       c.continentKo.includes(q) ||
-      c.cities.some(city => city.toLowerCase().includes(q))
+      c.cities.some(city => city.toLowerCase().includes(q)) ||
+      (mappedEngCity && c.cities.some(city => city.toUpperCase() === mappedEngCity.toUpperCase() || mappedEngCity.toUpperCase().includes(city.toUpperCase())))
     );
   }, [searchQuery]);
 
@@ -2114,20 +2272,36 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
               </div>
             </div>
 
-            {/* Main Cities Guide */}
+            {/* Main Cities Guide (With Wishlist Checkbox/Star Toggle) */}
             <div>
-              <div className="text-[10px] font-['Inter',sans-serif] font-black uppercase tracking-widest text-black/50 dark:text-white/50 mb-2">
-                MAJOR DESTINATIONS <span className="font-['Noto_Sans_KR',sans-serif] font-normal text-[9.5px]">(주요 여행 도시)</span>
+              <div className="text-[10px] font-['Inter',sans-serif] font-black uppercase tracking-widest text-black/50 dark:text-white/50 mb-2 flex items-center justify-between">
+                <div>
+                  MAJOR DESTINATIONS <span className="font-['Noto_Sans_KR',sans-serif] font-normal text-[9.5px]">(주요 여행 도시)</span>
+                </div>
+                <span className="text-[9px] font-['Noto_Sans_KR',sans-serif] font-bold text-amber-600 dark:text-amber-400">
+                  ★ 클릭하여 위시리스트 추가
+                </span>
               </div>
               <div className="flex flex-wrap gap-1.5 font-['Inter',sans-serif]">
-                {selectedCountry.cities.map(city => (
-                  <span
-                    key={city}
-                    className="px-2 py-0.5 text-[10px] font-bold uppercase bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-black/80 dark:text-white/80"
-                  >
-                    {city}
-                  </span>
-                ))}
+                {selectedCountry.cities.map(city => {
+                  const isCityFavorite = favoriteCities.includes(city.toUpperCase());
+                  return (
+                    <button
+                      key={city}
+                      type="button"
+                      onClick={() => toggleFavoriteCity(city)}
+                      className={`px-2 py-1 text-[10px] font-bold uppercase transition-all cursor-pointer flex items-center gap-1 border ${
+                        isCityFavorite
+                          ? 'bg-amber-500 text-black border-amber-500 shadow-xs'
+                          : 'bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white'
+                      }`}
+                      title={`${city} 위시리스트 토글`}
+                    >
+                      <Star className={`w-3 h-3 ${isCityFavorite ? 'fill-black text-black' : 'text-black/40 dark:text-white/40'}`} />
+                      <span>{city}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -2174,13 +2348,13 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
             className="w-full max-w-md bg-white dark:bg-[#111111] border border-black/20 dark:border-white/20 shadow-2xl p-6 select-none"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-4">
+            <div className="flex items-start justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-3">
               <div>
                 <span className="text-[10px] font-mono font-black uppercase tracking-widest text-amber-500 block mb-0.5">
                   MY TRAVEL WISHLIST
                 </span>
                 <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white">
-                  가고싶은 나라 ({favoriteCountries.length})
+                  위시리스트 ({favoriteCountries.length + favoriteCities.length})
                 </h3>
               </div>
               <button
@@ -2191,60 +2365,148 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
               </button>
             </div>
 
-            {wishlistCountriesData.length === 0 ? (
-              <div className="py-12 text-center text-xs font-mono text-black/40 dark:text-white/40">
-                즐겨찾기에 등록된 국가가 없습니다. <br />
-                국가를 검색하거나 지도에서 선택하여 가고싶은 나라를 담아보세요.
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2 max-h-80 overflow-y-auto pr-1 divide-y divide-black/5 dark:divide-white/5">
-                {wishlistCountriesData.map(c => (
-                  <div key={c.code} className="pt-2 flex items-center justify-between gap-3">
-                    <div 
-                      className="cursor-pointer flex-1 min-w-0"
-                      onClick={() => {
-                        handleSelectCountry(c);
-                        setIsWishlistModalOpen(false);
-                      }}
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-black uppercase truncate text-black dark:text-white">
-                          {c.name}
-                        </span>
-                        <span className="text-[10px] font-sans text-black/50 dark:text-white/50">
-                          ({c.nameKo})
+            {/* Tabs: COUNTRIES vs CITIES */}
+            <div className="flex border-b border-black/10 dark:border-white/10 mb-3">
+              <button
+                type="button"
+                onClick={() => setWishlistTab('countries')}
+                className={`flex-1 py-2 text-center text-xs font-black uppercase tracking-wider font-mono cursor-pointer transition-colors border-b-2 ${
+                  wishlistTab === 'countries'
+                    ? 'border-black dark:border-white text-black dark:text-white font-bold'
+                    : 'border-transparent text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
+                }`}
+              >
+                COUNTRIES ({favoriteCountries.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setWishlistTab('cities')}
+                className={`flex-1 py-2 text-center text-xs font-black uppercase tracking-wider font-mono cursor-pointer transition-colors border-b-2 ${
+                  wishlistTab === 'cities'
+                    ? 'border-black dark:border-white text-black dark:text-white font-bold'
+                    : 'border-transparent text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
+                }`}
+              >
+                CITIES ({favoriteCities.length})
+              </button>
+            </div>
+
+            {wishlistTab === 'countries' ? (
+              wishlistCountriesData.length === 0 ? (
+                <div className="py-12 text-center text-xs font-mono text-black/40 dark:text-white/40">
+                  즐겨찾기에 등록된 국가가 없습니다. <br />
+                  국가를 검색하거나 지도에서 선택하여 가고싶은 나라를 담아보세요.
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2 max-h-80 overflow-y-auto pr-1 divide-y divide-black/5 dark:divide-white/5">
+                  {wishlistCountriesData.map(c => (
+                    <div key={c.code} className="pt-2 flex items-center justify-between gap-3">
+                      <div 
+                        className="cursor-pointer flex-1 min-w-0"
+                        onClick={() => {
+                          handleSelectCountry(c);
+                          setIsWishlistModalOpen(false);
+                        }}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-black uppercase truncate text-black dark:text-white">
+                            {c.name}
+                          </span>
+                          <span className="text-[10px] font-sans text-black/50 dark:text-white/50">
+                            ({c.nameKo})
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-mono text-black/40 dark:text-white/40 block truncate">
+                          {c.cities.slice(0, 3).join(', ')}
                         </span>
                       </div>
-                      <span className="text-[10px] font-mono text-black/40 dark:text-white/40 block truncate">
-                        {c.cities.slice(0, 3).join(', ')}
-                      </span>
-                    </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {onCreateTripForCountry && (
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {onCreateTripForCountry && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onCreateTripForCountry(c.name);
+                              setIsWishlistModalOpen(false);
+                            }}
+                            className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-[10px] font-black uppercase tracking-wider cursor-pointer hover:opacity-85"
+                          >
+                            + 여정 만들기
+                          </button>
+                        )}
                         <button
                           type="button"
+                          onClick={() => toggleFavoriteCountry(c.code)}
+                          className="p-1 text-black/30 dark:text-white/30 hover:text-red-500 cursor-pointer"
+                          title="즐겨찾기 해제"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            ) : (
+              favoriteCities.length === 0 ? (
+                <div className="py-12 text-center text-xs font-mono text-black/40 dark:text-white/40">
+                  즐겨찾기에 등록된 도시가 없습니다. <br />
+                  국가 상세 카드에서 원하는 여행 도시의 ★를 눌러 담아보세요.
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2 max-h-80 overflow-y-auto pr-1 divide-y divide-black/5 dark:divide-white/5">
+                  {favoriteCities.map(city => {
+                    const matchedCountry = COUNTRIES_DATA.find(c => c.cities.some(cty => cty.toUpperCase() === city.toUpperCase()));
+                    return (
+                      <div key={city} className="pt-2 flex items-center justify-between gap-3">
+                        <div 
+                          className="cursor-pointer flex-1 min-w-0"
                           onClick={() => {
-                            onCreateTripForCountry(c.name);
+                            if (matchedCountry) {
+                              handleSelectCountry(matchedCountry);
+                            }
                             setIsWishlistModalOpen(false);
                           }}
-                          className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-[10px] font-black uppercase tracking-wider cursor-pointer hover:opacity-85"
                         >
-                          + 여정 만들기
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => toggleFavoriteCountry(c.code)}
-                        className="p-1 text-black/30 dark:text-white/30 hover:text-red-500 cursor-pointer"
-                        title="즐겨찾기 해제"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-black uppercase truncate text-black dark:text-white">
+                              {city}
+                            </span>
+                            {matchedCountry && (
+                              <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                                · {matchedCountry.name} ({matchedCountry.nameKo})
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {onCreateTripForCountry && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                onCreateTripForCountry(city);
+                                setIsWishlistModalOpen(false);
+                              }}
+                              className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-[10px] font-black uppercase tracking-wider cursor-pointer hover:opacity-85"
+                            >
+                              + 여정 만들기
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => toggleFavoriteCity(city)}
+                            className="p-1 text-black/30 dark:text-white/30 hover:text-red-500 cursor-pointer"
+                            title="도시 즐겨찾기 해제"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )
             )}
           </div>
         </div>

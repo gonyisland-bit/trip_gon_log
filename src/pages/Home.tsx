@@ -113,7 +113,7 @@ function getYearAndMonth(dateRangeStr?: string): { year: string; month: string; 
 }
 
 // Helper to extract large bold uppercase English city/region name for magazine
-function getEnglishCityName(locationStr?: string): string {
+export function getEnglishCityName(locationStr?: string): string {
   if (!locationStr) return '';
   const cleaned = cleanAdministrativeDistricts(locationStr);
   const cityMap: Record<string, string> = {
@@ -766,15 +766,15 @@ export function HomePage({
     <main onClick={() => setActiveCardId(null)} className="animate-in fade-in duration-700 w-full">
 
       {/* ===== Hero Section: 3-Column Swiss Editorial Layout (Matching Reference) ===== */}
-      <section className="relative w-full py-8 md:py-16 px-6 sm:px-10 md:px-16 border-b border-black/15 dark:border-white/15 bg-[#FBFBFA] dark:bg-[#121212] overflow-hidden transition-colors">
+      <section className="relative w-full border-b border-black/15 dark:border-white/15 bg-[#FBFBFA] dark:bg-[#121212] overflow-hidden transition-colors">
         {currentHero ? (
           (() => {
             const { year, month, days, dateRange, cities } = getHeroDetails(currentHero);
 
             return (
-              <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-0 items-center">
+              <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-0 items-stretch">
                 {/* 1. Left Column: Top branding, Big Title, Month/Year (Overlapping onto center media) */}
-                <div className="md:col-span-4 flex flex-col justify-between h-full order-2 md:order-1 relative z-20 md:-mr-12 lg:-mr-16 pointer-events-none">
+                <div className="md:col-span-4 flex flex-col justify-between h-full order-2 md:order-1 relative z-20 md:-mr-12 lg:-mr-16 pointer-events-none py-8 sm:py-12 md:py-16 px-6 sm:px-10 md:px-0">
                   <div>
                     {/* Minimal Branding / Title in Inter */}
                     <div className="text-[11px] font-['Inter',sans-serif] font-bold tracking-[0.25em] text-black/40 dark:text-white/40 uppercase mb-4 sm:mb-6 pointer-events-auto">
@@ -804,11 +804,11 @@ export function HomePage({
                   </div>
                 </div>
 
-                {/* 2. Center Column: Exact 1/3 Width Borderless Hero Media Frame */}
-                <div className="md:col-span-4 flex flex-col items-center justify-center order-1 md:order-2 relative z-10 w-full px-0 sm:px-2">
+                {/* 2. Center Column: Exact 1/3 Width Borderless Hero Media Frame (Full Height touching top and bottom borders) */}
+                <div className="md:col-span-4 self-stretch flex items-stretch justify-center order-1 md:order-2 relative z-10 w-full px-0">
                   <div 
                     onClick={() => onNavigate('detail', currentHero.id)}
-                    className="relative w-full aspect-[3/4] overflow-hidden bg-neutral-900 group cursor-pointer select-none"
+                    className="relative w-full h-full min-h-[440px] sm:min-h-[520px] md:min-h-[580px] lg:min-h-[640px] aspect-[3/4] md:aspect-auto overflow-hidden bg-neutral-900 group cursor-pointer select-none"
                   >
                     {heroJourneys.map((journey, index) => (
                       <HeroMedia
@@ -828,7 +828,7 @@ export function HomePage({
                 </div>
 
                 {/* 3. Right Column: Date range / Days duration, Cities, Minimal circular arrow button */}
-                <div className="md:col-span-4 flex flex-col justify-between h-full order-3 text-left md:text-right items-start md:items-end relative z-20 md:pl-8 font-['Inter',sans-serif]">
+                <div className="md:col-span-4 flex flex-col justify-between h-full order-3 text-left md:text-right items-start md:items-end relative z-20 md:pl-8 font-['Inter',sans-serif] py-8 sm:py-12 md:py-16 px-6 sm:px-10 md:px-0">
                   {/* Top Slide Indicator (e.g. 01 / 03) with minimal gauge & arrows */}
                   {heroJourneys.length > 1 ? (
                     <div className="flex items-center gap-2.5 mb-6">

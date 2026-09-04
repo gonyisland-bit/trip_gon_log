@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Plus, GripVertical, ChevronDown, ChevronUp, Tag, Search, X, LayoutGrid, StretchHorizontal, List, ArrowRight, ArrowUpDown } from 'lucide-react';
 import { Trip, Plan } from '../types';
-import { JourneyCardMenu } from './Home';
+import { JourneyCardMenu, getEnglishCityName } from './Home';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
 
@@ -325,6 +325,71 @@ export function ArchiveHubPage({
       return true;
     });
   }, [sortedTrips, activeFilter, activeYearFilter, activeLocationFilter, hubSearchQuery]);
+
+  // Collapsed sections for Time (Year) / Place (City) accordion
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+
+  const toggleSection = (sectionKey: string) => {
+    setCollapsedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(sectionKey)) {
+        next.delete(sectionKey);
+      } else {
+        next.add(sectionKey);
+      }
+      return next;
+    });
+  };
+
+  // Grouped trips by Year or City when sortBy is 'date' or 'place'
+  const groupedTrips = useMemo(() => {
+    if (sortBy === 'user') {
+      return [{ key: 'ALL', title: 'ALL JOURNEYS', items: filteredTrips }];
+    }
+
+    const groupsMap = new Map<string, Trip[]>();
+
+    filteredTrips.forEach(trip => {
+      let groupKey = '';
+      if (sortBy === 'date') {
+        const { year } = getYearAndMonth(trip.date);
+        groupKey = year || 'OTHER';
+      } else if (sortBy === 'place') {
+        const engCity = getEnglishCityName(trip.locationStr);
+        if (engCity) {
+          groupKey = engCity;
+        } else if (trip.country?.trim()) {
+          groupKey = trip.country.trim().toUpperCase();
+        } else if (trip.locationStr?.trim()) {
+          const parts = trip.locationStr.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+          groupKey = parts[parts.length - 1] || 'OTHER';
+        } else {
+          groupKey = 'OTHER';
+        }
+      }
+
+      if (!groupsMap.has(groupKey)) {
+        groupsMap.set(groupKey, []);
+      }
+      groupsMap.get(groupKey)!.push(trip);
+    });
+
+    const entries = Array.from(groupsMap.entries()).map(([key, items]) => ({
+      key,
+      title: key,
+      items
+    }));
+
+    if (sortBy === 'date') {
+      // Sort descending by year
+      entries.sort((a, b) => b.key.localeCompare(a.key));
+    } else if (sortBy === 'place') {
+      // Sort alphabetically by city name
+      entries.sort((a, b) => a.key.localeCompare(b.key));
+    }
+
+    return entries;
+  }, [filteredTrips, sortBy]);
 
   const handleTripDragStart = (e: React.DragEvent, id: number) => {
     if (sortBy !== 'user') return;
@@ -684,209 +749,249 @@ export function ArchiveHubPage({
         )}
       </div>
       
-      {cardViewMode === 'list' ? (
-        <div className="flex flex-col w-full border-t border-black/15 dark:border-white/15">
-          {filteredTrips.map((trip, index) => {
-            const isCardActive = activeCardId === trip.id;
+      {/* Journeys Container: Flat list/grid for USER, or Accordion Sections for TIME / PLACE */}
+      <div className="flex flex-col w-full">
+        {groupedTrips.map(group => {
+          const isCollapsed = collapsedSections.has(group.key);
+          const showGroupHeader = sortBy !== 'user';
 
-            return (
-              <div
-                key={trip.id}
-                onClick={() => onNavigate('detail', trip.id)}
-                className={`group flex flex-row items-stretch border-b border-black/15 dark:border-white/15 transition-colors cursor-pointer w-full select-none ${
-                  isCardActive 
-                    ? 'bg-neutral-100 dark:bg-white/[0.08] border-l-[4px] border-l-red-600 dark:border-l-red-500' 
-                    : 'border-l-[4px] border-l-transparent hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
-                }`}
-              >
-                {/* Thumbnail: 1:1 full-height square edge-to-edge */}
-                <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 aspect-square self-stretch shrink-0 border-r border-black/15 dark:border-white/15 overflow-hidden rounded-none relative bg-black/10">
-                  <img src={getEffectiveImageUrl(trip.img)} alt={trip.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                </div>
-
-                {/* Meta */}
-                <div className="flex-1 min-w-0 py-2.5 px-3 sm:px-4 md:px-6 flex flex-col justify-center gap-0.5">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-black text-sm sm:text-base md:text-lg text-black dark:text-white uppercase font-satoshi truncate">
-                      {trip.title}
-                    </h3>
-                    {((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
-                      <span className="text-[10px] sm:text-[11px] font-black px-2 py-0.5 font-mono uppercase bg-black text-white dark:bg-white dark:text-black border border-white/40 dark:border-black/40 tracking-wider shadow-xs">
-                        PLAN
-                      </span>
-                    ) : trip.statusBadge ? (
-                      <span className={`text-[10px] sm:text-[11px] font-black px-2 py-0.5 rounded-none font-mono uppercase tracking-wider shadow-xs ${
-                        trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
-                      }`}>
-                        {trip.statusBadge}
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="flex items-center gap-2 text-[10.5px] sm:text-xs text-black/60 dark:text-white/60 font-mono flex-wrap mt-0.5">
-                    <span className="font-bold text-black/80 dark:text-white/80">{trip.date}</span>
-                    {trip.locationStr && (
-                      <>
-                        <span>·</span>
-                        <span className="text-black/70 dark:text-white/70">{trip.locationStr.replace(/,/g, ' · ')}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* Right Menu (Unboxed, NO right arrow button) */}
-                <div className="flex items-center pr-2 sm:pr-4 md:pr-6 shrink-0" onClick={(e) => e.stopPropagation()}>
-                  {(() => {
-                    const isPlan = trip.tags?.includes('Plan') || trip.title.includes('(Plan)');
-                    return (
-                      <JourneyCardMenu
-                        isLoggedIn={isLoggedIn}
-                        onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
-                        onDelete={() => onDeleteTrip(trip.id)}
-                        onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
-                        onMove={
-                          isPlan
-                            ? (onMoveToArchive ? () => onMoveToArchive(trip as Plan) : undefined)
-                            : (onMoveToPlans ? () => onMoveToPlans(trip) : undefined)
-                        }
-                        moveLabel={isPlan ? "아카이브로 이동" : "계획으로 이동"}
-                        variant="minimal"
-                      />
-                    );
-                  })()}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className={cardViewMode === 'wide' 
-          ? "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 px-4 pt-4 pb-0 md:px-12 md:pt-12 md:pb-0 w-full"
-          : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 px-3 pt-3 pb-0 sm:px-6 sm:pt-6 sm:pb-0 md:px-12 md:pt-12 md:pb-0 w-full"
-        }>
-          {filteredTrips.map((trip, index) => {
-            const { year, month, compactDate } = getYearAndMonth(trip.date);
-            const days = calculateDays(trip.date);
-            const isCardActive = activeCardId === trip.id;
-            const issueNumber = String((trip.displayOrder ?? index) + 1).padStart(2, '0');
-
-            return (
-              <div key={trip.id} className="relative group">
-                {/* Ambient Glow Aura */}
-                <div
-                  className={`absolute -inset-1.5 rounded-2xl bg-gradient-to-tr from-red-600/30 via-orange-500/20 to-amber-400/25 blur-xl transition-all duration-500 pointer-events-none -z-10 ${
-                    isCardActive ? 'opacity-80 scale-105' : 'opacity-0 group-hover:opacity-50 scale-100'
-                  }`}
-                />
-
-                <div
-                  style={{ containerType: 'inline-size' }}
-                  className={`cursor-pointer ${cardViewMode === 'wide' ? 'aspect-[16/10]' : 'aspect-[3/4]'} w-full overflow-hidden transition-all border relative shadow-[0_0_15px_rgba(0,0,0,0.08)] dark:shadow-[0_0_15px_rgba(255,255,255,0.03)] ${
-                    draggedTripId === trip.id ? 'opacity-40' : 'opacity-100'
-                  } ${
-                    isCardActive
-                      ? 'border-red-600 dark:border-red-400 ring-2 ring-red-600/20 dark:ring-red-400/20 scale-[1.01] shadow-lg'
-                      : 'border-black/10 dark:border-white/10 bg-[#111]'
-                  }`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onNavigate('detail', trip.id);
-                  }}
-                  draggable={isLoggedIn && sortBy === 'user'}
-                  onDragStart={(e) => handleTripDragStart(e, trip.id)}
-                  onDragOver={(e) => handleTripDragOver(e, trip.id)}
-                  onDrop={handleTripDrop}
-                  onDragEnd={() => setDraggedTripId(null)}
+          return (
+            <div key={group.key} className="flex flex-col w-full">
+              {/* Section Header for Time (Year) and Place (City) */}
+              {showGroupHeader && (
+                <div 
+                  onClick={() => toggleSection(group.key)}
+                  className="flex items-center justify-between px-4 sm:px-6 md:px-12 py-3.5 sm:py-4 border-b border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] cursor-pointer hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors select-none group"
                 >
-                  {/* Background cover image/video */}
-                  <CardMedia
-                    img={trip.img}
-                    title={trip.title}
-                    videoUrl={trip.videoUrl}
-                    isActive={isCardActive}
-                  />
-
-                  {/* Magazine Overlay Gradient */}
-                  <div className="absolute inset-0 magazine-card-gradient pointer-events-none" />
-
-                  {/* Swiss Editorial Poster Text Layout */}
-                  <div className="absolute inset-0 p-4 sm:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
-                    {/* Top Header Row: Giant Bold Year & Month / Status Badge */}
-                    <div className="flex justify-between items-start w-full">
-                      {year ? (
-                        <div className="flex flex-col leading-none">
-                          <span className="text-[10cqw] font-black font-sans tracking-tighter leading-none text-white drop-shadow-md">
-                            {year}
-                          </span>
-                          {month && (
-                            <span className="text-[7cqw] font-sans font-black tracking-tight text-white/95 uppercase mt-0.5 leading-none">
-                              {month}
-                            </span>
-                          )}
-                        </div>
-                      ) : <div />}
-
-                      {((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
-                        <span className="px-2.5 sm:px-3.5 py-0.5 sm:py-1 text-[5.5cqw] sm:text-[6.5cqw] font-black uppercase tracking-wider font-mono shadow-md bg-black text-white dark:bg-white dark:text-black border border-white/40 dark:border-black/40 leading-none">
-                          PLAN
-                        </span>
-                      ) : trip.statusBadge ? (
-                        <span className={`px-2.5 sm:px-3.5 py-0.5 sm:py-1 text-[5.5cqw] sm:text-[6.5cqw] font-black uppercase tracking-wider font-mono shadow-md leading-none ${
-                          trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
-                        }`}>
-                          {trip.statusBadge}
-                        </span>
-                      ) : null}
-                    </div>
-
-                    {/* Bottom Footer Row: Title, Location, Date (3-tier clean stack) */}
-                    <div className="mt-auto flex flex-col gap-1 w-full max-w-[88%]">
-                      <h3 className="text-[5.8cqw] sm:text-[6.2cqw] font-black uppercase tracking-tight leading-tight font-sans text-white drop-shadow-md line-clamp-2">
-                        {trip.title}
-                      </h3>
-                      {trip.locationStr && (
-                        <div className={cardViewMode === 'wide'
-                          ? "text-xs sm:text-sm font-sans font-bold uppercase tracking-wider text-white/95 truncate drop-shadow-sm mt-0.5"
-                          : "text-[11px] sm:text-xs md:text-[3.8cqw] font-sans font-black uppercase tracking-wider text-white/95 truncate drop-shadow-sm mt-0.5"
-                        }>
-                          {cleanAdministrativeDistricts(trip.locationStr).replace(/,/g, ' · ')}
-                        </div>
-                      )}
-                      {trip.date && (
-                        <div className={cardViewMode === 'wide'
-                          ? "text-[11px] sm:text-xs font-sans font-semibold text-white/80 tracking-wider truncate"
-                          : "text-[10px] sm:text-[11px] md:text-[3.4cqw] font-sans font-bold text-white/85 tracking-wider truncate"
-                        }>
-                          {compactDate || trip.date}
-                        </div>
-                      )}
-                    </div>
+                  <div className="flex items-baseline gap-3">
+                    <h2 className="text-xl sm:text-2xl md:text-3xl font-black uppercase font-sans tracking-tight text-black dark:text-white">
+                      {group.title}
+                    </h2>
+                    <span className="font-mono text-xs font-bold text-black/40 dark:text-white/40 tracking-wider">
+                      {group.items.length} {group.items.length === 1 ? 'JOURNEY' : 'JOURNEYS'}
+                    </span>
                   </div>
-
-                  {/* Hamburger menu */}
-                  {(() => {
-                    const isPlan = trip.tags?.includes('Plan') || trip.title.includes('(Plan)');
-                    return (
-                      <JourneyCardMenu
-                        className="absolute bottom-3 right-3 z-30"
-                        isLoggedIn={isLoggedIn}
-                        onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
-                        onDelete={() => onDeleteTrip(trip.id)}
-                        onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
-                        onMove={
-                          isPlan
-                            ? (onMoveToArchive ? () => onMoveToArchive(trip as Plan) : undefined)
-                            : (onMoveToPlans ? () => onMoveToPlans(trip) : undefined)
-                        }
-                        moveLabel={isPlan ? "아카이브로 이동" : "계획으로 이동"}
-                      />
-                    );
-                  })()}
+                  <button
+                    type="button"
+                    className="p-1 text-black/50 dark:text-white/50 group-hover:text-black dark:group-hover:text-white transition-colors"
+                  >
+                    {isCollapsed ? (
+                      <ChevronDown className="w-5 h-5" />
+                    ) : (
+                      <ChevronUp className="w-5 h-5" />
+                    )}
+                  </button>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              )}
+
+              {/* Group Body: List or Grid */}
+              {!isCollapsed && (
+                cardViewMode === 'list' ? (
+                  <div className="flex flex-col w-full border-b border-black/15 dark:border-white/15">
+                    {group.items.map((trip, index) => {
+                      const isCardActive = activeCardId === trip.id;
+
+                      return (
+                        <div
+                          key={trip.id}
+                          onClick={() => onNavigate('detail', trip.id)}
+                          className={`group flex flex-row items-stretch border-b border-black/15 dark:border-white/15 last:border-b-0 transition-colors cursor-pointer w-full select-none ${
+                            isCardActive 
+                              ? 'bg-neutral-100 dark:bg-white/[0.08] border-l-[4px] border-l-red-600 dark:border-l-red-500' 
+                              : 'border-l-[4px] border-l-transparent hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
+                          }`}
+                        >
+                          {/* Thumbnail: 1:1 full-height square edge-to-edge */}
+                          <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 aspect-square self-stretch shrink-0 border-r border-black/15 dark:border-white/15 overflow-hidden rounded-none relative bg-black/10">
+                            <img src={getEffectiveImageUrl(trip.img)} alt={trip.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          </div>
+
+                          {/* Meta */}
+                          <div className="flex-1 min-w-0 py-2.5 px-3 sm:px-4 md:px-6 flex flex-col justify-center gap-0.5">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="font-black text-sm sm:text-base md:text-lg text-black dark:text-white uppercase font-satoshi truncate">
+                                {trip.title}
+                              </h3>
+                              {((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
+                                <span className="text-[10px] sm:text-[11px] font-black px-2 py-0.5 font-mono uppercase bg-black text-white dark:bg-white dark:text-black border border-white/40 dark:border-black/40 tracking-wider shadow-xs">
+                                  PLAN
+                                </span>
+                              ) : trip.statusBadge ? (
+                                <span className={`text-[10px] sm:text-[11px] font-black px-2 py-0.5 rounded-none font-mono uppercase tracking-wider shadow-xs ${
+                                  trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
+                                }`}>
+                                  {trip.statusBadge}
+                                </span>
+                              ) : null}
+                            </div>
+                            <div className="flex items-center gap-2 text-[10.5px] sm:text-xs text-black/60 dark:text-white/60 font-mono flex-wrap mt-0.5">
+                              <span className="font-bold text-black/80 dark:text-white/80">{trip.date}</span>
+                              {trip.locationStr && (
+                                <>
+                                  <span>·</span>
+                                  <span className="text-black/70 dark:text-white/70">{trip.locationStr.replace(/,/g, ' · ')}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Right Menu (Unboxed, NO right arrow button) */}
+                          <div className="flex items-center pr-2 sm:pr-4 md:pr-6 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            {(() => {
+                              const isPlan = trip.tags?.includes('Plan') || trip.title.includes('(Plan)');
+                              return (
+                                <JourneyCardMenu
+                                  isLoggedIn={isLoggedIn}
+                                  onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
+                                  onDelete={() => onDeleteTrip(trip.id)}
+                                  onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
+                                  onMove={
+                                    isPlan
+                                      ? (onMoveToArchive ? () => onMoveToArchive(trip as Plan) : undefined)
+                                      : (onMoveToPlans ? () => onMoveToPlans(trip) : undefined)
+                                  }
+                                  moveLabel={isPlan ? "아카이브로 이동" : "계획으로 이동"}
+                                  variant="minimal"
+                                />
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className={cardViewMode === 'wide' 
+                    ? "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 px-4 pt-4 pb-8 md:px-12 md:pt-6 md:pb-12 w-full"
+                    : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 px-3 pt-3 pb-8 sm:px-6 sm:pt-4 sm:pb-10 md:px-12 md:pt-6 md:pb-12 w-full"
+                  }>
+                    {group.items.map((trip, index) => {
+                      const { year, month, compactDate } = getYearAndMonth(trip.date);
+                      const isCardActive = activeCardId === trip.id;
+
+                      return (
+                        <div key={trip.id} className="relative group">
+                          {/* Ambient Glow Aura */}
+                          <div
+                            className={`absolute -inset-1.5 rounded-2xl bg-gradient-to-tr from-red-600/30 via-orange-500/20 to-amber-400/25 blur-xl transition-all duration-500 pointer-events-none -z-10 ${
+                              isCardActive ? 'opacity-80 scale-105' : 'opacity-0 group-hover:opacity-50 scale-100'
+                            }`}
+                          />
+
+                          <div
+                            style={{ containerType: 'inline-size' }}
+                            className={`cursor-pointer ${cardViewMode === 'wide' ? 'aspect-[16/10]' : 'aspect-[3/4]'} w-full overflow-hidden transition-all border relative shadow-[0_0_15px_rgba(0,0,0,0.08)] dark:shadow-[0_0_15px_rgba(255,255,255,0.03)] ${
+                              draggedTripId === trip.id ? 'opacity-40' : 'opacity-100'
+                            } ${
+                              isCardActive
+                                ? 'border-red-600 dark:border-red-400 ring-2 ring-red-600/20 dark:ring-red-400/20 scale-[1.01] shadow-lg'
+                                : 'border-black/10 dark:border-white/10 bg-[#111]'
+                            }`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onNavigate('detail', trip.id);
+                            }}
+                            draggable={isLoggedIn && sortBy === 'user'}
+                            onDragStart={(e) => handleTripDragStart(e, trip.id)}
+                            onDragOver={(e) => handleTripDragOver(e, trip.id)}
+                            onDrop={handleTripDrop}
+                            onDragEnd={() => setDraggedTripId(null)}
+                          >
+                            {/* Background cover image/video */}
+                            <CardMedia
+                              img={trip.img}
+                              title={trip.title}
+                              videoUrl={trip.videoUrl}
+                              isActive={isCardActive}
+                            />
+
+                            {/* Magazine Overlay Gradient */}
+                            <div className="absolute inset-0 magazine-card-gradient pointer-events-none" />
+
+                            {/* Swiss Editorial Poster Text Layout */}
+                            <div className="absolute inset-0 p-4 sm:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
+                              {/* Top Header Row: Giant Bold Year & Month / Status Badge */}
+                              <div className="flex justify-between items-start w-full">
+                                {year ? (
+                                  <div className="flex flex-col leading-none">
+                                    <span className="text-[10cqw] font-black font-sans tracking-tighter leading-none text-white drop-shadow-md">
+                                      {year}
+                                    </span>
+                                    {month && (
+                                      <span className="text-[7cqw] font-sans font-black tracking-tight text-white/95 uppercase mt-0.5 leading-none">
+                                        {month}
+                                      </span>
+                                    )}
+                                  </div>
+                                ) : <div />}
+
+                                {((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
+                                  <span className="px-2.5 sm:px-3.5 py-0.5 sm:py-1 text-[5.5cqw] sm:text-[6.5cqw] font-black uppercase tracking-wider font-mono shadow-md bg-black text-white dark:bg-white dark:text-black border border-white/40 dark:border-black/40 leading-none">
+                                    PLAN
+                                  </span>
+                                ) : trip.statusBadge ? (
+                                  <span className={`px-2.5 sm:px-3.5 py-0.5 sm:py-1 text-[5.5cqw] sm:text-[6.5cqw] font-black uppercase tracking-wider font-mono shadow-md leading-none ${
+                                    trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
+                                  }`}>
+                                    {trip.statusBadge}
+                                  </span>
+                                ) : null}
+                              </div>
+
+                              {/* Bottom Footer Row: Title, Location, Date (3-tier clean stack) */}
+                              <div className="mt-auto flex flex-col gap-1 w-full max-w-[88%]">
+                                <h3 className="text-[5.8cqw] sm:text-[6.2cqw] font-black uppercase tracking-tight leading-tight font-sans text-white drop-shadow-md line-clamp-2">
+                                  {trip.title}
+                                </h3>
+                                {trip.locationStr && (
+                                  <div className={cardViewMode === 'wide'
+                                    ? "text-xs sm:text-sm font-sans font-bold uppercase tracking-wider text-white/95 truncate drop-shadow-sm mt-0.5"
+                                    : "text-[11px] sm:text-xs md:text-[3.8cqw] font-sans font-black uppercase tracking-wider text-white/95 truncate drop-shadow-sm mt-0.5"
+                                  }>
+                                    {cleanAdministrativeDistricts(trip.locationStr).replace(/,/g, ' · ')}
+                                  </div>
+                                )}
+                                {trip.date && (
+                                  <div className={cardViewMode === 'wide'
+                                    ? "text-[11px] sm:text-xs font-sans font-semibold text-white/80 tracking-wider truncate"
+                                    : "text-[10px] sm:text-[11px] md:text-[3.4cqw] font-sans font-bold text-white/85 tracking-wider truncate"
+                                  }>
+                                    {compactDate || trip.date}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Hamburger menu */}
+                            {(() => {
+                              const isPlan = trip.tags?.includes('Plan') || trip.title.includes('(Plan)');
+                              return (
+                                <JourneyCardMenu
+                                  className="absolute bottom-3 right-3 z-30"
+                                  isLoggedIn={isLoggedIn}
+                                  onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
+                                  onDelete={() => onDeleteTrip(trip.id)}
+                                  onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
+                                  onMove={
+                                    isPlan
+                                      ? (onMoveToArchive ? () => onMoveToArchive(trip as Plan) : undefined)
+                                      : (onMoveToPlans ? () => onMoveToPlans(trip) : undefined)
+                                  }
+                                  moveLabel={isPlan ? "아카이브로 이동" : "계획으로 이동"}
+                                />
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
+              )}
+            </div>
+          );
+        })}
+      </div>
       </div>
 
       {/* ===== Bottom Bold Typography Statistics Banner (Seamlessly attached without white gap) ===== */}
