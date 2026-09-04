@@ -107,7 +107,7 @@ export function Navigation({
                   : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
               }`}
             >
-              ARCHIVE
+              TRIP
             </button>
             <button 
               onClick={() => navigateTo('map')} 
@@ -267,7 +267,7 @@ export function Navigation({
                   ? 'text-black dark:text-white underline decoration-2 underline-offset-8' 
                   : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
               }`}>
-                ARCHIVE
+                TRIP
               </span>
             </button>
 

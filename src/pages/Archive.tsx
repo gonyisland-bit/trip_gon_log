@@ -353,33 +353,85 @@ export function ArchiveHubPage({
     }
   };
 
+  // Compute comprehensive trip summary statistics
+  const tripStats = useMemo(() => {
+    const list = localTrips;
+    const totalTrips = list.length;
+    
+    // Unique countries
+    const countrySet = new Set<string>();
+    list.forEach(t => {
+      if (t.country) {
+        countrySet.add(t.country.trim().toUpperCase());
+      }
+      if (t.locations && t.locations.length > 0) {
+        t.locations.forEach(loc => {
+          if (loc.country) countrySet.add(loc.country.trim().toUpperCase());
+        });
+      }
+    });
+
+    // Unique cities / places
+    const citySet = new Set<string>();
+    list.forEach(t => {
+      if (t.locationStr) {
+        t.locationStr.split(/[,/·-]/).map(s => s.trim()).filter(Boolean).forEach(c => citySet.add(c.toUpperCase()));
+      }
+      if (t.locations && t.locations.length > 0) {
+        t.locations.forEach(loc => {
+          if (loc.name) citySet.add(loc.name.trim().toUpperCase());
+        });
+      }
+    });
+
+    // Total days traveled
+    const totalDays = list.reduce((acc, t) => acc + calculateDays(t.date), 0);
+
+    return {
+      totalTrips,
+      totalCountries: countrySet.size,
+      totalCities: citySet.size,
+      totalDays
+    };
+  }, [localTrips]);
+
   return (
-    <main onClick={() => setActiveCardId(null)} className="animate-in fade-in duration-500 min-h-screen w-full">
-      <div className="p-4 sm:p-6 md:px-12 md:py-8 border-b border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.02] flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6">
-        <div className="flex-1">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter uppercase mb-1 sm:mb-1.5 break-keep">Journeys Archive</h1>
-          <p className="text-xs sm:text-sm leading-relaxed opacity-70 whitespace-nowrap truncate">지난 여정 및 여행 계획 모음</p>
+    <main onClick={() => setActiveCardId(null)} className="animate-in fade-in duration-500 min-h-screen w-full flex flex-col justify-between">
+      <div>
+        {/* Minimal Swiss Header (Matching Home's 01 / TRIP style) */}
+        <div className="p-6 md:px-12 border-b border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] flex flex-col md:flex-row md:items-end justify-between gap-4 transition-colors">
+          {/* Left: Pure Minimal Title */}
+          <div className="flex flex-col gap-0.5">
+            <span className="font-mono text-xs font-black text-black/40 dark:text-white/40 tracking-widest uppercase">
+              01 / TRIP
+            </span>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+              TRIP
+            </h1>
+          </div>
           
-          {/* Active Filter and Sorting Layout */}
-          <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
-            {/* Tag Filter Minimal Icon Button & Multi-Filter Dropdown */}
-            <div className="relative inline-block text-left z-20">
-              <div className="flex items-center gap-2">
-                <button 
-                  type="button"
-                  onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}
-                  className={`p-2 border transition-colors flex items-center justify-center rounded-none cursor-pointer relative ${
-                    activeFilter !== 'All' || activeYearFilter !== 'All' || activeLocationFilter !== 'All'
-                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
-                      : 'border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-transparent text-black dark:text-white'
-                  }`}
-                  title="필터 열기 (태그, 연도, 장소)"
-                >
-                  <Tag className="w-3.5 h-3.5" />
-                  {(activeFilter !== 'All' || activeYearFilter !== 'All' || activeLocationFilter !== 'All') && (
-                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-600" />
-                  )}
-                </button>
+          {/* Right: Active Filter, Search, and Controls Layout */}
+          <div className="flex flex-col gap-2 w-full md:w-auto relative z-20">
+            <div className="flex flex-wrap items-center justify-between md:justify-end gap-2.5">
+              {/* Tag / Multi-Filter Dropdown Button */}
+              <div className="relative inline-block text-left">
+                <div className="flex items-center gap-2">
+                  <button 
+                    type="button"
+                    onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}
+                    className={`text-[10px] sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-none transition-all flex items-center gap-1.5 cursor-pointer relative ${
+                      activeFilter !== 'All' || activeYearFilter !== 'All' || activeLocationFilter !== 'All'
+                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                        : 'border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5 text-black dark:text-white'
+                    }`}
+                    title="FILTER (TAG, YEAR, LOCATION)"
+                  >
+                    <Tag className="w-3.5 h-3.5" />
+                    <span>FILTER</span>
+                    {(activeFilter !== 'All' || activeYearFilter !== 'All' || activeLocationFilter !== 'All') && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
+                    )}
+                  </button>
 
                 {/* Separated Search Button */}
                 <button
@@ -835,6 +887,28 @@ export function ArchiveHubPage({
           })}
         </div>
       )}
+      </div>
+
+      {/* ===== Bottom Bold Typography Statistics Banner ===== */}
+      <footer className="w-full border-t border-black/15 dark:border-white/15 bg-black/[0.03] dark:bg-white/[0.03] py-10 sm:py-16 px-6 sm:px-12 md:px-16 mt-16 transition-colors">
+        <div className="max-w-7xl mx-auto flex flex-col gap-3">
+          <span className="font-mono text-xs font-black text-black/40 dark:text-white/40 tracking-[0.25em] uppercase">
+            TOTAL TRAVEL RECORD
+          </span>
+          <div 
+            className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black font-satoshi uppercase tracking-tight leading-[1.05] text-black dark:text-white"
+            style={{ fontFamily: "'Satoshi', sans-serif", wordBreak: 'keep-all' }}
+          >
+            <span>{tripStats.totalTrips} {tripStats.totalTrips === 1 ? 'TRIP' : 'TRIPS'}</span>
+            <span className="text-black/30 dark:text-white/30 mx-2 sm:mx-3">·</span>
+            <span>{tripStats.totalCountries} {tripStats.totalCountries === 1 ? 'COUNTRY' : 'COUNTRIES'}</span>
+            <span className="text-black/30 dark:text-white/30 mx-2 sm:mx-3">·</span>
+            <span>{tripStats.totalCities} {tripStats.totalCities === 1 ? 'CITY' : 'CITIES'}</span>
+            <span className="text-black/30 dark:text-white/30 mx-2 sm:mx-3">·</span>
+            <span>{tripStats.totalDays} {tripStats.totalDays === 1 ? 'DAY' : 'DAYS'}</span>
+          </div>
+        </div>
+      </footer>
     </main>
   );
 }

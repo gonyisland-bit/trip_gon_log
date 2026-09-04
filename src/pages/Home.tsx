@@ -772,19 +772,19 @@ export function HomePage({
             const { year, month, days, dateRange, cities } = getHeroDetails(currentHero);
 
             return (
-              <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-8 lg:gap-12 items-center">
-                {/* 1. Left Column: Top branding, Big Title, Month/Year */}
-                <div className="md:col-span-4 flex flex-col justify-between h-full order-2 md:order-1">
+              <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-0 items-center">
+                {/* 1. Left Column: Top branding, Big Title, Month/Year (Overlapping onto center media) */}
+                <div className="md:col-span-5 flex flex-col justify-between h-full order-2 md:order-1 relative z-20 md:-mr-16 lg:-mr-24 pointer-events-none">
                   <div>
                     {/* Minimal Branding / Title */}
-                    <div className="text-[11px] font-mono font-bold tracking-[0.25em] text-black/40 dark:text-white/40 uppercase mb-4 sm:mb-6">
+                    <div className="text-[11px] font-mono font-bold tracking-[0.25em] text-black/40 dark:text-white/40 uppercase mb-4 sm:mb-6 pointer-events-auto">
                       {homeTitle ? homeTitle.replace(/\\n|\n/g, ' ') : 'JOURNAL'}
                     </div>
 
-                    {/* Massive Bold Title */}
+                    {/* Massive Bold Magazine Title (Overlaps onto center frame) */}
                     <h2
                       onClick={() => onNavigate('detail', currentHero.id)}
-                      className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black font-satoshi uppercase tracking-tight leading-[0.95] text-black dark:text-white cursor-pointer hover:opacity-75 transition-opacity select-none"
+                      className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black font-satoshi uppercase tracking-tight leading-[0.92] text-black dark:text-white cursor-pointer hover:opacity-85 transition-opacity select-none drop-shadow-sm pointer-events-auto"
                       style={{ fontFamily: "'Satoshi', sans-serif", wordBreak: 'keep-all' }}
                     >
                       {currentHero.title}
@@ -792,7 +792,7 @@ export function HomePage({
                   </div>
 
                   {/* Year & Month + Minimal Subtitle */}
-                  <div className="mt-8 sm:mt-12 flex flex-col gap-1">
+                  <div className="mt-8 sm:mt-12 flex flex-col gap-1 pointer-events-auto">
                     <div className="text-xl sm:text-2xl font-mono font-black tracking-widest text-black dark:text-white uppercase">
                       {month} {year}
                     </div>
@@ -805,7 +805,7 @@ export function HomePage({
                 </div>
 
                 {/* 2. Center Column: Vertical Hero Media Frame (aspect-[3/4]) */}
-                <div className="md:col-span-5 flex flex-col items-center justify-center order-1 md:order-2">
+                <div className="md:col-span-4 flex flex-col items-center justify-center order-1 md:order-2 relative z-10">
                   <div 
                     onClick={() => onNavigate('detail', currentHero.id)}
                     className="relative w-full max-w-[340px] sm:max-w-[380px] aspect-[3/4] overflow-hidden shadow-2xl bg-neutral-900 group cursor-pointer border border-black/10 dark:border-white/15 select-none"
@@ -828,7 +828,7 @@ export function HomePage({
                 </div>
 
                 {/* 3. Right Column: Date range / Days duration, Cities, Minimal circular arrow button */}
-                <div className="md:col-span-3 flex flex-col justify-between h-full order-3 text-left md:text-right items-start md:items-end">
+                <div className="md:col-span-3 flex flex-col justify-between h-full order-3 text-left md:text-right items-start md:items-end relative z-20 md:pl-6">
                   {/* Top Slide Indicator (e.g. 01 / 03) with minimal gauge & arrows */}
                   {heroJourneys.length > 1 ? (
                     <div className="flex items-center gap-2.5 mb-6">

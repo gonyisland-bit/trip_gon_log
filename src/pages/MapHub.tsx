@@ -1882,7 +1882,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                 setIsSearchDropdownOpen(true);
               }}
               onFocus={() => setIsSearchDropdownOpen(true)}
-              placeholder="나라, 도시 또는 대륙 검색..."
+              placeholder="SEARCH COUNTRY, CITY, CONTINENT..."
               className="w-full bg-transparent text-xs font-sans font-bold uppercase tracking-wider text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 outline-none"
             />
             {searchQuery && (
@@ -1905,7 +1905,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                 ? 'text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5'
                 : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
             }`}
-            title={`가고싶은 나라 (WISHLIST: ${favoriteCountries.length})`}
+            title={`WISHLIST: ${favoriteCountries.length}`}
           >
             <Star className={`w-3.5 h-3.5 ${favoriteCountries.length > 0 ? 'fill-black text-black dark:fill-white dark:text-white' : ''}`} />
             {favoriteCountries.length > 0 && (
@@ -1964,7 +1964,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                 ? 'bg-black text-white dark:bg-white dark:text-black'
                 : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
             }`}
-            title={showPinLabels ? "라벨 숨기기 (Hide Labels)" : "라벨 켜기 (Show Labels)"}
+            title="TOGGLE LABELS"
           >
             <Tag className="w-3.5 h-3.5" />
           </button>
@@ -1978,7 +1978,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                 ? 'bg-black text-white dark:bg-white dark:text-black'
                 : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
             }`}
-            title={showVisitedPins ? "간곳 여정 핀 숨기기 (Hide Visited Pins)" : "간곳 여정 핀 켜기 (Show Visited Pins)"}
+            title="TOGGLE VISITED PINS"
           >
             <MapPin className="w-3.5 h-3.5" />
           </button>
@@ -1992,7 +1992,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                 ? 'bg-black text-white dark:bg-white dark:text-black'
                 : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
             }`}
-            title={showWishlistPins ? "위시 핀 숨기기 (Hide Wishlist Pins)" : "위시 핀 켜기 (Show Wishlist Pins)"}
+            title="TOGGLE WISHLIST PINS"
           >
             <Bookmark className="w-3.5 h-3.5" />
           </button>
@@ -2002,17 +2002,17 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
             type="button"
             onClick={handleResetToDefaultView}
             className="p-2 sm:px-2.5 sm:py-2 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center"
-            title="기본 위치로 돌아오기 (단축키: H)"
+            title="RESET VIEW (H)"
           >
             <HomeIcon className="w-3.5 h-3.5" />
           </button>
 
-          {/* 5. Registered Journey Places List Button (신설) */}
+          {/* 5. Registered Journey Places List Button */}
           <button
             type="button"
             onClick={() => setIsPlaceListModalOpen(true)}
             className="p-2 sm:px-2.5 sm:py-2 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center border-l border-black/15 dark:border-white/15"
-            title="등록된 여정 장소 목록 보기 (도시 리스트)"
+            title="PLACES LIST"
           >
             <List className="w-3.5 h-3.5" />
           </button>
@@ -2218,7 +2218,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
             <div className="flex items-start justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-4">
               <div>
                 <span className="text-[10px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
-                  JOURNEY ARCHIVE
+                  TRIP
                 </span>
                 <h3 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-black dark:text-white">
                   {selectedPinGroup.city}

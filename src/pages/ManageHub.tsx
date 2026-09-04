@@ -627,7 +627,7 @@ export function ManageHubPage({
           </div>
         </div>
 
-        {/* Mode Switcher: HOME / ARCHIVE / MAP / TRASH */}
+        {/* Mode Switcher: HOME / TRIP / MAP / TRASH */}
         <div className="flex items-center border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 p-0.5 rounded-none">
           {(['HOME', 'ARCHIVE', 'MAP', 'TRASH'] as const).map(mode => (
             <button
@@ -639,7 +639,7 @@ export function ManageHubPage({
                   : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
               }`}
             >
-              {mode}
+              {mode === 'ARCHIVE' ? 'TRIP' : mode}
               {mode === 'TRASH' && trashedJourneys.length > 0 && (
                 <span className="ml-1 text-[9px] font-mono px-1 bg-red-600 text-white">
                   {trashedJourneys.length}
