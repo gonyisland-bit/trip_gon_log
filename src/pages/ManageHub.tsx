@@ -23,6 +23,7 @@ import {
   Image as ImageIcon,
   ExternalLink,
   Search,
+  AlertTriangle,
   GripVertical,
   Eye,
   Loader2

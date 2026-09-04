@@ -42,8 +42,8 @@ export function ConfirmModal({
       return;
     }
 
-    let fadeTimer: NodeJS.Timeout;
-    let closeTimer: NodeJS.Timeout;
+    let fadeTimer: ReturnType<typeof setTimeout> | undefined;
+    let closeTimer: ReturnType<typeof setTimeout> | undefined;
 
     if (autoDismiss) {
       const fadeDuration = 300;
