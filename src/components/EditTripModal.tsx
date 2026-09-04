@@ -16,6 +16,8 @@ interface EditTripModalProps {
   onSave: (tripId: number, updatedData: Partial<Trip>) => Promise<void>;
   isLoggedIn: boolean;
   existingTags: string[];
+  onMoveToPlans?: (trip: Trip) => Promise<void> | void;
+  onMoveToArchive?: (plan: any) => Promise<void> | void;
 }
 
 function extractCountry(address: string): string {
@@ -80,6 +82,8 @@ export function EditTripModal({
   onSave,
   isLoggedIn,
   existingTags,
+  onMoveToPlans,
+  onMoveToArchive,
 }: EditTripModalProps) {
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
@@ -140,6 +144,14 @@ export function EditTripModal({
       setCoverTab('main');
     }
   }, [isOpen, trip]);
+
+  const isPlanJourney = Boolean(
+    trip && (
+      (trip as any).isPlan ||
+      trip.tags?.includes('Plan') ||
+      trip.title?.includes('(Plan)')
+    )
+  );
 
   const isDirty = Boolean(
     trip && (
@@ -551,6 +563,60 @@ export function EditTripModal({
         {/* Content Form */}
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4">
           
+          {/* Journey Type (LOG vs PLAN) */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+                Type (여정 유형 구분)
+              </label>
+              <span className="text-[9px] font-mono font-bold text-black/40 dark:text-white/40">
+                {isPlanJourney ? 'CURRENT: PLAN' : 'CURRENT: LOG'}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  if (isPlanJourney && onMoveToArchive && trip) {
+                    if (confirm('이 계획을 [LOG (여정)]으로 전환하시겠습니까?')) {
+                      await onMoveToArchive(trip);
+                      onClose();
+                    }
+                  }
+                }}
+                disabled={!isPlanJourney || !onMoveToArchive}
+                className={`py-2 px-3 border text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  !isPlanJourney
+                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                    : 'bg-transparent text-black/50 dark:text-white/50 border-black/20 dark:border-white/20 hover:text-black dark:hover:text-white'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${!isPlanJourney ? 'bg-red-500' : 'bg-transparent'}`} />
+                <span>LOG (기록)</span>
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!isPlanJourney && onMoveToPlans && trip) {
+                    if (confirm('이 여정을 [PLAN (계획)]으로 전환하시겠습니까?')) {
+                      await onMoveToPlans(trip);
+                      onClose();
+                    }
+                  }
+                }}
+                disabled={isPlanJourney || !onMoveToPlans}
+                className={`py-2 px-3 border text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  isPlanJourney
+                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                    : 'bg-transparent text-black/50 dark:text-white/50 border-black/20 dark:border-white/20 hover:text-black dark:hover:text-white'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${isPlanJourney ? 'bg-blue-500' : 'bg-transparent'}`} />
+                <span>PLAN (계획)</span>
+              </button>
+            </div>
+          </div>
+
           {/* Title */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">

@@ -1360,6 +1360,49 @@ export function ManageHubPage({
                       />
                     </div>
 
+                    {/* Journey Type (LOG vs PLAN) */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60">
+                        Type (여정 유형 구분)
+                      </label>
+                      <div className="flex items-center gap-1.5 h-[35px]">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isSelectedPlan) {
+                              onMoveToArchive(selectedJourney as Plan);
+                            }
+                          }}
+                          disabled={!isSelectedPlan}
+                          className={`flex-1 h-full text-xs font-black uppercase tracking-wider transition-all border flex items-center justify-center gap-1.5 cursor-pointer ${
+                            !isSelectedPlan
+                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                              : 'bg-transparent text-black/50 dark:text-white/50 border-black/20 dark:border-white/20 hover:text-black dark:hover:text-white'
+                          }`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${!isSelectedPlan ? 'bg-red-500' : 'bg-transparent'}`} />
+                          <span>LOG (기록)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!isSelectedPlan) {
+                              onMoveToPlans(selectedJourney);
+                            }
+                          }}
+                          disabled={isSelectedPlan}
+                          className={`flex-1 h-full text-xs font-black uppercase tracking-wider transition-all border flex items-center justify-center gap-1.5 cursor-pointer ${
+                            isSelectedPlan
+                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                              : 'bg-transparent text-black/50 dark:text-white/50 border-black/20 dark:border-white/20 hover:text-black dark:hover:text-white'
+                          }`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${isSelectedPlan ? 'bg-blue-500' : 'bg-transparent'}`} />
+                          <span>PLAN (계획)</span>
+                        </button>
+                      </div>
+                    </div>
+
                     {/* Status Badge */}
                     <div className="flex flex-col gap-1">
                       <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60">
@@ -1368,7 +1411,7 @@ export function ManageHubPage({
                       <select
                         value={editStatusBadge}
                         onChange={e => setEditStatusBadge(e.target.value as any)}
-                        className="px-3 py-2 text-xs font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white cursor-pointer"
+                        className="px-3 py-2 text-xs font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white cursor-pointer h-[35px]"
                       >
                         <option value="">None (없음)</option>
                         <option value="NEW">NEW (신규)</option>
@@ -1774,7 +1817,7 @@ export function ManageHubPage({
                         className="px-3 py-2 border border-black/20 dark:border-white/20 text-xs font-black uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
                       >
                         <ArrowRightLeft className="w-3.5 h-3.5" />
-                        <span>{isSelectedPlan ? '아카이브로 전환' : '플랜으로 전환'}</span>
+                        <span>{isSelectedPlan ? 'LOG(여정)로 전환' : 'PLAN(계획)으로 전환'}</span>
                       </button>
                     </div>
 

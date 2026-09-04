@@ -1413,19 +1413,34 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
 
   const toggleFavoriteCity = async (cityName: string) => {
     const cityUpper = cityName.toUpperCase();
-    const updated = favoriteCities.includes(cityUpper)
-      ? favoriteCities.filter(c => c !== cityUpper)
-      : [...favoriteCities, cityUpper];
+    const isAdding = !favoriteCities.includes(cityUpper);
+    const updatedCities = isAdding
+      ? [...favoriteCities, cityUpper]
+      : favoriteCities.filter(c => c !== cityUpper);
 
-    setFavoriteCities(updated);
+    let updatedCountries = [...favoriteCountries];
+    if (isAdding) {
+      const matchedCountry = COUNTRIES_DATA.find(c =>
+        c.cities.some(cty => cty.toUpperCase() === cityUpper)
+      );
+      if (matchedCountry && !updatedCountries.includes(matchedCountry.code)) {
+        updatedCountries.push(matchedCountry.code);
+        setFavoriteCountries(updatedCountries);
+        try {
+          localStorage.setItem('wishlist_countries', JSON.stringify(updatedCountries));
+        } catch (_) {}
+      }
+    }
+
+    setFavoriteCities(updatedCities);
     try {
-      localStorage.setItem('wishlist_cities', JSON.stringify(updated));
+      localStorage.setItem('wishlist_cities', JSON.stringify(updatedCities));
     } catch (_) {}
 
     try {
       await setDoc(doc(db, 'users', 'public', 'settings', 'map_wishlist'), {
-        countries: favoriteCountries,
-        cities: updated,
+        countries: updatedCountries,
+        cities: updatedCities,
         updatedAt: new Date().toISOString()
       }, { merge: true });
     } catch (err) {

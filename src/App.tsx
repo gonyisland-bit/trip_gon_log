@@ -707,11 +707,11 @@ function App() {
     try {
       const batch = writeBatch(db);
       batch.delete(planRef);
-      batch.set(tripRef, newTrip);
+      batch.set(tripRef, cleanForFirestore(newTrip));
       await batch.commit();
     } catch (err: any) {
       console.error("Error moving plan to archive:", err);
-      alert("아카이브로 이동하는 데 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+      alert("로그(여정)로 이동하는 데 실패했습니다. Firebase 권한 설정을 확인해주세요.");
     }
   };
 
@@ -730,11 +730,11 @@ function App() {
     try {
       const batch = writeBatch(db);
       batch.delete(tripRef);
-      batch.set(planRef, newPlan);
+      batch.set(planRef, cleanForFirestore(newPlan));
       await batch.commit();
     } catch (err: any) {
       console.error("Error moving trip to plans:", err);
-      alert("계획으로 이동하는 데 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+      alert("플랜으로 이동하는 데 실패했습니다. Firebase 권한 설정을 확인해주세요.");
     }
   };
 
@@ -1725,6 +1725,8 @@ function App() {
           onClose={() => setEditingTripId(null)}
           trip={trips.find(t => String(t.id) === String(editingTripId)) || plans.find(p => String(p.id) === String(editingTripId))}
           onSave={handleEditTripSave}
+          onMoveToPlans={handleMoveToPlans}
+          onMoveToArchive={handleMoveToArchive}
           isLoggedIn={isLoggedIn}
           existingTags={existingTags}
         />

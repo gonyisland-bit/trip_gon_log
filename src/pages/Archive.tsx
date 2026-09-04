@@ -850,7 +850,7 @@ export function ArchiveHubPage({
                                       ? (onMoveToArchive ? () => onMoveToArchive(trip as Plan) : undefined)
                                       : (onMoveToPlans ? () => onMoveToPlans(trip) : undefined)
                                   }
-                                  moveLabel={isPlan ? "아카이브로 이동" : "계획으로 이동"}
+                                  moveLabel={isPlan ? "LOG" : "PLAN"}
                                   variant="minimal"
                                 />
                               );
@@ -977,7 +977,7 @@ export function ArchiveHubPage({
                                       ? (onMoveToArchive ? () => onMoveToArchive(trip as Plan) : undefined)
                                       : (onMoveToPlans ? () => onMoveToPlans(trip) : undefined)
                                   }
-                                  moveLabel={isPlan ? "아카이브로 이동" : "계획으로 이동"}
+                                  moveLabel={isPlan ? "LOG" : "PLAN"}
                                 />
                               );
                             })()}

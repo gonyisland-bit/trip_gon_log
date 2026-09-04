@@ -772,12 +772,12 @@ export function HomePage({
             const { year, month, days, dateRange, cities } = getHeroDetails(currentHero);
 
             return (
-              <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-0 items-stretch">
+              <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 grid grid-cols-1 md:grid-cols-12 items-stretch">
                 {/* 1. Left Column: Top branding, Big Title, Month/Year (Overlapping onto center media) */}
-                <div className="md:col-span-4 flex flex-col justify-between h-full order-2 md:order-1 relative z-20 md:-mr-12 lg:-mr-16 pointer-events-none py-8 sm:py-12 md:py-16 px-6 sm:px-10 md:px-0">
+                <div className="md:col-span-4 flex flex-col justify-between h-full order-2 md:order-1 relative z-20 md:-mr-12 lg:-mr-16 pointer-events-none py-4 sm:py-6 md:py-10 lg:py-14 px-2 sm:px-4 md:px-0">
                   <div>
                     {/* Minimal Branding / Title in Inter */}
-                    <div className="text-[11px] font-['Inter',sans-serif] font-bold tracking-[0.25em] text-black/40 dark:text-white/40 uppercase mb-4 sm:mb-6 pointer-events-auto">
+                    <div className="text-[11px] font-['Inter',sans-serif] font-bold tracking-[0.25em] text-black/40 dark:text-white/40 uppercase mb-3 sm:mb-4 md:mb-6 pointer-events-auto">
                       {homeTitle ? homeTitle.replace(/\\n|\n/g, ' ') : 'JOURNAL'}
                     </div>
 
@@ -792,8 +792,8 @@ export function HomePage({
                   </div>
 
                   {/* Year & Month + Minimal Subtitle */}
-                  <div className="mt-8 sm:mt-12 flex flex-col gap-1 pointer-events-auto font-['Inter',sans-serif]">
-                    <div className="text-xl sm:text-2xl font-black tracking-widest text-black dark:text-white uppercase">
+                  <div className="mt-4 sm:mt-6 md:mt-10 lg:mt-12 flex flex-col gap-1 pointer-events-auto font-['Inter',sans-serif]">
+                    <div className="text-lg sm:text-xl md:text-2xl font-black tracking-widest text-black dark:text-white uppercase">
                       {month} {year}
                     </div>
                     {homeSubtitle && (
@@ -804,11 +804,11 @@ export function HomePage({
                   </div>
                 </div>
 
-                {/* 2. Center Column: Exact 1/3 Width Borderless Hero Media Frame (Full Height touching top and bottom borders) */}
+                {/* 2. Center Column: Exact 2:3 Aspect Ratio Borderless Hero Media Frame (Full Height touching top and bottom borders) */}
                 <div className="md:col-span-4 self-stretch flex items-stretch justify-center order-1 md:order-2 relative z-10 w-full px-0">
                   <div 
                     onClick={() => onNavigate('detail', currentHero.id)}
-                    className="relative w-full h-full min-h-[440px] sm:min-h-[520px] md:min-h-[580px] lg:min-h-[640px] aspect-[3/4] md:aspect-auto overflow-hidden bg-neutral-900 group cursor-pointer select-none"
+                    className="relative w-full h-full min-h-[340px] sm:min-h-[420px] md:min-h-[540px] lg:min-h-[620px] aspect-[2/3] overflow-hidden bg-neutral-900 group cursor-pointer select-none mx-auto max-w-sm sm:max-w-md md:max-w-none"
                   >
                     {heroJourneys.map((journey, index) => (
                       <HeroMedia
@@ -828,10 +828,10 @@ export function HomePage({
                 </div>
 
                 {/* 3. Right Column: Date range / Days duration, Cities, Minimal circular arrow button */}
-                <div className="md:col-span-4 flex flex-col justify-between h-full order-3 text-left md:text-right items-start md:items-end relative z-20 md:pl-8 font-['Inter',sans-serif] py-8 sm:py-12 md:py-16 px-6 sm:px-10 md:px-0">
+                <div className="md:col-span-4 flex flex-col justify-between h-full order-3 text-left md:text-right items-start md:items-end relative z-20 md:pl-8 lg:pl-12 font-['Inter',sans-serif] py-4 sm:py-6 md:py-10 lg:py-14 px-2 sm:px-4 md:px-0">
                   {/* Top Slide Indicator (e.g. 01 / 03) with minimal gauge & arrows */}
                   {heroJourneys.length > 1 ? (
-                    <div className="flex items-center gap-2.5 mb-6">
+                    <div className="flex items-center gap-2.5 mb-4 sm:mb-6">
                       <span className="text-xs font-black tracking-widest text-black dark:text-white">
                         {String(heroSlide + 1).padStart(2, '0')}
                       </span>
@@ -873,11 +873,11 @@ export function HomePage({
                         </button>
                       </div>
                     </div>
-                  ) : <div className="mb-6" />}
+                  ) : <div className="mb-4 sm:mb-6" />}
 
                   {/* Middle: Duration & Dates (e.g. 18 — 20 / 3 DAYS) */}
                   <div className="my-auto flex flex-col items-start md:items-end">
-                    <div className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter text-black dark:text-white leading-none font-['Inter',sans-serif]">
+                    <div className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-black tracking-tighter text-black dark:text-white leading-none font-['Inter',sans-serif]">
                       {dateRange}
                     </div>
                     {days && (
@@ -888,7 +888,7 @@ export function HomePage({
                   </div>
 
                   {/* Bottom: Cities and Circular Arrow ( → ) */}
-                  <div className="mt-8 sm:mt-12 flex flex-col items-start md:items-end gap-4">
+                  <div className="mt-4 sm:mt-6 md:mt-10 lg:mt-12 flex flex-col items-start md:items-end gap-3 sm:gap-4">
                     <div className="text-xs sm:text-sm font-bold text-black/70 dark:text-white/70 uppercase tracking-widest leading-relaxed">
                       {cities}
                     </div>
@@ -896,10 +896,10 @@ export function HomePage({
                     <button
                       type="button"
                       onClick={() => onNavigate('detail', currentHero.id)}
-                      className="w-12 h-12 rounded-full border border-black/30 dark:border-white/30 hover:border-black dark:hover:border-white flex items-center justify-center transition-all hover:scale-105 cursor-pointer text-black dark:text-white shadow-xs"
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-black/30 dark:border-white/30 hover:border-black dark:hover:border-white flex items-center justify-center transition-all hover:scale-105 cursor-pointer text-black dark:text-white shadow-xs"
                       title="VIEW TRIP"
                     >
-                      <ArrowRight className="w-5 h-5" />
+                      <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
                   </div>
                 </div>
@@ -1117,7 +1117,7 @@ export function HomePage({
                       onDelete={onDeleteTrip ? () => onDeleteTrip(trip.id) : undefined}
                       onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
                       onMove={onMoveToPlans ? () => onMoveToPlans(trip) : undefined}
-                      moveLabel="계획으로 이동"
+                      moveLabel="PLAN"
                       variant="minimal"
                     />
                   </div>
@@ -1238,7 +1238,7 @@ export function HomePage({
                       onDelete={onDeleteTrip ? () => onDeleteTrip(trip.id) : undefined}
                       onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
                       onMove={onMoveToPlans ? () => onMoveToPlans(trip) : undefined}
-                      moveLabel="계획으로 이동"
+                      moveLabel="PLAN"
                     />
                   </div>
                 </div>
@@ -1346,113 +1346,125 @@ export function HomePage({
                 )}
               </div>
 
-              {/* Magazine Editorial Spread Layout: 3:4 Vertical Cards (Boundary-free Swiss Minimal) */}
-              <div 
-                key={currentSpread}
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 items-stretch animate-in fade-in duration-500"
-              >
-                {currentSlice.map((moment, idx) => {
-                  const parentTrip = trips.find(t => t.id === moment.tripId);
-                  const tripDestination = parentTrip?.locationStr || (parentTrip?.locations && parentTrip.locations[0]?.name) || moment.location || '';
-                  const engCity = getEnglishCityName(tripDestination) || 'JOURNEY';
+              {/* Magazine Editorial Spread Layout: 3:4 Vertical Cards (Boundary-free Swiss Minimal) with Smooth Horizontal Slide */}
+              <div className="w-full overflow-hidden">
+                <div 
+                  className="flex transition-transform duration-500 ease-out"
+                  style={{ transform: `translateX(-${currentSpread * 100}%)` }}
+                >
+                  {Array.from({ length: totalSpreads }).map((_, spreadIdx) => {
+                    const slice = displayMoments.slice(spreadIdx * MOMENTS_PER_SPREAD, (spreadIdx + 1) * MOMENTS_PER_SPREAD);
+                    return (
+                      <div 
+                        key={spreadIdx} 
+                        className="w-full shrink-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 items-stretch"
+                      >
+                        {slice.map((moment, idx) => {
+                          const parentTrip = trips.find(t => t.id === moment.tripId);
+                          const tripDestination = parentTrip?.locationStr || (parentTrip?.locations && parentTrip.locations[0]?.name) || moment.location || '';
+                          const engCity = getEnglishCityName(tripDestination) || 'JOURNEY';
 
-                  let resolvedLocation = '';
-                  if (allTimelineItems.length > 0 && moment.img) {
-                    const momentEffImg = getEffectiveImageUrl(moment.img);
-                    const matched = allTimelineItems.find(it => {
-                      if (!it.img) return false;
-                      if (it.img === moment.img) return true;
-                      return getEffectiveImageUrl(it.img) === momentEffImg;
-                    });
-                    if (matched) {
-                      if (matched.place && matched.place.trim()) {
-                        resolvedLocation = matched.place.trim();
-                      } else if (matched.location) {
-                        if (typeof matched.location === 'string' && matched.location.trim()) {
-                          resolvedLocation = matched.location.trim().split(',')[0].trim();
-                        } else if (typeof matched.location === 'object' && (matched.location as any)?.name) {
-                          resolvedLocation = (matched.location as any).name;
-                        }
-                      }
-                    }
-                  }
-                  const displayPlace = resolvedLocation || moment.placeName || cleanAdministrativeDistricts(moment.location || '') || 'VISITED PLACE';
-                  const dateWithDay = formatSimpleDateWithDay(moment.date);
-
-                  return (
-                    <div
-                      key={moment.id || idx}
-                      onClick={() => {
-                        if (moment.tripId) {
-                          try {
-                            localStorage.setItem('pending_detail_jump', JSON.stringify({
-                              tab: 'timeline',
-                              imgUrl: moment.img,
-                              date: moment.date,
-                              placeName: moment.placeName,
-                              title: moment.title
-                            }));
-                          } catch (e) {
-                            console.warn(e);
+                          let resolvedLocation = '';
+                          if (allTimelineItems.length > 0 && moment.img) {
+                            const momentEffImg = getEffectiveImageUrl(moment.img);
+                            const matched = allTimelineItems.find(it => {
+                              if (!it.img) return false;
+                              if (it.img === moment.img) return true;
+                              return getEffectiveImageUrl(it.img) === momentEffImg;
+                            });
+                            if (matched) {
+                              if (matched.place && matched.place.trim()) {
+                                resolvedLocation = matched.place.trim();
+                              } else if (matched.location) {
+                                if (typeof matched.location === 'string' && matched.location.trim()) {
+                                  resolvedLocation = matched.location.trim().split(',')[0].trim();
+                                } else if (typeof matched.location === 'object' && (matched.location as any)?.name) {
+                                  resolvedLocation = (matched.location as any).name;
+                                }
+                              }
+                            }
                           }
-                          onNavigate('detail', moment.tripId);
-                        }
-                      }}
-                      className="group relative cursor-pointer flex flex-col justify-between transition-all duration-300 select-none bg-transparent border-none shadow-none"
-                    >
-                      {/* 1. Boundary-free Editorial Photo Section: 3:4 Vertical Frame */}
-                      <div className="w-full aspect-[3/4] overflow-hidden relative bg-black/5 dark:bg-white/5">
-                        <img
-                          src={getEffectiveImageUrl(moment.img)}
-                          alt={moment.title}
-                          className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out select-none"
-                        />
-                        {/* Top-Right: Swiss Minimal Black Label (여행지명: TOKYO, OSAKA, etc.) */}
-                        {engCity && (
-                          <div className="absolute top-3 right-3 pointer-events-none z-10">
-                            <span className="px-2.5 py-1 text-[11px] sm:text-xs font-black font-['Inter',sans-serif] uppercase tracking-[0.2em] bg-black text-white leading-none inline-block shadow-sm">
-                              {engCity}
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                          const displayPlace = resolvedLocation || moment.placeName || cleanAdministrativeDistricts(moment.location || '') || 'VISITED PLACE';
+                          const dateWithDay = formatSimpleDateWithDay(moment.date);
 
-                      {/* 2. Editorial Text Hierarchy (Big Bold Typography + Date/Day + Quote + Place / Arrow) */}
-                      <div className="pt-3.5 flex-1 flex flex-col justify-between text-black dark:text-white">
-                        <div className="flex flex-col">
-                          {/* Large Bold Headline */}
-                          <h3 className="text-base sm:text-lg md:text-xl font-black uppercase tracking-tight text-black dark:text-white font-sans line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
-                            {moment.title}
-                          </h3>
+                          return (
+                            <div
+                              key={moment.id || idx}
+                              onClick={() => {
+                                if (moment.tripId) {
+                                  try {
+                                    localStorage.setItem('pending_detail_jump', JSON.stringify({
+                                      tab: 'timeline',
+                                      imgUrl: moment.img,
+                                      date: moment.date,
+                                      placeName: moment.placeName,
+                                      title: moment.title
+                                    }));
+                                  } catch (e) {
+                                    console.warn(e);
+                                  }
+                                  onNavigate('detail', moment.tripId);
+                                }
+                              }}
+                              className="group relative cursor-pointer flex flex-col justify-between transition-all duration-300 select-none bg-transparent border-none shadow-none"
+                            >
+                              {/* 1. Boundary-free Editorial Photo Section: 3:4 Vertical Frame */}
+                              <div className="w-full aspect-[3/4] overflow-hidden relative bg-black/5 dark:bg-white/5">
+                                <img
+                                  src={getEffectiveImageUrl(moment.img)}
+                                  alt={moment.title}
+                                  className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out select-none"
+                                />
+                                {/* Top-Right: Swiss Minimal Black Label (여행지명: TOKYO, OSAKA, etc.) */}
+                                {engCity && (
+                                  <div className="absolute top-3 right-3 pointer-events-none z-10">
+                                    <span className="px-2.5 py-1 text-[11px] sm:text-xs font-black font-['Inter',sans-serif] uppercase tracking-[0.2em] bg-black text-white leading-none inline-block shadow-sm">
+                                      {engCity}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
 
-                          {/* Minimal Date and Day (e.g. 2024.07.19 FRI) with tight vertical gap */}
-                          {dateWithDay && (
-                            <div className="text-[11px] sm:text-xs font-mono font-bold text-black/50 dark:text-white/50 uppercase tracking-wider mt-1">
-                              {dateWithDay}
+                              {/* 2. Editorial Text Hierarchy (Big Bold Typography + Date/Day + Quote + Place / Arrow) */}
+                              <div className="pt-3.5 flex-1 flex flex-col justify-between text-black dark:text-white">
+                                <div className="flex flex-col">
+                                  {/* Large Bold Headline */}
+                                  <h3 className="text-base sm:text-lg md:text-xl font-black uppercase tracking-tight text-black dark:text-white font-sans line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
+                                    {moment.title}
+                                  </h3>
+
+                                  {/* Minimal Date and Day (e.g. 2024.07.19 FRI) with tight vertical gap */}
+                                  {dateWithDay && (
+                                    <div className="text-[11px] sm:text-xs font-mono font-bold text-black/50 dark:text-white/50 uppercase tracking-wider mt-1">
+                                      {dateWithDay}
+                                    </div>
+                                  )}
+
+                                  {/* Concise quote or caption if present */}
+                                  {(moment.quote || moment.caption) && (
+                                    <p className="text-xs sm:text-[13px] font-sans font-normal text-black/65 dark:text-white/65 leading-relaxed line-clamp-2 mt-1.5">
+                                      {moment.quote || moment.caption}
+                                    </p>
+                                  )}
+                                </div>
+
+                                {/* Bottom Row: Specific Tagged Place & Simple Arrow (No MOMENT badge, No VIEW text, No Icons) */}
+                                <div className="pt-3 mt-auto flex items-center justify-between text-xs font-sans text-black/75 dark:text-white/75 border-t border-black/10 dark:border-white/10">
+                                  <span className="font-bold tracking-tight truncate max-w-[85%]" title={displayPlace}>
+                                    {displayPlace}
+                                  </span>
+                                  <span className="text-base font-bold text-black dark:text-white group-hover:translate-x-1.5 transition-transform shrink-0">
+                                    →
+                                  </span>
+                                </div>
+                              </div>
                             </div>
-                          )}
-
-                          {/* Concise quote or caption if present */}
-                          {(moment.quote || moment.caption) && (
-                            <p className="text-xs sm:text-[13px] font-sans font-normal text-black/65 dark:text-white/65 leading-relaxed line-clamp-2 mt-1.5">
-                              {moment.quote || moment.caption}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Bottom Row: Specific Tagged Place & Simple Arrow (No MOMENT badge, No VIEW text, No Icons) */}
-                        <div className="pt-3 mt-auto flex items-center justify-between text-xs font-sans text-black/75 dark:text-white/75 border-t border-black/10 dark:border-white/10">
-                          <span className="font-bold tracking-tight truncate max-w-[85%]" title={displayPlace}>
-                            {displayPlace}
-                          </span>
-                          <span className="text-base font-bold text-black dark:text-white group-hover:translate-x-1.5 transition-transform shrink-0">
-                            →
-                          </span>
-                        </div>
+                          );
+                        })}
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </div>
           );
