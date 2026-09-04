@@ -698,17 +698,24 @@ function App() {
     const planRef = doc(db, 'users', 'public', 'plans', String(plan.id));
     const tripRef = doc(db, 'users', 'public', 'trips', String(plan.id));
 
-    const newTrip: Trip = { 
+    const cleanTags = (plan.tags || []).filter(t => t !== 'Plan' && t !== 'Archived');
+    const cleanTitle = (plan.title || '').replace(/\s*\(Plan\)$/i, '').trim();
+
+    const newTrip: any = { 
       ...plan, 
-      title: plan.title.replace(' (Plan)', ''), 
-      tags: [...plan.tags.filter(t => t !== 'Plan'), 'Archived'] 
+      title: cleanTitle, 
+      tags: cleanTags,
     };
+    delete newTrip.isPlan;
 
     try {
       const batch = writeBatch(db);
       batch.delete(planRef);
       batch.set(tripRef, cleanForFirestore(newTrip));
       await batch.commit();
+
+      setPlans(prev => prev.filter(p => String(p.id) !== String(plan.id)));
+      setTrips(prev => [...prev.filter(t => String(t.id) !== String(plan.id)), newTrip as Trip]);
     } catch (err: any) {
       console.error("Error moving plan to archive:", err);
       alert("로그(여정)로 이동하는 데 실패했습니다. Firebase 권한 설정을 확인해주세요.");
@@ -721,10 +728,17 @@ function App() {
     const tripRef = doc(db, 'users', 'public', 'trips', String(trip.id));
     const planRef = doc(db, 'users', 'public', 'plans', String(trip.id));
 
-    const newPlan: Plan = { 
+    const cleanTags = (trip.tags || []).filter(t => t !== 'Archived');
+    if (!cleanTags.includes('Plan')) {
+      cleanTags.push('Plan');
+    }
+    const cleanTitle = trip.title.endsWith(' (Plan)') ? trip.title : `${trip.title} (Plan)`;
+
+    const newPlan: any = { 
       ...trip, 
-      title: trip.title.endsWith(' (Plan)') ? trip.title : `${trip.title} (Plan)`, 
-      tags: [...trip.tags.filter(t => t !== 'Archived'), 'Plan'] 
+      title: cleanTitle, 
+      tags: cleanTags,
+      isPlan: true,
     };
 
     try {
@@ -732,6 +746,9 @@ function App() {
       batch.delete(tripRef);
       batch.set(planRef, cleanForFirestore(newPlan));
       await batch.commit();
+
+      setTrips(prev => prev.filter(t => String(t.id) !== String(trip.id)));
+      setPlans(prev => [...prev.filter(p => String(p.id) !== String(trip.id)), newPlan as Plan]);
     } catch (err: any) {
       console.error("Error moving trip to plans:", err);
       alert("플랜으로 이동하는 데 실패했습니다. Firebase 권한 설정을 확인해주세요.");

@@ -467,9 +467,6 @@ export function ArchiveHubPage({
         <div className="p-6 md:px-12 border-b border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] flex flex-col md:flex-row md:items-end justify-between gap-4 transition-colors">
           {/* Left: Pure Minimal Title */}
           <div className="flex flex-col gap-0.5">
-            <span className="font-mono text-xs font-black text-black/40 dark:text-white/40 tracking-widest uppercase">
-              01 / TRIP
-            </span>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
               TRIP
             </h1>
@@ -838,7 +835,12 @@ export function ArchiveHubPage({
                           {/* Right Menu (Unboxed, NO right arrow button) */}
                           <div className="flex items-center pr-2 sm:pr-4 md:pr-6 shrink-0" onClick={(e) => e.stopPropagation()}>
                             {(() => {
-                              const isPlan = trip.tags?.includes('Plan') || trip.title.includes('(Plan)');
+                              const isPlan = Boolean(
+                                (trip as any).isPlan ||
+                                (plans && plans.some(p => String(p.id) === String(trip.id))) ||
+                                trip.tags?.includes('Plan') ||
+                                trip.title?.includes('(Plan)')
+                              );
                               return (
                                 <JourneyCardMenu
                                   isLoggedIn={isLoggedIn}
@@ -964,7 +966,12 @@ export function ArchiveHubPage({
 
                             {/* Hamburger menu */}
                             {(() => {
-                              const isPlan = trip.tags?.includes('Plan') || trip.title.includes('(Plan)');
+                              const isPlan = Boolean(
+                                (trip as any).isPlan ||
+                                (plans && plans.some(p => String(p.id) === String(trip.id))) ||
+                                trip.tags?.includes('Plan') ||
+                                trip.title?.includes('(Plan)')
+                              );
                               return (
                                 <JourneyCardMenu
                                   className="absolute bottom-3 right-3 z-30"

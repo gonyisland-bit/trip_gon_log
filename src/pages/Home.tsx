@@ -774,7 +774,7 @@ export function HomePage({
             return (
               <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 grid grid-cols-1 md:grid-cols-12 items-stretch">
                 {/* 1. Left Column: Top branding, Big Title, Month/Year (Overlapping onto center media) */}
-                <div className="md:col-span-4 flex flex-col justify-between h-full order-2 md:order-1 relative z-20 md:-mr-12 lg:-mr-16 pointer-events-none py-4 sm:py-6 md:py-10 lg:py-14 px-2 sm:px-4 md:px-0">
+                <div className="md:col-span-4 lg:col-span-4 flex flex-col justify-between h-full order-2 md:order-1 relative z-20 md:-mr-16 lg:-mr-24 pointer-events-none py-6 sm:py-8 md:py-12 lg:py-16 px-2 sm:px-4 md:px-0">
                   <div>
                     {/* Minimal Branding / Title in Inter */}
                     <div className="text-[11px] font-['Inter',sans-serif] font-bold tracking-[0.25em] text-black/40 dark:text-white/40 uppercase mb-3 sm:mb-4 md:mb-6 pointer-events-auto">
@@ -784,7 +784,7 @@ export function HomePage({
                     {/* Massive Bold Magazine Title in Inter (Overlaps onto center frame) */}
                     <h2
                       onClick={() => onNavigate('detail', currentHero.id)}
-                      className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black font-['Inter',sans-serif] uppercase tracking-tighter leading-[0.92] text-black dark:text-white cursor-pointer hover:opacity-85 transition-opacity select-none drop-shadow-sm pointer-events-auto"
+                      className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-black font-['Inter',sans-serif] uppercase tracking-tighter leading-[0.9] text-black dark:text-white cursor-pointer hover:opacity-85 transition-opacity select-none drop-shadow-sm pointer-events-auto"
                       style={{ wordBreak: 'keep-all' }}
                     >
                       {currentHero.title}
@@ -804,11 +804,11 @@ export function HomePage({
                   </div>
                 </div>
 
-                {/* 2. Center Column: Exact 4:3 Landscape Aspect Ratio Hero Media Frame */}
-                <div className="md:col-span-4 flex items-center justify-center order-1 md:order-2 relative z-10 w-full py-4 sm:py-6 md:py-8 px-2 sm:px-4 md:px-0">
+                {/* 2. Center Column: Large 4:3 Aspect Ratio Borderless Hero Media Frame (Touches top and bottom edges) */}
+                <div className="md:col-span-4 lg:col-span-5 self-stretch flex items-stretch justify-center order-1 md:order-2 relative z-10 w-full px-0">
                   <div 
                     onClick={() => onNavigate('detail', currentHero.id)}
-                    className="relative w-full aspect-[4/3] max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl overflow-hidden bg-neutral-900 group cursor-pointer select-none mx-auto shadow-md"
+                    className="relative w-full h-full min-h-[380px] sm:min-h-[480px] md:min-h-[640px] lg:min-h-[740px] aspect-[4/3] overflow-hidden bg-neutral-900 group cursor-pointer select-none mx-auto shadow-2xl"
                   >
                     {heroJourneys.map((journey, index) => (
                       <HeroMedia
@@ -828,7 +828,7 @@ export function HomePage({
                 </div>
 
                 {/* 3. Right Column: Date range / Days duration, Cities, Minimal circular arrow button */}
-                <div className="md:col-span-4 flex flex-col justify-between h-full order-3 text-left md:text-right items-start md:items-end relative z-20 md:pl-8 lg:pl-12 font-['Inter',sans-serif] py-4 sm:py-6 md:py-10 lg:py-14 px-2 sm:px-4 md:px-0">
+                <div className="md:col-span-4 lg:col-span-3 flex flex-col justify-between h-full order-3 text-left md:text-right items-start md:items-end relative z-20 md:pl-6 lg:pl-10 font-['Inter',sans-serif] py-6 sm:py-8 md:py-12 lg:py-16 px-2 sm:px-4 md:px-0">
                   {/* Top Slide Indicator (e.g. 01 / 03) with minimal gauge & arrows */}
                   {heroJourneys.length > 1 ? (
                     <div className="flex items-center gap-2.5 mb-4 sm:mb-6">
@@ -914,11 +914,8 @@ export function HomePage({
       {/* ─────────────────────────────────────────────────────────────────── */}
       <section className="flex flex-col w-full overflow-hidden transition-colors border-t border-black/10 dark:border-white/10">
         <div className="p-6 md:px-12 border-b border-black/15 dark:border-white/15 flex flex-col md:flex-row md:items-end justify-between gap-4 transition-colors">
-          {/* Left: Pure Minimal Title (No long Korean subtitle) */}
+          {/* Left: Pure Minimal Title */}
           <div className="flex flex-col gap-0.5">
-            <span className="font-mono text-xs font-black text-black/40 dark:text-white/40 tracking-widest uppercase">
-              01 / TRIP
-            </span>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
               TRIP
             </h2>
@@ -1112,7 +1109,7 @@ export function HomePage({
                   {/* Right Menu (Unboxed, NO right arrow button) */}
                   <div className="flex items-center pr-2 sm:pr-4 md:pr-6 shrink-0" onClick={(e) => e.stopPropagation()}>
                     {(() => {
-                      const isItemPlan = Boolean((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)'));
+                      const isItemPlan = Boolean((trip as any).isPlan || (plans && plans.some(p => String(p.id) === String(trip.id))) || trip.tags?.includes('Plan') || trip.title.includes('(Plan)'));
                       return (
                         <JourneyCardMenu
                           isLoggedIn={isLoggedIn}
@@ -1243,7 +1240,7 @@ export function HomePage({
 
                     {/* Hamburger menu */}
                     {(() => {
-                      const isItemPlan = Boolean((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)'));
+                      const isItemPlan = Boolean((trip as any).isPlan || (plans && plans.some(p => String(p.id) === String(trip.id))) || trip.tags?.includes('Plan') || trip.title.includes('(Plan)'));
                       return (
                         <JourneyCardMenu
                           className="absolute bottom-3 right-3 z-30"
@@ -1315,9 +1312,6 @@ export function HomePage({
               {/* Section Header: Pure Swiss Minimal Magazine Header */}
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-black/15 dark:border-white/15">
                 <div className="flex flex-col gap-0.5">
-                  <span className="font-mono text-xs font-black text-black/40 dark:text-white/40 tracking-widest uppercase">
-                    02 / MAGAZINE
-                  </span>
                   <h2 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
                     MAGAZINE
                   </h2>

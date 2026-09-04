@@ -540,7 +540,7 @@ export function PlanHubPage({
                     onDelete={() => onDeletePlan(plan.id)}
                     onClone={onClonePlan ? () => onClonePlan(plan.id) : undefined}
                     onMove={() => handleMoveToArchive(plan)}
-                    moveLabel="아카이브로 이동"
+                    moveLabel="LOG"
                     variant="minimal"
                   />
                 </div>
@@ -646,7 +646,7 @@ export function PlanHubPage({
                   onDelete={() => onDeletePlan(plan.id)}
                   onClone={onClonePlan ? () => onClonePlan(plan.id) : undefined}
                   onMove={() => handleMoveToArchive(plan)}
-                  moveLabel="아카이브로 이동"
+                  moveLabel="LOG"
                 />
               </div>
             );

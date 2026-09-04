@@ -128,11 +128,17 @@ export function ManageHubPage({
     setSelectedHeroIds(next);
   };
 
+  const handleToggleHero = (id: number) => {
+    setSelectedHeroIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
   // Mobile Archive Switcher: 'LIST' or 'EDIT'
   const [mobileArchiveTab, setMobileArchiveTab] = useState<'LIST' | 'EDIT'>('LIST');
 
-  // Home Section Switcher: 'ALL' | 'MAIN' | 'ARCHIVE' | 'MAGAZINE'
-  const [homeSubTab, setHomeSubTab] = useState<'ALL' | 'MAIN' | 'ARCHIVE' | 'MAGAZINE'>('ALL');
+  // Home Section Switcher: 'main' | 'hero' | 'trip' | 'magazine' | null (null shows ALL)
+  const [homeSubTab, setHomeSubTab] = useState<'main' | 'hero' | 'trip' | 'magazine' | null>(null);
 
   // Combined Journeys for ARCHIVE management
   const [localJourneys, setLocalJourneys] = useState<(Trip | Plan)[]>([]);
@@ -250,9 +256,14 @@ export function ManageHubPage({
     const plansWithFlag = (plans || []).map(p => ({
       ...p,
       isPlan: true,
-      tags: p.tags?.includes('Plan') ? p.tags : [...(p.tags || []), 'Plan'],
+      tags: Array.from(new Set((p.tags || []).filter(t => t !== 'Archived').concat(p.tags?.includes('Plan') ? [] : ['Plan']))),
     }));
-    let combined = [...(trips || []), ...plansWithFlag];
+    const tripsClean = (trips || []).map(t => ({
+      ...t,
+      isPlan: false,
+      tags: Array.from(new Set((t.tags || []).filter(t => t !== 'Archived'))),
+    }));
+    let combined = [...tripsClean, ...plansWithFlag];
     try {
       const saved = localStorage.getItem('journey_order');
       if (saved) {
@@ -607,6 +618,7 @@ export function ManageHubPage({
   const isSelectedPlan = Boolean(
     selectedJourney && (
       (selectedJourney as any).isPlan ||
+      (plans && plans.some(p => String(p.id) === String(selectedJourney.id))) ||
       selectedJourney.tags?.includes('Plan') ||
       selectedJourney.title?.includes('(Plan)')
     )
@@ -670,27 +682,18 @@ export function ManageHubPage({
         {activeMode === 'HOME' && (
           <div className="w-full max-w-3xl mx-auto p-4 sm:p-8 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200">
             {/* Header */}
-            <div className="border-b border-black/15 dark:border-white/15 pb-4">
-              <span className="text-[10px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-1">
-                SETTINGS
-              </span>
-              <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
-                HOME SETTINGS
-              </h2>
-            </div>
-
-            {/* Sub Section Filter: ALL / MAIN / ARCHIVE / MAGAZINE (Protected from shrinking & Sticky) */}
+            {/* Sub Section Filter: MAIN / HERO / TRIP / MAGAZINE (Toggle filter, click again to unselect & view ALL) */}
             <div className="shrink-0 sticky -top-4 sm:-top-8 bg-white/95 dark:bg-[#0e0e0e]/95 backdrop-blur-sm z-20 pt-3 pb-3 border-b border-black/15 dark:border-white/15 flex items-center gap-2 overflow-x-auto">
               {[
-                { id: 'ALL', label: 'ALL' },
-                { id: 'MAIN', label: 'MAIN' },
-                { id: 'ARCHIVE', label: 'ARCHIVE' },
-                { id: 'MAGAZINE', label: 'MAGAZINE' },
+                { id: 'main', label: 'MAIN' },
+                { id: 'hero', label: 'HERO' },
+                { id: 'trip', label: 'TRIP' },
+                { id: 'magazine', label: 'MAGAZINE' },
               ].map(tab => (
                 <button
                   key={tab.id}
                   type="button"
-                  onClick={() => setHomeSubTab(tab.id as any)}
+                  onClick={() => setHomeSubTab(current => current === tab.id ? null : tab.id as any)}
                   className={`shrink-0 h-9 px-4 text-xs font-mono font-bold transition-all cursor-pointer whitespace-nowrap border flex items-center justify-center ${
                     homeSubTab === tab.id
                       ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
@@ -704,12 +707,12 @@ export function ManageHubPage({
 
             <div className="flex flex-col gap-8">
               {/* ═══════════════════════════════════════════════════════════════ */}
-              {/* SECTION: MAIN (메인 & 히어로 설정)                             */}
+              {/* SECTION: MAIN (메인 & 마퀴 설정)                              */}
               {/* ═══════════════════════════════════════════════════════════════ */}
-              {(homeSubTab === 'ALL' || homeSubTab === 'MAIN') && (
+              {(!homeSubTab || homeSubTab === 'main') && (
                 <section className="flex flex-col gap-6 pt-2">
                   <div className="flex items-center justify-between border-b-2 border-black dark:border-white pb-2">
-                    <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-mono">
+                    <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
                       MAIN
                     </h3>
                   </div>
@@ -740,6 +743,69 @@ export function ManageHubPage({
                         className="px-3 py-2 text-xs font-bold bg-transparent border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white text-black dark:text-white"
                       />
                     </div>
+                  </div>
+
+                  {/* Marquee Banner (Now under MAIN) */}
+                  <div className="flex flex-col gap-2.5 pt-3 border-t border-black/10 dark:border-white/10">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-mono font-bold uppercase text-black/80 dark:text-white/80">
+                        MARQUEE BANNER
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowMarquee(!showMarquee)}
+                        className={`px-3 py-1 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer ${
+                          showMarquee
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                            : 'border-black/20 dark:border-white/20 text-black/40 dark:text-white/40'
+                        }`}
+                      >
+                        {showMarquee ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+
+                    {showMarquee && (
+                      <div className="flex flex-col gap-3 pt-1">
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
+                            MARQUEE TEXT
+                          </label>
+                          <input
+                            type="text"
+                            value={homeMarquee}
+                            onChange={e => setHomeMarquee(e.target.value)}
+                            placeholder="TRIP GON LOG - PLAN YOUR JOURNEY OR EXPLORE ARCHIVED LOGS"
+                            className="px-3 py-2 text-xs font-bold bg-transparent border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white text-black dark:text-white"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between gap-4 pt-1">
+                          <span className="text-[11px] font-mono font-bold text-black/60 dark:text-white/60 shrink-0">
+                            SPEED: {homeSpeed}s
+                          </span>
+                          <input
+                            type="range"
+                            min={15}
+                            max={120}
+                            value={homeSpeed}
+                            onChange={e => setHomeSpeed(parseInt(e.target.value, 10))}
+                            className="flex-1 accent-black dark:accent-white cursor-pointer"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {/* ═══════════════════════════════════════════════════════════════ */}
+              {/* SECTION: HERO (히어로 설정)                                   */}
+              {/* ═══════════════════════════════════════════════════════════════ */}
+              {(!homeSubTab || homeSubTab === 'hero') && (
+                <section className="flex flex-col gap-6 pt-2">
+                  <div className="flex items-center justify-between border-b-2 border-black dark:border-white pb-2">
+                    <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                      HERO
+                    </h3>
                   </div>
 
                   {/* Hero Auto Slide & Slide Limit */}
@@ -858,38 +924,37 @@ export function ManageHubPage({
                                     />
                                   </div>
                                   <div className="min-w-0">
-                                    <h6 className="text-xs font-bold truncate text-black dark:text-white">
-                                      {journey.title.replace(' (Plan)', '')}
-                                    </h6>
-                                    <span className="text-[10px] font-mono text-black/50 dark:text-white/50 block truncate">
+                                    <div className="text-xs font-bold truncate text-black dark:text-white font-sans">
+                                      {journey.title}
+                                    </div>
+                                    <div className="text-[10px] font-mono text-black/50 dark:text-white/50">
                                       {journey.date}
-                                    </span>
+                                    </div>
                                   </div>
                                 </div>
-
                                 <div className="flex items-center gap-1 shrink-0">
                                   <button
                                     type="button"
-                                    disabled={idx === 0}
                                     onClick={() => handleMoveHeroOrder(idx, 'up')}
-                                    className="p-1.5 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+                                    disabled={idx === 0}
+                                    className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
                                     title="위로 이동"
                                   >
-                                    <ChevronUp className="w-3.5 h-3.5" />
+                                    <ChevronUp className="w-4 h-4" />
                                   </button>
                                   <button
                                     type="button"
-                                    disabled={idx === selectedHeroIds.length - 1}
                                     onClick={() => handleMoveHeroOrder(idx, 'down')}
-                                    className="p-1.5 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+                                    disabled={idx === selectedHeroIds.length - 1}
+                                    className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
                                     title="아래로 이동"
                                   >
-                                    <ChevronDown className="w-3.5 h-3.5" />
+                                    <ChevronDown className="w-4 h-4" />
                                   </button>
                                   <button
                                     type="button"
-                                    onClick={() => setSelectedHeroIds(selectedHeroIds.filter(item => item !== id))}
-                                    className="p-1.5 border border-black/15 dark:border-white/15 hover:bg-red-500 hover:text-white text-black/40 dark:text-white/40 transition-colors cursor-pointer"
+                                    onClick={() => handleToggleHero(id)}
+                                    className="p-1 text-black/40 dark:text-white/40 hover:text-red-600 transition-colors cursor-pointer"
                                     title="제거"
                                   >
                                     <X className="w-3.5 h-3.5" />
@@ -902,94 +967,84 @@ export function ManageHubPage({
                       </div>
                     )}
 
-                    {/* Search Bar */}
-                    <div className="relative">
-                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
-                      <input
-                        type="text"
-                        value={heroSearchQuery}
-                        onChange={e => setHeroSearchQuery(e.target.value)}
-                        placeholder="Search journey..."
-                        className="w-full pl-8 pr-8 py-2 text-xs font-mono font-bold bg-transparent border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white text-black dark:text-white"
-                      />
-                      {heroSearchQuery && (
-                        <button
-                          type="button"
-                          onClick={() => setHeroSearchQuery('')}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white cursor-pointer"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
+                    {/* Journeys Checklist Search & Selection */}
+                    <div className="flex flex-col gap-2">
+                      <div className="relative">
+                        <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
+                        <input
+                          type="text"
+                          value={heroSearchQuery}
+                          onChange={e => setHeroSearchQuery(e.target.value)}
+                          placeholder="여정 검색 (제목, 장소)..."
+                          className="w-full pl-8 pr-3 py-1.5 text-xs bg-white dark:bg-[#161616] border border-black/15 dark:border-white/15 outline-none rounded-none focus:border-black dark:focus:border-white"
+                        />
+                      </div>
 
-                    {/* Candidate List */}
-                    <div className="flex flex-col gap-1 max-h-56 overflow-y-auto p-1 border border-black/15 dark:border-white/15">
-                      {filteredHeroCandidates.length === 0 ? (
-                        <div className="py-6 text-center text-xs font-mono text-black/40 dark:text-white/40">
-                          NO RESULTS
-                        </div>
-                      ) : (
-                        filteredHeroCandidates.map(j => {
-                          const isSelected = selectedHeroIds.includes(j.id);
-                          return (
-                            <div
-                              key={j.id}
-                              onClick={() => {
-                                if (isSelected) {
-                                  setSelectedHeroIds(selectedHeroIds.filter(id => id !== j.id));
-                                } else {
-                                  setSelectedHeroIds([...selectedHeroIds, j.id]);
-                                }
-                              }}
-                              className={`p-1.5 border transition-all flex items-center justify-between gap-2 cursor-pointer rounded-none ${
-                                isSelected
-                                  ? 'bg-black/5 dark:bg-white/10 border-black dark:border-white'
-                                  : 'border-transparent hover:border-black/20 dark:hover:border-white/20'
-                              }`}
-                            >
-                              <div className="flex items-center gap-2 min-w-0">
-                                <div className="w-8 h-8 aspect-square border border-black/10 dark:border-white/10 shrink-0 overflow-hidden bg-black/10">
-                                  <img
-                                    src={getEffectiveImageUrl(j.img)}
-                                    alt={j.title}
-                                    className="w-full h-full object-cover"
-                                  />
+                      <div className="max-h-60 overflow-y-auto border border-black/15 dark:border-white/15 divide-y divide-black/10 dark:divide-white/10 bg-white dark:bg-[#161616]">
+                        {filteredHeroCandidates.length === 0 ? (
+                          <div className="p-4 text-center text-xs font-mono text-black/40 dark:text-white/40">
+                            검색 결과가 없습니다.
+                          </div>
+                        ) : (
+                          filteredHeroCandidates.map(journey => {
+                            const isSelected = selectedHeroIds.includes(journey.id);
+                            return (
+                              <div
+                                key={journey.id}
+                                onClick={() => handleToggleHero(journey.id)}
+                                className={`p-2 flex items-center justify-between gap-3 cursor-pointer transition-colors ${
+                                  isSelected
+                                    ? 'bg-black/5 dark:bg-white/10'
+                                    : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className={`w-4 h-4 rounded-none border flex items-center justify-center shrink-0 ${
+                                    isSelected
+                                      ? 'bg-black dark:bg-white border-black dark:border-white text-white dark:text-black'
+                                      : 'border-black/30 dark:border-white/30'
+                                  }`}>
+                                    {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                                  </div>
+                                  <div className="w-7 h-7 aspect-square border border-black/10 dark:border-white/10 shrink-0 overflow-hidden bg-black/10">
+                                    <img
+                                      src={getEffectiveImageUrl(journey.img)}
+                                      alt={journey.title}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="text-xs font-bold truncate text-black dark:text-white font-sans">
+                                      {journey.title}
+                                    </div>
+                                    <div className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                                      {journey.locationStr} · {journey.date}
+                                    </div>
+                                  </div>
                                 </div>
-                                <div className="min-w-0">
-                                  <h5 className="text-xs font-bold text-black dark:text-white truncate">
-                                    {j.title.replace(' (Plan)', '')}
-                                  </h5>
-                                  <span className="text-[10px] font-mono text-black/50 dark:text-white/50 block truncate">
-                                    {j.date} · {j.locationStr}
+                                {isSelected && (
+                                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black shrink-0">
+                                    SLIDE #{selectedHeroIds.indexOf(journey.id) + 1}
                                   </span>
-                                </div>
+                                )}
                               </div>
-
-                              <span className={`px-2 py-0.5 text-[9px] font-mono font-bold uppercase border shrink-0 ${
-                                isSelected
-                                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                                  : 'border-black/20 dark:border-white/20 text-black/50 dark:text-white/50'
-                              }`}>
-                                {isSelected ? '✓ SELECTED' : '+ SELECT'}
-                              </span>
-                            </div>
-                          );
-                        })
-                      )}
+                            );
+                          })
+                        )}
+                      </div>
                     </div>
                   </div>
                 </section>
               )}
 
               {/* ═══════════════════════════════════════════════════════════════ */}
-              {/* SECTION: ARCHIVE (아카이브 & 전광판)                           */}
+              {/* SECTION: TRIP (여정 표시 설정 - 구 ARCHIVE)                    */}
               {/* ═══════════════════════════════════════════════════════════════ */}
-              {(homeSubTab === 'ALL' || homeSubTab === 'ARCHIVE') && (
+              {(!homeSubTab || homeSubTab === 'trip') && (
                 <section className="flex flex-col gap-6 pt-6 border-t border-black/20 dark:border-white/20">
                   <div className="flex items-center justify-between border-b-2 border-black dark:border-white pb-2">
-                    <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-mono">
-                      ARCHIVE
+                    <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                      TRIP
                     </h3>
                   </div>
 
@@ -1015,52 +1070,16 @@ export function ManageHubPage({
                       ))}
                     </div>
                   </div>
-
-                  {/* Marquee Banner */}
-                  <div className="flex flex-col gap-2.5 pt-3 border-t border-black/10 dark:border-white/10">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-mono font-bold uppercase text-black/80 dark:text-white/80">
-                        MARQUEE BANNER
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setShowMarquee(!showMarquee)}
-                        className={`px-3 py-1 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer ${
-                          showMarquee
-                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                            : 'border-black/20 dark:border-white/20 text-black/40 dark:text-white/40'
-                        }`}
-                      >
-                        {showMarquee ? 'ON' : 'OFF'}
-                      </button>
-                    </div>
-
-                    {showMarquee && (
-                      <div className="flex items-center justify-between gap-4 pt-1">
-                        <span className="text-[11px] font-mono font-bold text-black/60 dark:text-white/60 shrink-0">
-                          SPEED: {homeSpeed}s
-                        </span>
-                        <input
-                          type="range"
-                          min={15}
-                          max={120}
-                          value={homeSpeed}
-                          onChange={e => setHomeSpeed(parseInt(e.target.value, 10))}
-                          className="flex-1 accent-black dark:accent-white cursor-pointer"
-                        />
-                      </div>
-                    )}
-                  </div>
                 </section>
               )}
 
               {/* ═══════════════════════════════════════════════════════════════ */}
               {/* SECTION: MAGAZINE (홈 매거진 순간 선별)                         */}
               {/* ═══════════════════════════════════════════════════════════════ */}
-              {(homeSubTab === 'ALL' || homeSubTab === 'MAGAZINE') && (
+              {(!homeSubTab || homeSubTab === 'magazine') && (
                 <section className="flex flex-col gap-6 pt-6 border-t border-black/20 dark:border-white/20">
                   <div className="flex items-center justify-between border-b-2 border-black dark:border-white pb-2">
-                    <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-mono">
+                    <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
                       MAGAZINE
                     </h3>
                     <span className="text-xs font-mono font-bold text-red-600 dark:text-red-500">
@@ -1379,9 +1398,11 @@ export function ManageHubPage({
                       <div className="flex items-center gap-1.5 h-[35px]">
                         <button
                           type="button"
-                          onClick={() => {
-                            if (isSelectedPlan) {
-                              onMoveToArchive(selectedJourney as Plan);
+                          onClick={async () => {
+                            if (isSelectedPlan && selectedJourney) {
+                              await onMoveToArchive(selectedJourney as Plan);
+                              setEditTags(prev => prev.filter(t => t !== 'Plan' && t !== 'Archived'));
+                              setEditTitle(prev => prev.replace(/\s*\(Plan\)$/i, '').trim());
                             }
                           }}
                           disabled={!isSelectedPlan}
@@ -1396,9 +1417,14 @@ export function ManageHubPage({
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            if (!isSelectedPlan) {
-                              onMoveToPlans(selectedJourney);
+                          onClick={async () => {
+                            if (!isSelectedPlan && selectedJourney) {
+                              await onMoveToPlans(selectedJourney);
+                              setEditTags(prev => {
+                                const next = prev.filter(t => t !== 'Archived');
+                                return next.includes('Plan') ? next : [...next, 'Plan'];
+                              });
+                              setEditTitle(prev => prev.endsWith(' (Plan)') ? prev : `${prev} (Plan)`);
                             }
                           }}
                           disabled={isSelectedPlan}
@@ -1818,11 +1844,18 @@ export function ManageHubPage({
 
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={async () => {
                           if (isSelectedPlan) {
-                            onMoveToArchive(selectedJourney as Plan);
+                            await onMoveToArchive(selectedJourney as Plan);
+                            setEditTags(prev => prev.filter(t => t !== 'Plan' && t !== 'Archived'));
+                            setEditTitle(prev => prev.replace(/\s*\(Plan\)$/i, '').trim());
                           } else {
-                            onMoveToPlans(selectedJourney);
+                            await onMoveToPlans(selectedJourney);
+                            setEditTags(prev => {
+                              const next = prev.filter(t => t !== 'Archived');
+                              return next.includes('Plan') ? next : [...next, 'Plan'];
+                            });
+                            setEditTitle(prev => prev.endsWith(' (Plan)') ? prev : `${prev} (Plan)`);
                           }
                         }}
                         className="px-3 py-2 border border-black/20 dark:border-white/20 text-xs font-black uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
