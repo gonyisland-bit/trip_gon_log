@@ -1002,22 +1002,28 @@ export function ArchiveHubPage({
       </div>
 
       {/* ===== Bottom Bold Typography Statistics Banner (Seamlessly attached without white gap) ===== */}
-      <footer className="w-full border-t border-black/15 dark:border-white/15 bg-black/[0.03] dark:bg-white/[0.03] py-10 sm:py-16 px-6 sm:px-12 md:px-16 mt-0 transition-colors">
-        <div className="max-w-7xl mx-auto flex flex-col gap-3 font-['Inter',sans-serif]">
+      <footer className="w-full border-t border-black/15 dark:border-white/15 bg-black/[0.03] dark:bg-white/[0.03] py-8 sm:py-12 md:py-16 px-6 sm:px-12 md:px-16 mt-0 transition-colors">
+        <div className="max-w-7xl mx-auto flex flex-col gap-2.5 sm:gap-3 font-['Inter',sans-serif]">
           <span className="text-xs font-black text-black/40 dark:text-white/40 tracking-[0.25em] uppercase">
             TOTAL TRAVEL RECORD
           </span>
-          <div 
-            className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-tighter leading-[1.05] text-black dark:text-white"
-            style={{ wordBreak: 'keep-all' }}
-          >
-            <span>{tripStats.totalTrips} {tripStats.totalTrips === 1 ? 'TRIP' : 'TRIPS'}</span>
-            <span className="text-black/30 dark:text-white/30 mx-2 sm:mx-3">·</span>
-            <span>{tripStats.totalCountries} {tripStats.totalCountries === 1 ? 'COUNTRY' : 'COUNTRIES'}</span>
-            <span className="text-black/30 dark:text-white/30 mx-2 sm:mx-3">·</span>
-            <span>{tripStats.totalCities} {tripStats.totalCities === 1 ? 'CITY' : 'CITIES'}</span>
-            <span className="text-black/30 dark:text-white/30 mx-2 sm:mx-3">·</span>
-            <span>{tripStats.totalDays} {tripStats.totalDays === 1 ? 'DAY' : 'DAYS'}</span>
+          <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black uppercase tracking-tighter leading-[1.1] text-black dark:text-white flex flex-col sm:flex-row sm:items-center sm:flex-nowrap whitespace-nowrap gap-1 sm:gap-0">
+            {/* Mobile Row 1 / Desktop Left Half: TRIPS · COUNTRIES */}
+            <div className="flex items-center">
+              <span>{tripStats.totalTrips} {tripStats.totalTrips === 1 ? 'TRIP' : 'TRIPS'}</span>
+              <span className="text-black/30 dark:text-white/30 mx-2 sm:mx-2.5 lg:mx-3">·</span>
+              <span>{tripStats.totalCountries} {tripStats.totalCountries === 1 ? 'COUNTRY' : 'COUNTRIES'}</span>
+            </div>
+
+            {/* Middle divider on Desktop */}
+            <span className="hidden sm:inline text-black/30 dark:text-white/30 mx-2 sm:mx-2.5 lg:mx-3">·</span>
+
+            {/* Mobile Row 2 / Desktop Right Half: CITIES · DAYS */}
+            <div className="flex items-center">
+              <span>{tripStats.totalCities} {tripStats.totalCities === 1 ? 'CITY' : 'CITIES'}</span>
+              <span className="text-black/30 dark:text-white/30 mx-2 sm:mx-2.5 lg:mx-3">·</span>
+              <span>{tripStats.totalDays} {tripStats.totalDays === 1 ? 'DAY' : 'DAYS'}</span>
+            </div>
           </div>
         </div>
       </footer>

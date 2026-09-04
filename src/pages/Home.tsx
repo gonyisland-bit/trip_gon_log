@@ -3,7 +3,7 @@ import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Menu, Edit2, Trash
 import { Trip, Plan, MagazineMoment, TimelineData } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { cleanAdministrativeDistricts } from '../components/SummaryView';
+import { cleanAdministrativeDistricts, generateJourneyMessage } from '../components/SummaryView';
 
 interface HomePageProps {
   onNavigate: (view: string, tripId?: number | null) => void;
@@ -14,7 +14,7 @@ interface HomePageProps {
   onCloneTrip?: (id: number) => void;
   onClonePlan?: (id: number) => void;
   homeTitle: string;
-  homeSubtitle: string;
+  homeSubtitle?: string;
   heroJourneyIds?: number[];
   heroAutoSlide?: boolean;
   heroMediaType?: 'image' | 'video';
@@ -217,6 +217,7 @@ function getHeroDetails(journey: Trip) {
   return {
     year: year || '2024',
     month: month || 'JUL',
+    daysCount: days,
     days: days > 0 ? `${days} ${days === 1 ? 'DAY' : 'DAYS'}` : '',
     dateRange: dateRangeText || '01 — 03',
     cities
@@ -773,8 +774,8 @@ export function HomePage({
 
             return (
               <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 grid grid-cols-1 md:grid-cols-12 items-center">
-                {/* 1. Left Column: Top branding, Big Title, Month/Year (Overlapping onto center media) */}
-                <div className="md:col-span-3 lg:col-span-3 flex flex-col justify-between h-full order-2 md:order-1 relative z-20 md:-mr-12 lg:-mr-20 pointer-events-none py-6 sm:py-8 md:py-12 lg:py-16 px-2 sm:px-4 md:px-0">
+                {/* 1. Left Column: Top branding, Big Title, Month/Year, Auto Journey Sentence */}
+                <div className="md:col-span-3 lg:col-span-3 flex flex-col justify-between h-full order-2 md:order-1 relative z-20 md:-mr-8 lg:-mr-12 pointer-events-none py-6 sm:py-8 md:py-12 lg:py-16 px-2 sm:px-4 md:px-0">
                   <div>
                     {/* Minimal Branding / Title in Inter */}
                     <div className="text-[11px] font-['Inter',sans-serif] font-bold tracking-[0.25em] text-black/40 dark:text-white/40 uppercase mb-3 sm:mb-4 md:mb-6 pointer-events-auto">
@@ -791,24 +792,23 @@ export function HomePage({
                     </h2>
                   </div>
 
-                  {/* Year & Month + Minimal Subtitle */}
-                  <div className="mt-4 sm:mt-6 md:mt-10 lg:mt-12 flex flex-col gap-1 pointer-events-auto font-['Inter',sans-serif]">
-                    <div className="text-lg sm:text-xl md:text-2xl font-black tracking-widest text-black dark:text-white uppercase">
+                  {/* Year & Month with tight tracking + Auto Journey Sentence (Does NOT overlap hero media) */}
+                  <div className="mt-4 sm:mt-6 md:mt-10 lg:mt-12 flex flex-col gap-1.5 pointer-events-auto font-['Inter',sans-serif] max-w-[260px] lg:max-w-[300px]">
+                    <div className="text-base sm:text-lg md:text-xl font-black tracking-tight text-black dark:text-white uppercase leading-none">
                       {month} {year}
                     </div>
-                    {homeSubtitle && (
-                      <p className="text-xs font-medium text-black/50 dark:text-white/50 uppercase tracking-wider leading-relaxed max-w-xs mt-1">
-                        {homeSubtitle}
-                      </p>
-                    )}
+                    {/* Auto journey generated sentence */}
+                    <p className="text-[11px] sm:text-xs font-medium text-black/60 dark:text-white/60 leading-snug break-keep">
+                      {generateJourneyMessage(currentHero.locationStr, currentHero.date, getHeroDetails(currentHero).daysCount)}
+                    </p>
                   </div>
                 </div>
 
-                {/* 2. Center Column: Large 4:3 Aspect Ratio Borderless Hero Media Frame (Dead center of the screen) */}
+                {/* 2. Center Column: Large 3:4 Aspect Ratio Borderless Hero Media Frame (Dead center of the screen, towering height) */}
                 <div className="md:col-span-6 lg:col-span-6 flex items-center justify-center order-1 md:order-2 relative z-10 w-full px-0">
                   <div 
                     onClick={() => onNavigate('detail', currentHero.id)}
-                    className="relative w-full aspect-[4/3] max-w-2xl lg:max-w-3xl xl:max-w-4xl 2xl:max-w-5xl overflow-hidden bg-neutral-900 group cursor-pointer select-none mx-auto shadow-2xl"
+                    className="relative w-full aspect-[3/4] max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl max-h-[85vh] overflow-hidden bg-neutral-900 group cursor-pointer select-none mx-auto shadow-2xl"
                   >
                     {heroJourneys.map((journey, index) => (
                       <HeroMedia

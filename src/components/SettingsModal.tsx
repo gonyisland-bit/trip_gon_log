@@ -232,19 +232,6 @@ export function SettingsModal({
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
-                  Home Hub Subtitle
-                </label>
-                <textarea
-                  value={subtitle}
-                  onChange={(e) => setSubtitle(e.target.value)}
-                  className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 p-3 text-xs md:text-sm font-medium text-black dark:text-white outline-none w-full h-20 resize-none focus:border-red-600 dark:focus:border-red-400 transition-colors"
-                  placeholder="나만의 감성으로 기록하고 보관하는 여행 아카이브."
-                  required
-                />
-              </div>
-
               {/* Hero Journey Selection */}
               <div className="flex flex-col gap-2.5 pt-2">
                 <div className="flex items-center gap-2">

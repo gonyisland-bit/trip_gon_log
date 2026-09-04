@@ -1693,8 +1693,8 @@ function App() {
           )}
         </div>
         
-        {/* Footer: Hidden only on JourneyDetail; rendered with mt-0 on MapHub */}
-        {currentView !== 'detail' && <Footer className={currentView === 'map' ? 'mt-0' : 'mt-12'} />}
+        {/* Footer: Hidden on JourneyDetail; rendered with mt-0 on ArchiveHub and MapHub */}
+        {currentView !== 'detail' && <Footer className={(currentView === 'map' || currentView === 'archive') ? 'mt-0' : 'mt-12'} />}
 
         {/* Auth Modal Popup */}
         <AuthModal 

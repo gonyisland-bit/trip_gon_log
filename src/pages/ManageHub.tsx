@@ -717,32 +717,18 @@ export function ManageHubPage({
                     </h3>
                   </div>
 
-                  {/* Home Title & Subtitle */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
-                        HOME TITLE
-                      </label>
-                      <input
-                        type="text"
-                        value={title}
-                        onChange={e => setTitle(e.target.value)}
-                        placeholder="TRIP GON LOG"
-                        className="px-3 py-2 text-xs font-bold bg-transparent border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white text-black dark:text-white"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
-                        HOME SUBTITLE
-                      </label>
-                      <input
-                        type="text"
-                        value={subtitle}
-                        onChange={e => setSubtitle(e.target.value)}
-                        placeholder="Your Personal Travel Magazine"
-                        className="px-3 py-2 text-xs font-bold bg-transparent border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white text-black dark:text-white"
-                      />
-                    </div>
+                  {/* Home Title */}
+                  <div className="flex flex-col gap-1.5 max-w-md">
+                    <label className="text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                      HOME TITLE
+                    </label>
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={e => setTitle(e.target.value)}
+                      placeholder="TRIP GON LOG"
+                      className="px-3 py-2 text-xs font-bold bg-transparent border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white text-black dark:text-white"
+                    />
                   </div>
 
                   {/* Marquee Banner (Now under MAIN) */}
