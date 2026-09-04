@@ -1589,6 +1589,7 @@ function App() {
                     await batch.commit();
                   }}
                   isLoggedIn={isLoggedIn}
+                  isDarkMode={isDarkMode}
                   homeGradientEnabled={homeGradientEnabled}
                   homeGradientFrom={homeGradientFrom}
                   homeGradientTo={homeGradientTo}
