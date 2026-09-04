@@ -24,6 +24,10 @@ interface HomePageProps {
   onReorderTrips?: (orderedIds: number[]) => void;
   onReorderPlans?: (orderedIds: number[]) => void;
   isLoggedIn?: boolean;
+  isDarkMode?: boolean;
+  homeGradientEnabled?: boolean;
+  homeGradientFrom?: string;
+  homeGradientTo?: string;
   magazineMoments?: MagazineMoment[];
   timelineData?: TimelineData;
 }
@@ -587,6 +591,10 @@ export function HomePage({
   onCloneTrip,
   onClonePlan,
   isLoggedIn = false,
+  isDarkMode = false,
+  homeGradientEnabled,
+  homeGradientFrom,
+  homeGradientTo,
   magazineMoments = [],
   timelineData,
 }: HomePageProps) {
@@ -604,6 +612,24 @@ export function HomePage({
 
   const [magazineSpreadIndex, setMagazineSpreadIndex] = useState(0);
 
+  // Gradient background state
+  const [gradientEnabled, setGradientEnabled] = useState<boolean>(() => {
+    if (homeGradientEnabled !== undefined) return homeGradientEnabled;
+    return localStorage.getItem('home_gradient_enabled') === 'true';
+  });
+  const [gradientFrom, setGradientFrom] = useState<string>(() => {
+    return homeGradientFrom || localStorage.getItem('home_gradient_from') || '#FAF8F5';
+  });
+  const [gradientTo, setGradientTo] = useState<string>(() => {
+    return homeGradientTo || localStorage.getItem('home_gradient_to') || '#F1ECE1';
+  });
+
+  useEffect(() => {
+    if (homeGradientEnabled !== undefined) setGradientEnabled(homeGradientEnabled);
+    if (homeGradientFrom) setGradientFrom(homeGradientFrom);
+    if (homeGradientTo) setGradientTo(homeGradientTo);
+  }, [homeGradientEnabled, homeGradientFrom, homeGradientTo]);
+
   // Flatten all timeline items from timelineData ({ [date: string]: TimelineItem[] })
   const allTimelineItems = useMemo(() => {
     if (!timelineData) return [];
@@ -617,10 +643,25 @@ export function HomePage({
   useEffect(() => {
     const handleConfigChange = () => {
       setJourneyLimit(parseInt(localStorage.getItem('home_journey_limit') || '4', 10));
+      setGradientEnabled(localStorage.getItem('home_gradient_enabled') === 'true');
+      setGradientFrom(localStorage.getItem('home_gradient_from') || '#FAF8F5');
+      setGradientTo(localStorage.getItem('home_gradient_to') || '#F1ECE1');
     };
     window.addEventListener('homeConfigChanged', handleConfigChange);
     return () => window.removeEventListener('homeConfigChanged', handleConfigChange);
   }, []);
+
+  const gradientBackgroundStyle = useMemo(() => {
+    if (!gradientEnabled) return undefined;
+    if (isDarkMode) {
+      return {
+        background: 'linear-gradient(135deg, #181818 0%, #121212 100%)',
+      };
+    }
+    return {
+      background: `linear-gradient(135deg, ${gradientFrom} 0%, ${gradientTo} 100%)`,
+    };
+  }, [gradientEnabled, gradientFrom, gradientTo, isDarkMode]);
 
   // Drag-reorder state for archive cards
   const [draggedTripId, setDraggedTripId] = useState<number | null>(null);
@@ -764,10 +805,14 @@ export function HomePage({
   };
 
   return (
-    <main onClick={() => setActiveCardId(null)} className="animate-in fade-in duration-700 w-full">
+    <main 
+      onClick={() => setActiveCardId(null)} 
+      style={gradientBackgroundStyle}
+      className="animate-in fade-in duration-700 w-full transition-all"
+    >
 
       {/* ===== Hero Section: 3-Column Swiss Editorial Layout (Matching Reference) ===== */}
-      <section className="relative w-full border-b border-black/15 dark:border-white/15 bg-[#FBFBFA] dark:bg-[#121212] overflow-hidden transition-colors">
+      <section className={`relative w-full border-b border-black/15 dark:border-white/15 ${gradientEnabled ? 'bg-transparent' : 'bg-[#FBFBFA] dark:bg-[#141414]'} overflow-hidden transition-colors`}>
         {currentHero ? (
           (() => {
             const { year, month, days, dateRange, cities } = getHeroDetails(currentHero);

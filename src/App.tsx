@@ -133,6 +133,9 @@ function App() {
   });
   const [marqueeMessage, setMarqueeMessage] = useState<string>("🎉 WELCOME TO TRIPGON LOG! PLAN YOUR JOURNEY OR EXPLORE ARCHIVED LOGS.");
   const [marqueeSpeed, setMarqueeSpeed] = useState<number>(30);
+  const [homeGradientEnabled, setHomeGradientEnabled] = useState<boolean>(() => localStorage.getItem('home_gradient_enabled') === 'true');
+  const [homeGradientFrom, setHomeGradientFrom] = useState<string>(() => localStorage.getItem('home_gradient_from') || '#FAF8F5');
+  const [homeGradientTo, setHomeGradientTo] = useState<string>(() => localStorage.getItem('home_gradient_to') || '#F1ECE1');
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [searchFocusItemId, setSearchFocusItemId] = useState<number | null>(null);
   const [searchFocusTab, setSearchFocusTab] = useState<string | null>(null);
@@ -500,6 +503,18 @@ function App() {
           localStorage.setItem('hero_slide_duration', String(data.heroSlideDuration));
         }
         if (Array.isArray(data.magazineMoments)) setMagazineMoments(data.magazineMoments);
+        if (data.homeGradientEnabled !== undefined) {
+          setHomeGradientEnabled(data.homeGradientEnabled);
+          localStorage.setItem('home_gradient_enabled', String(data.homeGradientEnabled));
+        }
+        if (data.homeGradientFrom) {
+          setHomeGradientFrom(data.homeGradientFrom);
+          localStorage.setItem('home_gradient_from', data.homeGradientFrom);
+        }
+        if (data.homeGradientTo) {
+          setHomeGradientTo(data.homeGradientTo);
+          localStorage.setItem('home_gradient_to', data.homeGradientTo);
+        }
       }
     }, (err) => {
       console.error("Settings snapshot subscription error:", err);
@@ -851,7 +866,10 @@ function App() {
     marqueeSpd?: number,
     heroMediaTypeParam?: 'image' | 'video',
     magazineMomentsParam?: MagazineMoment[],
-    heroSlideDurationParam?: number
+    heroSlideDurationParam?: number,
+    gradientEnabledParam?: boolean,
+    gradientFromParam?: string,
+    gradientToParam?: string
   ) => {
     if (!isLoggedIn) return;
     try {
@@ -866,7 +884,10 @@ function App() {
         marqueeMessage: marqueeMsg ?? marqueeMessage,
         marqueeSpeed: marqueeSpd ?? marqueeSpeed,
         heroSlideDuration: heroSlideDurationParam ?? heroSlideDuration,
-        magazineMoments: cleanForFirestore(momentsToSave)
+        magazineMoments: cleanForFirestore(momentsToSave),
+        homeGradientEnabled: gradientEnabledParam !== undefined ? gradientEnabledParam : homeGradientEnabled,
+        homeGradientFrom: gradientFromParam !== undefined ? gradientFromParam : homeGradientFrom,
+        homeGradientTo: gradientToParam !== undefined ? gradientToParam : homeGradientTo,
       }), { merge: true });
 
       setHeroJourneyIds(heroIds);
@@ -880,6 +901,18 @@ function App() {
         localStorage.setItem('hero_slide_duration', String(heroSlideDurationParam));
       }
       if (magazineMomentsParam !== undefined) setMagazineMoments(magazineMomentsParam);
+      if (gradientEnabledParam !== undefined) {
+        setHomeGradientEnabled(gradientEnabledParam);
+        localStorage.setItem('home_gradient_enabled', String(gradientEnabledParam));
+      }
+      if (gradientFromParam !== undefined) {
+        setHomeGradientFrom(gradientFromParam);
+        localStorage.setItem('home_gradient_from', gradientFromParam);
+      }
+      if (gradientToParam !== undefined) {
+        setHomeGradientTo(gradientToParam);
+        localStorage.setItem('home_gradient_to', gradientToParam);
+      }
     } catch (err) {
       console.error("Failed to save settings:", err);
       throw err;
@@ -1396,7 +1429,7 @@ function App() {
 
   return (
     <div className={`${isDarkMode ? 'dark' : ''} overflow-x-hidden w-full`}>
-      <div className={`min-h-screen bg-white text-black dark:bg-[#0A0A0A] dark:text-white font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 w-full overflow-x-hidden flex flex-col ${(currentView === 'detail' || currentView === 'map') ? 'h-screen overflow-hidden' : ''}`}>
+      <div className={`min-h-screen bg-white text-black dark:bg-[#141414] dark:text-white font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 w-full overflow-x-hidden flex flex-col ${(currentView === 'detail' || currentView === 'map') ? 'h-screen overflow-hidden' : ''}`}>
         
         {/* Firebase Error/Status Banners */}
         {dbError && (
@@ -1534,6 +1567,9 @@ function App() {
                     await batch.commit();
                   }}
                   isLoggedIn={isLoggedIn}
+                  homeGradientEnabled={homeGradientEnabled}
+                  homeGradientFrom={homeGradientFrom}
+                  homeGradientTo={homeGradientTo}
                   magazineMoments={magazineMoments}
                   timelineData={timelineData}
                 />
@@ -1612,6 +1648,9 @@ function App() {
                   marqueeShow={marqueeShow}
                   marqueeMessage={marqueeMessage}
                   marqueeSpeed={marqueeSpeed}
+                  homeGradientEnabled={homeGradientEnabled}
+                  homeGradientFrom={homeGradientFrom}
+                  homeGradientTo={homeGradientTo}
                   onSaveAllHomeSettings={handleSaveSettings}
                   magazineMoments={magazineMoments}
                   timelineData={timelineData}
@@ -1816,7 +1855,7 @@ function App() {
 
       {/* Splash Screen V0.7 */}
       {showSplash && (
-        <div className={`fixed inset-0 z-[99999] flex flex-col justify-between items-center bg-white dark:bg-[#0A0A0A] p-8 md:p-12 splash-container ${fadeSplash ? 'splash-container-fade' : 'splash-container-active'}`}>
+        <div className={`fixed inset-0 z-[99999] flex flex-col justify-between items-center bg-white dark:bg-[#141414] p-8 md:p-12 splash-container ${fadeSplash ? 'splash-container-fade' : 'splash-container-active'}`}>
           {/* Top Micro Masthead */}
           <div className="flex items-center gap-2 text-[10px] font-mono font-black uppercase tracking-[0.3em] text-black/60 dark:text-white/60">
             <span>TRIP GON LOG</span>

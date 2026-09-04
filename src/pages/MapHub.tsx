@@ -1327,6 +1327,20 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
   const [isPlaceListModalOpen, setIsPlaceListModalOpen] = useState(false);
   const [placeSearchQuery, setPlaceSearchQuery] = useState('');
 
+  // Map tile style state (esri or google)
+  const [mapTileStyle, setMapTileStyle] = useState<'esri' | 'google'>(() => {
+    return (localStorage.getItem('mapTileStyle') as any) || 'esri';
+  });
+
+  useEffect(() => {
+    const handleTileChange = (e: any) => {
+      const newStyle = e?.detail || localStorage.getItem('mapTileStyle') || 'esri';
+      setMapTileStyle(newStyle);
+    };
+    window.addEventListener('mapTileStyleChanged', handleTileChange);
+    return () => window.removeEventListener('mapTileStyleChanged', handleTileChange);
+  }, []);
+
   // Favorite countries (Wishlist) state with Firebase Firestore synchronization & local fallback
   const [favoriteCountries, setFavoriteCountries] = useState<string[]>(() => {
     try {
@@ -1851,19 +1865,39 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    const tileUrl = isDarkMode
-      ? 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
-      : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+    const getTileConfig = (style: 'esri' | 'google', dark: boolean) => {
+      if (style === 'google') {
+        return {
+          url: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+          options: {
+            attribution: '&copy; Google Maps',
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+            className: dark ? 'map-tiles-dark' : '',
+            updateWhenIdle: false,
+            updateWhenZooming: false,
+            crossOrigin: true,
+          }
+        };
+      }
+      return {
+        url: dark
+          ? 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+          : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+        options: {
+          attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+          maxZoom: 18,
+          tileSize: 256,
+          zoomOffset: 0,
+          updateWhenIdle: true,
+          updateWhenZooming: false,
+          crossOrigin: true,
+        }
+      };
+    };
 
-    L.tileLayer(tileUrl, {
-      attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
-      maxZoom: 18,
-      tileSize: 256,
-      zoomOffset: 0,
-      updateWhenIdle: true,
-      updateWhenZooming: false,
-      crossOrigin: true,
-    }).addTo(map);
+    const initialConfig = getTileConfig(mapTileStyle, isDarkMode);
+    tileLayerRef.current = L.tileLayer(initialConfig.url, initialConfig.options).addTo(map);
 
     mapRef.current = map;
 
@@ -1873,7 +1907,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
     };
   }, []);
 
-  // Sync dark mode tile change
+  // Sync dark mode & mapTileStyle changes dynamically
   useEffect(() => {
     const map = mapRef.current;
     const L = (window as any).L;
@@ -1883,19 +1917,31 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
       map.removeLayer(tileLayerRef.current);
     }
 
-    const tileUrl = isDarkMode
-      ? 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
-      : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+    if (mapTileStyle === 'google') {
+      tileLayerRef.current = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        attribution: '&copy; Google Maps',
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        className: isDarkMode ? 'map-tiles-dark' : '',
+        updateWhenIdle: false,
+        updateWhenZooming: false,
+        crossOrigin: true,
+      }).addTo(map);
+    } else {
+      const tileUrl = isDarkMode
+        ? 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+        : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
 
-    tileLayerRef.current = L.tileLayer(tileUrl, {
-      attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
-      maxZoom: 18,
-      keepBuffer: 16,
-      updateWhenIdle: false,
-      updateWhenZooming: false,
-      crossOrigin: true,
-    }).addTo(map);
-  }, [isDarkMode]);
+      tileLayerRef.current = L.tileLayer(tileUrl, {
+        attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+        maxZoom: 18,
+        keepBuffer: 16,
+        updateWhenIdle: false,
+        updateWhenZooming: false,
+        crossOrigin: true,
+      }).addTo(map);
+    }
+  }, [isDarkMode, mapTileStyle]);
 
   // Reset to default global view (Clean reset to South Korea center view with complete mapping sync)
   const handleResetToDefaultView = () => {
@@ -2060,7 +2106,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
   const isCurrentCountryFavorite = selectedCountry && favoriteCountries.includes(selectedCountry.code);
 
   return (
-    <main className={`relative w-full h-[calc(100vh-56px)] h-[calc(100dvh-56px)] flex flex-col bg-white dark:bg-[#0A0A0A] overflow-hidden overscroll-none select-none font-sans touch-pan-x touch-pan-y ${!showPinLabels ? 'map-hide-pin-labels' : ''}`}>
+    <main className={`relative w-full h-[calc(100vh-56px)] h-[calc(100dvh-56px)] flex flex-col bg-white dark:bg-[#141414] overflow-hidden overscroll-none select-none font-sans touch-pan-x touch-pan-y ${!showPinLabels ? 'map-hide-pin-labels' : ''}`}>
       
       {/* 1. Top Bar: Search with Integrated Wishlist Star & Swiss Minimal Layer Toggles */}
       <div className="absolute top-4 left-4 right-4 sm:left-6 sm:right-auto z-[500] flex flex-wrap items-center gap-2">

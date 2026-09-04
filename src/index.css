@@ -14,6 +14,11 @@
   }
 }
 
+/* Dark mode filter for Google Map tiles */
+.map-tiles-dark {
+  filter: brightness(0.65) invert(1) contrast(2.5) hue-rotate(200deg) saturate(0.3) brightness(0.75);
+}
+
 /* Custom Leaflet overrides */
 .custom-leaflet-pin-icon {
   background: transparent !important;

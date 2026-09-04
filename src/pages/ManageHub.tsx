@@ -52,6 +52,9 @@ interface ManageHubPageProps {
   marqueeShow: boolean;
   marqueeMessage: string;
   marqueeSpeed: number;
+  homeGradientEnabled?: boolean;
+  homeGradientFrom?: string;
+  homeGradientTo?: string;
   onSaveAllHomeSettings: (
     title: string,
     subtitle: string,
@@ -62,7 +65,10 @@ interface ManageHubPageProps {
     marqueeSpd: number,
     heroMediaTypeParam?: 'image' | 'video',
     magazineMomentsParam?: MagazineMoment[],
-    heroSlideDurationParam?: number
+    heroSlideDurationParam?: number,
+    gradientEnabledParam?: boolean,
+    gradientFromParam?: string,
+    gradientToParam?: string
   ) => Promise<void>;
   // Magazine Highlights
   magazineMoments?: MagazineMoment[];
@@ -97,6 +103,9 @@ export function ManageHubPage({
   marqueeShow,
   marqueeMessage,
   marqueeSpeed,
+  homeGradientEnabled,
+  homeGradientFrom,
+  homeGradientTo,
   onSaveAllHomeSettings,
   trashedJourneys,
   onRestoreJourney,
@@ -140,7 +149,25 @@ export function ManageHubPage({
   // Home Section Switcher: 'main' | 'hero' | 'trip' | 'magazine' | null (null shows ALL)
   const [homeSubTab, setHomeSubTab] = useState<'main' | 'hero' | 'trip' | 'magazine' | null>(null);
 
-  // Combined Journeys for ARCHIVE management
+  // Home Background Gradient state
+  const [gradientEnabled, setGradientEnabled] = useState<boolean>(() => {
+    if (homeGradientEnabled !== undefined) return homeGradientEnabled;
+    return localStorage.getItem('home_gradient_enabled') === 'true';
+  });
+  const [gradientFrom, setGradientFrom] = useState<string>(() => {
+    return homeGradientFrom || localStorage.getItem('home_gradient_from') || '#FAF8F5';
+  });
+  const [gradientTo, setGradientTo] = useState<string>(() => {
+    return homeGradientTo || localStorage.getItem('home_gradient_to') || '#F1ECE1';
+  });
+
+  useEffect(() => {
+    if (homeGradientEnabled !== undefined) setGradientEnabled(homeGradientEnabled);
+    if (homeGradientFrom) setGradientFrom(homeGradientFrom);
+    if (homeGradientTo) setGradientTo(homeGradientTo);
+  }, [homeGradientEnabled, homeGradientFrom, homeGradientTo]);
+
+  // Selected journey for editing in ARCHIVE mode
   const [localJourneys, setLocalJourneys] = useState<(Trip | Plan)[]>([]);
   const [selectedJourneyId, setSelectedJourneyId] = useState<number | null>(null);
 
@@ -222,9 +249,12 @@ export function ManageHubPage({
       showMarquee !== marqueeShow ||
       homeMarquee !== (marqueeMessage || '') ||
       homeSpeed !== (marqueeSpeed || 50) ||
+      gradientEnabled !== (homeGradientEnabled ?? false) ||
+      gradientFrom !== (homeGradientFrom || '#FAF8F5') ||
+      gradientTo !== (homeGradientTo || '#F1ECE1') ||
       JSON.stringify(momentsList) !== JSON.stringify(magazineMoments || [])
     );
-  }, [title, homeTitle, subtitle, homeSubtitle, selectedHeroIds, heroJourneyIds, autoSlide, heroAutoSlide, slideDuration, heroSlideDuration, mediaType, heroMediaType, showMarquee, marqueeShow, homeMarquee, marqueeMessage, homeSpeed, marqueeSpeed, momentsList, magazineMoments]);
+  }, [title, homeTitle, subtitle, homeSubtitle, selectedHeroIds, heroJourneyIds, autoSlide, heroAutoSlide, slideDuration, heroSlideDuration, mediaType, heroMediaType, showMarquee, marqueeShow, homeMarquee, marqueeMessage, homeSpeed, marqueeSpeed, gradientEnabled, homeGradientEnabled, gradientFrom, homeGradientFrom, gradientTo, homeGradientTo, momentsList, magazineMoments]);
 
   // Dirty tracking for currently selected journey in ARCHIVE mode
   const isArchiveDirty = useMemo(() => {
@@ -433,6 +463,9 @@ export function ManageHubPage({
       localStorage.setItem('playVideoOnActivate', String(playVideoOnActivate));
       localStorage.setItem('home_journey_limit', String(homeJourneyLimit));
       localStorage.setItem('hero_slide_duration', String(slideDuration));
+      localStorage.setItem('home_gradient_enabled', String(gradientEnabled));
+      localStorage.setItem('home_gradient_from', gradientFrom);
+      localStorage.setItem('home_gradient_to', gradientTo);
       window.dispatchEvent(new CustomEvent('homeConfigChanged'));
       await onSaveAllHomeSettings(
         title,
@@ -444,7 +477,10 @@ export function ManageHubPage({
         homeSpeed,
         mediaType,
         momentsList,
-        slideDuration
+        slideDuration,
+        gradientEnabled,
+        gradientFrom,
+        gradientTo
       );
       setHomeSaveSuccess(true);
       setTimeout(() => setHomeSaveSuccess(false), 2000);
@@ -505,6 +541,7 @@ export function ManageHubPage({
   // Save Map Settings
   const handleSaveMapSettings = () => {
     localStorage.setItem('mapTileStyle', mapTileStyle);
+    window.dispatchEvent(new CustomEvent('mapTileStyleChanged', { detail: mapTileStyle }));
     alert('지도 스타일 설정이 저장되었습니다.');
   };
 
@@ -519,24 +556,58 @@ export function ManageHubPage({
     );
   }, [localJourneys, heroSearchQuery]);
 
-  // Extract all timeline items with images across timelineData
+  // Extract all timeline items with images across timelineData AND journey gallery metadata
   const allTimelineItemsWithImages = useMemo(() => {
     const list: (TimelineItem & { journeyTitle?: string; journeyLocation?: string })[] = [];
     const journeyMap = new Map(localJourneys.map(j => [j.id, j]));
+    const seenImages = new Set<string>();
 
+    // 1. From timelineData (across all recorded dates)
     Object.entries(timelineData).forEach(([date, items]) => {
-      items.forEach(item => {
-        if (item.img) {
-          const matchedJourney = item.tripId ? journeyMap.get(item.tripId) : undefined;
-          list.push({
-            ...item,
-            date: item.date || date,
-            journeyTitle: matchedJourney?.title.replace(' (Plan)', ''),
-            journeyLocation: matchedJourney?.locationStr || matchedJourney?.country,
-          });
-        }
-      });
+      if (Array.isArray(items)) {
+        items.forEach(item => {
+          if (item.img) {
+            seenImages.add(item.img);
+            const matchedJourney = item.tripId ? journeyMap.get(item.tripId) : undefined;
+            list.push({
+              ...item,
+              date: item.date || date,
+              journeyTitle: matchedJourney?.title ? matchedJourney.title.replace(/\s*\(Plan\)$/i, '') : undefined,
+              journeyLocation: matchedJourney?.locationStr || matchedJourney?.country,
+            });
+          }
+        });
+      }
     });
+
+    // 2. Also extract all photos from each journey's gallery metadata
+    localJourneys.forEach(j => {
+      if (j.gallery && Array.isArray(j.gallery)) {
+        j.gallery.forEach((gItem, gIdx) => {
+          const url = typeof gItem === 'string' ? gItem : gItem?.url;
+          if (url && !seenImages.has(url)) {
+            seenImages.add(url);
+            const gDate = typeof gItem === 'object' && gItem?.date ? gItem.date : j.date;
+            const gPlace = typeof gItem === 'object' && gItem?.place ? gItem.place : '';
+            const gMemo = typeof gItem === 'object' && gItem?.imgNote ? gItem.imgNote : '';
+            list.push({
+              id: 900000 + j.id * 1000 + gIdx,
+              time: typeof gItem === 'object' && gItem?.time ? gItem.time : '12:00',
+              type: 'PHOTO',
+              place: gPlace || j.locationStr || j.title.replace(/\s*\(Plan\)$/i, ''),
+              cost: '',
+              memo: gMemo,
+              img: url,
+              date: gDate,
+              tripId: j.id,
+              journeyTitle: j.title.replace(/\s*\(Plan\)$/i, ''),
+              journeyLocation: j.locationStr || j.country,
+            });
+          }
+        });
+      }
+    });
+
     return list;
   }, [timelineData, localJourneys]);
 
@@ -555,7 +626,7 @@ export function ManageHubPage({
   const candidateTimelineItems = useMemo(() => {
     let result = allTimelineItemsWithImages;
     if (selectedTripForMoments !== null) {
-      result = result.filter(item => Number(item.tripId) === Number(selectedTripForMoments));
+      result = result.filter(item => String(item.tripId) === String(selectedTripForMoments));
     }
     if (momentSearchQuery.trim()) {
       const q = momentSearchQuery.toLowerCase().trim();
@@ -625,7 +696,7 @@ export function ManageHubPage({
   );
 
   return (
-    <main className="min-h-screen w-full bg-[#FAF9F6] dark:bg-[#0A0A0A] text-black dark:text-white flex flex-col font-sans select-none animate-in fade-in duration-300">
+    <main className="min-h-screen w-full bg-[#FAF9F6] dark:bg-[#141414] text-black dark:text-white flex flex-col font-sans select-none animate-in fade-in duration-300">
       
       {/* 1. Header Toolbar with Swiss Minimal Mode Switcher: HOME / ARCHIVE / MAP / TRASH */}
       <div className="border-b border-black/15 dark:border-white/15 px-4 sm:px-8 py-3 bg-white dark:bg-[#111111] flex flex-wrap items-center justify-between gap-4 sticky top-0 z-30">
@@ -776,6 +847,131 @@ export function ManageHubPage({
                             onChange={e => setHomeSpeed(parseInt(e.target.value, 10))}
                             className="flex-1 accent-black dark:accent-white cursor-pointer"
                           />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Background Gradient Settings */}
+                  <div className="flex flex-col gap-3.5 pt-4 border-t border-black/10 dark:border-white/10">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="text-xs font-mono font-bold uppercase text-black/80 dark:text-white/80 block">
+                          BACKGROUND GRADIENT (홈 감성 그라데이션)
+                        </span>
+                        <span className="text-[10px] text-black/50 dark:text-white/50">
+                          화이트/블랙의 단조로움을 없애고 두 가지 은은한 톤으로 감성 느낌 연출
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setGradientEnabled(!gradientEnabled)}
+                        className={`px-3 py-1 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer ${
+                          gradientEnabled
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                            : 'border-black/20 dark:border-white/20 text-black/40 dark:text-white/40'
+                        }`}
+                      >
+                        {gradientEnabled ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+
+                    {gradientEnabled && (
+                      <div className="flex flex-col gap-4 pt-2 bg-black/[0.02] dark:bg-white/[0.02] p-4 border border-black/10 dark:border-white/10">
+                        {/* Presets */}
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
+                            SWISS MINIMAL PRESETS (추천 프리셋)
+                          </label>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                            {[
+                              { name: 'Minimal Sand', from: '#FAF8F5', to: '#F1ECE1' },
+                              { name: 'Soft Lavender', from: '#FAF9FD', to: '#ECE9F2' },
+                              { name: 'Misty Sage', from: '#F8FAF8', to: '#E9EFE8' },
+                              { name: 'Slate Cool', from: '#F8F9FA', to: '#EAEFF5' },
+                              { name: 'Warm Paper', from: '#FAF6EE', to: '#EFE8DA' },
+                            ].map((p, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => {
+                                  setGradientFrom(p.from);
+                                  setGradientTo(p.to);
+                                }}
+                                className="p-2 border border-black/15 dark:border-white/15 text-left flex flex-col gap-1.5 hover:border-black dark:hover:border-white transition-colors cursor-pointer"
+                              >
+                                <div
+                                  className="w-full h-5 border border-black/10 dark:border-white/10"
+                                  style={{ background: `linear-gradient(135deg, ${p.from}, ${p.to})` }}
+                                />
+                                <span className="text-[10px] font-bold text-black dark:text-white truncate">
+                                  {p.name}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Custom Color Pickers */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                          {/* Color 1 */}
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
+                              COLOR 1 (시작 색상)
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="color"
+                                value={gradientFrom}
+                                onChange={e => setGradientFrom(e.target.value)}
+                                className="w-8 h-8 p-0 border border-black/20 dark:border-white/20 rounded-none cursor-pointer bg-transparent"
+                              />
+                              <input
+                                type="text"
+                                value={gradientFrom}
+                                onChange={e => setGradientFrom(e.target.value)}
+                                placeholder="#FAF8F5"
+                                className="flex-1 px-3 py-1.5 text-xs font-mono font-bold uppercase bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Color 2 */}
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
+                              COLOR 2 (끝 색상)
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="color"
+                                value={gradientTo}
+                                onChange={e => setGradientTo(e.target.value)}
+                                className="w-8 h-8 p-0 border border-black/20 dark:border-white/20 rounded-none cursor-pointer bg-transparent"
+                              />
+                              <input
+                                type="text"
+                                value={gradientTo}
+                                onChange={e => setGradientTo(e.target.value)}
+                                placeholder="#F1ECE1"
+                                className="flex-1 px-3 py-1.5 text-xs font-mono font-bold uppercase bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Live Preview Strip */}
+                        <div className="flex flex-col gap-1 pt-1">
+                          <label className="text-[9px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
+                            LIVE PREVIEW (실시간 미리보기)
+                          </label>
+                          <div
+                            className="w-full h-12 border border-black/15 dark:border-white/15 flex items-center justify-center p-3 shadow-inner"
+                            style={{ background: `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})` }}
+                          >
+                            <span className="text-xs font-mono font-black text-black/80 tracking-widest uppercase">
+                              PREVIEW: {gradientFrom} &rarr; {gradientTo}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -1180,8 +1376,8 @@ export function ManageHubPage({
                           NO PHOTOS FOUND
                         </div>
                       ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-80 overflow-y-auto p-1 border border-black/15 dark:border-white/15">
-                          {candidateTimelineItems.slice(0, 60).map((item, i) => {
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-[520px] overflow-y-auto p-1 border border-black/15 dark:border-white/15">
+                          {candidateTimelineItems.map((item, i) => {
                             const pName = safeStr(item.place);
                             const jTitle = safeStr(item.journeyTitle);
                             const displayTitle = pName || jTitle || 'MOMENT';
@@ -2016,7 +2212,11 @@ export function ManageHubPage({
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div
-                    onClick={() => setMapTileStyle('esri')}
+                    onClick={() => {
+                      setMapTileStyle('esri');
+                      localStorage.setItem('mapTileStyle', 'esri');
+                      window.dispatchEvent(new CustomEvent('mapTileStyleChanged', { detail: 'esri' }));
+                    }}
                     className={`p-4 border cursor-pointer transition-all ${
                       mapTileStyle === 'esri'
                         ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-md'
@@ -2032,7 +2232,11 @@ export function ManageHubPage({
                   </div>
 
                   <div
-                    onClick={() => setMapTileStyle('google')}
+                    onClick={() => {
+                      setMapTileStyle('google');
+                      localStorage.setItem('mapTileStyle', 'google');
+                      window.dispatchEvent(new CustomEvent('mapTileStyleChanged', { detail: 'google' }));
+                    }}
                     className={`p-4 border cursor-pointer transition-all ${
                       mapTileStyle === 'google'
                         ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-md'
