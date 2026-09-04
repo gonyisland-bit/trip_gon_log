@@ -176,6 +176,68 @@ function getEnglishCityName(locationStr?: string): string {
   return cleaned.toUpperCase();
 }
 
+// Helper to extract Hero meta details (month, year, days, date range, cities)
+function getHeroDetails(journey: Trip) {
+  const { year, month } = getYearAndMonth(journey.date);
+  const days = calculateDays(journey.date);
+
+  const parts = (journey.date || '').split(/\s*[-—–~]\s*/).map(p => p.trim());
+  let dateRangeText = '';
+  if (parts.length >= 2) {
+    const d1Match = parts[0].match(/(\d{1,2})$/);
+    const d2Match = parts[1].match(/(\d{1,2})$/);
+    if (d1Match && d2Match) {
+      dateRangeText = `${d1Match[1]} — ${d2Match[1]}`;
+    } else {
+      dateRangeText = journey.date;
+    }
+  } else if (parts[0]) {
+    const dMatch = parts[0].match(/(\d{1,2})$/);
+    dateRangeText = dMatch ? dMatch[1] : parts[0];
+  }
+
+  let cities = '';
+  if (journey.locations && journey.locations.length > 0) {
+    const cityNames = journey.locations
+      .map(loc => getEnglishCityName(loc.name))
+      .filter(Boolean);
+    const unique = Array.from(new Set(cityNames));
+    cities = unique.join(' — ');
+  }
+  if (!cities && journey.locationStr) {
+    const splitLocs = journey.locationStr.split(/[,/·-]/).map(s => s.trim()).filter(Boolean);
+    const cityNames = splitLocs.map(s => getEnglishCityName(s)).filter(Boolean);
+    const unique = Array.from(new Set(cityNames));
+    cities = unique.join(' — ');
+  }
+  if (!cities) {
+    cities = getEnglishCityName(journey.locationStr) || 'JOURNEY';
+  }
+
+  return {
+    year: year || '2024',
+    month: month || 'JUL',
+    days: days > 0 ? `${days} ${days === 1 ? 'DAY' : 'DAYS'}` : '',
+    dateRange: dateRangeText || '01 — 03',
+    cities
+  };
+}
+
+// Helper for minimal date + day format (e.g. 2024.07.19 FRI)
+function formatSimpleDateWithDay(dateStr?: string): string {
+  if (!dateStr) return '';
+  const parts = dateStr.split(/\s*[-—–~]\s*/);
+  const firstDate = parts[0]?.trim();
+  const d = parseDateParts(firstDate);
+  if (!d) return dateStr;
+  const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const dayName = days[d.getDay()];
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}.${month}.${day} ${dayName}`;
+}
+
 // Journey card hamburger menu
 export function JourneyCardMenu({
   onEdit,
@@ -703,151 +765,166 @@ export function HomePage({
   return (
     <main onClick={() => setActiveCardId(null)} className="animate-in fade-in duration-700 w-full">
 
-      {/* ===== Hero Section ===== */}
-      <section className="relative w-full h-[60vh] md:h-[80vh] overflow-hidden group border-b border-black/20 dark:border-white/20">
-        {/* Background style */}
-        {heroJourneys.length === 0 ? (
-          <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-neutral-100 via-neutral-50 to-neutral-200 dark:from-[#0E0E0E] dark:via-[#161616] dark:to-[#0A0A0A]" />
-        ) : (
-          heroJourneys.map((journey, index) => (
-            <HeroMedia
-              key={journey.id}
-              journey={journey}
-              isActive={index === heroSlide}
-              mediaType={heroMediaType}
-              onMediaReady={() => {
-                if (index === heroSlide) {
-                  setIsHeroMediaReady(true);
-                }
-              }}
-            />
-          ))
-        )}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 md:via-black/40 to-transparent pointer-events-none" />
-        {currentHero && (
-          <div className="absolute inset-0 cursor-pointer z-0" onClick={() => onNavigate('detail', currentHero.id)} />
-        )}
+      {/* ===== Hero Section: 3-Column Swiss Editorial Layout (Matching Reference) ===== */}
+      <section className="relative w-full py-8 md:py-16 px-6 sm:px-10 md:px-16 border-b border-black/15 dark:border-white/15 bg-[#FBFBFA] dark:bg-[#121212] overflow-hidden transition-colors">
+        {currentHero ? (
+          (() => {
+            const { year, month, days, dateRange, cities } = getHeroDetails(currentHero);
 
-        {/* Text content - Magazine Cover Style Hero */}
-        <div className="absolute inset-0 p-6 sm:p-10 md:p-16 pb-16 sm:pb-16 md:pb-16 flex flex-col justify-between text-white z-10 pointer-events-none">
-          {/* Top-Left: Static Home Hub Title & Subtitle (Minimized) */}
-          <div className="pointer-events-auto max-w-full sm:max-w-md md:max-w-lg mt-4 md:mt-0">
-            <h1 className="text-sm md:text-xs font-black tracking-[0.25em] uppercase text-amber-500 drop-shadow-sm mb-1">
-              {homeTitle.replace(/\\n|\n/g, ' ')}
-            </h1>
-            <p className="text-[10px] md:text-[11px] text-white/60 uppercase tracking-widest font-bold max-w-xs drop-shadow-sm leading-relaxed break-keep">
-              {homeSubtitle}
-            </p>
-          </div>
+            return (
+              <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-8 lg:gap-12 items-center">
+                {/* 1. Left Column: Top branding, Big Title, Month/Year */}
+                <div className="md:col-span-4 flex flex-col justify-between h-full order-2 md:order-1">
+                  <div>
+                    {/* Minimal Branding / Title */}
+                    <div className="text-[11px] font-mono font-bold tracking-[0.25em] text-black/40 dark:text-white/40 uppercase mb-4 sm:mb-6">
+                      {homeTitle ? homeTitle.replace(/\\n|\n/g, ' ') : 'JOURNAL'}
+                    </div>
 
-          {/* Bottom-Left: Dynamic Active Slide Info (Magazine Style - Massive Serif Title + Month/Year) */}
-          {currentHero && (
-            <div className="pointer-events-auto mt-auto max-w-full md:max-w-[70%] lg:max-w-[60%] flex flex-col md:flex-row md:items-end gap-3 md:gap-6">
-              {/* Year/Month Badge */}
-              {(() => {
-                const { year, month } = getYearAndMonth(currentHero.date);
-                if (!month || !year) return null;
-                return (
-                  <div className="flex items-baseline md:flex-col items-start md:items-end shrink-0 leading-none font-mono border-l-2 md:border-l-0 md:border-r-2 border-amber-500 pl-3 md:pl-0 md:pr-4">
-                    <span className="text-2xl md:text-3xl font-black tracking-widest text-amber-500 uppercase">{month}</span>
-                    <span className="text-xs md:text-sm font-bold tracking-widest text-white/70 ml-2 md:ml-0 md:mt-1">{year}</span>
+                    {/* Massive Bold Title */}
+                    <h2
+                      onClick={() => onNavigate('detail', currentHero.id)}
+                      className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black font-satoshi uppercase tracking-tight leading-[0.95] text-black dark:text-white cursor-pointer hover:opacity-75 transition-opacity select-none"
+                      style={{ fontFamily: "'Satoshi', sans-serif", wordBreak: 'keep-all' }}
+                    >
+                      {currentHero.title}
+                    </h2>
                   </div>
-                );
-              })()}
 
-              {/* Title */}
-              <div className="flex flex-col">
-                <div className="text-[10px] tracking-[0.3em] font-bold text-white/50 uppercase mb-1 md:mb-2">FEATURED JOURNAL</div>
-                <h2
-                  onClick={() => onNavigate('detail', currentHero.id)}
-                  className="text-3xl min-[390px]:text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[0.95] font-satoshi cursor-pointer hover:text-amber-500 transition-colors drop-shadow-xl line-clamp-3 select-none"
-                  style={{ fontFamily: "'Satoshi', sans-serif", wordBreak: 'keep-all' }}
-                >
-                  {currentHero.title}
-                </h2>
-              </div>
-            </div>
-          )}
-        </div>
+                  {/* Year & Month + Minimal Subtitle */}
+                  <div className="mt-8 sm:mt-12 flex flex-col gap-1">
+                    <div className="text-xl sm:text-2xl font-mono font-black tracking-widest text-black dark:text-white uppercase">
+                      {month} {year}
+                    </div>
+                    {homeSubtitle && (
+                      <p className="text-xs font-sans text-black/50 dark:text-white/50 uppercase tracking-wider leading-relaxed max-w-xs mt-1">
+                        {homeSubtitle}
+                      </p>
+                    )}
+                  </div>
+                </div>
 
-        {/* Carousel slide indicators with animated progress gauge */}
-        {currentHero && heroJourneys.length > 1 && (
-          <div className="absolute bottom-4 right-4 md:bottom-6 md:right-8 z-20 pointer-events-auto">
-            <div className="flex items-center gap-2 bg-black/45 backdrop-blur-md px-3 py-1.5 border border-white/15 rounded-full shadow-2xl">
-              <span className="text-[9px] font-mono font-bold tracking-widest text-amber-400">
-                {String(heroSlide + 1).padStart(2, '0')}
-              </span>
-              <div className="flex items-center gap-1.5">
-                {heroJourneys.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={(e) => { e.stopPropagation(); goToSlide(idx); }}
-                    className="h-1.5 rounded-full overflow-hidden transition-all bg-white/20 hover:bg-white/30 cursor-pointer relative"
-                    style={{ width: idx === heroSlide ? '28px' : '8px' }}
-                    title={`Slide ${idx + 1}`}
-                    aria-label={`Go to slide ${idx + 1}`}
+                {/* 2. Center Column: Vertical Hero Media Frame (aspect-[3/4]) */}
+                <div className="md:col-span-5 flex flex-col items-center justify-center order-1 md:order-2">
+                  <div 
+                    onClick={() => onNavigate('detail', currentHero.id)}
+                    className="relative w-full max-w-[340px] sm:max-w-[380px] aspect-[3/4] overflow-hidden shadow-2xl bg-neutral-900 group cursor-pointer border border-black/10 dark:border-white/15 select-none"
                   >
-                    {idx === heroSlide ? (
-                      <div
-                        key={`${heroSlide}-${exactSlideDuration}`}
-                        className="h-full bg-gradient-to-r from-amber-500 to-amber-300"
-                        style={{
-                          animation: (heroAutoSlide && isHeroMediaReady) ? `heroGauge ${exactSlideDuration}ms linear forwards` : 'none',
-                          width: (heroAutoSlide && !isHeroMediaReady) ? '0%' : (heroAutoSlide ? undefined : '100%'),
+                    {heroJourneys.map((journey, index) => (
+                      <HeroMedia
+                        key={journey.id}
+                        journey={journey}
+                        isActive={index === heroSlide}
+                        mediaType={heroMediaType}
+                        onMediaReady={() => {
+                          if (index === heroSlide) {
+                            setIsHeroMediaReady(true);
+                          }
                         }}
                       />
-                    ) : idx < heroSlide ? (
-                      <div className="h-full w-full bg-white/60" />
-                    ) : null}
-                  </button>
-                ))}
-              </div>
-              <span className="text-[9px] font-mono font-bold tracking-widest text-white/50">
-                {String(heroJourneys.length).padStart(2, '0')}
-              </span>
-            </div>
-          </div>
-        )}
+                    ))}
+                    <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors pointer-events-none" />
+                  </div>
+                </div>
 
-        {/* Carousel nav arrows */}
-        {heroJourneys.length > 1 && (
-          <>
-            <button onClick={(e) => { e.stopPropagation(); goToPrev(); }} className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/10 hover:bg-white/25 border border-white/15 text-white rounded-full transition-all backdrop-blur-sm">
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button onClick={(e) => { e.stopPropagation(); goToNext(); }} className="absolute right-4 md:right-6 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/10 hover:bg-white/25 border border-white/15 text-white rounded-full transition-all backdrop-blur-sm">
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </>
-        )}
+                {/* 3. Right Column: Date range / Days duration, Cities, Minimal circular arrow button */}
+                <div className="md:col-span-3 flex flex-col justify-between h-full order-3 text-left md:text-right items-start md:items-end">
+                  {/* Top Slide Indicator (e.g. 01 / 03) with minimal gauge & arrows */}
+                  {heroJourneys.length > 1 ? (
+                    <div className="flex items-center gap-2.5 mb-6">
+                      <span className="text-xs font-mono font-black tracking-widest text-black dark:text-white">
+                        {String(heroSlide + 1).padStart(2, '0')}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        {heroJourneys.map((_, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => goToSlide(idx)}
+                            className="h-1 rounded-none transition-all cursor-pointer"
+                            style={{
+                              width: idx === heroSlide ? '24px' : '8px',
+                              backgroundColor: idx === heroSlide ? 'currentColor' : 'rgba(150,150,150,0.3)'
+                            }}
+                            title={`Slide ${idx + 1}`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-xs font-mono font-bold tracking-widest text-black/40 dark:text-white/40">
+                        {String(heroJourneys.length).padStart(2, '0')}
+                      </span>
+
+                      {/* Small Prev/Next */}
+                      <div className="flex items-center gap-1 ml-2">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); goToPrev(); }}
+                          className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                          title="Prev"
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); goToNext(); }}
+                          className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                          title="Next"
+                        >
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : <div className="mb-6" />}
+
+                  {/* Middle: Duration & Dates (e.g. 18 — 20 / 3 DAYS) */}
+                  <div className="my-auto flex flex-col items-start md:items-end">
+                    <div className="text-3xl sm:text-4xl md:text-5xl font-black font-mono tracking-tight text-black dark:text-white leading-none">
+                      {dateRange}
+                    </div>
+                    {days && (
+                      <div className="text-xs sm:text-sm font-mono font-bold text-black/50 dark:text-white/50 tracking-widest uppercase mt-2">
+                        {days}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Bottom: Cities and Circular Arrow ( → ) */}
+                  <div className="mt-8 sm:mt-12 flex flex-col items-start md:items-end gap-4">
+                    <div className="text-xs sm:text-sm font-mono font-bold text-black/70 dark:text-white/70 uppercase tracking-widest leading-relaxed">
+                      {cities}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => onNavigate('detail', currentHero.id)}
+                      className="w-12 h-12 rounded-full border border-black/30 dark:border-white/30 hover:border-black dark:hover:border-white flex items-center justify-center transition-all hover:scale-105 cursor-pointer text-black dark:text-white shadow-xs"
+                      title="VIEW TRIP"
+                    >
+                      <ArrowRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()
+        ) : null}
       </section>
 
       {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* 01. JOURNEYS & PLANS ARCHIVE (통합 아카이브 그리드 섹션)             */}
+      {/* 01. TRIP (통합 여정 목록 섹션)                                       */}
       {/* ─────────────────────────────────────────────────────────────────── */}
-      <section className="flex flex-col w-full overflow-hidden transition-colors">
-        <div className="p-6 md:px-12 border-b border-black/20 dark:border-white/20 flex flex-col md:flex-row md:items-end justify-between gap-4 transition-colors">
-          {/* Left: Section Header with Unified Weight & Noto Sans Korean Subtitle */}
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2 mb-0.5">
-              <span className="font-mono text-xs font-black text-red-600 dark:text-red-500 tracking-widest uppercase">
-                01 / JOURNEYS ARCHIVE
-              </span>
-              {isLoggedIn && (
-                <span className="text-[10px] font-mono text-black/40 dark:text-white/40 uppercase hidden sm:inline">
-                  [드래그로 순서 변경]
-                </span>
-              )}
-            </div>
+      <section className="flex flex-col w-full overflow-hidden transition-colors border-t border-black/10 dark:border-white/10">
+        <div className="p-6 md:px-12 border-b border-black/15 dark:border-white/15 flex flex-col md:flex-row md:items-end justify-between gap-4 transition-colors">
+          {/* Left: Pure Minimal Title (No long Korean subtitle) */}
+          <div className="flex flex-col gap-0.5">
+            <span className="font-mono text-xs font-black text-black/40 dark:text-white/40 tracking-widest uppercase">
+              01 / TRIP
+            </span>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
-              JOURNEYS & PLANS
+              TRIP
             </h2>
-            <p className="text-xs sm:text-sm font-sans font-medium text-black/70 dark:text-white/70 whitespace-nowrap truncate mt-0.5 leading-relaxed">
-              모든 여정과 여행 계획을 담아낸 컬렉션
-            </p>
           </div>
 
-          {/* Right: Controls (View Modes, Tag Filter, View All) */}
+          {/* Right: Controls (View Modes, Tag Filter, All Trips) */}
           <div className="flex flex-col gap-2 w-full md:w-auto relative z-20">
             <div className="flex items-center justify-between md:justify-end gap-2.5 w-full flex-wrap">
               {/* 1. Simple Tag Filter Button */}
@@ -859,7 +936,7 @@ export function HomePage({
                     ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
                     : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5'
                 }`}
-                title="태그 필터 열기/닫기"
+                title="TAG FILTER"
               >
                 <Tag className="w-3.5 h-3.5" />
                 <span>{activeFilter === 'All' ? 'TAG' : `#${activeFilter}`}</span>
@@ -871,11 +948,11 @@ export function HomePage({
                 <button
                   type="button"
                   onClick={() => setActiveFilter('All')}
-                  className="text-[9px] px-1.5 py-1 uppercase font-bold tracking-wider text-red-600 dark:text-red-400 hover:underline cursor-pointer flex items-center gap-0.5"
-                  title="필터 초기화"
+                  className="text-[9px] px-1.5 py-1 uppercase font-bold tracking-wider text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer flex items-center gap-0.5"
+                  title="RESET"
                 >
                   <X className="w-3 h-3" />
-                  초기화
+                  RESET
                 </button>
               )}
 
@@ -889,7 +966,7 @@ export function HomePage({
                       ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
                       : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
                   }`}
-                  title="그리드 보기"
+                  title="GRID"
                 >
                   <LayoutGrid className="w-3.5 h-3.5" />
                 </button>
@@ -901,7 +978,7 @@ export function HomePage({
                       ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
                       : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
                   }`}
-                  title="와이드 보기"
+                  title="WIDE"
                 >
                   <StretchHorizontal className="w-3.5 h-3.5" />
                 </button>
@@ -913,20 +990,20 @@ export function HomePage({
                       ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
                       : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
                   }`}
-                  title="리스트 보기"
+                  title="LIST"
                 >
                   <List className="w-3.5 h-3.5" />
                 </button>
               </div>
 
-              {/* 3. View All Button */}
+              {/* 3. All Trips Button */}
               <button 
                 type="button"
                 onClick={() => onNavigate('archive')} 
-                className="text-[11px] sm:text-xs font-mono font-bold uppercase tracking-widest flex items-center hover:opacity-60 shrink-0 ml-1 cursor-pointer"
-                title="모든 여정 및 계획 보기"
+                className="text-[11px] sm:text-xs font-mono font-bold uppercase tracking-widest flex items-center hover:opacity-60 shrink-0 ml-1 cursor-pointer text-black dark:text-white"
+                title="ALL TRIPS"
               >
-                VIEW ALL <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                ALL TRIPS <ArrowRight className="w-3.5 h-3.5 ml-1" />
               </button>
             </div>
 
@@ -1178,7 +1255,7 @@ export function HomePage({
               onClick={() => onNavigate('archive')}
               className="px-8 py-3 bg-black text-white dark:bg-white dark:text-black border border-black dark:border-white text-xs font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-2.5 cursor-pointer shadow-md"
             >
-              <span>VIEW ALL ({filteredTrips.length})</span>
+              <span>ALL TRIPS ({filteredTrips.length})</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -1213,26 +1290,18 @@ export function HomePage({
 
           return (
             <div className="w-full border-t border-black/10 dark:border-white/10 mt-12 pt-12 px-4 sm:px-8 md:px-12 flex flex-col gap-8">
-              {/* Section Header: Swiss Minimal Magazine Header */}
+              {/* Section Header: Pure Swiss Minimal Magazine Header */}
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-black/15 dark:border-white/15">
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="font-mono text-xs font-black text-red-600 dark:text-red-500 tracking-widest uppercase">
-                      02 / EDITORIAL MAGAZINE
-                    </span>
-                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40 uppercase hidden sm:inline">
-                      [잡지 연출 컬렉션]
-                    </span>
-                  </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-mono text-xs font-black text-black/40 dark:text-white/40 tracking-widest uppercase">
+                    02 / MAGAZINE
+                  </span>
                   <h2 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
-                    JOURNEY MAGAZINE
+                    MAGAZINE
                   </h2>
-                  <p className="text-xs sm:text-sm font-sans font-medium text-black/70 dark:text-white/70 whitespace-nowrap truncate mt-0.5 leading-relaxed">
-                    지난 여정에서 인상적인 추억들
-                  </p>
                 </div>
 
-                {/* Swiss Minimal Spread Navigation Controls (No Gray Box, Hero-Style Indicators) */}
+                {/* Swiss Minimal Spread Navigation Controls */}
                 {totalSpreads > 1 && (
                   <div className="flex items-center gap-3.5 shrink-0 self-start sm:self-auto">
                     {/* Minimal Hero-Style Indicator Bars */}
@@ -1247,7 +1316,7 @@ export function HomePage({
                               ? 'w-6 bg-black dark:bg-white' 
                               : 'w-2 bg-black/20 dark:bg-white/20 hover:bg-black/50 dark:hover:bg-white/50'
                           }`}
-                          title={`화보 스프레드 ${i + 1}`}
+                          title={`SPREAD ${i + 1}`}
                         />
                       ))}
                     </div>
@@ -1258,8 +1327,8 @@ export function HomePage({
                         type="button"
                         onClick={() => setMagazineSpreadIndex(prev => Math.max(0, prev - 1))}
                         disabled={currentSpread === 0}
-                        className="w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-white dark:bg-[#121212] text-black dark:text-white"
-                        title="이전 화보 스프레드"
+                        className="w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white"
+                        title="PREV"
                       >
                         <ChevronLeft className="w-4 h-4 stroke-[2]" />
                       </button>
@@ -1267,8 +1336,8 @@ export function HomePage({
                         type="button"
                         onClick={() => setMagazineSpreadIndex(prev => Math.min(totalSpreads - 1, prev + 1))}
                         disabled={currentSpread >= totalSpreads - 1}
-                        className="w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-white dark:bg-[#121212] text-black dark:text-white"
-                        title="다음 화보 스프레드"
+                        className="w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white"
+                        title="NEXT"
                       >
                         <ChevronRight className="w-4 h-4 stroke-[2]" />
                       </button>
@@ -1277,7 +1346,7 @@ export function HomePage({
                 )}
               </div>
 
-              {/* Magazine Editorial Spread Layout: Smooth Animated Grid (Boundary-free Swiss Minimal) */}
+              {/* Magazine Editorial Spread Layout: 3:4 Vertical Cards (Boundary-free Swiss Minimal) */}
               <div 
                 key={currentSpread}
                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 items-stretch animate-in fade-in duration-500"
@@ -1308,7 +1377,7 @@ export function HomePage({
                     }
                   }
                   const displayPlace = resolvedLocation || moment.placeName || cleanAdministrativeDistricts(moment.location || '') || 'VISITED PLACE';
-                  const displayDesc = moment.quote || moment.caption || (moment.date ? `${moment.date}의 기록` : `${engCity} 여정의 순간.`);
+                  const dateWithDay = formatSimpleDateWithDay(moment.date);
 
                   return (
                     <div
@@ -1331,8 +1400,8 @@ export function HomePage({
                       }}
                       className="group relative cursor-pointer flex flex-col justify-between transition-all duration-300 select-none bg-transparent border-none shadow-none"
                     >
-                      {/* 1. Boundary-free Editorial Photo Section */}
-                      <div className="w-full aspect-[4/3] overflow-hidden relative bg-black/5 dark:bg-white/5">
+                      {/* 1. Boundary-free Editorial Photo Section: 3:4 Vertical Frame */}
+                      <div className="w-full aspect-[3/4] overflow-hidden relative bg-black/5 dark:bg-white/5">
                         <img
                           src={getEffectiveImageUrl(moment.img)}
                           alt={moment.title}
@@ -1348,22 +1417,31 @@ export function HomePage({
                         )}
                       </div>
 
-                      {/* 2. Editorial Text Hierarchy (Big Bold Typography + Small Description + Place / Arrow) */}
-                      <div className="pt-4 flex-1 flex flex-col justify-between text-black dark:text-white">
+                      {/* 2. Editorial Text Hierarchy (Big Bold Typography + Date/Day + Quote + Place / Arrow) */}
+                      <div className="pt-3.5 flex-1 flex flex-col justify-between text-black dark:text-white">
                         <div className="flex flex-col">
                           {/* Large Bold Headline */}
                           <h3 className="text-base sm:text-lg md:text-xl font-black uppercase tracking-tight text-black dark:text-white font-sans line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
                             {moment.title}
                           </h3>
 
-                          {/* Refined Small Description */}
-                          <p className="text-xs sm:text-[13px] font-sans font-normal text-black/60 dark:text-white/60 leading-relaxed line-clamp-2 sm:line-clamp-3 mt-1.5">
-                            {displayDesc}
-                          </p>
+                          {/* Minimal Date and Day (e.g. 2024.07.19 FRI) with tight vertical gap */}
+                          {dateWithDay && (
+                            <div className="text-[11px] sm:text-xs font-mono font-bold text-black/50 dark:text-white/50 uppercase tracking-wider mt-1">
+                              {dateWithDay}
+                            </div>
+                          )}
+
+                          {/* Concise quote or caption if present */}
+                          {(moment.quote || moment.caption) && (
+                            <p className="text-xs sm:text-[13px] font-sans font-normal text-black/65 dark:text-white/65 leading-relaxed line-clamp-2 mt-1.5">
+                              {moment.quote || moment.caption}
+                            </p>
+                          )}
                         </div>
 
                         {/* Bottom Row: Specific Tagged Place & Simple Arrow (No MOMENT badge, No VIEW text, No Icons) */}
-                        <div className="pt-3.5 mt-auto flex items-center justify-between text-xs font-sans text-black/75 dark:text-white/75">
+                        <div className="pt-3 mt-auto flex items-center justify-between text-xs font-sans text-black/75 dark:text-white/75 border-t border-black/10 dark:border-white/10">
                           <span className="font-bold tracking-tight truncate max-w-[85%]" title={displayPlace}>
                             {displayPlace}
                           </span>
