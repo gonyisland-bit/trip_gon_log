@@ -1265,14 +1265,14 @@ export function EditTripModal({
         </form>
       </div>
 
-      {/* Unsaved changes confirmation modal with shortcuts (YES[Y], NO[N], ESC) */}
+      {/* Unsaved changes confirmation modal with shortcuts (SAVE[Y/S], DISCARD[N/D], SKIP[ESC]) */}
       <ConfirmModal
         isOpen={showUnsavedConfirm}
         title="UNSAVED CHANGES"
-        message="Save current changes before leaving?"
-        confirmLabel="YES (Y)"
-        discardLabel="NO (N)"
-        cancelLabel="CANCEL (ESC)"
+        message="Are you sure?"
+        confirmLabel="SAVE (Y)"
+        discardLabel="DISCARD (N)"
+        cancelLabel="SKIP (ESC)"
         onConfirm={async () => {
           setShowUnsavedConfirm(false);
           await handleSubmit({ preventDefault: () => {} } as any);

@@ -21,10 +21,10 @@ interface ConfirmModalProps {
 export function ConfirmModal({
   isOpen,
   title = "UNSAVED CHANGES",
-  message = "Save current changes before leaving?",
-  confirmLabel = "YES (Y)",
-  cancelLabel = "CANCEL (ESC)",
-  discardLabel = "NO (N)",
+  message = "Are you sure?",
+  confirmLabel = "SAVE (Y)",
+  cancelLabel = "SKIP (ESC)",
+  discardLabel = "DISCARD (N)",
   onConfirm,
   onCancel,
   onDiscard,
@@ -59,15 +59,18 @@ export function ConfirmModal({
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName) || (e.target as HTMLElement)?.isContentEditable;
+      if (isInput) return;
+
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
         onCancel();
-      } else if (e.key === 'y' || e.key === 'Y' || e.key === 'Enter') {
+      } else if (e.key === 'y' || e.key === 'Y' || e.key === 's' || e.key === 'S' || e.key === 'Enter') {
         e.preventDefault();
         e.stopPropagation();
         onConfirm();
-      } else if ((e.key === 'n' || e.key === 'N') && onDiscard) {
+      } else if ((e.key === 'n' || e.key === 'N' || e.key === 'd' || e.key === 'D') && onDiscard) {
         e.preventDefault();
         e.stopPropagation();
         onDiscard();

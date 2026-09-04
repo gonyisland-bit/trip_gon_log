@@ -29,6 +29,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { Trip, Plan, MagazineMoment, TimelineData, TimelineItem } from '../types';
+import { ConfirmModal } from '../components/ConfirmModal';
 import { getEffectiveImageUrl, uploadFileToR2, deleteFileFromR2 } from '../utils/storageHelper';
 import { compressImage } from '../utils/imageHelper';
 import { inspectAndPrepareVideo } from '../utils/videoHelper';
@@ -228,6 +229,7 @@ export function ManageHubPage({
   const [isHeroDragActive, setIsHeroDragActive] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [pendingJourneyId, setPendingJourneyId] = useState<number | null>(null);
+  const [showSaveSuccessModal, setShowSaveSuccessModal] = useState(false);
 
   // Drag and Drop state
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -506,35 +508,10 @@ export function ManageHubPage({
     }
   }, [activeMode, title, subtitle, selectedHeroIds, autoSlide, showMarquee, homeMarquee, homeSpeed, mediaType, momentsList, slideDuration, gradientEnabled, gradientFrom, gradientTo, selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge, saveRef]);
 
-  // Keyboard Shortcuts: Enter / ESC / D in Unsaved Modal, and Ctrl+S to Save
+  // Keyboard Shortcuts: Ctrl+S to Save
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // 1. Unsaved changes modal shortcuts: Yes (Y), No (N), Cancel (ESC) (Only for internal journey switching)
-      if (showUnsavedModal && pendingJourneyId !== null) {
-        if (e.key === 'y' || e.key === 'Y' || e.key === 'Enter') {
-          e.preventDefault();
-          (async () => {
-            await handleSaveJourney();
-            setSelectedJourneyId(pendingJourneyId);
-            setPendingJourneyId(null);
-            setMobileArchiveTab('EDIT');
-            setShowUnsavedModal(false);
-          })();
-        } else if (e.key === 'n' || e.key === 'N') {
-          e.preventDefault();
-          setSelectedJourneyId(pendingJourneyId);
-          setPendingJourneyId(null);
-          setMobileArchiveTab('EDIT');
-          setShowUnsavedModal(false);
-        } else if (e.key === 'Escape') {
-          e.preventDefault();
-          setPendingJourneyId(null);
-          setShowUnsavedModal(false);
-        }
-        return;
-      }
-
-      // 2. Ctrl + S / Cmd + S to save
+      // Ctrl + S / Cmd + S to save
       if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
         e.preventDefault();
         if (activeMode === 'HOME') handleSaveHome();
@@ -543,7 +520,7 @@ export function ManageHubPage({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showUnsavedModal, pendingJourneyId, activeMode, isHomeDirty, isArchiveDirty, title, subtitle, selectedHeroIds, autoSlide, showMarquee, homeMarquee, homeSpeed, mediaType, momentsList, slideDuration, gradientEnabled, gradientFrom, gradientTo, selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge]);
+  }, [activeMode, isHomeDirty, isArchiveDirty, title, subtitle, selectedHeroIds, autoSlide, showMarquee, homeMarquee, homeSpeed, mediaType, momentsList, slideDuration, gradientEnabled, gradientFrom, gradientTo, selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge]);
 
   // Save Map Settings
   const handleSaveMapSettings = () => {
@@ -2491,72 +2468,51 @@ export function ManageHubPage({
         </button>
       </div>
 
-      {/* 4. Common Minimal Unsaved Changes Modal (Only for internal journey switching in Archive tab) */}
-      {showUnsavedModal && pendingJourneyId !== null && (
-        <div 
-          className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
-          onClick={() => {
+      {/* 4. Common Minimal Unsaved Changes Modal */}
+      <ConfirmModal
+        isOpen={showUnsavedModal && pendingJourneyId !== null}
+        title="UNSAVED CHANGES"
+        message="Are you sure?"
+        confirmLabel="SAVE (Y)"
+        discardLabel="DISCARD (N)"
+        cancelLabel="SKIP (ESC)"
+        onConfirm={async () => {
+          if (pendingJourneyId !== null) {
+            await handleSaveJourney();
+            setSelectedJourneyId(pendingJourneyId);
             setPendingJourneyId(null);
-            setShowUnsavedModal(false);
-          }}
-        >
-          <div 
-            className="w-full max-w-sm bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 shadow-2xl p-5 sm:p-6 select-none flex flex-col gap-4 text-black dark:text-white"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 shrink-0 text-black dark:text-white" />
-              <h3 className="text-xs sm:text-sm font-mono font-black uppercase tracking-widest">
-                UNSAVED CHANGES
-              </h3>
-            </div>
-            <p className="text-xs sm:text-sm text-black/80 dark:text-white/80 font-sans leading-relaxed break-keep font-medium">
-              Save current changes before leaving?
-            </p>
-            <div className="grid grid-cols-3 gap-1.5 pt-3 border-t border-black/10 dark:border-white/10 font-sans text-xs font-black uppercase tracking-wider">
-              <button
-                type="button"
-                onClick={() => {
-                  setPendingJourneyId(null);
-                  setShowUnsavedModal(false);
-                }}
-                className="px-2 py-2.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60 transition-colors cursor-pointer text-center whitespace-nowrap text-[11px]"
-              >
-                CANCEL (ESC)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (pendingJourneyId !== null) {
-                    setSelectedJourneyId(pendingJourneyId);
-                    setPendingJourneyId(null);
-                    setMobileArchiveTab('EDIT');
-                  }
-                  setShowUnsavedModal(false);
-                }}
-                className="px-2 py-2.5 border border-black/25 dark:border-white/25 text-black/80 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer text-center whitespace-nowrap text-[11px]"
-              >
-                NO (N)
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  if (pendingJourneyId !== null) {
-                    await handleSaveJourney();
-                    setSelectedJourneyId(pendingJourneyId);
-                    setPendingJourneyId(null);
-                    setMobileArchiveTab('EDIT');
-                  }
-                  setShowUnsavedModal(false);
-                }}
-                className="px-2 py-2.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 transition-colors cursor-pointer shadow-sm text-center whitespace-nowrap text-[11px]"
-              >
-                YES (Y)
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            setMobileArchiveTab('EDIT');
+            setShowSaveSuccessModal(true);
+          }
+          setShowUnsavedModal(false);
+        }}
+        onDiscard={() => {
+          if (pendingJourneyId !== null) {
+            setSelectedJourneyId(pendingJourneyId);
+            setPendingJourneyId(null);
+            setMobileArchiveTab('EDIT');
+          }
+          setShowUnsavedModal(false);
+        }}
+        onCancel={() => {
+          setPendingJourneyId(null);
+          setShowUnsavedModal(false);
+        }}
+      />
+
+      {/* Save Success Auto-Dismiss Modal */}
+      <ConfirmModal
+        isOpen={showSaveSuccessModal}
+        title="SAVED"
+        message="All changes have been successfully saved."
+        confirmLabel="OK"
+        iconType="check"
+        singleButton
+        autoDismiss
+        autoDismissDuration={2000}
+        onConfirm={() => setShowSaveSuccessModal(false)}
+        onCancel={() => setShowSaveSuccessModal(false)}
+      />
     </main>
   );
 }

@@ -12,6 +12,7 @@ import { CreateTripModal } from './components/CreateTripModal';
 import { SettingsModal } from './components/SettingsModal';
 import { SearchModal } from './components/SearchModal';
 import { EditTripModal } from './components/EditTripModal';
+import { ConfirmModal } from './components/ConfirmModal';
 import { Check, AlertTriangle } from 'lucide-react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { fetchCoordinates } from './utils/googleMapsHelper';
@@ -160,6 +161,7 @@ function App() {
     } catch (err) {
       console.warn("Save before navigation error:", err);
     }
+    setShowSaveCompleteModal(true);
     if (pendingNavigation) {
       const { view, tripId } = pendingNavigation;
       setPendingNavigation(null);
@@ -167,7 +169,7 @@ function App() {
       setIsManageDirty(false);
       setTimeout(() => {
         navigateTo(view, tripId, true, null, true);
-      }, 100);
+      }, 2000);
     }
   };
 
@@ -186,28 +188,6 @@ function App() {
     setShowUnsavedModal(false);
     setPendingNavigation(null);
   };
-
-  // Keyboard shortcut listener for unsaved modal: Save (Y), Discard (N), Skip (Esc)
-  useEffect(() => {
-    if (!showUnsavedModal) return;
-    const handleModalKeyDown = (e: KeyboardEvent) => {
-      const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName) || (e.target as HTMLElement)?.isContentEditable;
-      if (isInput) return;
-
-      if (e.key === 'y' || e.key === 'Y') {
-        e.preventDefault();
-        handleSaveAndNavigate();
-      } else if (e.key === 'n' || e.key === 'N') {
-        e.preventDefault();
-        handleDiscardAndNavigate();
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        handleCancelUnsavedModal();
-      }
-    };
-    window.addEventListener('keydown', handleModalKeyDown);
-    return () => window.removeEventListener('keydown', handleModalKeyDown);
-  }, [showUnsavedModal, pendingNavigation]);
 
   const currentUserEmail = auth.currentUser?.email?.toLowerCase() || '';
   const isGuest = currentUserEmail.startsWith('guest') || currentUserEmail.includes('guest') || Boolean(auth.currentUser?.isAnonymous);
@@ -1823,57 +1803,32 @@ function App() {
           onResultClick={handleSearchResultClick}
         />
 
-        {/* Save Complete Modal */}
-        {showSaveCompleteModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
-            <div className="bg-[#F9F8F6] dark:bg-[#161616] border border-black/20 dark:border-white/20 p-6 md:p-8 w-full max-w-sm text-center shadow-2xl rounded-none text-black dark:text-white">
-              <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-4">
-                <Check className="w-6 h-6" />
-              </div>
-              <h3 className="text-base font-black uppercase tracking-widest mb-6">Saved</h3>
-              <button
-                onClick={() => setShowSaveCompleteModal(false)}
-                className="w-full py-2.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-black uppercase tracking-widest rounded-none transition-all"
-              >
-                확인
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Save Complete Auto-Dismiss Modal */}
+        <ConfirmModal
+          isOpen={showSaveCompleteModal}
+          title="SAVED"
+          message="All changes have been successfully saved."
+          confirmLabel="OK"
+          iconType="check"
+          singleButton
+          autoDismiss
+          autoDismissDuration={2000}
+          onConfirm={() => setShowSaveCompleteModal(false)}
+          onCancel={() => setShowSaveCompleteModal(false)}
+        />
 
         {/* Unsaved Changes Warning Modal */}
-        {showUnsavedModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
-            <div className="bg-[#F9F8F6] dark:bg-[#161616] border border-black/20 dark:border-white/20 p-6 md:p-8 w-full max-w-sm text-center shadow-2xl rounded-none text-black dark:text-white">
-              <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4 animate-bounce">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <h3 className="text-sm font-black tracking-tight mb-6 leading-relaxed">
-                저장되지 않은 변경 사항이 있습니다.<br />저장하고 이동하시겠습니까?
-              </h3>
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={handleSaveAndNavigate}
-                  className="w-full py-2.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-black uppercase tracking-widest rounded-none transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  Save (Y)
-                </button>
-                <button
-                  onClick={handleDiscardAndNavigate}
-                  className="w-full py-2.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-[10px] font-black uppercase tracking-widest rounded-none transition-all cursor-pointer"
-                >
-                  Discard (N)
-                </button>
-                <button
-                  onClick={handleCancelUnsavedModal}
-                  className="w-full py-2.5 text-black/45 dark:text-white/45 hover:text-black dark:hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors mt-1 cursor-pointer"
-                >
-                  Skip (Esc)
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <ConfirmModal
+          isOpen={showUnsavedModal}
+          title="UNSAVED CHANGES"
+          message="Are you sure?"
+          confirmLabel="SAVE (Y)"
+          discardLabel="DISCARD (N)"
+          cancelLabel="SKIP (ESC)"
+          onConfirm={handleSaveAndNavigate}
+          onDiscard={handleDiscardAndNavigate}
+          onCancel={handleCancelUnsavedModal}
+        />
       </div>
 
       {/* Splash Screen V0.7 */}
