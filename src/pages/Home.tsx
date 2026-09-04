@@ -804,11 +804,11 @@ export function HomePage({
                   </div>
                 </div>
 
-                {/* 2. Center Column: Exact 2:3 Aspect Ratio Borderless Hero Media Frame (Full Height touching top and bottom borders) */}
-                <div className="md:col-span-4 self-stretch flex items-stretch justify-center order-1 md:order-2 relative z-10 w-full px-0">
+                {/* 2. Center Column: Exact 4:3 Landscape Aspect Ratio Hero Media Frame */}
+                <div className="md:col-span-4 flex items-center justify-center order-1 md:order-2 relative z-10 w-full py-4 sm:py-6 md:py-8 px-2 sm:px-4 md:px-0">
                   <div 
                     onClick={() => onNavigate('detail', currentHero.id)}
-                    className="relative w-full h-full min-h-[340px] sm:min-h-[420px] md:min-h-[540px] lg:min-h-[620px] aspect-[2/3] overflow-hidden bg-neutral-900 group cursor-pointer select-none mx-auto max-w-sm sm:max-w-md md:max-w-none"
+                    className="relative w-full aspect-[4/3] max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl overflow-hidden bg-neutral-900 group cursor-pointer select-none mx-auto shadow-md"
                   >
                     {heroJourneys.map((journey, index) => (
                       <HeroMedia
@@ -1111,15 +1111,26 @@ export function HomePage({
 
                   {/* Right Menu (Unboxed, NO right arrow button) */}
                   <div className="flex items-center pr-2 sm:pr-4 md:pr-6 shrink-0" onClick={(e) => e.stopPropagation()}>
-                    <JourneyCardMenu
-                      isLoggedIn={isLoggedIn}
-                      onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
-                      onDelete={onDeleteTrip ? () => onDeleteTrip(trip.id) : undefined}
-                      onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
-                      onMove={onMoveToPlans ? () => onMoveToPlans(trip) : undefined}
-                      moveLabel="PLAN"
-                      variant="minimal"
-                    />
+                    {(() => {
+                      const isItemPlan = Boolean((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)'));
+                      return (
+                        <JourneyCardMenu
+                          isLoggedIn={isLoggedIn}
+                          onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
+                          onDelete={onDeleteTrip ? () => onDeleteTrip(trip.id) : undefined}
+                          onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
+                          onMove={() => {
+                            if (isItemPlan) {
+                              handleMoveToArchive(trip as Plan);
+                            } else if (onMoveToPlans) {
+                              onMoveToPlans(trip);
+                            }
+                          }}
+                          moveLabel={isItemPlan ? "LOG" : "PLAN"}
+                          variant="minimal"
+                        />
+                      );
+                    })()}
                   </div>
                 </div>
               );
@@ -1231,15 +1242,26 @@ export function HomePage({
                     </div>
 
                     {/* Hamburger menu */}
-                    <JourneyCardMenu
-                      className="absolute bottom-3 right-3 z-30"
-                      isLoggedIn={isLoggedIn}
-                      onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
-                      onDelete={onDeleteTrip ? () => onDeleteTrip(trip.id) : undefined}
-                      onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
-                      onMove={onMoveToPlans ? () => onMoveToPlans(trip) : undefined}
-                      moveLabel="PLAN"
-                    />
+                    {(() => {
+                      const isItemPlan = Boolean((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)'));
+                      return (
+                        <JourneyCardMenu
+                          className="absolute bottom-3 right-3 z-30"
+                          isLoggedIn={isLoggedIn}
+                          onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
+                          onDelete={onDeleteTrip ? () => onDeleteTrip(trip.id) : undefined}
+                          onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
+                          onMove={() => {
+                            if (isItemPlan) {
+                              handleMoveToArchive(trip as Plan);
+                            } else if (onMoveToPlans) {
+                              onMoveToPlans(trip);
+                            }
+                          }}
+                          moveLabel={isItemPlan ? "LOG" : "PLAN"}
+                        />
+                      );
+                    })()}
                   </div>
                 </div>
               );

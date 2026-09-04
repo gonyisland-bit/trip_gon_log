@@ -2608,9 +2608,11 @@ export function JourneyDetailPage({
         if (typeof fieldOrFields === 'string') {
           if (fieldOrFields === 'ticketType') {
             const typeUpper = (val || '').toUpperCase();
-            if (typeUpper.includes('BUS')) {
+            if (typeUpper.includes('CAR')) {
+              updated.transitType = 'car';
+            } else if (typeUpper.includes('BUS')) {
               updated.transitType = 'bus';
-            } else if (typeUpper.includes('TAXI') || typeUpper.includes('CAR')) {
+            } else if (typeUpper.includes('TAXI')) {
               updated.transitType = 'taxi';
             } else {
               updated.transitType = 'train';
@@ -2619,9 +2621,11 @@ export function JourneyDetailPage({
         } else {
           if ('ticketType' in fieldOrFields) {
             const typeUpper = (fieldOrFields.ticketType || '').toUpperCase();
-            if (typeUpper.includes('BUS')) {
+            if (typeUpper.includes('CAR')) {
+              updated.transitType = 'car';
+            } else if (typeUpper.includes('BUS')) {
               updated.transitType = 'bus';
-            } else if (typeUpper.includes('TAXI') || typeUpper.includes('CAR')) {
+            } else if (typeUpper.includes('TAXI')) {
               updated.transitType = 'taxi';
             } else {
               updated.transitType = 'train';
@@ -2653,21 +2657,24 @@ export function JourneyDetailPage({
       updateTransit(id, field as any, value);
     }
   };
-  const handleAddTransit = (type: 'train' | 'bus' | 'taxi') => {
-    const ticketType = type === 'train' ? 'TRAIN TICKET' : type === 'bus' ? 'BUS TICKET' : 'TAXI TICKET';
-    const title = type === 'train' ? 'Train' : type === 'bus' ? 'Bus' : 'Taxi';
-    const route = type === 'taxi' ? '출발지 → 도착지' : '출발역 → 도착역';
-    const bookingRef = type === 'train' ? 'TRN-000' : type === 'bus' ? 'BUS-000' : 'TX-000';
-    const seat = type === 'taxi' ? 'N/A' : 'Car 0, 00A';
+  const handleAddTransit = (type: 'train' | 'bus' | 'taxi' | 'car') => {
+    const ticketType = type === 'train' ? 'TRAIN TICKET' : type === 'bus' ? 'BUS TICKET' : type === 'car' ? 'CAR RENTAL' : 'TAXI TICKET';
+    const title = type === 'train' ? 'Train' : type === 'bus' ? 'Bus' : type === 'car' ? 'Car Rental' : 'Taxi';
+    const route = type === 'car' ? '픽업 장소 → 반납 장소' : type === 'taxi' ? '출발지 → 도착지' : '출발역 → 도착역';
+    const bookingRef = type === 'train' ? 'TRN-000' : type === 'bus' ? 'BUS-000' : type === 'car' ? 'CAR-000' : 'TX-000';
+    const seat = type === 'car' || type === 'taxi' ? 'N/A' : 'Car 0, 00A';
 
     const newTransit: TransitItem = {
       id: Date.now(),
       ticketType,
       transitType: type,
       date: 'YYYY.MM.DD',
+      rentalDropoffDate: type === 'car' ? 'YYYY.MM.DD' : undefined,
+      carModel: type === 'car' ? '' : undefined,
+      carNumber: type === 'car' ? '' : undefined,
       title,
       route,
-      time: '12:00 PM',
+      time: type === 'car' ? '10:00 AM' : '12:00 PM',
       seat,
       bookingRef,
       memo: '',
@@ -4592,15 +4599,17 @@ export function JourneyDetailPage({
                     </div>
                   );
                 } else {
-                  // 탑승종류순 정렬: 기존과 같이 Train / Bus / Taxi 분류
-                  const trains = transitList.filter(t => t.transitType === 'train' || (!t.transitType || (t.transitType !== 'bus' && t.transitType !== 'taxi')));
+                  // 탑승종류순 정렬: Train / Bus / Taxi / Car 분류
+                  const trains = transitList.filter(t => t.transitType === 'train' || (!t.transitType || (t.transitType !== 'bus' && t.transitType !== 'taxi' && t.transitType !== 'car')));
                   const buses = transitList.filter(t => t.transitType === 'bus');
                   const taxis = transitList.filter(t => t.transitType === 'taxi');
+                  const cars = transitList.filter(t => t.transitType === 'car');
                   return (
                     <div className="flex flex-col text-left w-full">
                       {renderGroup(trains, 'Train Tickets', Train)}
                       {renderGroup(buses, 'Bus Tickets', Bus)}
-                      {renderGroup(taxis, 'Taxi/Car Tickets', Car)}
+                      {renderGroup(taxis, 'Taxi Tickets', Car)}
+                      {renderGroup(cars, 'Car Rentals', Car)}
                     </div>
                   );
                 }
@@ -4613,21 +4622,27 @@ export function JourneyDetailPage({
                   <div className="flex flex-wrap justify-center gap-2">
                     <button 
                       onClick={() => handleAddTransit('train')} 
-                      className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5"
+                      className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" /> Train
                     </button>
                     <button 
                       onClick={() => handleAddTransit('bus')} 
-                      className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5"
+                      className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" /> Bus
                     </button>
                     <button 
                       onClick={() => handleAddTransit('taxi')} 
-                      className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5"
+                      className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" /> Taxi
+                    </button>
+                    <button 
+                      onClick={() => handleAddTransit('car')} 
+                      className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Car Rental
                     </button>
                   </div>
                 </div>

@@ -1391,7 +1391,23 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
   };
 
   const toggleFavoriteCountry = async (code: string) => {
-    const updated = favoriteCountries.includes(code)
+    const isRemoving = favoriteCountries.includes(code);
+
+    if (isRemoving) {
+      // Check if any favorite city belongs to this country
+      const countryData = COUNTRIES_DATA.find(c => c.code === code);
+      if (countryData && countryData.cities) {
+        const hasFavoritedCity = countryData.cities.some(city => 
+          favoriteCities.includes(city.toUpperCase())
+        );
+        if (hasFavoritedCity) {
+          alert(`위시리스트에 등록된 해당 국가의 도시가 포함되어 있어 국가 위시를 해제할 수 없습니다.\n먼저 도시 위시를 해제해주세요.`);
+          return;
+        }
+      }
+    }
+
+    const updated = isRemoving
       ? favoriteCountries.filter(c => c !== code)
       : [...favoriteCountries, code];
 

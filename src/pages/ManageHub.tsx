@@ -247,7 +247,12 @@ export function ManageHubPage({
 
   // Sync journeys from props with localStorage order preservation
   useEffect(() => {
-    let combined = [...trips, ...plans];
+    const plansWithFlag = (plans || []).map(p => ({
+      ...p,
+      isPlan: true,
+      tags: p.tags?.includes('Plan') ? p.tags : [...(p.tags || []), 'Plan'],
+    }));
+    let combined = [...(trips || []), ...plansWithFlag];
     try {
       const saved = localStorage.getItem('journey_order');
       if (saved) {
@@ -599,7 +604,13 @@ export function ManageHubPage({
     setMomentsList(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
   };
 
-  const isSelectedPlan = selectedJourney?.tags?.includes('Plan') || selectedJourney?.title.includes('(Plan)');
+  const isSelectedPlan = Boolean(
+    selectedJourney && (
+      (selectedJourney as any).isPlan ||
+      selectedJourney.tags?.includes('Plan') ||
+      selectedJourney.title?.includes('(Plan)')
+    )
+  );
 
   return (
     <main className="min-h-screen w-full bg-[#FAF9F6] dark:bg-[#0A0A0A] text-black dark:text-white flex flex-col font-sans select-none animate-in fade-in duration-300">

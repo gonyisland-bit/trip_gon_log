@@ -68,6 +68,20 @@ function time24hTo12h(val24h: string): string {
   return minutesToTimeStr(h24 * 60 + m);
 }
 
+function formatRentalDateRange(pickup: string, dropoff: string): string {
+  if (!pickup) return '';
+  const formattedPickup = pickup.replace(/-/g, '.');
+  if (!dropoff) return formattedPickup;
+  const formattedDropoff = dropoff.replace(/-/g, '.');
+
+  const d1 = new Date(pickup);
+  const d2 = new Date(dropoff);
+  const diffTime = d2.getTime() - d1.getTime();
+  const days = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1);
+
+  return `${formattedPickup} - ${formattedDropoff} (${days} DAY${days !== 1 ? 'S' : ''})`;
+}
+
 export function TransitCard({
   transit,
   isEditMode,
@@ -91,6 +105,8 @@ export function TransitCard({
   const [localSeat, setLocalSeat] = useState(transit.seat);
   const [localBookingRef, setLocalBookingRef] = useState(transit.bookingRef);
   const [localMemo, setLocalMemo] = useState(transit.memo || '');
+  const [localCarModel, setLocalCarModel] = useState(transit.carModel || '');
+  const [localCarNumber, setLocalCarNumber] = useState(transit.carNumber || '');
 
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [attachmentLightboxOpen, setAttachmentLightboxOpen] = useState(false);
@@ -144,6 +160,8 @@ export function TransitCard({
     setLocalSeat(transit.seat);
     setLocalBookingRef(transit.bookingRef);
     setLocalMemo(transit.memo || '');
+    setLocalCarModel(transit.carModel || '');
+    setLocalCarNumber(transit.carNumber || '');
   }, [transit]);
 
   const handlePlaceLinkClick = (e: React.MouseEvent, placeName: string) => {
@@ -182,21 +200,25 @@ export function TransitCard({
       <div className="bg-black/[0.03] dark:bg-white/5 px-4 py-2.5 border-b border-black/15 dark:border-white/15 flex justify-between items-center text-[10px] md:text-xs font-bold tracking-widest text-black/60 dark:text-white/60 gap-4">
         <div className="flex items-center gap-2">
           {(() => {
+            const isCar = transit.transitType === 'car' || (transit.ticketType || '').toUpperCase().includes('CAR');
+            if (isCar) return <Car className="w-3.5 h-3.5 animate-in fade-in duration-300 text-red-600 dark:text-red-400" />;
             const typeUpper = (transit.ticketType || '').toUpperCase();
             if (typeUpper.includes('BUS')) return <Bus className="w-3.5 h-3.5 animate-in fade-in duration-300" />;
-            if (typeUpper.includes('TAXI') || typeUpper.includes('CAR')) return <Car className="w-3.5 h-3.5 animate-in fade-in duration-300" />;
+            if (typeUpper.includes('TAXI')) return <Car className="w-3.5 h-3.5 animate-in fade-in duration-300" />;
             return <Train className="w-3.5 h-3.5 animate-in fade-in duration-300" />;
           })()}
           {isEditMode ? (
             <select
-              value={transit.ticketType || 'TRAIN TICKET'}
+              value={transit.ticketType || (transit.transitType === 'car' ? 'CAR RENTAL' : 'TRAIN TICKET')}
               onChange={(e) => {
                 const val = e.target.value;
                 onUpdate(transit.id, 'ticketType', val);
                 const typeUpper = val.toUpperCase();
-                if (typeUpper.includes('BUS')) {
+                if (typeUpper.includes('CAR')) {
+                  onUpdate(transit.id, 'transitType', 'car');
+                } else if (typeUpper.includes('BUS')) {
                   onUpdate(transit.id, 'transitType', 'bus');
-                } else if (typeUpper.includes('TAXI') || typeUpper.includes('CAR')) {
+                } else if (typeUpper.includes('TAXI')) {
                   onUpdate(transit.id, 'transitType', 'taxi');
                 } else {
                   onUpdate(transit.id, 'transitType', 'train');
@@ -208,13 +230,40 @@ export function TransitCard({
               <option value="TRAIN TICKET">TRAIN TICKET</option>
               <option value="BUS TICKET">BUS TICKET</option>
               <option value="TAXI TICKET">TAXI TICKET</option>
+              <option value="CAR RENTAL">CAR RENTAL</option>
             </select>
           ) : (
-            <span className="uppercase">{transit.ticketType || 'TRAIN TICKET'}</span>
+            <span className="uppercase">{transit.ticketType || (transit.transitType === 'car' ? 'CAR RENTAL' : 'TRAIN TICKET')}</span>
           )}
         </div>
         <div className="flex items-center gap-2">
-          {isEditMode ? (
+          {transit.transitType === 'car' ? (
+            isEditMode ? (
+              <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                <span className="text-[8px] uppercase font-black opacity-40">PICKUP</span>
+                <input
+                  type="date"
+                  value={transit.date ? transit.date.replace(/\./g, '-') : ''}
+                  min={minDate}
+                  max={maxDate}
+                  onChange={(e) => onUpdate(transit.id, 'date', e.target.value.replace(/-/g, '.'))}
+                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-32 text-center"
+                />
+                <span className="text-black/40 dark:text-white/40">—</span>
+                <span className="text-[8px] uppercase font-black opacity-40">RETURN</span>
+                <input
+                  type="date"
+                  value={transit.rentalDropoffDate ? transit.rentalDropoffDate.replace(/\./g, '-') : ''}
+                  min={transit.date ? transit.date.replace(/\./g, '-') : minDate}
+                  max={maxDate}
+                  onChange={(e) => onUpdate(transit.id, 'rentalDropoffDate', e.target.value.replace(/-/g, '.'))}
+                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-32 text-center"
+                />
+              </div>
+            ) : (
+              <span className="font-mono">{formatRentalDateRange(transit.date, transit.rentalDropoffDate || '')}</span>
+            )
+          ) : isEditMode ? (
             <input
               type="date"
               value={transit.date ? transit.date.replace(/\./g, '-') : ''}
@@ -245,6 +294,32 @@ export function TransitCard({
         </div>
       </div>
       
+      {/* If Car Rental has image or is edit mode, show Cover Photo like StayCard */}
+      {transit.transitType === 'car' && (transit.boardingImg || isEditMode) && (
+        <div className="relative aspect-[21/9] sm:aspect-[24/9] w-full overflow-hidden border-b border-black/10 dark:border-white/10 bg-black/5 group">
+          {transit.boardingImg ? (
+            <img 
+              src={getEffectiveImageUrl(transit.boardingImg)} 
+              alt={transit.title} 
+              className="w-full h-full object-cover" 
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center text-black/40 dark:text-white/40 gap-1.5 text-xs font-bold uppercase tracking-widest">
+              <Car className="w-6 h-6 opacity-40" />
+              <span>VEHICLE PHOTO (드래그하여 차량 사진 추가)</span>
+            </div>
+          )}
+          {isEditMode && (
+            <ImageEditOverlay
+              isEditMode={isEditMode}
+              onImageUploaded={(url) => onUpdate(transit.id, 'boardingImg', url)}
+              hasImage={!!transit.boardingImg}
+              onImageRemoved={() => onUpdate(transit.id, 'boardingImg', null)}
+            />
+          )}
+        </div>
+      )}
+
       {/* Card Body */}
       <div className="p-4 md:p-6">
         <div className="flex flex-row items-center justify-between">
@@ -257,7 +332,7 @@ export function TransitCard({
                 onBlur={() => onUpdate(transit.id, 'title', localTitle)}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-black text-lg md:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
-                placeholder="TRANSIT TITLE"
+                placeholder={transit.transitType === 'car' ? "RENTAL COMPANY / TITLE" : "TRANSIT TITLE"}
               />
             ) : (
               <h3 className="text-lg md:text-xl font-black tracking-tight leading-snug uppercase truncate">
@@ -267,7 +342,9 @@ export function TransitCard({
             {isEditMode ? (
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2 w-full relative" onClick={(e) => e.stopPropagation()}>
                 <div className="flex-1 min-w-0 relative">
-                  <span className="text-[8px] uppercase font-bold tracking-widest opacity-40 block mb-0.5">DEPART</span>
+                  <span className="text-[8px] uppercase font-bold tracking-widest opacity-40 block mb-0.5">
+                    {transit.transitType === 'car' ? 'PICKUP LOCATION' : 'DEPART'}
+                  </span>
                   <PlaceAutocompleteInput
                     value={transit.departPlace || ''}
                     onChange={(val) => {
@@ -284,12 +361,14 @@ export function TransitCard({
                       });
                     }}
                     className="w-full bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm"
-                    placeholder="Departure terminal/station..."
+                    placeholder={transit.transitType === 'car' ? "Pickup location / airport..." : "Departure terminal/station..."}
                   />
                 </div>
                 <span className="text-black/40 dark:text-white/40 self-end mb-1.5 hidden sm:inline">→</span>
                 <div className="flex-1 min-w-0 relative">
-                  <span className="text-[8px] uppercase font-bold tracking-widest opacity-40 block mb-0.5">ARRIVE</span>
+                  <span className="text-[8px] uppercase font-bold tracking-widest opacity-40 block mb-0.5">
+                    {transit.transitType === 'car' ? 'RETURN LOCATION' : 'ARRIVE'}
+                  </span>
                   <PlaceAutocompleteInput
                     value={transit.arrivePlace || ''}
                     onChange={(val) => {
@@ -306,7 +385,7 @@ export function TransitCard({
                       });
                     }}
                     className="w-full bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm"
-                    placeholder="Arrival terminal/station..."
+                    placeholder={transit.transitType === 'car' ? "Return location / branch..." : "Arrival terminal/station..."}
                   />
                 </div>
               </div>
@@ -320,7 +399,7 @@ export function TransitCard({
                     {transit.departPlace}
                   </span>
                 ) : (
-                  <span>출발지</span>
+                  <span>{transit.transitType === 'car' ? '픽업 장소' : '출발지'}</span>
                 )}
                 <span className="mx-1 opacity-60">→</span>
                 {transit.arrivePlace ? (
@@ -331,11 +410,28 @@ export function TransitCard({
                     {transit.arrivePlace}
                   </span>
                 ) : (
-                  <span>도착지</span>
+                  <span>{transit.transitType === 'car' ? '반납 장소' : '도착지'}</span>
                 )}
               </p>
             )}
-            {isEditMode ? (
+
+            {/* Time selection (or Rental Duration display for CAR) */}
+            {transit.transitType === 'car' ? (
+              <div className="mt-3 flex items-center gap-3">
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
+                  RENTAL TIME: {transit.time || '10:00 AM'}
+                </span>
+                {isEditMode && (
+                  <input
+                    ref={timeRef}
+                    type="time"
+                    value={timeStrTo24h(transit.time)}
+                    onChange={(e) => onUpdate(transit.id, 'time', time24hTo12h(e.target.value))}
+                    className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-bold text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-28 text-center cursor-pointer"
+                  />
+                )}
+              </div>
+            ) : isEditMode ? (
               <div className="flex items-center gap-1.5 mt-4" onClick={(e) => e.stopPropagation()}>
                 <input
                   ref={timeRef}
@@ -366,26 +462,67 @@ export function TransitCard({
             )}
           </div>
           
-          {/* Right Side: Seat & Booking Ref Box */}
-          <div className="border border-black/10 dark:border-white/10 p-3 md:p-4 text-left w-28 md:w-36 shrink-0 bg-white/30 dark:bg-black/10">
-            <div className="mb-3">
-              <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5">SEAT</span>
-              {isEditMode ? (
-                <input
-                  type="text"
-                  value={localSeat}
-                  onChange={(e) => setLocalSeat(e.target.value)}
-                  onBlur={() => onUpdate(transit.id, 'seat', localSeat)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full"
-                  placeholder="Car 0, 00A"
-                />
-              ) : (
-                <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 block">
-                  {transit.seat}
-                </span>
-              )}
-            </div>
+          {/* Right Side: Seat (or Car Model/Plate) & Booking Ref Box */}
+          <div className="border border-black/10 dark:border-white/10 p-3 md:p-4 text-left w-28 md:w-40 shrink-0 bg-white/30 dark:bg-black/10">
+            {transit.transitType === 'car' ? (
+              <>
+                <div className="mb-2.5">
+                  <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5">CAR MODEL (차종)</span>
+                  {isEditMode ? (
+                    <input
+                      type="text"
+                      value={localCarModel}
+                      onChange={(e) => setLocalCarModel(e.target.value)}
+                      onBlur={() => onUpdate(transit.id, 'carModel', localCarModel)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
+                      placeholder="e.g. PRIUS / TESLA"
+                    />
+                  ) : (
+                    <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 block uppercase truncate">
+                      {transit.carModel || '-'}
+                    </span>
+                  )}
+                </div>
+                <div className="mb-2.5">
+                  <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5">PLATE NO. (차량번호)</span>
+                  {isEditMode ? (
+                    <input
+                      type="text"
+                      value={localCarNumber}
+                      onChange={(e) => setLocalCarNumber(e.target.value)}
+                      onBlur={() => onUpdate(transit.id, 'carNumber', localCarNumber)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
+                      placeholder="e.g. 12가 3456"
+                    />
+                  ) : (
+                    <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 block font-mono truncate">
+                      {transit.carNumber || '-'}
+                    </span>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="mb-3">
+                <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5">SEAT</span>
+                {isEditMode ? (
+                  <input
+                    type="text"
+                    value={localSeat}
+                    onChange={(e) => setLocalSeat(e.target.value)}
+                    onBlur={() => onUpdate(transit.id, 'seat', localSeat)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full"
+                    placeholder="Car 0, 00A"
+                  />
+                ) : (
+                  <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 block">
+                    {transit.seat}
+                  </span>
+                )}
+              </div>
+            )}
             <div>
               <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5">BOOKING REF</span>
               {isEditMode ? (
@@ -396,10 +533,10 @@ export function TransitCard({
                   onBlur={() => onUpdate(transit.id, 'bookingRef', localBookingRef)}
                   onClick={(e) => e.stopPropagation()}
                   className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
-                  placeholder="TRN-000"
+                  placeholder="REF-000"
                 />
               ) : (
-                <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 tracking-wider block">
+                <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 tracking-wider block truncate">
                   {transit.bookingRef}
                 </span>
               )}
@@ -413,7 +550,7 @@ export function TransitCard({
             {isEditMode && (
               <div>
                 <label className="text-[9px] text-black/40 dark:text-white/40 uppercase font-black tracking-widest block mb-2">Transit Type (교통 종류)</label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
                     onClick={() => {
@@ -421,7 +558,7 @@ export function TransitCard({
                       onUpdate(transit.id, 'ticketType', 'TRAIN TICKET');
                     }}
                     className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider border transition-all ${
-                      transit.transitType === 'train' || (!transit.transitType || (transit.transitType !== 'bus' && transit.transitType !== 'taxi'))
+                      transit.transitType === 'train' || (!transit.transitType || (transit.transitType !== 'bus' && transit.transitType !== 'taxi' && transit.transitType !== 'car'))
                         ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
                         : 'bg-transparent text-black/60 dark:text-white/60 border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5'
                     }`}
@@ -455,6 +592,20 @@ export function TransitCard({
                     }`}
                   >
                     <Car className="w-3.5 h-3.5" /> Taxi
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onUpdate(transit.id, 'transitType', 'car');
+                      onUpdate(transit.id, 'ticketType', 'CAR RENTAL');
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider border transition-all ${
+                      transit.transitType === 'car'
+                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                        : 'bg-transparent text-black/60 dark:text-white/60 border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <Car className="w-3.5 h-3.5" /> Car Rental
                   </button>
                 </div>
               </div>

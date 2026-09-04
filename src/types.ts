@@ -141,7 +141,10 @@ export interface TransitItem {
   time: string;
   seat: string;
   bookingRef: string;
-  transitType?: 'train' | 'bus' | 'taxi';
+  transitType?: 'train' | 'bus' | 'taxi' | 'car';
+  carModel?: string;
+  carNumber?: string;
+  rentalDropoffDate?: string;
   departPlace?: string;
   departLat?: number;
   departLng?: number;
