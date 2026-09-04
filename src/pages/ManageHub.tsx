@@ -558,17 +558,18 @@ export function ManageHubPage({
   // Add timeline item as a magazine moment
   const handleAddMomentFromTimeline = (item: TimelineItem & { journeyTitle?: string; journeyLocation?: string }) => {
     if (!item.img) return;
+    const parentTrip = trips.find(t => t.id === item.tripId);
     const pName = safeStr(item.place);
-    const jTitle = safeStr(item.journeyTitle);
-    const jLoc = safeStr(item.journeyLocation);
-    const locStr = safeStr(item.location) || pName || jLoc;
+    const jTitle = safeStr(item.journeyTitle) || parentTrip?.title || '';
+    const jLoc = parentTrip?.locationStr || (parentTrip?.locations && parentTrip.locations[0]?.name) || safeStr(item.journeyLocation);
+    const locStr = safeStr(item.location) || pName;
     const newMoment: MagazineMoment = {
       id: `moment-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       tripId: item.tripId,
       title: pName || jTitle || 'UNTITLED MOMENT',
       date: safeStr(item.date),
       placeName: locStr,
-      location: locStr,
+      location: jLoc,
       caption: '',
       quote: '',
       img: item.img,

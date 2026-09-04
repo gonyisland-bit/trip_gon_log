@@ -1277,12 +1277,39 @@ export function HomePage({
                 )}
               </div>
 
-              {/* Magazine Editorial Spread Layout: Smooth Animated Grid */}
+              {/* Magazine Editorial Spread Layout: Smooth Animated Grid (Boundary-free Swiss Minimal) */}
               <div 
                 key={currentSpread}
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 items-stretch animate-in fade-in duration-500"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 items-stretch animate-in fade-in duration-500"
               >
                 {currentSlice.map((moment, idx) => {
+                  const parentTrip = trips.find(t => t.id === moment.tripId);
+                  const tripDestination = parentTrip?.locationStr || (parentTrip?.locations && parentTrip.locations[0]?.name) || moment.location || '';
+                  const engCity = getEnglishCityName(tripDestination) || 'JOURNEY';
+
+                  let resolvedLocation = '';
+                  if (allTimelineItems.length > 0 && moment.img) {
+                    const momentEffImg = getEffectiveImageUrl(moment.img);
+                    const matched = allTimelineItems.find(it => {
+                      if (!it.img) return false;
+                      if (it.img === moment.img) return true;
+                      return getEffectiveImageUrl(it.img) === momentEffImg;
+                    });
+                    if (matched) {
+                      if (matched.place && matched.place.trim()) {
+                        resolvedLocation = matched.place.trim();
+                      } else if (matched.location) {
+                        if (typeof matched.location === 'string' && matched.location.trim()) {
+                          resolvedLocation = matched.location.trim().split(',')[0].trim();
+                        } else if (typeof matched.location === 'object' && (matched.location as any)?.name) {
+                          resolvedLocation = (matched.location as any).name;
+                        }
+                      }
+                    }
+                  }
+                  const displayPlace = resolvedLocation || moment.placeName || cleanAdministrativeDistricts(moment.location || '') || 'VISITED PLACE';
+                  const displayDesc = moment.quote || moment.caption || (moment.date ? `${moment.date}의 기록` : `${engCity} 여정의 순간.`);
+
                   return (
                     <div
                       key={moment.id || idx}
@@ -1302,70 +1329,46 @@ export function HomePage({
                           onNavigate('detail', moment.tripId);
                         }
                       }}
-                      className="group relative cursor-pointer overflow-hidden border border-black/15 dark:border-white/15 bg-white dark:bg-[#121212] flex flex-col justify-between shadow-sm hover:shadow-xl transition-all duration-300 select-none"
+                      className="group relative cursor-pointer flex flex-col justify-between transition-all duration-300 select-none bg-transparent border-none shadow-none"
                     >
-                      {/* 1. Album Photo Section: 4:3 Minimal Matte Photo Frame */}
-                      <div className="w-full aspect-[4/3] overflow-hidden relative bg-black/10 dark:bg-black/40 border-b border-black/10 dark:border-white/10">
+                      {/* 1. Boundary-free Editorial Photo Section */}
+                      <div className="w-full aspect-[4/3] overflow-hidden relative bg-black/5 dark:bg-white/5">
                         <img
                           src={getEffectiveImageUrl(moment.img)}
                           alt={moment.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                          className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out select-none"
                         />
-                        {/* Top-Right: Grand English Satoshi Region/City Tag */}
-                        {(() => {
-                          const engCity = getEnglishCityName(moment.location || '');
-                          if (!engCity) return null;
-                          return (
-                            <div className="absolute top-3.5 right-3.5 pointer-events-none z-10">
-                              <span className="px-2.5 py-1 text-xs sm:text-sm font-black font-satoshi uppercase tracking-[0.18em] bg-black/80 dark:bg-black/90 text-white backdrop-blur-md border border-white/30 shadow-lg leading-none inline-block">
-                                {engCity}
-                              </span>
-                            </div>
-                          );
-                        })()}
+                        {/* Top-Right: Swiss Minimal Black Label (여행지명: TOKYO, OSAKA, etc.) */}
+                        {engCity && (
+                          <div className="absolute top-3 right-3 pointer-events-none z-10">
+                            <span className="px-2.5 py-1 text-[11px] sm:text-xs font-black font-satoshi uppercase tracking-[0.2em] bg-black text-white leading-none inline-block shadow-sm">
+                              {engCity}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
-                      {/* 2. Editorial Album Text & Meta Section */}
-                      <div className="p-5 flex-1 flex flex-col justify-between gap-4 text-black dark:text-white">
-                        <div className="flex flex-col gap-2">
-                          <div className="flex items-center justify-between text-xs font-sans font-bold text-black/50 dark:text-white/50">
-                            <span className="font-mono">{moment.date || 'EDITORIAL LOG'}</span>
-                            <span className="text-red-600 dark:text-red-400 font-extrabold tracking-wider font-mono">MOMENT</span>
-                          </div>
-
-                          <h3 className="text-base sm:text-lg font-black uppercase tracking-tight line-clamp-2 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors font-sans">
+                      {/* 2. Editorial Text Hierarchy (Big Bold Typography + Small Description + Place / Arrow) */}
+                      <div className="pt-4 flex-1 flex flex-col justify-between text-black dark:text-white">
+                        <div className="flex flex-col">
+                          {/* Large Bold Headline */}
+                          <h3 className="text-base sm:text-lg md:text-xl font-black uppercase tracking-tight text-black dark:text-white font-sans line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
                             {moment.title}
                           </h3>
+
+                          {/* Refined Small Description */}
+                          <p className="text-xs sm:text-[13px] font-sans font-normal text-black/60 dark:text-white/60 leading-relaxed line-clamp-2 sm:line-clamp-3 mt-1.5">
+                            {displayDesc}
+                          </p>
                         </div>
 
-                        {/* Bottom Row: Specific Timeline GPS Place Name & View Link */}
-                        <div className="pt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-xs font-sans mt-auto">
-                          {(() => {
-                            let resolvedLocation = '';
-                            if (allTimelineItems.length > 0 && moment.img) {
-                              const momentEffImg = getEffectiveImageUrl(moment.img);
-                              const matched = allTimelineItems.find(it => {
-                                if (!it.img) return false;
-                                if (it.img === moment.img) return true;
-                                return getEffectiveImageUrl(it.img) === momentEffImg;
-                              });
-                              if (matched && matched.location) {
-                                if (typeof matched.location === 'string' && matched.location.trim()) {
-                                  resolvedLocation = matched.location.trim();
-                                } else if (typeof matched.location === 'object' && (matched.location as any)?.name) {
-                                  resolvedLocation = (matched.location as any).name;
-                                }
-                              }
-                            }
-                            const displayPlace = resolvedLocation || moment.location || moment.placeName || cleanAdministrativeDistricts(moment.location || '') || 'VISITED PLACE';
-                            return (
-                              <span className="truncate max-w-[70%] font-bold text-black/75 dark:text-white/75 tracking-tight font-sans" title={displayPlace}>
-                                📍 {displayPlace}
-                              </span>
-                            );
-                          })()}
-                          <span className="font-bold text-black dark:text-white group-hover:translate-x-1 transition-transform inline-flex items-center gap-1 shrink-0 text-xs font-sans">
-                            VIEW ➔
+                        {/* Bottom Row: Specific Tagged Place & Simple Arrow (No MOMENT badge, No VIEW text, No Icons) */}
+                        <div className="pt-3.5 mt-auto flex items-center justify-between text-xs font-sans text-black/75 dark:text-white/75">
+                          <span className="font-bold tracking-tight truncate max-w-[85%]" title={displayPlace}>
+                            {displayPlace}
+                          </span>
+                          <span className="text-base font-bold text-black dark:text-white group-hover:translate-x-1.5 transition-transform shrink-0">
+                            →
                           </span>
                         </div>
                       </div>
