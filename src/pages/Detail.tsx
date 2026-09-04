@@ -5,7 +5,7 @@ import {
   ExternalLink, MapPinOff, Maximize2, Star, ChevronLeft, ChevronRight, ArrowUp, ArrowDown,
   Sun, Cloud, Cloudy, CloudRain, Snowflake, CloudLightning, ArrowRight, Calculator, FileText, Share2, GripVertical,
   Play, Pause, SkipForward, SkipBack, X as CloseIcon, Check, Edit3, DollarSign,
-  Columns2, LayoutGrid, ArrowRightLeft, X, Coins
+  Columns2, LayoutGrid, ArrowRightLeft, X, Coins, Undo2, Redo2
 } from 'lucide-react';
 import { MapArea } from '../components/MapArea';
 import { ImageEditOverlay } from '../components/ImageEditOverlay';
@@ -791,6 +791,113 @@ export function JourneyDetailPage({
   useEffect(() => { draftStaysRef.current = draftStays; }, [draftStays]);
   useEffect(() => { draftTransitsRef.current = draftTransits; }, [draftTransits]);
 
+  // ── Undo / Redo History Management (Ctrl+Z / Ctrl+Y) ────────────────────
+  type EditSnapshot = {
+    trip: Trip | null;
+    timeline: TimelineItem[];
+    flights: FlightItem[];
+    stays: StayItem[];
+    transits: TransitItem[];
+  };
+
+  const undoStackRef = useRef<EditSnapshot[]>([]);
+  const redoStackRef = useRef<EditSnapshot[]>([]);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+
+  const updateUndoRedoFlags = useCallback(() => {
+    setCanUndo(undoStackRef.current.length > 0);
+    setCanRedo(redoStackRef.current.length > 0);
+  }, []);
+
+  const recordHistory = useCallback(() => {
+    if (!isEditing) return;
+    const snapshot: EditSnapshot = {
+      trip: draftTripRef.current ? JSON.parse(JSON.stringify(draftTripRef.current)) : null,
+      timeline: JSON.parse(JSON.stringify(draftTimelineRef.current)),
+      flights: JSON.parse(JSON.stringify(draftFlightsRef.current)),
+      stays: JSON.parse(JSON.stringify(draftStaysRef.current)),
+      transits: JSON.parse(JSON.stringify(draftTransitsRef.current)),
+    };
+    undoStackRef.current.push(snapshot);
+    if (undoStackRef.current.length > 50) {
+      undoStackRef.current.shift();
+    }
+    redoStackRef.current = [];
+    updateUndoRedoFlags();
+  }, [isEditing, updateUndoRedoFlags]);
+
+  const handleUndo = useCallback(() => {
+    if (!isEditing || undoStackRef.current.length === 0) return;
+    const currentSnapshot: EditSnapshot = {
+      trip: draftTripRef.current ? JSON.parse(JSON.stringify(draftTripRef.current)) : null,
+      timeline: JSON.parse(JSON.stringify(draftTimelineRef.current)),
+      flights: JSON.parse(JSON.stringify(draftFlightsRef.current)),
+      stays: JSON.parse(JSON.stringify(draftStaysRef.current)),
+      transits: JSON.parse(JSON.stringify(draftTransitsRef.current)),
+    };
+    redoStackRef.current.push(currentSnapshot);
+
+    const previousSnapshot = undoStackRef.current.pop()!;
+    setDraftTrip(previousSnapshot.trip);
+    setDraftTimeline(previousSnapshot.timeline);
+    setDraftFlights(previousSnapshot.flights);
+    setDraftStays(previousSnapshot.stays);
+    setDraftTransits(previousSnapshot.transits);
+    updateUndoRedoFlags();
+  }, [isEditing, updateUndoRedoFlags]);
+
+  const handleRedo = useCallback(() => {
+    if (!isEditing || redoStackRef.current.length === 0) return;
+    const currentSnapshot: EditSnapshot = {
+      trip: draftTripRef.current ? JSON.parse(JSON.stringify(draftTripRef.current)) : null,
+      timeline: JSON.parse(JSON.stringify(draftTimelineRef.current)),
+      flights: JSON.parse(JSON.stringify(draftFlightsRef.current)),
+      stays: JSON.parse(JSON.stringify(draftStaysRef.current)),
+      transits: JSON.parse(JSON.stringify(draftTransitsRef.current)),
+    };
+    undoStackRef.current.push(currentSnapshot);
+
+    const nextSnapshot = redoStackRef.current.pop()!;
+    setDraftTrip(nextSnapshot.trip);
+    setDraftTimeline(nextSnapshot.timeline);
+    setDraftFlights(nextSnapshot.flights);
+    setDraftStays(nextSnapshot.stays);
+    setDraftTransits(nextSnapshot.transits);
+    updateUndoRedoFlags();
+  }, [isEditing, updateUndoRedoFlags]);
+
+  // Global Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z Keyboard Listener
+  useEffect(() => {
+    if (!isEditing) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // If user is currently typing inside an active text input or textarea, let native browser undo handle text within the input
+      const activeEl = document.activeElement;
+      const isTypingInInput = activeEl instanceof HTMLInputElement || activeEl instanceof HTMLTextAreaElement;
+
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const isCtrlOrCmd = isMac ? e.metaKey : e.ctrlKey;
+
+      if (isCtrlOrCmd) {
+        if ((e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
+          if (!isTypingInInput) {
+            e.preventDefault();
+            handleUndo();
+          }
+        } else if (e.key === 'y' || e.key === 'Y' || ((e.key === 'z' || e.key === 'Z') && e.shiftKey)) {
+          if (!isTypingInInput) {
+            e.preventDefault();
+            handleRedo();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isEditing, handleUndo, handleRedo]);
+
   const [transitSortType, setTransitSortType] = useState<'time' | 'type'>('time');
   const [mapConfirm, setMapConfirm] = useState<{ placeName: string; url: string } | null>(null);
 
@@ -1458,6 +1565,9 @@ export function JourneyDetailPage({
     setDraftFlights([...flights]);
     setDraftStays([...stays]);
     setDraftTransits([...transits]);
+    undoStackRef.current = [];
+    redoStackRef.current = [];
+    updateUndoRedoFlags();
     setIsEditing(true);
     onEditModeChange?.(true);
   };
@@ -1465,6 +1575,9 @@ export function JourneyDetailPage({
   const handleCancel = () => {
     setIsEditing(false);
     onEditModeChange?.(false);
+    undoStackRef.current = [];
+    redoStackRef.current = [];
+    updateUndoRedoFlags();
     setDraftTrip(null);
     setDraftTimeline([]);
     setDraftFlights([]);
@@ -2257,6 +2370,7 @@ export function JourneyDetailPage({
       tripId: trip.id
     };
 
+    recordHistory();
     setDraftTimeline(prev => {
       const copy = [...prev];
       const targetDraftIdx = copy.findIndex(item => item.id === relativeId);
@@ -2441,6 +2555,7 @@ export function JourneyDetailPage({
       date: date,
       tripId: trip.id
     };
+    recordHistory();
     setDraftTimeline(prev => [...prev, newItem]);
     setExpandedItemId(newId);
 
@@ -2458,6 +2573,7 @@ export function JourneyDetailPage({
   };
 
   const handleDeleteTimelineItem = (id: number) => {
+    recordHistory();
     setDraftTimeline(prev => prev.filter(item => item.id !== id));
   };
 
@@ -2501,6 +2617,7 @@ export function JourneyDetailPage({
     setDraftFlights(prev => prev.map(f => f.id === id ? { ...f, [field]: val } : f));
   };
   const deleteFlight = (id: number) => {
+    recordHistory();
     setDraftFlights(prev => prev.filter(f => f.id !== id));
   };
   const handleAddFlight = (title: string) => {
@@ -2557,6 +2674,7 @@ export function JourneyDetailPage({
       pnr: defaultPnr,
       tripId: trip.id
     };
+    recordHistory();
     setDraftFlights(prev => [...prev, newFlight]);
   };
 
@@ -2578,6 +2696,7 @@ export function JourneyDetailPage({
     }
   };
   const deleteStay = (id: number) => {
+    recordHistory();
     setDraftStays(prev => prev.filter(s => s.id !== id));
   };
   const handleAddStay = () => {
@@ -2591,6 +2710,7 @@ export function JourneyDetailPage({
       confNo: 'HTL-0000',
       img: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=800&auto=format&fit=crop',
     };
+    recordHistory();
     setDraftStays(prev => [...prev, newStay]);
   };
 
@@ -2638,6 +2758,7 @@ export function JourneyDetailPage({
     }));
   };
   const deleteTransit = (id: number) => {
+    recordHistory();
     setDraftTransits(prev => prev.filter(t => t.id !== id));
   };
 
@@ -2658,10 +2779,10 @@ export function JourneyDetailPage({
     }
   };
   const handleAddTransit = (type: 'train' | 'bus' | 'taxi' | 'car') => {
-    const ticketType = type === 'train' ? 'TRAIN TICKET' : type === 'bus' ? 'BUS TICKET' : type === 'car' ? 'CAR RENTAL' : 'TAXI TICKET';
-    const title = type === 'train' ? 'Train' : type === 'bus' ? 'Bus' : type === 'car' ? 'Car Rental' : 'Taxi';
-    const route = type === 'car' ? '픽업 장소 → 반납 장소' : type === 'taxi' ? '출발지 → 도착지' : '출발역 → 도착역';
-    const bookingRef = type === 'train' ? 'TRN-000' : type === 'bus' ? 'BUS-000' : type === 'car' ? 'CAR-000' : 'TX-000';
+    const ticketType = type === 'train' ? 'TRAIN TICKET' : type === 'bus' ? 'BUS TICKET' : type === 'car' ? 'RENTAL' : 'TAXI TICKET';
+    const title = type === 'train' ? 'Train' : type === 'bus' ? 'Bus' : type === 'car' ? 'Rental' : 'Taxi';
+    const route = type === 'car' ? '픽업 장소' : type === 'taxi' ? '출발지 → 도착지' : '출발역 → 도착역';
+    const bookingRef = type === 'train' ? 'TRN-000' : type === 'bus' ? 'BUS-000' : type === 'car' ? 'N/A' : 'TX-000';
     const seat = type === 'car' || type === 'taxi' ? 'N/A' : 'Car 0, 00A';
 
     const newTransit: TransitItem = {
@@ -2670,6 +2791,7 @@ export function JourneyDetailPage({
       transitType: type,
       date: 'YYYY.MM.DD',
       rentalDropoffDate: type === 'car' ? 'YYYY.MM.DD' : undefined,
+      rentalDropoffTime: type === 'car' ? '06:00 PM' : undefined,
       carModel: type === 'car' ? '' : undefined,
       carNumber: type === 'car' ? '' : undefined,
       title,
@@ -2679,6 +2801,7 @@ export function JourneyDetailPage({
       bookingRef,
       memo: '',
     };
+    recordHistory();
     setDraftTransits(prev => [...prev, newTransit]);
   };
 
@@ -3019,6 +3142,38 @@ export function JourneyDetailPage({
           >
             <FileText className="w-3.5 h-3.5" />
           </button>
+
+          {/* Undo / Redo buttons in Edit mode */}
+          {isEditing && (
+            <div className="flex items-center gap-0.5 mr-0.5">
+              <button
+                type="button"
+                onClick={handleUndo}
+                disabled={!canUndo}
+                className={`p-1.5 rounded transition-colors flex items-center justify-center ${
+                  canUndo
+                    ? 'hover:bg-black/5 dark:hover:bg-white/5 text-black/80 dark:text-white/80 cursor-pointer'
+                    : 'text-black/25 dark:text-white/25 cursor-not-allowed'
+                }`}
+                title="실행 취소 (Undo: Ctrl+Z)"
+              >
+                <Undo2 className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={handleRedo}
+                disabled={!canRedo}
+                className={`p-1.5 rounded transition-colors flex items-center justify-center ${
+                  canRedo
+                    ? 'hover:bg-black/5 dark:hover:bg-white/5 text-black/80 dark:text-white/80 cursor-pointer'
+                    : 'text-black/25 dark:text-white/25 cursor-not-allowed'
+                }`}
+                title="다시 실행 (Redo: Ctrl+Y)"
+              >
+                <Redo2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
           {/* Quick Edit / Done Icon Button (Unified Icon on Web & Mobile) */}
           {isLoggedIn && (
@@ -4609,7 +4764,7 @@ export function JourneyDetailPage({
                       {renderGroup(trains, 'Train Tickets', Train)}
                       {renderGroup(buses, 'Bus Tickets', Bus)}
                       {renderGroup(taxis, 'Taxi Tickets', Car)}
-                      {renderGroup(cars, 'Car Rentals', Car)}
+                      {renderGroup(cars, 'Rentals', Car)}
                     </div>
                   );
                 }
@@ -4642,7 +4797,7 @@ export function JourneyDetailPage({
                       onClick={() => handleAddTransit('car')} 
                       className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest border border-black dark:border-white px-4 py-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer"
                     >
-                      <Plus className="w-3.5 h-3.5" /> Car Rental
+                      <Plus className="w-3.5 h-3.5" /> Rental
                     </button>
                   </div>
                 </div>

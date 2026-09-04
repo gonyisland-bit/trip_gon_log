@@ -209,12 +209,12 @@ export function TransitCard({
           })()}
           {isEditMode ? (
             <select
-              value={transit.ticketType || (transit.transitType === 'car' ? 'CAR RENTAL' : 'TRAIN TICKET')}
+              value={transit.ticketType || (transit.transitType === 'car' ? 'RENTAL' : 'TRAIN TICKET')}
               onChange={(e) => {
                 const val = e.target.value;
                 onUpdate(transit.id, 'ticketType', val);
                 const typeUpper = val.toUpperCase();
-                if (typeUpper.includes('CAR')) {
+                if (typeUpper.includes('RENTAL') || typeUpper.includes('CAR')) {
                   onUpdate(transit.id, 'transitType', 'car');
                 } else if (typeUpper.includes('BUS')) {
                   onUpdate(transit.id, 'transitType', 'bus');
@@ -230,10 +230,10 @@ export function TransitCard({
               <option value="TRAIN TICKET">TRAIN TICKET</option>
               <option value="BUS TICKET">BUS TICKET</option>
               <option value="TAXI TICKET">TAXI TICKET</option>
-              <option value="CAR RENTAL">CAR RENTAL</option>
+              <option value="RENTAL">RENTAL</option>
             </select>
           ) : (
-            <span className="uppercase">{transit.ticketType || (transit.transitType === 'car' ? 'CAR RENTAL' : 'TRAIN TICKET')}</span>
+            <span className="uppercase">{transit.ticketType === 'CAR RENTAL' ? 'RENTAL' : (transit.ticketType || (transit.transitType === 'car' ? 'RENTAL' : 'TRAIN TICKET'))}</span>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -339,97 +339,167 @@ export function TransitCard({
                 {transit.title}
               </h3>
             )}
+            {/* Route / Location Display & Inputs */}
             {isEditMode ? (
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2 w-full relative" onClick={(e) => e.stopPropagation()}>
-                <div className="flex-1 min-w-0 relative">
-                  <span className="text-[8px] uppercase font-bold tracking-widest opacity-40 block mb-0.5">
-                    {transit.transitType === 'car' ? 'PICKUP LOCATION' : 'DEPART'}
-                  </span>
-                  <PlaceAutocompleteInput
-                    value={transit.departPlace || ''}
-                    onChange={(val) => {
-                      onUpdate(transit.id, {
-                        departPlace: val,
-                        route: `${val} → ${transit.arrivePlace || ''}`
-                      });
-                    }}
-                    onSelectPlace={(name, coords) => {
-                      onUpdate(transit.id, {
-                        departPlace: name,
-                        route: `${name} → ${transit.arrivePlace || ''}`,
-                        ...(coords ? { departLat: coords.lat, departLng: coords.lng } : {})
-                      });
-                    }}
-                    className="w-full bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm"
-                    placeholder={transit.transitType === 'car' ? "Pickup location / airport..." : "Departure terminal/station..."}
-                  />
-                </div>
-                <span className="text-black/40 dark:text-white/40 self-end mb-1.5 hidden sm:inline">→</span>
-                <div className="flex-1 min-w-0 relative">
-                  <span className="text-[8px] uppercase font-bold tracking-widest opacity-40 block mb-0.5">
-                    {transit.transitType === 'car' ? 'RETURN LOCATION' : 'ARRIVE'}
-                  </span>
-                  <PlaceAutocompleteInput
-                    value={transit.arrivePlace || ''}
-                    onChange={(val) => {
-                      onUpdate(transit.id, {
-                        arrivePlace: val,
-                        route: `${transit.departPlace || ''} → ${val}`
-                      });
-                    }}
-                    onSelectPlace={(name, coords) => {
-                      onUpdate(transit.id, {
-                        arrivePlace: name,
-                        route: `${transit.departPlace || ''} → ${name}`,
-                        ...(coords ? { arriveLat: coords.lat, arriveLng: coords.lng } : {})
-                      });
-                    }}
-                    className="w-full bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm"
-                    placeholder={transit.transitType === 'car' ? "Return location / branch..." : "Arrival terminal/station..."}
-                  />
-                </div>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
+                {transit.transitType === 'car' ? (
+                  <div className="w-full relative">
+                    <span className="text-[8px] uppercase font-bold tracking-widest opacity-40 block mb-0.5">
+                      PICKUP LOCATION
+                    </span>
+                    <PlaceAutocompleteInput
+                      value={transit.departPlace || ''}
+                      onChange={(val) => {
+                        onUpdate(transit.id, {
+                          departPlace: val,
+                          arrivePlace: val,
+                          route: val
+                        });
+                      }}
+                      onSelectPlace={(name, coords) => {
+                        onUpdate(transit.id, {
+                          departPlace: name,
+                          arrivePlace: name,
+                          route: name,
+                          ...(coords ? { departLat: coords.lat, departLng: coords.lng, arriveLat: coords.lat, arriveLng: coords.lng } : {})
+                        });
+                      }}
+                      className="w-full bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm"
+                      placeholder="Pickup location / airport / branch..."
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex-1 min-w-0 relative">
+                      <span className="text-[8px] uppercase font-bold tracking-widest opacity-40 block mb-0.5">
+                        DEPART
+                      </span>
+                      <PlaceAutocompleteInput
+                        value={transit.departPlace || ''}
+                        onChange={(val) => {
+                          onUpdate(transit.id, {
+                            departPlace: val,
+                            route: `${val} → ${transit.arrivePlace || ''}`
+                          });
+                        }}
+                        onSelectPlace={(name, coords) => {
+                          onUpdate(transit.id, {
+                            departPlace: name,
+                            route: `${name} → ${transit.arrivePlace || ''}`,
+                            ...(coords ? { departLat: coords.lat, departLng: coords.lng } : {})
+                          });
+                        }}
+                        className="w-full bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm"
+                        placeholder="Departure terminal/station..."
+                      />
+                    </div>
+                    <span className="text-black/40 dark:text-white/40 self-end mb-1.5 hidden sm:inline">→</span>
+                    <div className="flex-1 min-w-0 relative">
+                      <span className="text-[8px] uppercase font-bold tracking-widest opacity-40 block mb-0.5">
+                        ARRIVE
+                      </span>
+                      <PlaceAutocompleteInput
+                        value={transit.arrivePlace || ''}
+                        onChange={(val) => {
+                          onUpdate(transit.id, {
+                            arrivePlace: val,
+                            route: `${transit.departPlace || ''} → ${val}`
+                          });
+                        }}
+                        onSelectPlace={(name, coords) => {
+                          onUpdate(transit.id, {
+                            arrivePlace: name,
+                            route: `${transit.departPlace || ''} → ${name}`,
+                            ...(coords ? { arriveLat: coords.lat, arriveLng: coords.lng } : {})
+                          });
+                        }}
+                        className="w-full bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm"
+                        placeholder="Arrival terminal/station..."
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             ) : (
               <p className="text-xs md:text-sm text-black/50 dark:text-white/50 mt-1 block flex flex-wrap items-center gap-1">
-                {transit.departPlace ? (
-                  <span 
-                    onClick={(e) => handlePlaceLinkClick(e, transit.departPlace!)}
-                    className="hover:underline hover:text-red-600 transition-colors cursor-pointer font-medium underline decoration-dotted decoration-black/30 dark:decoration-white/30"
-                  >
-                    {transit.departPlace}
-                  </span>
+                {transit.transitType === 'car' ? (
+                  transit.departPlace ? (
+                    <span 
+                      onClick={(e) => handlePlaceLinkClick(e, transit.departPlace!)}
+                      className="hover:underline hover:text-red-600 transition-colors cursor-pointer font-medium underline decoration-dotted decoration-black/30 dark:decoration-white/30"
+                    >
+                      {transit.departPlace}
+                    </span>
+                  ) : (
+                    <span>픽업 장소</span>
+                  )
                 ) : (
-                  <span>{transit.transitType === 'car' ? '픽업 장소' : '출발지'}</span>
-                )}
-                <span className="mx-1 opacity-60">→</span>
-                {transit.arrivePlace ? (
-                  <span 
-                    onClick={(e) => handlePlaceLinkClick(e, transit.arrivePlace!)}
-                    className="hover:underline hover:text-red-600 transition-colors cursor-pointer font-medium underline decoration-dotted decoration-black/30 dark:decoration-white/30"
-                  >
-                    {transit.arrivePlace}
-                  </span>
-                ) : (
-                  <span>{transit.transitType === 'car' ? '반납 장소' : '도착지'}</span>
+                  <>
+                    {transit.departPlace ? (
+                      <span 
+                        onClick={(e) => handlePlaceLinkClick(e, transit.departPlace!)}
+                        className="hover:underline hover:text-red-600 transition-colors cursor-pointer font-medium underline decoration-dotted decoration-black/30 dark:decoration-white/30"
+                      >
+                        {transit.departPlace}
+                      </span>
+                    ) : (
+                      <span>출발지</span>
+                    )}
+                    <span className="mx-1 opacity-60">→</span>
+                    {transit.arrivePlace ? (
+                      <span 
+                        onClick={(e) => handlePlaceLinkClick(e, transit.arrivePlace!)}
+                        className="hover:underline hover:text-red-600 transition-colors cursor-pointer font-medium underline decoration-dotted decoration-black/30 dark:decoration-white/30"
+                      >
+                        {transit.arrivePlace}
+                      </span>
+                    ) : (
+                      <span>도착지</span>
+                    )}
+                  </>
                 )}
               </p>
             )}
 
             {/* Time selection (or Rental Duration display for CAR) */}
             {transit.transitType === 'car' ? (
-              <div className="mt-3 flex items-center gap-3">
-                <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
-                  RENTAL TIME: {transit.time || '10:00 AM'}
-                </span>
-                {isEditMode && (
-                  <input
-                    ref={timeRef}
-                    type="time"
-                    value={timeStrTo24h(transit.time)}
-                    onChange={(e) => onUpdate(transit.id, 'time', time24hTo12h(e.target.value))}
-                    className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-bold text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-28 text-center cursor-pointer"
-                  />
-                )}
+              <div className="mt-3 flex flex-wrap items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
+                    PICKUP:
+                  </span>
+                  <span className="text-xs font-mono font-black text-black/80 dark:text-white/80">
+                    {transit.time || '10:00 AM'}
+                  </span>
+                  {isEditMode && (
+                    <input
+                      ref={timeRef}
+                      type="time"
+                      value={timeStrTo24h(transit.time)}
+                      onChange={(e) => onUpdate(transit.id, 'time', time24hTo12h(e.target.value))}
+                      className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-bold text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-24 text-center cursor-pointer"
+                    />
+                  )}
+                </div>
+
+                <span className="text-black/30 dark:text-white/30">—</span>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
+                    RETURN:
+                  </span>
+                  <span className="text-xs font-mono font-black text-black/80 dark:text-white/80">
+                    {transit.rentalDropoffTime || '06:00 PM'}
+                  </span>
+                  {isEditMode && (
+                    <input
+                      type="time"
+                      value={timeStrTo24h(transit.rentalDropoffTime || '06:00 PM')}
+                      onChange={(e) => onUpdate(transit.id, 'rentalDropoffTime', time24hTo12h(e.target.value))}
+                      className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-bold text-xs text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-24 text-center cursor-pointer"
+                    />
+                  )}
+                </div>
               </div>
             ) : isEditMode ? (
               <div className="flex items-center gap-1.5 mt-4" onClick={(e) => e.stopPropagation()}>
@@ -467,7 +537,7 @@ export function TransitCard({
             {transit.transitType === 'car' ? (
               <>
                 <div className="mb-2.5">
-                  <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5">CAR MODEL (차종)</span>
+                  <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5 whitespace-nowrap">CAR MODEL</span>
                   {isEditMode ? (
                     <input
                       type="text"
@@ -484,8 +554,8 @@ export function TransitCard({
                     </span>
                   )}
                 </div>
-                <div className="mb-2.5">
-                  <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5">PLATE NO. (차량번호)</span>
+                <div>
+                  <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5 whitespace-nowrap">PLATE NO.</span>
                   {isEditMode ? (
                     <input
                       type="text"
@@ -504,43 +574,45 @@ export function TransitCard({
                 </div>
               </>
             ) : (
-              <div className="mb-3">
-                <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5">SEAT</span>
-                {isEditMode ? (
-                  <input
-                    type="text"
-                    value={localSeat}
-                    onChange={(e) => setLocalSeat(e.target.value)}
-                    onBlur={() => onUpdate(transit.id, 'seat', localSeat)}
-                    onClick={(e) => e.stopPropagation()}
-                    className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full"
-                    placeholder="Car 0, 00A"
-                  />
-                ) : (
-                  <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 block">
-                    {transit.seat}
-                  </span>
-                )}
-              </div>
+              <>
+                <div className="mb-3">
+                  <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5">SEAT</span>
+                  {isEditMode ? (
+                    <input
+                      type="text"
+                      value={localSeat}
+                      onChange={(e) => setLocalSeat(e.target.value)}
+                      onBlur={() => onUpdate(transit.id, 'seat', localSeat)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full"
+                      placeholder="Car 0, 00A"
+                    />
+                  ) : (
+                    <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 block">
+                      {transit.seat}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5">BOOKING REF</span>
+                  {isEditMode ? (
+                    <input
+                      type="text"
+                      value={localBookingRef}
+                      onChange={(e) => setLocalBookingRef(e.target.value)}
+                      onBlur={() => onUpdate(transit.id, 'bookingRef', localBookingRef)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
+                      placeholder="REF-000"
+                    />
+                  ) : (
+                    <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 tracking-wider block truncate">
+                      {transit.bookingRef}
+                    </span>
+                  )}
+                </div>
+              </>
             )}
-            <div>
-              <span className="text-[8px] md:text-[9px] text-black/40 dark:text-white/40 uppercase font-bold tracking-widest block mb-0.5">BOOKING REF</span>
-              {isEditMode ? (
-                <input
-                  type="text"
-                  value={localBookingRef}
-                  onChange={(e) => setLocalBookingRef(e.target.value)}
-                  onBlur={() => onUpdate(transit.id, 'bookingRef', localBookingRef)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
-                  placeholder="REF-000"
-                />
-              ) : (
-                <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 tracking-wider block truncate">
-                  {transit.bookingRef}
-                </span>
-              )}
-            </div>
           </div>
         </div>
         {/* Expanded details section (Shown if active) */}
@@ -597,7 +669,7 @@ export function TransitCard({
                     type="button"
                     onClick={() => {
                       onUpdate(transit.id, 'transitType', 'car');
-                      onUpdate(transit.id, 'ticketType', 'CAR RENTAL');
+                      onUpdate(transit.id, 'ticketType', 'RENTAL');
                     }}
                     className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider border transition-all ${
                       transit.transitType === 'car'
@@ -605,7 +677,7 @@ export function TransitCard({
                         : 'bg-transparent text-black/60 dark:text-white/60 border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5'
                     }`}
                   >
-                    <Car className="w-3.5 h-3.5" /> Car Rental
+                    <Car className="w-3.5 h-3.5" /> Rental
                   </button>
                 </div>
               </div>

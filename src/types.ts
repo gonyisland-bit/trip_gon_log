@@ -145,6 +145,7 @@ export interface TransitItem {
   carModel?: string;
   carNumber?: string;
   rentalDropoffDate?: string;
+  rentalDropoffTime?: string;
   departPlace?: string;
   departLat?: number;
   departLng?: number;

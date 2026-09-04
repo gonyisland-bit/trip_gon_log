@@ -772,9 +772,9 @@ export function HomePage({
             const { year, month, days, dateRange, cities } = getHeroDetails(currentHero);
 
             return (
-              <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 grid grid-cols-1 md:grid-cols-12 items-stretch">
+              <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 grid grid-cols-1 md:grid-cols-12 items-center">
                 {/* 1. Left Column: Top branding, Big Title, Month/Year (Overlapping onto center media) */}
-                <div className="md:col-span-4 lg:col-span-4 flex flex-col justify-between h-full order-2 md:order-1 relative z-20 md:-mr-16 lg:-mr-24 pointer-events-none py-6 sm:py-8 md:py-12 lg:py-16 px-2 sm:px-4 md:px-0">
+                <div className="md:col-span-3 lg:col-span-3 flex flex-col justify-between h-full order-2 md:order-1 relative z-20 md:-mr-12 lg:-mr-20 pointer-events-none py-6 sm:py-8 md:py-12 lg:py-16 px-2 sm:px-4 md:px-0">
                   <div>
                     {/* Minimal Branding / Title in Inter */}
                     <div className="text-[11px] font-['Inter',sans-serif] font-bold tracking-[0.25em] text-black/40 dark:text-white/40 uppercase mb-3 sm:mb-4 md:mb-6 pointer-events-auto">
@@ -804,11 +804,11 @@ export function HomePage({
                   </div>
                 </div>
 
-                {/* 2. Center Column: Large 4:3 Aspect Ratio Borderless Hero Media Frame (Touches top and bottom edges) */}
-                <div className="md:col-span-4 lg:col-span-5 self-stretch flex items-stretch justify-center order-1 md:order-2 relative z-10 w-full px-0">
+                {/* 2. Center Column: Large 4:3 Aspect Ratio Borderless Hero Media Frame (Dead center of the screen) */}
+                <div className="md:col-span-6 lg:col-span-6 flex items-center justify-center order-1 md:order-2 relative z-10 w-full px-0">
                   <div 
                     onClick={() => onNavigate('detail', currentHero.id)}
-                    className="relative w-full h-full min-h-[380px] sm:min-h-[480px] md:min-h-[640px] lg:min-h-[740px] aspect-[4/3] overflow-hidden bg-neutral-900 group cursor-pointer select-none mx-auto shadow-2xl"
+                    className="relative w-full aspect-[4/3] max-w-2xl lg:max-w-3xl xl:max-w-4xl 2xl:max-w-5xl overflow-hidden bg-neutral-900 group cursor-pointer select-none mx-auto shadow-2xl"
                   >
                     {heroJourneys.map((journey, index) => (
                       <HeroMedia
@@ -828,7 +828,7 @@ export function HomePage({
                 </div>
 
                 {/* 3. Right Column: Date range / Days duration, Cities, Minimal circular arrow button */}
-                <div className="md:col-span-4 lg:col-span-3 flex flex-col justify-between h-full order-3 text-left md:text-right items-start md:items-end relative z-20 md:pl-6 lg:pl-10 font-['Inter',sans-serif] py-6 sm:py-8 md:py-12 lg:py-16 px-2 sm:px-4 md:px-0">
+                <div className="md:col-span-3 lg:col-span-3 flex flex-col justify-between h-full order-3 text-left md:text-right items-start md:items-end relative z-20 md:pl-6 lg:pl-10 font-['Inter',sans-serif] py-6 sm:py-8 md:py-12 lg:py-16 px-2 sm:px-4 md:px-0">
                   {/* Top Slide Indicator (e.g. 01 / 03) with minimal gauge & arrows */}
                   {heroJourneys.length > 1 ? (
                     <div className="flex items-center gap-2.5 mb-4 sm:mb-6">
