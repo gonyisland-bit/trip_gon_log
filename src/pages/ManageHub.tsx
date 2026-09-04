@@ -2500,28 +2500,26 @@ export function ManageHubPage({
           }}
         >
           <div 
-            className="w-full max-w-sm bg-white dark:bg-[#111] border border-black/20 dark:border-white/20 shadow-2xl p-6 select-none flex flex-col gap-4"
+            className="w-full max-w-sm bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 shadow-2xl p-5 sm:p-6 select-none flex flex-col gap-4 text-black dark:text-white"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-black dark:text-white" />
+              <h3 className="text-xs sm:text-sm font-mono font-black uppercase tracking-widest">
                 UNSAVED CHANGES
-              </span>
-              <h3 className="text-sm sm:text-base font-black uppercase tracking-tight text-black dark:text-white">
-                수정사항이 있는데 저장하시겠습니까?
               </h3>
-              <p className="text-xs text-black/60 dark:text-white/60 font-sans mt-0.5 leading-relaxed">
-                저장하지 않고 이동하면 편집 중인 내용이 유실될 수 있습니다.
-              </p>
             </div>
-            <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-black/10 dark:border-white/10 font-sans text-xs font-black uppercase tracking-wider">
+            <p className="text-xs sm:text-sm text-black/80 dark:text-white/80 font-sans leading-relaxed break-keep font-medium">
+              Save current changes before leaving?
+            </p>
+            <div className="grid grid-cols-3 gap-1.5 pt-3 border-t border-black/10 dark:border-white/10 font-sans text-xs font-black uppercase tracking-wider">
               <button
                 type="button"
                 onClick={() => {
                   setPendingJourneyId(null);
                   setShowUnsavedModal(false);
                 }}
-                className="px-2 py-2.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60 uppercase tracking-wider cursor-pointer text-center whitespace-nowrap text-[11px]"
+                className="px-2 py-2.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60 transition-colors cursor-pointer text-center whitespace-nowrap text-[11px]"
               >
                 CANCEL (ESC)
               </button>
@@ -2535,7 +2533,7 @@ export function ManageHubPage({
                   }
                   setShowUnsavedModal(false);
                 }}
-                className="px-2 py-2.5 border border-red-600/30 text-red-600 dark:text-red-400 hover:bg-red-600/10 font-bold uppercase tracking-wider cursor-pointer text-center whitespace-nowrap text-[11px]"
+                className="px-2 py-2.5 border border-black/25 dark:border-white/25 text-black/80 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer text-center whitespace-nowrap text-[11px]"
               >
                 NO (N)
               </button>
@@ -2550,7 +2548,7 @@ export function ManageHubPage({
                   }
                   setShowUnsavedModal(false);
                 }}
-                className="px-2 py-2.5 bg-black text-white dark:bg-white dark:text-black font-bold uppercase tracking-wider flex items-center justify-center gap-1 hover:opacity-85 cursor-pointer shadow-sm whitespace-nowrap text-[11px]"
+                className="px-2 py-2.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 transition-colors cursor-pointer shadow-sm text-center whitespace-nowrap text-[11px]"
               >
                 YES (Y)
               </button>

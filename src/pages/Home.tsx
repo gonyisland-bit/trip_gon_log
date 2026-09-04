@@ -391,10 +391,11 @@ export function JourneyCardMenu({
 
       <ConfirmModal
         isOpen={showDeleteConfirm}
-        title="DELETE CONFIRMATION"
-        message="정말 이 여정을 삭제하시겠습니까? 삭제 후 복구할 수 없습니다."
-        confirmLabel="YES [Y]"
-        cancelLabel="NO [N]"
+        title="DELETE JOURNEY"
+        message="Are you sure you want to delete this journey?"
+        confirmLabel="YES (Y)"
+        cancelLabel="CANCEL (ESC)"
+        confirmVariant="danger"
         onConfirm={() => {
           setShowDeleteConfirm(false);
           if (onDelete) onDelete();

@@ -1269,10 +1269,10 @@ export function EditTripModal({
       <ConfirmModal
         isOpen={showUnsavedConfirm}
         title="UNSAVED CHANGES"
-        message="수정사항이 있는데 저장하시겠습니까?"
-        confirmLabel="YES (저장 후 나가기)"
-        discardLabel="NO (저장 안 함)"
-        cancelLabel="취소 (계속 편집)"
+        message="Save current changes before leaving?"
+        confirmLabel="YES (Y)"
+        discardLabel="NO (N)"
+        cancelLabel="CANCEL (ESC)"
         onConfirm={async () => {
           setShowUnsavedConfirm(false);
           await handleSubmit({ preventDefault: () => {} } as any);

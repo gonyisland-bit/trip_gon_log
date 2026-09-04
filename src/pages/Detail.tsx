@@ -847,6 +847,8 @@ export function JourneyDetailPage({
     updateUndoRedoFlags();
   }, [isEditing, updateUndoRedoFlags]);
 
+  const [showSaveSuccessModal, setShowSaveSuccessModal] = useState(false);
+
   const handleRedo = useCallback(() => {
     if (!isEditing || redoStackRef.current.length === 0) return;
     const currentSnapshot: EditSnapshot = {
@@ -1639,6 +1641,7 @@ export function JourneyDetailPage({
       setIsEditing(false);
       onEditModeChange?.(false);
       setIsBannerMenuOpen(false);
+      setShowSaveSuccessModal(true);
     } catch (e) {
       console.error(e);
     } finally {
@@ -5391,13 +5394,28 @@ export function JourneyDetailPage({
         </div>
       )}
 
+      {/* Save Success Auto-Dismiss Modal */}
+      <ConfirmModal
+        isOpen={showSaveSuccessModal}
+        title="SAVED"
+        message="All changes have been successfully saved."
+        confirmLabel="OK"
+        iconType="check"
+        singleButton
+        autoDismiss
+        autoDismissDuration={2000}
+        onConfirm={() => setShowSaveSuccessModal(false)}
+        onCancel={() => setShowSaveSuccessModal(false)}
+      />
+
       {/* Delete Confirmation Modal */}
       <ConfirmModal
         isOpen={showTripDeleteConfirm}
         title="DELETE JOURNEY"
-        message="정말 이 여정을 완전히 삭제하시겠습니까? 기록된 타임라인, 항공, 숙소, 교통 데이터가 모두 영구 삭제됩니다."
-        confirmLabel="YES [Y]"
-        cancelLabel="NO [N]"
+        message="Are you sure you want to permanently delete this journey?"
+        confirmLabel="YES (Y)"
+        cancelLabel="CANCEL (ESC)"
+        confirmVariant="danger"
         onConfirm={async () => {
           setShowTripDeleteConfirm(false);
           if (trip && onDelete) {

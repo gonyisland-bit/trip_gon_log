@@ -1317,6 +1317,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
   const highlightLayerRef = useRef<any>(null);
   const selectPinRef = useRef<any>(null);
   const yellowMarkersRef = useRef<any[]>([]);
+  const countryDotsRef = useRef<any[]>([]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCountry, setSelectedCountry] = useState<CountryInfo | null>(null);
@@ -2160,6 +2161,46 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
       yellowMarkersRef.current.push(marker);
     });
   }, [favoriteCountries, showWishlistPins, showPinLabels, isDarkMode]);
+
+  // Render Faint Minimal Dot Markers for all travelable countries (Visual hint for clickable countries)
+  useEffect(() => {
+    const L = (window as any).L;
+    const map = mapRef.current;
+    if (!map || !L) return;
+
+    countryDotsRef.current.forEach(m => map.removeLayer(m));
+    countryDotsRef.current = [];
+
+    COUNTRIES_DATA.forEach(country => {
+      const dotHtml = `
+        <div class="group relative cursor-pointer flex items-center justify-center select-none" style="width: 24px; height: 24px;">
+          <!-- Hover Tooltip -->
+          <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 4px; pointer-events: none; white-space: nowrap; z-index: 1000;" class="opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+            <span style="font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 5px; line-height: 1; display: inline-block;">
+              ${country.name}
+            </span>
+          </div>
+          <!-- Faint Dot: 7px with subtle contrast ring -->
+          <div style="width: 7px; height: 7px; border-radius: 9999px; background-color: ${isDarkMode ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.35)'}; border: 1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)'};" class="group-hover:scale-150 transition-all duration-150 shadow-2xs"></div>
+        </div>
+      `;
+
+      const icon = L.divIcon({
+        className: 'custom-country-dot',
+        html: dotHtml,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+      });
+
+      const dotMarker = L.marker(country.center, { icon, zIndexOffset: 300 }).addTo(map);
+      dotMarker.on('click', (e: any) => {
+        if (e && e.originalEvent) e.originalEvent.stopPropagation();
+        handleSelectCountry(country);
+      });
+
+      countryDotsRef.current.push(dotMarker);
+    });
+  }, [isDarkMode]);
 
   // Filtered countries for search (Supports continent search e.g. "아시아", "유럽", "아프리카", "남미" and Korean city search e.g. "뉴욕", "파리", "로스앤젤레스")
   const filteredCountries = useMemo(() => {
