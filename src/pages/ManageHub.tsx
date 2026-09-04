@@ -466,7 +466,13 @@ export function ManageHubPage({
       localStorage.setItem('home_gradient_enabled', String(gradientEnabled));
       localStorage.setItem('home_gradient_from', gradientFrom);
       localStorage.setItem('home_gradient_to', gradientTo);
-      window.dispatchEvent(new CustomEvent('homeConfigChanged'));
+      window.dispatchEvent(new CustomEvent('homeConfigChanged', {
+        detail: {
+          gradientEnabled,
+          gradientFrom,
+          gradientTo,
+        }
+      }));
       await onSaveAllHomeSettings(
         title,
         subtitle,
@@ -497,7 +503,7 @@ export function ManageHubPage({
     if (saveRef) {
       saveRef.current = activeMode === 'HOME' ? handleSaveHome : handleSaveJourney;
     }
-  }, [activeMode, title, subtitle, selectedHeroIds, autoSlide, showMarquee, homeMarquee, homeSpeed, mediaType, momentsList, slideDuration, selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge, saveRef]);
+  }, [activeMode, title, subtitle, selectedHeroIds, autoSlide, showMarquee, homeMarquee, homeSpeed, mediaType, momentsList, slideDuration, gradientEnabled, gradientFrom, gradientTo, selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge, saveRef]);
 
   // Keyboard Shortcuts: Enter / ESC / D in Unsaved Modal, and Ctrl+S to Save
   useEffect(() => {
@@ -536,7 +542,7 @@ export function ManageHubPage({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showUnsavedModal, pendingJourneyId, activeMode, isHomeDirty, isArchiveDirty, title, subtitle, selectedHeroIds, autoSlide, showMarquee, homeMarquee, homeSpeed, mediaType, momentsList, selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge]);
+  }, [showUnsavedModal, pendingJourneyId, activeMode, isHomeDirty, isArchiveDirty, title, subtitle, selectedHeroIds, autoSlide, showMarquee, homeMarquee, homeSpeed, mediaType, momentsList, slideDuration, gradientEnabled, gradientFrom, gradientTo, selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge]);
 
   // Save Map Settings
   const handleSaveMapSettings = () => {
@@ -556,61 +562,6 @@ export function ManageHubPage({
     );
   }, [localJourneys, heroSearchQuery]);
 
-  // Extract all timeline items with images across timelineData AND journey gallery metadata
-  const allTimelineItemsWithImages = useMemo(() => {
-    const list: (TimelineItem & { journeyTitle?: string; journeyLocation?: string })[] = [];
-    const journeyMap = new Map(localJourneys.map(j => [j.id, j]));
-    const seenImages = new Set<string>();
-
-    // 1. From timelineData (across all recorded dates)
-    Object.entries(timelineData).forEach(([date, items]) => {
-      if (Array.isArray(items)) {
-        items.forEach(item => {
-          if (item.img) {
-            seenImages.add(item.img);
-            const matchedJourney = item.tripId ? journeyMap.get(item.tripId) : undefined;
-            list.push({
-              ...item,
-              date: item.date || date,
-              journeyTitle: matchedJourney?.title ? matchedJourney.title.replace(/\s*\(Plan\)$/i, '') : undefined,
-              journeyLocation: matchedJourney?.locationStr || matchedJourney?.country,
-            });
-          }
-        });
-      }
-    });
-
-    // 2. Also extract all photos from each journey's gallery metadata
-    localJourneys.forEach(j => {
-      if (j.gallery && Array.isArray(j.gallery)) {
-        j.gallery.forEach((gItem, gIdx) => {
-          const url = typeof gItem === 'string' ? gItem : gItem?.url;
-          if (url && !seenImages.has(url)) {
-            seenImages.add(url);
-            const gDate = typeof gItem === 'object' && gItem?.date ? gItem.date : j.date;
-            const gPlace = typeof gItem === 'object' && gItem?.place ? gItem.place : '';
-            const gMemo = typeof gItem === 'object' && gItem?.imgNote ? gItem.imgNote : '';
-            list.push({
-              id: 900000 + j.id * 1000 + gIdx,
-              time: typeof gItem === 'object' && gItem?.time ? gItem.time : '12:00',
-              type: 'PHOTO',
-              place: gPlace || j.locationStr || j.title.replace(/\s*\(Plan\)$/i, ''),
-              cost: '',
-              memo: gMemo,
-              img: url,
-              date: gDate,
-              tripId: j.id,
-              journeyTitle: j.title.replace(/\s*\(Plan\)$/i, ''),
-              journeyLocation: j.locationStr || j.country,
-            });
-          }
-        });
-      }
-    });
-
-    return list;
-  }, [timelineData, localJourneys]);
-
   // Safe string helper to prevent crash when location or other properties are objects
   const safeStr = (val: any): string => {
     if (typeof val === 'string') return val;
@@ -622,25 +573,95 @@ export function ManageHubPage({
     return '';
   };
 
-  // Filtered timeline candidate items based on selected trip OR search query
+  // Extract candidate timeline & gallery photos on-demand (only when trip is selected or search query is active)
   const candidateTimelineItems = useMemo(() => {
-    let result = allTimelineItemsWithImages;
-    if (selectedTripForMoments !== null) {
-      result = result.filter(item => String(item.tripId) === String(selectedTripForMoments));
+    // If no trip selected and no search query, do NOT process database to keep mobile entry blazing fast
+    if (selectedTripForMoments === null && !momentSearchQuery.trim()) {
+      return [];
     }
-    if (momentSearchQuery.trim()) {
-      const q = momentSearchQuery.toLowerCase().trim();
-      result = result.filter(item => {
-        const place = safeStr(item.place).toLowerCase();
-        const memo = safeStr(item.memo).toLowerCase();
-        const jTitle = safeStr(item.journeyTitle).toLowerCase();
-        const jLoc = safeStr(item.journeyLocation).toLowerCase();
-        const loc = safeStr(item.location).toLowerCase();
-        return place.includes(q) || memo.includes(q) || jTitle.includes(q) || jLoc.includes(q) || loc.includes(q);
-      });
-    }
-    return result;
-  }, [allTimelineItemsWithImages, selectedTripForMoments, momentSearchQuery]);
+
+    const list: (TimelineItem & { journeyTitle?: string; journeyLocation?: string })[] = [];
+    const journeyMap = new Map(localJourneys.map(j => [j.id, j]));
+    const seenImages = new Set<string>();
+    const q = momentSearchQuery.toLowerCase().trim();
+
+    // 1. From timelineData
+    Object.entries(timelineData).forEach(([date, items]) => {
+      if (Array.isArray(items)) {
+        items.forEach(item => {
+          if (!item.img) return;
+          if (selectedTripForMoments !== null && String(item.tripId) !== String(selectedTripForMoments)) {
+            return;
+          }
+          const matchedJourney = item.tripId ? journeyMap.get(item.tripId) : undefined;
+          if (q) {
+            const place = safeStr(item.place).toLowerCase();
+            const memo = safeStr(item.memo).toLowerCase();
+            const loc = safeStr(item.location).toLowerCase();
+            const jTitle = safeStr(matchedJourney?.title).toLowerCase();
+            const jLoc = safeStr(matchedJourney?.locationStr || matchedJourney?.country).toLowerCase();
+            if (!place.includes(q) && !memo.includes(q) && !loc.includes(q) && !jTitle.includes(q) && !jLoc.includes(q)) {
+              return;
+            }
+          }
+          if (!seenImages.has(item.img)) {
+            seenImages.add(item.img);
+            list.push({
+              ...item,
+              date: item.date || date,
+              journeyTitle: matchedJourney?.title ? matchedJourney.title.replace(/\s*\(Plan\)$/i, '') : undefined,
+              journeyLocation: matchedJourney?.locationStr || matchedJourney?.country,
+            });
+          }
+        });
+      }
+    });
+
+    // 2. From journey gallery metadata
+    const targetJourneys = selectedTripForMoments !== null
+      ? localJourneys.filter(j => String(j.id) === String(selectedTripForMoments))
+      : localJourneys;
+
+    targetJourneys.forEach(j => {
+      if (j.gallery && Array.isArray(j.gallery)) {
+        j.gallery.forEach((gItem, gIdx) => {
+          const url = typeof gItem === 'string' ? gItem : gItem?.url;
+          if (!url || seenImages.has(url)) return;
+
+          const gDate = typeof gItem === 'object' && gItem?.date ? gItem.date : j.date;
+          const gPlace = typeof gItem === 'object' && gItem?.place ? gItem.place : '';
+          const gMemo = typeof gItem === 'object' && gItem?.imgNote ? gItem.imgNote : '';
+
+          if (q) {
+            const place = gPlace.toLowerCase();
+            const memo = gMemo.toLowerCase();
+            const jTitle = safeStr(j.title).toLowerCase();
+            const jLoc = safeStr(j.locationStr || j.country).toLowerCase();
+            if (!place.includes(q) && !memo.includes(q) && !jTitle.includes(q) && !jLoc.includes(q)) {
+              return;
+            }
+          }
+
+          seenImages.add(url);
+          list.push({
+            id: 900000 + j.id * 1000 + gIdx,
+            time: typeof gItem === 'object' && gItem?.time ? gItem.time : '12:00',
+            type: 'PHOTO',
+            place: gPlace || j.locationStr || j.title.replace(/\s*\(Plan\)$/i, ''),
+            cost: '',
+            memo: gMemo,
+            img: url,
+            date: gDate,
+            tripId: j.id,
+            journeyTitle: j.title.replace(/\s*\(Plan\)$/i, ''),
+            journeyLocation: j.locationStr || j.country,
+          });
+        });
+      }
+    });
+
+    return list;
+  }, [timelineData, localJourneys, selectedTripForMoments, momentSearchQuery]);
 
   // Add timeline item as a magazine moment
   const handleAddMomentFromTimeline = (item: TimelineItem & { journeyTitle?: string; journeyLocation?: string }) => {
@@ -890,25 +911,41 @@ export function ManageHubPage({
                               { name: 'Misty Sage', from: '#F8FAF8', to: '#E9EFE8' },
                               { name: 'Slate Cool', from: '#F8F9FA', to: '#EAEFF5' },
                               { name: 'Warm Paper', from: '#FAF6EE', to: '#EFE8DA' },
-                            ].map((p, idx) => (
-                              <button
-                                key={idx}
-                                type="button"
-                                onClick={() => {
-                                  setGradientFrom(p.from);
-                                  setGradientTo(p.to);
-                                }}
-                                className="p-2 border border-black/15 dark:border-white/15 text-left flex flex-col gap-1.5 hover:border-black dark:hover:border-white transition-colors cursor-pointer"
-                              >
-                                <div
-                                  className="w-full h-5 border border-black/10 dark:border-white/10"
-                                  style={{ background: `linear-gradient(135deg, ${p.from}, ${p.to})` }}
-                                />
-                                <span className="text-[10px] font-bold text-black dark:text-white truncate">
-                                  {p.name}
-                                </span>
-                              </button>
-                            ))}
+                            ].map((p, idx) => {
+                              const isSelected = gradientFrom.toLowerCase() === p.from.toLowerCase() && gradientTo.toLowerCase() === p.to.toLowerCase();
+                              return (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={() => {
+                                    setGradientFrom(p.from);
+                                    setGradientTo(p.to);
+                                  }}
+                                  className={`p-2 border text-left flex flex-col gap-1.5 transition-all cursor-pointer relative ${
+                                    isSelected
+                                      ? 'border-black dark:border-white ring-2 ring-black dark:ring-white bg-black/5 dark:bg-white/10 shadow-sm'
+                                      : 'border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white opacity-70 hover:opacity-100'
+                                  }`}
+                                >
+                                  <div
+                                    className="w-full h-5 border border-black/10 dark:border-white/10 relative"
+                                    style={{ background: `linear-gradient(135deg, ${p.from}, ${p.to})` }}
+                                  >
+                                    {isSelected && (
+                                      <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-black dark:bg-white shadow-xs" />
+                                    )}
+                                  </div>
+                                  <div className="flex items-center justify-between gap-1">
+                                    <span className={`text-[10px] truncate ${isSelected ? 'font-black text-black dark:text-white' : 'font-bold text-black/80 dark:text-white/80'}`}>
+                                      {p.name}
+                                    </span>
+                                    {isSelected && (
+                                      <Check className="w-3 h-3 text-black dark:text-white shrink-0" />
+                                    )}
+                                  </div>
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
 
@@ -1344,10 +1381,10 @@ export function ManageHubPage({
                         onChange={e => setSelectedTripForMoments(e.target.value === '' ? null : Number(e.target.value))}
                         className="px-3 py-2 text-xs font-mono font-bold bg-transparent border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white text-black dark:text-white"
                       >
-                        <option value="" className="text-black bg-white dark:bg-[#161616] dark:text-white">ALL JOURNEYS ({allTimelineItemsWithImages.length})</option>
+                        <option value="" className="text-black bg-white dark:bg-[#161616] dark:text-white">-- SELECT JOURNEY TO LOAD PHOTOS --</option>
                         {localJourneys.map(j => (
                           <option key={j.id} value={j.id} className="text-black bg-white dark:bg-[#161616] dark:text-white">
-                            {j.title.replace(' (Plan)', '')} ({j.locationStr})
+                            {j.title.replace(/\s*\(Plan\)$/i, '')} ({j.locationStr || j.country})
                           </option>
                         ))}
                       </select>
@@ -1367,14 +1404,37 @@ export function ManageHubPage({
 
                     {/* Candidate Timeline Images Grid */}
                     <div className="flex flex-col gap-2 mt-1">
-                      <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
-                        TIMELINE PHOTO ({candidateTimelineItems.length})
-                      </span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                          TIMELINE PHOTOS ({candidateTimelineItems.length})
+                        </span>
+                        {selectedTripForMoments !== null && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedTripForMoments(null)}
+                            className="text-[10px] font-mono text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                          >
+                            CLEAR SELECTION
+                          </button>
+                        )}
+                      </div>
 
                       {candidateTimelineItems.length === 0 ? (
-                        <div className="py-8 text-center text-xs font-mono text-black/40 dark:text-white/40 border border-black/10 dark:border-white/10">
-                          NO PHOTOS FOUND
-                        </div>
+                        selectedTripForMoments === null && !momentSearchQuery.trim() ? (
+                          <div className="py-10 px-4 text-center flex flex-col items-center justify-center gap-2 border border-dashed border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.02]">
+                            <ImageIcon className="w-6 h-6 text-black/30 dark:text-white/30" />
+                            <span className="text-xs font-mono font-black text-black/70 dark:text-white/70 tracking-wider uppercase">
+                              SELECT A JOURNEY TO VIEW PHOTOS
+                            </span>
+                            <span className="text-[11px] text-black/40 dark:text-white/40 max-w-sm leading-relaxed">
+                              위 드롭다운에서 여행을 선택하시거나 검색어를 입력하시면 해당 사진들이 즉시 로드됩니다.
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="py-8 text-center text-xs font-mono text-black/40 dark:text-white/40 border border-black/10 dark:border-white/10">
+                            NO PHOTOS FOUND FOR THIS SELECTION
+                          </div>
+                        )
                       ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-[520px] overflow-y-auto p-1 border border-black/15 dark:border-white/15">
                           {candidateTimelineItems.map((item, i) => {
@@ -1393,6 +1453,7 @@ export function ManageHubPage({
                                   src={getEffectiveImageUrl(item.img || '')}
                                   alt={displayTitle}
                                   loading="lazy"
+                                  decoding="async"
                                   className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                 />
                                 

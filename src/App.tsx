@@ -553,6 +553,19 @@ function App() {
     };
   }, []);
 
+  // Sync real-time homeConfigChanged events (gradient / limits)
+  useEffect(() => {
+    const handleConfigChange = (e: any) => {
+      if (e?.detail?.gradientEnabled !== undefined) {
+        setHomeGradientEnabled(Boolean(e.detail.gradientEnabled));
+      }
+      if (e?.detail?.gradientFrom) setHomeGradientFrom(e.detail.gradientFrom);
+      if (e?.detail?.gradientTo) setHomeGradientTo(e.detail.gradientTo);
+    };
+    window.addEventListener('homeConfigChanged', handleConfigChange);
+    return () => window.removeEventListener('homeConfigChanged', handleConfigChange);
+  }, []);
+
   // Auto-seed if database is empty when admin logs in
   useEffect(() => {
     if (isLoggedIn && trips.length === 0 && plans.length === 0) {
@@ -1427,9 +1440,27 @@ function App() {
     new Set([...trips, ...plans].flatMap(t => t.tags || []))
   ).filter(t => t !== 'Plan' && t !== 'Personal');
 
+  const appGradientStyle = (currentView === 'home' && homeGradientEnabled)
+    ? (isDarkMode
+        ? (() => {
+            const f = (homeGradientFrom || '').toLowerCase();
+            const t = (homeGradientTo || '').toLowerCase();
+            if (f.includes('fbfbfa') || f.includes('faf8f5') || t.includes('f1ece1')) return { background: 'linear-gradient(135deg, #1d1a16 0%, #12110f 100%)' };
+            if (f.includes('faf9fd') || f.includes('ece9f2') || t.includes('ece9f2')) return { background: 'linear-gradient(135deg, #1c1825 0%, #111018 100%)' };
+            if (f.includes('f8faf8') || f.includes('e9efe8') || t.includes('e9efe8')) return { background: 'linear-gradient(135deg, #161c17 0%, #101411 100%)' };
+            if (f.includes('f8f9fa') || f.includes('eaeff5') || t.includes('eaeff5')) return { background: 'linear-gradient(135deg, #171c24 0%, #101217 100%)' };
+            if (f.includes('faf6ee') || f.includes('efe8da') || t.includes('efe8da')) return { background: 'linear-gradient(135deg, #201b13 0%, #13110d 100%)' };
+            return { background: 'linear-gradient(135deg, #1d1b18 0%, #121212 100%)' };
+          })()
+        : { background: `linear-gradient(135deg, ${homeGradientFrom} 0%, ${homeGradientTo} 100%)` })
+    : undefined;
+
   return (
     <div className={`${isDarkMode ? 'dark' : ''} overflow-x-hidden w-full`}>
-      <div className={`min-h-screen bg-white text-black dark:bg-[#141414] dark:text-white font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 w-full overflow-x-hidden flex flex-col ${(currentView === 'detail' || currentView === 'map') ? 'h-screen overflow-hidden' : ''}`}>
+      <div 
+        style={appGradientStyle}
+        className={`min-h-screen ${appGradientStyle ? 'bg-transparent' : 'bg-white dark:bg-[#141414]'} text-black dark:text-white font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 w-full overflow-x-hidden flex flex-col ${(currentView === 'detail' || currentView === 'map') ? 'h-screen overflow-hidden' : ''}`}
+      >
         
         {/* Firebase Error/Status Banners */}
         {dbError && (

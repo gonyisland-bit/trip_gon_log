@@ -641,11 +641,17 @@ export function HomePage({
   });
 
   useEffect(() => {
-    const handleConfigChange = () => {
+    const handleConfigChange = (e?: any) => {
       setJourneyLimit(parseInt(localStorage.getItem('home_journey_limit') || '4', 10));
-      setGradientEnabled(localStorage.getItem('home_gradient_enabled') === 'true');
-      setGradientFrom(localStorage.getItem('home_gradient_from') || '#FAF8F5');
-      setGradientTo(localStorage.getItem('home_gradient_to') || '#F1ECE1');
+      if (e?.detail?.gradientEnabled !== undefined) {
+        setGradientEnabled(Boolean(e.detail.gradientEnabled));
+      } else {
+        setGradientEnabled(localStorage.getItem('home_gradient_enabled') === 'true');
+      }
+      if (e?.detail?.gradientFrom) setGradientFrom(e.detail.gradientFrom);
+      else setGradientFrom(localStorage.getItem('home_gradient_from') || '#FAF8F5');
+      if (e?.detail?.gradientTo) setGradientTo(e.detail.gradientTo);
+      else setGradientTo(localStorage.getItem('home_gradient_to') || '#F1ECE1');
     };
     window.addEventListener('homeConfigChanged', handleConfigChange);
     return () => window.removeEventListener('homeConfigChanged', handleConfigChange);
@@ -654,9 +660,24 @@ export function HomePage({
   const gradientBackgroundStyle = useMemo(() => {
     if (!gradientEnabled) return undefined;
     if (isDarkMode) {
-      return {
-        background: 'linear-gradient(135deg, #181818 0%, #121212 100%)',
-      };
+      const f = (gradientFrom || '').toLowerCase();
+      const t = (gradientTo || '').toLowerCase();
+      if (f.includes('fbfbfa') || f.includes('faf8f5') || t.includes('f1ece1')) {
+        return { background: 'linear-gradient(135deg, #1d1a16 0%, #12110f 100%)' };
+      }
+      if (f.includes('faf9fd') || f.includes('ece9f2') || t.includes('ece9f2')) {
+        return { background: 'linear-gradient(135deg, #1c1825 0%, #111018 100%)' };
+      }
+      if (f.includes('f8faf8') || f.includes('e9efe8') || t.includes('e9efe8')) {
+        return { background: 'linear-gradient(135deg, #161c17 0%, #101411 100%)' };
+      }
+      if (f.includes('f8f9fa') || f.includes('eaeff5') || t.includes('eaeff5')) {
+        return { background: 'linear-gradient(135deg, #171c24 0%, #101217 100%)' };
+      }
+      if (f.includes('faf6ee') || f.includes('efe8da') || t.includes('efe8da')) {
+        return { background: 'linear-gradient(135deg, #201b13 0%, #13110d 100%)' };
+      }
+      return { background: 'linear-gradient(135deg, #1d1b18 0%, #121212 100%)' };
     }
     return {
       background: `linear-gradient(135deg, ${gradientFrom} 0%, ${gradientTo} 100%)`,
