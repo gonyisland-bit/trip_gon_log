@@ -1473,28 +1473,33 @@ export function HomePage({
                           const tripDestination = parentTrip?.locationStr || (parentTrip?.locations && parentTrip.locations[0]?.name) || moment.location || '';
                           const engCity = getEnglishCityName(tripDestination) || 'JOURNEY';
 
-                          let resolvedLocation = '';
+                          let matchedTimelineItem: any = null;
                           if (allTimelineItems.length > 0 && moment.img) {
                             const momentEffImg = getEffectiveImageUrl(moment.img);
-                            const matched = allTimelineItems.find(it => {
+                            matchedTimelineItem = allTimelineItems.find(it => {
                               if (!it.img) return false;
                               if (it.img === moment.img) return true;
                               return getEffectiveImageUrl(it.img) === momentEffImg;
                             });
-                            if (matched) {
-                              if (matched.place && matched.place.trim()) {
-                                resolvedLocation = matched.place.trim();
-                              } else if (matched.location) {
-                                if (typeof matched.location === 'string' && matched.location.trim()) {
-                                  resolvedLocation = matched.location.trim().split(',')[0].trim();
-                                } else if (typeof matched.location === 'object' && (matched.location as any)?.name) {
-                                  resolvedLocation = (matched.location as any).name;
-                                }
-                              }
+                          }
+
+                          // 1. Title from timeline place or moment title
+                          const displayTitle = matchedTimelineItem?.place?.trim() || moment.title;
+
+                          // 2. Formatted date and day
+                          const rawDate = matchedTimelineItem?.date || moment.date;
+                          const dateWithDay = formatSimpleDateWithDay(rawDate);
+
+                          // 3. Google autocomplete location name for bottom row
+                          let resolvedGoogleLocation = '';
+                          if (matchedTimelineItem?.location) {
+                            if (typeof matchedTimelineItem.location === 'string' && matchedTimelineItem.location.trim()) {
+                              resolvedGoogleLocation = matchedTimelineItem.location.trim().split(',')[0].trim();
+                            } else if (typeof matchedTimelineItem.location === 'object' && (matchedTimelineItem.location as any)?.name) {
+                              resolvedGoogleLocation = (matchedTimelineItem.location as any).name;
                             }
                           }
-                          const displayPlace = resolvedLocation || moment.placeName || cleanAdministrativeDistricts(moment.location || '') || 'VISITED PLACE';
-                          const dateWithDay = formatSimpleDateWithDay(moment.date);
+                          const displayPlace = resolvedGoogleLocation || moment.location || moment.placeName || cleanAdministrativeDistricts(moment.location || '') || 'VISITED PLACE';
 
                           return (
                             <div
@@ -1522,7 +1527,7 @@ export function HomePage({
                               <div className="w-full aspect-[3/4] overflow-hidden relative bg-black/5 dark:bg-white/5">
                                 <img
                                   src={getEffectiveImageUrl(moment.img)}
-                                  alt={moment.title}
+                                  alt={displayTitle}
                                   className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out select-none"
                                 />
                                 {/* Top-Right: Swiss Minimal Black Label (여행지명: TOKYO, OSAKA, etc.) */}
@@ -1535,30 +1540,23 @@ export function HomePage({
                                 )}
                               </div>
 
-                              {/* 2. Editorial Text Hierarchy (Big Bold Typography + Date/Day + Quote + Place / Arrow) */}
+                              {/* 2. Editorial Text Hierarchy (Title + Date + Bottom Google Place / Arrow) */}
                               <div className="pt-3.5 flex-1 flex flex-col justify-between text-black dark:text-white">
                                 <div className="flex flex-col">
-                                  {/* Large Bold Headline */}
+                                  {/* 1) Timeline Title */}
                                   <h3 className="text-base sm:text-lg md:text-xl font-black uppercase tracking-tight text-black dark:text-white font-sans line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
-                                    {moment.title}
+                                    {displayTitle}
                                   </h3>
 
-                                  {/* Minimal Date and Day (e.g. 2024.07.19 FRI) with tight vertical gap */}
+                                  {/* 2) Date and Day (e.g. 2024.07.19 FRI) */}
                                   {dateWithDay && (
                                     <div className="text-[11px] sm:text-xs font-mono font-bold text-black/50 dark:text-white/50 uppercase tracking-wider mt-1">
                                       {dateWithDay}
                                     </div>
                                   )}
-
-                                  {/* Concise quote or caption if present */}
-                                  {(moment.quote || moment.caption) && (
-                                    <p className="text-xs sm:text-[13px] font-sans font-normal text-black/65 dark:text-white/65 leading-relaxed line-clamp-2 mt-1.5">
-                                      {moment.quote || moment.caption}
-                                    </p>
-                                  )}
                                 </div>
 
-                                {/* Bottom Row: Specific Tagged Place & Simple Arrow (No MOMENT badge, No VIEW text, No Icons) */}
+                                {/* 3) Bottom Row: Google Autocomplete Place Name & Simple Arrow */}
                                 <div className="pt-3 mt-auto flex items-center justify-between text-xs font-sans text-black/75 dark:text-white/75 border-t border-black/10 dark:border-white/10">
                                   <span className="font-bold tracking-tight truncate max-w-[85%]" title={displayPlace}>
                                     {displayPlace}

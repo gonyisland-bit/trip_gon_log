@@ -170,6 +170,20 @@ export function Lightbox({
     scheduleThumbnailSettle();
   };
 
+  // Convert mouse wheel up/down to horizontal scroll on thumbnail bar
+  const handleThumbnailsWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    const container = thumbnailsContainerRef.current;
+    if (!container || !isOpen || isSlideshow) return;
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      e.preventDefault();
+      e.stopPropagation();
+      isUserScrollingThumbsRef.current = true;
+      if (thumbScrollTimeoutRef.current) clearTimeout(thumbScrollTimeoutRef.current);
+      container.scrollLeft += e.deltaY;
+      scheduleThumbnailSettle();
+    }
+  };
+
   // Native scrollend listener for instantaneous and perfect settle on mobile
   useEffect(() => {
     const container = thumbnailsContainerRef.current;
@@ -924,6 +938,7 @@ export function Lightbox({
         <div 
           ref={thumbnailsContainerRef} 
           onScroll={handleThumbnailsScroll}
+          onWheel={handleThumbnailsWheel}
           onTouchStart={() => {
             isTouchingThumbsRef.current = true;
             isUserScrollingThumbsRef.current = true;

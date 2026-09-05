@@ -2963,7 +2963,6 @@ export function JourneyDetailPage({
 
   const handleRemoveGalleryImage = async (imageUrl: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!window.confirm("이 이미지를 갤러리에서 삭제하시겠습니까?")) return;
 
     // Delete actual file from R2
     deleteFileFromR2(imageUrl);

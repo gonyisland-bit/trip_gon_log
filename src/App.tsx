@@ -1250,7 +1250,6 @@ function App() {
       setTimeout(() => {
         setMarqueeOverrideText(null);
       }, 5000);
-      setShowSaveCompleteModal(true);
     } catch (err: any) {
       console.error('Error saving journey details:', err);
       console.error('Error code:', err?.code);

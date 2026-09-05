@@ -162,11 +162,9 @@ export function ImageEditOverlay({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                if (confirm("일정 사진을 삭제하시겠습니까?")) {
-                  onImageRemoved();
-                }
+                onImageRemoved();
               }}
-              className="p-1 bg-white/20 hover:bg-red-600 text-white rounded transition-colors shadow-sm"
+              className="p-1 bg-white/20 hover:bg-red-600 text-white rounded transition-colors shadow-sm cursor-pointer"
               title="사진 삭제"
             >
               <Trash2 className="w-3.5 h-3.5" />
