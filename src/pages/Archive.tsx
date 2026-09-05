@@ -171,6 +171,29 @@ function getYearAndMonth(dateRangeStr: string): { year: string; month: string; c
   return { year, month, compactDate };
 }
 
+// Helper to format date range without repeating same year (e.g. 2026.05.01 - 05.05)
+export function formatNonRepeatingDate(dateRangeStr?: string): string {
+  if (!dateRangeStr) return '';
+  const parts = dateRangeStr.split(/\s*[-—–~]\s*/).map(p => p.trim());
+  if (parts.length === 2) {
+    const m1 = parts[0].match(/^(\d{4})[./-](\d{1,2})[./-](\d{1,2})$/);
+    const m2 = parts[1].match(/^(\d{4})[./-](\d{1,2})[./-](\d{1,2})$/);
+    if (m1 && m2) {
+      const y1 = m1[1];
+      const y2 = m2[1];
+      const mo1 = m1[2].padStart(2, '0');
+      const d1 = m1[3].padStart(2, '0');
+      const mo2 = m2[2].padStart(2, '0');
+      const d2 = m2[3].padStart(2, '0');
+      if (y1 === y2) {
+        return `${y1}.${mo1}.${d1} - ${mo2}.${d2}`;
+      }
+      return `${y1}.${mo1}.${d1} - ${y2}.${mo2}.${d2}`;
+    }
+  }
+  return dateRangeStr;
+}
+
 export function ArchiveHubPage({
   trips,
   plans = [],
@@ -787,6 +810,8 @@ export function ArchiveHubPage({
                   <div className="flex flex-col w-full border-b border-black/15 dark:border-white/15">
                     {group.items.map((trip, index) => {
                       const isCardActive = activeCardId === trip.id;
+                      const { year, month } = getYearAndMonth(trip.date);
+                      const formattedDate = formatNonRepeatingDate(trip.date);
 
                       return (
                         <div
@@ -804,29 +829,40 @@ export function ArchiveHubPage({
                           </div>
 
                           {/* Meta */}
-                          <div className="flex-1 min-w-0 py-2.5 px-3 sm:px-4 md:px-6 flex flex-col justify-center gap-0.5">
+                          <div className="flex-1 min-w-0 py-2 px-3 sm:px-4 md:px-6 flex flex-col justify-center gap-0.5">
+                            {/* Top row: Year & Month badge (grid style emphasis) + Status */}
                             <div className="flex items-center gap-2 flex-wrap">
-                              <h3 className="font-black text-sm sm:text-base md:text-lg text-black dark:text-white uppercase font-satoshi truncate">
-                                {trip.title}
-                              </h3>
+                              {(year || month) && (
+                                <div className="flex items-baseline gap-1 font-mono leading-none">
+                                  {year && <span className="font-black text-xs sm:text-sm text-black dark:text-white tracking-tight">{year}</span>}
+                                  {month && <span className="font-black text-[11px] sm:text-xs text-red-600 dark:text-red-500 uppercase tracking-tight">{month}</span>}
+                                </div>
+                              )}
                               {((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
-                                <span className="text-[10px] sm:text-[11px] font-black px-2 py-0.5 font-mono uppercase bg-black text-white dark:bg-white dark:text-black border border-white/40 dark:border-black/40 tracking-wider shadow-xs">
+                                <span className="text-[9.5px] sm:text-[10px] font-black px-1.5 py-0.5 font-mono uppercase bg-black text-white dark:bg-white dark:text-black border border-white/40 dark:border-black/40 tracking-wider shadow-xs leading-none">
                                   PLAN
                                 </span>
                               ) : trip.statusBadge ? (
-                                <span className={`text-[10px] sm:text-[11px] font-black px-2 py-0.5 rounded-none font-mono uppercase tracking-wider shadow-xs ${
+                                <span className={`text-[9.5px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-none font-mono uppercase tracking-wider shadow-xs leading-none ${
                                   trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
                                 }`}>
                                   {trip.statusBadge}
                                 </span>
                               ) : null}
                             </div>
-                            <div className="flex items-center gap-2 text-[10.5px] sm:text-xs text-black/60 dark:text-white/60 font-mono flex-wrap mt-0.5">
-                              <span className="font-bold text-black/80 dark:text-white/80">{trip.date}</span>
+
+                            {/* Title */}
+                            <h3 className="font-black text-sm sm:text-base md:text-lg text-black dark:text-white uppercase font-satoshi truncate">
+                              {trip.title}
+                            </h3>
+
+                            {/* Non-repeating Date & Location */}
+                            <div className="flex items-center gap-2 text-[10.5px] sm:text-xs text-black/60 dark:text-white/60 font-mono flex-wrap">
+                              <span className="font-bold text-black/80 dark:text-white/80">{formattedDate}</span>
                               {trip.locationStr && (
                                 <>
                                   <span>·</span>
-                                  <span className="text-black/70 dark:text-white/70">{trip.locationStr.replace(/,/g, ' · ')}</span>
+                                  <span className="text-black/70 dark:text-white/70">{cleanAdministrativeDistricts(trip.locationStr).replace(/,/g, ' · ')}</span>
                                 </>
                               )}
                             </div>
@@ -849,8 +885,10 @@ export function ArchiveHubPage({
                                   onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
                                   onMove={
                                     isPlan
-                                      ? (onMoveToArchive ? () => onMoveToArchive(trip as Plan) : undefined)
-                                      : (onMoveToPlans ? () => onMoveToPlans(trip) : undefined)
+                                      ? () => handleMoveToArchive(trip as Plan)
+                                      : onMoveToPlans
+                                        ? () => onMoveToPlans(trip)
+                                        : undefined
                                   }
                                   moveLabel={isPlan ? "LOG" : "PLAN"}
                                   variant="minimal"
@@ -864,12 +902,13 @@ export function ArchiveHubPage({
                   </div>
                 ) : (
                   <div className={cardViewMode === 'wide' 
-                    ? "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 px-4 pt-4 pb-8 md:px-12 md:pt-6 md:pb-12 w-full"
-                    : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 px-3 pt-3 pb-8 sm:px-6 sm:pt-4 sm:pb-10 md:px-12 md:pt-6 md:pb-12 w-full"
+                    ? "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 p-4 md:p-12 w-full"
+                    : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 p-3 sm:p-6 md:p-12 w-full"
                   }>
                     {group.items.map((trip, index) => {
                       const { year, month, compactDate } = getYearAndMonth(trip.date);
                       const isCardActive = activeCardId === trip.id;
+                      const issueNumber = String((trip.displayOrder ?? index) + 1).padStart(2, '0');
 
                       return (
                         <div key={trip.id} className="relative group">
@@ -927,6 +966,7 @@ export function ArchiveHubPage({
                                   </div>
                                 ) : <div />}
 
+                                {/* Responsive Large Bold Tag Box: PLAN or Status Badge */}
                                 {((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
                                   <span className="px-2.5 sm:px-3.5 py-0.5 sm:py-1 text-[5.5cqw] sm:text-[6.5cqw] font-black uppercase tracking-wider font-mono shadow-md bg-black text-white dark:bg-white dark:text-black border border-white/40 dark:border-black/40 leading-none">
                                     PLAN
@@ -947,7 +987,7 @@ export function ArchiveHubPage({
                                 </h3>
                                 {trip.locationStr && (
                                   <div className={cardViewMode === 'wide'
-                                    ? "text-xs sm:text-sm font-sans font-bold uppercase tracking-wider text-white/95 truncate drop-shadow-sm py-0.5"
+                                    ? "text-sm sm:text-base md:text-lg font-sans font-bold uppercase tracking-wider text-white/95 truncate drop-shadow-sm py-0.5"
                                     : "text-[11px] sm:text-xs md:text-[3.8cqw] font-sans font-black uppercase tracking-wider text-white/95 truncate drop-shadow-sm py-0.5"
                                   }>
                                     {cleanAdministrativeDistricts(trip.locationStr).replace(/,/g, ' · ')}
@@ -955,7 +995,7 @@ export function ArchiveHubPage({
                                 )}
                                 {trip.date && (
                                   <div className={cardViewMode === 'wide'
-                                    ? "text-[11px] sm:text-xs font-sans font-semibold text-white/80 tracking-wider truncate py-0.5"
+                                    ? "text-xs sm:text-sm font-sans font-semibold text-white/85 tracking-wider truncate py-0.5"
                                     : "text-[10px] sm:text-[11px] md:text-[3.4cqw] font-sans font-bold text-white/85 tracking-wider truncate py-0.5"
                                   }>
                                     {compactDate || trip.date}

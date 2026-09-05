@@ -169,7 +169,7 @@ export function Navigation({
                   ? 'text-red-600 dark:text-red-500 bg-black/5 dark:bg-white/5'
                   : 'text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white'
               }`}
-              title={currentView === 'manage' ? "홈으로 돌아가기 (Close Manage Hub)" : "수정 허브 (Management Hub)"}
+              title={currentView === 'manage' ? "홈으로 돌아가기 (Close Settings)" : "설정 (Settings)"}
             >
               <SlidersHorizontal className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             </button>
@@ -333,7 +333,7 @@ export function Navigation({
                     ? 'text-black dark:text-white underline decoration-2 underline-offset-8' 
                     : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
                 }`}>
-                  MANAGE
+                  SETTINGS
                 </span>
               </button>
             )}

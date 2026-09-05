@@ -2790,8 +2790,8 @@ export function ManageHubPage({
 
                 {/* Interactive Visual Cards Grid (Synchronized with 3-Column / 2-Column Magazine Rules) */}
                 {(() => {
-                  const items = currentMagSection.items || [];
-                  if (items.length === 0) {
+                  const rawItems = currentMagSection.items || [];
+                  if (rawItems.length === 0) {
                     return (
                       <div className="py-12 text-center flex flex-col items-center justify-center gap-2 text-xs font-mono text-black/40 dark:text-white/40 border border-dashed border-black/20 dark:border-white/20 p-8">
                         <Layout className="w-6 h-6 opacity-30" />
@@ -2800,6 +2800,57 @@ export function ManageHubPage({
                       </div>
                     );
                   }
+
+                  // Live sync items with timelineData
+                  const timelineByUrl = new Map<string, TimelineItem>();
+                  if (timelineData) {
+                    Object.values(timelineData).forEach(tItems => {
+                      if (Array.isArray(tItems)) {
+                        tItems.forEach(t => {
+                          if (t.img) {
+                            timelineByUrl.set(t.img, t);
+                            const eff = getEffectiveImageUrl(t.img);
+                            if (eff) timelineByUrl.set(eff, t);
+                          }
+                          if (Array.isArray(t.galleryImages)) {
+                            t.galleryImages.forEach(g => {
+                              const gUrl = typeof g === 'string' ? g : g?.url;
+                              if (gUrl) {
+                                timelineByUrl.set(gUrl, {
+                                  ...t,
+                                  place: (typeof g !== 'string' && g.place) || t.place,
+                                  location: (typeof g !== 'string' && g.location) || t.location,
+                                  imgNote: (typeof g !== 'string' && g.imgNote) || t.imgNote,
+                                  date: (typeof g !== 'string' && g.date) || t.date,
+                                });
+                              }
+                            });
+                          }
+                        });
+                      }
+                    });
+                  }
+
+                  const items = rawItems.map(item => {
+                    if (item.isTextOnly || !item.img) return item;
+                    const matched = timelineByUrl.get(item.img) || timelineByUrl.get(getEffectiveImageUrl(item.img));
+                    if (matched) {
+                      const parentTrip = trips.find(t => t.id === (matched.tripId || item.tripId));
+                      const pName = matched.place || '';
+                      const jTitle = parentTrip?.title || '';
+                      const jLoc = parentTrip?.locationStr || (parentTrip?.locations && parentTrip.locations[0]?.name) || '';
+                      const locStr = matched.location || pName;
+                      return {
+                        ...item,
+                        title: pName || jTitle || item.title,
+                        placeName: locStr || item.placeName,
+                        location: jLoc || item.location,
+                        date: matched.date || item.date,
+                        caption: matched.imgNote || matched.memo || item.caption,
+                      };
+                    }
+                    return item;
+                  });
 
                   const isLand = (item: MagazineItem) =>
                     item.layoutType === 'landscape' || item.layoutType === 'wide' || item.layoutType === 'large';

@@ -697,32 +697,40 @@ export function Lightbox({
 
           {/* Bottom info + progress bar */}
           <div className="pointer-events-auto bg-gradient-to-t from-black/80 to-transparent px-6 pb-6 pt-10 flex flex-col items-center gap-3">
-            {/* Place & memo */}
-            <div className="text-center">
-              {currentMeta.place && (
-                <div className="text-white font-bold text-sm md:text-base tracking-wide uppercase mb-1">
-                  {currentMeta.place}
+            {/* Place & memo without duplicate title/location */}
+            {(() => {
+              const primaryTitle = (currentMeta.place || currentMeta.imgNote || '').trim();
+              const secondaryLoc = (currentMeta.location && currentMeta.location.trim() !== primaryTitle) ? currentMeta.location.trim() : '';
+              const extraNote = (currentMeta.imgNote && currentMeta.imgNote.trim() !== primaryTitle && currentMeta.imgNote.trim() !== secondaryLoc) ? currentMeta.imgNote.trim() : '';
+
+              return (
+                <div className="text-center max-w-xl px-4">
+                  {primaryTitle && (
+                    <div className="text-white font-bold text-sm md:text-base tracking-wide uppercase mb-1 drop-shadow-md">
+                      {primaryTitle}
+                    </div>
+                  )}
+                  {currentMeta.date && (
+                    <div
+                      className="font-mono font-bold tracking-widest"
+                      style={{ color: '#f97316', fontSize: 'clamp(11px, 1.4vw, 16px)', letterSpacing: '0.12em' }}
+                    >
+                      {formatFilmDate(currentMeta.date)}
+                    </div>
+                  )}
+                  {secondaryLoc ? (
+                    <div className="text-white/80 text-xs mt-1 max-w-lg truncate flex items-center justify-center gap-1 font-sans">
+                      <MapPin className="w-3 h-3 text-orange-400 shrink-0" />
+                      <span>{secondaryLoc}</span>
+                    </div>
+                  ) : extraNote ? (
+                    <div className="text-white/70 text-xs mt-1 max-w-lg truncate">
+                      {extraNote}
+                    </div>
+                  ) : null}
                 </div>
-              )}
-              {currentMeta.date && (
-                <div
-                  className="font-mono font-bold tracking-widest"
-                  style={{ color: '#f97316', fontSize: 'clamp(11px, 1.4vw, 16px)', letterSpacing: '0.12em' }}
-                >
-                  {formatFilmDate(currentMeta.date)}
-                </div>
-              )}
-              {currentMeta.location ? (
-                <div className="text-white/70 text-xs mt-1 max-w-lg truncate flex items-center justify-center gap-1 font-sans">
-                  <MapPin className="w-3 h-3 text-orange-400 shrink-0" />
-                  <span>{currentMeta.location}</span>
-                </div>
-              ) : currentMeta.imgNote ? (
-                <div className="text-white/60 text-xs mt-1 max-w-lg truncate">
-                  {currentMeta.imgNote}
-                </div>
-              ) : null}
-            </div>
+              );
+            })()}
 
             {/* Progress bar */}
             <div className="w-full max-w-xs h-[2px] bg-white/15 rounded-full overflow-hidden">
@@ -878,7 +886,9 @@ export function Lightbox({
               data-pin-nopin="true"
               style={{
                 maxHeight: isSlideshow
-                  ? '100vh'
+                  ? isMobile
+                    ? 'calc(100vh - 130px)'
+                    : 'calc(100vh - 150px)'
                   : isMobile
                     ? 'calc(100vh - 85px)'
                     : 'calc(100vh - 145px)',
@@ -1026,24 +1036,33 @@ export function Lightbox({
       {/* Bottom captions panel (normal mode only) */}
       {showLog && !isSlideshow && (
         <div className="relative z-20 bg-black/90 border-t border-white/10 px-4 py-2.5 md:px-8 md:py-3 flex flex-col items-center justify-center gap-1 shrink-0 min-h-16 md:min-h-20 text-center w-full">
-          {/* Main Photo Title: 일정 제목 (place) */}
-          {(currentMeta.place || currentMeta.imgNote) ? (
-            <h4 className="text-white font-bold text-xs md:text-sm tracking-wide truncate max-w-2xl font-sans">
-              {currentMeta.place || currentMeta.imgNote}
-            </h4>
-          ) : null}
+          {(() => {
+            const primaryTitle = (currentMeta.place || currentMeta.imgNote || '').trim();
+            const secondaryLoc = (currentMeta.location && currentMeta.location.trim() !== primaryTitle) ? currentMeta.location.trim() : '';
 
-          {/* Place Info: 구글 자동완성으로 입력된 위치명 (location) */}
-          {currentMeta.location ? (
-            <div className="text-orange-400 dark:text-orange-300 font-semibold text-[11px] md:text-xs tracking-tight flex items-center justify-center gap-1 truncate max-w-xl">
-              <MapPin className="w-3.5 h-3.5 shrink-0 text-orange-500" />
-              <span className="truncate">{currentMeta.location}</span>
-            </div>
-          ) : (!currentMeta.place && !currentMeta.imgNote) ? (
-            <div className="text-white/30 font-bold text-[10px] md:text-xs tracking-widest uppercase">
-              No Location Tagged
-            </div>
-          ) : null}
+            return (
+              <>
+                {/* Main Photo Title: 일정 제목 (place) */}
+                {primaryTitle ? (
+                  <h4 className="text-white font-bold text-xs md:text-sm tracking-wide truncate max-w-2xl font-sans">
+                    {primaryTitle}
+                  </h4>
+                ) : null}
+
+                {/* Place Info: 구글 자동완성으로 입력된 위치명 (location) */}
+                {secondaryLoc ? (
+                  <div className="text-orange-400 dark:text-orange-300 font-semibold text-[11px] md:text-xs tracking-tight flex items-center justify-center gap-1 truncate max-w-xl">
+                    <MapPin className="w-3.5 h-3.5 shrink-0 text-orange-500" />
+                    <span className="truncate">{secondaryLoc}</span>
+                  </div>
+                ) : !primaryTitle ? (
+                  <div className="text-white/30 font-bold text-[10px] md:text-xs tracking-widest uppercase">
+                    No Location Tagged
+                  </div>
+                ) : null}
+              </>
+            );
+          })()}
         </div>
       )}
 

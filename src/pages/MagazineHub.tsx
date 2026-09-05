@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   Trip, 
   Plan, 
@@ -15,6 +15,7 @@ import {
   Maximize2, 
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   Sparkles,
   BookOpen
 } from 'lucide-react';
@@ -92,17 +93,111 @@ export function MagazineHubPage({
     ];
   }, [sections, trips]);
 
+  // Touch swipe state for Hero section
+  const touchStartXRef = useRef<number | null>(null);
+
+  // Switch to next/prev section
+  const handlePrevSection = () => {
+    if (effectiveSections.length <= 1) return;
+    const currIdx = effectiveSections.findIndex(s => s.id === (currentSection?.id || activeSectionId));
+    const prevIdx = (currIdx - 1 + effectiveSections.length) % effectiveSections.length;
+    setActiveSectionId(effectiveSections[prevIdx].id);
+  };
+
+  const handleNextSection = () => {
+    if (effectiveSections.length <= 1) return;
+    const currIdx = effectiveSections.findIndex(s => s.id === (currentSection?.id || activeSectionId));
+    const nextIdx = (currIdx + 1) % effectiveSections.length;
+    setActiveSectionId(effectiveSections[nextIdx].id);
+  };
+
+  const handleHeroTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+  };
+
+  const handleHeroTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const deltaX = touchEndX - touchStartXRef.current;
+    touchStartXRef.current = null;
+
+    if (Math.abs(deltaX) > 45) {
+      if (deltaX > 0) {
+        // Swipe Right -> Prev Section
+        handlePrevSection();
+      } else {
+        // Swipe Left -> Next Section
+        handleNextSection();
+      }
+    }
+  };
+
   // Current Active Section
   const currentSection = useMemo(() => {
     const found = effectiveSections.find(s => s.id === activeSectionId);
     return found || effectiveSections[0] || null;
   }, [effectiveSections, activeSectionId]);
 
-  // Items for the current active section
+  // Items for the current active section with real-time sync from timelineData
   const sectionItems: MagazineItem[] = useMemo(() => {
     if (!currentSection || !currentSection.items) return [];
-    return [...currentSection.items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-  }, [currentSection]);
+
+    // Fast lookup map for live timeline items
+    const timelineByUrl = new Map<string, TimelineItem>();
+    if (timelineData) {
+      Object.values(timelineData).forEach(items => {
+        if (Array.isArray(items)) {
+          items.forEach(t => {
+            if (t.img) {
+              timelineByUrl.set(t.img, t);
+              const eff = getEffectiveImageUrl(t.img);
+              if (eff) timelineByUrl.set(eff, t);
+            }
+            if (Array.isArray(t.galleryImages)) {
+              t.galleryImages.forEach(g => {
+                const gUrl = typeof g === 'string' ? g : g?.url;
+                if (gUrl) {
+                  timelineByUrl.set(gUrl, {
+                    ...t,
+                    place: (typeof g !== 'string' && g.place) || t.place,
+                    location: (typeof g !== 'string' && g.location) || t.location,
+                    imgNote: (typeof g !== 'string' && g.imgNote) || t.imgNote,
+                    date: (typeof g !== 'string' && g.date) || t.date,
+                  });
+                }
+              });
+            }
+          });
+        }
+      });
+    }
+
+    return [...currentSection.items]
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      .map(item => {
+        if (item.isTextOnly || !item.img) return item;
+
+        // Sync with live timeline item if available
+        const matched = timelineByUrl.get(item.img) || timelineByUrl.get(getEffectiveImageUrl(item.img));
+        if (matched) {
+          const parentTrip = trips.find(t => t.id === (matched.tripId || item.tripId));
+          const pName = matched.place || '';
+          const jTitle = parentTrip?.title || '';
+          const jLoc = parentTrip?.locationStr || (parentTrip?.locations && parentTrip.locations[0]?.name) || '';
+          const locStr = matched.location || pName;
+
+          return {
+            ...item,
+            title: pName || jTitle || item.title,
+            placeName: locStr || item.placeName,
+            location: jLoc || item.location,
+            date: matched.date || item.date,
+            caption: matched.imgNote || matched.memo || item.caption,
+          };
+        }
+        return item;
+      });
+  }, [currentSection, timelineData, trips]);
 
   // Prepare images for Lightbox
   const lightboxImages = useMemo(() => {
@@ -316,7 +411,11 @@ export function MagazineHubPage({
       {/* 1. HERO SECTION (Editorial Large Hero Banner with Typography)        */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       {currentSection && (
-        <section className="relative w-full aspect-[16/10] sm:aspect-[21/9] md:aspect-[24/10] min-h-[50vh] max-h-[80vh] overflow-hidden bg-black select-none group">
+        <section 
+          onTouchStart={handleHeroTouchStart}
+          onTouchEnd={handleHeroTouchEnd}
+          className="relative w-full aspect-[16/10] sm:aspect-[21/9] md:aspect-[24/10] min-h-[50vh] max-h-[80vh] overflow-hidden bg-black select-none group"
+        >
           {/* Background Image */}
           {currentSection.heroImg ? (
             <img
@@ -331,6 +430,37 @@ export function MagazineHubPage({
           {/* Dark Overlay Gradients for Editorial Mood & Readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-transparent hidden md:block" />
+
+          {/* Minimal Translucent Prev/Next Navigation Buttons */}
+          {effectiveSections.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePrevSection();
+                }}
+                className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-3 rounded-full bg-black/30 hover:bg-black/60 text-white/80 hover:text-white backdrop-blur-md border border-white/20 transition-all cursor-pointer shadow-lg active:scale-95 flex items-center justify-center opacity-80 group-hover:opacity-100"
+                title="이전 매거진 섹션"
+                aria-label="Previous magazine section"
+              >
+                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleNextSection();
+                }}
+                className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-3 rounded-full bg-black/30 hover:bg-black/60 text-white/80 hover:text-white backdrop-blur-md border border-white/20 transition-all cursor-pointer shadow-lg active:scale-95 flex items-center justify-center opacity-80 group-hover:opacity-100"
+                title="다음 매거진 섹션"
+                aria-label="Next magazine section"
+              >
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+            </>
+          )}
 
           {/* Hero Top Bar: Issue / Volume / Section Badge */}
           <div className="absolute top-5 sm:top-6 left-6 sm:left-12 right-6 sm:right-12 z-20 flex items-center justify-between text-white/80">
@@ -392,56 +522,42 @@ export function MagazineHubPage({
       {/* ─────────────────────────────────────────────────────────────────── */}
       <div className="sticky top-14 sm:top-16 z-30 w-full bg-[#FAF9F6]/95 dark:bg-[#111111]/95 backdrop-blur-md border-b border-black/10 dark:border-white/10 px-4 sm:px-8 md:px-12 py-3 transition-colors">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          
-          {/* Section Navigation Tabs */}
-          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5">
-            {effectiveSections.map(sec => {
-              const isActive = sec.id === currentSection?.id;
+          {/* Section Tabs */}
+          <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto hide-scrollbar py-1">
+            {effectiveSections.map((sec, idx) => {
+              const isActive = sec.id === (currentSection?.id || activeSectionId);
               return (
                 <button
                   key={sec.id}
-                  type="button"
                   onClick={() => setActiveSectionId(sec.id)}
-                  className={`px-3.5 sm:px-5 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer rounded-none border ${
+                  className={`px-3 py-1.5 text-xs sm:text-sm font-bold uppercase font-['Inter',sans-serif] tracking-wider transition-all border whitespace-nowrap cursor-pointer ${
                     isActive
-                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
-                      : 'bg-transparent text-black/60 dark:text-white/60 border-transparent hover:border-black/20 dark:hover:border-white/20 hover:text-black dark:hover:text-white'
+                      ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-sm'
+                      : 'bg-transparent border-black/10 dark:border-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
                   }`}
                 >
-                  <span>{sec.title}</span>
-                  {sec.items && sec.items.length > 0 && (
-                    <span className={`ml-2 text-[10px] opacity-60 ${isActive ? 'font-black' : ''}`}>
-                      ({sec.items.length})
-                    </span>
-                  )}
+                  <span className="font-mono text-[10px] opacity-60 mr-1.5">{String(idx + 1).padStart(2, '0')}.</span>
+                  {sec.title}
                 </button>
               );
             })}
-          </div>
-
-          {/* Section Count / Editorial Label */}
-          <div className="hidden lg:flex items-center gap-3 text-xs font-mono text-black/40 dark:text-white/40">
-            <BookOpen className="w-4 h-4" />
-            <span className="uppercase tracking-wider">
-              {currentSection?.title || 'MAGAZINE'}
-            </span>
           </div>
         </div>
       </div>
 
       {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* 3. EDITORIAL MAGAZINE GRID (Smart 3-Column Harmonious Layout)        */}
+      {/* 3. SECTION CONTENT (Curated Moments & Stories)                      */}
       {/* ─────────────────────────────────────────────────────────────────── */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-8 md:px-12 py-12 sm:py-16 flex flex-col gap-12">
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-8 md:px-12 py-10 sm:py-16 flex-1">
         
-        {/* Section Header Text (Journal Title & Curated Memo) */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-black/15 dark:border-white/15">
+        {/* Section Header Title & Story Count */}
+        <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 border-b border-black/15 dark:border-white/15 pb-4 mb-8 sm:mb-12">
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-red-600 dark:text-red-500">
-              EDITORIAL CURATION
+            <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-red-600 dark:text-red-400">
+              CURATED STORIES
             </span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif font-normal tracking-tight text-black dark:text-white">
-              {currentSection?.title}
+            <h2 className="text-2xl sm:text-3xl font-black uppercase font-['Inter',sans-serif] tracking-tight text-black dark:text-white">
+              {currentSection?.title || 'EDITORIAL MOMENTS'}
             </h2>
           </div>
 
@@ -459,7 +575,7 @@ export function MagazineHubPage({
                 NO MAGAZINE MOMENTS YET
               </span>
               <p className="text-xs text-black/50 dark:text-white/50 leading-relaxed">
-                이 섹션에 등록된 매거진 사진이나 텍스트 카드가 아직 없습니다. 관리자 허브에서 카드를 추가해보세요.
+                이 섹션에 등록된 매거진 사진이나 텍스트 카드가 아직 없습니다. 설정에서 카드를 추가해보세요.
               </p>
             </div>
             {isLoggedIn && isAdmin && (
@@ -468,7 +584,7 @@ export function MagazineHubPage({
                 onClick={handleEditThisSection}
                 className="mt-2 px-6 py-2.5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider cursor-pointer hover:opacity-85 transition-opacity"
               >
-                + ADD MOMENTS IN MANAGE HUB
+                + ADD MOMENTS IN SETTINGS
               </button>
             )}
           </div>
