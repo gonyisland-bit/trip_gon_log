@@ -38,6 +38,7 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { getEffectiveImageUrl, uploadFileToR2, deleteFileFromR2 } from '../utils/storageHelper';
 import { compressImage } from '../utils/imageHelper';
 import { inspectAndPrepareVideo } from '../utils/videoHelper';
+import { cleanAdministrativeDistricts, resolveTimelineItemLocation } from '../components/SummaryView';
 
 interface ManageHubPageProps {
   trips: Trip[];
@@ -2835,22 +2836,28 @@ export function ManageHubPage({
                   const items = rawItems.map(item => {
                     if (item.isTextOnly || !item.img) return item;
                     const matched = timelineByUrl.get(item.img) || timelineByUrl.get(getEffectiveImageUrl(item.img));
+                    const parentTrip = trips.find(t => t.id === (matched?.tripId || item.tripId));
                     if (matched) {
-                      const parentTrip = trips.find(t => t.id === (matched.tripId || item.tripId));
-                      const pName = matched.place || '';
-                      const jTitle = parentTrip?.title || '';
-                      const jLoc = parentTrip?.locationStr || (parentTrip?.locations && parentTrip.locations[0]?.name) || '';
-                      const locStr = matched.location || pName;
+                      const pName = matched.place?.trim() || '';
+                      const jTitle = parentTrip?.title?.replace(/\s*\(Plan\)$/i, '') || '';
+                      const resolvedLocation = resolveTimelineItemLocation(matched, timelineData, parentTrip);
                       return {
                         ...item,
-                        title: pName || jTitle || item.title,
-                        placeName: locStr || item.placeName,
-                        location: jLoc || item.location,
+                        tripId: matched.tripId || item.tripId,
+                        title: pName || jTitle || item.title || 'UNTITLED MOMENT',
+                        placeName: resolvedLocation,
+                        location: resolvedLocation,
                         date: matched.date || item.date,
                         caption: matched.imgNote || matched.memo || item.caption,
                       };
+                    } else {
+                      const resolvedLocation = resolveTimelineItemLocation(null, timelineData, parentTrip);
+                      return {
+                        ...item,
+                        placeName: item.placeName || resolvedLocation,
+                        location: item.location || resolvedLocation,
+                      };
                     }
-                    return item;
                   });
 
                   const isLand = (item: MagazineItem) =>
@@ -3039,47 +3046,39 @@ export function ManageHubPage({
                             </div>
                           )}
 
-                          {/* Clean Form Inputs (Title, Place, Date) - Only for Photo Cards */}
+                          {/* Synced Read-only Info (Title, Place, Date) - Only for Photo Cards */}
                           {!isTextCard && (
                             <div 
-                              className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 font-['Inter',sans-serif] mt-auto"
+                              className="flex flex-col gap-2 pt-2 border-t border-black/10 dark:border-white/10 font-['Inter',sans-serif] mt-auto"
                               onClick={e => e.stopPropagation()}
                             >
-                              <div className="sm:col-span-3 flex flex-col gap-0.5">
-                                <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
-                                  TITLE (타이틀)
-                                </span>
-                                <input
-                                  type="text"
-                                  value={item.title || ''}
-                                  onChange={e => handleUpdateItemInCurrentSection(item.id, 'title', e.target.value)}
-                                  placeholder="Moment Title"
-                                  className="px-2 py-1 text-xs font-bold font-['Inter',sans-serif] bg-black/[0.03] dark:bg-white/[0.05] border border-black/15 dark:border-white/15 outline-none text-black dark:text-white"
-                                />
-                              </div>
-                              <div className="sm:col-span-2 flex flex-col gap-0.5">
-                                <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
-                                  PLACE (장소명)
-                                </span>
-                                <input
-                                  type="text"
-                                  value={item.placeName || item.location || ''}
-                                  onChange={e => handleUpdateItemInCurrentSection(item.id, 'placeName', e.target.value)}
-                                  placeholder="Place / Location"
-                                  className="px-2 py-1 text-xs font-mono font-bold bg-black/[0.03] dark:bg-white/[0.05] border border-black/15 dark:border-white/15 outline-none text-black dark:text-white"
-                                />
-                              </div>
                               <div className="flex flex-col gap-0.5">
-                                <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
-                                  DATE (날짜)
+                                <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-black/40 dark:text-white/40">
+                                  TITLE · 타임라인 동기화
                                 </span>
-                                <input
-                                  type="text"
-                                  value={item.date || ''}
-                                  onChange={e => handleUpdateItemInCurrentSection(item.id, 'date', e.target.value)}
-                                  placeholder="YYYY.MM.DD"
-                                  className="px-2 py-1 text-xs font-mono bg-black/[0.03] dark:bg-white/[0.05] border border-black/15 dark:border-white/15 outline-none text-black dark:text-white"
-                                />
+                                <div className="text-xs sm:text-sm font-bold font-['Inter',sans-serif] text-black dark:text-white truncate" title={item.title}>
+                                  {item.title || 'UNTITLED MOMENT'}
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                                  <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-black/40 dark:text-white/40">
+                                    PLACE · 자동 매핑
+                                  </span>
+                                  <div className="text-xs sm:text-sm font-bold font-['Inter',sans-serif] text-black dark:text-white truncate" title={item.placeName || item.location}>
+                                    {item.placeName || item.location || 'VISITED PLACE'}
+                                  </div>
+                                </div>
+                                {item.date && (
+                                  <div className="flex flex-col items-end gap-0.5 shrink-0">
+                                    <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-black/40 dark:text-white/40">
+                                      DATE
+                                    </span>
+                                    <div className="text-[11px] sm:text-xs font-mono font-bold text-black/60 dark:text-white/60">
+                                      {item.date}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           )}

@@ -95,6 +95,102 @@ export function generateJourneyMessage(locationStr?: string, dateStr?: string, d
   return `${cleanLoc}에서의 여정`;
 }
 
+// Auto-resolve location for timeline item when address is missing
+// 1. Direct location on matched item
+// 2. Nearest previous timeline item with an entered location in chronological order (within same trip)
+// 3. Trip city / country (cleanAdministrativeDistricts)
+// * Never uses dummy or obsolete junk text / scrap title
+export function resolveTimelineItemLocation(
+  matchedItem: TimelineItem | null | undefined,
+  timelineData?: { [date: string]: TimelineItem[] },
+  parentTrip?: Trip | null
+): string {
+  const extractPlace = (loc: any): string => {
+    if (!loc) return '';
+    if (typeof loc === 'string') {
+      const trimmed = loc.trim();
+      if (!trimmed) return '';
+      return trimmed.split(',')[0].trim();
+    }
+    if (typeof loc === 'object' && loc?.name) {
+      return String(loc.name).trim();
+    }
+    return '';
+  };
+
+  // 1. Direct location on matchedItem
+  if (matchedItem) {
+    const directLoc = extractPlace(matchedItem.location);
+    if (directLoc) return directLoc;
+  }
+
+  // 2. Search chronological timeline items within the same trip for the nearest previous location
+  const tripId = matchedItem?.tripId || parentTrip?.id;
+  if (tripId && timelineData) {
+    const allTripItems: (TimelineItem & { sortKey: string })[] = [];
+    Object.entries(timelineData).forEach(([dateStr, items]) => {
+      if (Array.isArray(items)) {
+        items.forEach(t => {
+          if (t.tripId === tripId) {
+            const itemDate = t.date || dateStr || '';
+            const itemTime = t.time || '00:00';
+            const sortKey = `${itemDate}_${itemTime}_${String(t.id).padStart(10, '0')}`;
+            allTripItems.push({ ...t, date: itemDate, sortKey });
+          }
+        });
+      }
+    });
+
+    allTripItems.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+
+    if (matchedItem) {
+      const matchIdx = allTripItems.findIndex(it => 
+        it.id === matchedItem.id || 
+        (it.img && matchedItem.img && it.img === matchedItem.img)
+      );
+
+      if (matchIdx > 0) {
+        for (let j = matchIdx - 1; j >= 0; j--) {
+          const prevLoc = extractPlace(allTripItems[j].location);
+          if (prevLoc) {
+            return prevLoc;
+          }
+        }
+      } else if (matchIdx === -1) {
+        const targetDate = matchedItem.date || '';
+        const targetTime = matchedItem.time || '00:00';
+        const targetKey = `${targetDate}_${targetTime}_${String(matchedItem.id || 0).padStart(10, '0')}`;
+        const earlierItems = allTripItems.filter(it => it.sortKey <= targetKey && it.id !== matchedItem.id);
+        for (let j = earlierItems.length - 1; j >= 0; j--) {
+          const prevLoc = extractPlace(earlierItems[j].location);
+          if (prevLoc) {
+            return prevLoc;
+          }
+        }
+      }
+    }
+  }
+
+  // 3. Fallback to trip city / destination name
+  if (parentTrip) {
+    if (parentTrip.locationStr) {
+      const cleaned = cleanAdministrativeDistricts(parentTrip.locationStr);
+      if (cleaned) {
+        return cleaned.split(',')[0].trim();
+      }
+    }
+    if (parentTrip.locations && parentTrip.locations.length > 0 && parentTrip.locations[0]?.name) {
+      const locName = cleanAdministrativeDistricts(parentTrip.locations[0].name);
+      if (locName) return locName.split(',')[0].trim();
+    }
+    if (parentTrip.country) {
+      return parentTrip.country.trim();
+    }
+  }
+
+  return 'VISITED PLACE';
+}
+
 export function SummaryView({
   trip,
   timelineData,
@@ -601,8 +697,8 @@ export function SummaryView({
           </div>
 
           {/* Metric 4: Total Estimated Budget ('240,-' European/Swiss editorial format) */}
-          <div className="flex items-baseline gap-1.5 sm:gap-2 min-w-0 flex-nowrap">
-            <span className="text-2xl sm:text-3xl md:text-4xl font-black font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
+          <div className="flex items-baseline gap-1.5 sm:gap-2.5 min-w-0 flex-nowrap">
+            <span className="text-3xl sm:text-4xl md:text-5xl font-black font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
               {Math.round(totalInBaseCurrency / 1000).toLocaleString()},-
             </span>
             <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase shrink-0">

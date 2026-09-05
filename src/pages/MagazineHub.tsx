@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { Lightbox } from '../components/Lightbox';
+import { cleanAdministrativeDistricts, resolveTimelineItemLocation } from '../components/SummaryView';
 
 // Helper for minimal date + day format (e.g. 2024.07.19 FRI)
 function formatSimpleDateWithDay(dateStr?: string): string {
@@ -198,30 +199,28 @@ export function MagazineHubPage({
 
         // Sync with live timeline item if available
         const matched = timelineByUrl.get(item.img) || timelineByUrl.get(getEffectiveImageUrl(item.img));
+        const parentTrip = trips.find(t => t.id === (matched?.tripId || item.tripId));
         if (matched) {
-          const parentTrip = trips.find(t => t.id === (matched.tripId || item.tripId));
           const pName = matched.place?.trim() || '';
           const jTitle = parentTrip?.title?.replace(/\s*\(Plan\)$/i, '') || '';
-          
-          let resolvedLocation = '';
-          if (matched.location) {
-            if (typeof matched.location === 'string' && matched.location.trim()) {
-              resolvedLocation = matched.location.trim().split(',')[0].trim();
-            } else if (typeof matched.location === 'object' && (matched.location as any)?.name) {
-              resolvedLocation = (matched.location as any).name;
-            }
-          }
+          const resolvedLocation = resolveTimelineItemLocation(matched, timelineData, parentTrip);
 
           return {
             ...item,
             tripId: matched.tripId || item.tripId,
-            title: pName || jTitle || item.title,
-            placeName: resolvedLocation || item.placeName || item.location || pName,
-            location: resolvedLocation || item.location || pName,
+            title: pName || jTitle || item.title || 'UNTITLED MOMENT',
+            placeName: resolvedLocation,
+            location: resolvedLocation,
             date: matched.date || item.date,
           };
+        } else {
+          const resolvedLocation = resolveTimelineItemLocation(null, timelineData, parentTrip);
+          return {
+            ...item,
+            placeName: item.placeName || resolvedLocation,
+            location: item.location || resolvedLocation,
+          };
         }
-        return item;
       });
   }, [currentSection, timelineData, trips]);
 
