@@ -3101,9 +3101,9 @@ export function JourneyDetailPage({
             </h1>
 
             {/* Date & Destination summary - visible on mobile & web with high legibility */}
-            <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-mono font-medium text-black/65 dark:text-white/65 min-w-0">
-              <span className="hidden sm:inline text-black/25 dark:text-white/25">·</span>
-              <span className="truncate sm:break-keep font-medium leading-tight">{generateJourneyMessage(trip.locationStr, trip.date, generatedDates.length)}</span>
+            <div className="flex items-center gap-1.5 text-xs sm:text-sm font-mono font-bold text-black/80 dark:text-white/80 min-w-0">
+              <span className="hidden sm:inline text-black/35 dark:text-white/35">·</span>
+              <span className="truncate sm:break-keep font-bold leading-tight">{generateJourneyMessage(trip.locationStr, trip.date, generatedDates.length)}</span>
             </div>
           </div>
         </div>

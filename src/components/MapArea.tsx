@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { MapPin, Plus, Minus, Store, ShoppingBag, Train, Loader2, ChevronDown, ChevronUp, Menu, Lock, Unlock } from 'lucide-react';
+import { MapPin, Plus, Minus, Store, ShoppingBag, Train, Loader2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Menu, Lock, Unlock } from 'lucide-react';
 import { Trip, TimelineItem, TransitItem } from '../types';
 
 const dayColors = [
@@ -1078,61 +1078,84 @@ export function MapArea({
         className="absolute inset-0 w-full h-full z-0"
       />
 
-      {/* ── Nearby POI Toggles Overlay (Stays tab only) ── */}
+      {/* ── Nearby POI Toggles Overlay (Stays tab only: Minimal Icon Bar) ── */}
       {isStayTab && (
-        <div className="absolute top-2 left-2 md:top-6 md:left-6 flex flex-col gap-1 md:gap-2 z-20 bg-[#F9F8F6]/95 dark:bg-[#111111]/95 backdrop-blur border border-black/20 dark:border-white/20 p-1.5 md:p-2.5 shadow-md transition-all duration-300">
-          <div 
-            onClick={() => setIsPoiExpanded(!isPoiExpanded)}
-            className="flex items-center justify-between gap-2 md:gap-3 cursor-pointer select-none"
-          >
-            <div className="flex items-center gap-1 md:gap-1.5">
-              <span className="text-[7px] md:text-[9px] font-black uppercase tracking-widest text-black/50 dark:text-white/50">Nearby Amenities</span>
-              {poiLoading && <Loader2 className="w-2.5 h-2.5 md:w-3 md:h-3 text-red-600 animate-spin" />}
-            </div>
-            {isPoiExpanded ? (
-              <ChevronUp className="w-3 md:w-3.5 h-3 md:h-3.5 text-black/50 dark:text-white/50" />
-            ) : (
-              <ChevronDown className="w-3 md:w-3.5 h-3 md:h-3.5 text-black/50 dark:text-white/50" />
-            )}
-          </div>
-          
-          {isPoiExpanded && (
-            <div className="flex flex-col gap-1 mt-1 md:gap-1.5 md:mt-1.5 animate-in slide-in-from-top-2 duration-200">
+        <div className="absolute top-2 left-2 md:top-4 md:left-4 z-20 flex items-center gap-1 bg-[#F9F8F6]/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/15 dark:border-white/15 p-1 rounded-md shadow-sm transition-all duration-300">
+          {isPoiExpanded ? (
+            <div className="flex items-center gap-1 animate-in fade-in duration-200">
+              {/* 편의점 */}
               <button
+                type="button"
                 onClick={() => setShowConvenience(!showConvenience)}
-                className={`flex items-center gap-1 md:gap-2 px-1.5 py-1 md:px-2.5 md:py-1.5 text-[8px] md:text-[10px] font-bold uppercase tracking-wider transition-all border ${
-                  showConvenience 
-                    ? 'bg-blue-600 border-blue-600 text-white shadow-sm' 
-                    : 'bg-transparent border-black/10 dark:border-white/10 text-black/75 dark:text-white/75 hover:bg-black/5 dark:hover:bg-white/5'
+                title={`편의점 (${poiItems.filter(p => p.type === 'convenience').length})`}
+                className={`relative flex items-center justify-center px-1.5 py-1 rounded transition-all cursor-pointer ${
+                  showConvenience
+                    ? 'bg-blue-600 text-white shadow-sm font-bold'
+                    : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/10'
                 }`}
               >
-                <Store className="w-3 h-3 md:w-3.5 md:h-3.5" />
-                <span>Convenience ({poiItems.filter(p => p.type === 'convenience').length})</span>
+                <Store className="w-3.5 h-3.5" />
+                <span className="ml-1 text-[9px] font-mono">
+                  {poiItems.filter(p => p.type === 'convenience').length}
+                </span>
               </button>
+
+              {/* 슈퍼마켓 */}
               <button
+                type="button"
                 onClick={() => setShowSupermarket(!showSupermarket)}
-                className={`flex items-center gap-1 md:gap-2 px-1.5 py-1 md:px-2.5 md:py-1.5 text-[8px] md:text-[10px] font-bold uppercase tracking-wider transition-all border ${
-                  showSupermarket 
-                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
-                    : 'bg-transparent border-black/10 dark:border-white/10 text-black/75 dark:text-white/75 hover:bg-black/5 dark:hover:bg-white/5'
+                title={`슈퍼마켓 (${poiItems.filter(p => p.type === 'supermarket').length})`}
+                className={`relative flex items-center justify-center px-1.5 py-1 rounded transition-all cursor-pointer ${
+                  showSupermarket
+                    ? 'bg-emerald-600 text-white shadow-sm font-bold'
+                    : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/10'
                 }`}
               >
-                <ShoppingBag className="w-3 h-3 md:w-3.5 md:h-3.5" />
-                <span>Supermarket ({poiItems.filter(p => p.type === 'supermarket').length})</span>
+                <ShoppingBag className="w-3.5 h-3.5" />
+                <span className="ml-1 text-[9px] font-mono">
+                  {poiItems.filter(p => p.type === 'supermarket').length}
+                </span>
               </button>
+
+              {/* 역 */}
               <button
+                type="button"
                 onClick={() => setShowStation(!showStation)}
-                className={`flex items-center gap-1 md:gap-2 px-1.5 py-1 md:px-2.5 md:py-1.5 text-[8px] md:text-[10px] font-bold uppercase tracking-wider transition-all border ${
-                  showStation 
-                    ? 'bg-purple-600 border-purple-600 text-white shadow-sm' 
-                    : 'bg-transparent border-black/10 dark:border-white/10 text-black/75 dark:text-white/75 hover:bg-black/5 dark:hover:bg-white/5'
+                title={`지하철/기차역 (${poiItems.filter(p => p.type === 'station').length})`}
+                className={`relative flex items-center justify-center px-1.5 py-1 rounded transition-all cursor-pointer ${
+                  showStation
+                    ? 'bg-purple-600 text-white shadow-sm font-bold'
+                    : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/10'
                 }`}
               >
-                <Train className="w-3 h-3 md:w-3.5 md:h-3.5" />
-                <span>Stations ({poiItems.filter(p => p.type === 'station').length})</span>
+                <Train className="w-3.5 h-3.5" />
+                <span className="ml-1 text-[9px] font-mono">
+                  {poiItems.filter(p => p.type === 'station').length}
+                </span>
               </button>
             </div>
-          )}
+          ) : null}
+
+          {/* 접기/펼치기 토글 버튼 */}
+          <button
+            type="button"
+            onClick={() => setIsPoiExpanded(!isPoiExpanded)}
+            title={isPoiExpanded ? "아이콘 바 접기" : "주변 편의시설 (편의점/슈퍼/역) 보기"}
+            className="p-1 rounded text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center cursor-pointer"
+          >
+            {poiLoading ? (
+              <Loader2 className="w-3.5 h-3.5 text-red-600 animate-spin" />
+            ) : isPoiExpanded ? (
+              <ChevronLeft className="w-3.5 h-3.5" />
+            ) : (
+              <div className="flex items-center gap-1 px-0.5">
+                <Store className="w-3.5 h-3.5 text-blue-600" />
+                <ShoppingBag className="w-3.5 h-3.5 text-emerald-600" />
+                <Train className="w-3.5 h-3.5 text-purple-600" />
+                <ChevronRight className="w-3 h-3 text-black/40 dark:text-white/40 ml-0.5" />
+              </div>
+            )}
+          </button>
         </div>
       )}
 

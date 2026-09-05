@@ -616,21 +616,21 @@ export function PlanHubPage({
 
                   {/* Bottom Footer Row: Title, Location, Date (3-tier clean stack) */}
                   <div className="mt-auto flex flex-col gap-1 w-full max-w-[88%]">
-                    <h3 className="text-[5.8cqw] sm:text-[6.2cqw] font-black uppercase tracking-tight leading-tight font-sans text-white drop-shadow-md line-clamp-2">
+                    <h3 className="text-[5.8cqw] sm:text-[6.2cqw] font-black uppercase tracking-tight leading-[1.28] py-0.5 font-sans text-white drop-shadow-md line-clamp-2">
                       {plan.title.replace(' (Plan)', '')}
                     </h3>
                     {plan.locationStr && (
                       <div className={cardViewMode === 'wide'
-                        ? "text-xs sm:text-sm font-sans font-bold uppercase tracking-wider text-white/95 truncate drop-shadow-sm mt-0.5"
-                        : "text-[11px] sm:text-xs md:text-[3.8cqw] font-sans font-black uppercase tracking-wider text-white/95 truncate drop-shadow-sm mt-0.5"
+                        ? "text-xs sm:text-sm font-sans font-bold uppercase tracking-wider text-white/95 truncate drop-shadow-sm mt-0.5 leading-[1.28] py-0.5"
+                        : "text-[11px] sm:text-xs md:text-[3.8cqw] font-sans font-black uppercase tracking-wider text-white/95 truncate drop-shadow-sm mt-0.5 leading-[1.28] py-0.5"
                       }>
                         {cleanAdministrativeDistricts(plan.locationStr).replace(/,/g, ' · ')}
                       </div>
                     )}
                     {plan.date && (
                       <div className={cardViewMode === 'wide'
-                        ? "text-[11px] sm:text-xs font-sans font-semibold text-white/80 tracking-wider truncate"
-                        : "text-[10px] sm:text-[11px] md:text-[3.4cqw] font-sans font-bold text-white/85 tracking-wider truncate"
+                        ? "text-[11px] sm:text-xs font-sans font-semibold text-white/80 tracking-wider truncate leading-[1.28] py-0.5"
+                        : "text-[10px] sm:text-[11px] md:text-[3.4cqw] font-sans font-bold text-white/85 tracking-wider truncate leading-[1.28] py-0.5"
                       }>
                         {compactDate || plan.date}
                       </div>

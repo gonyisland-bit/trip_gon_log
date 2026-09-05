@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Trip, 
   Plan, 
@@ -49,6 +49,11 @@ export function MagazineHubPage({
 
   // Lightbox state for high-res photo viewing
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  // Scroll to top on mount or section switch
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [activeSectionId]);
 
   // Fallback default sections if none exist yet
   const effectiveSections: MagazineSection[] = useMemo(() => {

@@ -365,7 +365,7 @@ export function FlightCard({
                 
                 {/* Suggestions drop down */}
                 {activeSearchField === 'from' && filteredSuggestions.length > 0 && (
-                  <div className="absolute top-9 left-0 sm:left-1/2 sm:-translate-x-1/2 w-48 sm:w-56 bg-[#F9F8F6] dark:bg-[#1c1c1c] border border-black/15 dark:border-white/15 shadow-2xl z-50 max-h-48 overflow-y-auto text-left rounded-sm" onClick={(e) => e.stopPropagation()}>
+                  <div className="absolute top-9 left-0 sm:left-1/2 sm:-translate-x-1/2 w-56 sm:w-64 bg-[#F9F8F6] dark:bg-[#1c1c1c] border border-black/15 dark:border-white/15 shadow-2xl z-50 max-h-56 overflow-y-auto text-left rounded-sm" onClick={(e) => e.stopPropagation()}>
                     {filteredSuggestions.map((s: { code: string; city: string; english: string; name: string }) => (
                       <button
                         key={s.code}
@@ -378,13 +378,13 @@ export function FlightCard({
                           onUpdate(flight.id, 'fromTerminal', `TER ${newTerminalNum}`);
                           setActiveSearchField(null);
                         }}
-                        className="w-full px-2.5 py-1.5 text-[10px] hover:bg-black/5 dark:hover:bg-white/5 flex flex-col border-b border-black/5 dark:border-white/5 last:border-0 text-black dark:text-white cursor-pointer"
+                        className="w-full px-3 py-2 text-xs sm:text-sm hover:bg-black/5 dark:hover:bg-white/5 flex flex-col border-b border-black/5 dark:border-white/5 last:border-0 text-black dark:text-white cursor-pointer"
                       >
                         <div className="flex justify-between items-center w-full">
-                          <span className="font-black text-red-600 dark:text-red-400 font-mono">{s.code}</span>
-                          <span className="font-bold opacity-80">{s.city}</span>
+                          <span className="font-black text-red-600 dark:text-red-400 font-mono text-xs sm:text-sm">{s.code}</span>
+                          <span className="font-bold opacity-90 text-xs sm:text-sm">{s.city}</span>
                         </div>
-                        <span className="text-[8.5px] opacity-45 truncate">{s.name}</span>
+                        <span className="text-[10px] sm:text-xs opacity-60 truncate mt-0.5">{s.name}</span>
                       </button>
                     ))}
                   </div>
@@ -418,26 +418,26 @@ export function FlightCard({
                   onUpdate(flight.id, 'fromTerminal', `TER ${val}`);
                 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-black/5 dark:bg-[#1a1a1a] px-0.5 py-0.5 outline-none text-[8px] sm:text-[9px] md:text-[10px] font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-12 sm:w-14 mt-1 cursor-pointer font-mono"
+                className="bg-black/5 dark:bg-[#1a1a1a] px-1 py-0.5 outline-none text-[10px] sm:text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-16 sm:w-20 mt-1 cursor-pointer font-mono"
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                   <option key={num} value={num} className="bg-white dark:bg-[#1a1a1a]">TER {num}</option>
                 ))}
               </select>
             ) : (
-              <span className="text-[8.5px] sm:text-[9px] md:text-[10px] text-black/50 dark:text-white/50 mt-1 uppercase font-bold block font-mono">
+              <span className="text-[10px] sm:text-xs md:text-sm text-black/60 dark:text-white/60 mt-1 uppercase font-bold block font-mono">
                 {formatTerminal(flight.fromTerminal)}
               </span>
             )}
 
             {isEditMode ? (
-              <div className="flex items-center justify-center gap-0.5 sm:gap-1 mt-1" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-center gap-1 sm:gap-1.5 mt-1.5" onClick={(e) => e.stopPropagation()}>
                 <input
                   ref={fromTimeRef}
                   type="time"
                   value={timeStrTo24h(flight.fromTime)}
                   onChange={(e) => onUpdate(flight.id, 'fromTime', time24hTo12h(e.target.value))}
-                  className="bg-black/5 dark:bg-white/10 px-0.5 py-0.5 outline-none text-[9px] sm:text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-[58px] sm:w-[68px] md:w-[72px] font-mono [&::-webkit-calendar-picker-indicator]:hidden"
+                  className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] sm:text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-[76px] sm:w-[86px] md:w-[94px] font-mono [&::-webkit-calendar-picker-indicator]:hidden"
                 />
                 <button
                   type="button"
@@ -448,10 +448,10 @@ export function FlightCard({
                       console.warn(err);
                     }
                   }}
-                  className="p-0.5 sm:p-1 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-black/5 dark:bg-white/10 cursor-pointer flex items-center justify-center shrink-0"
+                  className="p-1 sm:p-1.5 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-black/5 dark:bg-white/10 cursor-pointer flex items-center justify-center shrink-0"
                   title="시간 선택"
                 >
-                  <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-black/60 dark:text-white/60" />
+                  <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/60 dark:text-white/60" />
                 </button>
               </div>
             ) : (
@@ -489,7 +489,7 @@ export function FlightCard({
               <Plane className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/40 dark:text-white/40 rotate-90" />
             )}
             
-            <div className="h-[1px] w-6 sm:w-12 md:w-16 bg-black/20 dark:bg-white/20 my-1 relative flex items-center justify-center">
+            <div className="h-[1px] w-8 sm:w-14 md:w-20 bg-black/20 dark:bg-white/20 my-1 relative flex items-center justify-center">
               {isEditMode ? (
                 <input
                   type="text"
@@ -497,11 +497,11 @@ export function FlightCard({
                   onChange={(e) => setLocalFlightNo(e.target.value.toUpperCase())}
                   onBlur={() => onUpdate(flight.id, 'flightNo', localFlightNo)}
                   onClick={(e) => e.stopPropagation()}
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1a1a1a] px-1 text-[8.5px] sm:text-[9px] md:text-[10px] font-bold text-black/60 dark:text-white/60 tracking-wider text-center w-12 sm:w-14 outline-none border border-black/10 dark:border-white/10 rounded-sm z-10 uppercase font-mono"
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1a1a1a] px-1.5 text-[10px] sm:text-xs md:text-sm font-bold text-black dark:text-white tracking-wider text-center w-16 sm:w-20 outline-none border border-black/10 dark:border-white/10 rounded-sm z-10 uppercase font-mono"
                   placeholder="KE000"
                 />
               ) : (
-                <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1a1a1a] px-1 sm:px-1.5 text-[8.5px] sm:text-[9px] md:text-[10px] font-bold text-black/60 dark:text-white/60 tracking-wider whitespace-nowrap z-10 font-mono">
+                <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1a1a1a] px-1 sm:px-1.5 text-[10px] sm:text-xs md:text-sm font-bold text-black/70 dark:text-white/70 tracking-wider whitespace-nowrap z-10 font-mono">
                   {flight.flightNo}
                 </span>
               )}
@@ -509,7 +509,7 @@ export function FlightCard({
             
             {/* Layover Info */}
             {!isEditMode && flight.layoverCode && (
-              <div className="text-[8.5px] sm:text-[9px] md:text-[10px] font-bold text-red-600 dark:text-red-400 mt-1 flex items-center gap-1 font-mono">
+              <div className="text-[9px] sm:text-[10px] md:text-xs font-bold text-red-600 dark:text-red-400 mt-1 flex items-center gap-1 font-mono">
                 <span>
                   경유: {flight.layoverCode} {flight.layoverTime ? `(${flight.layoverTime})` : ''}
                 </span>
@@ -548,7 +548,7 @@ export function FlightCard({
                 
                 {/* Suggestions drop down */}
                 {activeSearchField === 'to' && filteredSuggestions.length > 0 && (
-                  <div className="absolute top-9 right-0 sm:left-1/2 sm:-translate-x-1/2 w-48 sm:w-56 bg-[#F9F8F6] dark:bg-[#1c1c1c] border border-black/15 dark:border-white/15 shadow-2xl z-50 max-h-48 overflow-y-auto text-left rounded-sm" onClick={(e) => e.stopPropagation()}>
+                  <div className="absolute top-9 right-0 sm:left-1/2 sm:-translate-x-1/2 w-56 sm:w-64 bg-[#F9F8F6] dark:bg-[#1c1c1c] border border-black/15 dark:border-white/15 shadow-2xl z-50 max-h-56 overflow-y-auto text-left rounded-sm" onClick={(e) => e.stopPropagation()}>
                     {filteredSuggestions.map((s: { code: string; city: string; english: string; name: string }) => (
                       <button
                         key={s.code}
@@ -561,13 +561,13 @@ export function FlightCard({
                           onUpdate(flight.id, 'toTerminal', `TER ${newTerminalNum}`);
                           setActiveSearchField(null);
                         }}
-                        className="w-full px-2.5 py-1.5 text-[10px] hover:bg-black/5 dark:hover:bg-white/5 flex flex-col border-b border-black/5 dark:border-white/5 last:border-0 text-black dark:text-white cursor-pointer"
+                        className="w-full px-3 py-2 text-xs sm:text-sm hover:bg-black/5 dark:hover:bg-white/5 flex flex-col border-b border-black/5 dark:border-white/5 last:border-0 text-black dark:text-white cursor-pointer"
                       >
                         <div className="flex justify-between items-center w-full">
-                          <span className="font-black text-red-600 dark:text-red-400 font-mono">{s.code}</span>
-                          <span className="font-bold opacity-80">{s.city}</span>
+                          <span className="font-black text-red-600 dark:text-red-400 font-mono text-xs sm:text-sm">{s.code}</span>
+                          <span className="font-bold opacity-90 text-xs sm:text-sm">{s.city}</span>
                         </div>
-                        <span className="text-[8.5px] opacity-45 truncate">{s.name}</span>
+                        <span className="text-[10px] sm:text-xs opacity-60 truncate mt-0.5">{s.name}</span>
                       </button>
                     ))}
                   </div>
@@ -601,26 +601,26 @@ export function FlightCard({
                   onUpdate(flight.id, 'toTerminal', `TER ${val}`);
                 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-black/5 dark:bg-[#1a1a1a] px-0.5 py-0.5 outline-none text-[8px] sm:text-[9px] md:text-[10px] font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-12 sm:w-14 mt-1 cursor-pointer font-mono"
+                className="bg-black/5 dark:bg-[#1a1a1a] px-1 py-0.5 outline-none text-[10px] sm:text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-16 sm:w-20 mt-1 cursor-pointer font-mono"
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                   <option key={num} value={num} className="bg-white dark:bg-[#1a1a1a]">TER {num}</option>
                 ))}
               </select>
             ) : (
-              <span className="text-[8.5px] sm:text-[9px] md:text-[10px] text-black/50 dark:text-white/50 mt-1 uppercase font-bold block font-mono">
+              <span className="text-[10px] sm:text-xs md:text-sm text-black/60 dark:text-white/60 mt-1 uppercase font-bold block font-mono">
                 {formatTerminal(flight.toTerminal)}
               </span>
             )}
 
             {isEditMode ? (
-              <div className="flex items-center justify-center gap-0.5 sm:gap-1 mt-1" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-center gap-1 sm:gap-1.5 mt-1.5" onClick={(e) => e.stopPropagation()}>
                 <input
                   ref={toTimeRef}
                   type="time"
                   value={timeStrTo24h(flight.toTime)}
                   onChange={(e) => onUpdate(flight.id, 'toTime', time24hTo12h(e.target.value))}
-                  className="bg-black/5 dark:bg-white/10 px-0.5 py-0.5 outline-none text-[9px] sm:text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-[58px] sm:w-[68px] md:w-[72px] font-mono [&::-webkit-calendar-picker-indicator]:hidden"
+                  className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] sm:text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-[76px] sm:w-[86px] md:w-[94px] font-mono [&::-webkit-calendar-picker-indicator]:hidden"
                 />
                 <button
                   type="button"
@@ -631,10 +631,10 @@ export function FlightCard({
                       console.warn(err);
                     }
                   }}
-                  className="p-0.5 sm:p-1 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-black/5 dark:bg-white/10 cursor-pointer flex items-center justify-center shrink-0"
+                  className="p-1 sm:p-1.5 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-black/5 dark:bg-white/10 cursor-pointer flex items-center justify-center shrink-0"
                   title="시간 선택"
                 >
-                  <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-black/60 dark:text-white/60" />
+                  <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/60 dark:text-white/60" />
                 </button>
               </div>
             ) : (

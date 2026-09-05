@@ -702,6 +702,9 @@ function App() {
     setCurrentView(view);
     setSelectedTagFilter(tagFilter);
 
+    // Always scroll to top when changing views
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+
     sessionStorage.setItem('lastView', view);
     if (tripId || activeTripId) {
       sessionStorage.setItem('lastTripId', String(tripId || activeTripId));
