@@ -327,6 +327,12 @@ export function ManageHubPage({
       JSON.stringify(editTags) !== JSON.stringify(selectedJourney.tags || []) ||
       editImg !== (selectedJourney.img || '') ||
       editVideoUrl !== (selectedJourney.videoUrl || '') ||
+      editHeroImg !== (selectedJourney.heroImg || '') ||
+      editHeroVideoUrl !== (selectedJourney.heroVideoUrl || '') ||
+      editStatusBadge !== (selectedJourney.statusBadge || '')
+    );
+  }, [selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge]);
+
   // Dirty tracking for MAGAZINE sections & moments
   const isMagazineDirty = useMemo(() => {
     return JSON.stringify(sectionsList) !== JSON.stringify(magazineSections || []);
