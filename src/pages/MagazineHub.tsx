@@ -131,21 +131,21 @@ export function MagazineHubPage({
       {/* 1. HERO SECTION (Editorial Large Hero Banner with Typography)        */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       {currentSection && (
-        <section className="relative w-full h-[46vh] sm:h-[52vh] md:h-[58vh] max-h-[560px] min-h-[320px] overflow-hidden bg-black select-none group">
+        <section className="relative w-full h-[54vh] sm:h-[60vh] md:h-[66vh] max-h-[680px] min-h-[400px] overflow-hidden bg-black select-none group">
           {/* Background Image */}
           {currentSection.heroImg ? (
             <img
               src={getEffectiveImageUrl(currentSection.heroImg)}
               alt={currentSection.heroTitle || currentSection.title}
-              className="absolute inset-0 w-full h-full object-cover opacity-85 group-hover:scale-105 transition-transform duration-1000 ease-out"
+              className="absolute inset-0 w-full h-full object-cover opacity-95 group-hover:scale-105 transition-transform duration-1000 ease-out"
             />
           ) : (
             <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#1a1a1a] via-[#111] to-[#0a0a0a]" />
           )}
 
-          {/* Dark Overlay Gradients for Editorial Mood & Readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/30" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent hidden md:block" />
+          {/* Dark Overlay Gradients for Editorial Mood & Readability (Lighter for clearer photo visibility) */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-transparent hidden md:block" />
 
           {/* Hero Top Bar: Issue / Volume / Section Badge */}
           <div className="absolute top-5 sm:top-6 left-6 sm:left-12 right-6 sm:right-12 z-20 flex items-center justify-between text-white/80">

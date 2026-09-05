@@ -327,13 +327,12 @@ export function ManageHubPage({
       JSON.stringify(editTags) !== JSON.stringify(selectedJourney.tags || []) ||
       editImg !== (selectedJourney.img || '') ||
       editVideoUrl !== (selectedJourney.videoUrl || '') ||
-      editHeroImg !== (selectedJourney.heroImg || '') ||
-      editHeroVideoUrl !== (selectedJourney.heroVideoUrl || '') ||
-      editStatusBadge !== (selectedJourney.statusBadge || '')
-    );
-  }, [selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge]);
+  // Dirty tracking for MAGAZINE sections & moments
+  const isMagazineDirty = useMemo(() => {
+    return JSON.stringify(sectionsList) !== JSON.stringify(magazineSections || []);
+  }, [sectionsList, magazineSections]);
 
-  const isCurrentDirty = (activeMode === 'HOME' && isHomeDirty) || (activeMode === 'ARCHIVE' && isArchiveDirty);
+  const isCurrentDirty = (activeMode === 'HOME' && isHomeDirty) || (activeMode === 'ARCHIVE' && isArchiveDirty) || (activeMode === 'MAGAZINE' && isMagazineDirty);
 
   useEffect(() => {
     if (onDirtyChange) {
@@ -944,6 +943,7 @@ export function ManageHubPage({
         await onSaveMagazineMoments(mainSec?.items || []);
       }
       setMagazineSaveSuccess(true);
+      setShowSaveSuccessModal(true);
       setTimeout(() => setMagazineSaveSuccess(false), 2000);
     } catch (err) {
       console.error('Failed to save magazine settings:', err);
@@ -952,6 +952,21 @@ export function ManageHubPage({
       setIsSavingMagazine(false);
     }
   };
+
+  // Sync saveRef with the current active mode's save handler
+  useEffect(() => {
+    if (saveRef) {
+      if (activeMode === 'HOME') {
+        saveRef.current = handleSaveHome;
+      } else if (activeMode === 'ARCHIVE') {
+        saveRef.current = handleSaveJourney;
+      } else if (activeMode === 'MAGAZINE') {
+        saveRef.current = handleSaveMagazine;
+      } else {
+        saveRef.current = null;
+      }
+    }
+  }, [saveRef, activeMode, handleSaveHome, handleSaveJourney, handleSaveMagazine]);
 
   const isSelectedPlan = Boolean(
     selectedJourney && (
@@ -2516,7 +2531,7 @@ export function ManageHubPage({
         {activeMode === 'MAGAZINE' && (
           <div className="w-full max-w-5xl mx-auto p-4 sm:p-8 flex flex-col gap-8 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200">
             
-            {/* Top Bar with Header & Action Buttons */}
+            {/* Top Bar with Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-black/15 dark:border-white/15 pb-4">
               <div>
                 <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
@@ -2528,32 +2543,6 @@ export function ManageHubPage({
                 <p className="text-xs text-black/60 dark:text-white/60 mt-0.5">
                   기본 홈 매거진 및 여정별·테마별 섹션을 추가하고 잡지 스타일의 리듬감 있는 레이아웃을 구성합니다.
                 </p>
-              </div>
-
-              <div className="flex items-center gap-2.5 shrink-0 self-start sm:self-auto">
-                {/* View Magazine Hub Link Button */}
-                <button
-                  type="button"
-                  onClick={() => onNavigate('magazine')}
-                  className="px-3.5 py-2 border border-black/30 dark:border-white/30 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
-                  title="매거진 허브 페이지로 이동하여 미리보기"
-                >
-                  <BookOpen className="w-3.5 h-3.5" />
-                  <span>VIEW HUB →</span>
-                </button>
-
-                {/* Save Button */}
-                <button
-                  type="button"
-                  onClick={handleSaveMagazine}
-                  disabled={isSavingMagazine}
-                  className={`px-5 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest flex items-center gap-1.5 cursor-pointer hover:opacity-85 transition-opacity shadow-sm ${
-                    magazineSaveSuccess ? '!bg-green-600 !text-white' : ''
-                  }`}
-                >
-                  {magazineSaveSuccess ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
-                  <span>{magazineSaveSuccess ? 'SAVED' : 'SAVE MAGAZINE'}</span>
-                </button>
               </div>
             </div>
 
@@ -2664,7 +2653,7 @@ export function ManageHubPage({
                     </span>
                   </div>
 
-                  <div className="w-full h-44 sm:h-56 md:h-64 relative overflow-hidden bg-black/10 dark:bg-white/5 border border-black/15 dark:border-white/15 group">
+                  <div className="w-full h-52 sm:h-64 md:h-72 relative overflow-hidden bg-black/10 dark:bg-white/5 border border-black/15 dark:border-white/15 group">
                     {currentMagSection.heroImg ? (
                       <>
                         <img
@@ -2672,7 +2661,7 @@ export function ManageHubPage({
                           alt={currentMagSection.heroTitle || 'Hero'}
                           className="w-full h-full object-cover object-center"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
                         <div className="absolute inset-0 p-5 sm:p-8 flex flex-col justify-between text-white pointer-events-none">
                           <div className="flex items-center justify-between">
                             <span className="text-[10px] font-mono font-bold uppercase tracking-widest px-2 py-0.5 bg-black/60 backdrop-blur-xs border border-white/20">
