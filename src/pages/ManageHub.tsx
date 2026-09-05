@@ -450,7 +450,7 @@ export function ManageHubPage({
   };
 
   // Save journey handler
-  const handleSaveJourney = async (showModal = true) => {
+  const handleSaveJourney = async (showModal: boolean = true) => {
     if (!selectedJourney) return;
     if (!isLoggedIn) return alert('로그인 후 저장 가능합니다.');
 
@@ -525,7 +525,7 @@ export function ManageHubPage({
   };
 
   // Save Home Settings + Magazine Moments together
-  const handleSaveHome = async (showModal = true) => {
+  const handleSaveHome = async (showModal: boolean = true) => {
     setIsSavingHome(true);
     try {
       localStorage.setItem('playVideoOnActivate', String(playVideoOnActivate));
@@ -962,7 +962,7 @@ export function ManageHubPage({
   };
 
   // Save Magazine Sections & Moments
-  const handleSaveMagazine = async (showModal = true) => {
+  const handleSaveMagazine = async (showModal: boolean = true) => {
     if (isSavingMagazine) return;
     setIsSavingMagazine(true);
     try {
@@ -1791,7 +1791,7 @@ export function ManageHubPage({
               <div className="pt-6 border-t border-black/20 dark:border-white/20 flex justify-end">
                 <button
                   type="button"
-                  onClick={handleSaveHome}
+                  onClick={() => handleSaveHome()}
                   disabled={isSavingHome}
                   className={`px-8 py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity ${
                     homeSaveSuccess ? '!bg-green-600 !text-white' : ''
@@ -1870,7 +1870,7 @@ export function ManageHubPage({
 
                       <button
                         type="button"
-                        onClick={handleSaveJourney}
+                        onClick={() => handleSaveJourney()}
                         disabled={isSavingTrip}
                         className={`px-4 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-widest font-sans flex items-center gap-1.5 cursor-pointer hover:opacity-85 transition-opacity ${
                           tripSaveSuccess ? '!bg-green-600 !text-white' : ''
@@ -3205,7 +3205,7 @@ export function ManageHubPage({
             <div className="pt-6 border-t border-black/20 dark:border-white/20 flex justify-end">
               <button
                 type="button"
-                onClick={handleSaveMagazine}
+                onClick={() => handleSaveMagazine()}
                 disabled={isSavingMagazine}
                 className={`px-8 py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity shadow-md ${
                   magazineSaveSuccess ? '!bg-green-600 !text-white' : ''
