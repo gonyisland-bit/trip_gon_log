@@ -26,9 +26,14 @@ import {
   AlertTriangle,
   GripVertical,
   Eye,
-  Loader2
+  Loader2,
+  Plus,
+  BookOpen,
+  Layers,
+  Sparkles,
+  Layout
 } from 'lucide-react';
-import { Trip, Plan, MagazineMoment, TimelineData, TimelineItem } from '../types';
+import { Trip, Plan, MagazineMoment, MagazineSection, MagazineItem, TimelineData, TimelineItem } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { getEffectiveImageUrl, uploadFileToR2, deleteFileFromR2 } from '../utils/storageHelper';
 import { compressImage } from '../utils/imageHelper';
@@ -72,10 +77,12 @@ interface ManageHubPageProps {
     gradientFromParam?: string,
     gradientToParam?: string
   ) => Promise<void>;
-  // Magazine Highlights
+  // Magazine Highlights & Sections
   magazineMoments?: MagazineMoment[];
+  magazineSections?: MagazineSection[];
   timelineData?: TimelineData;
   onSaveMagazineMoments?: (moments: MagazineMoment[]) => Promise<void>;
+  onSaveMagazineSections?: (sections: MagazineSection[]) => Promise<void>;
   // Trash bin
   trashedJourneys: Trip[];
   onRestoreJourney: (id: number) => Promise<void>;
@@ -115,15 +122,17 @@ export function ManageHubPage({
   isLoggedIn,
   isDarkMode,
   magazineMoments = [],
+  magazineSections = [],
   timelineData = {},
   onSaveMagazineMoments,
+  onSaveMagazineSections,
   onDirtyChange,
   saveRef,
 }: ManageHubPageProps) {
-  // Top-level mode tabs ordered: 'HOME' | 'ARCHIVE' | 'MAP' | 'TRASH'
-  const [activeMode, setActiveMode] = useState<'HOME' | 'ARCHIVE' | 'MAP' | 'TRASH'>(() => {
+  // Top-level mode tabs ordered: 'HOME' | 'ARCHIVE' | 'MAGAZINE' | 'MAP' | 'TRASH'
+  const [activeMode, setActiveMode] = useState<'HOME' | 'ARCHIVE' | 'MAGAZINE' | 'MAP' | 'TRASH'>(() => {
     const fromSession = sessionStorage.getItem('initialManageTab');
-    if (fromSession && ['HOME', 'ARCHIVE', 'MAP', 'TRASH'].includes(fromSession)) {
+    if (fromSession && ['HOME', 'ARCHIVE', 'MAGAZINE', 'MAP', 'TRASH'].includes(fromSession)) {
       sessionStorage.removeItem('initialManageTab');
       return fromSession as any;
     }
@@ -173,18 +182,66 @@ export function ManageHubPage({
   const [localJourneys, setLocalJourneys] = useState<(Trip | Plan)[]>([]);
   const [selectedJourneyId, setSelectedJourneyId] = useState<number | null>(null);
 
-  // Magazine highlights state
+  // Magazine sections & moments state
+  const [sectionsList, setSectionsList] = useState<MagazineSection[]>(() => {
+    if (magazineSections && magazineSections.length > 0) {
+      return magazineSections;
+    }
+    const mainItems = (magazineMoments && magazineMoments.length > 0) ? magazineMoments : [];
+    return [
+      {
+        id: 'main',
+        title: 'MAGAZINE HOME',
+        subtitle: 'Curated Moments & Editorial Stories',
+        heroImg: trips[0]?.heroImg || trips[0]?.img || '',
+        heroTitle: 'The Other Side of Paradise',
+        heroSubtitle: '나만의 감성으로 기록하고 기억하는 여행의 순간들.',
+        heroDate: trips[0]?.date || '2024 — 2026',
+        heroLocation: trips[0]?.locationStr || 'GLOBAL ARCHIVE',
+        heroTripId: trips[0]?.id,
+        items: mainItems,
+        order: 0,
+        isDefault: true,
+      }
+    ];
+  });
+
+  const [activeMagSectionId, setActiveMagSectionId] = useState<string>(() => {
+    const fromSession = sessionStorage.getItem('initialMagazineSectionId');
+    if (fromSession) {
+      sessionStorage.removeItem('initialMagazineSectionId');
+      return fromSession;
+    }
+    return 'main';
+  });
+
   const [momentsList, setMomentsList] = useState<MagazineMoment[]>(magazineMoments || []);
   const [selectedTripForMoments, setSelectedTripForMoments] = useState<number | null>(null);
   const [momentSearchQuery, setMomentSearchQuery] = useState('');
   const [isSavingMoments, setIsSavingMoments] = useState(false);
   const [momentsSaveSuccess, setMomentsSaveSuccess] = useState(false);
+  const [isSavingMagazine, setIsSavingMagazine] = useState(false);
+  const [magazineSaveSuccess, setMagazineSaveSuccess] = useState(false);
+  const [showAddSectionModal, setShowAddSectionModal] = useState(false);
+  const [newSectionTitle, setNewSectionTitle] = useState('');
+  const [newSectionSubtitle, setNewSectionSubtitle] = useState('');
+
+  useEffect(() => {
+    if (magazineSections && magazineSections.length > 0) {
+      setSectionsList(magazineSections);
+    }
+  }, [magazineSections]);
 
   useEffect(() => {
     if (magazineMoments && magazineMoments.length > 0) {
       setMomentsList(magazineMoments);
     }
   }, [magazineMoments]);
+
+  // Current selected magazine section
+  const currentMagSection = useMemo(() => {
+    return sectionsList.find(s => s.id === activeMagSectionId) || sectionsList[0] || null;
+  }, [sectionsList, activeMagSectionId]);
 
   // Home configuration state
   const [title, setTitle] = useState(homeTitle || '');
@@ -726,6 +783,160 @@ export function ManageHubPage({
     setMomentsList(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
   };
 
+  // Section Management Handlers
+  const handleAddSection = () => {
+    if (!newSectionTitle.trim()) {
+      alert('섹션 제목을 입력해주세요.');
+      return;
+    }
+    const newId = `section-${Date.now()}`;
+    const newSection: MagazineSection = {
+      id: newId,
+      title: newSectionTitle.trim().toUpperCase(),
+      subtitle: newSectionSubtitle.trim(),
+      heroImg: '',
+      heroTitle: newSectionTitle.trim(),
+      heroSubtitle: newSectionSubtitle.trim(),
+      heroDate: '',
+      heroLocation: '',
+      items: [],
+      order: sectionsList.length,
+      isDefault: false,
+    };
+    setSectionsList(prev => [...prev, newSection]);
+    setActiveMagSectionId(newId);
+    setNewSectionTitle('');
+    setNewSectionSubtitle('');
+    setShowAddSectionModal(false);
+  };
+
+  const handleDeleteSection = (sectionId: string) => {
+    const target = sectionsList.find(s => s.id === sectionId);
+    if (target?.isDefault) {
+      alert('기본 MAIN 섹션은 삭제할 수 없습니다.');
+      return;
+    }
+    if (window.confirm(`'${target?.title}' 매거진 섹션을 삭제하시겠습니까?`)) {
+      setSectionsList(prev => {
+        const filtered = prev.filter(s => s.id !== sectionId);
+        return filtered.map((s, idx) => ({ ...s, order: idx }));
+      });
+      setActiveMagSectionId('main');
+    }
+  };
+
+  const handleMoveSection = (index: number, direction: 'up' | 'down') => {
+    const targetIdx = direction === 'up' ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= sectionsList.length) return;
+    const copy = [...sectionsList];
+    const [moved] = copy.splice(index, 1);
+    copy.splice(targetIdx, 0, moved);
+    setSectionsList(copy.map((s, idx) => ({ ...s, order: idx })));
+  };
+
+  const handleUpdateSectionField = (sectionId: string, field: keyof MagazineSection, val: any) => {
+    setSectionsList(prev => prev.map(s => s.id === sectionId ? { ...s, [field]: val } : s));
+  };
+
+  // Add Item to Current Section
+  const handleAddItemToCurrentSection = (item: TimelineItem & { journeyTitle?: string; journeyLocation?: string }) => {
+    if (!currentMagSection || !item.img) return;
+    const parentTrip = trips.find(t => t.id === item.tripId);
+    const pName = safeStr(item.place);
+    const jTitle = safeStr(item.journeyTitle) || parentTrip?.title || '';
+    const jLoc = parentTrip?.locationStr || (parentTrip?.locations && parentTrip.locations[0]?.name) || safeStr(item.journeyLocation);
+    const locStr = safeStr(item.location) || pName;
+
+    const newItem: MagazineItem = {
+      id: `moment-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      tripId: item.tripId,
+      title: pName || jTitle || 'UNTITLED MOMENT',
+      date: safeStr(item.date),
+      placeName: locStr,
+      location: jLoc,
+      caption: '',
+      quote: '',
+      img: item.img,
+      layoutType: 'normal',
+      order: (currentMagSection.items || []).length,
+    };
+
+    setSectionsList(prev => prev.map(s => {
+      if (s.id === currentMagSection.id) {
+        return {
+          ...s,
+          items: [...(s.items || []), newItem],
+        };
+      }
+      return s;
+    }));
+  };
+
+  const handleRemoveItemFromCurrentSection = (itemId: string) => {
+    if (!currentMagSection) return;
+    setSectionsList(prev => prev.map(s => {
+      if (s.id === currentMagSection.id) {
+        return {
+          ...s,
+          items: (s.items || []).filter(it => it.id !== itemId).map((it, idx) => ({ ...it, order: idx })),
+        };
+      }
+      return s;
+    }));
+  };
+
+  const handleMoveItemInCurrentSection = (index: number, direction: 'up' | 'down') => {
+    if (!currentMagSection || !currentMagSection.items) return;
+    const items = [...currentMagSection.items];
+    const targetIdx = direction === 'up' ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= items.length) return;
+    const temp = items[index];
+    items[index] = items[targetIdx];
+    items[targetIdx] = temp;
+    const reordered = items.map((it, idx) => ({ ...it, order: idx }));
+
+    setSectionsList(prev => prev.map(s => {
+      if (s.id === currentMagSection.id) {
+        return { ...s, items: reordered };
+      }
+      return s;
+    }));
+  };
+
+  const handleUpdateItemInCurrentSection = (itemId: string, field: keyof MagazineItem, val: any) => {
+    if (!currentMagSection || !currentMagSection.items) return;
+    setSectionsList(prev => prev.map(s => {
+      if (s.id === currentMagSection.id) {
+        return {
+          ...s,
+          items: s.items.map(it => it.id === itemId ? { ...it, [field]: val } : it),
+        };
+      }
+      return s;
+    }));
+  };
+
+  // Save Magazine Sections & Moments
+  const handleSaveMagazine = async () => {
+    if (isSavingMagazine) return;
+    setIsSavingMagazine(true);
+    try {
+      if (onSaveMagazineSections) {
+        await onSaveMagazineSections(sectionsList);
+      } else if (onSaveMagazineMoments) {
+        const mainSec = sectionsList.find(s => s.id === 'main') || sectionsList[0];
+        await onSaveMagazineMoments(mainSec?.items || []);
+      }
+      setMagazineSaveSuccess(true);
+      setTimeout(() => setMagazineSaveSuccess(false), 2000);
+    } catch (err) {
+      console.error('Failed to save magazine settings:', err);
+      alert('매거진 설정 저장에 실패했습니다.');
+    } finally {
+      setIsSavingMagazine(false);
+    }
+  };
+
   const isSelectedPlan = Boolean(
     selectedJourney && (
       (selectedJourney as any).isPlan ||
@@ -761,13 +972,13 @@ export function ManageHubPage({
           </div>
         </div>
 
-        {/* Mode Switcher: HOME / TRIP / MAP / TRASH */}
-        <div className="flex items-center border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 p-0.5 rounded-none">
-          {(['HOME', 'ARCHIVE', 'MAP', 'TRASH'] as const).map(mode => (
+        {/* Mode Switcher: HOME / TRIP / MAGAZINE / MAP / TRASH */}
+        <div className="flex items-center border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 p-0.5 rounded-none overflow-x-auto">
+          {(['HOME', 'ARCHIVE', 'MAGAZINE', 'MAP', 'TRASH'] as const).map(mode => (
             <button
               key={mode}
               onClick={() => setActiveMode(mode)}
-              className={`px-3 sm:px-4 py-1.5 text-xs font-black uppercase tracking-wider font-sans transition-colors cursor-pointer ${
+              className={`px-3 sm:px-4 py-1.5 text-xs font-black uppercase tracking-wider font-sans transition-colors cursor-pointer whitespace-nowrap ${
                 activeMode === mode
                   ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
                   : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -2267,6 +2478,611 @@ export function ManageHubPage({
                 })}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ─────────────────────────────────────────────────────────────────── */}
+        {/* MODE: MAGAZINE (Sections, Hero, Layout & Moments Management)        */}
+        {/* ─────────────────────────────────────────────────────────────────── */}
+        {activeMode === 'MAGAZINE' && (
+          <div className="w-full max-w-5xl mx-auto p-4 sm:p-8 flex flex-col gap-8 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200">
+            
+            {/* Top Bar with Header & Action Buttons */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-black/15 dark:border-white/15 pb-4">
+              <div>
+                <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                  EDITORIAL MAGAZINE CURATION
+                </span>
+                <h2 className="text-2xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                  매거진 섹션 및 에디토리얼 관리
+                </h2>
+                <p className="text-xs text-black/60 dark:text-white/60 mt-0.5">
+                  기본 홈 매거진 및 여정별·테마별 섹션을 추가하고 잡지 스타일의 리듬감 있는 레이아웃을 구성합니다.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5 shrink-0 self-start sm:self-auto">
+                {/* View Magazine Hub Link Button */}
+                <button
+                  type="button"
+                  onClick={() => onNavigate('magazine')}
+                  className="px-3.5 py-2 border border-black/30 dark:border-white/30 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
+                  title="매거진 허브 페이지로 이동하여 미리보기"
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>VIEW HUB →</span>
+                </button>
+
+                {/* Save Button */}
+                <button
+                  type="button"
+                  onClick={handleSaveMagazine}
+                  disabled={isSavingMagazine}
+                  className={`px-5 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest flex items-center gap-1.5 cursor-pointer hover:opacity-85 transition-opacity shadow-sm ${
+                    magazineSaveSuccess ? '!bg-green-600 !text-white' : ''
+                  }`}
+                >
+                  {magazineSaveSuccess ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+                  <span>{magazineSaveSuccess ? 'SAVED' : 'SAVE MAGAZINE'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 1. Section Selector & Manager Bar */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                  MAGAZINE SECTIONS ({sectionsList.length})
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowAddSectionModal(true)}
+                  className="px-3 py-1 bg-black text-white dark:bg-white dark:text-black text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ ADD NEW SECTION</span>
+                </button>
+              </div>
+
+              {/* Sections Tab Strip */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-black/10 dark:border-white/10">
+                {sectionsList.map((sec, idx) => {
+                  const isActive = sec.id === activeMagSectionId;
+                  return (
+                    <div
+                      key={sec.id}
+                      className={`group flex items-center border transition-all ${
+                        isActive 
+                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs' 
+                          : 'bg-white dark:bg-[#181818] text-black/70 dark:text-white/70 border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white'
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setActiveMagSectionId(sec.id)}
+                        className="px-3 py-2 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer"
+                      >
+                        <span>{sec.title}</span>
+                        <span className={`text-[10px] px-1.5 py-0.2 ${isActive ? 'bg-white/20 dark:bg-black/20' : 'bg-black/10 dark:bg-white/10'}`}>
+                          {sec.items?.length || 0}
+                        </span>
+                      </button>
+
+                      {/* Active Section Quick Actions (Reorder & Delete) */}
+                      {isActive && (
+                        <div className="flex items-center border-l border-white/20 dark:border-black/20 pr-1">
+                          <button
+                            type="button"
+                            onClick={() => handleMoveSection(idx, 'up')}
+                            disabled={idx === 0}
+                            className="p-1 hover:bg-white/20 dark:hover:bg-black/20 disabled:opacity-20 cursor-pointer"
+                            title="섹션 앞으로 이동"
+                          >
+                            <ChevronUp className="w-3 h-3 -rotate-90" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMoveSection(idx, 'down')}
+                            disabled={idx === sectionsList.length - 1}
+                            className="p-1 hover:bg-white/20 dark:hover:bg-black/20 disabled:opacity-20 cursor-pointer"
+                            title="섹션 뒤로 이동"
+                          >
+                            <ChevronDown className="w-3 h-3 -rotate-90" />
+                          </button>
+                          {!sec.isDefault && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSection(sec.id)}
+                              className="p-1 text-red-400 hover:bg-red-500/20 cursor-pointer"
+                              title="섹션 삭제"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 2. Active Section Settings & Hero Configuration */}
+            {currentMagSection && (
+              <div className="flex flex-col gap-6 bg-black/[0.02] dark:bg-white/[0.02] border border-black/10 dark:border-white/10 p-4 sm:p-6">
+                <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-red-600 dark:text-red-500" />
+                    <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                      SECTION & HERO SETTINGS: [{currentMagSection.title}]
+                    </h3>
+                  </div>
+                  {currentMagSection.isDefault && (
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black uppercase">
+                      DEFAULT MAIN
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Section Title */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                      SECTION TITLE (섹션 이름)
+                    </label>
+                    <input
+                      type="text"
+                      value={currentMagSection.title || ''}
+                      onChange={e => handleUpdateSectionField(currentMagSection.id, 'title', e.target.value)}
+                      placeholder="e.g. TOKYO VIBES, JEJU ISLAND"
+                      className="px-3 py-2 text-xs font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none uppercase text-black dark:text-white"
+                    />
+                  </div>
+
+                  {/* Section Subtitle */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                      SECTION SUBTITLE / MEMO (부제목·설명)
+                    </label>
+                    <input
+                      type="text"
+                      value={currentMagSection.subtitle || ''}
+                      onChange={e => handleUpdateSectionField(currentMagSection.id, 'subtitle', e.target.value)}
+                      placeholder="e.g. Curated Moments & Stories"
+                      className="px-3 py-2 text-xs font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                    />
+                  </div>
+
+                  {/* Hero Big Title */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                      HERO BIG TITLE (히어로 대형 타이틀)
+                    </label>
+                    <input
+                      type="text"
+                      value={currentMagSection.heroTitle || ''}
+                      onChange={e => handleUpdateSectionField(currentMagSection.id, 'heroTitle', e.target.value)}
+                      placeholder="e.g. The Other Side of Paradise"
+                      className="px-3 py-2 text-xs font-serif font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                    />
+                  </div>
+
+                  {/* Hero Subtitle */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                      HERO SUBTITLE / QUOTE (히어로 인용문·서브텍스트)
+                    </label>
+                    <input
+                      type="text"
+                      value={currentMagSection.heroSubtitle || ''}
+                      onChange={e => handleUpdateSectionField(currentMagSection.id, 'heroSubtitle', e.target.value)}
+                      placeholder="e.g. 나만의 감성으로 기록하고 기억하는 순간들"
+                      className="px-3 py-2 text-xs bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                    />
+                  </div>
+
+                  {/* Hero Date */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                      HERO DATE (히어로 날짜)
+                    </label>
+                    <input
+                      type="text"
+                      value={currentMagSection.heroDate || ''}
+                      onChange={e => handleUpdateSectionField(currentMagSection.id, 'heroDate', e.target.value)}
+                      placeholder="e.g. 2024.07.19 — 2024.07.24"
+                      className="px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                    />
+                  </div>
+
+                  {/* Hero Location */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                      HERO LOCATION (히어로 장소)
+                    </label>
+                    <input
+                      type="text"
+                      value={currentMagSection.heroLocation || ''}
+                      onChange={e => handleUpdateSectionField(currentMagSection.id, 'heroLocation', e.target.value)}
+                      placeholder="e.g. TOKYO, JAPAN"
+                      className="px-3 py-2 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none uppercase text-black dark:text-white"
+                    />
+                  </div>
+
+                  {/* Hero Image URL & Linked Trip */}
+                  <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                        HERO IMAGE URL (히어로 대표 이미지)
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={currentMagSection.heroImg || ''}
+                          onChange={e => handleUpdateSectionField(currentMagSection.id, 'heroImg', e.target.value)}
+                          placeholder="https://..."
+                          className="flex-1 px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                        LINKED JOURNEY (연계 여정 상세 연결)
+                      </label>
+                      <select
+                        value={currentMagSection.heroTripId || ''}
+                        onChange={e => handleUpdateSectionField(currentMagSection.id, 'heroTripId', e.target.value ? Number(e.target.value) : undefined)}
+                        className="px-3 py-2 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                      >
+                        <option value="">-- NO LINKED JOURNEY --</option>
+                        {localJourneys.map(j => (
+                          <option key={j.id} value={j.id}>
+                            {j.title.replace(/\s*\(Plan\)$/i, '')} ({j.locationStr || j.country})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 3. Current Section Moments & Editorial Cards Manager */}
+            {currentMagSection && (
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
+                  <div className="flex items-center gap-2">
+                    <Layout className="w-4 h-4 text-black/70 dark:text-white/70" />
+                    <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                      CURATED MOMENTS IN THIS SECTION ({currentMagSection.items?.length || 0})
+                    </h3>
+                  </div>
+                  <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                    * 드롭다운으로 레이아웃 비율(Normal, Tall, Wide, Large)을 자유롭게 지정할 수 있습니다.
+                  </span>
+                </div>
+
+                {/* Items List */}
+                {(!currentMagSection.items || currentMagSection.items.length === 0) ? (
+                  <div className="py-10 text-center text-xs font-mono text-black/40 dark:text-white/40 border border-dashed border-black/20 dark:border-white/20 p-6">
+                    현재 섹션에 등록된 매거진 카드가 없습니다. 아래 타임라인 사진에서 '+ ADD'를 클릭하여 추가해주세요.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {currentMagSection.items.map((item, idx) => (
+                      <div
+                        key={item.id || idx}
+                        className="flex flex-col md:flex-row items-start md:items-center gap-3 p-3 bg-white dark:bg-[#161616] border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white transition-all shadow-xs"
+                      >
+                        {/* Thumbnail */}
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 border border-black/10 dark:border-white/10 overflow-hidden bg-black/10">
+                          <img
+                            src={getEffectiveImageUrl(item.img)}
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+
+                        {/* Fields */}
+                        <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 w-full">
+                          {/* Title */}
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
+                              TITLE (타이틀)
+                            </span>
+                            <input
+                              type="text"
+                              value={item.title || ''}
+                              onChange={e => handleUpdateItemInCurrentSection(item.id, 'title', e.target.value)}
+                              placeholder="Title"
+                              className="px-2 py-1 text-xs font-bold font-serif bg-transparent border-b border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                            />
+                          </div>
+
+                          {/* Place Name (Google Autocomplete) */}
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
+                              PLACE (장소명)
+                            </span>
+                            <input
+                              type="text"
+                              value={item.placeName || item.location || ''}
+                              onChange={e => handleUpdateItemInCurrentSection(item.id, 'placeName', e.target.value)}
+                              placeholder="Place / Spot"
+                              className="px-2 py-1 text-xs font-mono font-bold bg-transparent border-b border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                            />
+                          </div>
+
+                          {/* Date */}
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
+                              DATE (날짜)
+                            </span>
+                            <input
+                              type="text"
+                              value={item.date || ''}
+                              onChange={e => handleUpdateItemInCurrentSection(item.id, 'date', e.target.value)}
+                              placeholder="YYYY.MM.DD"
+                              className="px-2 py-1 text-xs font-mono bg-transparent border-b border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                            />
+                          </div>
+
+                          {/* Layout Type Selector */}
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
+                              LAYOUT TYPE (잡지 비율)
+                            </span>
+                            <select
+                              value={item.layoutType || 'normal'}
+                              onChange={e => handleUpdateItemInCurrentSection(item.id, 'layoutType', e.target.value)}
+                              className="px-2 py-1 text-xs font-mono font-bold bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                            >
+                              <option value="normal">NORMAL (3:4 세로 1열)</option>
+                              <option value="tall">TALL (2:3 긴세로 1열)</option>
+                              <option value="wide">WIDE (16:9 와이드 2열)</option>
+                              <option value="large">LARGE (4:3 피처 2열)</option>
+                            </select>
+                          </div>
+
+                          {/* Caption & Quote Span 4 */}
+                          <div className="sm:col-span-2 md:col-span-4 grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-black/5 dark:border-white/5 mt-1">
+                            <input
+                              type="text"
+                              value={item.caption || ''}
+                              onChange={e => handleUpdateItemInCurrentSection(item.id, 'caption', e.target.value)}
+                              placeholder="Editorial Caption / Short Memo (에디토리얼 메모)"
+                              className="px-2 py-0.5 text-[11px] bg-transparent border-b border-black/10 dark:border-white/10 outline-none text-black/70 dark:text-white/70"
+                            />
+                            <input
+                              type="text"
+                              value={item.quote || ''}
+                              onChange={e => handleUpdateItemInCurrentSection(item.id, 'quote', e.target.value)}
+                              placeholder="“Quote / Phrase” (인용구)"
+                              className="px-2 py-0.5 text-[11px] font-serif italic bg-transparent border-b border-black/10 dark:border-white/10 outline-none text-black/70 dark:text-white/70"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Order & Remove Action Buttons */}
+                        <div className="flex md:flex-col items-center gap-1 shrink-0 self-end md:self-center">
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveItemInCurrentSection(idx, 'up')}
+                              disabled={idx === 0}
+                              className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
+                              title="위로 이동"
+                            >
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveItemInCurrentSection(idx, 'down')}
+                              disabled={idx === currentMagSection.items.length - 1}
+                              className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
+                              title="아래로 이동"
+                            >
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveItemFromCurrentSection(item.id)}
+                            className="p-1 text-red-500 hover:bg-red-500/10 border border-red-500/30 cursor-pointer mt-0.5"
+                            title="삭제"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 4. Timeline Photos Selection Tool (여정 사진 탐색 및 즉시 추가) */}
+            <div className="flex flex-col gap-3 pt-4 border-t border-black/15 dark:border-white/15">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                  + ADD PHOTOS FROM TIMELINE TO [{currentMagSection?.title}]
+                </span>
+                <span className="text-[11px] font-mono text-black/50 dark:text-white/50">
+                  사진을 클릭하면 현재 선택된 섹션에 자동 추가됩니다.
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Filter by Journey */}
+                <select
+                  value={selectedTripForMoments === null ? '' : selectedTripForMoments}
+                  onChange={e => setSelectedTripForMoments(e.target.value === '' ? null : Number(e.target.value))}
+                  className="px-3 py-2 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                >
+                  <option value="">-- SELECT JOURNEY TO LOAD PHOTOS --</option>
+                  {localJourneys.map(j => (
+                    <option key={j.id} value={j.id}>
+                      {j.title.replace(/\s*\(Plan\)$/i, '')} ({j.locationStr || j.country})
+                    </option>
+                  ))}
+                </select>
+
+                {/* Search Keyword */}
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
+                  <input
+                    type="text"
+                    value={momentSearchQuery}
+                    onChange={e => setMomentSearchQuery(e.target.value)}
+                    placeholder="Search place, memo, location..."
+                    className="w-full pl-8 pr-3 py-2 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                  />
+                </div>
+              </div>
+
+              {/* Photo Candidates Grid */}
+              <div className="mt-2">
+                {candidateTimelineItems.length === 0 ? (
+                  selectedTripForMoments === null && !momentSearchQuery.trim() ? (
+                    <div className="py-10 px-4 text-center flex flex-col items-center justify-center gap-2 border border-dashed border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.02]">
+                      <ImageIcon className="w-6 h-6 text-black/30 dark:text-white/30" />
+                      <span className="text-xs font-mono font-black text-black/70 dark:text-white/70 tracking-wider uppercase">
+                        SELECT A JOURNEY TO VIEW CANDIDATE PHOTOS
+                      </span>
+                      <span className="text-[11px] text-black/40 dark:text-white/40 max-w-sm leading-relaxed">
+                        위 드롭다운에서 여행을 선택하시거나 검색어를 입력하시면 사진들이 즉시 로드됩니다.
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="py-8 text-center text-xs font-mono text-black/40 dark:text-white/40 border border-black/10 dark:border-white/10">
+                      NO PHOTOS FOUND FOR THIS SELECTION
+                    </div>
+                  )
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-[480px] overflow-y-auto p-1 border border-black/15 dark:border-white/15">
+                    {candidateTimelineItems.map((item, i) => {
+                      const pName = safeStr(item.place);
+                      const jTitle = safeStr(item.journeyTitle);
+                      const displayTitle = pName || jTitle || 'MOMENT';
+                      const itemDate = safeStr(item.date);
+                      return (
+                        <div
+                          key={`mag-cand-${item.id || i}-${i}`}
+                          onClick={() => handleAddItemToCurrentSection(item)}
+                          className="group relative h-32 sm:h-36 bg-white dark:bg-[#121212] border border-black/15 dark:border-white/15 overflow-hidden cursor-pointer flex flex-col justify-end transition-all select-none active:scale-95"
+                          title={`${displayTitle} (${itemDate}) - 클릭하여 추가`}
+                        >
+                          <img
+                            src={getEffectiveImageUrl(item.img || '')}
+                            alt={displayTitle}
+                            loading="lazy"
+                            decoding="async"
+                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white font-mono text-xs font-black p-2 text-center z-10">
+                            + ADD TO {currentMagSection?.title}
+                          </div>
+
+                          <div className="relative z-10 w-full bg-gradient-to-t from-black/95 via-black/80 to-transparent p-2 pt-3 flex flex-col gap-0.5">
+                            <span className="text-[11px] font-bold text-white truncate leading-tight">
+                              {displayTitle}
+                            </span>
+                            {itemDate && (
+                              <span className="text-[9px] font-mono text-white/70 truncate">
+                                {itemDate}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Bottom Save Button */}
+            <div className="pt-6 border-t border-black/20 dark:border-white/20 flex justify-end">
+              <button
+                type="button"
+                onClick={handleSaveMagazine}
+                disabled={isSavingMagazine}
+                className={`px-8 py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity shadow-md ${
+                  magazineSaveSuccess ? '!bg-green-600 !text-white' : ''
+                }`}
+              >
+                {magazineSaveSuccess ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                <span>{magazineSaveSuccess ? 'SAVED' : 'SAVE MAGAZINE SETTINGS'}</span>
+              </button>
+            </div>
+
+            {/* Modal: Add New Section */}
+            {showAddSectionModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+                <div className="w-full max-w-md bg-white dark:bg-[#161616] border border-black dark:border-white p-6 shadow-2xl flex flex-col gap-4">
+                  <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
+                    <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                      ADD NEW MAGAZINE SECTION
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddSectionModal(false)}
+                      className="p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                        SECTION TITLE (예: TOKYO, FUKUOKA, JEJU)
+                      </label>
+                      <input
+                        type="text"
+                        value={newSectionTitle}
+                        onChange={e => setNewSectionTitle(e.target.value)}
+                        placeholder="e.g. TOKYO VIBES"
+                        autoFocus
+                        className="px-3 py-2 text-xs font-bold uppercase bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                        SUBTITLE / MEMO (부제목)
+                      </label>
+                      <input
+                        type="text"
+                        value={newSectionSubtitle}
+                        onChange={e => setNewSectionSubtitle(e.target.value)}
+                        placeholder="e.g. City lights, quiet alleys, coffee"
+                        className="px-3 py-2 text-xs bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-black/10 dark:border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddSectionModal(false)}
+                      className="px-4 py-2 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase cursor-pointer"
+                    >
+                      CANCEL
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAddSection}
+                      className="px-5 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider cursor-pointer hover:opacity-85"
+                    >
+                      CREATE SECTION
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

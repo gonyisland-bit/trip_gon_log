@@ -178,4 +178,23 @@ export interface MagazineMoment {
   img: string;
   quote?: string;
   order?: number;
+  layoutType?: 'normal' | 'tall' | 'wide' | 'large';
 }
+
+export type MagazineItem = MagazineMoment;
+
+export interface MagazineSection {
+  id: string;
+  title: string;
+  subtitle?: string;
+  heroImg?: string;
+  heroTitle?: string;
+  heroSubtitle?: string;
+  heroDate?: string;
+  heroLocation?: string;
+  heroTripId?: number;
+  items: MagazineItem[];
+  order: number;
+  isDefault?: boolean;
+}
+

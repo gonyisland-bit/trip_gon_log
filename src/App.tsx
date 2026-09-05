@@ -6,6 +6,7 @@ import { ArchiveHubPage } from './pages/Archive';
 import { PlanHubPage } from './pages/Plan';
 import { MapHubPage } from './pages/MapHub';
 import { ManageHubPage } from './pages/ManageHub';
+import { MagazineHubPage } from './pages/MagazineHub';
 import { JourneyDetailPage } from './pages/Detail';
 import { AuthModal } from './components/AuthModal';
 import { CreateTripModal } from './components/CreateTripModal';
@@ -32,7 +33,9 @@ import {
   FlightItem, 
   StayItem, 
   TransitItem,
-  MagazineMoment
+  MagazineMoment,
+  MagazineSection,
+  MagazineItem
 } from './types';
 import { auth, db } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -90,6 +93,7 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [adminEmails, setAdminEmails] = useState<string[]>(ADMIN_EMAILS);
   const [magazineMoments, setMagazineMoments] = useState<MagazineMoment[]>([]);
+  const [magazineSections, setMagazineSections] = useState<MagazineSection[]>([]);
   const [showSettings, setShowSettings] = useState<boolean>(false);
   
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
@@ -482,7 +486,28 @@ function App() {
           setHeroSlideDuration(data.heroSlideDuration);
           localStorage.setItem('hero_slide_duration', String(data.heroSlideDuration));
         }
-        if (Array.isArray(data.magazineMoments)) setMagazineMoments(data.magazineMoments);
+        if (Array.isArray(data.magazineSections) && data.magazineSections.length > 0) {
+          setMagazineSections(data.magazineSections);
+          const mainSec = data.magazineSections.find((s: any) => s.id === 'main') || data.magazineSections[0];
+          if (mainSec && Array.isArray(mainSec.items)) {
+            setMagazineMoments(mainSec.items);
+          }
+        } else if (Array.isArray(data.magazineMoments)) {
+          setMagazineMoments(data.magazineMoments);
+          setMagazineSections([
+            {
+              id: 'main',
+              title: 'MAGAZINE HOME',
+              subtitle: 'Curated Moments & Editorial Stories',
+              heroImg: '',
+              heroTitle: 'The Other Side of Paradise',
+              heroSubtitle: '나만의 감성으로 기록하고 기억하는 여행의 순간들.',
+              items: data.magazineMoments,
+              order: 0,
+              isDefault: true,
+            }
+          ]);
+        }
         if (data.homeGradientEnabled !== undefined) {
           setHomeGradientEnabled(data.homeGradientEnabled);
           localStorage.setItem('home_gradient_enabled', String(data.homeGradientEnabled));
@@ -925,6 +950,27 @@ function App() {
     } catch (err) {
       console.error("Failed to save magazine moments:", err);
       alert("잡지 연출 저장에 실패했습니다.");
+      throw err;
+    }
+  };
+
+  const handleSaveMagazineSections = async (sections: MagazineSection[]) => {
+    if (!isLoggedIn || !isAdmin) {
+      alert("관리자(Admin)만 매거진 설정을 저장할 수 있습니다.");
+      return;
+    }
+    try {
+      const mainSec = sections.find(s => s.id === 'main') || sections[0];
+      const mainMoments = mainSec ? (mainSec.items || []) : [];
+      await setDoc(doc(db, 'users', 'public', 'settings', 'home'), {
+        magazineSections: cleanForFirestore(sections),
+        magazineMoments: cleanForFirestore(mainMoments),
+      }, { merge: true });
+      setMagazineSections(sections);
+      setMagazineMoments(mainMoments);
+    } catch (err) {
+      console.error("Failed to save magazine sections:", err);
+      alert("매거진 설정 저장에 실패했습니다.");
       throw err;
     }
   };
@@ -1655,8 +1701,10 @@ function App() {
                   homeGradientTo={homeGradientTo}
                   onSaveAllHomeSettings={handleSaveSettings}
                   magazineMoments={magazineMoments}
+                  magazineSections={magazineSections}
                   timelineData={timelineData}
                   onSaveMagazineMoments={handleSaveMagazineMoments}
+                  onSaveMagazineSections={handleSaveMagazineSections}
                   trashedJourneys={trashedJourneys}
                   onRestoreJourney={handleRestoreJourney}
                   onPermanentDeleteJourney={handlePermanentDeleteJourney}
@@ -1664,6 +1712,18 @@ function App() {
                   isDarkMode={isDarkMode}
                   onDirtyChange={setIsManageDirty}
                   saveRef={manageSaveRef}
+                />
+              )}
+              {currentView === 'magazine' && (
+                <MagazineHubPage
+                  sections={magazineSections}
+                  trips={trips}
+                  plans={plans}
+                  timelineData={timelineData}
+                  onNavigate={navigateTo}
+                  isLoggedIn={isLoggedIn}
+                  isAdmin={isAdmin}
+                  isDarkMode={isDarkMode}
                 />
               )}
               {currentView === 'plan' && (

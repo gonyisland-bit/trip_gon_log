@@ -93,7 +93,7 @@ export function Navigation({
             </span>
           </button>
 
-          {/* Desktop Nav Links (HOME / ARCHIVE / PLAN in Inter Font, Uppercase, Larger) */}
+          {/* Desktop Nav Links (HOME / TRIP / MAGAZINE / MAP in Inter Font, Uppercase, Larger) */}
           <div className="hidden md:flex items-center gap-6 lg:gap-8 border-l border-black/15 dark:border-white/15 pl-6 lg:pl-8 font-['Inter',sans-serif]">
             <button 
               onClick={() => navigateTo('home')} 
@@ -114,6 +114,16 @@ export function Navigation({
               }`}
             >
               TRIP
+            </button>
+            <button 
+              onClick={() => navigateTo('magazine')} 
+              className={`text-xs md:text-sm font-black tracking-widest uppercase transition-colors cursor-pointer py-1 ${
+                currentView === 'magazine' 
+                  ? 'text-black dark:text-white border-b-2 border-black dark:border-white' 
+                  : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+              }`}
+            >
+              MAGAZINE
             </button>
             <button 
               onClick={() => navigateTo('map')} 
@@ -279,11 +289,27 @@ export function Navigation({
             </button>
 
             <button
-              onClick={() => handleMenuNavigate('map')}
+              onClick={() => handleMenuNavigate('magazine')}
               className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-2"
             >
               <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-4 sm:mr-6 select-none">
                 03
+              </span>
+              <span className={`font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight transition-colors ${
+                currentView === 'magazine' 
+                  ? 'text-black dark:text-white underline decoration-2 underline-offset-8' 
+                  : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
+              }`}>
+                MAGAZINE
+              </span>
+            </button>
+
+            <button
+              onClick={() => handleMenuNavigate('map')}
+              className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-2"
+            >
+              <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-4 sm:mr-6 select-none">
+                04
               </span>
               <span className={`font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight transition-colors ${
                 currentView === 'map' 
@@ -300,7 +326,7 @@ export function Navigation({
                 className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-2"
               >
                 <span className="font-mono text-xs sm:text-sm font-bold text-red-600 dark:text-red-400 mr-4 sm:mr-6 select-none">
-                  04
+                  05
                 </span>
                 <span className={`font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight transition-colors ${
                   currentView === 'manage' 
@@ -317,7 +343,7 @@ export function Navigation({
               className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-2"
             >
               <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-4 sm:mr-6 select-none">
-                {isLoggedIn && isAdmin ? '05' : '04'}
+                {isLoggedIn && isAdmin ? '06' : '05'}
               </span>
               <div className="flex items-center gap-3">
                 <span className="font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white transition-colors">

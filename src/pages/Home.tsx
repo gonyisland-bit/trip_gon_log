@@ -1399,10 +1399,17 @@ export function HomePage({
             <div className="w-full border-t border-black/10 dark:border-white/10 mt-12 pt-12 px-4 sm:px-8 md:px-12 flex flex-col gap-8">
               {/* Section Header: Pure Swiss Minimal Magazine Header */}
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-black/15 dark:border-white/15">
-                <div className="flex flex-col gap-0.5">
+                <div className="flex items-baseline gap-4">
                   <h2 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
                     MAGAZINE
                   </h2>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('magazine')}
+                    className="text-xs font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white underline decoration-1 underline-offset-4 cursor-pointer transition-colors"
+                  >
+                    VIEW MAGAZINE HUB →
+                  </button>
                 </div>
 
                 {/* Swiss Minimal Spread Navigation Controls */}
@@ -1573,6 +1580,18 @@ export function HomePage({
                     );
                   })}
                 </div>
+              </div>
+
+              {/* EXPLORE MAGAZINE HUB Button */}
+              <div className="flex justify-center pt-6 pb-2 w-full">
+                <button
+                  type="button"
+                  onClick={() => onNavigate('magazine')}
+                  className="px-8 py-3 bg-black text-white dark:bg-white dark:text-black border border-black dark:border-white text-xs font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-2.5 cursor-pointer shadow-md font-sans"
+                >
+                  <span>EXPLORE MAGAZINE HUB</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
               </div>
             </div>
           );
