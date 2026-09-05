@@ -287,7 +287,7 @@ export function MagazineHubPage({
                 NO MAGAZINE MOMENTS YET
               </span>
               <p className="text-xs text-black/50 dark:text-white/50 leading-relaxed">
-                이 섹션에 등록된 매거진 사진이 아직 없습니다. 관리자 허브에서 여정 사진을 선택하여 매거진 카드를 추가해보세요.
+                이 섹션에 등록된 매거진 사진이나 텍스트 카드가 아직 없습니다. 관리자 허브에서 카드를 추가해보세요.
               </p>
             </div>
             {isLoggedIn && isAdmin && (
@@ -301,59 +301,78 @@ export function MagazineHubPage({
             )}
           </div>
         ) : (
-          /* Magazine Editorial Grid: Responsive 1 / 2 / 3 Columns with Varied Aspect Ratios */
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 items-start">
+          /* Magazine Editorial Grid: Clean 2-Column Responsive Grid with Landscape & Portrait Rhythm */
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start">
             {sectionItems.map((item, idx) => {
-              const layoutType = item.layoutType || 'normal';
+              const isLandscape = item.layoutType === 'landscape' || item.layoutType === 'wide' || item.layoutType === 'large';
+              const aspectClass = isLandscape ? 'aspect-[16/10]' : 'aspect-[3/4]';
+              const isTextCard = item.isTextOnly || !item.img;
               const parentTrip = trips.find(t => t.id === item.tripId);
-              
-              // Layout classes based on layoutType
-              let colSpanClass = 'col-span-1';
-              let aspectClass = 'aspect-[3/4]'; // Normal vertical
-
-              if (layoutType === 'tall') {
-                aspectClass = 'aspect-[2/3]'; // Taller vertical
-              } else if (layoutType === 'wide') {
-                colSpanClass = 'col-span-1 sm:col-span-2';
-                aspectClass = 'aspect-[16/10] sm:aspect-[16/9]';
-              } else if (layoutType === 'large') {
-                colSpanClass = 'col-span-1 sm:col-span-2 lg:col-span-2';
-                aspectClass = 'aspect-[4/3]';
-              }
 
               return (
                 <article
                   key={item.id || idx}
-                  className={`group flex flex-col gap-4 ${colSpanClass} transition-all duration-300`}
+                  className="group flex flex-col gap-4 w-full transition-all duration-300"
                 >
-                  {/* Image Container with Zoom and Lightbox Trigger */}
-                  <div 
-                    onClick={() => setLightboxIndex(idx)}
-                    className={`relative w-full ${aspectClass} overflow-hidden bg-black/5 dark:bg-white/5 cursor-pointer border border-black/10 dark:border-white/10`}
-                  >
-                    <img
-                      src={getEffectiveImageUrl(item.img)}
-                      alt={item.title}
-                      loading="lazy"
-                      decoding="async"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                    />
+                  {/* Card Visual Frame: Photo or Text-Only Editorial */}
+                  {isTextCard ? (
+                    <div
+                      className={`relative w-full ${aspectClass} overflow-hidden bg-black text-white dark:bg-white dark:text-black p-6 sm:p-8 md:p-10 flex flex-col justify-between border border-black/20 dark:border-white/20 select-none shadow-sm transition-transform duration-500 group-hover:scale-[1.01]`}
+                    >
+                      {/* Top Masthead in Card */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono font-black tracking-widest uppercase opacity-70">
+                          EDITORIAL NOTE #{String(idx + 1).padStart(2, '0')}
+                        </span>
+                        {item.placeName && (
+                          <span className="text-[11px] font-mono font-bold uppercase tracking-wider opacity-80 truncate max-w-[50%]">
+                            {item.placeName}
+                          </span>
+                        )}
+                      </div>
 
-                    {/* Subtle Overlay & Zoom Icon on Hover */}
-                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <div className="w-10 h-10 bg-white/90 dark:bg-black/90 text-black dark:text-white flex items-center justify-center shadow-md">
-                        <Maximize2 className="w-4 h-4" />
+                      {/* Center Giant Inter Bold Typography */}
+                      <div className="my-auto py-4">
+                        <p className="font-['Inter',sans-serif] font-black text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-tight leading-snug break-keep">
+                          {item.textContent || item.title}
+                        </p>
+                      </div>
+
+                      {/* Bottom Footer inside Text Card */}
+                      <div className="flex items-center justify-between pt-4 border-t border-white/20 dark:border-black/20 text-[10px] font-mono tracking-widest uppercase opacity-60">
+                        <span>{item.date || 'TRIP GON LOG'}</span>
+                        <span>LOG ENTRY</span>
                       </div>
                     </div>
+                  ) : (
+                    <div 
+                      onClick={() => setLightboxIndex(idx)}
+                      className={`relative w-full ${aspectClass} overflow-hidden bg-black/5 dark:bg-white/5 cursor-pointer border border-black/10 dark:border-white/10`}
+                    >
+                      <img
+                        src={getEffectiveImageUrl(item.img)}
+                        alt={item.title}
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                      />
 
-                    {/* Sequential Index Badge */}
-                    <div className="absolute top-3 left-3 bg-black/60 dark:bg-white/70 backdrop-blur-xs text-white dark:text-black font-mono text-[9px] font-bold px-1.5 py-0.5 uppercase tracking-widest">
-                      {String(idx + 1).padStart(2, '0')}
+                      {/* Subtle Overlay & Zoom Icon on Hover */}
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div className="w-10 h-10 bg-white/90 dark:bg-black/90 text-black dark:text-white flex items-center justify-center shadow-md">
+                          <Maximize2 className="w-4 h-4" />
+                        </div>
+                      </div>
+
+                      {/* Sequential Index Badge */}
+                      <div className="absolute top-3 left-3 bg-black/60 dark:bg-white/70 backdrop-blur-xs text-white dark:text-black font-mono text-[9px] font-bold px-1.5 py-0.5 uppercase tracking-widest">
+                        {String(idx + 1).padStart(2, '0')}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Editorial Typography & Metadata Section */}
-                  <div className="flex flex-col gap-2 pt-1">
+                  {/* Editorial Typography & Metadata Section (Simplified: Title, Place, Date only) */}
+                  <div className="flex flex-col gap-2 pt-1 font-['Inter',sans-serif]">
                     
                     {/* Top Tiny Metadata Strip: Date & Location */}
                     <div className="flex items-center gap-2 text-[10px] font-mono tracking-wider uppercase text-black/50 dark:text-white/50">
@@ -372,25 +391,11 @@ export function MagazineHubPage({
 
                     {/* Bold Large Image Title */}
                     <h3 
-                      onClick={() => setLightboxIndex(idx)}
-                      className="text-lg sm:text-xl font-serif font-bold text-black dark:text-white leading-snug tracking-tight hover:underline cursor-pointer"
+                      onClick={() => !isTextCard && setLightboxIndex(idx)}
+                      className={`text-lg sm:text-xl md:text-2xl font-black text-black dark:text-white leading-snug tracking-tight font-['Inter',sans-serif] ${!isTextCard ? 'hover:underline cursor-pointer' : ''}`}
                     >
                       {item.title}
                     </h3>
-
-                    {/* Editorial Caption / Short Description */}
-                    {item.caption && (
-                      <p className="text-xs text-black/70 dark:text-white/70 leading-relaxed font-sans line-clamp-3">
-                        {item.caption}
-                      </p>
-                    )}
-
-                    {/* Quote / Subtext if present */}
-                    {item.quote && (
-                      <p className="text-xs font-serif italic text-black/60 dark:text-white/60 border-l-2 border-black/20 dark:border-white/20 pl-2.5 my-1">
-                        “{item.quote}”
-                      </p>
-                    )}
 
                     {/* Bottom Action: Direct Link to Journey */}
                     {parentTrip && (

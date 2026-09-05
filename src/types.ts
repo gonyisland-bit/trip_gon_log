@@ -178,7 +178,10 @@ export interface MagazineMoment {
   img: string;
   quote?: string;
   order?: number;
-  layoutType?: 'normal' | 'tall' | 'wide' | 'large';
+  layoutType?: 'landscape' | 'portrait' | 'normal' | 'tall' | 'wide' | 'large';
+  isTextOnly?: boolean;
+  textContent?: string;
+  textBgStyle?: 'dark' | 'light' | 'accent';
 }
 
 export type MagazineItem = MagazineMoment;
