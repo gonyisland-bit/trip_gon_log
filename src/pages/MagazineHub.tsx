@@ -11,7 +11,6 @@ import {
   MapPin, 
   Calendar, 
   ArrowRight, 
-  SlidersHorizontal, 
   ExternalLink, 
   Maximize2, 
   ChevronDown,
@@ -208,8 +207,8 @@ export function MagazineHubPage({
     // Height & aspect ratio logic
     let visualFrameClass = 'aspect-[3/4] w-full';
     if (options.isMatchedHeight) {
-      // In a 3-col combined row (PL or LP), aspect-[3/2] (1.5:1) perfectly matches the portrait (3:4) sibling height across 2 columns
-      visualFrameClass = 'aspect-[3/2] w-full';
+      // In a 3-col combined row (PL or LP), aspect-[16/10] (1.6:1) perfectly compensates for grid gap and aligns horizontal height with portrait (3:4) sibling
+      visualFrameClass = 'aspect-[16/10] w-full';
     } else if (isLand) {
       visualFrameClass = 'aspect-[16/10] w-full';
     }
@@ -250,10 +249,10 @@ export function MagazineHubPage({
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
           />
 
-          {/* Subtle Overlay & Zoom Icon on Hover */}
-          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <div className="w-10 h-10 bg-white/90 dark:bg-black/90 text-black dark:text-white flex items-center justify-center shadow-md">
-              <Maximize2 className="w-4 h-4" />
+          {/* Minimal Subtle Zoom Icon at Bottom-Right on Hover */}
+          <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute bottom-3 right-3 w-8 h-8 bg-black/75 dark:bg-white/85 backdrop-blur-xs text-white dark:text-black flex items-center justify-center shadow-md transition-transform group-hover:scale-100 scale-90">
+              <Maximize2 className="w-3.5 h-3.5" />
             </div>
           </div>
 
@@ -338,19 +337,6 @@ export function MagazineHubPage({
                 {currentSection.title}
               </span>
             </div>
-
-            {/* Admin Quick Edit Button */}
-            {isLoggedIn && isAdmin && (
-              <button
-                type="button"
-                onClick={handleEditThisSection}
-                className="px-3.5 py-1.5 bg-white text-black hover:bg-white/90 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-lg transition-all"
-                title="이 매거진 섹션 편집하기"
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5" />
-                <span>EDIT SECTION</span>
-              </button>
-            )}
           </div>
 
           {/* Hero Content (Centered Bottom Editorial Typography) */}

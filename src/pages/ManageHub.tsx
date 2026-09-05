@@ -157,8 +157,8 @@ export function ManageHubPage({
   // Mobile Archive Switcher: 'LIST' or 'EDIT'
   const [mobileArchiveTab, setMobileArchiveTab] = useState<'LIST' | 'EDIT'>('LIST');
 
-  // Home Section Switcher: 'main' | 'hero' | 'trip' | 'magazine' | null (null shows ALL)
-  const [homeSubTab, setHomeSubTab] = useState<'main' | 'hero' | 'trip' | 'magazine' | null>(null);
+  // Selected Magazine Card for targeted insertion
+  const [selectedMagCardId, setSelectedMagCardId] = useState<string | null>(null);
 
   // Home Background Gradient state
   const [gradientEnabled, setGradientEnabled] = useState<boolean>(() => {
@@ -816,17 +816,20 @@ export function ManageHubPage({
   };
 
   const handleDeleteSection = (sectionId: string) => {
-    const target = sectionsList.find(s => s.id === sectionId);
-    if (target?.isDefault) {
-      alert('기본 MAIN 섹션은 삭제할 수 없습니다.');
+    if (sectionsList.length <= 1) {
+      alert('최소 1개의 매거진 섹션은 유지되어야 합니다.');
       return;
     }
-    if (window.confirm(`'${target?.title}' 매거진 섹션을 삭제하시겠습니까?`)) {
+    const target = sectionsList.find(s => s.id === sectionId);
+    if (window.confirm(`'${target?.title || '선택한'}' 매거진 섹션을 삭제하시겠습니까?`)) {
       setSectionsList(prev => {
         const filtered = prev.filter(s => s.id !== sectionId);
-        return filtered.map((s, idx) => ({ ...s, order: idx }));
+        const reordered = filtered.map((s, idx) => ({ ...s, order: idx }));
+        if (activeMagSectionId === sectionId && reordered.length > 0) {
+          setActiveMagSectionId(reordered[0].id);
+        }
+        return reordered;
       });
-      setActiveMagSectionId('main');
     }
   };
 
@@ -877,6 +880,7 @@ export function ManageHubPage({
 
   const handleAddTextCardToCurrentSection = () => {
     if (!currentMagSection) return;
+    const currentItems = [...(currentMagSection.items || [])];
     const newTextItem: MagazineItem = {
       id: `text-card-${Date.now()}`,
       title: 'EDITORIAL NOTE',
@@ -887,18 +891,30 @@ export function ManageHubPage({
       img: '',
       isTextOnly: true,
       layoutType: 'landscape',
-      order: (currentMagSection.items || []).length,
+      order: currentItems.length,
     };
+
+    let nextItems: MagazineItem[];
+    const selectedIdx = selectedMagCardId ? currentItems.findIndex(it => it.id === selectedMagCardId) : -1;
+    if (selectedIdx !== -1) {
+      // Insert right after the currently selected card
+      currentItems.splice(selectedIdx + 1, 0, newTextItem);
+      nextItems = currentItems.map((it, idx) => ({ ...it, order: idx }));
+    } else {
+      nextItems = [...currentItems, newTextItem].map((it, idx) => ({ ...it, order: idx }));
+    }
 
     setSectionsList(prev => prev.map(s => {
       if (s.id === currentMagSection.id) {
         return {
           ...s,
-          items: [...(s.items || []), newTextItem],
+          items: nextItems,
         };
       }
       return s;
     }));
+
+    setSelectedMagCardId(newTextItem.id);
   };
 
   const handleRemoveItemFromCurrentSection = (itemId: string) => {
@@ -1079,36 +1095,11 @@ export function ManageHubPage({
         {/* ─────────────────────────────────────────────────────────────────── */}
         {activeMode === 'HOME' && (
           <div className="w-full max-w-3xl mx-auto p-4 sm:p-8 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200">
-            {/* Header */}
-            {/* Sub Section Filter: MAIN / HERO / TRIP / MAGAZINE (Toggle filter, click again to unselect & view ALL) */}
-            <div className="shrink-0 sticky -top-4 sm:-top-8 bg-white/95 dark:bg-[#0e0e0e]/95 backdrop-blur-sm z-20 pt-3 pb-3 border-b border-black/15 dark:border-white/15 flex items-center gap-2 overflow-x-auto">
-              {[
-                { id: 'main', label: 'MAIN' },
-                { id: 'hero', label: 'HERO' },
-                { id: 'trip', label: 'TRIP' },
-                { id: 'magazine', label: 'MAGAZINE' },
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setHomeSubTab(current => current === tab.id ? null : tab.id as any)}
-                  className={`shrink-0 h-9 px-4 text-xs font-mono font-bold transition-all cursor-pointer whitespace-nowrap border flex items-center justify-center ${
-                    homeSubTab === tab.id
-                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
-                      : 'bg-white dark:bg-[#161616] text-black/60 dark:text-white/60 border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
             <div className="flex flex-col gap-8">
               {/* ═══════════════════════════════════════════════════════════════ */}
               {/* SECTION: MAIN (메인 & 마퀴 설정)                              */}
               {/* ═══════════════════════════════════════════════════════════════ */}
-              {(!homeSubTab || homeSubTab === 'main') && (
-                <section className="flex flex-col gap-6 pt-2">
+              <section className="flex flex-col gap-6 pt-2">
                   <div className="flex items-center justify-between border-b-2 border-black dark:border-white pb-2">
                     <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
                       MAIN
@@ -1320,13 +1311,11 @@ export function ManageHubPage({
                     )}
                   </div>
                 </section>
-              )}
 
-              {/* ═══════════════════════════════════════════════════════════════ */}
-              {/* SECTION: HERO (히어로 설정)                                   */}
-              {/* ═══════════════════════════════════════════════════════════════ */}
-              {(!homeSubTab || homeSubTab === 'hero') && (
-                <section className="flex flex-col gap-6 pt-2">
+                {/* ═══════════════════════════════════════════════════════════════ */}
+                {/* SECTION: HERO (히어로 설정)                                   */}
+                {/* ═══════════════════════════════════════════════════════════════ */}
+                <section className="flex flex-col gap-6 pt-6 border-t border-black/20 dark:border-white/20">
                   <div className="flex items-center justify-between border-b-2 border-black dark:border-white pb-2">
                     <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
                       HERO
@@ -1560,12 +1549,10 @@ export function ManageHubPage({
                     </div>
                   </div>
                 </section>
-              )}
 
-              {/* ═══════════════════════════════════════════════════════════════ */}
-              {/* SECTION: TRIP (여정 표시 설정 - 구 ARCHIVE)                    */}
-              {/* ═══════════════════════════════════════════════════════════════ */}
-              {(!homeSubTab || homeSubTab === 'trip') && (
+                {/* ═══════════════════════════════════════════════════════════════ */}
+                {/* SECTION: TRIP (여정 표시 설정 - 구 ARCHIVE)                    */}
+                {/* ═══════════════════════════════════════════════════════════════ */}
                 <section className="flex flex-col gap-6 pt-6 border-t border-black/20 dark:border-white/20">
                   <div className="flex items-center justify-between border-b-2 border-black dark:border-white pb-2">
                     <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
@@ -1596,12 +1583,10 @@ export function ManageHubPage({
                     </div>
                   </div>
                 </section>
-              )}
 
-              {/* ═══════════════════════════════════════════════════════════════ */}
-              {/* SECTION: MAGAZINE (홈 매거진 순간 선별)                         */}
-              {/* ═══════════════════════════════════════════════════════════════ */}
-              {(!homeSubTab || homeSubTab === 'magazine') && (
+                {/* ═══════════════════════════════════════════════════════════════ */}
+                {/* SECTION: MAGAZINE (홈 매거진 순간 선별)                         */}
+                {/* ═══════════════════════════════════════════════════════════════ */}
                 <section className="flex flex-col gap-6 pt-6 border-t border-black/20 dark:border-white/20">
                   <div className="flex items-center justify-between border-b-2 border-black dark:border-white pb-2">
                     <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
@@ -1785,7 +1770,6 @@ export function ManageHubPage({
                     </div>
                   </div>
                 </section>
-              )}
 
               {/* Save Button */}
               <div className="pt-6 border-t border-black/20 dark:border-white/20 flex justify-end">
@@ -2639,16 +2623,15 @@ export function ManageHubPage({
                           >
                             <ChevronDown className="w-3 h-3 -rotate-90" />
                           </button>
-                          {!sec.isDefault && (
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteSection(sec.id)}
-                              className="p-1 text-red-400 hover:bg-red-500/20 cursor-pointer"
-                              title="섹션 삭제"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSection(sec.id)}
+                            disabled={sectionsList.length <= 1}
+                            className="p-1 text-red-400 hover:bg-red-500/20 disabled:opacity-20 cursor-pointer"
+                            title={sectionsList.length <= 1 ? "최소 1개의 섹션은 유지되어야 합니다" : "섹션 삭제"}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
                         </div>
                       )}
                     </div>
@@ -2865,174 +2848,192 @@ export function ManageHubPage({
                     }
                   }
 
-                  const renderAdminCuratedCard = (
-                    item: MagazineItem,
-                    options: { spanClass?: string; isMatchedHeight?: boolean } = {}
-                  ) => {
-                    const idx = items.findIndex(x => x.id === item.id);
-                    const isItemHero = currentMagSection.heroImg === item.img;
-                    const isLandscape = isLand(item);
-                    const isTextCard = item.isTextOnly || !item.img;
+                    const renderAdminCuratedCard = (
+                      item: MagazineItem,
+                      options: { spanClass?: string; isMatchedHeight?: boolean } = {}
+                    ) => {
+                      const idx = items.findIndex(x => x.id === item.id);
+                      const isItemHero = currentMagSection.heroImg === item.img;
+                      const isLandscape = isLand(item);
+                      const isTextCard = item.isTextOnly || !item.img;
+                      const isCardSelected = selectedMagCardId === item.id;
 
-                    let aspectClass = 'aspect-[3/4] w-full';
-                    if (options.isMatchedHeight) {
-                      // In a 3-col combined row (PL or LP), aspect-[3/2] (1.5:1) perfectly matches the portrait (3:4) sibling height across 2 columns
-                      aspectClass = 'aspect-[3/2] w-full';
-                    } else if (isLandscape) {
-                      aspectClass = 'aspect-[16/10] w-full';
-                    }
+                      let aspectClass = 'aspect-[3/4] w-full';
+                      if (options.isMatchedHeight) {
+                        // In a 3-col combined row (PL or LP), aspect-[16/10] (1.6:1) perfectly aligns horizontal height with portrait (3:4) sibling
+                        aspectClass = 'aspect-[16/10] w-full';
+                      } else if (isLandscape) {
+                        aspectClass = 'aspect-[16/10] w-full';
+                      }
 
-                    return (
-                      <div
-                        key={item.id || idx}
-                        className={`flex flex-col gap-3 p-4 bg-white dark:bg-[#161616] border transition-all shadow-xs h-full ${options.spanClass || ''} ${
-                          isItemHero 
-                            ? 'border-black dark:border-white ring-1 ring-black dark:ring-white' 
-                            : 'border-black/15 dark:border-white/15 hover:border-black/60 dark:hover:border-white/60'
-                        }`}
-                      >
-                        {/* Card Controls Top Bar */}
-                        <div className="flex items-center justify-between gap-2 pb-1 border-b border-black/10 dark:border-white/10">
-                          <div className="flex items-center gap-1">
-                            <span className="text-[9px] font-mono font-bold uppercase text-black/40 dark:text-white/40 mr-1">
-                              #{String(idx + 1).padStart(2, '0')}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateItemInCurrentSection(item.id, 'layoutType', isLandscape ? 'portrait' : 'landscape')}
-                              className="px-2 py-0.5 text-[10px] font-mono font-bold uppercase border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
-                              title="가로형/세로형 비율 전환"
-                            >
-                              {isLandscape ? '가로형 ⟳' : '세로형 ⟳'}
-                            </button>
-                          </div>
-
-                          <div className="flex items-center gap-1">
-                            {!isTextCard && (
+                      return (
+                        <div
+                          key={item.id || idx}
+                          onClick={() => setSelectedMagCardId(prev => prev === item.id ? null : item.id)}
+                          className={`flex flex-col gap-3 p-4 bg-white dark:bg-[#161616] border transition-all shadow-xs h-full cursor-pointer select-none ${options.spanClass || ''} ${
+                            isCardSelected
+                              ? 'border-black dark:border-white ring-2 ring-black dark:ring-white shadow-md bg-black/[0.02] dark:bg-white/[0.04]'
+                              : isItemHero 
+                                ? 'border-black dark:border-white ring-1 ring-black dark:ring-white' 
+                                : 'border-black/15 dark:border-white/15 hover:border-black/60 dark:hover:border-white/60'
+                          }`}
+                        >
+                          {/* Card Controls Top Bar */}
+                          <div 
+                            className="flex items-center justify-between gap-2 pb-1 border-b border-black/10 dark:border-white/10"
+                            onClick={e => e.stopPropagation()}
+                          >
+                            <div className="flex items-center gap-1">
+                              <span className="text-[9px] font-mono font-bold uppercase text-black/40 dark:text-white/40 mr-1">
+                                #{String(idx + 1).padStart(2, '0')}
+                              </span>
                               <button
                                 type="button"
-                                onClick={() => handleSetAsHeroFromItem(item)}
-                                className={`px-2 py-0.5 text-[10px] font-mono font-bold uppercase transition-colors cursor-pointer border ${
-                                  isItemHero
-                                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                                    : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black'
-                                }`}
-                                title="섹션 히어로로 지정"
+                                onClick={() => handleUpdateItemInCurrentSection(item.id, 'layoutType', isLandscape ? 'portrait' : 'landscape')}
+                                className="px-2 py-0.5 text-[10px] font-mono font-bold uppercase border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
+                                title="가로형/세로형 비율 전환"
                               >
-                                {isItemHero ? '★ HERO' : 'SET HERO'}
+                                {isLandscape ? '가로형 ⟳' : '세로형 ⟳'}
                               </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => handleMoveItemInCurrentSection(idx, 'up')}
-                              disabled={idx === 0}
-                              className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
-                              title="앞으로 이동"
-                            >
-                              <ChevronUp className="w-3 h-3 -rotate-90" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleMoveItemInCurrentSection(idx, 'down')}
-                              disabled={idx === items.length - 1}
-                              className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
-                              title="뒤로 이동"
-                            >
-                              <ChevronDown className="w-3 h-3 -rotate-90" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveItemFromCurrentSection(item.id)}
-                              className="p-1 text-red-500 hover:bg-red-500/10 border border-red-500/30 cursor-pointer"
-                              title="카드 삭제"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </div>
+                              {isCardSelected && (
+                                <span className="px-1.5 py-0.5 text-[9px] font-mono font-black uppercase bg-black text-white dark:bg-white dark:text-black tracking-wider animate-in fade-in">
+                                  SELECTED
+                                </span>
+                              )}
+                            </div>
 
-                        {/* Visual Card Frame: Real-time Aspect Ratio Preview */}
-                        {isTextCard ? (
-                          <div
-                            className={`w-full ${aspectClass} bg-transparent text-black dark:text-white p-4 sm:p-5 flex flex-col justify-between border border-black/15 dark:border-white/15 relative group transition-all`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="text-[9px] font-mono font-bold uppercase opacity-60 text-black dark:text-white">
-                                TEXT CARD
-                              </span>
-                              <span className="text-[9px] font-mono opacity-50 uppercase text-black dark:text-white">
-                                INTER
-                              </span>
-                            </div>
-                            <textarea
-                              value={item.textContent || ''}
-                              onChange={e => handleUpdateItemInCurrentSection(item.id, 'textContent', e.target.value)}
-                              placeholder="매거진 본문 텍스트를 입력하세요..."
-                              className="w-full h-full my-2 bg-transparent text-black dark:text-white font-['Inter',sans-serif] font-bold text-sm sm:text-base md:text-lg leading-snug tracking-tight outline-none resize-none border-0 placeholder:text-black/30 dark:placeholder:text-white/30"
-                            />
-                            <div className="text-[9px] font-mono tracking-widest uppercase opacity-40 pt-1 border-t border-black/10 dark:border-white/10 text-black dark:text-white">
-                              {item.date || 'LOG ENTRY'}
+                            <div className="flex items-center gap-1">
+                              {!isTextCard && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSetAsHeroFromItem(item)}
+                                  className={`px-2 py-0.5 text-[10px] font-mono font-bold uppercase transition-colors cursor-pointer border ${
+                                    isItemHero
+                                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                                      : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black'
+                                  }`}
+                                  title="섹션 히어로로 지정"
+                                >
+                                  {isItemHero ? '★ HERO' : 'SET HERO'}
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleMoveItemInCurrentSection(idx, 'up')}
+                                disabled={idx === 0}
+                                className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
+                                title="앞으로 이동"
+                              >
+                                <ChevronUp className="w-3 h-3 -rotate-90" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleMoveItemInCurrentSection(idx, 'down')}
+                                disabled={idx === items.length - 1}
+                                className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
+                                title="뒤로 이동"
+                              >
+                                <ChevronDown className="w-3 h-3 -rotate-90" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (selectedMagCardId === item.id) setSelectedMagCardId(null);
+                                  handleRemoveItemFromCurrentSection(item.id);
+                                }}
+                                className="p-1 text-red-500 hover:bg-red-500/10 border border-red-500/30 cursor-pointer"
+                                title="카드 삭제"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
                             </div>
                           </div>
-                        ) : (
-                          <div
-                            className={`w-full ${aspectClass} overflow-hidden bg-black/10 dark:bg-white/5 border border-black/10 dark:border-white/10 relative group transition-all`}
-                          >
-                            <img
-                              src={getEffectiveImageUrl(item.img)}
-                              alt={item.title}
-                              className="w-full h-full object-cover"
-                            />
-                            {isItemHero && (
-                              <div className="absolute top-2 left-2 bg-black text-white dark:bg-white dark:text-black text-[9px] font-mono font-bold px-1.5 py-0.5 shadow-sm">
-                                HERO SELECTED ★
+
+                          {/* Visual Card Frame: Real-time Aspect Ratio Preview */}
+                          {isTextCard ? (
+                            <div
+                              onClick={e => e.stopPropagation()}
+                              className={`w-full ${aspectClass} bg-transparent text-black dark:text-white p-4 sm:p-5 flex flex-col justify-between border border-black/15 dark:border-white/15 relative group transition-all my-auto`}
+                            >
+                              <div className="flex items-center justify-between pb-1 border-b border-black/10 dark:border-white/10">
+                                <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
+                                  EDITORIAL TEXT CARD
+                                </span>
+                                <span className="text-[9px] font-mono uppercase text-black/40 dark:text-white/40">
+                                  INTER BOLD
+                                </span>
                               </div>
-                            )}
-                          </div>
-                        )}
+                              <textarea
+                                value={item.textContent || ''}
+                                onChange={e => handleUpdateItemInCurrentSection(item.id, 'textContent', e.target.value)}
+                                placeholder="매거진 본문 텍스트를 입력하세요..."
+                                className="w-full h-full my-2 bg-transparent text-black dark:text-white font-['Inter',sans-serif] font-bold text-sm sm:text-base md:text-lg leading-snug tracking-tight outline-none resize-none border-0 placeholder:text-black/30 dark:placeholder:text-white/30"
+                              />
+                            </div>
+                          ) : (
+                            <div
+                              className={`w-full ${aspectClass} overflow-hidden bg-black/10 dark:bg-white/5 border border-black/10 dark:border-white/10 relative group transition-all`}
+                            >
+                              <img
+                                src={getEffectiveImageUrl(item.img)}
+                                alt={item.title}
+                                className="w-full h-full object-cover"
+                              />
+                              {isItemHero && (
+                                <div className="absolute top-2 left-2 bg-black text-white dark:bg-white dark:text-black text-[9px] font-mono font-bold px-1.5 py-0.5 shadow-sm">
+                                  HERO SELECTED ★
+                                </div>
+                              )}
+                            </div>
+                          )}
 
-                        {/* Clean Form Inputs (Title, Place, Date) */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 font-['Inter',sans-serif] mt-auto">
-                          <div className="sm:col-span-3 flex flex-col gap-0.5">
-                            <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
-                              TITLE (타이틀)
-                            </span>
-                            <input
-                              type="text"
-                              value={item.title || ''}
-                              onChange={e => handleUpdateItemInCurrentSection(item.id, 'title', e.target.value)}
-                              placeholder="Moment Title"
-                              className="px-2 py-1 text-xs font-bold font-['Inter',sans-serif] bg-black/[0.03] dark:bg-white/[0.05] border border-black/15 dark:border-white/15 outline-none text-black dark:text-white"
-                            />
-                          </div>
-                          <div className="sm:col-span-2 flex flex-col gap-0.5">
-                            <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
-                              PLACE (장소명)
-                            </span>
-                            <input
-                              type="text"
-                              value={item.placeName || item.location || ''}
-                              onChange={e => handleUpdateItemInCurrentSection(item.id, 'placeName', e.target.value)}
-                              placeholder="Place / Location"
-                              className="px-2 py-1 text-xs font-mono font-bold bg-black/[0.03] dark:bg-white/[0.05] border border-black/15 dark:border-white/15 outline-none text-black dark:text-white"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
-                              DATE (날짜)
-                            </span>
-                            <input
-                              type="text"
-                              value={item.date || ''}
-                              onChange={e => handleUpdateItemInCurrentSection(item.id, 'date', e.target.value)}
-                              placeholder="YYYY.MM.DD"
-                              className="px-2 py-1 text-xs font-mono bg-black/[0.03] dark:bg-white/[0.05] border border-black/15 dark:border-white/15 outline-none text-black dark:text-white"
-                            />
-                          </div>
+                          {/* Clean Form Inputs (Title, Place, Date) - Only for Photo Cards */}
+                          {!isTextCard && (
+                            <div 
+                              className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 font-['Inter',sans-serif] mt-auto"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <div className="sm:col-span-3 flex flex-col gap-0.5">
+                                <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
+                                  TITLE (타이틀)
+                                </span>
+                                <input
+                                  type="text"
+                                  value={item.title || ''}
+                                  onChange={e => handleUpdateItemInCurrentSection(item.id, 'title', e.target.value)}
+                                  placeholder="Moment Title"
+                                  className="px-2 py-1 text-xs font-bold font-['Inter',sans-serif] bg-black/[0.03] dark:bg-white/[0.05] border border-black/15 dark:border-white/15 outline-none text-black dark:text-white"
+                                />
+                              </div>
+                              <div className="sm:col-span-2 flex flex-col gap-0.5">
+                                <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
+                                  PLACE (장소명)
+                                </span>
+                                <input
+                                  type="text"
+                                  value={item.placeName || item.location || ''}
+                                  onChange={e => handleUpdateItemInCurrentSection(item.id, 'placeName', e.target.value)}
+                                  placeholder="Place / Location"
+                                  className="px-2 py-1 text-xs font-mono font-bold bg-black/[0.03] dark:bg-white/[0.05] border border-black/15 dark:border-white/15 outline-none text-black dark:text-white"
+                                />
+                              </div>
+                              <div className="flex flex-col gap-0.5">
+                                <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
+                                  DATE (날짜)
+                                </span>
+                                <input
+                                  type="text"
+                                  value={item.date || ''}
+                                  onChange={e => handleUpdateItemInCurrentSection(item.id, 'date', e.target.value)}
+                                  placeholder="YYYY.MM.DD"
+                                  className="px-2 py-1 text-xs font-mono bg-black/[0.03] dark:bg-white/[0.05] border border-black/15 dark:border-white/15 outline-none text-black dark:text-white"
+                                />
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    );
-                  };
+                      );
+                    };
 
                   return (
                     <div className="flex flex-col gap-6 sm:gap-8">
