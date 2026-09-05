@@ -885,10 +885,8 @@ export function ArchiveHubPage({
                                   onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
                                   onMove={
                                     isPlan
-                                      ? () => handleMoveToArchive(trip as Plan)
-                                      : onMoveToPlans
-                                        ? () => onMoveToPlans(trip)
-                                        : undefined
+                                      ? (onMoveToArchive ? () => onMoveToArchive(trip as Plan) : undefined)
+                                      : (onMoveToPlans ? () => onMoveToPlans(trip) : undefined)
                                   }
                                   moveLabel={isPlan ? "LOG" : "PLAN"}
                                   variant="minimal"

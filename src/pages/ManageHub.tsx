@@ -2812,16 +2812,17 @@ export function ManageHubPage({
                             const eff = getEffectiveImageUrl(t.img);
                             if (eff) timelineByUrl.set(eff, t);
                           }
-                          if (Array.isArray(t.galleryImages)) {
-                            t.galleryImages.forEach(g => {
+                          const gImages = (t as any).galleryImages;
+                          if (Array.isArray(gImages)) {
+                            gImages.forEach((g: any) => {
                               const gUrl = typeof g === 'string' ? g : g?.url;
                               if (gUrl) {
                                 timelineByUrl.set(gUrl, {
                                   ...t,
-                                  place: (typeof g !== 'string' && g.place) || t.place,
-                                  location: (typeof g !== 'string' && g.location) || t.location,
-                                  imgNote: (typeof g !== 'string' && g.imgNote) || t.imgNote,
-                                  date: (typeof g !== 'string' && g.date) || t.date,
+                                  place: (typeof g !== 'string' && g?.place) || t.place,
+                                  location: (typeof g !== 'string' && g?.location) || t.location,
+                                  imgNote: (typeof g !== 'string' && g?.imgNote) || t.imgNote,
+                                  date: (typeof g !== 'string' && g?.date) || t.date,
                                 });
                               }
                             });
