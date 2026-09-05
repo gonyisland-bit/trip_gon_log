@@ -90,7 +90,7 @@ interface ManageHubPageProps {
   isLoggedIn: boolean;
   isDarkMode: boolean;
   onDirtyChange?: (isDirty: boolean) => void;
-  saveRef?: React.MutableRefObject<(() => Promise<void>) | null>;
+  saveRef?: React.MutableRefObject<((showModal?: boolean) => Promise<void>) | null>;
 }
 
 export function ManageHubPage({
@@ -450,7 +450,7 @@ export function ManageHubPage({
   };
 
   // Save journey handler
-  const handleSaveJourney = async () => {
+  const handleSaveJourney = async (showModal = true) => {
     if (!selectedJourney) return;
     if (!isLoggedIn) return alert('로그인 후 저장 가능합니다.');
 
@@ -470,7 +470,9 @@ export function ManageHubPage({
       });
 
       setTripSaveSuccess(true);
-      setShowSaveSuccessModal(true);
+      if (showModal) {
+        setShowSaveSuccessModal(true);
+      }
       setTimeout(() => setTripSaveSuccess(false), 2000);
     } catch (err) {
       console.error('Error saving trip:', err);
@@ -523,7 +525,7 @@ export function ManageHubPage({
   };
 
   // Save Home Settings + Magazine Moments together
-  const handleSaveHome = async () => {
+  const handleSaveHome = async (showModal = true) => {
     setIsSavingHome(true);
     try {
       localStorage.setItem('playVideoOnActivate', String(playVideoOnActivate));
@@ -555,7 +557,9 @@ export function ManageHubPage({
         gradientTo
       );
       setHomeSaveSuccess(true);
-      setShowSaveSuccessModal(true);
+      if (showModal) {
+        setShowSaveSuccessModal(true);
+      }
       setTimeout(() => setHomeSaveSuccess(false), 2000);
     } catch (err) {
       console.error('Failed to save home settings:', err);
@@ -565,13 +569,6 @@ export function ManageHubPage({
     }
   };
 
-  // Bind saveRef for App.tsx unsaved changes navigation
-  useEffect(() => {
-    if (saveRef) {
-      saveRef.current = activeMode === 'HOME' ? handleSaveHome : handleSaveJourney;
-    }
-  }, [activeMode, title, subtitle, selectedHeroIds, autoSlide, showMarquee, homeMarquee, homeSpeed, mediaType, momentsList, slideDuration, gradientEnabled, gradientFrom, gradientTo, selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge, saveRef]);
-
   // Keyboard Shortcuts: Ctrl+S to Save
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -580,11 +577,12 @@ export function ManageHubPage({
         e.preventDefault();
         if (activeMode === 'HOME') handleSaveHome();
         else if (activeMode === 'ARCHIVE') handleSaveJourney();
+        else if (activeMode === 'MAGAZINE') handleSaveMagazine();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeMode, isHomeDirty, isArchiveDirty, title, subtitle, selectedHeroIds, autoSlide, showMarquee, homeMarquee, homeSpeed, mediaType, momentsList, slideDuration, gradientEnabled, gradientFrom, gradientTo, selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge]);
+  }, [activeMode, isHomeDirty, isArchiveDirty, isMagazineDirty, title, subtitle, selectedHeroIds, autoSlide, showMarquee, homeMarquee, homeSpeed, mediaType, momentsList, slideDuration, gradientEnabled, gradientFrom, gradientTo, selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge, sectionsList]);
 
   // Save Map Settings
   const handleSaveMapSettings = () => {
@@ -964,7 +962,7 @@ export function ManageHubPage({
   };
 
   // Save Magazine Sections & Moments
-  const handleSaveMagazine = async () => {
+  const handleSaveMagazine = async (showModal = true) => {
     if (isSavingMagazine) return;
     setIsSavingMagazine(true);
     try {
@@ -975,7 +973,9 @@ export function ManageHubPage({
         await onSaveMagazineMoments(mainSec?.items || []);
       }
       setMagazineSaveSuccess(true);
-      setShowSaveSuccessModal(true);
+      if (showModal) {
+        setShowSaveSuccessModal(true);
+      }
       setTimeout(() => setMagazineSaveSuccess(false), 2000);
     } catch (err) {
       console.error('Failed to save magazine settings:', err);
@@ -2876,7 +2876,8 @@ export function ManageHubPage({
 
                     let aspectClass = 'aspect-[3/4] w-full';
                     if (options.isMatchedHeight) {
-                      aspectClass = 'aspect-[16/10] md:aspect-auto md:h-full md:min-h-0 w-full';
+                      // In a 3-col combined row (PL or LP), aspect-[3/2] (1.5:1) perfectly matches the portrait (3:4) sibling height across 2 columns
+                      aspectClass = 'aspect-[3/2] w-full';
                     } else if (isLandscape) {
                       aspectClass = 'aspect-[16/10] w-full';
                     }

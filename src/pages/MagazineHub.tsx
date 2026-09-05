@@ -208,8 +208,8 @@ export function MagazineHubPage({
     // Height & aspect ratio logic
     let visualFrameClass = 'aspect-[3/4] w-full';
     if (options.isMatchedHeight) {
-      // In a 3-col combined row (PL or LP), match the portrait sibling height
-      visualFrameClass = 'aspect-[16/10] md:aspect-auto md:h-full md:min-h-0 w-full';
+      // In a 3-col combined row (PL or LP), aspect-[3/2] (1.5:1) perfectly matches the portrait (3:4) sibling height across 2 columns
+      visualFrameClass = 'aspect-[3/2] w-full';
     } else if (isLand) {
       visualFrameClass = 'aspect-[16/10] w-full';
     }

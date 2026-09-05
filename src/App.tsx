@@ -151,7 +151,22 @@ function App() {
   const [showUnsavedModal, setShowUnsavedModal] = useState<boolean>(false);
   const [pendingNavigation, setPendingNavigation] = useState<{ view: string; tripId: number | null } | null>(null);
   const detailSaveRef = useRef<((showModal?: boolean) => Promise<void>) | null>(null);
-  const manageSaveRef = useRef<(() => Promise<void>) | null>(null);
+  const manageSaveRef = useRef<((showModal?: boolean) => Promise<void>) | null>(null);
+  const postSaveNavTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const postSaveNavTargetRef = useRef<{ view: string; tripId: number | null } | null>(null);
+
+  const handleCloseSaveCompleteModal = () => {
+    setShowSaveCompleteModal(false);
+    if (postSaveNavTimerRef.current) {
+      clearTimeout(postSaveNavTimerRef.current);
+      postSaveNavTimerRef.current = null;
+    }
+    if (postSaveNavTargetRef.current) {
+      const { view, tripId } = postSaveNavTargetRef.current;
+      postSaveNavTargetRef.current = null;
+      navigateTo(view, tripId, true, null, true);
+    }
+  };
 
   const handleSaveAndNavigate = async () => {
     setShowUnsavedModal(false);
@@ -160,7 +175,7 @@ function App() {
         await detailSaveRef.current(false);
       }
       if (isManageDirty && manageSaveRef.current) {
-        await manageSaveRef.current();
+        await manageSaveRef.current(false);
       }
     } catch (err) {
       console.warn("Save before navigation error:", err);
@@ -171,7 +186,10 @@ function App() {
       setPendingNavigation(null);
       setIsDetailEditing(false);
       setIsManageDirty(false);
-      setTimeout(() => {
+      postSaveNavTargetRef.current = { view, tripId };
+      postSaveNavTimerRef.current = setTimeout(() => {
+        postSaveNavTimerRef.current = null;
+        postSaveNavTargetRef.current = null;
         navigateTo(view, tripId, true, null, true);
       }, 2000);
     }
@@ -1440,7 +1458,7 @@ function App() {
       if (showSaveCompleteModal) {
         if (e.key === 'Enter' || e.key === 'Escape') {
           e.preventDefault();
-          setShowSaveCompleteModal(false);
+          handleCloseSaveCompleteModal();
         }
       } else if (showUnsavedModal) {
         if (e.key === 'Enter') {
@@ -1872,8 +1890,8 @@ function App() {
           singleButton
           autoDismiss
           autoDismissDuration={2000}
-          onConfirm={() => setShowSaveCompleteModal(false)}
-          onCancel={() => setShowSaveCompleteModal(false)}
+          onConfirm={handleCloseSaveCompleteModal}
+          onCancel={handleCloseSaveCompleteModal}
         />
 
         {/* Unsaved Changes Warning Modal */}
