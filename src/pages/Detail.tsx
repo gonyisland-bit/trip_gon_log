@@ -1587,7 +1587,7 @@ export function JourneyDetailPage({
     setDraftTransits([]);
   };
 
-  const handleSave = async () => {
+  const handleSave = async (showModal: boolean = true) => {
     if (!trip) return;
 
     // Force blur active input/textarea to trigger its onChange/composition commit

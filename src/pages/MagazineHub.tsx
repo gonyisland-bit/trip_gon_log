@@ -433,10 +433,11 @@ export function MagazineHubPage({
       {/* ─────────────────────────────────────────────────────────────────── */}
       {lightboxIndex !== null && (
         <Lightbox
+          isOpen={lightboxIndex !== null}
           images={lightboxImages}
-          initialIndex={lightboxIndex}
+          currentIndex={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
-          isDarkMode={isDarkMode}
+          onNavigate={(idx) => setLightboxIndex(idx)}
         />
       )}
     </main>

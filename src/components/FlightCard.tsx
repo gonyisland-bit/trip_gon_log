@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Plane, Trash2, RefreshCw, Clock, Paperclip, Loader2, X, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import { FlightItem } from '../types';
 import { SettlementExpenseInput } from './SettlementExpenseInput';
@@ -366,7 +366,7 @@ export function FlightCard({
                 {/* Suggestions drop down */}
                 {activeSearchField === 'from' && filteredSuggestions.length > 0 && (
                   <div className="absolute top-9 left-0 sm:left-1/2 sm:-translate-x-1/2 w-48 sm:w-56 bg-[#F9F8F6] dark:bg-[#1c1c1c] border border-black/15 dark:border-white/15 shadow-2xl z-50 max-h-48 overflow-y-auto text-left rounded-sm" onClick={(e) => e.stopPropagation()}>
-                    {filteredSuggestions.map(s => (
+                    {filteredSuggestions.map((s: { code: string; city: string; english: string; name: string }) => (
                       <button
                         key={s.code}
                         type="button"
@@ -549,7 +549,7 @@ export function FlightCard({
                 {/* Suggestions drop down */}
                 {activeSearchField === 'to' && filteredSuggestions.length > 0 && (
                   <div className="absolute top-9 right-0 sm:left-1/2 sm:-translate-x-1/2 w-48 sm:w-56 bg-[#F9F8F6] dark:bg-[#1c1c1c] border border-black/15 dark:border-white/15 shadow-2xl z-50 max-h-48 overflow-y-auto text-left rounded-sm" onClick={(e) => e.stopPropagation()}>
-                    {filteredSuggestions.map(s => (
+                    {filteredSuggestions.map((s: { code: string; city: string; english: string; name: string }) => (
                       <button
                         key={s.code}
                         type="button"
