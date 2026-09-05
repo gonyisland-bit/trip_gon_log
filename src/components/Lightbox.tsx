@@ -59,6 +59,8 @@ export function Lightbox({
   const isUserScrollingThumbsRef = useRef(false);
   const thumbScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resetUserScrollingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastWheelTimeRef = useRef<number>(0);
+  const wheelVelocityRef = useRef<number>(1);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
 
   const scaleRef = useRef(scale);
@@ -160,7 +162,7 @@ export function Lightbox({
     thumbScrollTimeoutRef.current = setTimeout(() => {
       if (isTouchingThumbsRef.current) return;
       settleThumbnailImmediate();
-    }, 140);
+    }, 180);
   }, [settleThumbnailImmediate]);
 
   // Handle user drag/scroll on thumbnail bar
@@ -170,16 +172,41 @@ export function Lightbox({
     scheduleThumbnailSettle();
   };
 
-  // Convert mouse wheel up/down to horizontal scroll on thumbnail bar
+  // Convert mouse wheel up/down to horizontal scroll with 1-by-1 step and acceleration
   const handleThumbnailsWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     const container = thumbnailsContainerRef.current;
     if (!container || !isOpen || isSlideshow) return;
+
     if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
       e.preventDefault();
       e.stopPropagation();
       isUserScrollingThumbsRef.current = true;
       if (thumbScrollTimeoutRef.current) clearTimeout(thumbScrollTimeoutRef.current);
-      container.scrollLeft += e.deltaY;
+
+      const now = performance.now();
+      const timeSinceLast = now - lastWheelTimeRef.current;
+      lastWheelTimeRef.current = now;
+
+      // Detect rapid successive wheel events for acceleration
+      if (timeSinceLast < 140) {
+        wheelVelocityRef.current = Math.min(wheelVelocityRef.current + 0.4, 4.5);
+      } else {
+        wheelVelocityRef.current = 1.0;
+      }
+
+      const sign = Math.sign(e.deltaY);
+      const absDelta = Math.abs(e.deltaY);
+
+      // Base step per single gentle notch (~56px = exactly 1 thumbnail width)
+      let moveDistance = 56;
+      if (absDelta > 120) {
+        // High native delta from touchpad or free-spinning wheel
+        moveDistance = 56 + Math.pow(absDelta / 100, 1.3) * 35;
+      }
+
+      const finalDelta = sign * moveDistance * wheelVelocityRef.current;
+      container.scrollLeft += finalDelta;
+
       scheduleThumbnailSettle();
     }
   };

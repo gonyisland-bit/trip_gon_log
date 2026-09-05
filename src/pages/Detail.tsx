@@ -83,7 +83,7 @@ interface JourneyDetailPageProps {
   searchFocusTab?: string | null;
   onClearSearchFocus?: () => void;
   onEditModeChange?: (editing: boolean) => void;
-  saveRef?: React.MutableRefObject<(() => Promise<void>) | null>;
+  saveRef?: React.MutableRefObject<((showModal?: boolean) => Promise<void>) | null>;
   allTrips?: Trip[];
   allPlans?: Plan[];
 }
@@ -1641,7 +1641,9 @@ export function JourneyDetailPage({
       setIsEditing(false);
       onEditModeChange?.(false);
       setIsBannerMenuOpen(false);
-      setShowSaveSuccessModal(true);
+      if (showModal) {
+        setShowSaveSuccessModal(true);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -1651,7 +1653,7 @@ export function JourneyDetailPage({
 
   useEffect(() => {
     if (saveRef) {
-      saveRef.current = handleSave;
+      saveRef.current = (showModal?: boolean) => handleSave(showModal ?? true);
       return () => {
         saveRef.current = null;
       };
@@ -4756,11 +4758,23 @@ export function JourneyDetailPage({
                     </div>
                   );
                 } else {
+                  // Helper to determine transit type reliably
+                  const getEffectiveTransitType = (t: TransitItem): 'train' | 'bus' | 'taxi' | 'car' => {
+                    if (t.transitType === 'car' || t.transitType === 'taxi' || t.transitType === 'bus' || t.transitType === 'train') {
+                      return t.transitType;
+                    }
+                    const typeUpper = ((t.ticketType || '') + ' ' + (t.title || '')).toUpperCase();
+                    if (typeUpper.includes('CAR') || typeUpper.includes('RENT') || typeUpper.includes('렌트') || typeUpper.includes('렌터카')) return 'car';
+                    if (typeUpper.includes('TAXI') || typeUpper.includes('택시')) return 'taxi';
+                    if (typeUpper.includes('BUS') || typeUpper.includes('버스')) return 'bus';
+                    return 'train';
+                  };
+
                   // 탑승종류순 정렬: Train / Bus / Taxi / Car 분류
-                  const trains = transitList.filter(t => t.transitType === 'train' || (!t.transitType || (t.transitType !== 'bus' && t.transitType !== 'taxi' && t.transitType !== 'car')));
-                  const buses = transitList.filter(t => t.transitType === 'bus');
-                  const taxis = transitList.filter(t => t.transitType === 'taxi');
-                  const cars = transitList.filter(t => t.transitType === 'car');
+                  const trains = transitList.filter(t => getEffectiveTransitType(t) === 'train');
+                  const buses = transitList.filter(t => getEffectiveTransitType(t) === 'bus');
+                  const taxis = transitList.filter(t => getEffectiveTransitType(t) === 'taxi');
+                  const cars = transitList.filter(t => getEffectiveTransitType(t) === 'car');
                   return (
                     <div className="flex flex-col text-left w-full">
                       {renderGroup(trains, 'Train Tickets', Train)}

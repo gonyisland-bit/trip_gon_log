@@ -22,22 +22,99 @@ interface FlightCardProps {
 
 // Common Airport suggestions helper list
 const airportSuggestions = [
-  { code: 'ICN', city: '서울/인천', english: 'seoul incheon', name: '인천국제공항' },
-  { code: 'GMP', city: '서울/김포', english: 'seoul gimpo', name: '김포국제공항' },
-  { code: 'NRT', city: '도쿄/나리타', english: 'tokyo narita', name: '나리타국제공항' },
-  { code: 'HND', city: '도쿄/하네다', english: 'tokyo haneda', name: '하네다국제공항' },
-  { code: 'KIX', city: '오사카/간사이', english: 'osaka kansai', name: '간사이국제공항' },
-  { code: 'CTS', city: '삿포로/신치토세', english: 'sapporo new chitose', name: '신치토세공항' },
-  { code: 'FUK', city: '후쿠오카', english: 'fukuoka', name: '후쿠오카공항' },
-  { code: 'CDG', city: '파리/샤를드골', english: 'paris charles de gaulle', name: '샤를드골공항' },
-  { code: 'LHR', city: '런던/히드로', english: 'london heathrow', name: '히드로공항' },
-  { code: 'JFK', city: '뉴욕/존F케네디', english: 'new york jfk john f kennedy', name: '존 F. 케네디 국제공항' },
-  { code: 'LAX', city: '로스앤젤레스', english: 'los angeles lax', name: '로스앤젤레스국제공항' },
-  { code: 'SIN', city: '싱가포르/창이', english: 'singapore changi', name: '창이국제공항' },
-  { code: 'BKK', city: '방콕/수완나품', english: 'bangkok suvarnabhumi', name: '수완나품공항' },
+  // Korea (대한민국)
+  { code: 'ICN', city: '서울/인천', english: 'seoul incheon icn', name: '인천국제공항' },
+  { code: 'GMP', city: '서울/김포', english: 'seoul gimpo gmp', name: '김포국제공항' },
+  { code: 'CJU', city: '제주', english: 'jeju cju', name: '제주국제공항' },
+  { code: 'PUS', city: '부산/김해', english: 'busan gimhae pus', name: '김해국제공항' },
+  { code: 'TAE', city: '대구', english: 'daegu tae', name: '대구국제공항' },
+  { code: 'CJJ', city: '청주', english: 'cheongju cjj', name: '청주국제공항' },
+  { code: 'KWJ', city: '광주', english: 'gwangju kwj', name: '광주공항' },
+  { code: 'RSU', city: '여수', english: 'yeosu rsu', name: '여수공항' },
+  { code: 'USN', city: '울산', english: 'ulsan usn', name: '울산공항' },
+
+  // Japan (일본)
+  { code: 'NRT', city: '도쿄/나리타', english: 'tokyo narita nrt', name: '나리타국제공항' },
+  { code: 'HND', city: '도쿄/하네다', english: 'tokyo haneda hnd', name: '하네다국제공항' },
+  { code: 'KIX', city: '오사카/간사이', english: 'osaka kansai kix', name: '간사이국제공항' },
+  { code: 'ITM', city: '오사카/이타미', english: 'osaka itami itm', name: '이타미공항' },
+  { code: 'FUK', city: '후쿠오카', english: 'fukuoka fuk', name: '후쿠오카공항' },
+  { code: 'CTS', city: '삿포로/신치토세', english: 'sapporo new chitose cts', name: '신치토세공항' },
+  { code: 'OKA', city: '오키나와/나하', english: 'okinawa naha oka', name: '나하공항' },
+  { code: 'NGO', city: '나고야/주부', english: 'nagoya chubu ngo', name: '주부국제공항' },
+  { code: 'KOJ', city: '가고시마', english: 'kagoshima koj', name: '가고시마공항' },
+  { code: 'KMJ', city: '구마모토', english: 'kumamoto kmj', name: '구마모토공항' },
+  { code: 'TAK', city: '다카마쓰', english: 'takamatsu tak', name: '다카마쓰공항' },
+  { code: 'MYJ', city: '마쓰야마', english: 'matsuyama myj', name: '마쓰야마공항' },
+  { code: 'FSZ', city: '시즈오카', english: 'shizuoka fsz', name: '후지산 시즈오카공항' },
+
+  // East Asia (동아시아)
+  { code: 'TPE', city: '타이베이/타오위안', english: 'taipei taoyuan taiwan tpe', name: '타오위안국제공항' },
+  { code: 'TSA', city: '타이베이/쑹산', english: 'taipei songshan tsa', name: '쑹산공항' },
+  { code: 'KHH', city: '가오슝', english: 'kaohsiung khh', name: '가오슝국제공항' },
   { code: 'HKG', city: '홍콩', english: 'hong kong hkg', name: '홍콩국제공항' },
+  { code: 'MFM', city: '마카오', english: 'macau macao mfm', name: '마카오국제공항' },
   { code: 'PEK', city: '베이징/서우두', english: 'beijing capital pek', name: '베이징 서우두 국제공항' },
+  { code: 'PKX', city: '베이징/다싱', english: 'beijing daxing pkx', name: '베이징 다싱 국제공항' },
   { code: 'PVG', city: '상하이/푸동', english: 'shanghai pudong pvg', name: '상하이 푸둥 국제공항' },
+  { code: 'SHA', city: '상하이/홍차오', english: 'shanghai hongqiao sha', name: '상하이 훙차오 국제공항' },
+  { code: 'CAN', city: '광저우/바이윈', english: 'guangzhou baiyun can', name: '광저우 바이윈 국제공항' },
+
+  // Southeast Asia (동남아시아)
+  { code: 'DAD', city: '다낭', english: 'danang da nang dad', name: '다낭국제공항' },
+  { code: 'CXR', city: '나트랑/깜라인', english: 'nha trang cam ranh cxr', name: '깜라인국제공항' },
+  { code: 'HAN', city: '하노이/노이바이', english: 'hanoi noi bai han', name: '노이바이국제공항' },
+  { code: 'SGN', city: '호치민/탄손누트', english: 'ho chi minh tan son nhat sgn', name: '탄손누트국제공항' },
+  { code: 'PQC', city: '푸꾸옥', english: 'phu quoc pqc', name: '푸꾸옥국제공항' },
+  { code: 'BKK', city: '방콕/수완나품', english: 'bangkok suvarnabhumi bkk', name: '수완나품국제공항' },
+  { code: 'DMK', city: '방콕/돈므앙', english: 'bangkok don mueang dmk', name: '돈므앙국제공항' },
+  { code: 'HKT', city: '푸켓', english: 'phuket hkt', name: '푸켓국제공항' },
+  { code: 'CNX', city: '치앙마이', english: 'chiang mai cnx', name: '치앙마이국제공항' },
+  { code: 'SIN', city: '싱가포르/창이', english: 'singapore changi sin', name: '창이국제공항' },
+  { code: 'KUL', city: '쿠알라룸푸르', english: 'kuala lumpur kul', name: '쿠알라룸푸르국제공항' },
+  { code: 'DPS', city: '발리/덴파사르', english: 'bali denpasar ngurah rai dps', name: '응우라라이국제공항' },
+  { code: 'CEB', city: '세부/막탄', english: 'cebu mactan ceb', name: '막탄세부국제공항' },
+  { code: 'MNL', city: '마닐라', english: 'manila ninoy aquino mnl', name: '니노이아키노국제공항' },
+  { code: 'KLO', city: '보라카이/칼리보', english: 'boracay kalibo klo', name: '칼리보국제공항' },
+
+  // Europe (유럽)
+  { code: 'CDG', city: '파리/샤를드골', english: 'paris charles de gaulle cdg', name: '샤를드골국제공항' },
+  { code: 'ORY', city: '파리/오를리', english: 'paris orly ory', name: '오를리공항' },
+  { code: 'LHR', city: '런던/히드로', english: 'london heathrow lhr', name: '히드로국제공항' },
+  { code: 'LGW', city: '런던/개트윅', english: 'london gatwick lgw', name: '개트윅공항' },
+  { code: 'FCO', city: '로마/피우미치노', english: 'rome fiumicino leonardo da vinci fco', name: '피우미치노국제공항' },
+  { code: 'MXP', city: '밀라노/말펜사', english: 'milan malpensa mxp', name: '말펜사국제공항' },
+  { code: 'BCN', city: '바르셀로나', english: 'barcelona el prat bcn', name: '엘프라트국제공항' },
+  { code: 'MAD', city: '마드리드/바라하스', english: 'madrid barajas mad', name: '바라하스국제공항' },
+  { code: 'FRA', city: '프랑크푸르트', english: 'frankfurt fra', name: '프랑크푸르트공항' },
+  { code: 'MUC', city: '뮌헨', english: 'munich muc', name: '뮌헨공항' },
+  { code: 'ZRH', city: '취리히', english: 'zurich zrh', name: '취리히공항' },
+  { code: 'VIE', city: '비엔나', english: 'vienna vie', name: '비엔나국제공항' },
+  { code: 'PRG', city: '프라하/바츨라프하벨', english: 'prague vaclav havel prg', name: '바츨라프하벨국제공항' },
+  { code: 'AMS', city: '암스테르담/스키폴', english: 'amsterdam schiphol ams', name: '스키폴국제공항' },
+  { code: 'IST', city: '이스탄불', english: 'istanbul ist', name: '이스탄불공항' },
+  { code: 'HEL', city: '헬싱키/반타', english: 'helsinki vantaa hel', name: '헬싱키반타공항' },
+
+  // Americas & Oceania (미주/대양주)
+  { code: 'JFK', city: '뉴욕/존F케네디', english: 'new york jfk john f kennedy', name: '존 F. 케네디 국제공항' },
+  { code: 'EWR', city: '뉴욕/뉴어크', english: 'new york newark ewr', name: '뉴어크리버티국제공항' },
+  { code: 'LAX', city: '로스앤젤레스', english: 'los angeles lax', name: '로스앤젤레스국제공항' },
+  { code: 'SFO', city: '샌프란시스코', english: 'san francisco sfo', name: '샌프란시스코국제공항' },
+  { code: 'SEA', city: '시애틀', english: 'seattle tacoma sea', name: '시애틀터코마국제공항' },
+  { code: 'LAS', city: '라스베이거스', english: 'las vegas harry reid las', name: '해리리드국제공항' },
+  { code: 'ORD', city: '시카고/오헤어', english: 'chicago ohare ord', name: '오헤어국제공항' },
+  { code: 'HNL', city: '호놀룰루/하와이', english: 'honolulu hawaii daniel k inouye hnl', name: '대니얼 K. 이노우에 국제공항' },
+  { code: 'OGG', city: '마우이/카훌루이', english: 'maui kahului ogg', name: '카훌루이공항' },
+  { code: 'YVR', city: '밴쿠버', english: 'vancouver yvr', name: '밴쿠버국제공항' },
+  { code: 'YYZ', city: '토론토/피어슨', english: 'toronto pearson yyz', name: '피어슨국제공항' },
+  { code: 'GUM', city: '괌/안토니오원팻', english: 'guam antonio b won pat gum', name: '안토니오 B. 원 팻 국제공항' },
+  { code: 'SPN', city: '사이판', english: 'saipan spn', name: '사이판국제공항' },
+  { code: 'SYD', city: '시드니/킹스포드스미스', english: 'sydney kingsford smith syd', name: '킹스포드스미스국제공항' },
+  { code: 'MEL', city: '멜버른/툴라마린', english: 'melbourne tullamarine mel', name: '멜버른공항' },
+  { code: 'BNE', city: '브리즈번', english: 'brisbane bne', name: '브리즈번공항' },
+  { code: 'AKL', city: '오클랜드', english: 'auckland akl', name: '오클랜드공항' },
+  { code: 'DXB', city: '두바이', english: 'dubai dxb', name: '두바이국제공항' },
+  { code: 'DOH', city: '도하/하마드', english: 'doha hamad doh', name: '하마드국제공항' },
 ];
 
 // Time conversion helpers
@@ -183,14 +260,35 @@ export function FlightCard({
     setLocalPnr(flight.pnr);
   }, [flight]);
 
-  const filteredSuggestions = searchQuery.trim()
-    ? airportSuggestions.filter(s =>
-        s.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.english.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.name.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : [];
+  const filteredSuggestions = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) {
+      return airportSuggestions.slice(0, 10);
+    }
+    return airportSuggestions.filter(s =>
+      s.code.toLowerCase().includes(q) ||
+      s.city.toLowerCase().includes(q) ||
+      s.english.toLowerCase().includes(q) ||
+      s.name.toLowerCase().includes(q)
+    );
+  }, [searchQuery]);
+
+  const resolveAirportCode = (input: string): string => {
+    const clean = input.trim();
+    if (!clean) return 'ICN';
+    if (clean.length === 3 && /^[A-Za-z]+$/.test(clean)) {
+      return clean.toUpperCase();
+    }
+    // Try matching prefix or Korean name/city
+    const match = airportSuggestions.find(s =>
+      s.code.toLowerCase() === clean.toLowerCase() ||
+      s.code.toLowerCase().startsWith(clean.toLowerCase()) ||
+      s.city.toLowerCase().includes(clean.toLowerCase()) ||
+      s.name.toLowerCase().includes(clean.toLowerCase()) ||
+      s.english.toLowerCase().includes(clean.toLowerCase())
+    );
+    return match ? match.code : clean.toUpperCase().slice(0, 3);
+  };
 
   return (
     <div 
@@ -202,7 +300,7 @@ export function FlightCard({
       }`}
     >
       {/* Header bar */}
-      <div className="bg-black/[0.03] dark:bg-white/5 px-4 py-2.5 flex justify-between items-center text-[10px] md:text-xs font-bold tracking-widest text-black/60 dark:text-white/60 border-b border-black/15 dark:border-white/15 gap-4">
+      <div className="bg-black/[0.03] dark:bg-white/5 px-3 sm:px-4 py-2 sm:py-2.5 flex justify-between items-center text-[10px] md:text-xs font-bold tracking-widest text-black/60 dark:text-white/60 border-b border-black/15 dark:border-white/15 gap-2 sm:gap-4">
         {isEditMode ? (
           <input
             type="text"
@@ -210,11 +308,11 @@ export function FlightCard({
             onChange={(e) => setLocalTitle(e.target.value.toUpperCase())}
             onBlur={() => onUpdate(flight.id, 'title', localTitle)}
             onClick={(e) => e.stopPropagation()}
-            className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm uppercase w-40"
+            className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm uppercase w-32 sm:w-40"
             placeholder="FLIGHT TITLE"
           />
         ) : (
-          <span className="uppercase">{flight.title}</span>
+          <span className="uppercase truncate">{flight.title}</span>
         )}
         {isEditMode ? (
           <input
@@ -224,47 +322,50 @@ export function FlightCard({
             max={maxDate}
             onChange={(e) => onUpdate(flight.id, 'date', e.target.value.replace(/-/g, '.'))}
             onClick={(e) => e.stopPropagation()}
-            className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 text-right"
+            className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-28 sm:w-36 text-right font-mono"
           />
         ) : (
-          <span>{flight.date}</span>
+          <span className="font-mono">{flight.date}</span>
         )}
       </div>
       
-      {/* Card Body */}
-      <div className="p-3 sm:p-4 md:p-6 flex flex-col md:flex-row md:items-center min-w-0 w-full">
+      {/* Card Body (Unclipped responsive layout) */}
+      <div className="p-2.5 sm:p-4 md:p-5 flex flex-col md:flex-row md:items-center min-w-0 w-full gap-2 md:gap-0">
         {/* Left Side: Route and Airport Codes */}
-        <div className="flex-grow flex items-center justify-around pr-4 relative min-w-0">
+        <div className="flex-1 flex items-center justify-between sm:justify-around relative min-w-0 w-full">
           
           {/* Departure */}
-          <div className="text-center relative">
+          <div className="text-center relative flex flex-col items-center shrink-0">
             {isEditMode ? (
               <div className="flex flex-col gap-1 items-center relative">
                 <input
                   type="text"
-                  maxLength={5}
+                  maxLength={10}
                   value={localFromCode}
                   onChange={(e) => {
-                    const val = e.target.value.toUpperCase();
+                    const val = e.target.value;
                     setLocalFromCode(val);
                     setSearchQuery(val);
+                    setActiveSearchField('from');
                   }}
                   onFocus={() => {
                     setActiveSearchField('from');
                     setSearchQuery(localFromCode);
                   }}
                   onBlur={() => {
-                    onUpdate(flight.id, 'fromCode', localFromCode);
+                    const resolved = resolveAirportCode(localFromCode);
+                    setLocalFromCode(resolved);
+                    onUpdate(flight.id, 'fromCode', resolved);
                     setTimeout(() => setActiveSearchField(null), 250);
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-black text-lg md:text-2xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-14"
+                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none font-black text-base sm:text-lg md:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-12 sm:w-14 uppercase"
                   placeholder="DEP"
                 />
                 
                 {/* Suggestions drop down */}
                 {activeSearchField === 'from' && filteredSuggestions.length > 0 && (
-                  <div className="absolute top-10 left-1/2 -translate-x-1/2 w-48 bg-[#F9F8F6] dark:bg-[#1c1c1c] border border-black/10 dark:border-white/10 shadow-xl z-50 max-h-40 overflow-y-auto text-left rounded-sm" onClick={(e) => e.stopPropagation()}>
+                  <div className="absolute top-9 left-0 sm:left-1/2 sm:-translate-x-1/2 w-48 sm:w-56 bg-[#F9F8F6] dark:bg-[#1c1c1c] border border-black/15 dark:border-white/15 shadow-2xl z-50 max-h-48 overflow-y-auto text-left rounded-sm" onClick={(e) => e.stopPropagation()}>
                     {filteredSuggestions.map(s => (
                       <button
                         key={s.code}
@@ -277,13 +378,13 @@ export function FlightCard({
                           onUpdate(flight.id, 'fromTerminal', `TER ${newTerminalNum}`);
                           setActiveSearchField(null);
                         }}
-                        className="w-full px-2.5 py-1.5 text-[10px] hover:bg-black/5 dark:hover:bg-white/5 flex flex-col border-b border-black/5 dark:border-white/5 last:border-0 text-black dark:text-white"
+                        className="w-full px-2.5 py-1.5 text-[10px] hover:bg-black/5 dark:hover:bg-white/5 flex flex-col border-b border-black/5 dark:border-white/5 last:border-0 text-black dark:text-white cursor-pointer"
                       >
                         <div className="flex justify-between items-center w-full">
-                          <span className="font-black text-red-600 dark:text-red-400">{s.code}</span>
-                          <span className="font-bold opacity-75">{s.city}</span>
+                          <span className="font-black text-red-600 dark:text-red-400 font-mono">{s.code}</span>
+                          <span className="font-bold opacity-80">{s.city}</span>
                         </div>
-                        <span className="text-[8px] opacity-40 truncate">{s.name}</span>
+                        <span className="text-[8.5px] opacity-45 truncate">{s.name}</span>
                       </button>
                     ))}
                   </div>
@@ -302,7 +403,7 @@ export function FlightCard({
                     window.open(url, '_blank');
                   }
                 }}
-                className="text-2xl md:text-4xl font-black tracking-tighter block leading-none hover:underline hover:text-red-600 transition-colors bg-transparent border-none p-0 cursor-pointer text-black dark:text-white"
+                className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter block leading-none hover:underline hover:text-red-600 transition-colors bg-transparent border-none p-0 cursor-pointer text-black dark:text-white font-mono"
               >
                 {flight.fromCode}
               </button>
@@ -317,26 +418,26 @@ export function FlightCard({
                   onUpdate(flight.id, 'fromTerminal', `TER ${val}`);
                 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-black/5 dark:bg-[#1a1a1a] px-1 py-0.5 outline-none text-[8px] md:text-[10px] font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-14 mt-1 cursor-pointer"
+                className="bg-black/5 dark:bg-[#1a1a1a] px-0.5 py-0.5 outline-none text-[8px] sm:text-[9px] md:text-[10px] font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-12 sm:w-14 mt-1 cursor-pointer font-mono"
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                   <option key={num} value={num} className="bg-white dark:bg-[#1a1a1a]">TER {num}</option>
                 ))}
               </select>
             ) : (
-              <span className="text-[9px] md:text-[10px] text-black/50 dark:text-white/50 mt-1.5 uppercase font-bold block">
+              <span className="text-[8.5px] sm:text-[9px] md:text-[10px] text-black/50 dark:text-white/50 mt-1 uppercase font-bold block font-mono">
                 {formatTerminal(flight.fromTerminal)}
               </span>
             )}
 
             {isEditMode ? (
-              <div className="flex items-center justify-center gap-1 mt-1.5" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-center gap-0.5 sm:gap-1 mt-1" onClick={(e) => e.stopPropagation()}>
                 <input
                   ref={fromTimeRef}
                   type="time"
                   value={timeStrTo24h(flight.fromTime)}
                   onChange={(e) => onUpdate(flight.id, 'fromTime', time24hTo12h(e.target.value))}
-                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-[9px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-[72px] [&::-webkit-calendar-picker-indicator]:hidden"
+                  className="bg-black/5 dark:bg-white/10 px-0.5 py-0.5 outline-none text-[9px] sm:text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-[58px] sm:w-[68px] md:w-[72px] font-mono [&::-webkit-calendar-picker-indicator]:hidden"
                 />
                 <button
                   type="button"
@@ -347,21 +448,21 @@ export function FlightCard({
                       console.warn(err);
                     }
                   }}
-                  className="p-1 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-black/5 dark:bg-white/10 cursor-pointer flex items-center justify-center"
+                  className="p-0.5 sm:p-1 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-black/5 dark:bg-white/10 cursor-pointer flex items-center justify-center shrink-0"
                   title="시간 선택"
                 >
-                  <Clock className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
+                  <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-black/60 dark:text-white/60" />
                 </button>
               </div>
             ) : (
-              <span className="text-xs md:text-sm font-bold mt-2 block">
+              <span className="text-[11px] sm:text-xs md:text-sm font-bold mt-1.5 block font-mono">
                 {flight.fromTime}
               </span>
             )}
           </div>
           
           {/* Connection Line & Flight Number & Swap Button */}
-          <div className="flex flex-col items-center mx-3 sm:mx-6 shrink-0 relative">
+          <div className="flex flex-col items-center mx-1 sm:mx-3 md:mx-4 shrink-0 relative">
             {isEditMode ? (
               <button
                 type="button"
@@ -379,16 +480,16 @@ export function FlightCard({
                   onUpdate(flight.id, 'toTerminal', tempTerminal);
                   onUpdate(flight.id, 'toTime', tempTime);
                 }}
-                className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors flex items-center justify-center text-red-600 dark:text-red-400 border border-black/10 dark:border-white/10 bg-[#F9F8F6] dark:bg-[#161616] cursor-pointer"
+                className="p-1 sm:p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors flex items-center justify-center text-red-600 dark:text-red-400 border border-black/10 dark:border-white/10 bg-[#F9F8F6] dark:bg-[#161616] cursor-pointer"
                 title="출발지/도착지 반전"
               >
-                <RefreshCw className="w-3.5 h-3.5" />
+                <RefreshCw className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               </button>
             ) : (
-              <Plane className="w-4 h-4 text-black/40 dark:text-white/40 rotate-90" />
+              <Plane className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/40 dark:text-white/40 rotate-90" />
             )}
             
-            <div className="h-[1px] w-12 sm:w-16 md:w-24 bg-black/20 dark:bg-white/20 my-1 relative flex items-center justify-center">
+            <div className="h-[1px] w-6 sm:w-12 md:w-16 bg-black/20 dark:bg-white/20 my-1 relative flex items-center justify-center">
               {isEditMode ? (
                 <input
                   type="text"
@@ -396,19 +497,19 @@ export function FlightCard({
                   onChange={(e) => setLocalFlightNo(e.target.value.toUpperCase())}
                   onBlur={() => onUpdate(flight.id, 'flightNo', localFlightNo)}
                   onClick={(e) => e.stopPropagation()}
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1a1a1a] px-1 text-[9px] md:text-[10px] font-bold text-black/60 dark:text-white/60 tracking-wider text-center w-16 outline-none border border-black/10 dark:border-white/10 rounded-sm z-10 uppercase"
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1a1a1a] px-1 text-[8.5px] sm:text-[9px] md:text-[10px] font-bold text-black/60 dark:text-white/60 tracking-wider text-center w-12 sm:w-14 outline-none border border-black/10 dark:border-white/10 rounded-sm z-10 uppercase font-mono"
                   placeholder="KE000"
                 />
               ) : (
-                <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1a1a1a] px-2 text-[9px] md:text-[10px] font-bold text-black/60 dark:text-white/60 tracking-wider whitespace-nowrap z-10">
+                <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1a1a1a] px-1 sm:px-1.5 text-[8.5px] sm:text-[9px] md:text-[10px] font-bold text-black/60 dark:text-white/60 tracking-wider whitespace-nowrap z-10 font-mono">
                   {flight.flightNo}
                 </span>
               )}
             </div>
             
-            {/* Layover Info (Display only if exists in database; edit is managed as separate ticket cards) */}
+            {/* Layover Info */}
             {!isEditMode && flight.layoverCode && (
-              <div className="text-[9px] md:text-[10px] font-bold text-red-600 dark:text-red-400 mt-1.5 flex items-center gap-1">
+              <div className="text-[8.5px] sm:text-[9px] md:text-[10px] font-bold text-red-600 dark:text-red-400 mt-1 flex items-center gap-1 font-mono">
                 <span>
                   경유: {flight.layoverCode} {flight.layoverTime ? `(${flight.layoverTime})` : ''}
                 </span>
@@ -417,34 +518,37 @@ export function FlightCard({
           </div>
           
           {/* Arrival */}
-          <div className="text-center relative">
+          <div className="text-center relative flex flex-col items-center shrink-0">
             {isEditMode ? (
               <div className="flex flex-col gap-1 items-center relative">
                 <input
                   type="text"
-                  maxLength={5}
+                  maxLength={10}
                   value={localToCode}
                   onChange={(e) => {
-                    const val = e.target.value.toUpperCase();
+                    const val = e.target.value;
                     setLocalToCode(val);
                     setSearchQuery(val);
+                    setActiveSearchField('to');
                   }}
                   onFocus={() => {
                     setActiveSearchField('to');
                     setSearchQuery(localToCode);
                   }}
                   onBlur={() => {
-                    onUpdate(flight.id, 'toCode', localToCode);
+                    const resolved = resolveAirportCode(localToCode);
+                    setLocalToCode(resolved);
+                    onUpdate(flight.id, 'toCode', resolved);
                     setTimeout(() => setActiveSearchField(null), 250);
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-black text-lg md:text-2xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-14"
+                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none font-black text-base sm:text-lg md:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-12 sm:w-14 uppercase"
                   placeholder="ARR"
                 />
                 
                 {/* Suggestions drop down */}
                 {activeSearchField === 'to' && filteredSuggestions.length > 0 && (
-                  <div className="absolute top-10 left-1/2 -translate-x-1/2 w-48 bg-[#F9F8F6] dark:bg-[#1c1c1c] border border-black/10 dark:border-white/10 shadow-xl z-50 max-h-40 overflow-y-auto text-left rounded-sm" onClick={(e) => e.stopPropagation()}>
+                  <div className="absolute top-9 right-0 sm:left-1/2 sm:-translate-x-1/2 w-48 sm:w-56 bg-[#F9F8F6] dark:bg-[#1c1c1c] border border-black/15 dark:border-white/15 shadow-2xl z-50 max-h-48 overflow-y-auto text-left rounded-sm" onClick={(e) => e.stopPropagation()}>
                     {filteredSuggestions.map(s => (
                       <button
                         key={s.code}
@@ -457,13 +561,13 @@ export function FlightCard({
                           onUpdate(flight.id, 'toTerminal', `TER ${newTerminalNum}`);
                           setActiveSearchField(null);
                         }}
-                        className="w-full px-2.5 py-1.5 text-[10px] hover:bg-black/5 dark:hover:bg-white/5 flex flex-col border-b border-black/5 dark:border-white/5 last:border-0 text-black dark:text-white"
+                        className="w-full px-2.5 py-1.5 text-[10px] hover:bg-black/5 dark:hover:bg-white/5 flex flex-col border-b border-black/5 dark:border-white/5 last:border-0 text-black dark:text-white cursor-pointer"
                       >
                         <div className="flex justify-between items-center w-full">
-                          <span className="font-black text-red-600 dark:text-red-400">{s.code}</span>
-                          <span className="font-bold opacity-75">{s.city}</span>
+                          <span className="font-black text-red-600 dark:text-red-400 font-mono">{s.code}</span>
+                          <span className="font-bold opacity-80">{s.city}</span>
                         </div>
-                        <span className="text-[8px] opacity-40 truncate">{s.name}</span>
+                        <span className="text-[8.5px] opacity-45 truncate">{s.name}</span>
                       </button>
                     ))}
                   </div>
@@ -482,7 +586,7 @@ export function FlightCard({
                     window.open(url, '_blank');
                   }
                 }}
-                className="text-2xl md:text-4xl font-black tracking-tighter block leading-none hover:underline hover:text-red-600 transition-colors bg-transparent border-none p-0 cursor-pointer text-black dark:text-white"
+                className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter block leading-none hover:underline hover:text-red-600 transition-colors bg-transparent border-none p-0 cursor-pointer text-black dark:text-white font-mono"
               >
                 {flight.toCode}
               </button>
@@ -497,26 +601,26 @@ export function FlightCard({
                   onUpdate(flight.id, 'toTerminal', `TER ${val}`);
                 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-black/5 dark:bg-[#1a1a1a] px-1 py-0.5 outline-none text-[8px] md:text-[10px] font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-14 mt-1 cursor-pointer"
+                className="bg-black/5 dark:bg-[#1a1a1a] px-0.5 py-0.5 outline-none text-[8px] sm:text-[9px] md:text-[10px] font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-12 sm:w-14 mt-1 cursor-pointer font-mono"
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                   <option key={num} value={num} className="bg-white dark:bg-[#1a1a1a]">TER {num}</option>
                 ))}
               </select>
             ) : (
-              <span className="text-[9px] md:text-[10px] text-black/50 dark:text-white/50 mt-1.5 uppercase font-bold block">
+              <span className="text-[8.5px] sm:text-[9px] md:text-[10px] text-black/50 dark:text-white/50 mt-1 uppercase font-bold block font-mono">
                 {formatTerminal(flight.toTerminal)}
               </span>
             )}
 
             {isEditMode ? (
-              <div className="flex items-center justify-center gap-1 mt-1.5" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-center gap-0.5 sm:gap-1 mt-1" onClick={(e) => e.stopPropagation()}>
                 <input
                   ref={toTimeRef}
                   type="time"
                   value={timeStrTo24h(flight.toTime)}
                   onChange={(e) => onUpdate(flight.id, 'toTime', time24hTo12h(e.target.value))}
-                  className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-[9px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-[72px] [&::-webkit-calendar-picker-indicator]:hidden"
+                  className="bg-black/5 dark:bg-white/10 px-0.5 py-0.5 outline-none text-[9px] sm:text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm text-center w-[58px] sm:w-[68px] md:w-[72px] font-mono [&::-webkit-calendar-picker-indicator]:hidden"
                 />
                 <button
                   type="button"
@@ -527,14 +631,14 @@ export function FlightCard({
                       console.warn(err);
                     }
                   }}
-                  className="p-1 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-black/5 dark:bg-white/10 cursor-pointer flex items-center justify-center"
+                  className="p-0.5 sm:p-1 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-black/5 dark:bg-white/10 cursor-pointer flex items-center justify-center shrink-0"
                   title="시간 선택"
                 >
-                  <Clock className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
+                  <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-black/60 dark:text-white/60" />
                 </button>
               </div>
             ) : (
-              <span className="text-xs md:text-sm font-bold mt-2 block">
+              <span className="text-[11px] sm:text-xs md:text-sm font-bold mt-1.5 block font-mono">
                 {flight.toTime}
               </span>
             )}
@@ -542,13 +646,13 @@ export function FlightCard({
         </div>
         
         {/* Dividers: vertical on desktop, horizontal on mobile */}
-        <div className="hidden md:block border-l border-dashed border-black/20 dark:border-white/20 h-16 self-stretch"></div>
-        <div className="block md:hidden border-t border-dashed border-black/15 dark:border-white/15 w-full my-2"></div>
+        <div className="hidden md:block border-l border-dashed border-black/20 dark:border-white/20 h-16 self-stretch mx-3"></div>
+        <div className="block md:hidden border-t border-dashed border-black/15 dark:border-white/15 w-full my-1"></div>
         
         {/* Right Side: Seat & PNR (Balanced 2-column on mobile, vertical stack on desktop) */}
-        <div className="w-full md:w-28 md:pl-4 grid grid-cols-2 md:flex md:flex-col items-center justify-between md:justify-center mt-1 md:mt-0 gap-2 md:gap-0 shrink-0">
-          <div className="w-full text-center md:text-left md:mb-2.5">
-            <span className="text-[10px] md:text-[11px] text-black/50 dark:text-white/50 uppercase font-bold tracking-widest block mb-0.5">SEAT</span>
+        <div className="w-full md:w-28 md:pl-2 grid grid-cols-2 md:flex md:flex-col items-center justify-between md:justify-center gap-2 md:gap-0 shrink-0">
+          <div className="w-full text-center md:text-left md:mb-2">
+            <span className="text-[9.5px] sm:text-[10px] text-black/50 dark:text-white/50 uppercase font-bold tracking-widest block mb-0.5">SEAT</span>
             {isEditMode ? (
               <input
                 type="text"
@@ -556,17 +660,17 @@ export function FlightCard({
                 onChange={(e) => setLocalSeat(e.target.value.toUpperCase())}
                 onBlur={() => onUpdate(flight.id, 'seat', localSeat)}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full text-center md:text-left uppercase"
+                className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs sm:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full text-center md:text-left uppercase font-mono"
                 placeholder="00A"
               />
             ) : (
-              <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 block uppercase">
+              <span className="text-xs sm:text-sm font-bold text-black/80 dark:text-white/80 block uppercase font-mono">
                 {flight.seat || 'N/A'}
               </span>
             )}
           </div>
           <div className="w-full text-center md:text-left">
-            <span className="text-[10px] md:text-[11px] text-black/50 dark:text-white/50 uppercase font-bold tracking-widest block mb-0.5">PNR</span>
+            <span className="text-[9.5px] sm:text-[10px] text-black/50 dark:text-white/50 uppercase font-bold tracking-widest block mb-0.5">PNR</span>
             {isEditMode ? (
               <input
                 type="text"
@@ -574,11 +678,11 @@ export function FlightCard({
                 onChange={(e) => setLocalPnr(e.target.value.toUpperCase())}
                 onBlur={() => onUpdate(flight.id, 'pnr', localPnr)}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full text-center md:text-left uppercase"
+                className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs sm:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full text-center md:text-left uppercase font-mono"
                 placeholder="XXXXXX"
               />
             ) : (
-              <span className="text-xs md:text-sm font-bold text-black/80 dark:text-white/80 tracking-wide block uppercase">
+              <span className="text-xs sm:text-sm font-bold text-black/80 dark:text-white/80 tracking-wide block uppercase font-mono">
                 {flight.pnr || 'N/A'}
               </span>
             )}

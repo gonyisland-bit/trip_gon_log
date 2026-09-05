@@ -218,19 +218,33 @@ export function SummaryView({
     return 1;
   };
 
+  const getEffectiveTransitType = (t: TransitItem): 'train' | 'bus' | 'taxi' | 'rental' => {
+    if (t.transitType === 'car') return 'rental';
+    if (t.transitType === 'taxi') return 'taxi';
+    if (t.transitType === 'bus') return 'bus';
+    if (t.transitType === 'train') return 'train';
+    const type = ((t.ticketType || '') + ' ' + (t.title || '')).toLowerCase();
+    if (type.includes('car') || type.includes('렌트') || type.includes('rental')) return 'rental';
+    if (type.includes('taxi') || type.includes('택시')) return 'taxi';
+    if (type.includes('bus') || type.includes('버스')) return 'bus';
+    return 'train';
+  };
+
   const transitSummaryStr = useMemo(() => {
-    let train = 0, bus = 0, taxi = 0, other = 0;
+    let train = 0, bus = 0, taxi = 0, rental = 0, other = 0;
     transits.forEach(t => {
-      const type = (t.transitType || t.ticketType || t.title || '').toLowerCase();
-      if (type.includes('train') || type.includes('기차') || type.includes('철도') || type.includes('지하철')) train++;
-      else if (type.includes('bus') || type.includes('버스')) bus++;
-      else if (type.includes('taxi') || type.includes('택시') || type.includes('car') || type.includes('렌트')) taxi++;
+      const eType = getEffectiveTransitType(t);
+      if (eType === 'train') train++;
+      else if (eType === 'bus') bus++;
+      else if (eType === 'taxi') taxi++;
+      else if (eType === 'rental') rental++;
       else other++;
     });
     const parts: string[] = [];
     if (train > 0) parts.push(`train ${train}`);
     if (bus > 0) parts.push(`bus ${bus}`);
     if (taxi > 0) parts.push(`taxi ${taxi}`);
+    if (rental > 0) parts.push(`rental ${rental}`);
     if (other > 0 && parts.length === 0) parts.push(`other ${other}`);
     return parts.join(', ') || `${transits.length} passes`;
   }, [transits]);
@@ -702,15 +716,21 @@ export function SummaryView({
               <div className="divide-y divide-black/15 dark:divide-white/15 animate-in fade-in duration-150 pl-1">
                 {transits.map((t, idx) => {
                   const isOpen = expandedTransitId === idx;
+                  const eType = getEffectiveTransitType(t);
+                  const isCar = eType === 'rental';
+
                   return (
                     <div key={idx} className="py-3 transition-colors">
                       <div 
                         onClick={() => setExpandedTransitId(isOpen ? null : idx)}
                         className="flex items-center justify-between gap-3 cursor-pointer select-none group"
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70 rounded-xs uppercase">
+                            {eType.toUpperCase()}
+                          </span>
                           <span className="font-bold text-sm text-black dark:text-white font-sans uppercase">
-                            {t.title || t.ticketType}
+                            {t.title || (isCar ? 'RENTAL CAR' : t.ticketType)}
                           </span>
                           {t.route && (
                             <span className="text-xs text-black/60 dark:text-white/60 font-sans font-medium">
@@ -720,7 +740,7 @@ export function SummaryView({
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
                           <span className="text-xs font-mono text-black/60 dark:text-white/60">
-                            {t.date}
+                            {isCar && t.rentalDropoffDate ? `${t.date} ~ ${t.rentalDropoffDate}` : t.date}
                           </span>
                           <span className="text-black/50 dark:text-white/50">
                             {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -731,20 +751,28 @@ export function SummaryView({
                       {isOpen && (
                         <div className="pt-3 pb-1 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono animate-in fade-in duration-150 border-t border-black/5 dark:border-white/5 mt-2">
                           <div>
-                            <span className="text-[9px] uppercase tracking-wider text-black/40 dark:text-white/40 block font-sans font-bold">ROUTE / 경로</span>
+                            <span className="text-[9px] uppercase tracking-wider text-black/40 dark:text-white/40 block font-sans font-bold">
+                              {isCar ? 'PICKUP / 픽업' : 'ROUTE / 경로'}
+                            </span>
                             <span className="font-bold text-black dark:text-white">
                               {t.departPlace && t.arrivePlace ? `${t.departPlace} → ${t.arrivePlace}` : (t.route || '—')}
                             </span>
                           </div>
                           <div>
-                            <span className="text-[9px] uppercase tracking-wider text-black/40 dark:text-white/40 block font-sans font-bold">TIME / 시간</span>
+                            <span className="text-[9px] uppercase tracking-wider text-black/40 dark:text-white/40 block font-sans font-bold">
+                              {isCar ? 'PERIOD / 대여기간' : 'TIME / 시간'}
+                            </span>
                             <span className="font-bold text-black dark:text-white">
-                              {t.time || '—'}
+                              {isCar && t.rentalDropoffDate ? `${t.time || ''} ~ ${t.rentalDropoffTime || ''}` : (t.time || '—')}
                             </span>
                           </div>
                           <div>
-                            <span className="text-[9px] uppercase tracking-wider text-black/40 dark:text-white/40 block font-sans font-bold">SEAT / 좌석</span>
-                            <span className="font-bold text-black dark:text-white">{t.seat || '—'}</span>
+                            <span className="text-[9px] uppercase tracking-wider text-black/40 dark:text-white/40 block font-sans font-bold">
+                              {isCar ? 'VEHICLE / 차량' : 'SEAT / 좌석'}
+                            </span>
+                            <span className="font-bold text-black dark:text-white">
+                              {isCar ? (t.carModel || t.carNumber || '—') : (t.seat || '—')}
+                            </span>
                           </div>
                           <div>
                             <span className="text-[9px] uppercase tracking-wider text-black/40 dark:text-white/40 block font-sans font-bold">CONFIRMATION / 예약번호</span>

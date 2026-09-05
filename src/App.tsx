@@ -146,14 +146,14 @@ function App() {
   const [showSaveCompleteModal, setShowSaveCompleteModal] = useState<boolean>(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState<boolean>(false);
   const [pendingNavigation, setPendingNavigation] = useState<{ view: string; tripId: number | null } | null>(null);
-  const detailSaveRef = useRef<(() => Promise<void>) | null>(null);
+  const detailSaveRef = useRef<((showModal?: boolean) => Promise<void>) | null>(null);
   const manageSaveRef = useRef<(() => Promise<void>) | null>(null);
 
   const handleSaveAndNavigate = async () => {
     setShowUnsavedModal(false);
     try {
       if (isDetailEditing && detailSaveRef.current) {
-        await detailSaveRef.current();
+        await detailSaveRef.current(false);
       }
       if (isManageDirty && manageSaveRef.current) {
         await manageSaveRef.current();
