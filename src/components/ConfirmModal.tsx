@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { AlertTriangle, Check, Info } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { AlertTriangle, Check, Info, X } from 'lucide-react';
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -35,26 +35,43 @@ export function ConfirmModal({
   singleButton = false,
 }: ConfirmModalProps) {
   const [isFadingOut, setIsFadingOut] = useState(false);
+  const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearTimers = () => {
+    if (fadeTimerRef.current) {
+      clearTimeout(fadeTimerRef.current);
+      fadeTimerRef.current = null;
+    }
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  };
+
+  const handleImmediateClose = (action: () => void) => {
+    clearTimers();
+    setIsFadingOut(false);
+    action();
+  };
 
   useEffect(() => {
     if (!isOpen) {
+      clearTimers();
       setIsFadingOut(false);
       return;
     }
-
-    let fadeTimer: ReturnType<typeof setTimeout> | undefined;
-    let closeTimer: ReturnType<typeof setTimeout> | undefined;
 
     if (autoDismiss) {
       const fadeDuration = 300;
       const startFadeAfter = Math.max(200, autoDismissDuration - fadeDuration);
 
-      fadeTimer = setTimeout(() => {
+      fadeTimerRef.current = setTimeout(() => {
         setIsFadingOut(true);
       }, startFadeAfter);
 
-      closeTimer = setTimeout(() => {
-        onCancel();
+      closeTimerRef.current = setTimeout(() => {
+        handleImmediateClose(onCancel);
       }, autoDismissDuration);
     }
 
@@ -65,23 +82,22 @@ export function ConfirmModal({
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
-        onCancel();
+        handleImmediateClose(onCancel);
       } else if (e.key === 'y' || e.key === 'Y' || e.key === 's' || e.key === 'S' || e.key === 'Enter') {
         e.preventDefault();
         e.stopPropagation();
-        onConfirm();
+        handleImmediateClose(onConfirm);
       } else if ((e.key === 'n' || e.key === 'N' || e.key === 'd' || e.key === 'D') && onDiscard) {
         e.preventDefault();
         e.stopPropagation();
-        onDiscard();
+        handleImmediateClose(onDiscard);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      if (fadeTimer) clearTimeout(fadeTimer);
-      if (closeTimer) clearTimeout(closeTimer);
+      clearTimers();
     };
   }, [isOpen, onConfirm, onCancel, onDiscard, autoDismiss, autoDismissDuration]);
 
@@ -105,19 +121,29 @@ export function ConfirmModal({
 
   return (
     <div 
-      className={`fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-xs select-none transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-xs select-none transition-opacity duration-300 ${
         isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
-      onClick={onCancel}
+      onClick={() => handleImmediateClose(onCancel)}
     >
       <div 
-        className={`w-full max-w-sm bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 shadow-2xl p-5 sm:p-6 flex flex-col gap-4 text-black dark:text-white transition-transform duration-300 ${
+        className={`relative w-full max-w-sm bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 shadow-2xl p-5 sm:p-6 flex flex-col gap-4 text-black dark:text-white transition-transform duration-300 ${
           isFadingOut ? 'scale-95' : 'scale-100'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Top-right close X button */}
+        <button
+          type="button"
+          onClick={() => handleImmediateClose(onCancel)}
+          className="absolute top-3.5 right-3.5 p-1 text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white transition-colors cursor-pointer"
+          title="닫기 (ESC)"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
         {/* Header: Swiss Minimal Black/White Icon & Clean Uppercase Title */}
-        <div className="flex items-center gap-2 text-black dark:text-white">
+        <div className="flex items-center gap-2 pr-6 text-black dark:text-white">
           {renderIcon()}
           <h3 className="text-xs sm:text-sm font-mono font-black uppercase tracking-widest">
             {title}
@@ -134,7 +160,7 @@ export function ConfirmModal({
           {!singleButton && (
             <button
               type="button"
-              onClick={onCancel}
+              onClick={() => handleImmediateClose(onCancel)}
               className="px-2 py-2.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60 transition-colors cursor-pointer text-center whitespace-nowrap text-[11px]"
             >
               {cancelLabel}
@@ -144,7 +170,7 @@ export function ConfirmModal({
           {onDiscard && !singleButton && (
             <button
               type="button"
-              onClick={onDiscard}
+              onClick={() => handleImmediateClose(onDiscard)}
               className="px-2 py-2.5 border border-black/25 dark:border-white/25 text-black/80 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer text-center whitespace-nowrap text-[11px]"
             >
               {discardLabel}
@@ -153,7 +179,7 @@ export function ConfirmModal({
 
           <button
             type="button"
-            onClick={onConfirm}
+            onClick={() => handleImmediateClose(onConfirm)}
             className={`px-2 py-2.5 text-center transition-colors cursor-pointer shadow-sm whitespace-nowrap text-[11px] ${
               confirmVariant === 'danger'
                 ? 'bg-black text-white dark:bg-white dark:text-black hover:opacity-85'

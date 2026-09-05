@@ -470,6 +470,7 @@ export function ManageHubPage({
       });
 
       setTripSaveSuccess(true);
+      setShowSaveSuccessModal(true);
       setTimeout(() => setTripSaveSuccess(false), 2000);
     } catch (err) {
       console.error('Error saving trip:', err);
@@ -554,6 +555,7 @@ export function ManageHubPage({
         gradientTo
       );
       setHomeSaveSuccess(true);
+      setShowSaveSuccessModal(true);
       setTimeout(() => setHomeSaveSuccess(false), 2000);
     } catch (err) {
       console.error('Failed to save home settings:', err);
@@ -2892,13 +2894,13 @@ export function ManageHubPage({
                           {/* Visual Card Frame: Real-time Aspect Ratio Preview */}
                           {isTextCard ? (
                             <div
-                              className={`w-full ${aspectClass} bg-black text-white dark:bg-white dark:text-black p-5 sm:p-6 flex flex-col justify-between border border-black/20 dark:border-white/20 relative group transition-all`}
+                              className={`w-full ${aspectClass} bg-transparent text-black dark:text-white p-5 sm:p-6 flex flex-col justify-between border border-black/20 dark:border-white/20 relative group transition-all`}
                             >
                               <div className="flex items-center justify-between">
-                                <span className="text-[9px] font-mono font-black tracking-widest uppercase opacity-70">
+                                <span className="text-[9px] font-mono font-black tracking-widest uppercase opacity-70 text-black dark:text-white">
                                   TEXT CARD
                                 </span>
-                                <span className="text-[9px] font-mono opacity-50 uppercase">
+                                <span className="text-[9px] font-mono opacity-50 uppercase text-black dark:text-white">
                                   INTER TYPOGRAPHY
                                 </span>
                               </div>
@@ -2906,9 +2908,9 @@ export function ManageHubPage({
                                 value={item.textContent || ''}
                                 onChange={e => handleUpdateItemInCurrentSection(item.id, 'textContent', e.target.value)}
                                 placeholder="매거진 본문 텍스트를 입력하세요..."
-                                className="w-full h-full my-2 bg-transparent text-white dark:text-black font-['Inter',sans-serif] font-black text-base sm:text-lg md:text-xl leading-snug tracking-tight outline-none resize-none border-0"
+                                className="w-full h-full my-2 bg-transparent text-black dark:text-white font-['Inter',sans-serif] font-black text-base sm:text-lg md:text-xl leading-snug tracking-tight outline-none resize-none border-0 placeholder:text-black/30 dark:placeholder:text-white/30"
                               />
-                              <div className="text-[9px] font-mono tracking-widest uppercase opacity-50 pt-2 border-t border-white/20 dark:border-black/20">
+                              <div className="text-[9px] font-mono tracking-widest uppercase opacity-50 pt-2 border-t border-black/10 dark:border-white/10 text-black dark:text-white">
                                 {item.date || 'LOG ENTRY'}
                               </div>
                             </div>

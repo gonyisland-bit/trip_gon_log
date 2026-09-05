@@ -124,6 +124,197 @@ export function MagazineHubPage({
     onNavigate('manage');
   };
 
+  // Group sectionItems into smart editorial rows based on 3-column magazine rules:
+  // - [P, P, P] -> 3 portrait cards row (1 col each)
+  // - [P, L] -> 1 portrait (1 col) + 1 landscape (2 cols, matched height)
+  // - [L, P] -> 1 landscape (2 cols, matched height) + 1 portrait (1 col)
+  // - [L, L] or [L] -> full-width landscape rows (each takes 3 cols)
+  // - [P, P] -> 2 portrait cards row
+  // - [P] -> 1 portrait card row
+  const isLandscapeItem = (item: MagazineItem) =>
+    item.layoutType === 'landscape' || item.layoutType === 'wide' || item.layoutType === 'large';
+
+  type MagazineRow = 
+    | { type: 'PPP'; items: [MagazineItem, MagazineItem, MagazineItem] }
+    | { type: 'PL'; items: [MagazineItem, MagazineItem] }
+    | { type: 'LP'; items: [MagazineItem, MagazineItem] }
+    | { type: 'PP'; items: [MagazineItem, MagazineItem] }
+    | { type: 'FULL_LANDSCAPE'; items: [MagazineItem] }
+    | { type: 'SINGLE_PORTRAIT'; items: [MagazineItem] };
+
+  const magazineRows = useMemo<MagazineRow[]>(() => {
+    const rows: MagazineRow[] = [];
+    let i = 0;
+    while (i < sectionItems.length) {
+      const cur = sectionItems[i];
+      const next1 = sectionItems[i + 1];
+      const next2 = sectionItems[i + 2];
+
+      if (isLandscapeItem(cur)) {
+        // Current is Landscape
+        if (next1 && !isLandscapeItem(next1)) {
+          // [L, P] -> 2 cols Landscape + 1 col Portrait (matched height)
+          rows.push({ type: 'LP', items: [cur, next1] });
+          i += 2;
+        } else {
+          // [L, L] or single [L] -> Full width landscape row
+          rows.push({ type: 'FULL_LANDSCAPE', items: [cur] });
+          i += 1;
+        }
+      } else {
+        // Current is Portrait
+        if (next1 && isLandscapeItem(next1)) {
+          // [P, L] -> 1 col Portrait + 2 cols Landscape (matched height)
+          rows.push({ type: 'PL', items: [cur, next1] });
+          i += 2;
+        } else if (next1 && !isLandscapeItem(next1) && next2 && !isLandscapeItem(next2)) {
+          // [P, P, P] -> 3 portrait cards
+          rows.push({ type: 'PPP', items: [cur, next1, next2] });
+          i += 3;
+        } else if (next1 && !isLandscapeItem(next1)) {
+          // [P, P] -> 2 portrait cards
+          rows.push({ type: 'PP', items: [cur, next1] });
+          i += 2;
+        } else {
+          // Single [P]
+          rows.push({ type: 'SINGLE_PORTRAIT', items: [cur] });
+          i += 1;
+        }
+      }
+    }
+    return rows;
+  }, [sectionItems]);
+
+  // Card Rendering Component
+  const renderCard = (
+    item: MagazineItem,
+    options: {
+      spanClass?: string;
+      isMatchedHeight?: boolean;
+      fullWidth?: boolean;
+    } = {}
+  ) => {
+    const globalIdx = sectionItems.findIndex(x => x.id === item.id);
+    const itemIndex = globalIdx !== -1 ? globalIdx : 0;
+    const isLand = isLandscapeItem(item);
+    const isTextCard = item.isTextOnly || !item.img;
+    const parentTrip = trips.find(t => t.id === item.tripId);
+
+    // Height & aspect ratio logic
+    let visualFrameClass = 'aspect-[3/4] w-full';
+    if (options.fullWidth) {
+      visualFrameClass = 'aspect-[16/9] sm:aspect-[21/9] w-full';
+    } else if (options.isMatchedHeight) {
+      // In a 3-col combined row (PL or LP), match the portrait sibling height
+      visualFrameClass = 'aspect-[16/10] sm:aspect-auto sm:h-full sm:min-h-0 w-full';
+    } else if (isLand) {
+      visualFrameClass = 'aspect-[16/10] w-full';
+    }
+
+    return (
+      <article
+        key={item.id || itemIndex}
+        className={`group flex flex-col gap-4 w-full h-full transition-all duration-300 ${options.spanClass || ''}`}
+      >
+        {/* Visual Frame: Transparent Text Editorial OR Photo */}
+        {isTextCard ? (
+          <div
+            className={`relative ${visualFrameClass} overflow-hidden bg-transparent text-black dark:text-white p-6 sm:p-8 md:p-10 flex flex-col justify-between border border-black/15 dark:border-white/15 select-none shadow-xs transition-transform duration-500 group-hover:scale-[1.01]`}
+          >
+            {/* Top Masthead inside Text Card */}
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono font-black tracking-widest uppercase opacity-60 text-black dark:text-white">
+                EDITORIAL NOTE #{String(itemIndex + 1).padStart(2, '0')}
+              </span>
+              {(item.placeName || item.location) && (
+                <span className="text-[11px] font-mono font-bold uppercase tracking-wider opacity-70 truncate max-w-[50%] text-black dark:text-white">
+                  {item.placeName || item.location}
+                </span>
+              )}
+            </div>
+
+            {/* Center Inter Bold Typography (Transparent background, Black / Darkmode White) */}
+            <div className="my-auto py-4">
+              <p className="font-['Inter',sans-serif] font-black text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-tight leading-snug break-keep text-black dark:text-white">
+                {item.textContent || item.title}
+              </p>
+            </div>
+
+            {/* Bottom Masthead Footer */}
+            <div className="flex items-center justify-between pt-4 border-t border-black/10 dark:border-white/10 text-[10px] font-mono tracking-widest uppercase opacity-50 text-black dark:text-white">
+              <span>{item.date || 'TRIP GON LOG'}</span>
+              <span>MAGAZINE NOTE</span>
+            </div>
+          </div>
+        ) : (
+          <div
+            onClick={() => setLightboxIndex(itemIndex)}
+            className={`relative ${visualFrameClass} overflow-hidden bg-black/5 dark:bg-white/5 cursor-pointer border border-black/10 dark:border-white/10`}
+          >
+            <img
+              src={getEffectiveImageUrl(item.img)}
+              alt={item.title}
+              loading="lazy"
+              decoding="async"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+            />
+
+            {/* Subtle Overlay & Zoom Icon on Hover */}
+            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <div className="w-10 h-10 bg-white/90 dark:bg-black/90 text-black dark:text-white flex items-center justify-center shadow-md">
+                <Maximize2 className="w-4 h-4" />
+              </div>
+            </div>
+
+            {/* Sequential Index Badge */}
+            <div className="absolute top-3 left-3 bg-black/60 dark:bg-white/70 backdrop-blur-xs text-white dark:text-black font-mono text-[9px] font-bold px-1.5 py-0.5 uppercase tracking-widest">
+              {String(itemIndex + 1).padStart(2, '0')}
+            </div>
+          </div>
+        )}
+
+        {/* Editorial Typography & Metadata (Title, Place, Date only) */}
+        <div className="flex flex-col gap-2 pt-1 font-['Inter',sans-serif]">
+          {/* Metadata Strip: Date & Location */}
+          <div className="flex items-center gap-2 text-[10px] font-mono tracking-wider uppercase text-black/50 dark:text-white/50">
+            {item.date && <span>{item.date}</span>}
+            {item.date && (item.placeName || item.location) && <span className="opacity-30">•</span>}
+            {(item.placeName || item.location) && (
+              <span className="font-bold text-black/70 dark:text-white/70 truncate">
+                {item.placeName || item.location}
+              </span>
+            )}
+          </div>
+
+          {/* Bold Editorial Title */}
+          <h3
+            onClick={() => !isTextCard && setLightboxIndex(itemIndex)}
+            className={`text-lg sm:text-xl md:text-2xl font-black text-black dark:text-white leading-snug tracking-tight font-['Inter',sans-serif] ${!isTextCard ? 'hover:underline cursor-pointer' : ''}`}
+          >
+            {item.title}
+          </h3>
+
+          {/* Direct Link to Journey */}
+          {parentTrip && (
+            <div className="pt-1 mt-auto">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNavigate('detail', parentTrip.id);
+                }}
+                className="inline-flex items-center gap-1.5 text-[11px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:underline cursor-pointer transition-colors"
+              >
+                <span>JOURNEY: {parentTrip.title.replace(/\s*\(Plan\)$/i, '')}</span>
+                <ExternalLink className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+        </div>
+      </article>
+    );
+  };
+
   return (
     <main className="min-h-screen w-full bg-[#FAF9F6] dark:bg-[#111111] text-black dark:text-white flex flex-col font-sans transition-colors duration-300">
       
@@ -131,7 +322,7 @@ export function MagazineHubPage({
       {/* 1. HERO SECTION (Editorial Large Hero Banner with Typography)        */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       {currentSection && (
-        <section className="relative w-full h-[54vh] sm:h-[60vh] md:h-[66vh] max-h-[680px] min-h-[400px] overflow-hidden bg-black select-none group">
+        <section className="relative w-full aspect-[16/10] sm:aspect-[21/9] md:aspect-[24/10] min-h-[50vh] max-h-[80vh] overflow-hidden bg-black select-none group">
           {/* Background Image */}
           {currentSection.heroImg ? (
             <img
@@ -143,7 +334,7 @@ export function MagazineHubPage({
             <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#1a1a1a] via-[#111] to-[#0a0a0a]" />
           )}
 
-          {/* Dark Overlay Gradients for Editorial Mood & Readability (Lighter for clearer photo visibility) */}
+          {/* Dark Overlay Gradients for Editorial Mood & Readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-transparent hidden md:block" />
 
@@ -258,7 +449,7 @@ export function MagazineHubPage({
       </div>
 
       {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* 3. EDITORIAL MAGAZINE GRID (Varied Layout Cards)                     */}
+      {/* 3. EDITORIAL MAGAZINE GRID (Smart 3-Column Harmonious Layout)        */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       <section className="w-full max-w-7xl mx-auto px-4 sm:px-8 md:px-12 py-12 sm:py-16 flex flex-col gap-12">
         
@@ -301,121 +492,57 @@ export function MagazineHubPage({
             )}
           </div>
         ) : (
-          /* Magazine Editorial Grid: Clean 2-Column Responsive Grid with Landscape & Portrait Rhythm */
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start">
-            {sectionItems.map((item, idx) => {
-              const isLandscape = item.layoutType === 'landscape' || item.layoutType === 'wide' || item.layoutType === 'large';
-              const aspectClass = isLandscape ? 'aspect-[16/10]' : 'aspect-[3/4]';
-              const isTextCard = item.isTextOnly || !item.img;
-              const parentTrip = trips.find(t => t.id === item.tripId);
-
-              return (
-                <article
-                  key={item.id || idx}
-                  className="group flex flex-col gap-4 w-full transition-all duration-300"
-                >
-                  {/* Card Visual Frame: Photo or Text-Only Editorial */}
-                  {isTextCard ? (
-                    <div
-                      className={`relative w-full ${aspectClass} overflow-hidden bg-black text-white dark:bg-white dark:text-black p-6 sm:p-8 md:p-10 flex flex-col justify-between border border-black/20 dark:border-white/20 select-none shadow-sm transition-transform duration-500 group-hover:scale-[1.01]`}
-                    >
-                      {/* Top Masthead in Card */}
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-mono font-black tracking-widest uppercase opacity-70">
-                          EDITORIAL NOTE #{String(idx + 1).padStart(2, '0')}
-                        </span>
-                        {item.placeName && (
-                          <span className="text-[11px] font-mono font-bold uppercase tracking-wider opacity-80 truncate max-w-[50%]">
-                            {item.placeName}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Center Giant Inter Bold Typography */}
-                      <div className="my-auto py-4">
-                        <p className="font-['Inter',sans-serif] font-black text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-tight leading-snug break-keep">
-                          {item.textContent || item.title}
-                        </p>
-                      </div>
-
-                      {/* Bottom Footer inside Text Card */}
-                      <div className="flex items-center justify-between pt-4 border-t border-white/20 dark:border-black/20 text-[10px] font-mono tracking-widest uppercase opacity-60">
-                        <span>{item.date || 'TRIP GON LOG'}</span>
-                        <span>LOG ENTRY</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div 
-                      onClick={() => setLightboxIndex(idx)}
-                      className={`relative w-full ${aspectClass} overflow-hidden bg-black/5 dark:bg-white/5 cursor-pointer border border-black/10 dark:border-white/10`}
-                    >
-                      <img
-                        src={getEffectiveImageUrl(item.img)}
-                        alt={item.title}
-                        loading="lazy"
-                        decoding="async"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                      />
-
-                      {/* Subtle Overlay & Zoom Icon on Hover */}
-                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <div className="w-10 h-10 bg-white/90 dark:bg-black/90 text-black dark:text-white flex items-center justify-center shadow-md">
-                          <Maximize2 className="w-4 h-4" />
-                        </div>
-                      </div>
-
-                      {/* Sequential Index Badge */}
-                      <div className="absolute top-3 left-3 bg-black/60 dark:bg-white/70 backdrop-blur-xs text-white dark:text-black font-mono text-[9px] font-bold px-1.5 py-0.5 uppercase tracking-widest">
-                        {String(idx + 1).padStart(2, '0')}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Editorial Typography & Metadata Section (Simplified: Title, Place, Date only) */}
-                  <div className="flex flex-col gap-2 pt-1 font-['Inter',sans-serif]">
-                    
-                    {/* Top Tiny Metadata Strip: Date & Location */}
-                    <div className="flex items-center gap-2 text-[10px] font-mono tracking-wider uppercase text-black/50 dark:text-white/50">
-                      {item.date && (
-                        <span>{item.date}</span>
-                      )}
-                      {item.date && (item.placeName || item.location) && (
-                        <span className="opacity-30">•</span>
-                      )}
-                      {(item.placeName || item.location) && (
-                        <span className="font-bold text-black/70 dark:text-white/70 truncate">
-                          {item.placeName || item.location}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Bold Large Image Title */}
-                    <h3 
-                      onClick={() => !isTextCard && setLightboxIndex(idx)}
-                      className={`text-lg sm:text-xl md:text-2xl font-black text-black dark:text-white leading-snug tracking-tight font-['Inter',sans-serif] ${!isTextCard ? 'hover:underline cursor-pointer' : ''}`}
-                    >
-                      {item.title}
-                    </h3>
-
-                    {/* Bottom Action: Direct Link to Journey */}
-                    {parentTrip && (
-                      <div className="pt-1 mt-auto">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onNavigate('detail', parentTrip.id);
-                          }}
-                          className="inline-flex items-center gap-1.5 text-[11px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:underline cursor-pointer transition-colors"
-                        >
-                          <span>JOURNEY: {parentTrip.title.replace(/\s*\(Plan\)$/i, '')}</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </button>
-                      </div>
-                    )}
+          /* Magazine Editorial 3-Column Smart Grid */
+          <div className="flex flex-col gap-10 sm:gap-14">
+            {magazineRows.map((row, rowIdx) => {
+              if (row.type === 'PPP') {
+                return (
+                  <div key={rowIdx} className="grid grid-cols-1 sm:grid-cols-3 gap-8 md:gap-10 items-stretch">
+                    {renderCard(row.items[0], { spanClass: 'col-span-1' })}
+                    {renderCard(row.items[1], { spanClass: 'col-span-1' })}
+                    {renderCard(row.items[2], { spanClass: 'col-span-1' })}
                   </div>
-                </article>
-              );
+                );
+              }
+              if (row.type === 'PL') {
+                return (
+                  <div key={rowIdx} className="grid grid-cols-1 sm:grid-cols-3 gap-8 md:gap-10 items-stretch">
+                    {renderCard(row.items[0], { spanClass: 'sm:col-span-1' })}
+                    {renderCard(row.items[1], { spanClass: 'sm:col-span-2', isMatchedHeight: true })}
+                  </div>
+                );
+              }
+              if (row.type === 'LP') {
+                return (
+                  <div key={rowIdx} className="grid grid-cols-1 sm:grid-cols-3 gap-8 md:gap-10 items-stretch">
+                    {renderCard(row.items[0], { spanClass: 'sm:col-span-2', isMatchedHeight: true })}
+                    {renderCard(row.items[1], { spanClass: 'sm:col-span-1' })}
+                  </div>
+                );
+              }
+              if (row.type === 'FULL_LANDSCAPE') {
+                return (
+                  <div key={rowIdx} className="w-full">
+                    {renderCard(row.items[0], { spanClass: 'w-full', fullWidth: true })}
+                  </div>
+                );
+              }
+              if (row.type === 'PP') {
+                return (
+                  <div key={rowIdx} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 items-stretch">
+                    {renderCard(row.items[0], { spanClass: 'col-span-1' })}
+                    {renderCard(row.items[1], { spanClass: 'col-span-1' })}
+                  </div>
+                );
+              }
+              if (row.type === 'SINGLE_PORTRAIT') {
+                return (
+                  <div key={rowIdx} className="grid grid-cols-1 sm:grid-cols-3 gap-8 md:gap-10 items-stretch">
+                    {renderCard(row.items[0], { spanClass: 'col-span-1' })}
+                  </div>
+                );
+              }
+              return null;
             })}
           </div>
         )}
