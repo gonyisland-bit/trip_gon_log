@@ -62,6 +62,11 @@ export function ConfirmModal({
       return;
     }
 
+    // Blur any active input so modal takes keyboard focus immediately
+    if (document.activeElement && (document.activeElement as HTMLElement).blur) {
+      (document.activeElement as HTMLElement).blur();
+    }
+
     if (autoDismiss) {
       const fadeDuration = 300;
       const startFadeAfter = Math.max(200, autoDismissDuration - fadeDuration);
@@ -76,14 +81,28 @@ export function ConfirmModal({
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName) || (e.target as HTMLElement)?.isContentEditable;
-      if (isInput) return;
-
+      // Escape ALWAYS closes modal immediately
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
         handleImmediateClose(onCancel);
-      } else if (e.key === 'y' || e.key === 'Y' || e.key === 's' || e.key === 'S' || e.key === 'Enter') {
+        return;
+      }
+
+      // If single button or auto-dismiss modal (e.g. SAVED notification), Enter or Space immediately confirms/closes
+      if (singleButton || autoDismiss) {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'y' || e.key === 'Y') {
+          e.preventDefault();
+          e.stopPropagation();
+          handleImmediateClose(onConfirm);
+          return;
+        }
+      }
+
+      const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName) || (e.target as HTMLElement)?.isContentEditable;
+      if (isInput) return;
+
+      if (e.key === 'y' || e.key === 'Y' || e.key === 's' || e.key === 'S' || e.key === 'Enter') {
         e.preventDefault();
         e.stopPropagation();
         handleImmediateClose(onConfirm);
@@ -94,12 +113,12 @@ export function ConfirmModal({
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, true);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handleKeyDown, true);
       clearTimers();
     };
-  }, [isOpen, onConfirm, onCancel, onDiscard, autoDismiss, autoDismissDuration]);
+  }, [isOpen, onConfirm, onCancel, onDiscard, autoDismiss, autoDismissDuration, singleButton]);
 
   if (!isOpen) return null;
 

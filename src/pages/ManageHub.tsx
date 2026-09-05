@@ -2908,7 +2908,7 @@ export function ManageHubPage({
                                 value={item.textContent || ''}
                                 onChange={e => handleUpdateItemInCurrentSection(item.id, 'textContent', e.target.value)}
                                 placeholder="매거진 본문 텍스트를 입력하세요..."
-                                className="w-full h-full my-2 bg-transparent text-black dark:text-white font-['Inter',sans-serif] font-black text-base sm:text-lg md:text-xl leading-snug tracking-tight outline-none resize-none border-0 placeholder:text-black/30 dark:placeholder:text-white/30"
+                                className="w-full h-full my-2 bg-transparent text-black dark:text-white font-['Inter',sans-serif] font-bold text-base sm:text-lg md:text-xl leading-snug tracking-tight outline-none resize-none border-0 placeholder:text-black/30 dark:placeholder:text-white/30"
                               />
                               <div className="text-[9px] font-mono tracking-widest uppercase opacity-50 pt-2 border-t border-black/10 dark:border-white/10 text-black dark:text-white">
                                 {item.date || 'LOG ENTRY'}

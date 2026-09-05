@@ -125,12 +125,13 @@ export function MagazineHubPage({
   };
 
   // Group sectionItems into smart editorial rows based on 3-column magazine rules:
-  // - [P, P, P] -> 3 portrait cards row (1 col each)
-  // - [P, L] -> 1 portrait (1 col) + 1 landscape (2 cols, matched height)
-  // - [L, P] -> 1 landscape (2 cols, matched height) + 1 portrait (1 col)
-  // - [L, L] or [L] -> full-width landscape rows (each takes 3 cols)
-  // - [P, P] -> 2 portrait cards row
-  // - [P] -> 1 portrait card row
+  // - [P, P, P] -> 3 portrait cards row (1 col each in 3-col grid)
+  // - [P, L] -> 1 portrait (1 col) + 1 landscape (2 cols, matched height) in 3-col grid
+  // - [L, P] -> 1 landscape (2 cols, matched height) + 1 portrait (1 col) in 3-col grid
+  // - [L, L] -> 2 landscape cards row (50% : 50% in 2-col grid)
+  // - [L] (single) -> 1 landscape card (50% max width in 2-col grid)
+  // - [P, P] -> 2 portrait cards row (33% each in 3-col grid)
+  // - [P] (single) -> 1 portrait card (33% in 3-col grid)
   const isLandscapeItem = (item: MagazineItem) =>
     item.layoutType === 'landscape' || item.layoutType === 'wide' || item.layoutType === 'large';
 
@@ -138,8 +139,9 @@ export function MagazineHubPage({
     | { type: 'PPP'; items: [MagazineItem, MagazineItem, MagazineItem] }
     | { type: 'PL'; items: [MagazineItem, MagazineItem] }
     | { type: 'LP'; items: [MagazineItem, MagazineItem] }
+    | { type: 'LL'; items: [MagazineItem, MagazineItem] }
+    | { type: 'SINGLE_LANDSCAPE'; items: [MagazineItem] }
     | { type: 'PP'; items: [MagazineItem, MagazineItem] }
-    | { type: 'FULL_LANDSCAPE'; items: [MagazineItem] }
     | { type: 'SINGLE_PORTRAIT'; items: [MagazineItem] };
 
   const magazineRows = useMemo<MagazineRow[]>(() => {
@@ -156,9 +158,13 @@ export function MagazineHubPage({
           // [L, P] -> 2 cols Landscape + 1 col Portrait (matched height)
           rows.push({ type: 'LP', items: [cur, next1] });
           i += 2;
+        } else if (next1 && isLandscapeItem(next1)) {
+          // [L, L] -> 2 landscape items in a 2-col row (50% : 50%)
+          rows.push({ type: 'LL', items: [cur, next1] });
+          i += 2;
         } else {
-          // [L, L] or single [L] -> Full width landscape row
-          rows.push({ type: 'FULL_LANDSCAPE', items: [cur] });
+          // Single [L] -> 50% max width in 2-col row
+          rows.push({ type: 'SINGLE_LANDSCAPE', items: [cur] });
           i += 1;
         }
       } else {
@@ -168,15 +174,15 @@ export function MagazineHubPage({
           rows.push({ type: 'PL', items: [cur, next1] });
           i += 2;
         } else if (next1 && !isLandscapeItem(next1) && next2 && !isLandscapeItem(next2)) {
-          // [P, P, P] -> 3 portrait cards
+          // [P, P, P] -> 3 portrait cards (33% each in 3-col row)
           rows.push({ type: 'PPP', items: [cur, next1, next2] });
           i += 3;
         } else if (next1 && !isLandscapeItem(next1)) {
-          // [P, P] -> 2 portrait cards
+          // [P, P] -> 2 portrait cards (33% each in 3-col row)
           rows.push({ type: 'PP', items: [cur, next1] });
           i += 2;
         } else {
-          // Single [P]
+          // Single [P] -> 1 portrait card (33% in 3-col row)
           rows.push({ type: 'SINGLE_PORTRAIT', items: [cur] });
           i += 1;
         }
@@ -191,7 +197,6 @@ export function MagazineHubPage({
     options: {
       spanClass?: string;
       isMatchedHeight?: boolean;
-      fullWidth?: boolean;
     } = {}
   ) => {
     const globalIdx = sectionItems.findIndex(x => x.id === item.id);
@@ -202,76 +207,61 @@ export function MagazineHubPage({
 
     // Height & aspect ratio logic
     let visualFrameClass = 'aspect-[3/4] w-full';
-    if (options.fullWidth) {
-      visualFrameClass = 'aspect-[16/9] sm:aspect-[21/9] w-full';
-    } else if (options.isMatchedHeight) {
+    if (options.isMatchedHeight) {
       // In a 3-col combined row (PL or LP), match the portrait sibling height
       visualFrameClass = 'aspect-[16/10] sm:aspect-auto sm:h-full sm:min-h-0 w-full';
     } else if (isLand) {
       visualFrameClass = 'aspect-[16/10] w-full';
     }
 
+    // Pure Text Card Rendering: No borders, no metadata headers/footers, ONLY text content
+    if (isTextCard) {
+      return (
+        <article
+          key={item.id || itemIndex}
+          className={`group flex flex-col w-full h-full justify-center transition-all duration-300 ${options.spanClass || ''}`}
+        >
+          <div
+            className={`relative ${visualFrameClass} overflow-hidden bg-transparent text-black dark:text-white p-4 sm:p-6 md:p-8 flex items-center justify-center select-none border-0`}
+          >
+            <p className="font-['Inter',sans-serif] font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-tight leading-snug break-keep text-black dark:text-white text-center">
+              {item.textContent || item.title}
+            </p>
+          </div>
+        </article>
+      );
+    }
+
+    // Photo Card Rendering
     return (
       <article
         key={item.id || itemIndex}
         className={`group flex flex-col gap-4 w-full h-full transition-all duration-300 ${options.spanClass || ''}`}
       >
-        {/* Visual Frame: Transparent Text Editorial OR Photo */}
-        {isTextCard ? (
-          <div
-            className={`relative ${visualFrameClass} overflow-hidden bg-transparent text-black dark:text-white p-6 sm:p-8 md:p-10 flex flex-col justify-between border border-black/15 dark:border-white/15 select-none shadow-xs transition-transform duration-500 group-hover:scale-[1.01]`}
-          >
-            {/* Top Masthead inside Text Card */}
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono font-black tracking-widest uppercase opacity-60 text-black dark:text-white">
-                EDITORIAL NOTE #{String(itemIndex + 1).padStart(2, '0')}
-              </span>
-              {(item.placeName || item.location) && (
-                <span className="text-[11px] font-mono font-bold uppercase tracking-wider opacity-70 truncate max-w-[50%] text-black dark:text-white">
-                  {item.placeName || item.location}
-                </span>
-              )}
-            </div>
+        <div
+          onClick={() => setLightboxIndex(itemIndex)}
+          className={`relative ${visualFrameClass} overflow-hidden bg-black/5 dark:bg-white/5 cursor-pointer border border-black/10 dark:border-white/10`}
+        >
+          <img
+            src={getEffectiveImageUrl(item.img)}
+            alt={item.title}
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+          />
 
-            {/* Center Inter Bold Typography (Transparent background, Black / Darkmode White) */}
-            <div className="my-auto py-4">
-              <p className="font-['Inter',sans-serif] font-black text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-tight leading-snug break-keep text-black dark:text-white">
-                {item.textContent || item.title}
-              </p>
-            </div>
-
-            {/* Bottom Masthead Footer */}
-            <div className="flex items-center justify-between pt-4 border-t border-black/10 dark:border-white/10 text-[10px] font-mono tracking-widest uppercase opacity-50 text-black dark:text-white">
-              <span>{item.date || 'TRIP GON LOG'}</span>
-              <span>MAGAZINE NOTE</span>
+          {/* Subtle Overlay & Zoom Icon on Hover */}
+          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <div className="w-10 h-10 bg-white/90 dark:bg-black/90 text-black dark:text-white flex items-center justify-center shadow-md">
+              <Maximize2 className="w-4 h-4" />
             </div>
           </div>
-        ) : (
-          <div
-            onClick={() => setLightboxIndex(itemIndex)}
-            className={`relative ${visualFrameClass} overflow-hidden bg-black/5 dark:bg-white/5 cursor-pointer border border-black/10 dark:border-white/10`}
-          >
-            <img
-              src={getEffectiveImageUrl(item.img)}
-              alt={item.title}
-              loading="lazy"
-              decoding="async"
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-            />
 
-            {/* Subtle Overlay & Zoom Icon on Hover */}
-            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <div className="w-10 h-10 bg-white/90 dark:bg-black/90 text-black dark:text-white flex items-center justify-center shadow-md">
-                <Maximize2 className="w-4 h-4" />
-              </div>
-            </div>
-
-            {/* Sequential Index Badge */}
-            <div className="absolute top-3 left-3 bg-black/60 dark:bg-white/70 backdrop-blur-xs text-white dark:text-black font-mono text-[9px] font-bold px-1.5 py-0.5 uppercase tracking-widest">
-              {String(itemIndex + 1).padStart(2, '0')}
-            </div>
+          {/* Sequential Index Badge */}
+          <div className="absolute top-3 left-3 bg-black/60 dark:bg-white/70 backdrop-blur-xs text-white dark:text-black font-mono text-[9px] font-bold px-1.5 py-0.5 uppercase tracking-widest">
+            {String(itemIndex + 1).padStart(2, '0')}
           </div>
-        )}
+        </div>
 
         {/* Editorial Typography & Metadata (Title, Place, Date only) */}
         <div className="flex flex-col gap-2 pt-1 font-['Inter',sans-serif]">
@@ -288,8 +278,8 @@ export function MagazineHubPage({
 
           {/* Bold Editorial Title */}
           <h3
-            onClick={() => !isTextCard && setLightboxIndex(itemIndex)}
-            className={`text-lg sm:text-xl md:text-2xl font-black text-black dark:text-white leading-snug tracking-tight font-['Inter',sans-serif] ${!isTextCard ? 'hover:underline cursor-pointer' : ''}`}
+            onClick={() => setLightboxIndex(itemIndex)}
+            className="text-lg sm:text-xl md:text-2xl font-bold text-black dark:text-white leading-snug tracking-tight font-['Inter',sans-serif] hover:underline cursor-pointer"
           >
             {item.title}
           </h3>
@@ -520,16 +510,24 @@ export function MagazineHubPage({
                   </div>
                 );
               }
-              if (row.type === 'FULL_LANDSCAPE') {
+              if (row.type === 'LL') {
                 return (
-                  <div key={rowIdx} className="w-full">
-                    {renderCard(row.items[0], { spanClass: 'w-full', fullWidth: true })}
+                  <div key={rowIdx} className="grid grid-cols-1 sm:grid-cols-2 gap-8 md:gap-10 items-stretch">
+                    {renderCard(row.items[0], { spanClass: 'col-span-1' })}
+                    {renderCard(row.items[1], { spanClass: 'col-span-1' })}
+                  </div>
+                );
+              }
+              if (row.type === 'SINGLE_LANDSCAPE') {
+                return (
+                  <div key={rowIdx} className="grid grid-cols-1 sm:grid-cols-2 gap-8 md:gap-10 items-stretch">
+                    {renderCard(row.items[0], { spanClass: 'col-span-1' })}
                   </div>
                 );
               }
               if (row.type === 'PP') {
                 return (
-                  <div key={rowIdx} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 items-stretch">
+                  <div key={rowIdx} className="grid grid-cols-1 sm:grid-cols-3 gap-8 md:gap-10 items-stretch">
                     {renderCard(row.items[0], { spanClass: 'col-span-1' })}
                     {renderCard(row.items[1], { spanClass: 'col-span-1' })}
                   </div>
