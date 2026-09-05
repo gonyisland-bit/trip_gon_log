@@ -37,6 +37,7 @@ export function ConfirmModal({
   const [isFadingOut, setIsFadingOut] = useState(false);
   const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const confirmButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const clearTimers = () => {
     if (fadeTimerRef.current) {
@@ -62,10 +63,10 @@ export function ConfirmModal({
       return;
     }
 
-    // Blur any active input so modal takes keyboard focus immediately
-    if (document.activeElement && (document.activeElement as HTMLElement).blur) {
-      (document.activeElement as HTMLElement).blur();
-    }
+    // Immediately focus confirm button so Enter/Space/Escape hit directly
+    const focusTimer = setTimeout(() => {
+      confirmButtonRef.current?.focus();
+    }, 10);
 
     if (autoDismiss) {
       const fadeDuration = 300;
@@ -85,37 +86,40 @@ export function ConfirmModal({
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         handleImmediateClose(onCancel);
         return;
       }
 
-      // If single button or auto-dismiss modal (e.g. SAVED notification), Enter or Space immediately confirms/closes
-      if (singleButton || autoDismiss) {
-        if (e.key === 'Enter' || e.key === ' ' || e.key === 'y' || e.key === 'Y') {
-          e.preventDefault();
-          e.stopPropagation();
-          handleImmediateClose(onConfirm);
-          return;
-        }
+      // Enter or Space immediately confirms and closes singleButton / autoDismiss / any modal
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        handleImmediateClose(onConfirm);
+        return;
       }
 
       const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName) || (e.target as HTMLElement)?.isContentEditable;
       if (isInput) return;
 
-      if (e.key === 'y' || e.key === 'Y' || e.key === 's' || e.key === 'S' || e.key === 'Enter') {
+      if (e.key === 'y' || e.key === 'Y' || e.key === 's' || e.key === 'S') {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         handleImmediateClose(onConfirm);
       } else if ((e.key === 'n' || e.key === 'N' || e.key === 'd' || e.key === 'D') && onDiscard) {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         handleImmediateClose(onDiscard);
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
     return () => {
-      window.removeEventListener('keydown', handleKeyDown, true);
+      clearTimeout(focusTimer);
+      window.removeEventListener('keydown', handleKeyDown, { capture: true });
       clearTimers();
     };
   }, [isOpen, onConfirm, onCancel, onDiscard, autoDismiss, autoDismissDuration, singleButton]);
@@ -197,9 +201,10 @@ export function ConfirmModal({
           )}
 
           <button
+            ref={confirmButtonRef}
             type="button"
             onClick={() => handleImmediateClose(onConfirm)}
-            className={`px-2 py-2.5 text-center transition-colors cursor-pointer shadow-sm whitespace-nowrap text-[11px] ${
+            className={`px-2 py-2.5 text-center transition-colors cursor-pointer shadow-sm whitespace-nowrap text-[11px] outline-none ring-2 ring-transparent focus:ring-black dark:focus:ring-white ${
               confirmVariant === 'danger'
                 ? 'bg-black text-white dark:bg-white dark:text-black hover:opacity-85'
                 : 'bg-black text-white dark:bg-white dark:text-black hover:opacity-85'

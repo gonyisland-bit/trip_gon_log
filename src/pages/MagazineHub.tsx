@@ -209,7 +209,7 @@ export function MagazineHubPage({
     let visualFrameClass = 'aspect-[3/4] w-full';
     if (options.isMatchedHeight) {
       // In a 3-col combined row (PL or LP), match the portrait sibling height
-      visualFrameClass = 'aspect-[16/10] sm:aspect-auto sm:h-full sm:min-h-0 w-full';
+      visualFrameClass = 'aspect-[16/10] md:aspect-auto md:h-full md:min-h-0 w-full';
     } else if (isLand) {
       visualFrameClass = 'aspect-[16/10] w-full';
     }
@@ -487,56 +487,56 @@ export function MagazineHubPage({
             {magazineRows.map((row, rowIdx) => {
               if (row.type === 'PPP') {
                 return (
-                  <div key={rowIdx} className="grid grid-cols-1 sm:grid-cols-3 gap-8 md:gap-10 items-stretch">
-                    {renderCard(row.items[0], { spanClass: 'col-span-1' })}
-                    {renderCard(row.items[1], { spanClass: 'col-span-1' })}
-                    {renderCard(row.items[2], { spanClass: 'col-span-1' })}
+                  <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 items-stretch">
+                    {renderCard(row.items[0], { spanClass: 'md:col-span-1' })}
+                    {renderCard(row.items[1], { spanClass: 'md:col-span-1' })}
+                    {renderCard(row.items[2], { spanClass: 'md:col-span-1' })}
                   </div>
                 );
               }
               if (row.type === 'PL') {
                 return (
-                  <div key={rowIdx} className="grid grid-cols-1 sm:grid-cols-3 gap-8 md:gap-10 items-stretch">
-                    {renderCard(row.items[0], { spanClass: 'sm:col-span-1' })}
-                    {renderCard(row.items[1], { spanClass: 'sm:col-span-2', isMatchedHeight: true })}
+                  <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 items-stretch">
+                    {renderCard(row.items[0], { spanClass: 'md:col-span-1' })}
+                    {renderCard(row.items[1], { spanClass: 'md:col-span-2', isMatchedHeight: true })}
                   </div>
                 );
               }
               if (row.type === 'LP') {
                 return (
-                  <div key={rowIdx} className="grid grid-cols-1 sm:grid-cols-3 gap-8 md:gap-10 items-stretch">
-                    {renderCard(row.items[0], { spanClass: 'sm:col-span-2', isMatchedHeight: true })}
-                    {renderCard(row.items[1], { spanClass: 'sm:col-span-1' })}
+                  <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 items-stretch">
+                    {renderCard(row.items[0], { spanClass: 'md:col-span-2', isMatchedHeight: true })}
+                    {renderCard(row.items[1], { spanClass: 'md:col-span-1' })}
                   </div>
                 );
               }
               if (row.type === 'LL') {
                 return (
-                  <div key={rowIdx} className="grid grid-cols-1 sm:grid-cols-2 gap-8 md:gap-10 items-stretch">
-                    {renderCard(row.items[0], { spanClass: 'col-span-1' })}
-                    {renderCard(row.items[1], { spanClass: 'col-span-1' })}
+                  <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 items-stretch">
+                    {renderCard(row.items[0], { spanClass: 'md:col-span-1' })}
+                    {renderCard(row.items[1], { spanClass: 'md:col-span-1' })}
                   </div>
                 );
               }
               if (row.type === 'SINGLE_LANDSCAPE') {
                 return (
-                  <div key={rowIdx} className="grid grid-cols-1 sm:grid-cols-2 gap-8 md:gap-10 items-stretch">
-                    {renderCard(row.items[0], { spanClass: 'col-span-1' })}
+                  <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 items-stretch">
+                    {renderCard(row.items[0], { spanClass: 'md:col-span-1' })}
                   </div>
                 );
               }
               if (row.type === 'PP') {
                 return (
-                  <div key={rowIdx} className="grid grid-cols-1 sm:grid-cols-3 gap-8 md:gap-10 items-stretch">
-                    {renderCard(row.items[0], { spanClass: 'col-span-1' })}
-                    {renderCard(row.items[1], { spanClass: 'col-span-1' })}
+                  <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 items-stretch">
+                    {renderCard(row.items[0], { spanClass: 'md:col-span-1' })}
+                    {renderCard(row.items[1], { spanClass: 'md:col-span-1' })}
                   </div>
                 );
               }
               if (row.type === 'SINGLE_PORTRAIT') {
                 return (
-                  <div key={rowIdx} className="grid grid-cols-1 sm:grid-cols-3 gap-8 md:gap-10 items-stretch">
-                    {renderCard(row.items[0], { spanClass: 'col-span-1' })}
+                  <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 items-stretch">
+                    {renderCard(row.items[0], { spanClass: 'md:col-span-1' })}
                   </div>
                 );
               }

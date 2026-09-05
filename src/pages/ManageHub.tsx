@@ -2805,181 +2805,297 @@ export function ManageHubPage({
                   </div>
                 </div>
 
-                {/* Interactive Visual Cards Grid (Shows actual landscape/portrait ratio) */}
-                {(!currentMagSection.items || currentMagSection.items.length === 0) ? (
-                  <div className="py-12 text-center flex flex-col items-center justify-center gap-2 text-xs font-mono text-black/40 dark:text-white/40 border border-dashed border-black/20 dark:border-white/20 p-8">
-                    <Layout className="w-6 h-6 opacity-30" />
-                    <span>현재 섹션에 등록된 카드가 없습니다.</span>
-                    <span>아래 타임라인 사진에서 '+ ADD'를 누르거나 상단의 '+ ADD TEXT CARD'를 클릭해주세요.</span>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 items-start">
-                    {currentMagSection.items.map((item, idx) => {
-                      const isItemHero = currentMagSection.heroImg === item.img;
-                      const isLandscape = item.layoutType === 'landscape' || item.layoutType === 'wide' || item.layoutType === 'large';
-                      const aspectClass = isLandscape ? 'aspect-[16/10]' : 'aspect-[3/4]';
-                      const isTextCard = item.isTextOnly || !item.img;
+                {/* Interactive Visual Cards Grid (Synchronized with 3-Column / 2-Column Magazine Rules) */}
+                {(() => {
+                  const items = currentMagSection.items || [];
+                  if (items.length === 0) {
+                    return (
+                      <div className="py-12 text-center flex flex-col items-center justify-center gap-2 text-xs font-mono text-black/40 dark:text-white/40 border border-dashed border-black/20 dark:border-white/20 p-8">
+                        <Layout className="w-6 h-6 opacity-30" />
+                        <span>현재 섹션에 등록된 카드가 없습니다.</span>
+                        <span>아래 타임라인 사진에서 '+ ADD'를 누르거나 상단의 '+ ADD TEXT CARD'를 클릭해주세요.</span>
+                      </div>
+                    );
+                  }
 
-                      return (
-                        <div
-                          key={item.id || idx}
-                          className={`flex flex-col gap-3 p-4 bg-white dark:bg-[#161616] border transition-all shadow-xs ${
-                            isItemHero 
-                              ? 'border-black dark:border-white ring-1 ring-black dark:ring-white' 
-                              : 'border-black/15 dark:border-white/15 hover:border-black/60 dark:hover:border-white/60'
-                          }`}
-                        >
-                          {/* Card Controls Top Bar */}
-                          <div className="flex items-center justify-between gap-2 pb-1 border-b border-black/10 dark:border-white/10">
-                            {/* Ratio Toggle Switch (가로형 ↔ 세로형) */}
-                            <div className="flex items-center gap-1">
-                              <span className="text-[9px] font-mono font-bold uppercase text-black/40 dark:text-white/40 mr-1">
-                                #{String(idx + 1).padStart(2, '0')}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => handleUpdateItemInCurrentSection(item.id, 'layoutType', isLandscape ? 'portrait' : 'landscape')}
-                                className="px-2 py-0.5 text-[10px] font-mono font-bold uppercase border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
-                                title="가로형/세로형 비율 전환"
-                              >
-                                {isLandscape ? '가로형 (16:10) ⟳' : '세로형 (3:4) ⟳'}
-                              </button>
-                            </div>
+                  const isLand = (item: MagazineItem) =>
+                    item.layoutType === 'landscape' || item.layoutType === 'wide' || item.layoutType === 'large';
 
-                            {/* Actions: Hero, Reorder, Delete */}
-                            <div className="flex items-center gap-1">
-                              {!isTextCard && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleSetAsHeroFromItem(item)}
-                                  className={`px-2 py-0.5 text-[10px] font-mono font-bold uppercase transition-colors cursor-pointer border ${
-                                    isItemHero
-                                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                                      : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black'
-                                  }`}
-                                  title="섹션 히어로로 지정"
-                                >
-                                  {isItemHero ? '★ HERO' : 'SET HERO'}
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => handleMoveItemInCurrentSection(idx, 'up')}
-                                disabled={idx === 0}
-                                className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
-                                title="앞으로 이동"
-                              >
-                                <ChevronUp className="w-3 h-3 -rotate-90" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleMoveItemInCurrentSection(idx, 'down')}
-                                disabled={idx === currentMagSection.items.length - 1}
-                                className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
-                                title="뒤로 이동"
-                              >
-                                <ChevronDown className="w-3 h-3 -rotate-90" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveItemFromCurrentSection(item.id)}
-                                className="p-1 text-red-500 hover:bg-red-500/10 border border-red-500/30 cursor-pointer"
-                                title="카드 삭제"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            </div>
+                  type MagRow = 
+                    | { type: 'PPP'; items: [MagazineItem, MagazineItem, MagazineItem] }
+                    | { type: 'PL'; items: [MagazineItem, MagazineItem] }
+                    | { type: 'LP'; items: [MagazineItem, MagazineItem] }
+                    | { type: 'LL'; items: [MagazineItem, MagazineItem] }
+                    | { type: 'SINGLE_LANDSCAPE'; items: [MagazineItem] }
+                    | { type: 'PP'; items: [MagazineItem, MagazineItem] }
+                    | { type: 'SINGLE_PORTRAIT'; items: [MagazineItem] };
+
+                  const rows: MagRow[] = [];
+                  let i = 0;
+                  while (i < items.length) {
+                    const cur = items[i];
+                    const next1 = items[i + 1];
+                    const next2 = items[i + 2];
+
+                    if (isLand(cur)) {
+                      if (next1 && !isLand(next1)) {
+                        rows.push({ type: 'LP', items: [cur, next1] });
+                        i += 2;
+                      } else if (next1 && isLand(next1)) {
+                        rows.push({ type: 'LL', items: [cur, next1] });
+                        i += 2;
+                      } else {
+                        rows.push({ type: 'SINGLE_LANDSCAPE', items: [cur] });
+                        i += 1;
+                      }
+                    } else {
+                      if (next1 && isLand(next1)) {
+                        rows.push({ type: 'PL', items: [cur, next1] });
+                        i += 2;
+                      } else if (next1 && !isLand(next1) && next2 && !isLand(next2)) {
+                        rows.push({ type: 'PPP', items: [cur, next1, next2] });
+                        i += 3;
+                      } else if (next1 && !isLand(next1)) {
+                        rows.push({ type: 'PP', items: [cur, next1] });
+                        i += 2;
+                      } else {
+                        rows.push({ type: 'SINGLE_PORTRAIT', items: [cur] });
+                        i += 1;
+                      }
+                    }
+                  }
+
+                  const renderAdminCuratedCard = (
+                    item: MagazineItem,
+                    options: { spanClass?: string; isMatchedHeight?: boolean } = {}
+                  ) => {
+                    const idx = items.findIndex(x => x.id === item.id);
+                    const isItemHero = currentMagSection.heroImg === item.img;
+                    const isLandscape = isLand(item);
+                    const isTextCard = item.isTextOnly || !item.img;
+
+                    let aspectClass = 'aspect-[3/4] w-full';
+                    if (options.isMatchedHeight) {
+                      aspectClass = 'aspect-[16/10] md:aspect-auto md:h-full md:min-h-0 w-full';
+                    } else if (isLandscape) {
+                      aspectClass = 'aspect-[16/10] w-full';
+                    }
+
+                    return (
+                      <div
+                        key={item.id || idx}
+                        className={`flex flex-col gap-3 p-4 bg-white dark:bg-[#161616] border transition-all shadow-xs h-full ${options.spanClass || ''} ${
+                          isItemHero 
+                            ? 'border-black dark:border-white ring-1 ring-black dark:ring-white' 
+                            : 'border-black/15 dark:border-white/15 hover:border-black/60 dark:hover:border-white/60'
+                        }`}
+                      >
+                        {/* Card Controls Top Bar */}
+                        <div className="flex items-center justify-between gap-2 pb-1 border-b border-black/10 dark:border-white/10">
+                          <div className="flex items-center gap-1">
+                            <span className="text-[9px] font-mono font-bold uppercase text-black/40 dark:text-white/40 mr-1">
+                              #{String(idx + 1).padStart(2, '0')}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateItemInCurrentSection(item.id, 'layoutType', isLandscape ? 'portrait' : 'landscape')}
+                              className="px-2 py-0.5 text-[10px] font-mono font-bold uppercase border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
+                              title="가로형/세로형 비율 전환"
+                            >
+                              {isLandscape ? '가로형 ⟳' : '세로형 ⟳'}
+                            </button>
                           </div>
 
-                          {/* Visual Card Frame: Real-time Aspect Ratio Preview */}
-                          {isTextCard ? (
-                            <div
-                              className={`w-full ${aspectClass} bg-transparent text-black dark:text-white p-5 sm:p-6 flex flex-col justify-between border border-black/20 dark:border-white/20 relative group transition-all`}
+                          <div className="flex items-center gap-1">
+                            {!isTextCard && (
+                              <button
+                                type="button"
+                                onClick={() => handleSetAsHeroFromItem(item)}
+                                className={`px-2 py-0.5 text-[10px] font-mono font-bold uppercase transition-colors cursor-pointer border ${
+                                  isItemHero
+                                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                                    : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black'
+                                }`}
+                                title="섹션 히어로로 지정"
+                              >
+                                {isItemHero ? '★ HERO' : 'SET HERO'}
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleMoveItemInCurrentSection(idx, 'up')}
+                              disabled={idx === 0}
+                              className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
+                              title="앞으로 이동"
                             >
-                              <div className="flex items-center justify-between">
-                                <span className="text-[9px] font-mono font-black tracking-widest uppercase opacity-70 text-black dark:text-white">
-                                  TEXT CARD
-                                </span>
-                                <span className="text-[9px] font-mono opacity-50 uppercase text-black dark:text-white">
-                                  INTER TYPOGRAPHY
-                                </span>
-                              </div>
-                              <textarea
-                                value={item.textContent || ''}
-                                onChange={e => handleUpdateItemInCurrentSection(item.id, 'textContent', e.target.value)}
-                                placeholder="매거진 본문 텍스트를 입력하세요..."
-                                className="w-full h-full my-2 bg-transparent text-black dark:text-white font-['Inter',sans-serif] font-bold text-base sm:text-lg md:text-xl leading-snug tracking-tight outline-none resize-none border-0 placeholder:text-black/30 dark:placeholder:text-white/30"
-                              />
-                              <div className="text-[9px] font-mono tracking-widest uppercase opacity-50 pt-2 border-t border-black/10 dark:border-white/10 text-black dark:text-white">
-                                {item.date || 'LOG ENTRY'}
-                              </div>
-                            </div>
-                          ) : (
-                            <div
-                              className={`w-full ${aspectClass} overflow-hidden bg-black/10 dark:bg-white/5 border border-black/10 dark:border-white/10 relative group transition-all`}
+                              <ChevronUp className="w-3 h-3 -rotate-90" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveItemInCurrentSection(idx, 'down')}
+                              disabled={idx === items.length - 1}
+                              className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
+                              title="뒤로 이동"
                             >
-                              <img
-                                src={getEffectiveImageUrl(item.img)}
-                                alt={item.title}
-                                className="w-full h-full object-cover"
-                              />
-                              {isItemHero && (
-                                <div className="absolute top-2 left-2 bg-black text-white dark:bg-white dark:text-black text-[9px] font-mono font-bold px-1.5 py-0.5 shadow-sm">
-                                  HERO SELECTED ★
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Clean Form Inputs (Title, Place, Date only - No obsolete subtitles) */}
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 font-['Inter',sans-serif]">
-                            {/* Title */}
-                            <div className="sm:col-span-3 flex flex-col gap-0.5">
-                              <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
-                                TITLE (타이틀)
-                              </span>
-                              <input
-                                type="text"
-                                value={item.title || ''}
-                                onChange={e => handleUpdateItemInCurrentSection(item.id, 'title', e.target.value)}
-                                placeholder="Moment Title"
-                                className="px-2 py-1 text-xs font-black font-['Inter',sans-serif] bg-black/[0.03] dark:bg-white/[0.05] border border-black/15 dark:border-white/15 outline-none text-black dark:text-white"
-                              />
-                            </div>
-
-                            {/* Place */}
-                            <div className="sm:col-span-2 flex flex-col gap-0.5">
-                              <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
-                                PLACE (장소명)
-                              </span>
-                              <input
-                                type="text"
-                                value={item.placeName || item.location || ''}
-                                onChange={e => handleUpdateItemInCurrentSection(item.id, 'placeName', e.target.value)}
-                                placeholder="Place / Location"
-                                className="px-2 py-1 text-xs font-mono font-bold bg-black/[0.03] dark:bg-white/[0.05] border border-black/15 dark:border-white/15 outline-none text-black dark:text-white"
-                              />
-                            </div>
-
-                            {/* Date */}
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
-                                DATE (날짜)
-                              </span>
-                              <input
-                                type="text"
-                                value={item.date || ''}
-                                onChange={e => handleUpdateItemInCurrentSection(item.id, 'date', e.target.value)}
-                                placeholder="YYYY.MM.DD"
-                                className="px-2 py-1 text-xs font-mono bg-black/[0.03] dark:bg-white/[0.05] border border-black/15 dark:border-white/15 outline-none text-black dark:text-white"
-                              />
-                            </div>
+                              <ChevronDown className="w-3 h-3 -rotate-90" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveItemFromCurrentSection(item.id)}
+                              className="p-1 text-red-500 hover:bg-red-500/10 border border-red-500/30 cursor-pointer"
+                              title="카드 삭제"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+
+                        {/* Visual Card Frame: Real-time Aspect Ratio Preview */}
+                        {isTextCard ? (
+                          <div
+                            className={`w-full ${aspectClass} bg-transparent text-black dark:text-white p-4 sm:p-5 flex flex-col justify-between border border-black/15 dark:border-white/15 relative group transition-all`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] font-mono font-bold uppercase opacity-60 text-black dark:text-white">
+                                TEXT CARD
+                              </span>
+                              <span className="text-[9px] font-mono opacity-50 uppercase text-black dark:text-white">
+                                INTER
+                              </span>
+                            </div>
+                            <textarea
+                              value={item.textContent || ''}
+                              onChange={e => handleUpdateItemInCurrentSection(item.id, 'textContent', e.target.value)}
+                              placeholder="매거진 본문 텍스트를 입력하세요..."
+                              className="w-full h-full my-2 bg-transparent text-black dark:text-white font-['Inter',sans-serif] font-bold text-sm sm:text-base md:text-lg leading-snug tracking-tight outline-none resize-none border-0 placeholder:text-black/30 dark:placeholder:text-white/30"
+                            />
+                            <div className="text-[9px] font-mono tracking-widest uppercase opacity-40 pt-1 border-t border-black/10 dark:border-white/10 text-black dark:text-white">
+                              {item.date || 'LOG ENTRY'}
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            className={`w-full ${aspectClass} overflow-hidden bg-black/10 dark:bg-white/5 border border-black/10 dark:border-white/10 relative group transition-all`}
+                          >
+                            <img
+                              src={getEffectiveImageUrl(item.img)}
+                              alt={item.title}
+                              className="w-full h-full object-cover"
+                            />
+                            {isItemHero && (
+                              <div className="absolute top-2 left-2 bg-black text-white dark:bg-white dark:text-black text-[9px] font-mono font-bold px-1.5 py-0.5 shadow-sm">
+                                HERO SELECTED ★
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Clean Form Inputs (Title, Place, Date) */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 font-['Inter',sans-serif] mt-auto">
+                          <div className="sm:col-span-3 flex flex-col gap-0.5">
+                            <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
+                              TITLE (타이틀)
+                            </span>
+                            <input
+                              type="text"
+                              value={item.title || ''}
+                              onChange={e => handleUpdateItemInCurrentSection(item.id, 'title', e.target.value)}
+                              placeholder="Moment Title"
+                              className="px-2 py-1 text-xs font-bold font-['Inter',sans-serif] bg-black/[0.03] dark:bg-white/[0.05] border border-black/15 dark:border-white/15 outline-none text-black dark:text-white"
+                            />
+                          </div>
+                          <div className="sm:col-span-2 flex flex-col gap-0.5">
+                            <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
+                              PLACE (장소명)
+                            </span>
+                            <input
+                              type="text"
+                              value={item.placeName || item.location || ''}
+                              onChange={e => handleUpdateItemInCurrentSection(item.id, 'placeName', e.target.value)}
+                              placeholder="Place / Location"
+                              className="px-2 py-1 text-xs font-mono font-bold bg-black/[0.03] dark:bg-white/[0.05] border border-black/15 dark:border-white/15 outline-none text-black dark:text-white"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
+                              DATE (날짜)
+                            </span>
+                            <input
+                              type="text"
+                              value={item.date || ''}
+                              onChange={e => handleUpdateItemInCurrentSection(item.id, 'date', e.target.value)}
+                              placeholder="YYYY.MM.DD"
+                              className="px-2 py-1 text-xs font-mono bg-black/[0.03] dark:bg-white/[0.05] border border-black/15 dark:border-white/15 outline-none text-black dark:text-white"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  };
+
+                  return (
+                    <div className="flex flex-col gap-6 sm:gap-8">
+                      {rows.map((row, rowIdx) => {
+                        if (row.type === 'PPP') {
+                          return (
+                            <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 items-stretch">
+                              {renderAdminCuratedCard(row.items[0], { spanClass: 'md:col-span-1' })}
+                              {renderAdminCuratedCard(row.items[1], { spanClass: 'md:col-span-1' })}
+                              {renderAdminCuratedCard(row.items[2], { spanClass: 'md:col-span-1' })}
+                            </div>
+                          );
+                        }
+                        if (row.type === 'PL') {
+                          return (
+                            <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 items-stretch">
+                              {renderAdminCuratedCard(row.items[0], { spanClass: 'md:col-span-1' })}
+                              {renderAdminCuratedCard(row.items[1], { spanClass: 'md:col-span-2', isMatchedHeight: true })}
+                            </div>
+                          );
+                        }
+                        if (row.type === 'LP') {
+                          return (
+                            <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 items-stretch">
+                              {renderAdminCuratedCard(row.items[0], { spanClass: 'md:col-span-2', isMatchedHeight: true })}
+                              {renderAdminCuratedCard(row.items[1], { spanClass: 'md:col-span-1' })}
+                            </div>
+                          );
+                        }
+                        if (row.type === 'LL') {
+                          return (
+                            <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 items-stretch">
+                              {renderAdminCuratedCard(row.items[0], { spanClass: 'md:col-span-1' })}
+                              {renderAdminCuratedCard(row.items[1], { spanClass: 'md:col-span-1' })}
+                            </div>
+                          );
+                        }
+                        if (row.type === 'SINGLE_LANDSCAPE') {
+                          return (
+                            <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 items-stretch">
+                              {renderAdminCuratedCard(row.items[0], { spanClass: 'md:col-span-1' })}
+                            </div>
+                          );
+                        }
+                        if (row.type === 'PP') {
+                          return (
+                            <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 items-stretch">
+                              {renderAdminCuratedCard(row.items[0], { spanClass: 'md:col-span-1' })}
+                              {renderAdminCuratedCard(row.items[1], { spanClass: 'md:col-span-1' })}
+                            </div>
+                          );
+                        }
+                        if (row.type === 'SINGLE_PORTRAIT') {
+                          return (
+                            <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 items-stretch">
+                              {renderAdminCuratedCard(row.items[0], { spanClass: 'md:col-span-1' })}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
