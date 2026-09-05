@@ -81,7 +81,7 @@ export function StayCard({
   const [localStatus, setLocalStatus] = useState(stay.status);
   const [localTitle, setLocalTitle] = useState(stay.title);
   const [localConfNo, setLocalConfNo] = useState(stay.confNo);
-  const [localMemo, setLocalMemo] = useState(stay.memo);
+  const [localMemo, setLocalMemo] = useState(stay.memo === '메모를 입력하세요' ? '' : stay.memo);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
@@ -105,7 +105,7 @@ export function StayCard({
   }, [stay.confNo]);
 
   useEffect(() => {
-    setLocalMemo(stay.memo);
+    setLocalMemo(stay.memo === '메모를 입력하세요' ? '' : stay.memo);
   }, [stay.memo]);
 
   const uploadMultipleAdditionalImages = async (files: File[]) => {
@@ -348,7 +348,7 @@ export function StayCard({
           {isEditMode ? (
             <div onClick={(e) => e.stopPropagation()}>
               <PlaceAutocompleteInput
-                value={stay.address}
+                value={stay.address === '숙소 주소를 입력하세요' ? '' : stay.address}
                 onChange={(val) => onUpdate(stay.id, 'address', val)}
                 onSelectPlace={(name, coords, address) => {
                   if (onSelectPlace) {
@@ -358,7 +358,7 @@ export function StayCard({
                   }
                 }}
                 className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-xs md:text-sm text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full"
-                placeholder="Accommodation Address"
+                placeholder="숙소 주소를 입력하세요 (Google 검색)"
               />
             </div>
           ) : (
@@ -429,7 +429,7 @@ export function StayCard({
         </div>
 
         {/* ── Accordion Expandable Content (Settlement, Memo & Additional Photos) ── */}
-        {(isExpanded || isEditMode) && (
+        {isExpanded && (
           <div className="animate-in fade-in duration-200 space-y-4 pt-3">
             {/* Settlement Section */}
             {(isEditMode || (stay.cost && stay.cost !== '-')) && (
@@ -461,7 +461,7 @@ export function StayCard({
                   onBlur={() => onUpdate(stay.id, 'memo', localMemo)}
                   onClick={(e) => e.stopPropagation()}
                   className="bg-black/5 dark:bg-white/10 p-1.5 outline-none text-xs md:text-sm text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full resize-none h-16"
-                  placeholder="Enter details, room info, etc..."
+                  placeholder="메모를 입력하세요 (방 정보, 체크인 안내 등)"
                 />
               ) : (
                 <p className="text-black/80 dark:text-white/80 leading-relaxed whitespace-pre-wrap">

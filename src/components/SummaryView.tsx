@@ -2,7 +2,7 @@ import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { 
   FileText, Share2, Download, X, Calendar, MapPin, 
   Bed, Plane, Train, Landmark, ChevronDown, ChevronUp, ArrowDownRight, ArrowRight,
-  Copy, Check
+  Copy, Check, ChevronsUpDown, ChevronsDownUp
 } from 'lucide-react';
 import { Trip, TimelineItem, FlightItem, StayItem, TransitItem } from '../types';
 import html2canvas from 'html2canvas';
@@ -106,13 +106,63 @@ export function SummaryView({
 }: SummaryViewProps) {
   const [isCapturing, setIsCapturing] = useState(false);
   const [capturedImg, setCapturedImg] = useState<string | null>(null);
-  const [expandedStayId, setExpandedStayId] = useState<number | null>(0);
-  const [expandedFlightId, setExpandedFlightId] = useState<number | null>(0);
-  const [expandedTransitId, setExpandedTransitId] = useState<number | null>(null);
+  const [expandedStayIds, setExpandedStayIds] = useState<Set<number>>(() => new Set([0]));
+  const [expandedFlightIds, setExpandedFlightIds] = useState<Set<number>>(() => new Set([0]));
+  const [expandedTransitIds, setExpandedTransitIds] = useState<Set<number>>(() => new Set());
   const [isTransitExpanded, setIsTransitExpanded] = useState(false);
   const [isCostExpanded, setIsCostExpanded] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
+
+  const toggleStay = (idx: number) => {
+    setExpandedStayIds(prev => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+  };
+
+  const toggleFlight = (idx: number) => {
+    setExpandedFlightIds(prev => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+  };
+
+  const toggleTransit = (idx: number) => {
+    setExpandedTransitIds(prev => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+  };
+
+  const areAllExpanded = useMemo(() => {
+    const allStays = stays.every((_, i) => expandedStayIds.has(i));
+    const allFlights = flights.every((_, i) => expandedFlightIds.has(i));
+    const allTransits = transits.length === 0 || (isTransitExpanded && transits.every((_, i) => expandedTransitIds.has(i)));
+    return allStays && allFlights && allTransits && isCostExpanded;
+  }, [stays, flights, transits, expandedStayIds, expandedFlightIds, expandedTransitIds, isTransitExpanded, isCostExpanded]);
+
+  const handleToggleAll = () => {
+    if (areAllExpanded) {
+      setExpandedStayIds(new Set());
+      setExpandedFlightIds(new Set());
+      setExpandedTransitIds(new Set());
+      setIsTransitExpanded(false);
+      setIsCostExpanded(false);
+    } else {
+      setExpandedStayIds(new Set(stays.map((_, i) => i)));
+      setExpandedFlightIds(new Set(flights.map((_, i) => i)));
+      setExpandedTransitIds(new Set(transits.map((_, i) => i)));
+      setIsTransitExpanded(true);
+      setIsCostExpanded(true);
+    }
+  };
 
   const handleCopyAddress = (e: React.MouseEvent, addr: string) => {
     e.stopPropagation();
@@ -371,6 +421,21 @@ export function SummaryView({
 
   const handleCapture = async () => {
     setIsCapturing(true);
+
+    // Backup current states
+    const prevStays = new Set(expandedStayIds);
+    const prevFlights = new Set(expandedFlightIds);
+    const prevTransits = new Set(expandedTransitIds);
+    const prevTransitExp = isTransitExpanded;
+    const prevCostExp = isCostExpanded;
+
+    // Temporarily expand all for complete receipt capture
+    setExpandedStayIds(new Set(stays.map((_, i) => i)));
+    setExpandedFlightIds(new Set(flights.map((_, i) => i)));
+    setExpandedTransitIds(new Set(transits.map((_, i) => i)));
+    setIsTransitExpanded(true);
+    setIsCostExpanded(true);
+
     setTimeout(async () => {
       if (printRef.current) {
         try {
@@ -388,7 +453,7 @@ export function SummaryView({
             backgroundColor: isDark ? '#0A0A0A' : '#ffffff',
             scale: 2,
             windowWidth: 480,
-            ignoreElements: (element) => element.id === 'capture-exclude-btn',
+            ignoreElements: (element) => element.id === 'capture-exclude-btn' || element.id === 'toggle-all-exclude-btn',
           });
 
           el.style.maxWidth = origMaxWidth;
@@ -401,9 +466,17 @@ export function SummaryView({
           alert('이미지 생성에 실패했습니다.');
         } finally {
           setIsCapturing(false);
+          // Restore previous expansion states
+          setExpandedStayIds(prevStays);
+          setExpandedFlightIds(prevFlights);
+          setExpandedTransitIds(prevTransits);
+          setIsTransitExpanded(prevTransitExp);
+          setIsCostExpanded(prevCostExp);
         }
+      } else {
+        setIsCapturing(false);
       }
-    }, 150);
+    }, 200);
   };
 
   const handleSaveImage = () => {
@@ -471,16 +544,26 @@ export function SummaryView({
             </div>
 
             {!isCapturing && (
-              <button
-                id="capture-exclude-btn"
-                onClick={handleCapture}
-                className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black dark:text-white hover:opacity-60 transition-opacity cursor-pointer active:scale-95 shrink-0"
-              >
-                <span className="w-4 h-4 rounded-xs bg-black text-white dark:bg-white dark:text-black flex items-center justify-center">
-                  <ArrowDownRight className="w-3 h-3" />
-                </span>
-                <span>EXPORT SUMMARY</span>
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  id="toggle-all-exclude-btn"
+                  onClick={handleToggleAll}
+                  className="p-1 sm:p-1.5 border border-black/15 dark:border-white/15 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-xs transition-all cursor-pointer active:scale-95 flex items-center justify-center text-black dark:text-white"
+                  title={areAllExpanded ? "전체 접기 (Collapse All)" : "전체 펼치기 (Expand All)"}
+                >
+                  {areAllExpanded ? <ChevronsDownUp className="w-3.5 h-3.5" /> : <ChevronsUpDown className="w-3.5 h-3.5" />}
+                </button>
+                <button
+                  id="capture-exclude-btn"
+                  onClick={handleCapture}
+                  className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black dark:text-white hover:opacity-60 transition-opacity cursor-pointer active:scale-95 shrink-0"
+                >
+                  <span className="w-4 h-4 rounded-xs bg-black text-white dark:bg-white dark:text-black flex items-center justify-center">
+                    <ArrowDownRight className="w-3 h-3" />
+                  </span>
+                  <span>EXPORT SUMMARY</span>
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -488,41 +571,41 @@ export function SummaryView({
         {/* 2. Giant Typographic Metrics Grid (Inter Font, Consistent Size & Weight) */}
         <div className="py-6 border-y border-black dark:border-white grid grid-cols-2 lg:grid-cols-4 gap-y-6 gap-x-4 sm:gap-6 w-full font-sans">
           {/* Metric 1: Total Days */}
-          <div className="flex items-baseline gap-2 sm:gap-2.5 min-w-0">
-            <span className="text-4xl sm:text-5xl lg:text-6xl font-black font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
+          <div className="flex items-baseline gap-1.5 sm:gap-2.5 min-w-0 flex-wrap">
+            <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black font-sans tracking-tighter text-black dark:text-white leading-none">
               {totalDays < 10 ? `0${totalDays}` : totalDays}
             </span>
-            <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase">
+            <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase shrink-0">
               days
             </span>
           </div>
 
           {/* Metric 2: Recorded Spots */}
-          <div className="flex items-baseline gap-2 sm:gap-2.5 min-w-0">
-            <span className="text-4xl sm:text-5xl lg:text-6xl font-black font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
+          <div className="flex items-baseline gap-1.5 sm:gap-2.5 min-w-0 flex-wrap">
+            <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black font-sans tracking-tighter text-black dark:text-white leading-none">
               {recordedSpotsCount < 10 ? `0${recordedSpotsCount}` : recordedSpotsCount}
             </span>
-            <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase">
+            <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase shrink-0">
               spots
             </span>
           </div>
 
           {/* Metric 3: Flight Legs */}
-          <div className="flex items-baseline gap-2 sm:gap-2.5 min-w-0">
-            <span className="text-4xl sm:text-5xl lg:text-6xl font-black font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
+          <div className="flex items-baseline gap-1.5 sm:gap-2.5 min-w-0 flex-wrap">
+            <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black font-sans tracking-tighter text-black dark:text-white leading-none">
               {flights.length < 10 ? `0${flights.length}` : flights.length}
             </span>
-            <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase">
+            <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase shrink-0">
               flights
             </span>
           </div>
 
           {/* Metric 4: Total Estimated Budget ('240,-' European/Swiss editorial format) */}
-          <div className="flex items-baseline gap-2 sm:gap-2.5 min-w-0">
-            <span className="text-4xl sm:text-5xl lg:text-6xl font-black font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
+          <div className="flex items-baseline gap-1.5 sm:gap-2.5 min-w-0 flex-wrap">
+            <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black font-sans tracking-tighter text-black dark:text-white leading-none break-all">
               {Math.round(totalInBaseCurrency / 1000).toLocaleString()},-
             </span>
-            <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase">
+            <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase shrink-0">
               cost
             </span>
           </div>
@@ -546,13 +629,13 @@ export function SummaryView({
           <div className="divide-y divide-black/15 dark:divide-white/15">
             {stays.length > 0 ? (
               stays.map((s, idx) => {
-                const isOpen = expandedStayId === idx;
+                const isOpen = expandedStayIds.has(idx);
                 const isDefaultMemo = !s.memo || s.memo.trim() === '' || s.memo.includes('일정을 입력') || s.memo.includes('메모를 입력');
                 const nights = calculateStayNights(s.dateRange);
                 return (
                   <div key={idx} className="py-3.5 transition-colors">
                     <div 
-                      onClick={() => setExpandedStayId(isOpen ? null : idx)}
+                      onClick={() => toggleStay(idx)}
                       className="flex items-center justify-between gap-3 cursor-pointer select-none group"
                     >
                       <span className="font-bold text-sm sm:text-base text-black dark:text-white font-sans group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
@@ -627,11 +710,11 @@ export function SummaryView({
           <div className="divide-y divide-black/15 dark:divide-white/15">
             {flights.length > 0 ? (
               flights.map((f, idx) => {
-                const isOpen = expandedFlightId === idx;
+                const isOpen = expandedFlightIds.has(idx);
                 return (
                   <div key={idx} className="py-3.5 transition-colors">
                     <div 
-                      onClick={() => setExpandedFlightId(isOpen ? null : idx)}
+                      onClick={() => toggleFlight(idx)}
                       className="flex items-center justify-between gap-3 cursor-pointer select-none group"
                     >
                       <div className="flex items-center gap-3">
@@ -715,14 +798,14 @@ export function SummaryView({
             {isTransitExpanded && (
               <div className="divide-y divide-black/15 dark:divide-white/15 animate-in fade-in duration-150 pl-1">
                 {transits.map((t, idx) => {
-                  const isOpen = expandedTransitId === idx;
+                  const isOpen = expandedTransitIds.has(idx);
                   const eType = getEffectiveTransitType(t);
                   const isCar = eType === 'rental';
 
                   return (
                     <div key={idx} className="py-3 transition-colors">
                       <div 
-                        onClick={() => setExpandedTransitId(isOpen ? null : idx)}
+                        onClick={() => toggleTransit(idx)}
                         className="flex items-center justify-between gap-3 cursor-pointer select-none group"
                       >
                         <div className="flex items-center gap-2 sm:gap-3">

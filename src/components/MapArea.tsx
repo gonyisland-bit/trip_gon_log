@@ -387,11 +387,11 @@ export function MapArea({
       
       if (coords.length > 0) {
         const bounds = L.latLngBounds(coords);
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 10, animate: true });
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 13, animate: true });
       } else {
         const lat = typeof trip.lat === 'number' && !isNaN(trip.lat) ? trip.lat : 35.0116;
         const lng = typeof trip.lng === 'number' && !isNaN(trip.lng) ? trip.lng : 135.7681;
-        map.setView([lat, lng], 10, { animate: true });
+        map.setView([lat, lng], 12, { animate: true });
       }
       return;
     }
@@ -526,11 +526,11 @@ export function MapArea({
       if (activeTab === 'summary') {
         if (coords.length > 0) {
           const bounds = L.latLngBounds(coords);
-          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 10, animate: true });
+          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 13, animate: true });
         } else {
           const lat = typeof trip.lat === 'number' && !isNaN(trip.lat) ? trip.lat : 35.0116;
           const lng = typeof trip.lng === 'number' && !isNaN(trip.lng) ? trip.lng : 135.7681;
-          map.setView([lat, lng], 10, { animate: true });
+          map.setView([lat, lng], 12, { animate: true });
         }
         
         if (summaryCircleRef.current) {

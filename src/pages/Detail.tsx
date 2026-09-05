@@ -2710,8 +2710,8 @@ export function JourneyDetailPage({
       status: 'BOOKING CONFIRMED',
       title: '새로운 숙소',
       dateRange: 'YYYY.MM.DD - YYYY.MM.DD (0 Nights)',
-      address: '숙소 주소를 입력하세요',
-      memo: '메모를 입력하세요',
+      address: '',
+      memo: '',
       confNo: 'HTL-0000',
       img: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=800&auto=format&fit=crop',
     };

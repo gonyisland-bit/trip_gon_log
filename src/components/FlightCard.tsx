@@ -480,13 +480,15 @@ export function FlightCard({
                   onUpdate(flight.id, 'toTerminal', tempTerminal);
                   onUpdate(flight.id, 'toTime', tempTime);
                 }}
-                className="p-1 sm:p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors flex items-center justify-center text-red-600 dark:text-red-400 border border-black/10 dark:border-white/10 bg-[#F9F8F6] dark:bg-[#161616] cursor-pointer"
+                className="mb-1.5 sm:mb-2 p-1 sm:p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors flex items-center justify-center text-red-600 dark:text-red-400 border border-black/10 dark:border-white/10 bg-[#F9F8F6] dark:bg-[#161616] cursor-pointer"
                 title="출발지/도착지 반전"
               >
                 <RefreshCw className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               </button>
             ) : (
-              <Plane className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/40 dark:text-white/40 rotate-90" />
+              <div className="mb-2 sm:mb-2.5 flex items-center justify-center">
+                <Plane className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/40 dark:text-white/40 rotate-90 shrink-0 overflow-visible" />
+              </div>
             )}
             
             <div className="h-[1px] w-8 sm:w-14 md:w-20 bg-black/20 dark:bg-white/20 my-1 relative flex items-center justify-center">
