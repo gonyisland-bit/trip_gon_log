@@ -916,6 +916,22 @@ export function ManageHubPage({
     }));
   };
 
+  const handleSetAsHeroFromItem = (item: MagazineItem) => {
+    if (!currentMagSection) return;
+    setSectionsList(prev => prev.map(s => {
+      if (s.id === currentMagSection.id) {
+        return {
+          ...s,
+          heroImg: item.img || '',
+          heroDate: item.date || s.heroDate || '',
+          heroLocation: item.placeName || item.location || s.heroLocation || '',
+          heroTripId: item.tripId || s.heroTripId,
+        };
+      }
+      return s;
+    }));
+  };
+
   // Save Magazine Sections & Moments
   const handleSaveMagazine = async () => {
     if (isSavingMagazine) return;
@@ -946,6 +962,20 @@ export function ManageHubPage({
     )
   );
 
+  const getReturnView = () => {
+    switch (activeMode) {
+      case 'MAGAZINE':
+        return 'magazine';
+      case 'ARCHIVE':
+        return 'archive';
+      case 'MAP':
+        return 'map';
+      case 'HOME':
+      default:
+        return 'home';
+    }
+  };
+
   return (
     <main className="min-h-screen w-full bg-[#FAF9F6] dark:bg-[#141414] text-black dark:text-white flex flex-col font-sans select-none animate-in fade-in duration-300">
       
@@ -954,8 +984,7 @@ export function ManageHubPage({
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
-              const returnView = sessionStorage.getItem('lastNonManageView') || 'archive';
-              onNavigate(returnView);
+              onNavigate(getReturnView());
             }}
             className="p-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer rounded-none"
             title="돌아가기"
@@ -2624,7 +2653,65 @@ export function ManageHubPage({
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Hero Live Preview (실제 비율로 시원하게 라이브 로딩) */}
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                      HERO LIVE PREVIEW (히어로 실제 비율 미리보기)
+                    </span>
+                    <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                      * 하단 큐레이팅 사진에서 [★ SET AS HERO]를 클릭하면 즉시 반영됩니다.
+                    </span>
+                  </div>
+
+                  <div className="w-full h-44 sm:h-56 md:h-64 relative overflow-hidden bg-black/10 dark:bg-white/5 border border-black/15 dark:border-white/15 group">
+                    {currentMagSection.heroImg ? (
+                      <>
+                        <img
+                          src={getEffectiveImageUrl(currentMagSection.heroImg)}
+                          alt={currentMagSection.heroTitle || 'Hero'}
+                          className="w-full h-full object-cover object-center"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
+                        <div className="absolute inset-0 p-5 sm:p-8 flex flex-col justify-between text-white pointer-events-none">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-mono font-bold uppercase tracking-widest px-2 py-0.5 bg-black/60 backdrop-blur-xs border border-white/20">
+                              HERO PREVIEW
+                            </span>
+                            {currentMagSection.heroLocation && (
+                              <span className="text-[11px] font-mono tracking-widest uppercase text-white/80">
+                                {currentMagSection.heroLocation}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            {currentMagSection.heroDate && (
+                              <span className="text-[11px] font-mono uppercase tracking-widest text-white/70 block mb-1">
+                                {currentMagSection.heroDate}
+                              </span>
+                            )}
+                            <h2 className="text-xl sm:text-2xl md:text-3xl font-serif font-black uppercase tracking-tight text-white drop-shadow-md line-clamp-2">
+                              {currentMagSection.heroTitle || 'SECTION HERO TITLE'}
+                            </h2>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-center p-6 text-black/40 dark:text-white/40">
+                        <Sparkles className="w-6 h-6 opacity-40" />
+                        <span className="text-xs font-mono font-bold uppercase tracking-wider">
+                          히어로 이미지가 지정되지 않았습니다.
+                        </span>
+                        <span className="text-[11px] font-mono">
+                          하단 큐레이팅된 사진 목록에서 [★ SET AS HERO] 버튼을 눌러 지정해주세요.
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Simplified Section Settings Form */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-black/10 dark:border-white/10">
                   {/* Section Title */}
                   <div className="flex flex-col gap-1">
                     <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
@@ -2636,20 +2723,6 @@ export function ManageHubPage({
                       onChange={e => handleUpdateSectionField(currentMagSection.id, 'title', e.target.value)}
                       placeholder="e.g. TOKYO VIBES, JEJU ISLAND"
                       className="px-3 py-2 text-xs font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none uppercase text-black dark:text-white"
-                    />
-                  </div>
-
-                  {/* Section Subtitle */}
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
-                      SECTION SUBTITLE / MEMO (부제목·설명)
-                    </label>
-                    <input
-                      type="text"
-                      value={currentMagSection.subtitle || ''}
-                      onChange={e => handleUpdateSectionField(currentMagSection.id, 'subtitle', e.target.value)}
-                      placeholder="e.g. Curated Moments & Stories"
-                      className="px-3 py-2 text-xs font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
                     />
                   </div>
 
@@ -2667,82 +2740,23 @@ export function ManageHubPage({
                     />
                   </div>
 
-                  {/* Hero Subtitle */}
+                  {/* Linked Trip */}
                   <div className="flex flex-col gap-1">
                     <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
-                      HERO SUBTITLE / QUOTE (히어로 인용문·서브텍스트)
+                      LINKED JOURNEY (연계 여정 상세 연결)
                     </label>
-                    <input
-                      type="text"
-                      value={currentMagSection.heroSubtitle || ''}
-                      onChange={e => handleUpdateSectionField(currentMagSection.id, 'heroSubtitle', e.target.value)}
-                      placeholder="e.g. 나만의 감성으로 기록하고 기억하는 순간들"
-                      className="px-3 py-2 text-xs bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
-                    />
-                  </div>
-
-                  {/* Hero Date */}
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
-                      HERO DATE (히어로 날짜)
-                    </label>
-                    <input
-                      type="text"
-                      value={currentMagSection.heroDate || ''}
-                      onChange={e => handleUpdateSectionField(currentMagSection.id, 'heroDate', e.target.value)}
-                      placeholder="e.g. 2024.07.19 — 2024.07.24"
-                      className="px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
-                    />
-                  </div>
-
-                  {/* Hero Location */}
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
-                      HERO LOCATION (히어로 장소)
-                    </label>
-                    <input
-                      type="text"
-                      value={currentMagSection.heroLocation || ''}
-                      onChange={e => handleUpdateSectionField(currentMagSection.id, 'heroLocation', e.target.value)}
-                      placeholder="e.g. TOKYO, JAPAN"
-                      className="px-3 py-2 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none uppercase text-black dark:text-white"
-                    />
-                  </div>
-
-                  {/* Hero Image URL & Linked Trip */}
-                  <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
-                        HERO IMAGE URL (히어로 대표 이미지)
-                      </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={currentMagSection.heroImg || ''}
-                          onChange={e => handleUpdateSectionField(currentMagSection.id, 'heroImg', e.target.value)}
-                          placeholder="https://..."
-                          className="flex-1 px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
-                        LINKED JOURNEY (연계 여정 상세 연결)
-                      </label>
-                      <select
-                        value={currentMagSection.heroTripId || ''}
-                        onChange={e => handleUpdateSectionField(currentMagSection.id, 'heroTripId', e.target.value ? Number(e.target.value) : undefined)}
-                        className="px-3 py-2 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
-                      >
-                        <option value="">-- NO LINKED JOURNEY --</option>
-                        {localJourneys.map(j => (
-                          <option key={j.id} value={j.id}>
-                            {j.title.replace(/\s*\(Plan\)$/i, '')} ({j.locationStr || j.country})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <select
+                      value={currentMagSection.heroTripId || ''}
+                      onChange={e => handleUpdateSectionField(currentMagSection.id, 'heroTripId', e.target.value ? Number(e.target.value) : undefined)}
+                      className="px-3 py-2 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                    >
+                      <option value="">-- NO LINKED JOURNEY --</option>
+                      {localJourneys.map(j => (
+                        <option key={j.id} value={j.id}>
+                          {j.title.replace(/\s*\(Plan\)$/i, '')} ({j.locationStr || j.country})
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
@@ -2770,133 +2784,159 @@ export function ManageHubPage({
                   </div>
                 ) : (
                   <div className="flex flex-col gap-3">
-                    {currentMagSection.items.map((item, idx) => (
-                      <div
-                        key={item.id || idx}
-                        className="flex flex-col md:flex-row items-start md:items-center gap-3 p-3 bg-white dark:bg-[#161616] border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white transition-all shadow-xs"
-                      >
-                        {/* Thumbnail */}
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 border border-black/10 dark:border-white/10 overflow-hidden bg-black/10">
-                          <img
-                            src={getEffectiveImageUrl(item.img)}
-                            alt={item.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-
-                        {/* Fields */}
-                        <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 w-full">
-                          {/* Title */}
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
-                              TITLE (타이틀)
-                            </span>
-                            <input
-                              type="text"
-                              value={item.title || ''}
-                              onChange={e => handleUpdateItemInCurrentSection(item.id, 'title', e.target.value)}
-                              placeholder="Title"
-                              className="px-2 py-1 text-xs font-bold font-serif bg-transparent border-b border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                    {currentMagSection.items.map((item, idx) => {
+                      const isItemHero = currentMagSection.heroImg === item.img;
+                      return (
+                        <div
+                          key={item.id || idx}
+                          className={`flex flex-col md:flex-row items-start md:items-center gap-3 p-3 bg-white dark:bg-[#161616] border transition-all shadow-xs ${
+                            isItemHero 
+                              ? 'border-black dark:border-white ring-1 ring-black dark:ring-white' 
+                              : 'border-black/15 dark:border-white/15 hover:border-black/50 dark:hover:border-white/50'
+                          }`}
+                        >
+                          {/* Thumbnail */}
+                          <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 border border-black/10 dark:border-white/10 overflow-hidden bg-black/10 relative group">
+                            <img
+                              src={getEffectiveImageUrl(item.img)}
+                              alt={item.title}
+                              className="w-full h-full object-cover"
                             />
+                            {isItemHero && (
+                              <div className="absolute top-1 left-1 bg-black text-white dark:bg-white dark:text-black text-[8px] font-mono font-bold px-1 py-0.5">
+                                HERO ★
+                              </div>
+                            )}
                           </div>
 
-                          {/* Place Name (Google Autocomplete) */}
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
-                              PLACE (장소명)
-                            </span>
-                            <input
-                              type="text"
-                              value={item.placeName || item.location || ''}
-                              onChange={e => handleUpdateItemInCurrentSection(item.id, 'placeName', e.target.value)}
-                              placeholder="Place / Spot"
-                              className="px-2 py-1 text-xs font-mono font-bold bg-transparent border-b border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
-                            />
+                          {/* Fields */}
+                          <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 w-full">
+                            {/* Title */}
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
+                                TITLE (타이틀)
+                              </span>
+                              <input
+                                type="text"
+                                value={item.title || ''}
+                                onChange={e => handleUpdateItemInCurrentSection(item.id, 'title', e.target.value)}
+                                placeholder="Title"
+                                className="px-2 py-1 text-xs font-bold font-serif bg-transparent border-b border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                              />
+                            </div>
+
+                            {/* Place Name (Google Autocomplete) */}
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
+                                PLACE (장소명)
+                              </span>
+                              <input
+                                type="text"
+                                value={item.placeName || item.location || ''}
+                                onChange={e => handleUpdateItemInCurrentSection(item.id, 'placeName', e.target.value)}
+                                placeholder="Place / Spot"
+                                className="px-2 py-1 text-xs font-mono font-bold bg-transparent border-b border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                              />
+                            </div>
+
+                            {/* Date */}
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
+                                DATE (날짜)
+                              </span>
+                              <input
+                                type="text"
+                                value={item.date || ''}
+                                onChange={e => handleUpdateItemInCurrentSection(item.id, 'date', e.target.value)}
+                                placeholder="YYYY.MM.DD"
+                                className="px-2 py-1 text-xs font-mono bg-transparent border-b border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                              />
+                            </div>
+
+                            {/* Layout Type Selector */}
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
+                                LAYOUT TYPE (잡지 비율)
+                              </span>
+                              <select
+                                value={item.layoutType || 'normal'}
+                                onChange={e => handleUpdateItemInCurrentSection(item.id, 'layoutType', e.target.value)}
+                                className="px-2 py-1 text-xs font-mono font-bold bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                              >
+                                <option value="normal">NORMAL (3:4 세로 1열)</option>
+                                <option value="tall">TALL (2:3 긴세로 1열)</option>
+                                <option value="wide">WIDE (16:9 와이드 2열)</option>
+                                <option value="large">LARGE (4:3 피처 2열)</option>
+                              </select>
+                            </div>
+
+                            {/* Caption & Quote Span 4 */}
+                            <div className="sm:col-span-2 md:col-span-4 grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-black/5 dark:border-white/5 mt-1">
+                              <input
+                                type="text"
+                                value={item.caption || ''}
+                                onChange={e => handleUpdateItemInCurrentSection(item.id, 'caption', e.target.value)}
+                                placeholder="Editorial Caption / Short Memo (에디토리얼 메모)"
+                                className="px-2 py-0.5 text-[11px] bg-transparent border-b border-black/10 dark:border-white/10 outline-none text-black/70 dark:text-white/70"
+                              />
+                              <input
+                                type="text"
+                                value={item.quote || ''}
+                                onChange={e => handleUpdateItemInCurrentSection(item.id, 'quote', e.target.value)}
+                                placeholder="“Quote / Phrase” (인용구)"
+                                className="px-2 py-0.5 text-[11px] font-serif italic bg-transparent border-b border-black/10 dark:border-white/10 outline-none text-black/70 dark:text-white/70"
+                              />
+                            </div>
                           </div>
 
-                          {/* Date */}
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
-                              DATE (날짜)
-                            </span>
-                            <input
-                              type="text"
-                              value={item.date || ''}
-                              onChange={e => handleUpdateItemInCurrentSection(item.id, 'date', e.target.value)}
-                              placeholder="YYYY.MM.DD"
-                              className="px-2 py-1 text-xs font-mono bg-transparent border-b border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
-                            />
-                          </div>
-
-                          {/* Layout Type Selector */}
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-[9px] font-mono font-bold uppercase text-black/50 dark:text-white/50">
-                              LAYOUT TYPE (잡지 비율)
-                            </span>
-                            <select
-                              value={item.layoutType || 'normal'}
-                              onChange={e => handleUpdateItemInCurrentSection(item.id, 'layoutType', e.target.value)}
-                              className="px-2 py-1 text-xs font-mono font-bold bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
-                            >
-                              <option value="normal">NORMAL (3:4 세로 1열)</option>
-                              <option value="tall">TALL (2:3 긴세로 1열)</option>
-                              <option value="wide">WIDE (16:9 와이드 2열)</option>
-                              <option value="large">LARGE (4:3 피처 2열)</option>
-                            </select>
-                          </div>
-
-                          {/* Caption & Quote Span 4 */}
-                          <div className="sm:col-span-2 md:col-span-4 grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-black/5 dark:border-white/5 mt-1">
-                            <input
-                              type="text"
-                              value={item.caption || ''}
-                              onChange={e => handleUpdateItemInCurrentSection(item.id, 'caption', e.target.value)}
-                              placeholder="Editorial Caption / Short Memo (에디토리얼 메모)"
-                              className="px-2 py-0.5 text-[11px] bg-transparent border-b border-black/10 dark:border-white/10 outline-none text-black/70 dark:text-white/70"
-                            />
-                            <input
-                              type="text"
-                              value={item.quote || ''}
-                              onChange={e => handleUpdateItemInCurrentSection(item.id, 'quote', e.target.value)}
-                              placeholder="“Quote / Phrase” (인용구)"
-                              className="px-2 py-0.5 text-[11px] font-serif italic bg-transparent border-b border-black/10 dark:border-white/10 outline-none text-black/70 dark:text-white/70"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Order & Remove Action Buttons */}
-                        <div className="flex md:flex-col items-center gap-1 shrink-0 self-end md:self-center">
-                          <div className="flex items-center gap-1">
+                          {/* Hero Selector & Order & Remove Action Buttons */}
+                          <div className="flex md:flex-col items-center gap-1.5 shrink-0 self-end md:self-center">
+                            {/* Set as Hero Button */}
                             <button
                               type="button"
-                              onClick={() => handleMoveItemInCurrentSection(idx, 'up')}
-                              disabled={idx === 0}
-                              className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
-                              title="위로 이동"
+                              onClick={() => handleSetAsHeroFromItem(item)}
+                              className={`px-2 py-1 text-[10px] font-mono font-bold uppercase transition-colors cursor-pointer border ${
+                                isItemHero
+                                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                                  : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black'
+                              }`}
+                              title="이 사진을 섹션 히어로로 지정"
                             >
-                              <ChevronUp className="w-3.5 h-3.5" />
+                              {isItemHero ? '★ HERO' : 'SET AS HERO'}
                             </button>
+
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handleMoveItemInCurrentSection(idx, 'up')}
+                                disabled={idx === 0}
+                                className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
+                                title="위로 이동"
+                              >
+                                <ChevronUp className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleMoveItemInCurrentSection(idx, 'down')}
+                                disabled={idx === currentMagSection.items.length - 1}
+                                className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
+                                title="아래로 이동"
+                              >
+                                <ChevronDown className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                             <button
                               type="button"
-                              onClick={() => handleMoveItemInCurrentSection(idx, 'down')}
-                              disabled={idx === currentMagSection.items.length - 1}
-                              className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
-                              title="아래로 이동"
+                              onClick={() => handleRemoveItemFromCurrentSection(item.id)}
+                              className="p-1 text-red-500 hover:bg-red-500/10 border border-red-500/30 cursor-pointer"
+                              title="삭제"
                             >
-                              <ChevronDown className="w-3.5 h-3.5" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveItemFromCurrentSection(item.id)}
-                            className="p-1 text-red-500 hover:bg-red-500/10 border border-red-500/30 cursor-pointer mt-0.5"
-                            title="삭제"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -3255,16 +3295,17 @@ export function ManageHubPage({
           onClick={() => {
             if (activeMode === 'HOME') handleSaveHome();
             else if (activeMode === 'ARCHIVE') handleSaveJourney();
+            else if (activeMode === 'MAGAZINE') handleSaveMagazine();
           }}
-          disabled={activeMode === 'HOME' ? isSavingHome : (activeMode === 'ARCHIVE' ? isSavingTrip : false)}
+          disabled={activeMode === 'HOME' ? isSavingHome : (activeMode === 'ARCHIVE' ? isSavingTrip : (activeMode === 'MAGAZINE' ? isSavingMagazine : false))}
           className={`w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-all cursor-pointer border ${
-            (homeSaveSuccess || tripSaveSuccess)
+            (homeSaveSuccess || tripSaveSuccess || magazineSaveSuccess)
               ? 'bg-green-600 text-white border-green-600 scale-105'
               : 'bg-black text-white dark:bg-white dark:text-black border-white/20 dark:border-black/20 hover:scale-110 active:scale-95'
           }`}
           title="변경사항 저장 (단축키: Ctrl + S)"
         >
-          {(homeSaveSuccess || tripSaveSuccess) ? (
+          {(homeSaveSuccess || tripSaveSuccess || magazineSaveSuccess) ? (
             <Check className="w-5 h-5 animate-in zoom-in" />
           ) : (
             <Save className="w-5 h-5" />
@@ -3275,10 +3316,10 @@ export function ManageHubPage({
         <button
           type="button"
           onClick={() => {
-            onNavigate('home');
+            onNavigate(getReturnView());
           }}
           className="w-12 h-12 rounded-full flex items-center justify-center shadow-2xl bg-white dark:bg-[#1a1a1a] text-black dark:text-white border border-black/15 dark:border-white/15 hover:scale-110 active:scale-95 transition-all cursor-pointer"
-          title="홈 뷰 모드로 이동"
+          title="뷰 모드로 이동"
         >
           <Eye className="w-5 h-5" />
         </button>

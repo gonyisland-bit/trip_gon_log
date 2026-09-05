@@ -187,26 +187,19 @@ export function Lightbox({
       const timeSinceLast = now - lastWheelTimeRef.current;
       lastWheelTimeRef.current = now;
 
-      // Detect rapid successive wheel events for acceleration
-      if (timeSinceLast < 140) {
-        wheelVelocityRef.current = Math.min(wheelVelocityRef.current + 0.4, 4.5);
+      // Detect rapid successive wheel events for smooth acceleration
+      if (timeSinceLast < 110) {
+        wheelVelocityRef.current = Math.min(wheelVelocityRef.current + 0.3, 3.5);
       } else {
         wheelVelocityRef.current = 1.0;
       }
 
       const sign = Math.sign(e.deltaY);
-      const absDelta = Math.abs(e.deltaY);
+      // Single notch moves exactly 1 thumbnail (56px), accelerating only on continuous spin
+      const moveDistance = 56 * wheelVelocityRef.current;
+      const finalDelta = sign * moveDistance;
 
-      // Base step per single gentle notch (~56px = exactly 1 thumbnail width)
-      let moveDistance = 56;
-      if (absDelta > 120) {
-        // High native delta from touchpad or free-spinning wheel
-        moveDistance = 56 + Math.pow(absDelta / 100, 1.3) * 35;
-      }
-
-      const finalDelta = sign * moveDistance * wheelVelocityRef.current;
       container.scrollLeft += finalDelta;
-
       scheduleThumbnailSettle();
     }
   };

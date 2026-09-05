@@ -131,7 +131,7 @@ export function MagazineHubPage({
       {/* 1. HERO SECTION (Editorial Large Hero Banner with Typography)        */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       {currentSection && (
-        <section className="relative w-full h-[65vh] sm:h-[75vh] md:h-[82vh] overflow-hidden bg-black select-none group">
+        <section className="relative w-full h-[46vh] sm:h-[52vh] md:h-[58vh] max-h-[560px] min-h-[320px] overflow-hidden bg-black select-none group">
           {/* Background Image */}
           {currentSection.heroImg ? (
             <img
@@ -148,7 +148,7 @@ export function MagazineHubPage({
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent hidden md:block" />
 
           {/* Hero Top Bar: Issue / Volume / Section Badge */}
-          <div className="absolute top-6 sm:top-8 left-6 sm:left-12 right-6 sm:right-12 z-20 flex items-center justify-between text-white/80">
+          <div className="absolute top-5 sm:top-6 left-6 sm:left-12 right-6 sm:right-12 z-20 flex items-center justify-between text-white/80">
             <div className="flex items-center gap-3">
               <span className="text-[10px] sm:text-xs font-mono font-bold tracking-widest uppercase bg-white/20 backdrop-blur-md px-2.5 py-1 border border-white/20">
                 MAGAZINE ISSUE #{String(effectiveSections.findIndex(s => s.id === currentSection.id) + 1).padStart(2, '0')}
@@ -173,7 +173,7 @@ export function MagazineHubPage({
           </div>
 
           {/* Hero Content (Centered Bottom Editorial Typography) */}
-          <div className="absolute bottom-10 sm:bottom-16 left-6 sm:left-12 right-6 sm:right-12 z-20 max-w-4xl flex flex-col gap-3 sm:gap-4 text-white">
+          <div className="absolute bottom-8 sm:bottom-12 left-6 sm:left-12 right-6 sm:right-12 z-20 max-w-4xl flex flex-col gap-2.5 sm:gap-3 text-white">
             {/* Meta Tags: Date & Location */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-[11px] sm:text-xs font-mono tracking-widest uppercase text-white/70">
               {currentSection.heroDate && (
@@ -194,20 +194,13 @@ export function MagazineHubPage({
             </div>
 
             {/* Bold Large Editorial Title */}
-            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-serif font-normal tracking-tight leading-[1.08] text-white drop-shadow-sm">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif font-normal tracking-tight leading-[1.08] text-white drop-shadow-sm">
               {currentSection.heroTitle || currentSection.title}
             </h1>
 
-            {/* Subtitle / Quote */}
-            {currentSection.heroSubtitle && (
-              <p className="text-xs sm:text-sm md:text-base font-light text-white/80 max-w-2xl leading-relaxed tracking-wide">
-                {currentSection.heroSubtitle}
-              </p>
-            )}
-
             {/* Link to Journey Detail */}
             {heroTrip && (
-              <div className="pt-2">
+              <div className="pt-1">
                 <button
                   type="button"
                   onClick={() => onNavigate('detail', heroTrip.id)}
@@ -223,7 +216,7 @@ export function MagazineHubPage({
       )}
 
       {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* 2. SECTION NAVIGATOR / SELECTOR (Editorial Tabs & Dropdown)           */}
+      {/* 2. SECTION NAVIGATOR / SELECTOR (Editorial Tabs)                     */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       <div className="sticky top-14 sm:top-16 z-30 w-full bg-[#FAF9F6]/95 dark:bg-[#111111]/95 backdrop-blur-md border-b border-black/10 dark:border-white/10 px-4 sm:px-8 md:px-12 py-3 transition-colors">
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -258,7 +251,7 @@ export function MagazineHubPage({
           <div className="hidden lg:flex items-center gap-3 text-xs font-mono text-black/40 dark:text-white/40">
             <BookOpen className="w-4 h-4" />
             <span className="uppercase tracking-wider">
-              {currentSection?.subtitle || 'CURATED TRAVEL ARCHIVE'}
+              {currentSection?.title || 'MAGAZINE'}
             </span>
           </div>
         </div>
@@ -278,11 +271,6 @@ export function MagazineHubPage({
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif font-normal tracking-tight text-black dark:text-white">
               {currentSection?.title}
             </h2>
-            {currentSection?.subtitle && (
-              <p className="text-xs sm:text-sm font-sans text-black/60 dark:text-white/60 max-w-xl mt-1">
-                {currentSection.subtitle}
-              </p>
-            )}
           </div>
 
           <div className="text-xs font-mono text-black/40 dark:text-white/40 shrink-0">
