@@ -23,6 +23,24 @@ import {
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { Lightbox } from '../components/Lightbox';
 
+// Helper for minimal date + day format (e.g. 2024.07.19 FRI)
+function formatSimpleDateWithDay(dateStr?: string): string {
+  if (!dateStr) return '';
+  const clean = dateStr.trim();
+  const match = clean.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})/);
+  if (!match) return dateStr;
+  const year = parseInt(match[1], 10);
+  const month = parseInt(match[2], 10) - 1;
+  const day = parseInt(match[3], 10);
+  const d = new Date(year, month, day);
+  if (isNaN(d.getTime())) return dateStr;
+  const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const dayName = days[d.getDay()];
+  const monthStr = String(month + 1).padStart(2, '0');
+  const dayStr = String(day).padStart(2, '0');
+  return `${year}.${monthStr}.${dayStr} ${dayName}`;
+}
+
 interface MagazineHubPageProps {
   sections: MagazineSection[];
   trips: Trip[];
@@ -163,7 +181,6 @@ export function MagazineHubPage({
                     ...t,
                     place: (typeof g !== 'string' && g?.place) || t.place,
                     location: (typeof g !== 'string' && g?.location) || t.location,
-                    imgNote: (typeof g !== 'string' && g?.imgNote) || t.imgNote,
                     date: (typeof g !== 'string' && g?.date) || t.date,
                   });
                 }
@@ -183,18 +200,25 @@ export function MagazineHubPage({
         const matched = timelineByUrl.get(item.img) || timelineByUrl.get(getEffectiveImageUrl(item.img));
         if (matched) {
           const parentTrip = trips.find(t => t.id === (matched.tripId || item.tripId));
-          const pName = matched.place || '';
-          const jTitle = parentTrip?.title || '';
-          const jLoc = parentTrip?.locationStr || (parentTrip?.locations && parentTrip.locations[0]?.name) || '';
-          const locStr = matched.location || pName;
+          const pName = matched.place?.trim() || '';
+          const jTitle = parentTrip?.title?.replace(/\s*\(Plan\)$/i, '') || '';
+          
+          let resolvedLocation = '';
+          if (matched.location) {
+            if (typeof matched.location === 'string' && matched.location.trim()) {
+              resolvedLocation = matched.location.trim().split(',')[0].trim();
+            } else if (typeof matched.location === 'object' && (matched.location as any)?.name) {
+              resolvedLocation = (matched.location as any).name;
+            }
+          }
 
           return {
             ...item,
+            tripId: matched.tripId || item.tripId,
             title: pName || jTitle || item.title,
-            placeName: locStr || item.placeName,
-            location: jLoc || item.location,
+            placeName: resolvedLocation || item.placeName || item.location || pName,
+            location: resolvedLocation || item.location || pName,
             date: matched.date || item.date,
-            caption: matched.imgNote || matched.memo || item.caption,
           };
         }
         return item;
@@ -207,7 +231,7 @@ export function MagazineHubPage({
       url: getEffectiveImageUrl(item.img),
       date: item.date,
       place: item.placeName || item.location,
-      imgNote: item.caption || item.quote || item.title,
+      imgNote: item.title,
     }));
   }, [sectionItems]);
 
@@ -333,22 +357,48 @@ export function MagazineHubPage({
       );
     }
 
+    // Extract Home Magazine Card properties
+    const displayTitle = item.title;
+    const rawDate = item.date;
+    const dateWithDay = formatSimpleDateWithDay(rawDate);
+    const displayPlace = item.placeName || item.location || 'VISITED PLACE';
+
+    // Direct jump handler to journey timeline
+    const handleJumpToTimeline = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (item.tripId) {
+        try {
+          localStorage.setItem('pending_detail_jump', JSON.stringify({
+            tab: 'timeline',
+            imgUrl: item.img,
+            date: rawDate,
+            placeName: displayPlace,
+            title: displayTitle
+          }));
+        } catch (err) {
+          console.warn(err);
+        }
+        onNavigate('detail', item.tripId);
+      }
+    };
+
     // Photo Card Rendering
     return (
       <article
         key={item.id || itemIndex}
-        className={`group flex flex-col gap-4 w-full h-full transition-all duration-300 ${options.spanClass || ''}`}
+        className={`group relative flex flex-col justify-between w-full h-full transition-all duration-300 select-none bg-transparent border-none shadow-none ${options.spanClass || ''}`}
       >
+        {/* 1. Photo Section */}
         <div
           onClick={() => setLightboxIndex(itemIndex)}
           className={`relative ${visualFrameClass} overflow-hidden bg-black/5 dark:bg-white/5 cursor-pointer border border-black/10 dark:border-white/10`}
         >
           <img
             src={getEffectiveImageUrl(item.img)}
-            alt={item.title}
+            alt={displayTitle}
             loading="lazy"
             decoding="async"
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out select-none"
           />
 
           {/* Minimal Subtle Zoom Icon at Bottom-Right on Hover */}
@@ -358,49 +408,44 @@ export function MagazineHubPage({
             </div>
           </div>
 
-          {/* Sequential Index Badge */}
+          {/* Sequential Index Badge (Top-Left) */}
           <div className="absolute top-3 left-3 bg-black/60 dark:bg-white/70 backdrop-blur-xs text-white dark:text-black font-mono text-[9px] font-bold px-1.5 py-0.5 uppercase tracking-widest">
             {String(itemIndex + 1).padStart(2, '0')}
           </div>
         </div>
 
-        {/* Editorial Typography & Metadata (Title, Place, Date only) */}
-        <div className="flex flex-col gap-2 pt-1 font-['Inter',sans-serif]">
-          {/* Metadata Strip: Date & Location */}
-          <div className="flex items-center gap-2 text-[10px] font-mono tracking-wider uppercase text-black/50 dark:text-white/50">
-            {item.date && <span>{item.date}</span>}
-            {item.date && (item.placeName || item.location) && <span className="opacity-30">•</span>}
-            {(item.placeName || item.location) && (
-              <span className="font-bold text-black/70 dark:text-white/70 truncate">
-                {item.placeName || item.location}
-              </span>
+        {/* 2. Editorial Typography & Metadata (Home Magazine Style: Title -> Date -> Location Row) */}
+        <div className="pt-3.5 flex-1 flex flex-col justify-between text-black dark:text-white font-['Inter',sans-serif]">
+          <div className="flex flex-col">
+            {/* 1) Title */}
+            <h3
+              onClick={() => setLightboxIndex(itemIndex)}
+              className="text-base sm:text-lg md:text-xl font-black uppercase tracking-tight text-black dark:text-white font-sans line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors cursor-pointer"
+            >
+              {displayTitle}
+            </h3>
+
+            {/* 2) Date and Day (e.g. 2024.07.19 FRI) */}
+            {dateWithDay && (
+              <div className="text-[11px] sm:text-xs font-mono font-bold text-black/50 dark:text-white/50 uppercase tracking-wider mt-1">
+                {dateWithDay}
+              </div>
             )}
           </div>
 
-          {/* Bold Editorial Title */}
-          <h3
-            onClick={() => setLightboxIndex(itemIndex)}
-            className="text-lg sm:text-xl md:text-2xl font-bold text-black dark:text-white leading-snug tracking-tight font-['Inter',sans-serif] hover:underline cursor-pointer"
+          {/* 3) Bottom Row: Google Autocomplete Place Name & Simple Arrow -> Direct Timeline Jump */}
+          <div
+            onClick={handleJumpToTimeline}
+            className="pt-3 mt-auto flex items-center justify-between text-xs font-sans text-black/75 dark:text-white/75 border-t border-black/10 dark:border-white/10 hover:text-red-600 dark:hover:text-red-400 cursor-pointer group/link transition-colors"
+            title={item.tripId ? "여정 타임라인으로 바로 이동" : undefined}
           >
-            {item.title}
-          </h3>
-
-          {/* Direct Link to Journey */}
-          {parentTrip && (
-            <div className="pt-1 mt-auto">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onNavigate('detail', parentTrip.id);
-                }}
-                className="inline-flex items-center gap-1.5 text-[11px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:underline cursor-pointer transition-colors"
-              >
-                <span>JOURNEY: {parentTrip.title.replace(/\s*\(Plan\)$/i, '')}</span>
-                <ExternalLink className="w-3 h-3" />
-              </button>
-            </div>
-          )}
+            <span className="font-bold tracking-tight truncate max-w-[85%]" title={displayPlace}>
+              {displayPlace}
+            </span>
+            <span className="text-base font-bold text-black dark:text-white group-hover/link:translate-x-1.5 transition-transform shrink-0">
+              →
+            </span>
+          </div>
         </div>
       </article>
     );

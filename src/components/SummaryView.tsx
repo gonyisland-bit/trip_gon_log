@@ -571,8 +571,8 @@ export function SummaryView({
         {/* 2. Giant Typographic Metrics Grid (Inter Font, Consistent Size & Weight) */}
         <div className="py-6 border-y border-black dark:border-white grid grid-cols-2 lg:grid-cols-4 gap-y-6 gap-x-4 sm:gap-6 w-full font-sans">
           {/* Metric 1: Total Days */}
-          <div className="flex items-baseline gap-1.5 sm:gap-2.5 min-w-0 flex-wrap">
-            <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black font-sans tracking-tighter text-black dark:text-white leading-none">
+          <div className="flex items-baseline gap-1.5 sm:gap-2.5 min-w-0 flex-nowrap">
+            <span className="text-3xl sm:text-4xl md:text-5xl font-black font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
               {totalDays < 10 ? `0${totalDays}` : totalDays}
             </span>
             <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase shrink-0">
@@ -581,8 +581,8 @@ export function SummaryView({
           </div>
 
           {/* Metric 2: Recorded Spots */}
-          <div className="flex items-baseline gap-1.5 sm:gap-2.5 min-w-0 flex-wrap">
-            <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black font-sans tracking-tighter text-black dark:text-white leading-none">
+          <div className="flex items-baseline gap-1.5 sm:gap-2.5 min-w-0 flex-nowrap">
+            <span className="text-3xl sm:text-4xl md:text-5xl font-black font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
               {recordedSpotsCount < 10 ? `0${recordedSpotsCount}` : recordedSpotsCount}
             </span>
             <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase shrink-0">
@@ -591,8 +591,8 @@ export function SummaryView({
           </div>
 
           {/* Metric 3: Flight Legs */}
-          <div className="flex items-baseline gap-1.5 sm:gap-2.5 min-w-0 flex-wrap">
-            <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black font-sans tracking-tighter text-black dark:text-white leading-none">
+          <div className="flex items-baseline gap-1.5 sm:gap-2.5 min-w-0 flex-nowrap">
+            <span className="text-3xl sm:text-4xl md:text-5xl font-black font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
               {flights.length < 10 ? `0${flights.length}` : flights.length}
             </span>
             <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase shrink-0">
@@ -601,8 +601,8 @@ export function SummaryView({
           </div>
 
           {/* Metric 4: Total Estimated Budget ('240,-' European/Swiss editorial format) */}
-          <div className="flex items-baseline gap-1.5 sm:gap-2.5 min-w-0 flex-wrap">
-            <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black font-sans tracking-tighter text-black dark:text-white leading-none break-all">
+          <div className="flex items-baseline gap-1.5 sm:gap-2 min-w-0 flex-nowrap">
+            <span className="text-2xl sm:text-3xl md:text-4xl font-black font-sans tracking-tighter text-black dark:text-white leading-none shrink-0">
               {Math.round(totalInBaseCurrency / 1000).toLocaleString()},-
             </span>
             <span className="text-xs sm:text-sm font-bold font-sans text-black/60 dark:text-white/60 lowercase shrink-0">
