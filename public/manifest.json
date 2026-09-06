@@ -1,0 +1,18 @@
+{
+  "name": "TripGonLog — Personal Travel Magazine",
+  "short_name": "TripGonLog",
+  "description": "나만의 감성으로 기록하고 보관하는 프리미엄 여행 아카이브 및 타임라인 매거진",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAF9F6",
+  "theme_color": "#FAF9F6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
