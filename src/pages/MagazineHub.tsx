@@ -295,8 +295,9 @@ export function MagazineHubPage({
     return photoItems.map(item => ({
       url: getEffectiveImageUrl(item.img),
       date: item.date,
-      place: item.placeName || item.location,
-      imgNote: item.title,
+      place: item.title,
+      location: item.placeName || item.location,
+      imgNote: item.caption || item.textContent || '',
     }));
   }, [photoItems]);
 

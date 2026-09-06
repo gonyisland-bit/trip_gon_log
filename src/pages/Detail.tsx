@@ -4863,15 +4863,15 @@ export function JourneyDetailPage({
                 <div 
                   ref={el => { itemRefs.current[imgItem.id] = el; }}
                   key={`${imgItem.type}-${imgItem.url}-${idx}`} 
-                  className={`flex flex-col group/gallery transition-all duration-200 relative border select-none opacity-100 ${
+                  className={`h-full flex flex-col group/gallery transition-all duration-200 relative border select-none opacity-100 ${
                     isPhotoActive 
-                      ? 'border-black dark:border-white ring-1 ring-black dark:ring-white shadow-xl z-20' 
-                      : 'border-black/15 dark:border-white/15 hover:border-black/40 dark:hover:border-white/40'
+                      ? 'border-black dark:border-white ring-1 ring-black dark:ring-white shadow-xl z-20 bg-black dark:bg-white' 
+                      : 'border-black/15 dark:border-white/15 bg-white dark:bg-[#0E0E0E] hover:border-black/40 dark:hover:border-white/40'
                   }`}
                 >
                   {/* Film-photo styled image container */}
                   <div
-                    className="relative overflow-hidden border-b border-black/10 dark:border-white/10 transition-all duration-300 cursor-pointer aspect-[4/3] group"
+                    className="relative overflow-hidden border-b border-black/10 dark:border-white/10 transition-all duration-300 cursor-pointer aspect-[4/3] group shrink-0"
                     onClick={() => {
                       setExpandedItemId(prev => prev === imgItem.id ? null : imgItem.id);
                     }}
@@ -4944,8 +4944,8 @@ export function JourneyDetailPage({
                     <div className="absolute inset-0 bg-black/0 group-hover/gallery:bg-black/10 transition-colors pointer-events-none" />
                   </div>
 
-                  {/* Note / description area below image (Inverted Highlight on Selection) */}
-                  <div className={`px-3 py-2.5 flex flex-col gap-1 transition-colors duration-200 ${
+                  {/* Note / description area below image (Takes full remaining card height with flex-1) */}
+                  <div className={`px-3 py-2.5 flex-1 flex flex-col justify-between gap-1 transition-colors duration-200 ${
                     isPhotoActive 
                       ? 'bg-black text-white dark:bg-white dark:text-black shadow-inner' 
                       : 'bg-white dark:bg-[#0E0E0E] text-black dark:text-white'
