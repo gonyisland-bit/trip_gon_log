@@ -1439,8 +1439,9 @@ function App() {
         });
 
         let newHeroImg = sec.heroImg;
-        if (sec.heroTripId === tripId && updatedTrip.coverImage && updatedTrip.coverImage !== sec.heroImg) {
-          newHeroImg = updatedTrip.coverImage;
+        const tripCover = updatedTrip.heroImg || updatedTrip.img;
+        if (sec.heroTripId === tripId && tripCover && tripCover !== sec.heroImg) {
+          newHeroImg = tripCover;
           secChanged = true;
         }
 
