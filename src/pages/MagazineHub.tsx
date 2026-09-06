@@ -96,125 +96,106 @@ export function MagazineHubPage({
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [activeSectionId]);
 
-  // Fallback default sections if none exist yet
+  // Effective sections: directly use user-configured sections
   const effectiveSections: MagazineSection[] = useMemo(() => {
-    if (sections && sections.length > 1) {
+    if (sections && sections.length > 0) {
       return [...sections].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     }
-    if (sections && sections.length === 1 && (sections[0].items && sections[0].items.length > 0) && !sections[0].isDefault) {
-      return [...sections];
-    }
 
-    // Generate comprehensive magazine sections from active trips
-    const mainItems: MagazineItem[] = [];
-    trips.forEach((t, tIdx) => {
-      // Add cover/hero photo
-      if (t.img) {
-        mainItems.push({
-          id: `main-${t.id}-cover`,
-          tripId: t.id,
-          title: t.title.replace(/\s*\(Plan\)$/i, ''),
-          date: t.date,
-          location: t.locationStr || t.country,
-          placeName: (t.locations && t.locations[0]?.name) || t.locationStr,
+    // Default starter 3 sections only if no sections exist at all
+    const mainTrip = trips[0];
+    const secondTrip = trips[1];
+    const thirdTrip = trips[2];
+
+    const makeStarterItems = (trip?: Trip): MagazineItem[] => {
+      if (!trip) return [];
+      const items: MagazineItem[] = [];
+      if (trip.img) {
+        items.push({
+          id: `starter-${trip.id}-cover`,
+          tripId: trip.id,
+          title: trip.title.replace(/\s*\(Plan\)$/i, ''),
+          date: trip.date,
+          location: trip.locationStr || trip.country,
+          placeName: (trip.locations && trip.locations[0]?.name) || trip.locationStr,
           caption: '',
-          img: t.img,
-          layoutType: tIdx % 3 === 0 ? 'tall' : tIdx % 3 === 1 ? 'wide' : 'normal',
-          order: mainItems.length,
+          img: trip.img,
+          layoutType: 'tall',
+          order: 0,
         });
       }
-      // Add gallery photos if present
-      if (t.gallery && Array.isArray(t.gallery)) {
-        t.gallery.slice(0, 3).forEach((g: any, gIdx) => {
+      if (trip.gallery && Array.isArray(trip.gallery)) {
+        trip.gallery.slice(0, 5).forEach((g: any, gIdx) => {
           const url = typeof g === 'string' ? g : g?.url;
           if (url) {
-            mainItems.push({
-              id: `main-${t.id}-g-${gIdx}`,
-              tripId: t.id,
-              title: (typeof g === 'object' && g?.place) ? g.place : t.title.replace(/\s*\(Plan\)$/i, ''),
-              date: (typeof g === 'object' && g?.date) ? g.date : t.date,
-              location: t.locationStr || t.country,
-              placeName: (typeof g === 'object' && g?.place) ? g.place : t.locationStr,
+            items.push({
+              id: `starter-${trip.id}-g-${gIdx}`,
+              tripId: trip.id,
+              title: (typeof g === 'object' && g?.place) ? g.place : trip.title.replace(/\s*\(Plan\)$/i, ''),
+              date: (typeof g === 'object' && g?.date) ? g.date : trip.date,
+              location: trip.locationStr || trip.country,
+              placeName: (typeof g === 'object' && g?.place) ? g.place : trip.locationStr,
               caption: typeof g === 'object' ? g?.imgNote || '' : '',
               img: url,
               layoutType: gIdx % 2 === 0 ? 'normal' : 'tall',
-              order: mainItems.length,
+              order: items.length,
             });
           }
         });
       }
-    });
+      return items;
+    };
 
-    const defaultSections: MagazineSection[] = [
+    const starterSections: MagazineSection[] = [
       {
         id: 'main',
         title: 'MAGAZINE HOME',
         subtitle: 'Curated Moments & Editorial Stories',
-        heroImg: trips[0]?.heroImg || trips[0]?.img || '',
+        heroImg: mainTrip?.heroImg || mainTrip?.img || '',
         heroTitle: 'The Other Side of Paradise',
         heroSubtitle: '나만의 감성으로 기록하고 기억하는 여행의 순간들.',
-        heroDate: trips[0]?.date || '2024 — 2026',
-        heroLocation: trips[0]?.locationStr || 'GLOBAL ARCHIVE',
-        heroTripId: trips[0]?.id,
-        items: mainItems.slice(0, 24),
+        heroDate: mainTrip?.date || '2024 — 2026',
+        heroLocation: mainTrip?.locationStr || 'GLOBAL ARCHIVE',
+        heroTripId: mainTrip?.id,
+        items: makeStarterItems(mainTrip),
         order: 0,
         isDefault: true,
       }
     ];
 
-    // Add per-trip dedicated issue sections
-    trips.forEach((t, idx) => {
-      const tripItems: MagazineItem[] = [];
-      if (t.img) {
-        tripItems.push({
-          id: `issue-${t.id}-0`,
-          tripId: t.id,
-          title: t.title.replace(/\s*\(Plan\)$/i, ''),
-          date: t.date,
-          location: t.locationStr || t.country,
-          placeName: (t.locations && t.locations[0]?.name) || t.locationStr,
-          caption: '',
-          img: t.img,
-          layoutType: 'tall',
-          order: 0,
-        });
-      }
-      if (t.gallery && Array.isArray(t.gallery)) {
-        t.gallery.forEach((g: any, gIdx) => {
-          const url = typeof g === 'string' ? g : g?.url;
-          if (url) {
-            tripItems.push({
-              id: `issue-${t.id}-${gIdx + 1}`,
-              tripId: t.id,
-              title: (typeof g === 'object' && g?.place) ? g.place : `${t.title} #${gIdx + 1}`,
-              date: (typeof g === 'object' && g?.date) ? g.date : t.date,
-              location: t.locationStr || t.country,
-              placeName: (typeof g === 'object' && g?.place) ? g.place : t.locationStr,
-              caption: typeof g === 'object' ? g?.imgNote || '' : '',
-              img: url,
-              layoutType: gIdx % 3 === 0 ? 'tall' : gIdx % 3 === 1 ? 'wide' : 'normal',
-              order: tripItems.length,
-            });
-          }
-        });
-      }
-
-      defaultSections.push({
-        id: `trip-${t.id}`,
-        title: t.title.replace(/\s*\(Plan\)$/i, '').toUpperCase(),
-        subtitle: `${t.date} · ${t.locationStr || t.country || 'JOURNEY'}`,
-        heroImg: t.heroImg || t.img || '',
-        heroTitle: t.title.replace(/\s*\(Plan\)$/i, ''),
-        heroSubtitle: `${t.locationStr || t.country}에서 마주한 특별한 에디토리얼 순간들.`,
-        heroDate: t.date,
-        heroLocation: t.locationStr || t.country,
-        heroTripId: t.id,
-        items: tripItems,
-        order: idx + 1,
+    if (secondTrip) {
+      starterSections.push({
+        id: `section-${secondTrip.id}`,
+        title: secondTrip.title.replace(/\s*\(Plan\)$/i, '').toUpperCase(),
+        subtitle: `${secondTrip.date} · ${secondTrip.locationStr || secondTrip.country || 'JOURNEY'}`,
+        heroImg: secondTrip.heroImg || secondTrip.img || '',
+        heroTitle: secondTrip.title.replace(/\s*\(Plan\)$/i, ''),
+        heroSubtitle: `${secondTrip.locationStr || secondTrip.country}의 감각적인 순간들.`,
+        heroDate: secondTrip.date,
+        heroLocation: secondTrip.locationStr || secondTrip.country,
+        heroTripId: secondTrip.id,
+        items: makeStarterItems(secondTrip),
+        order: 1,
       });
-    });
+    }
 
-    return defaultSections;
+    if (thirdTrip) {
+      starterSections.push({
+        id: `section-${thirdTrip.id}`,
+        title: thirdTrip.title.replace(/\s*\(Plan\)$/i, '').toUpperCase(),
+        subtitle: `${thirdTrip.date} · ${thirdTrip.locationStr || thirdTrip.country || 'JOURNEY'}`,
+        heroImg: thirdTrip.heroImg || thirdTrip.img || '',
+        heroTitle: thirdTrip.title.replace(/\s*\(Plan\)$/i, ''),
+        heroSubtitle: `${thirdTrip.locationStr || thirdTrip.country}의 특별한 여정 기록.`,
+        heroDate: thirdTrip.date,
+        heroLocation: thirdTrip.locationStr || thirdTrip.country,
+        heroTripId: thirdTrip.id,
+        items: makeStarterItems(thirdTrip),
+        order: 2,
+      });
+    }
+
+    return starterSections;
   }, [sections, trips]);
 
   // Touch swipe state for Hero section

@@ -206,22 +206,99 @@ export function ManageHubPage({
       return magazineSections;
     }
     const mainItems = (magazineMoments && magazineMoments.length > 0) ? magazineMoments : [];
-    return [
+    const mainTrip = trips[0];
+    const secondTrip = trips[1];
+    const thirdTrip = trips[2];
+
+    const makeStarterItems = (trip?: Trip): MagazineItem[] => {
+      if (!trip) return [];
+      const items: MagazineItem[] = [];
+      if (trip.img) {
+        items.push({
+          id: `starter-${trip.id}-cover`,
+          tripId: trip.id,
+          title: trip.title.replace(/\s*\(Plan\)$/i, ''),
+          date: trip.date,
+          location: trip.locationStr || trip.country,
+          placeName: (trip.locations && trip.locations[0]?.name) || trip.locationStr,
+          caption: '',
+          img: trip.img,
+          layoutType: 'tall',
+          order: 0,
+        });
+      }
+      if (trip.gallery && Array.isArray(trip.gallery)) {
+        trip.gallery.slice(0, 5).forEach((g: any, gIdx) => {
+          const url = typeof g === 'string' ? g : g?.url;
+          if (url) {
+            items.push({
+              id: `starter-${trip.id}-g-${gIdx}`,
+              tripId: trip.id,
+              title: (typeof g === 'object' && g?.place) ? g.place : trip.title.replace(/\s*\(Plan\)$/i, ''),
+              date: (typeof g === 'object' && g?.date) ? g.date : trip.date,
+              location: trip.locationStr || trip.country,
+              placeName: (typeof g === 'object' && g?.place) ? g.place : trip.locationStr,
+              caption: typeof g === 'object' ? g?.imgNote || '' : '',
+              img: url,
+              layoutType: gIdx % 2 === 0 ? 'normal' : 'tall',
+              order: items.length,
+            });
+          }
+        });
+      }
+      return items;
+    };
+
+    const starterSections: MagazineSection[] = [
       {
         id: 'main',
         title: 'MAGAZINE HOME',
         subtitle: 'Curated Moments & Editorial Stories',
-        heroImg: trips[0]?.heroImg || trips[0]?.img || '',
+        heroImg: mainTrip?.heroImg || mainTrip?.img || '',
         heroTitle: 'The Other Side of Paradise',
         heroSubtitle: '나만의 감성으로 기록하고 기억하는 여행의 순간들.',
-        heroDate: trips[0]?.date || '2024 — 2026',
-        heroLocation: trips[0]?.locationStr || 'GLOBAL ARCHIVE',
-        heroTripId: trips[0]?.id,
-        items: mainItems,
+        heroDate: mainTrip?.date || '2024 — 2026',
+        heroLocation: mainTrip?.locationStr || 'GLOBAL ARCHIVE',
+        heroTripId: mainTrip?.id,
+        items: mainItems.length > 0 ? mainItems : makeStarterItems(mainTrip),
         order: 0,
         isDefault: true,
       }
     ];
+
+    if (secondTrip) {
+      starterSections.push({
+        id: `section-${secondTrip.id}`,
+        title: secondTrip.title.replace(/\s*\(Plan\)$/i, '').toUpperCase(),
+        subtitle: `${secondTrip.date} · ${secondTrip.locationStr || secondTrip.country || 'JOURNEY'}`,
+        heroImg: secondTrip.heroImg || secondTrip.img || '',
+        heroTitle: secondTrip.title.replace(/\s*\(Plan\)$/i, ''),
+        heroSubtitle: `${secondTrip.locationStr || secondTrip.country}의 감각적인 순간들.`,
+        heroDate: secondTrip.date,
+        heroLocation: secondTrip.locationStr || secondTrip.country,
+        heroTripId: secondTrip.id,
+        items: makeStarterItems(secondTrip),
+        order: 1,
+      });
+    }
+
+    if (thirdTrip) {
+      starterSections.push({
+        id: `section-${thirdTrip.id}`,
+        title: thirdTrip.title.replace(/\s*\(Plan\)$/i, '').toUpperCase(),
+        subtitle: `${thirdTrip.date} · ${thirdTrip.locationStr || thirdTrip.country || 'JOURNEY'}`,
+        heroImg: thirdTrip.heroImg || thirdTrip.img || '',
+        heroTitle: thirdTrip.title.replace(/\s*\(Plan\)$/i, ''),
+        heroSubtitle: `${thirdTrip.locationStr || thirdTrip.country}의 특별한 여정 기록.`,
+        heroDate: thirdTrip.date,
+        heroLocation: thirdTrip.locationStr || thirdTrip.country,
+        heroTripId: thirdTrip.id,
+        items: makeStarterItems(thirdTrip),
+        order: 2,
+      });
+    }
+
+    return starterSections;
   });
 
   const [activeMagSectionId, setActiveMagSectionId] = useState<string>(() => {
@@ -252,6 +329,8 @@ export function ManageHubPage({
   const [showAddSectionModal, setShowAddSectionModal] = useState(false);
   const [newSectionTitle, setNewSectionTitle] = useState('');
   const [newSectionSubtitle, setNewSectionSubtitle] = useState('');
+  const [showAutoGenerateModal, setShowAutoGenerateModal] = useState(false);
+  const [selectedTripForAutoGenerate, setSelectedTripForAutoGenerate] = useState<number | null>(null);
 
   useEffect(() => {
     if (magazineSections && magazineSections.length > 0) {
@@ -1278,6 +1357,109 @@ export function ManageHubPage({
     setNewSectionTitle('');
     setNewSectionSubtitle('');
     setShowAddSectionModal(false);
+  };
+
+  const handleAutoGenerateSectionFromTrip = (tripId: number) => {
+    const targetTrip = localJourneys.find(j => Number(j.id) === Number(tripId)) || trips.find(t => Number(t.id) === Number(tripId)) || plans.find(p => Number(p.id) === Number(tripId));
+    if (!targetTrip) {
+      alert('여정을 찾을 수 없습니다.');
+      return;
+    }
+
+    const tripItems: MagazineItem[] = [];
+    const seenImages = new Set<string>();
+
+    // 1. Cover photo
+    if (targetTrip.img) {
+      seenImages.add(targetTrip.img);
+      tripItems.push({
+        id: `auto-${targetTrip.id}-cover-${Date.now()}`,
+        tripId: targetTrip.id,
+        title: targetTrip.title.replace(/\s*\(Plan\)$/i, ''),
+        date: targetTrip.date,
+        location: targetTrip.locationStr || targetTrip.country,
+        placeName: (targetTrip.locations && targetTrip.locations[0]?.name) || targetTrip.locationStr,
+        caption: '',
+        img: targetTrip.img,
+        layoutType: 'portrait',
+        order: tripItems.length,
+      });
+    }
+
+    // 2. Gallery photos
+    if (targetTrip.gallery && Array.isArray(targetTrip.gallery)) {
+      targetTrip.gallery.forEach((g: any, gIdx) => {
+        const url = typeof g === 'string' ? g : g?.url;
+        if (url && !seenImages.has(url)) {
+          seenImages.add(url);
+          const gTitle = (typeof g === 'object' && g?.place) ? g.place : `${targetTrip.title.replace(/\s*\(Plan\)$/i, '')} #${gIdx + 1}`;
+          const gDate = (typeof g === 'object' && g?.date) ? g.date : targetTrip.date;
+          const gLoc = (typeof g === 'object' && g?.place) ? g.place : targetTrip.locationStr;
+          const gMemo = typeof g === 'object' ? g?.imgNote || '' : '';
+          tripItems.push({
+            id: `auto-${targetTrip.id}-g-${gIdx}-${Date.now()}`,
+            tripId: targetTrip.id,
+            title: gTitle,
+            date: gDate,
+            location: targetTrip.locationStr || targetTrip.country,
+            placeName: gLoc,
+            caption: gMemo,
+            img: url,
+            layoutType: gIdx % 3 === 0 ? 'portrait' : gIdx % 3 === 1 ? 'landscape' : 'wide',
+            order: tripItems.length,
+          });
+        }
+      });
+    }
+
+    // 3. Timeline items for this trip
+    Object.values(timelineData || {}).forEach(dayItems => {
+      if (Array.isArray(dayItems)) {
+        dayItems.forEach(tItem => {
+          if (Number(tItem.tripId) === Number(targetTrip.id) && tItem.img && !seenImages.has(tItem.img)) {
+            seenImages.add(tItem.img);
+            const pName = safeStr(tItem.place);
+            const jTitle = targetTrip.title.replace(/\s*\(Plan\)$/i, '');
+            const displayTitle = pName || jTitle || 'MOMENT';
+            const itemDate = safeStr(tItem.date) || targetTrip.date;
+            tripItems.push({
+              id: `auto-${targetTrip.id}-tl-${tItem.id}-${Date.now()}`,
+              tripId: targetTrip.id,
+              timelineItemId: tItem.id,
+              title: displayTitle,
+              date: itemDate,
+              placeName: pName || targetTrip.locationStr,
+              location: targetTrip.locationStr || targetTrip.country,
+              caption: safeStr(tItem.memo),
+              img: tItem.img,
+              layoutType: tripItems.length % 3 === 0 ? 'portrait' : 'landscape',
+              order: tripItems.length,
+            });
+          }
+        });
+      }
+    });
+
+    const newSectionId = `trip-section-${targetTrip.id}-${Date.now()}`;
+    const newSection: MagazineSection = {
+      id: newSectionId,
+      title: targetTrip.title.replace(/\s*\(Plan\)$/i, '').toUpperCase(),
+      subtitle: `${targetTrip.date} · ${targetTrip.locationStr || targetTrip.country || 'JOURNEY'}`,
+      heroImg: targetTrip.heroImg || targetTrip.img || (tripItems[0]?.img || ''),
+      heroTitle: targetTrip.title.replace(/\s*\(Plan\)$/i, ''),
+      heroSubtitle: `${targetTrip.locationStr || targetTrip.country || ''}에서 마주한 특별한 에디토리얼 순간들.`,
+      heroDate: targetTrip.date,
+      heroLocation: targetTrip.locationStr || targetTrip.country,
+      heroTripId: targetTrip.id,
+      items: tripItems,
+      order: sectionsList.length,
+      isDefault: false,
+    };
+
+    setSectionsList(prev => [...prev, newSection]);
+    setActiveMagSectionId(newSectionId);
+    setShowAutoGenerateModal(false);
+    setSelectedTripForAutoGenerate(null);
   };
 
   const handleDeleteSection = (sectionId: string) => {
@@ -3154,18 +3336,31 @@ export function ManageHubPage({
 
             {/* 1. Section Selector & Manager Bar */}
             <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
                   MAGAZINE SECTIONS ({sectionsList.length})
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setShowAddSectionModal(true)}
-                  className="px-3 py-1 bg-black text-white dark:bg-white dark:text-black text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>+ ADD NEW SECTION</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedTripForAutoGenerate(localJourneys[0]?.id ?? null);
+                      setShowAutoGenerateModal(true);
+                    }}
+                    className="px-3 py-1 bg-red-600 text-white text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hover:bg-red-700 transition-colors shadow-xs"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>+ 여정 자동 생성 (AUTO-GENERATE)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddSectionModal(true)}
+                    className="px-3 py-1 bg-black text-white dark:bg-white dark:text-black text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ 빈 섹션 추가</span>
+                  </button>
+                </div>
               </div>
 
               {/* Sections Tab Strip */}
@@ -3971,6 +4166,96 @@ export function ManageHubPage({
                       className="px-5 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider cursor-pointer hover:opacity-85"
                     >
                       CREATE SECTION
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Modal: Auto-Generate Section from Journey */}
+            {showAutoGenerateModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+                <div className="w-full max-w-lg bg-white dark:bg-[#161616] border border-black dark:border-white p-6 shadow-2xl flex flex-col gap-4">
+                  <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-red-600 dark:text-red-500" />
+                      <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                        AUTO-GENERATE SECTION FROM JOURNEY
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowAutoGenerateModal(false)}
+                      className="p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <p className="text-xs text-black/70 dark:text-white/70 leading-relaxed font-sans">
+                    선택하신 여정의 대표 커버 이미지, 갤러리 및 타임라인 사진들을 자동으로 수집하여 최적의 매거진 이슈 섹션으로 즉시 구성합니다.
+                  </p>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-mono font-bold uppercase tracking-wider text-black/80 dark:text-white/80">
+                      SELECT JOURNEY (여정 선택)
+                    </label>
+                    <select
+                      value={selectedTripForAutoGenerate ?? ''}
+                      onChange={e => setSelectedTripForAutoGenerate(Number(e.target.value))}
+                      className="px-3 py-2.5 text-xs font-mono font-bold bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                    >
+                      {localJourneys.map(j => (
+                        <option key={j.id} value={j.id}>
+                          {j.title.replace(/\s*\(Plan\)$/i, '')} ({j.locationStr || j.country} · {j.date})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {(() => {
+                    const selected = localJourneys.find(j => Number(j.id) === Number(selectedTripForAutoGenerate));
+                    if (!selected) return null;
+                    return (
+                      <div className="p-3 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center gap-3">
+                        <div className="w-14 h-14 aspect-square bg-black/10 overflow-hidden shrink-0 border border-black/10">
+                          <img src={getEffectiveImageUrl(selected.img)} alt={selected.title} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-bold text-black dark:text-white uppercase truncate">
+                            {selected.title}
+                          </div>
+                          <div className="text-[11px] font-mono text-black/60 dark:text-white/60">
+                            {selected.locationStr || selected.country} · {selected.date}
+                          </div>
+                          <div className="text-[10px] font-mono text-red-600 dark:text-red-400 mt-0.5">
+                            * 갤러리/타임라인 사진을 포함하여 새 섹션이 생성됩니다.
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-black/10 dark:border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => setShowAutoGenerateModal(false)}
+                      className="px-4 py-2 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase cursor-pointer"
+                    >
+                      CANCEL
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!selectedTripForAutoGenerate}
+                      onClick={() => {
+                        if (selectedTripForAutoGenerate) {
+                          handleAutoGenerateSectionFromTrip(selectedTripForAutoGenerate);
+                        }
+                      }}
+                      className="px-5 py-2 bg-red-600 text-white text-xs font-mono font-bold uppercase tracking-wider cursor-pointer hover:bg-red-700 disabled:opacity-30 flex items-center gap-1.5 shadow-sm"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>GENERATE SECTION (자동 생성)</span>
                     </button>
                   </div>
                 </div>
