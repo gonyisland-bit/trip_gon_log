@@ -23,6 +23,7 @@ import {
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { Lightbox } from '../components/Lightbox';
 import { cleanAdministrativeDistricts, resolveTimelineItemLocation } from '../components/SummaryView';
+import { resolveTimelinePlaceName } from '../utils/magazineHelper';
 
 // Helper for minimal date + day format (e.g. 2024.07.19 FRI)
 function formatSimpleDateWithDay(dateStr?: string): string {
@@ -211,6 +212,16 @@ export function MagazineHubPage({
       });
     }
 
+    // Gather all trip timeline items for location resolution
+    const allTimelineList: TimelineItem[] = [];
+    if (timelineData) {
+      Object.values(timelineData).forEach(tItems => {
+        if (Array.isArray(tItems)) {
+          allTimelineList.push(...tItems);
+        }
+      });
+    }
+
     return [...currentSection.items]
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
       .map(item => {
@@ -218,26 +229,34 @@ export function MagazineHubPage({
 
         // Sync with live timeline item if available
         const matched = timelineByUrl.get(item.img) || timelineByUrl.get(getEffectiveImageUrl(item.img));
-        const parentTrip = trips.find(t => t.id === (matched?.tripId || item.tripId));
+        const targetTripId = matched?.tripId || item.tripId;
+        const parentTrip = trips.find(t => t.id === targetTripId);
+        const tripTimeline = allTimelineList.filter(t => t.tripId === targetTripId);
+
         if (matched) {
           const pName = matched.place?.trim() || '';
           const jTitle = parentTrip?.title?.replace(/\s*\(Plan\)$/i, '') || '';
-          const resolvedLocation = resolveTimelineItemLocation(matched, timelineData, parentTrip);
+          const resolvedLocation = resolveTimelinePlaceName(matched, tripTimeline, parentTrip);
 
           return {
             ...item,
-            tripId: matched.tripId || item.tripId,
+            tripId: targetTripId,
             title: pName || jTitle || item.title || 'UNTITLED MOMENT',
             placeName: resolvedLocation,
             location: resolvedLocation,
             date: matched.date || item.date,
           };
         } else {
-          const resolvedLocation = resolveTimelineItemLocation(null, timelineData, parentTrip);
+          // If no matched timeline, use existing or parent trip fallback (never duplicate title)
+          let resolvedLocation = item.placeName || '';
+          const pName = (item.title || '').trim().toLowerCase();
+          if (!resolvedLocation || resolvedLocation.trim().toLowerCase() === pName) {
+            resolvedLocation = parentTrip?.locationStr || (parentTrip?.locations && parentTrip.locations[0]?.name) || parentTrip?.country || 'VISITED PLACE';
+          }
           return {
             ...item,
-            placeName: item.placeName || resolvedLocation,
-            location: item.location || resolvedLocation,
+            placeName: resolvedLocation,
+            location: resolvedLocation,
           };
         }
       });

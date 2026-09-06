@@ -1284,16 +1284,40 @@ export function ManageHubPage({
   // Add Item to Current Section
   const handleAddItemToCurrentSection = (item: TimelineItem & { journeyTitle?: string; journeyLocation?: string }) => {
     if (!currentMagSection || !item.img) return;
+
+    // Check duplicate in current section
+    const isDuplicate = (currentMagSection.items || []).some(m =>
+      (m.timelineItemId !== undefined && m.timelineItemId === item.id) ||
+      (m.img && item.img && (m.img === item.img || m.img.split('?')[0] === item.img.split('?')[0]))
+    );
+    if (isDuplicate) {
+      alert("이미 현재 매거진 섹션에 등록된 이미지입니다.");
+      return;
+    }
+
     const parentTrip = trips.find(t => t.id === item.tripId);
     const pName = safeStr(item.place);
     const jTitle = safeStr(item.journeyTitle) || parentTrip?.title || '';
     const jLoc = parentTrip?.locationStr || (parentTrip?.locations && parentTrip.locations[0]?.name) || safeStr(item.journeyLocation);
-    const locStr = safeStr(item.location) || pName;
+
+    // Resolve location using chronological backwards inheritance:
+    const allTripTimelineItems: TimelineItem[] = [];
+    Object.values(timelineData || {}).forEach(dayItems => {
+      if (Array.isArray(dayItems)) {
+        dayItems.forEach(t => {
+          if (t.tripId === item.tripId) {
+            allTripTimelineItems.push(t);
+          }
+        });
+      }
+    });
+    const locStr = resolveTimelinePlaceName(item, allTripTimelineItems, parentTrip);
 
     const currentItems = [...(currentMagSection.items || [])];
     const newItem: MagazineItem = {
       id: `moment-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       tripId: item.tripId,
+      timelineItemId: item.id,
       title: pName || jTitle || 'UNTITLED MOMENT',
       date: safeStr(item.date),
       placeName: locStr,
@@ -1423,6 +1447,98 @@ export function ManageHubPage({
       }
       return s;
     }));
+  };
+
+  // Refresh & Sync current magazine section cards with latest timeline data
+  const [isSyncingMagazine, setIsSyncingMagazine] = useState(false);
+  const handleRefreshAndSyncMagazine = async () => {
+    if (!currentMagSection || isSyncingMagazine) return;
+    setIsSyncingMagazine(true);
+
+    try {
+      // Gather all timeline items across all dates
+      const allTimelineItems: TimelineItem[] = [];
+      Object.values(timelineData || {}).forEach(dayItems => {
+        if (Array.isArray(dayItems)) {
+          allTimelineItems.push(...dayItems);
+        }
+      });
+
+      let changesCount = 0;
+      const updatedItems = (currentMagSection.items || []).map(item => {
+        if (item.isTextOnly || !item.img) return item;
+
+        // Strict 1:1 match by timelineItemId or exact image URL
+        let matched: TimelineItem | undefined;
+        if (item.timelineItemId !== undefined) {
+          matched = allTimelineItems.find(t => Number(t.id) === Number(item.timelineItemId));
+        }
+        if (!matched && item.img) {
+          const cleanImg = item.img.split('?')[0];
+          matched = allTimelineItems.find(t => t.img && (t.img === item.img || t.img.split('?')[0] === cleanImg));
+        }
+
+        if (matched) {
+          const parentTrip = trips.find(t => t.id === matched?.tripId) || plans.find(p => p.id === matched?.tripId);
+          const tripTimeline = allTimelineItems.filter(t => t.tripId === matched?.tripId);
+          const resolvedLoc = resolveTimelinePlaceName(matched, tripTimeline, parentTrip);
+          const newTitle = matched.place?.trim() || item.title;
+          const newDate = matched.date || item.date;
+          const newImg = matched.img || item.img;
+
+          if (
+            item.title !== newTitle ||
+            item.placeName !== resolvedLoc ||
+            item.date !== newDate ||
+            item.img !== newImg ||
+            item.timelineItemId !== matched.id
+          ) {
+            changesCount++;
+            return {
+              ...item,
+              timelineItemId: matched.id,
+              title: newTitle,
+              placeName: resolvedLoc,
+              date: newDate,
+              img: newImg,
+            };
+          }
+        } else {
+          // If title and placeName are identical, fix duplicate placeName
+          const pName = (item.placeName || '').trim().toLowerCase();
+          const mTitle = (item.title || '').trim().toLowerCase();
+          if (pName && mTitle && pName === mTitle) {
+            const parentTrip = trips.find(t => t.id === item.tripId) || plans.find(p => p.id === item.tripId);
+            const fallbackLoc = parentTrip?.locationStr || (parentTrip?.locations && parentTrip.locations[0]?.name) || parentTrip?.country || 'VISITED PLACE';
+            changesCount++;
+            return {
+              ...item,
+              placeName: fallbackLoc,
+            };
+          }
+        }
+
+        return item;
+      });
+
+      const updatedSections = sectionsList.map(s => {
+        if (s.id === currentMagSection.id) {
+          return { ...s, items: updatedItems };
+        }
+        return s;
+      });
+
+      setSectionsList(updatedSections);
+      if (onSaveMagazineSections) {
+        await onSaveMagazineSections(updatedSections);
+      }
+      alert(`타임라인 기준 매거진 동기화가 완료되었습니다.\n(${changesCount}개 항목 최신화 및 저장 완료)`);
+    } catch (err: any) {
+      console.error('Failed to sync magazine with timeline:', err);
+      alert('타임라인 동기화 중 오류가 발생했습니다: ' + (err?.message || err));
+    } finally {
+      setIsSyncingMagazine(false);
+    }
   };
 
   // Save Magazine Sections & Moments
@@ -3251,6 +3367,16 @@ export function ManageHubPage({
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
+                      onClick={handleRefreshAndSyncMagazine}
+                      disabled={isSyncingMagazine}
+                      className="px-3 py-1 bg-white dark:bg-[#1f1f1f] text-black dark:text-white border border-black/20 dark:border-white/20 text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-all disabled:opacity-50"
+                      title="타임라인 최신 사진/제목/장소 데이터로 즉시 동기화"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${isSyncingMagazine ? 'animate-spin text-red-500' : 'text-black/70 dark:text-white/70'}`} />
+                      <span>{isSyncingMagazine ? '동기화 중...' : '타임라인 동기화 (SYNC)'}</span>
+                    </button>
+                    <button
+                      type="button"
                       onClick={handleAddTextCardToCurrentSection}
                       className="px-3 py-1 bg-black text-white dark:bg-white dark:text-black text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity"
                     >
@@ -3304,17 +3430,30 @@ export function ManageHubPage({
                     });
                   }
 
+                  // Gather all timeline items for place resolution
+                  const allTimelineList: TimelineItem[] = [];
+                  if (timelineData) {
+                    Object.values(timelineData).forEach(tItems => {
+                      if (Array.isArray(tItems)) {
+                        allTimelineList.push(...tItems);
+                      }
+                    });
+                  }
+
                   const items = rawItems.map(item => {
                     if (item.isTextOnly || !item.img) return item;
                     const matched = timelineByUrl.get(item.img) || timelineByUrl.get(getEffectiveImageUrl(item.img));
-                    const parentTrip = trips.find(t => t.id === (matched?.tripId || item.tripId));
+                    const targetTripId = matched?.tripId || item.tripId;
+                    const parentTrip = trips.find(t => t.id === targetTripId);
+                    const tripTimeline = allTimelineList.filter(t => t.tripId === targetTripId);
+
                     if (matched) {
                       const pName = matched.place?.trim() || '';
                       const jTitle = parentTrip?.title?.replace(/\s*\(Plan\)$/i, '') || '';
-                      const resolvedLocation = resolveTimelineItemLocation(matched, timelineData, parentTrip);
+                      const resolvedLocation = resolveTimelinePlaceName(matched, tripTimeline, parentTrip);
                       return {
                         ...item,
-                        tripId: matched.tripId || item.tripId,
+                        tripId: targetTripId,
                         title: pName || jTitle || item.title || 'UNTITLED MOMENT',
                         placeName: resolvedLocation,
                         location: resolvedLocation,
@@ -3322,11 +3461,15 @@ export function ManageHubPage({
                         caption: matched.imgNote || matched.memo || item.caption,
                       };
                     } else {
-                      const resolvedLocation = resolveTimelineItemLocation(null, timelineData, parentTrip);
+                      let resolvedLocation = item.placeName || '';
+                      const pName = (item.title || '').trim().toLowerCase();
+                      if (!resolvedLocation || resolvedLocation.trim().toLowerCase() === pName) {
+                        resolvedLocation = parentTrip?.locationStr || (parentTrip?.locations && parentTrip.locations[0]?.name) || parentTrip?.country || 'VISITED PLACE';
+                      }
                       return {
                         ...item,
-                        placeName: item.placeName || resolvedLocation,
-                        location: item.location || resolvedLocation,
+                        placeName: resolvedLocation,
+                        location: resolvedLocation,
                       };
                     }
                   });
@@ -3687,24 +3830,51 @@ export function ManageHubPage({
                       const jTitle = safeStr(item.journeyTitle);
                       const displayTitle = pName || jTitle || 'MOMENT';
                       const itemDate = safeStr(item.date);
+
+                      // Check if already attached to current section
+                      const isAttached = (currentMagSection?.items || []).some(m =>
+                        (m.timelineItemId !== undefined && Number(m.timelineItemId) === Number(item.id)) ||
+                        (m.img && item.img && (m.img === item.img || m.img.split('?')[0] === item.img.split('?')[0]))
+                      );
+
                       return (
                         <div
                           key={`mag-cand-${item.id || i}-${i}`}
-                          onClick={() => handleAddItemToCurrentSection(item)}
-                          className="group relative h-32 sm:h-36 bg-white dark:bg-[#121212] border border-black/15 dark:border-white/15 overflow-hidden cursor-pointer flex flex-col justify-end transition-all select-none active:scale-95"
-                          title={`${displayTitle} (${itemDate}) - 클릭하여 추가`}
+                          onClick={() => {
+                            if (isAttached) {
+                              alert("이미 현재 매거진 섹션에 등록된 사진입니다.");
+                              return;
+                            }
+                            handleAddItemToCurrentSection(item);
+                          }}
+                          className={`group relative h-32 sm:h-36 bg-white dark:bg-[#121212] border overflow-hidden flex flex-col justify-end transition-all select-none ${
+                            isAttached
+                              ? 'border-black/30 dark:border-white/30 opacity-40 grayscale cursor-not-allowed'
+                              : 'border-black/15 dark:border-white/15 cursor-pointer active:scale-95 hover:border-black dark:hover:border-white shadow-xs'
+                          }`}
+                          title={isAttached ? `${displayTitle} (이미 등록됨 - ATTACHED)` : `${displayTitle} (${itemDate}) - 클릭하여 추가`}
                         >
                           <img
                             src={getEffectiveImageUrl(item.img || '')}
                             alt={displayTitle}
                             loading="lazy"
                             decoding="async"
-                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            className={`absolute inset-0 w-full h-full object-cover transition-transform duration-300 ${
+                              !isAttached ? 'group-hover:scale-105' : ''
+                            }`}
                           />
                           
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white font-mono text-xs font-black p-2 text-center z-10">
-                            + ADD TO {currentMagSection?.title}
-                          </div>
+                          {/* Attached Minimal Badge */}
+                          {isAttached ? (
+                            <div className="absolute top-2 left-2 z-20 flex items-center gap-1 px-1.5 py-0.5 bg-black/90 text-white dark:bg-white dark:text-black text-[9px] font-mono font-black tracking-wider uppercase shadow-md">
+                              <Check className="w-2.5 h-2.5 stroke-[3]" />
+                              <span>ATTACHED</span>
+                            </div>
+                          ) : (
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white font-mono text-xs font-black p-2 text-center z-10">
+                              + ADD TO {currentMagSection?.title}
+                            </div>
+                          )}
 
                           <div className="relative z-10 w-full bg-gradient-to-t from-black/95 via-black/80 to-transparent p-2 pt-3 flex flex-col gap-0.5">
                             <span className="text-[11px] font-bold text-white truncate leading-tight">

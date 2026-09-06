@@ -1,13 +1,49 @@
 import { TimelineItem, Trip } from '../types';
 
+// Convert "10:30 AM" or "15:30" into total minutes from midnight for accurate chronological sorting
+function parseTimeToMinutes(timeStr?: string): number {
+  if (!timeStr) return 720; // default 12:00 PM
+  const clean = timeStr.trim();
+  const match = clean.match(/^(\d+):(\d+)\s*(AM|PM)?$/i);
+  if (!match) return 720;
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const ampm = match[3]?.toUpperCase();
+
+  if (ampm === 'PM' && hours < 12) {
+    hours += 12;
+  } else if (ampm === 'AM' && hours === 12) {
+    hours = 0;
+  }
+  return hours * 60 + minutes;
+}
+
+// Convert YYYY.MM.DD or YYYY-MM-DD or Day X to comparable number
+function parseDateScore(dateStr?: string): number {
+  if (!dateStr) return 99999999;
+  const clean = dateStr.trim();
+  const dateMatch = clean.match(/(\d{4})[./\-](\d{1,2})[./\-](\d{1,2})/);
+  if (dateMatch) {
+    const y = parseInt(dateMatch[1], 10);
+    const m = parseInt(dateMatch[2], 10);
+    const d = parseInt(dateMatch[3], 10);
+    return y * 10000 + m * 100 + d;
+  }
+  const dayMatch = clean.match(/day\s*(\d+)/i);
+  if (dayMatch) {
+    return 20000100 + parseInt(dayMatch[1], 10);
+  }
+  return 99999999;
+}
+
 /**
  * Resolves the display location string for a timeline item in magazine context:
  * 1. If the item has a valid location distinct from empty and from place name, use it.
  * 2. If the item has no location or it is identical to item.place:
  *    Search chronologically backwards for the closest prior timeline item that has a valid location!
- * 3. If no prior item has a location, check items on the same date.
- * 4. Fallback to parentTrip.locationStr or country.
- * 5. NEVER return item.place when item.place is already the title.
+ *    (e.g., if items 1, 2 have locations and items 3, 4 don't, item 4 inherits item 2's location).
+ * 3. Fallback to parentTrip.locationStr or country.
+ * 4. NEVER return item.place when item.place is already the title.
  */
 export function resolveTimelinePlaceName(
   item: TimelineItem,
@@ -21,24 +57,49 @@ export function resolveTimelinePlaceName(
     return item.location.trim();
   }
 
-  // 2. Search chronologically backwards for the closest prior item with a valid location
+  // 2. Sort all timeline items chronologically: Date -> Time (in minutes) -> ID
   const sorted = [...allTimelineItemsForTrip].sort((a, b) => {
-    const keyA = `${a.date || ''} ${a.time || ''}`;
-    const keyB = `${b.date || ''} ${b.time || ''}`;
-    return keyA.localeCompare(keyB);
+    const dScoreA = parseDateScore(a.date);
+    const dScoreB = parseDateScore(b.date);
+    if (dScoreA !== dScoreB) return dScoreA - dScoreB;
+
+    const tMinutesA = parseTimeToMinutes(a.time);
+    const tMinutesB = parseTimeToMinutes(b.time);
+    if (tMinutesA !== tMinutesB) return tMinutesA - tMinutesB;
+
+    return (Number(a.id) || 0) - (Number(b.id) || 0);
   });
 
   const currentIndex = sorted.findIndex(t => Number(t.id) === Number(item.id));
+  
   if (currentIndex > 0) {
+    // Search backwards from the immediate prior item
     for (let i = currentIndex - 1; i >= 0; i--) {
       const prevLoc = sorted[i]?.location?.trim();
       if (prevLoc && prevLoc.toLowerCase() !== pName) {
         return prevLoc;
       }
     }
+  } else if (currentIndex === -1) {
+    // If not found by ID (e.g. newly created before ID match), find by target date/time
+    const targetDateScore = parseDateScore(item.date);
+    const targetTimeMinutes = parseTimeToMinutes(item.time);
+    const earlierItems = sorted.filter(t => {
+      const d = parseDateScore(t.date);
+      if (d < targetDateScore) return true;
+      if (d === targetDateScore) return parseTimeToMinutes(t.time) <= targetTimeMinutes;
+      return false;
+    });
+
+    for (let i = earlierItems.length - 1; i >= 0; i--) {
+      const prevLoc = earlierItems[i]?.location?.trim();
+      if (prevLoc && prevLoc.toLowerCase() !== pName) {
+        return prevLoc;
+      }
+    }
   }
 
-  // 3. Search same date items with a valid location
+  // 3. Search any item on the same date with a valid location
   const sameDateItem = sorted.find(t => 
     t.date === item.date && 
     t.location && 
