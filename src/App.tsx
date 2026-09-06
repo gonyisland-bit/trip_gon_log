@@ -17,6 +17,7 @@ import { ConfirmModal } from './components/ConfirmModal';
 import { Check, AlertTriangle } from 'lucide-react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { fetchCoordinates } from './utils/googleMapsHelper';
+import { resolveTimelinePlaceName } from './utils/magazineHelper';
 import { 
   initialTrips, 
   initialPlans, 
@@ -596,7 +597,7 @@ function App() {
     }
   }, [isLoggedIn, trips.length, plans.length]);
 
-  // Auto-sync magazine moments with latest timeline images if they were updated earlier
+  // Auto-sync magazine moments with latest timeline data (Strict image/ID match & closest prior location)
   useEffect(() => {
     if (!magazineSections || magazineSections.length === 0 || Object.keys(timelineData).length === 0) return;
 
@@ -614,27 +615,45 @@ function App() {
       const syncedItems = (sec.items || []).map(m => {
         if (!m.tripId) return m;
 
-        // Try to match timeline item
+        // Strict 1:1 match by timelineItemId or matching photo URL
         let match: TimelineItem | undefined;
         if (m.timelineItemId !== undefined) {
           match = allTimelineItems.find(t => Number(t.tripId) === Number(m.tripId) && Number(t.id) === Number(m.timelineItemId));
         }
-        if (!match) {
+        if (!match && m.img) {
           match = allTimelineItems.find(t => 
             Number(t.tripId) === Number(m.tripId) && 
             t.img && 
-            (t.place === m.title || (t.date === m.date && t.place === m.placeName))
+            (t.img === m.img || t.img.split('?')[0] === m.img.split('?')[0])
           );
         }
 
-        if (match && match.img && match.img !== m.img) {
-          secChanged = true;
-          hasDifferences = true;
-          return {
-            ...m,
-            timelineItemId: match.id,
-            img: match.img,
-          };
+        if (match) {
+          const parentTrip = trips.find(trip => Number(trip.id) === Number(m.tripId)) || plans.find(plan => Number(plan.id) === Number(m.tripId));
+          const tripTimeline = allTimelineItems.filter(t => Number(t.tripId) === Number(m.tripId));
+          const resolvedPlace = resolveTimelinePlaceName(match, tripTimeline, parentTrip);
+          const newImg = match.img || m.img;
+          const newTitle = match.place || m.title;
+          const newDate = match.date || m.date;
+
+          if (
+            m.img !== newImg ||
+            m.title !== newTitle ||
+            m.placeName !== resolvedPlace ||
+            m.date !== newDate ||
+            m.timelineItemId !== match.id
+          ) {
+            secChanged = true;
+            hasDifferences = true;
+            return {
+              ...m,
+              timelineItemId: match.id,
+              img: newImg,
+              title: newTitle,
+              placeName: resolvedPlace,
+              date: newDate,
+            };
+          }
         }
         return m;
       });
@@ -658,7 +677,7 @@ function App() {
         }, { merge: true }).catch((e) => console.warn('Background magazine sync persistence notice:', e));
       }
     }
-  }, [timelineData, magazineSections?.length, isLoggedIn, isAdmin]);
+  }, [timelineData, magazineSections?.length, isLoggedIn, isAdmin, trips, plans]);
 
   // Sync state with browser History API and parse share param on initial load
   useEffect(() => {
@@ -1386,44 +1405,45 @@ function App() {
       const syncMoment = (m: MagazineMoment): MagazineMoment => {
         if (Number(m.tripId) !== Number(tripId)) return m;
 
-        // 1. Match by timelineItemId
+        // 1. Direct match by timelineItemId
+        let matched: TimelineItem | undefined;
         if (m.timelineItemId !== undefined && updatedTimelineMap.has(Number(m.timelineItemId))) {
-          const matched = updatedTimelineMap.get(Number(m.timelineItemId))!;
+          matched = updatedTimelineMap.get(Number(m.timelineItemId));
+        }
+
+        // 2. Match ONLY by exact image URL or previous image match
+        if (!matched && m.img) {
+          matched = updatedTimeline.find(t => t.img && (t.img === m.img || t.img.split('?')[0] === m.img.split('?')[0]));
+          if (!matched) {
+            const prevItem = previousTimelineDocs.find(p => p.img && (p.img === m.img || p.img.split('?')[0] === m.img.split('?')[0]));
+            if (prevItem) {
+              matched = updatedTimelineMap.get(Number(prevItem.id));
+            }
+          }
+        }
+
+        if (matched) {
+          const resolvedPlace = resolveTimelinePlaceName(matched, updatedTimeline, updatedTrip);
+          const newImg = matched.img || m.img;
+          const newTitle = matched.place || m.title;
+          const newDate = matched.date || m.date;
+
           if (
-            (matched.img && matched.img !== m.img) ||
-            (matched.place && matched.place !== m.title) ||
-            (matched.location && matched.location !== m.placeName) ||
-            (matched.date && matched.date !== m.date)
+            m.img !== newImg ||
+            m.title !== newTitle ||
+            m.placeName !== resolvedPlace ||
+            m.date !== newDate ||
+            m.timelineItemId !== matched.id
           ) {
             hasMagazineChanges = true;
             return {
               ...m,
-              img: matched.img || m.img,
-              title: matched.place || m.title,
-              placeName: matched.location || matched.place || m.placeName,
-              date: matched.date || m.date,
+              timelineItemId: matched.id,
+              img: newImg,
+              title: newTitle,
+              placeName: resolvedPlace,
+              date: newDate,
             };
-          }
-        }
-
-        // 2. Match by previous image URL or place+date match
-        for (const prevItem of previousTimelineDocs) {
-          const isImgMatch = Boolean(prevItem.img && m.img && (prevItem.img === m.img || prevItem.img.split('?')[0] === m.img.split('?')[0]));
-          const isPlaceMatch = Boolean(prevItem.place && m.title && prevItem.place.trim().toLowerCase() === m.title.trim().toLowerCase());
-
-          if (isImgMatch || isPlaceMatch) {
-            const currentItem = updatedTimelineMap.get(Number(prevItem.id));
-            if (currentItem && currentItem.img) {
-              hasMagazineChanges = true;
-              return {
-                ...m,
-                timelineItemId: currentItem.id,
-                img: currentItem.img,
-                title: currentItem.place || m.title,
-                placeName: currentItem.location || currentItem.place || m.placeName,
-                date: currentItem.date || m.date,
-              };
-            }
           }
         }
 

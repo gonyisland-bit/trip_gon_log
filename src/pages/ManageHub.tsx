@@ -49,6 +49,7 @@ import { getEffectiveImageUrl, uploadFileToR2, deleteFileFromR2 } from '../utils
 import { compressImage } from '../utils/imageHelper';
 import { inspectAndPrepareVideo } from '../utils/videoHelper';
 import { cleanAdministrativeDistricts, resolveTimelineItemLocation } from '../components/SummaryView';
+import { resolveTimelinePlaceName } from '../utils/magazineHelper';
 
 interface ManageHubPageProps {
   trips: Trip[];
@@ -317,6 +318,8 @@ export function ManageHubPage({
     orphanedStaysDocs: { id: string; tripId?: any }[];
     orphanedFlightsDocs: { id: string; tripId?: any }[];
     orphanedTransitsDocs: { id: string; tripId?: any }[];
+    orphanedMagazineMoments: { sectionId: string; sectionTitle: string; momentId: string; title: string; tripId?: any }[];
+    outOfSyncMagazineMoments: { sectionId: string; sectionTitle: string; momentId: string; title: string; reason: string }[];
     deprecatedSubtitleDocs: { collection: string; id: string }[];
     obsoleteStorageKeys: string[];
     isClean: boolean;
@@ -327,7 +330,7 @@ export function ManageHubPage({
   const [isCleaning, setIsCleaning] = useState(false);
   const [cleanLog, setCleanLog] = useState<string[]>([]);
   const [showCleanSuccessModal, setShowCleanSuccessModal] = useState(false);
-  const [cleanupSummary, setCleanupSummary] = useState<{ orphanedDeleted: number; subtitleCleaned: number; cacheCleaned: number } | null>(null);
+  const [cleanupSummary, setCleanupSummary] = useState<{ orphanedDeleted: number; subtitleCleaned: number; cacheCleaned: number; magazineOptimized: number } | null>(null);
 
   const handleScanCleanup = async () => {
     setIsScanning(true);
@@ -415,6 +418,68 @@ export function ManageHubPage({
         }
       });
 
+      // ── Scan Magazine Sections & Moments ──
+      const orphanedMagazineMoments: { sectionId: string; sectionTitle: string; momentId: string; title: string; tripId?: any }[] = [];
+      const outOfSyncMagazineMoments: { sectionId: string; sectionTitle: string; momentId: string; title: string; reason: string }[] = [];
+
+      // Collect all active timeline items across days
+      const allActiveTimelineItems: TimelineItem[] = [];
+      Object.values(timelineData || {}).forEach(dayItems => {
+        if (Array.isArray(dayItems)) {
+          allActiveTimelineItems.push(...dayItems);
+        }
+      });
+
+      sectionsList.forEach(section => {
+        (section.items || []).forEach(moment => {
+          // 1. Orphaned check: tripId doesn't exist in active trips/plans/trash
+          if (moment.tripId !== undefined && moment.tripId !== null && !validTripIds.has(String(moment.tripId))) {
+            orphanedMagazineMoments.push({
+              sectionId: section.id,
+              sectionTitle: section.title,
+              momentId: moment.id,
+              title: moment.title,
+              tripId: moment.tripId
+            });
+            return;
+          }
+
+          // 2. Out-of-sync or duplicate placeName check
+          const pName = (moment.placeName || '').trim().toLowerCase();
+          const mTitle = (moment.title || '').trim().toLowerCase();
+
+          // Check if placeName is duplicated with title
+          if (pName && mTitle && pName === mTitle) {
+            outOfSyncMagazineMoments.push({
+              sectionId: section.id,
+              sectionTitle: section.title,
+              momentId: moment.id,
+              title: moment.title,
+              reason: '제목과 장소명이 중복 표기됨 (타임라인 상속 장소로 최적화 필요)'
+            });
+            return;
+          }
+
+          // Check if moment has matched timeline item whose title/place or image is out of sync
+          if (moment.timelineItemId !== undefined) {
+            const matchedTimeline = allActiveTimelineItems.find(t => Number(t.id) === Number(moment.timelineItemId));
+            if (matchedTimeline) {
+              const expectedTitle = safeStr(matchedTimeline.place) || safeStr(matchedTimeline.journeyTitle) || 'UNTITLED';
+              const cleanExpected = expectedTitle.toLowerCase();
+              if (cleanExpected && mTitle && cleanExpected !== mTitle) {
+                outOfSyncMagazineMoments.push({
+                  sectionId: section.id,
+                  sectionTitle: section.title,
+                  momentId: moment.id,
+                  title: moment.title,
+                  reason: `타임라인 원본 제목('${matchedTimeline.place}')과 불일치`
+                });
+              }
+            }
+          }
+        });
+      });
+
       const obsoleteStorageKeys: string[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
@@ -423,7 +488,14 @@ export function ManageHubPage({
         }
       }
 
-      const totalIssues = orphanedTimelineDocs.length + orphanedStaysDocs.length + orphanedFlightsDocs.length + orphanedTransitsDocs.length + deprecatedSubtitleDocs.length + obsoleteStorageKeys.length;
+      const totalIssues = orphanedTimelineDocs.length + 
+        orphanedStaysDocs.length + 
+        orphanedFlightsDocs.length + 
+        orphanedTransitsDocs.length + 
+        orphanedMagazineMoments.length + 
+        outOfSyncMagazineMoments.length + 
+        deprecatedSubtitleDocs.length + 
+        obsoleteStorageKeys.length;
 
       const report: DiagnosticReport = {
         scannedAt: new Date(),
@@ -433,6 +505,8 @@ export function ManageHubPage({
         orphanedStaysDocs,
         orphanedFlightsDocs,
         orphanedTransitsDocs,
+        orphanedMagazineMoments,
+        outOfSyncMagazineMoments,
         deprecatedSubtitleDocs,
         obsoleteStorageKeys,
         isClean: totalIssues === 0,
@@ -449,7 +523,7 @@ export function ManageHubPage({
 
   const handleExecuteCleanup = async () => {
     if (!diagReport) return;
-    if (!confirm('안전 최적화 및 찌꺼기 정리를 실행하시겠습니까?\n\n[안전 보장 원칙]\n- 현재 등록된 모든 활성 여정 및 타임라인 데이터는 100% 안전하게 온전히 보존됩니다.\n- 이미 삭제된 과거 여정의 고아(Orphaned) 문서와 폐기된 subtitle 속성만 선별 정리됩니다.')) {
+    if (!confirm('안전 최적화 및 찌꺼기 정리를 실행하시겠습니까?\n\n[안전 보장 원칙]\n- 현재 등록된 모든 활성 여정 및 타임라인 데이터는 100% 안전하게 온전히 보존됩니다.\n- 이미 삭제된 과거 여정의 고아(Orphaned) 문서와 폐기된 subtitle 속성만 선별 정리됩니다.\n- 매거진은 원본 타임라인 데이터를 기준으로 완벽하게 최적화 및 동기화됩니다.')) {
       return;
     }
 
@@ -458,6 +532,7 @@ export function ManageHubPage({
     let orphanedDeleted = 0;
     let subtitleCleaned = 0;
     let cacheCleaned = 0;
+    let magazineOptimized = 0;
     const uid = 'public';
 
     try {
@@ -511,9 +586,106 @@ export function ManageHubPage({
         logs.push(`- [로컬 캐시] 폐기된 임시 키 정리: ${key}`);
       }
 
+      // 7. Clean and Optimize Magazine Moments
+      if (diagReport.orphanedMagazineMoments.length > 0 || diagReport.outOfSyncMagazineMoments.length > 0) {
+        const orphanedMomentIds = new Set(diagReport.orphanedMagazineMoments.map(m => m.momentId));
+        
+        // Prepare timeline lookup
+        const allTripTimelineItems: TimelineItem[] = [];
+        Object.values(timelineData || {}).forEach(dayItems => {
+          if (Array.isArray(dayItems)) {
+            allTripTimelineItems.push(...dayItems);
+          }
+        });
+
+        let magModified = false;
+        const cleanedSections = sectionsList.map(sec => {
+          let secChanged = false;
+          // Filter out orphaned moments
+          const filteredItems = (sec.items || []).filter(item => {
+            if (orphanedMomentIds.has(item.id)) {
+              secChanged = true;
+              orphanedDeleted++;
+              logs.push(`- [매거진] 고아 카드 안전 제거: '${item.title}' (섹션: ${sec.title})`);
+              return false;
+            }
+            return true;
+          });
+
+          // Optimize out-of-sync moments using timeline as truth
+          const optimizedItems = filteredItems.map((item, idx) => {
+            let matchedTimeline: TimelineItem | undefined;
+            if (item.timelineItemId !== undefined) {
+              matchedTimeline = allTripTimelineItems.find(t => Number(t.id) === Number(item.timelineItemId));
+            }
+            if (!matchedTimeline && item.img) {
+              const cleanImg = item.img.split('?')[0];
+              matchedTimeline = allTripTimelineItems.find(t => t.img && t.img.split('?')[0] === cleanImg);
+            }
+
+            if (matchedTimeline) {
+              const parentTrip = trips.find(t => t.id === matchedTimeline?.tripId);
+              const tripItems = allTripTimelineItems.filter(t => t.tripId === matchedTimeline?.tripId);
+              const resolvedLoc = resolveTimelinePlaceName(matchedTimeline, tripItems, parentTrip);
+              const correctTitle = safeStr(matchedTimeline.place) || safeStr(matchedTimeline.journeyTitle) || item.title;
+              const correctDate = safeStr(matchedTimeline.date) || item.date;
+
+              if (
+                item.title !== correctTitle ||
+                item.placeName !== resolvedLoc ||
+                item.timelineItemId !== matchedTimeline.id ||
+                item.order !== idx
+              ) {
+                secChanged = true;
+                magazineOptimized++;
+                logs.push(`- [매거진 최적화] '${item.title}' -> 제목/장소/시간 동기화 완료: '${correctTitle}' / '${resolvedLoc}'`);
+                return {
+                  ...item,
+                  timelineItemId: matchedTimeline.id,
+                  title: correctTitle,
+                  placeName: resolvedLoc,
+                  date: correctDate,
+                  order: idx,
+                };
+              }
+            } else if ((item.placeName || '').trim().toLowerCase() === (item.title || '').trim().toLowerCase()) {
+              // Duplicate title/place fix even if no timeline match
+              const parentTrip = trips.find(t => t.id === item.tripId);
+              const fallbackLoc = parentTrip?.locationStr || (parentTrip?.locations && parentTrip.locations[0]?.name) || 'VISITED PLACE';
+              secChanged = true;
+              magazineOptimized++;
+              logs.push(`- [매거진 장소명 최적화] '${item.title}' 중복 장소명을 '${fallbackLoc}'으로 분리`);
+              return {
+                ...item,
+                placeName: fallbackLoc,
+                order: idx,
+              };
+            }
+
+            return { ...item, order: idx };
+          });
+
+          if (secChanged) {
+            magModified = true;
+            return { ...sec, items: optimizedItems };
+          }
+          return sec;
+        });
+
+        if (magModified) {
+          setSectionsList(cleanedSections);
+          const activeSec = cleanedSections.find(s => s.id === activeMagSectionId) || cleanedSections[0];
+          setMomentsList(activeSec?.items || []);
+          if (onSaveMagazineSections) {
+            await onSaveMagazineSections(cleanedSections);
+          }
+          logs.push(`- [매거진] 최적화된 매거진 섹션 데이터 Firestore에 안전 영구 반영 완료`);
+        }
+      }
+
       logs.push(`[${new Date().toLocaleTimeString()}] ✅ 모든 최적화 및 클린화 작업이 안전하게 완료되었습니다!`);
       setCleanLog(logs);
-      setCleanupSummary({ orphanedDeleted, subtitleCleaned, cacheCleaned });
+      setCleanupSummary({ orphanedDeleted, subtitleCleaned, cacheCleaned, magazineOptimized });
       setShowCleanSuccessModal(true);
 
       // Refresh scan
@@ -1000,7 +1172,20 @@ export function ManageHubPage({
     const pName = safeStr(item.place);
     const jTitle = safeStr(item.journeyTitle) || parentTrip?.title || '';
     const jLoc = parentTrip?.locationStr || (parentTrip?.locations && parentTrip.locations[0]?.name) || safeStr(item.journeyLocation);
-    const locStr = safeStr(item.location) || pName;
+    
+    // Resolve location using chronological backwards inheritance:
+    const allTripTimelineItems: TimelineItem[] = [];
+    Object.values(timelineData || {}).forEach(dayItems => {
+      if (Array.isArray(dayItems)) {
+        dayItems.forEach(t => {
+          if (t.tripId === item.tripId) {
+            allTripTimelineItems.push(t);
+          }
+        });
+      }
+    });
+    const locStr = resolveTimelinePlaceName(item, allTripTimelineItems, parentTrip);
+
     const newMoment: MagazineMoment = {
       id: `moment-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       tripId: item.tripId,
@@ -3891,7 +4076,7 @@ export function ManageHubPage({
 
                   {/* Card 2: Orphaned Documents */}
                   <div className={`p-4 bg-white dark:bg-[#161616] border flex flex-col justify-between gap-3 ${
-                    (diagReport.orphanedTimelineDocs.length + diagReport.orphanedStaysDocs.length + diagReport.orphanedFlightsDocs.length + diagReport.orphanedTransitsDocs.length) > 0
+                    (diagReport.orphanedTimelineDocs.length + diagReport.orphanedStaysDocs.length + diagReport.orphanedFlightsDocs.length + diagReport.orphanedTransitsDocs.length + diagReport.orphanedMagazineMoments.length) > 0
                       ? 'border-amber-500/50 bg-amber-500/[0.02]'
                       : 'border-black/15 dark:border-white/15'
                   }`}>
@@ -3899,7 +4084,7 @@ export function ManageHubPage({
                       <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
                         ORPHANED DOCUMENTS
                       </span>
-                      {(diagReport.orphanedTimelineDocs.length + diagReport.orphanedStaysDocs.length + diagReport.orphanedFlightsDocs.length + diagReport.orphanedTransitsDocs.length) > 0 ? (
+                      {(diagReport.orphanedTimelineDocs.length + diagReport.orphanedStaysDocs.length + diagReport.orphanedFlightsDocs.length + diagReport.orphanedTransitsDocs.length + diagReport.orphanedMagazineMoments.length) > 0 ? (
                         <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                       ) : (
                         <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
@@ -3907,35 +4092,35 @@ export function ManageHubPage({
                     </div>
                     <div>
                       <div className="text-2xl sm:text-3xl font-black font-mono">
-                        {diagReport.orphanedTimelineDocs.length + diagReport.orphanedStaysDocs.length + diagReport.orphanedFlightsDocs.length + diagReport.orphanedTransitsDocs.length}{' '}
+                        {diagReport.orphanedTimelineDocs.length + diagReport.orphanedStaysDocs.length + diagReport.orphanedFlightsDocs.length + diagReport.orphanedTransitsDocs.length + diagReport.orphanedMagazineMoments.length}{' '}
                         <span className="text-sm font-sans font-normal text-black/60 dark:text-white/60">Items</span>
                       </div>
                       <div className="text-xs text-black/60 dark:text-white/60 font-mono mt-1">
-                        과거 삭제 여정 잔여물 (타임라인/숙소/교통 등)
+                        과거 삭제 여정 잔여물 (타임라인/숙소/매거진 등)
                       </div>
                     </div>
                     <span className={`text-[9px] font-mono px-1.5 py-0.5 w-fit ${
-                      (diagReport.orphanedTimelineDocs.length + diagReport.orphanedStaysDocs.length + diagReport.orphanedFlightsDocs.length + diagReport.orphanedTransitsDocs.length) > 0
+                      (diagReport.orphanedTimelineDocs.length + diagReport.orphanedStaysDocs.length + diagReport.orphanedFlightsDocs.length + diagReport.orphanedTransitsDocs.length + diagReport.orphanedMagazineMoments.length) > 0
                         ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
                         : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
                     }`}>
-                      {(diagReport.orphanedTimelineDocs.length + diagReport.orphanedStaysDocs.length + diagReport.orphanedFlightsDocs.length + diagReport.orphanedTransitsDocs.length) > 0
+                      {(diagReport.orphanedTimelineDocs.length + diagReport.orphanedStaysDocs.length + diagReport.orphanedFlightsDocs.length + diagReport.orphanedTransitsDocs.length + diagReport.orphanedMagazineMoments.length) > 0
                         ? '정리 대상 발견 (CLEANUP READY)'
                         : '고아 데이터 없음 (CLEAN)'}
                     </span>
                   </div>
 
-                  {/* Card 3: Deprecated Fields & Local Cache */}
+                  {/* Card 3: Magazine & Fields Optimization */}
                   <div className={`p-4 bg-white dark:bg-[#161616] border flex flex-col justify-between gap-3 ${
-                    (diagReport.deprecatedSubtitleDocs.length + diagReport.obsoleteStorageKeys.length) > 0
+                    (diagReport.outOfSyncMagazineMoments.length + diagReport.deprecatedSubtitleDocs.length + diagReport.obsoleteStorageKeys.length) > 0
                       ? 'border-amber-500/50 bg-amber-500/[0.02]'
                       : 'border-black/15 dark:border-white/15'
                   }`}>
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
-                        DEPRECATED FIELDS & CACHE
+                        OPTIMIZATION & CACHE
                       </span>
-                      {(diagReport.deprecatedSubtitleDocs.length + diagReport.obsoleteStorageKeys.length) > 0 ? (
+                      {(diagReport.outOfSyncMagazineMoments.length + diagReport.deprecatedSubtitleDocs.length + diagReport.obsoleteStorageKeys.length) > 0 ? (
                         <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                       ) : (
                         <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
@@ -3943,20 +4128,20 @@ export function ManageHubPage({
                     </div>
                     <div>
                       <div className="text-2xl sm:text-3xl font-black font-mono">
-                        {diagReport.deprecatedSubtitleDocs.length + diagReport.obsoleteStorageKeys.length}{' '}
-                        <span className="text-sm font-sans font-normal text-black/60 dark:text-white/60">Fields</span>
+                        {diagReport.outOfSyncMagazineMoments.length + diagReport.deprecatedSubtitleDocs.length + diagReport.obsoleteStorageKeys.length}{' '}
+                        <span className="text-sm font-sans font-normal text-black/60 dark:text-white/60">Items</span>
                       </div>
                       <div className="text-xs text-black/60 dark:text-white/60 font-mono mt-1">
-                        폐기된 subtitle: {diagReport.deprecatedSubtitleDocs.length}개 / 캐시: {diagReport.obsoleteStorageKeys.length}개
+                        매거진 동기화: {diagReport.outOfSyncMagazineMoments.length}개 / 폐기 필드: {diagReport.deprecatedSubtitleDocs.length}개 / 캐시: {diagReport.obsoleteStorageKeys.length}개
                       </div>
                     </div>
                     <span className={`text-[9px] font-mono px-1.5 py-0.5 w-fit ${
-                      (diagReport.deprecatedSubtitleDocs.length + diagReport.obsoleteStorageKeys.length) > 0
+                      (diagReport.outOfSyncMagazineMoments.length + diagReport.deprecatedSubtitleDocs.length + diagReport.obsoleteStorageKeys.length) > 0
                         ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
                         : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
                     }`}>
-                      {(diagReport.deprecatedSubtitleDocs.length + diagReport.obsoleteStorageKeys.length) > 0
-                        ? '폐기 필드 정리 권장'
+                      {(diagReport.outOfSyncMagazineMoments.length + diagReport.deprecatedSubtitleDocs.length + diagReport.obsoleteStorageKeys.length) > 0
+                        ? '최적화 정리 권장'
                         : '최적화 상태 (OPTIMIZED)'}
                     </span>
                   </div>
@@ -3981,6 +4166,18 @@ export function ManageHubPage({
                         <div key={`orph-timeline-${idx}`} className="flex items-center justify-between text-amber-700 dark:text-amber-300 py-0.5 border-b border-black/5 dark:border-white/5">
                           <span>[고아 타임라인 문서] ID: {item.id} (연결 여정 없음)</span>
                           <span className="text-[10px] px-1 bg-amber-500/10 font-bold">DELETE READY</span>
+                        </div>
+                      ))}
+                      {diagReport.orphanedMagazineMoments.map((item, idx) => (
+                        <div key={`orph-mag-${idx}`} className="flex items-center justify-between text-amber-700 dark:text-amber-300 py-0.5 border-b border-black/5 dark:border-white/5">
+                          <span>[고아 매거진 카드] '{item.title}' (섹션: {item.sectionTitle} / 삭제된 여정 ID: {item.tripId})</span>
+                          <span className="text-[10px] px-1 bg-amber-500/10 font-bold">DELETE READY</span>
+                        </div>
+                      ))}
+                      {diagReport.outOfSyncMagazineMoments.map((item, idx) => (
+                        <div key={`sync-mag-${idx}`} className="flex items-center justify-between text-blue-700 dark:text-blue-300 py-0.5 border-b border-black/5 dark:border-white/5">
+                          <span>[매거진 최적화 대상] '{item.title}' ({item.reason})</span>
+                          <span className="text-[10px] px-1 bg-blue-500/10 font-bold">OPTIMIZE READY</span>
                         </div>
                       ))}
                       {diagReport.orphanedStaysDocs.map((item, idx) => (
@@ -4143,7 +4340,7 @@ export function ManageHubPage({
       <ConfirmModal
         isOpen={showCleanSuccessModal}
         title="OPTIMIZATION COMPLETE"
-        message={`데이터베이스 최적화 및 안전 정리가 완료되었습니다.\n- 고아 문서 정리: ${cleanupSummary?.orphanedDeleted ?? 0}건\n- 폐기 속성(subtitle) 제거: ${cleanupSummary?.subtitleCleaned ?? 0}건\n- 로컬 임시 캐시 정리: ${cleanupSummary?.cacheCleaned ?? 0}건\n\n모든 활성 여정 및 타임라인 데이터는 100% 온전히 유지됩니다.`}
+        message={`데이터베이스 최적화 및 안전 정리가 완료되었습니다.\n- 고아 문서/카드 정리: ${cleanupSummary?.orphanedDeleted ?? 0}건\n- 매거진 동기화 및 장소명 최적화: ${cleanupSummary?.magazineOptimized ?? 0}건\n- 폐기 속성(subtitle) 제거: ${cleanupSummary?.subtitleCleaned ?? 0}건\n- 로컬 임시 캐시 정리: ${cleanupSummary?.cacheCleaned ?? 0}건\n\n모든 활성 여정 및 타임라인 데이터는 100% 온전히 유지됩니다.`}
         confirmLabel="확인 (OK)"
         iconType="check"
         singleButton

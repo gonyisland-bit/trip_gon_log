@@ -555,11 +555,12 @@ function PlaceAutocompleteInput({
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
   const hasSelectedRef = useRef(false);
-  const isFocusedRef = useRef(false);
+  const lastTypedValRef = useRef(value || '');
 
   useEffect(() => {
     if (!isFocusedRef.current && inputRef.current) {
       inputRef.current.value = value || '';
+      lastTypedValRef.current = value || '';
     }
   }, [value]);
 
@@ -598,6 +599,7 @@ function PlaceAutocompleteInput({
           const name = place.name || place.formatted_address || '';
           const address = place.formatted_address || name;
           hasSelectedRef.current = true; // Mark selection in progress to prevent blur race condition
+          lastTypedValRef.current = address;
           if (inputRef.current) {
             inputRef.current.value = address;
           }
@@ -620,10 +622,14 @@ function PlaceAutocompleteInput({
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    isFocusedRef.current = false;
-    const finalVal = inputRef.current ? inputRef.current.value : e.target.value;
+    const capturedVal = e.target.value;
+    if (capturedVal) lastTypedValRef.current = capturedVal;
     // Delay the blur action slightly to allow the place_changed listener to run first
     setTimeout(() => {
+      isFocusedRef.current = false;
+      const domVal = inputRef.current ? inputRef.current.value : '';
+      const fallbackVal = lastTypedValRef.current;
+      const finalVal = (fallbackVal && fallbackVal.length >= domVal.length) ? fallbackVal : domVal;
       if (hasSelectedRef.current) {
         hasSelectedRef.current = false; // Reset the flag
         if (onBlur) onBlur();
@@ -631,7 +637,7 @@ function PlaceAutocompleteInput({
         onChange(finalVal);
         if (onBlur) onBlur();
       }
-    }, 250);
+    }, 150);
   };
 
   return (
@@ -642,8 +648,12 @@ function PlaceAutocompleteInput({
           type="text"
           defaultValue={value || ''}
           onFocus={handleFocus}
+          onChange={(e) => {
+            lastTypedValRef.current = e.target.value;
+          }}
           onCompositionEnd={(e) => {
             const val = (e.target as HTMLInputElement).value;
+            lastTypedValRef.current = val;
             onChange(val);
           }}
           onBlur={handleBlur}
@@ -5527,16 +5537,53 @@ interface JourneyTitleInputProps {
 function JourneyTitleInput({ initialTitle, onUpdateTitle }: JourneyTitleInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const isFocusedRef = useRef(false);
+  const lastTypedValRef = useRef(initialTitle || '');
+  const blurTimerRef = useRef<any>(null);
 
   useEffect(() => {
     if (!isFocusedRef.current && inputRef.current) {
       inputRef.current.value = initialTitle || '';
+      lastTypedValRef.current = initialTitle || '';
     }
   }, [initialTitle]);
 
   const commitTitle = (valOverride?: string) => {
-    const val = valOverride !== undefined ? valOverride : (inputRef.current ? inputRef.current.value : '');
-    onUpdateTitle(val);
+    const rawVal = valOverride !== undefined ? valOverride : (inputRef.current ? inputRef.current.value : lastTypedValRef.current);
+    const finalVal = (lastTypedValRef.current && lastTypedValRef.current.length >= rawVal.length)
+      ? lastTypedValRef.current
+      : rawVal;
+    if (inputRef.current) inputRef.current.value = finalVal;
+    onUpdateTitle(finalVal);
+  };
+
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    lastTypedValRef.current = e.target.value;
+  };
+
+  const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
+    const val = (e.target as HTMLInputElement).value;
+    lastTypedValRef.current = val;
+    commitTitle(val);
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const capturedVal = e.target.value;
+    if (capturedVal) lastTypedValRef.current = capturedVal;
+    if (blurTimerRef.current) clearTimeout(blurTimerRef.current);
+    blurTimerRef.current = setTimeout(() => {
+      isFocusedRef.current = false;
+      const domVal = inputRef.current ? inputRef.current.value : '';
+      const fallbackVal = lastTypedValRef.current;
+      const bestVal = (fallbackVal && fallbackVal.length >= domVal.length) ? fallbackVal : domVal;
+      commitTitle(bestVal);
+    }, 50);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      commitTitle();
+      (e.target as HTMLInputElement).blur();
+    }
   };
 
   return (
@@ -5544,22 +5591,14 @@ function JourneyTitleInput({ initialTitle, onUpdateTitle }: JourneyTitleInputPro
       ref={inputRef}
       type="text"
       defaultValue={initialTitle || ''}
-      onFocus={() => { isFocusedRef.current = true; }}
-      onCompositionEnd={(e) => {
-        const val = (e.target as HTMLInputElement).value;
-        commitTitle(val);
+      onFocus={() => { 
+        if (blurTimerRef.current) clearTimeout(blurTimerRef.current);
+        isFocusedRef.current = true; 
       }}
-      onBlur={(e) => {
-        isFocusedRef.current = false;
-        const val = inputRef.current ? inputRef.current.value : e.target.value;
-        commitTitle(val);
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') {
-          commitTitle();
-          (e.target as HTMLInputElement).blur();
-        }
-      }}
+      onChange={handleInput}
+      onCompositionEnd={handleCompositionEnd}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
       className="text-base sm:text-lg md:text-xl font-black uppercase bg-black/5 dark:bg-white/10 border border-black/15 dark:border-white/15 px-2.5 py-1 outline-none w-full text-black dark:text-white rounded font-satoshi"
       placeholder="JOURNEY TITLE"
     />
@@ -5591,41 +5630,58 @@ function TimelineItemPlaceInput({
   const [showDropdown, setShowDropdown] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const isFocusedRef = useRef(false);
+  const lastTypedValRef = useRef(initialValue || '');
+  const blurTimerRef = useRef<any>(null);
 
   useEffect(() => {
     if (!isFocusedRef.current && inputRef.current) {
       inputRef.current.value = initialValue || '';
+      lastTypedValRef.current = initialValue || '';
       setFilterVal(initialValue || '');
     }
   }, [initialValue]);
 
   const commitValue = (valOverride?: string) => {
-    const val = valOverride !== undefined ? valOverride : (inputRef.current ? inputRef.current.value : filterVal);
-    onUpdatePlace(itemId, val);
+    const rawVal = valOverride !== undefined ? valOverride : (inputRef.current ? inputRef.current.value : filterVal);
+    const finalVal = (lastTypedValRef.current && lastTypedValRef.current.length >= rawVal.length)
+      ? lastTypedValRef.current
+      : rawVal;
+    if (inputRef.current) inputRef.current.value = finalVal;
+    setFilterVal(finalVal);
+    onUpdatePlace(itemId, finalVal);
   };
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
+    lastTypedValRef.current = val;
     setFilterVal(val);
   };
 
   const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
     const val = (e.target as HTMLInputElement).value;
+    lastTypedValRef.current = val;
     setFilterVal(val);
     commitValue(val);
   };
 
   const handleFocus = () => {
+    if (blurTimerRef.current) clearTimeout(blurTimerRef.current);
     isFocusedRef.current = true;
     setShowDropdown(true);
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    isFocusedRef.current = false;
-    const currentDomVal = inputRef.current ? inputRef.current.value : e.target.value;
-    setFilterVal(currentDomVal);
-    commitValue(currentDomVal);
-    setTimeout(() => setShowDropdown(false), 250);
+    const capturedVal = e.target.value;
+    if (capturedVal) lastTypedValRef.current = capturedVal;
+    if (blurTimerRef.current) clearTimeout(blurTimerRef.current);
+    blurTimerRef.current = setTimeout(() => {
+      isFocusedRef.current = false;
+      const domVal = inputRef.current ? inputRef.current.value : '';
+      const fallbackVal = lastTypedValRef.current;
+      const finalVal = (fallbackVal && fallbackVal.length >= domVal.length) ? fallbackVal : domVal;
+      commitValue(finalVal);
+      setShowDropdown(false);
+    }, 50);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -5639,6 +5695,7 @@ function TimelineItemPlaceInput({
     if (inputRef.current) {
       inputRef.current.value = fp.place;
     }
+    lastTypedValRef.current = fp.place;
     setFilterVal(fp.place);
     commitValue(fp.place);
     onSelectFrequent(item, fp);

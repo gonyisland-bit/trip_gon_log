@@ -387,7 +387,10 @@ export function MagazineHubPage({
     const displayTitle = item.title;
     const rawDate = item.date;
     const dateWithDay = formatSimpleDateWithDay(rawDate);
-    const displayPlace = item.placeName || item.location || 'VISITED PLACE';
+    let displayPlace = item.placeName || item.location || '';
+    if (!displayPlace || displayPlace.trim() === '' || displayPlace.trim().toLowerCase() === displayTitle.trim().toLowerCase()) {
+      displayPlace = parentTrip?.locationStr || parentTrip?.country || 'VISITED PLACE';
+    }
 
     // Direct jump handler to journey timeline
     const handleJumpToTimeline = (e: React.MouseEvent) => {

@@ -20,12 +20,12 @@ export function PlaceAutocompleteInput({
 }: PlaceAutocompleteInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
-  const hasSelectedRef = useRef(false);
-  const isFocusedRef = useRef(false);
+  const lastTypedValRef = useRef(value || '');
 
   useEffect(() => {
     if (!isFocusedRef.current && inputRef.current) {
       inputRef.current.value = value || '';
+      lastTypedValRef.current = value || '';
     }
   }, [value]);
 
@@ -72,6 +72,7 @@ export function PlaceAutocompleteInput({
             if (countryComp) countryName = countryComp.long_name;
           }
           hasSelectedRef.current = true;
+          lastTypedValRef.current = address;
           if (inputRef.current) {
             inputRef.current.value = address;
           }
@@ -94,10 +95,14 @@ export function PlaceAutocompleteInput({
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    isFocusedRef.current = false;
-    const finalVal = inputRef.current ? inputRef.current.value : e.target.value;
+    const capturedVal = e.target.value;
+    if (capturedVal) lastTypedValRef.current = capturedVal;
     // Delay the blur action slightly to allow the place_changed listener to run first
     setTimeout(() => {
+      isFocusedRef.current = false;
+      const domVal = inputRef.current ? inputRef.current.value : '';
+      const fallbackVal = lastTypedValRef.current;
+      const finalVal = (fallbackVal && fallbackVal.length >= domVal.length) ? fallbackVal : domVal;
       if (hasSelectedRef.current) {
         hasSelectedRef.current = false; // Reset the flag
         if (onBlur) onBlur();
@@ -105,7 +110,7 @@ export function PlaceAutocompleteInput({
         onChange(finalVal);
         if (onBlur) onBlur();
       }
-    }, 250);
+    }, 150);
   };
 
   return (
@@ -116,8 +121,12 @@ export function PlaceAutocompleteInput({
           type="text"
           defaultValue={value || ''}
           onFocus={handleFocus}
+          onChange={(e) => {
+            lastTypedValRef.current = e.target.value;
+          }}
           onCompositionEnd={(e) => {
             const val = (e.target as HTMLInputElement).value;
+            lastTypedValRef.current = val;
             onChange(val);
           }}
           onBlur={handleBlur}
