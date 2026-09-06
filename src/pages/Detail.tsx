@@ -4863,12 +4863,10 @@ export function JourneyDetailPage({
                 <div 
                   ref={el => { itemRefs.current[imgItem.id] = el; }}
                   key={`${imgItem.type}-${imgItem.url}-${idx}`} 
-                  className={`flex flex-col group/gallery transition-all duration-300 relative border select-none ${
+                  className={`flex flex-col group/gallery transition-all duration-200 relative border select-none opacity-100 ${
                     isPhotoActive 
-                      ? 'bg-white dark:bg-[#161616] border-black dark:border-white ring-2 ring-black dark:ring-white shadow-2xl z-20 scale-[1.015] opacity-100' 
-                      : (expandedItemId 
-                          ? 'bg-white dark:bg-[#0E0E0E] border-black/10 dark:border-white/10 opacity-40 hover:opacity-85' 
-                          : 'bg-white dark:bg-[#0E0E0E] border-black/10 dark:border-white/10 opacity-100 hover:border-black/30 dark:hover:border-white/30')
+                      ? 'border-black dark:border-white ring-1 ring-black dark:ring-white shadow-xl z-20' 
+                      : 'border-black/15 dark:border-white/15 hover:border-black/40 dark:hover:border-white/40'
                   }`}
                 >
                   {/* Film-photo styled image container */}
@@ -4946,17 +4944,21 @@ export function JourneyDetailPage({
                     <div className="absolute inset-0 bg-black/0 group-hover/gallery:bg-black/10 transition-colors pointer-events-none" />
                   </div>
 
-                  {/* Note / description area below image (Unified Single Body Swiss Style) */}
-                  <div className={`px-3 py-2.5 flex flex-col gap-1 transition-colors ${
-                    isPhotoActive ? 'bg-white dark:bg-[#161616]' : 'bg-white dark:bg-[#0E0E0E] text-black dark:text-white'
+                  {/* Note / description area below image (Inverted Highlight on Selection) */}
+                  <div className={`px-3 py-2.5 flex flex-col gap-1 transition-colors duration-200 ${
+                    isPhotoActive 
+                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-inner' 
+                      : 'bg-white dark:bg-[#0E0E0E] text-black dark:text-white'
                   }`}>
-                    {/* Top Meta: Date and Time (Black / White high contrast, no emojis) */}
+                    {/* Top Meta: Date and Time (Inverted text colors when active) */}
                     {imgItem.date && (
-                      <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 not-italic">
+                      <div className={`flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider not-italic ${
+                        isPhotoActive ? 'text-white/70 dark:text-black/70' : 'text-black/60 dark:text-white/60'
+                      }`}>
                         <span>{imgItem.date}</span>
                         {imgItem.time && (
                           <>
-                            <span className="text-black/30 dark:text-white/30">·</span>
+                            <span className={isPhotoActive ? 'text-white/40 dark:text-black/40' : 'text-black/30 dark:text-white/30'}>·</span>
                             <span>{imgItem.time}</span>
                           </>
                         )}
@@ -4968,7 +4970,9 @@ export function JourneyDetailPage({
                       <div className="flex-1 min-w-0">
                         {/* 1. Main Title: 일정 제목 (place) */}
                         {imgItem.place ? (
-                          <h4 className="text-xs sm:text-[13px] font-sans font-bold text-black dark:text-white leading-snug break-keep line-clamp-2 not-italic">
+                          <h4 className={`text-xs sm:text-[13px] font-sans font-bold leading-snug break-keep line-clamp-2 not-italic ${
+                            isPhotoActive ? 'text-white dark:text-black' : 'text-black dark:text-white'
+                          }`}>
                             {imgItem.place}
                           </h4>
                         ) : imgItem.type === 'gallery' && isEditing ? (
@@ -4977,21 +4981,31 @@ export function JourneyDetailPage({
                             value={imgItem.imgNote || ''}
                             onChange={(e) => handleUpdateGalleryImageNote(imgItem.url, e.target.value)}
                             placeholder="사진 설명 추가..."
-                            className="w-full bg-transparent outline-none text-xs sm:text-[13px] font-sans font-bold text-black dark:text-white placeholder-black/30 dark:placeholder-white/30 not-italic border-b border-black/20 dark:border-white/20 pb-0.5"
+                            className={`w-full bg-transparent outline-none text-xs sm:text-[13px] font-sans font-bold not-italic border-b pb-0.5 ${
+                              isPhotoActive 
+                                ? 'text-white dark:text-black placeholder-white/40 dark:placeholder-black/40 border-white/30 dark:border-black/30' 
+                                : 'text-black dark:text-white placeholder-black/30 dark:placeholder-white/30 border-black/20 dark:border-white/20'
+                            }`}
                             onClick={(e) => e.stopPropagation()}
                           />
                         ) : imgItem.imgNote ? (
-                          <h4 className="text-xs sm:text-[13px] font-sans font-bold text-black dark:text-white leading-snug break-keep line-clamp-2 not-italic">
+                          <h4 className={`text-xs sm:text-[13px] font-sans font-bold leading-snug break-keep line-clamp-2 not-italic ${
+                            isPhotoActive ? 'text-white dark:text-black' : 'text-black dark:text-white'
+                          }`}>
                             {imgItem.imgNote}
                           </h4>
                         ) : (
-                          <p className="text-[10.5px] font-sans font-medium text-black/35 dark:text-white/35 not-italic">기록된 제목 없음</p>
+                          <p className={`text-[10.5px] font-sans font-medium not-italic ${
+                            isPhotoActive ? 'text-white/50 dark:text-black/50' : 'text-black/35 dark:text-white/35'
+                          }`}>기록된 제목 없음</p>
                         )}
 
                         {/* 2. Specified Location Name: 구글 자동완성 위치명 (location) */}
                         {((imgItem as any).location || (imgItem.type === 'gallery' && imgItem.place && imgItem.imgNote)) && (
-                          <div className="text-[10.5px] sm:text-xs font-sans font-semibold text-black/70 dark:text-white/70 tracking-tight flex items-center gap-1 mt-1 not-italic truncate">
-                            <MapPin className="w-3 h-3 shrink-0 text-red-600 dark:text-red-400" />
+                          <div className={`text-[10.5px] sm:text-xs font-sans font-semibold tracking-tight flex items-center gap-1 mt-1 not-italic truncate ${
+                            isPhotoActive ? 'text-white/90 dark:text-black/90' : 'text-black/70 dark:text-white/70'
+                          }`}>
+                            <MapPin className={`w-3 h-3 shrink-0 ${isPhotoActive ? 'text-red-400 dark:text-red-600' : 'text-red-600 dark:text-red-400'}`} />
                             <span className="truncate">{(imgItem as any).location || imgItem.place}</span>
                           </div>
                         )}
@@ -5017,7 +5031,11 @@ export function JourneyDetailPage({
                                   e.stopPropagation();
                                   handleJumpToTimelineItem(targetItemId, targetDate);
                                 }}
-                                className="p-1 bg-black/5 dark:bg-white/5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-black/60 dark:text-white/60 transition-colors cursor-pointer"
+                                className={`p-1 transition-colors cursor-pointer ${
+                                  isPhotoActive
+                                    ? 'bg-white/20 dark:bg-black/10 hover:bg-white hover:text-black dark:hover:bg-black dark:hover:text-white text-white dark:text-black'
+                                    : 'bg-black/5 dark:bg-white/5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-black/60 dark:text-white/60'
+                                }`}
                                 title="일정으로 이동"
                               >
                                 <ArrowRight className="w-3 h-3" />

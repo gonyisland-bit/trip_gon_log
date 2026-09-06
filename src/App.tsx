@@ -3,7 +3,6 @@ import { Navigation } from './components/Navigation';
 import { Footer } from './components/Footer';
 import { HomePage } from './pages/Home';
 import { ArchiveHubPage } from './pages/Archive';
-import { PlanHubPage } from './pages/Plan';
 import { MapHubPage } from './pages/MapHub';
 import { ManageHubPage } from './pages/ManageHub';
 import { MagazineHubPage } from './pages/MagazineHub';
@@ -706,10 +705,8 @@ function App() {
       initialTripId = Number(idParam);
       setIsShareMode(true);
     } else {
-      if (path === '/archive' || window.location.hash === '#archive') {
+      if (path === '/archive' || window.location.hash === '#archive' || path === '/plan' || window.location.hash === '#plan') {
         initialView = 'archive';
-      } else if (path === '/plan' || window.location.hash === '#plan') {
-        initialView = 'plan';
       } else if (path === '/map' || window.location.hash === '#map') {
         initialView = 'map';
       } else if (path === '/manage' || window.location.hash === '#manage') {
@@ -721,7 +718,7 @@ function App() {
         }
       } else {
         const lastView = sessionStorage.getItem('lastView');
-        if (lastView && ['home', 'archive', 'plan', 'map', 'manage'].includes(lastView)) {
+        if (lastView && ['home', 'archive', 'map', 'manage', 'magazine'].includes(lastView)) {
           initialView = lastView;
         }
       }
@@ -792,30 +789,31 @@ function App() {
       setIsShareMode(false);
     }
 
+    const effectiveView = view === 'plan' ? 'archive' : view;
     if (tripId) setActiveTripId(tripId);
-    setCurrentView(view);
+    setCurrentView(effectiveView);
     setSelectedTagFilter(tagFilter);
 
     // Always scroll to top when changing views
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
 
-    sessionStorage.setItem('lastView', view);
+    sessionStorage.setItem('lastView', effectiveView);
     if (tripId || activeTripId) {
       sessionStorage.setItem('lastTripId', String(tripId || activeTripId));
     }
 
     if (pushHistory) {
       let path = '/';
-      if (view === 'archive') path = '/archive';
-      else if (view === 'plan') path = '/plan';
-      else if (view === 'map') path = '/map';
-      else if (view === 'manage') path = '/manage';
-      else if (view === 'detail') {
+      if (effectiveView === 'archive') path = '/archive';
+      else if (effectiveView === 'magazine') path = '/magazine';
+      else if (effectiveView === 'map') path = '/map';
+      else if (effectiveView === 'manage') path = '/manage';
+      else if (effectiveView === 'detail') {
         const idToUse = tripId || activeTripId;
-        const isShare = (view === 'detail' && (tripId === activeTripId || tripId === null || tripId === idToUse)) ? isShareMode : false;
+        const isShare = (effectiveView === 'detail' && (tripId === activeTripId || tripId === null || tripId === idToUse)) ? isShareMode : false;
         path = idToUse ? `/detail?id=${idToUse}${isShare ? '&share=true' : ''}` : '/detail';
       }
-      window.history.pushState({ view, tripId: tripId || activeTripId }, '', path);
+      window.history.pushState({ view: effectiveView, tripId: tripId || activeTripId }, '', path);
     }
   };
 
@@ -1168,13 +1166,6 @@ function App() {
   const handleAddArchive = async () => {
     if (!isLoggedIn) return alert("로그인 후 이용 가능합니다.");
     setCreateModalType('archive');
-    setIsCreateModalOpen(true);
-  };
-
-  const handleAddPlan = async () => {
-    if (!isLoggedIn) return alert("로그인 후 이용 가능합니다.");
-    setCreateCountryInitial('');
-    setCreateModalType('plan');
     setIsCreateModalOpen(true);
   };
 
@@ -1680,8 +1671,9 @@ function App() {
     new Set([...trips, ...plans].flatMap(t => t.tags || []))
   ).filter(t => t !== 'Plan' && t !== 'Personal');
 
-  const isHomeGradientActive = currentView === 'home' && homeGradientEnabled && !isDarkMode;
-  const appGradientStyle = isHomeGradientActive
+  const isGlobalGradientActive = (currentView === 'home' || currentView === 'archive' || currentView === 'magazine') && homeGradientEnabled && !isDarkMode;
+  const isHomeGradientActive = isGlobalGradientActive;
+  const appGradientStyle = isGlobalGradientActive
     ? { background: `linear-gradient(135deg, ${homeGradientFrom} 0%, ${homeGradientTo} 100%)` }
     : undefined;
 
@@ -1939,27 +1931,6 @@ function App() {
                   isLoggedIn={isLoggedIn}
                   isAdmin={isAdmin}
                   isDarkMode={isDarkMode}
-                />
-              )}
-              {currentView === 'plan' && (
-                <PlanHubPage 
-                  plans={plans} 
-                  onNavigate={navigateTo} 
-                  onAddPlan={handleAddPlan}
-                  handleMoveToArchive={handleMoveToArchive}
-                  isLoggedIn={isLoggedIn}
-                  onDeletePlan={handleDeleteJourney}
-                  onEditPlan={(id) => setEditingTripId(id)}
-                  onClonePlan={handleCloneJourney}
-                  onReorderPlans={async (orderedIds) => {
-                    if (!isLoggedIn) return;
-                    const batch = writeBatch(db);
-                    orderedIds.forEach((id, idx) => {
-                      batch.update(doc(db, 'users', 'public', 'plans', String(id)), { displayOrder: idx });
-                    });
-                    await batch.commit();
-                  }}
-                  initialTagFilter={selectedTagFilter}
                 />
               )}
               {currentView === 'detail' && (

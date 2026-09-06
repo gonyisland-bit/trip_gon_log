@@ -1781,10 +1781,10 @@ export function ManageHubPage({
                     <div className="flex justify-between items-center">
                       <div>
                         <span className="text-xs font-mono font-bold uppercase text-black/80 dark:text-white/80 block">
-                          BACKGROUND GRADIENT (홈 감성 그라데이션)
+                          BACKGROUND GRADIENT (전체 감성 그라데이션 - 홈, 트립, 매거진 적용)
                         </span>
                         <span className="text-[10px] text-black/50 dark:text-white/50">
-                          화이트/블랙의 단조로움을 없애고 두 가지 은은한 톤으로 감성 느낌 연출
+                          화이트/블랙의 단조로움을 없애고 은은한 톤으로 홈, 트립, 매거진 전체 배경 일괄 연출
                         </span>
                       </div>
                       <button

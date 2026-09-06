@@ -536,7 +536,7 @@ export function MagazineHubPage({
   };
 
   return (
-    <main className="min-h-screen w-full bg-[#FAF9F6] dark:bg-[#111111] text-black dark:text-white flex flex-col font-sans transition-colors duration-300">
+    <main className="min-h-screen w-full bg-transparent dark:bg-[#111111] text-black dark:text-white flex flex-col font-sans transition-colors duration-300">
       
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* 1. HERO SECTION (Editorial Large Hero Banner with Typography)        */}
@@ -651,7 +651,7 @@ export function MagazineHubPage({
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* 2. SECTION NAVIGATOR / SELECTOR (Editorial Tabs & Showcase Accordion) */}
       {/* ─────────────────────────────────────────────────────────────────── */}
-      <div className="sticky top-14 sm:top-16 z-30 w-full bg-[#FAF9F6]/95 dark:bg-[#111111]/95 backdrop-blur-md border-b border-black/10 dark:border-white/10 px-4 sm:px-8 md:px-12 py-2.5 transition-colors">
+      <div className="sticky top-14 sm:top-16 z-30 w-full bg-white/40 dark:bg-[#111111]/95 backdrop-blur-md border-b border-black/10 dark:border-white/10 px-4 sm:px-8 md:px-12 py-2.5 transition-colors">
         <div className="flex items-center justify-between gap-3">
           {/* Section Tabs (Horizontal Scrollable) */}
           <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto hide-scrollbar py-1 flex-1 min-w-0">
