@@ -74,6 +74,8 @@ interface ManageHubPageProps {
   homeGradientEnabled?: boolean;
   homeGradientFrom?: string;
   homeGradientTo?: string;
+  homeMagazineSectionId?: string;
+  homeMagazineLimit?: number;
   onSaveAllHomeSettings: (
     title: string,
     subtitle: string,
@@ -87,7 +89,9 @@ interface ManageHubPageProps {
     heroSlideDurationParam?: number,
     gradientEnabledParam?: boolean,
     gradientFromParam?: string,
-    gradientToParam?: string
+    gradientToParam?: string,
+    homeMagazineSectionIdParam?: string,
+    homeMagazineLimitParam?: number
   ) => Promise<void>;
   // Magazine Highlights & Sections
   magazineMoments?: MagazineMoment[];
@@ -127,6 +131,8 @@ export function ManageHubPage({
   homeGradientEnabled,
   homeGradientFrom,
   homeGradientTo,
+  homeMagazineSectionId = 'main',
+  homeMagazineLimit = 6,
   onSaveAllHomeSettings,
   trashedJourneys,
   onRestoreJourney,
@@ -278,6 +284,23 @@ export function ManageHubPage({
   const [isSavingHome, setIsSavingHome] = useState(false);
   const [homeSaveSuccess, setHomeSaveSuccess] = useState(false);
   const [heroSearchQuery, setHeroSearchQuery] = useState('');
+
+  // Home Magazine Section & Limit state
+  const [homeMagSectionId, setHomeMagSectionId] = useState<string>(() => {
+    return homeMagazineSectionId || localStorage.getItem('home_magazine_section_id') || 'main';
+  });
+  const [homeMagLimit, setHomeMagLimit] = useState<number>(() => {
+    const saved = localStorage.getItem('home_magazine_limit');
+    return saved ? parseInt(saved, 10) : (homeMagazineLimit || 6);
+  });
+
+  useEffect(() => {
+    if (homeMagazineSectionId) setHomeMagSectionId(homeMagazineSectionId);
+  }, [homeMagazineSectionId]);
+
+  useEffect(() => {
+    if (homeMagazineLimit) setHomeMagLimit(homeMagazineLimit);
+  }, [homeMagazineLimit]);
 
   // Map settings state
   const [mapTileStyle, setMapTileStyle] = useState<'esri' | 'google'>(() => {
@@ -723,9 +746,11 @@ export function ManageHubPage({
       gradientEnabled !== (homeGradientEnabled ?? false) ||
       gradientFrom !== (homeGradientFrom || '#F7F2EB') ||
       gradientTo !== (homeGradientTo || '#E7DEC8') ||
+      homeMagSectionId !== (homeMagazineSectionId || 'main') ||
+      homeMagLimit !== (homeMagazineLimit || 6) ||
       JSON.stringify(momentsList) !== JSON.stringify(magazineMoments || [])
     );
-  }, [title, homeTitle, subtitle, homeSubtitle, selectedHeroIds, heroJourneyIds, autoSlide, heroAutoSlide, slideDuration, heroSlideDuration, mediaType, heroMediaType, showMarquee, marqueeShow, homeMarquee, marqueeMessage, homeSpeed, marqueeSpeed, gradientEnabled, homeGradientEnabled, gradientFrom, homeGradientFrom, gradientTo, homeGradientTo, momentsList, magazineMoments]);
+  }, [title, homeTitle, subtitle, homeSubtitle, selectedHeroIds, heroJourneyIds, autoSlide, heroAutoSlide, slideDuration, heroSlideDuration, mediaType, heroMediaType, showMarquee, marqueeShow, homeMarquee, marqueeMessage, homeSpeed, marqueeSpeed, gradientEnabled, homeGradientEnabled, gradientFrom, homeGradientFrom, gradientTo, homeGradientTo, homeMagSectionId, homeMagazineSectionId, homeMagLimit, homeMagazineLimit, momentsList, magazineMoments]);
 
   // Dirty tracking for currently selected journey in ARCHIVE mode
   const isArchiveDirty = useMemo(() => {
@@ -945,6 +970,8 @@ export function ManageHubPage({
       localStorage.setItem('home_gradient_enabled', String(gradientEnabled));
       localStorage.setItem('home_gradient_from', gradientFrom);
       localStorage.setItem('home_gradient_to', gradientTo);
+      localStorage.setItem('home_magazine_section_id', homeMagSectionId);
+      localStorage.setItem('home_magazine_limit', String(homeMagLimit));
       window.dispatchEvent(new CustomEvent('homeConfigChanged', {
         detail: {
           gradientEnabled,
@@ -965,7 +992,9 @@ export function ManageHubPage({
         slideDuration,
         gradientEnabled,
         gradientFrom,
-        gradientTo
+        gradientTo,
+        homeMagSectionId,
+        homeMagLimit
       );
       setHomeSaveSuccess(true);
       if (showModal) {
@@ -2191,208 +2220,145 @@ export function ManageHubPage({
                 </section>
 
                 {/* ═══════════════════════════════════════════════════════════════ */}
-                {/* SECTION: MAGAZINE (홈 매거진 순간 선별)                         */}
+                {/* SECTION: MAGAZINE (홈 매거진 연동 설정)                         */}
                 {/* ═══════════════════════════════════════════════════════════════ */}
                 <section className="flex flex-col gap-6 pt-6 border-t border-black/20 dark:border-white/20">
                   <div className="flex items-center justify-between border-b-2 border-black dark:border-white pb-2">
-                    <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
-                      MAGAZINE
-                    </h3>
-                    <span className="text-xs font-mono font-bold text-red-600 dark:text-red-500">
-                      {momentsList.length} ITEMS
-                    </span>
+                    <div className="flex items-baseline gap-3">
+                      <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                        MAGAZINE
+                      </h3>
+                      <span className="text-xs font-mono font-bold text-black/50 dark:text-white/50 uppercase">
+                        HOME CURATION
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveMode('MAGAZINE')}
+                      className="text-xs font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-400 hover:underline flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <BookOpen className="w-3.5 h-3.5" />
+                      <span>매거진 허브 편집기 바로가기 →</span>
+                    </button>
                   </div>
 
-                  {/* Curated Moments: Slim Card without caption/subtitle */}
-                  {momentsList.length > 0 && (
-                    <div className="flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
-                      {momentsList.map((m, idx) => (
-                        <div 
-                          key={m.id || idx}
-                          className="p-2 border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616] flex items-center justify-between gap-3"
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            <div className="w-10 h-10 aspect-square border border-black/10 dark:border-white/10 shrink-0 overflow-hidden bg-black/10 relative">
-                              <img src={getEffectiveImageUrl(m.img)} alt={m.title} className="w-full h-full object-cover" />
-                              <span className="absolute bottom-0 left-0 bg-black text-white text-[8px] font-mono px-1">
-                                #{idx + 1}
+                  {/* 1. Feature Section Selector */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-mono font-bold uppercase tracking-wider text-black/80 dark:text-white/80">
+                      FEATURED MAGAZINE SECTION (홈에 노출할 매거진 섹션)
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                      {sectionsList.map(sec => {
+                        const isSelected = homeMagSectionId === sec.id;
+                        return (
+                          <div
+                            key={sec.id}
+                            onClick={() => setHomeMagSectionId(sec.id)}
+                            className={`p-3 border flex flex-col justify-between gap-2 cursor-pointer transition-all ${
+                              isSelected
+                                ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-md'
+                                : 'bg-white dark:bg-[#161616] border-black/15 dark:border-white/15 text-black dark:text-white hover:border-black/50'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-bold text-xs font-sans uppercase truncate">
+                                {sec.title}
                               </span>
+                              {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
                             </div>
-                            <div className="flex-1 min-w-0 flex flex-col gap-1">
-                              <input 
-                                type="text"
-                                value={m.title}
-                                onChange={e => handleUpdateMoment(m.id, 'title', e.target.value)}
-                                placeholder="Title"
-                                className="text-xs font-bold bg-transparent border-b border-black/20 dark:border-white/20 outline-none pb-0.5 focus:border-black dark:focus:border-white text-black dark:text-white"
-                              />
-                              <input 
-                                type="text"
-                                value={m.quote || ''}
-                                onChange={e => handleUpdateMoment(m.id, 'quote', e.target.value)}
-                                placeholder="“Quote / Phrase”"
-                                className="text-[11px] font-serif italic bg-transparent border-b border-black/10 dark:border-white/10 outline-none text-black/80 dark:text-white/80"
-                              />
+                            <div className="flex items-center justify-between text-[10px] font-mono opacity-70">
+                              <span>{sec.items?.length || 0} ITEMS</span>
+                              <span>{sec.isDefault ? 'DEFAULT' : 'CUSTOM'}</span>
                             </div>
                           </div>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => handleMoveMoment(idx, 'up')}
-                              disabled={idx === 0}
-                              className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
-                              title="위로 이동"
-                            >
-                              <ChevronUp className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleMoveMoment(idx, 'down')}
-                              disabled={idx === momentsList.length - 1}
-                              className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
-                              title="아래로 이동"
-                            >
-                              <ChevronDown className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveMoment(m.id)}
-                              className="p-1 text-red-500 hover:bg-red-500/10 border border-red-500/30 cursor-pointer ml-1"
-                              title="삭제"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
+                  {/* 2. Display Limit */}
+                  <div className="flex items-center justify-between py-2 border-t border-black/10 dark:border-white/10">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-mono font-bold uppercase text-black/80 dark:text-white/80">
+                        DISPLAY ITEMS LIMIT (노출 카드 수)
+                      </span>
+                      <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                        3장 단위로 슬라이드 스프레드가 구성됩니다.
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {[3, 6, 9, 12].map(limit => (
+                        <button
+                          key={limit}
+                          type="button"
+                          onClick={() => setHomeMagLimit(limit)}
+                          className={`px-3 py-1 text-xs font-mono font-bold border transition-colors cursor-pointer ${
+                            homeMagLimit === limit
+                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                              : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-black'
+                          }`}
+                        >
+                          {limit} ITEMS
+                        </button>
                       ))}
                     </div>
-                  )}
+                  </div>
 
-                  {/* Selection Tool */}
-                  <div className="flex flex-col gap-3 pt-2">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {/* Filter by Journey */}
-                      <select
-                        value={selectedTripForMoments === null ? '' : selectedTripForMoments}
-                        onChange={e => setSelectedTripForMoments(e.target.value === '' ? null : Number(e.target.value))}
-                        className="px-3 py-2 text-xs font-mono font-bold bg-transparent border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white text-black dark:text-white"
-                      >
-                        <option value="" className="text-black bg-white dark:bg-[#161616] dark:text-white">-- SELECT JOURNEY TO LOAD PHOTOS --</option>
-                        {localJourneys.map(j => (
-                          <option key={j.id} value={j.id} className="text-black bg-white dark:bg-[#161616] dark:text-white">
-                            {j.title.replace(/\s*\(Plan\)$/i, '')} ({j.locationStr || j.country})
-                          </option>
-                        ))}
-                      </select>
+                  {/* 3. Preview of Featured Section Cards */}
+                  {(() => {
+                    const activeSec = sectionsList.find(s => s.id === homeMagSectionId) || sectionsList[0];
+                    const itemsToPreview = (activeSec?.items || []).slice(0, homeMagLimit);
 
-                      {/* Search Keyword */}
-                      <div className="relative">
-                        <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
-                        <input
-                          type="text"
-                          value={momentSearchQuery}
-                          onChange={e => setMomentSearchQuery(e.target.value)}
-                          placeholder="Search place, memo, location..."
-                          className="w-full pl-8 pr-3 py-2 text-xs font-mono font-bold bg-transparent border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white text-black dark:text-white"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Candidate Timeline Images Grid */}
-                    <div className="flex flex-col gap-2 mt-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
-                          TIMELINE PHOTOS ({candidateTimelineItems.length})
-                        </span>
-                        {selectedTripForMoments !== null && (
+                    return (
+                      <div className="flex flex-col gap-2 pt-2 border-t border-black/10 dark:border-white/10">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                            HOME PREVIEW ({itemsToPreview.length} / {activeSec?.items?.length || 0})
+                          </span>
                           <button
                             type="button"
-                            onClick={() => setSelectedTripForMoments(null)}
-                            className="text-[10px] font-mono text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                            onClick={() => {
+                              setActiveMagSectionId(homeMagSectionId);
+                              setActiveMode('MAGAZINE');
+                            }}
+                            className="text-[10px] font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-400 hover:underline cursor-pointer"
                           >
-                            CLEAR SELECTION
+                            이 섹션 편집하기 →
                           </button>
-                        )}
-                      </div>
+                        </div>
 
-                      {candidateTimelineItems.length === 0 ? (
-                        selectedTripForMoments === null && !momentSearchQuery.trim() ? (
-                          <div className="py-10 px-4 text-center flex flex-col items-center justify-center gap-2 border border-dashed border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.02]">
-                            <ImageIcon className="w-6 h-6 text-black/30 dark:text-white/30" />
-                            <span className="text-xs font-mono font-black text-black/70 dark:text-white/70 tracking-wider uppercase">
-                              SELECT A JOURNEY TO VIEW PHOTOS
-                            </span>
-                            <span className="text-[11px] text-black/40 dark:text-white/40 max-w-sm leading-relaxed">
-                              위 드롭다운에서 여행을 선택하시거나 검색어를 입력하시면 해당 사진들이 즉시 로드됩니다.
-                            </span>
+                        {itemsToPreview.length === 0 ? (
+                          <div className="py-8 text-center text-xs font-mono text-black/40 dark:text-white/40 border border-dashed border-black/20 dark:border-white/20">
+                            선택된 매거진 섹션에 등록된 사진이 없습니다. 매거진 허브 편집기에서 사진을 추가해주세요.
                           </div>
                         ) : (
-                          <div className="py-8 text-center text-xs font-mono text-black/40 dark:text-white/40 border border-black/10 dark:border-white/10">
-                            NO PHOTOS FOUND FOR THIS SELECTION
-                          </div>
-                        )
-                      ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-[520px] overflow-y-auto p-1 border border-black/15 dark:border-white/15">
-                          {candidateTimelineItems.map((item, i) => {
-                            const pName = safeStr(item.place);
-                            const jTitle = safeStr(item.journeyTitle);
-                            const displayTitle = pName || jTitle || 'MOMENT';
-                            const itemDate = safeStr(item.date);
-                            const isAlreadyLinked = momentsList.some(m => 
-                              (m.timelineItemId !== undefined && m.timelineItemId === item.id) ||
-                              (m.img && item.img && (m.img === item.img || m.img.split('?')[0] === item.img.split('?')[0]))
-                            );
-                            return (
+                          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 p-2 border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616]">
+                            {itemsToPreview.map((item, idx) => (
                               <div
-                                key={`cand-${item.id || i}-${i}`}
-                                onClick={() => handleAddMomentFromTimeline(item)}
-                                className={`group relative h-32 sm:h-40 bg-white dark:bg-[#121212] border border-black/15 dark:border-white/15 overflow-hidden flex flex-col justify-end transition-all select-none rounded-none ${
-                                  isAlreadyLinked ? 'cursor-default opacity-85' : 'cursor-pointer active:scale-95'
-                                }`}
-                                title={isAlreadyLinked ? `${displayTitle} (매거진 연동됨)` : `${displayTitle} (${itemDate})`}
+                                key={item.id || idx}
+                                onClick={() => {
+                                  setActiveMagSectionId(homeMagSectionId);
+                                  setActiveMode('MAGAZINE');
+                                }}
+                                className="group relative aspect-[3/4] overflow-hidden bg-black/10 border border-black/10 dark:border-white/10 cursor-pointer"
+                                title={`${item.title} (클릭 시 매거진 편집기로 이동)`}
                               >
                                 <img
                                   src={getEffectiveImageUrl(item.img || '')}
-                                  alt={displayTitle}
-                                  loading="lazy"
-                                  decoding="async"
-                                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                  alt={item.title}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                 />
-
-                                {/* Minimal Checkmark Icon Badge (No Text) */}
-                                {isAlreadyLinked && (
-                                  <div 
-                                    className="absolute top-2 left-2 z-20 w-6 h-6 rounded-full bg-black/80 backdrop-blur-md border border-white/20 flex items-center justify-center text-emerald-400 shadow-md"
-                                    title="매거진 연동됨"
-                                  >
-                                    <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                                  </div>
-                                )}
-                                
-                                <div className={`absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white font-mono text-xs font-black p-2 text-center z-10 ${
-                                  isAlreadyLinked ? '!bg-black/60' : ''
-                                }`}>
-                                  {isAlreadyLinked ? 'ALREADY ADDED' : '+ ADD'}
-                                </div>
-
-                                <div className="relative z-10 w-full bg-gradient-to-t from-black/95 via-black/80 to-transparent p-2 pt-4 flex flex-col gap-0.5">
-                                  <span className="text-[11px] font-bold text-white truncate leading-tight">
-                                    {displayTitle}
-                                  </span>
-                                  {itemDate && (
-                                    <span className="text-[9px] font-mono text-white/70 truncate">
-                                      {itemDate}
-                                    </span>
-                                  )}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent p-1.5 flex flex-col justify-end">
+                                  <span className="text-[9px] font-mono text-white/70">#{idx + 1}</span>
+                                  <span className="text-[10px] font-bold text-white truncate">{item.title}</span>
                                 </div>
                               </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </section>
 
               {/* Save Button */}

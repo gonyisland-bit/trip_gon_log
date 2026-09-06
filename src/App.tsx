@@ -1,18 +1,21 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import { Navigation } from './components/Navigation';
 import { Footer } from './components/Footer';
 import { HomePage } from './pages/Home';
-import { ArchiveHubPage } from './pages/Archive';
-import { MapHubPage } from './pages/MapHub';
-import { ManageHubPage } from './pages/ManageHub';
-import { MagazineHubPage } from './pages/MagazineHub';
-import { JourneyDetailPage } from './pages/Detail';
-import { AuthModal } from './components/AuthModal';
-import { CreateTripModal } from './components/CreateTripModal';
-import { SettingsModal } from './components/SettingsModal';
-import { SearchModal } from './components/SearchModal';
-import { EditTripModal } from './components/EditTripModal';
-import { ConfirmModal } from './components/ConfirmModal';
+
+// Lazy loaded non-home pages & modals for fast initial load
+const ArchiveHubPage = lazy(() => import('./pages/Archive').then(m => ({ default: m.ArchiveHubPage })));
+const MapHubPage = lazy(() => import('./pages/MapHub').then(m => ({ default: m.MapHubPage })));
+const ManageHubPage = lazy(() => import('./pages/ManageHub').then(m => ({ default: m.ManageHubPage })));
+const MagazineHubPage = lazy(() => import('./pages/MagazineHub').then(m => ({ default: m.MagazineHubPage })));
+const JourneyDetailPage = lazy(() => import('./pages/Detail').then(m => ({ default: m.JourneyDetailPage })));
+
+const AuthModal = lazy(() => import('./components/AuthModal').then(m => ({ default: m.AuthModal })));
+const CreateTripModal = lazy(() => import('./components/CreateTripModal').then(m => ({ default: m.CreateTripModal })));
+const SettingsModal = lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
+const SearchModal = lazy(() => import('./components/SearchModal').then(m => ({ default: m.SearchModal })));
+const EditTripModal = lazy(() => import('./components/EditTripModal').then(m => ({ default: m.EditTripModal })));
+const ConfirmModal = lazy(() => import('./components/ConfirmModal').then(m => ({ default: m.ConfirmModal })));
 import { Check, AlertTriangle } from 'lucide-react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { fetchCoordinates } from './utils/googleMapsHelper';
@@ -90,10 +93,32 @@ function App() {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     return localStorage.getItem('isDarkMode') === 'true';
   });
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    return localStorage.getItem('isLoggedIn') === 'true' || Boolean(auth.currentUser);
+  });
+  const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
   const [adminEmails, setAdminEmails] = useState<string[]>(ADMIN_EMAILS);
-  const [magazineMoments, setMagazineMoments] = useState<MagazineMoment[]>([]);
-  const [magazineSections, setMagazineSections] = useState<MagazineSection[]>([]);
+  const [magazineMoments, setMagazineMoments] = useState<MagazineMoment[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_magazine_moments');
+      if (cached) return JSON.parse(cached);
+    } catch (_) {}
+    return [];
+  });
+  const [magazineSections, setMagazineSections] = useState<MagazineSection[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_magazine_sections');
+      if (cached) return JSON.parse(cached);
+    } catch (_) {}
+    return [];
+  });
+  const [homeMagazineSectionId, setHomeMagazineSectionId] = useState<string>(() => {
+    return localStorage.getItem('home_magazine_section_id') || 'main';
+  });
+  const [homeMagazineLimit, setHomeMagazineLimit] = useState<number>(() => {
+    const saved = localStorage.getItem('home_magazine_limit');
+    return saved ? parseInt(saved, 10) : 6;
+  });
   const [showSettings, setShowSettings] = useState<boolean>(false);
   
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
@@ -107,9 +132,21 @@ function App() {
   const [createCountryInitial, setCreateCountryInitial] = useState<string>('');
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
   
-  // Start with empty state for clean public load
-  const [trips, setTrips] = useState<Trip[]>([]);
-  const [plans, setPlans] = useState<Plan[]>([]);
+  // Hydrate from localStorage cache for instant 0ms mobile launch
+  const [trips, setTrips] = useState<Trip[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_trips');
+      if (cached) return applyJourneyOrder(JSON.parse(cached));
+    } catch (_) {}
+    return [];
+  });
+  const [plans, setPlans] = useState<Plan[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_plans');
+      if (cached) return applyJourneyOrder(JSON.parse(cached));
+    } catch (_) {}
+    return [];
+  });
   const [trashedJourneys, setTrashedJourneys] = useState<Trip[]>([]);
   const [activeTripId, setActiveTripId] = useState<number | null>(null);
   const [selectedTagFilter, setSelectedTagFilter] = useState<string | null>(null);
@@ -380,9 +417,13 @@ function App() {
       snapshot.forEach(doc => {
         list.push(doc.data() as Trip);
       });
-      setTrips(applyJourneyOrder(list));
+      const ordered = applyJourneyOrder(list);
+      setTrips(ordered);
       setTripsLoaded(true);
       setDbError(null);
+      try {
+        localStorage.setItem('cached_trips', JSON.stringify(ordered));
+      } catch (_) {}
     }, (err) => {
       console.error("Trips snapshot subscription error:", err);
       setDbError(err.message);
@@ -394,9 +435,13 @@ function App() {
       snapshot.forEach(doc => {
         list.push(doc.data() as Plan);
       });
-      setPlans(applyJourneyOrder(list));
+      const ordered = applyJourneyOrder(list);
+      setPlans(ordered);
       setPlansLoaded(true);
       setDbError(null);
+      try {
+        localStorage.setItem('cached_plans', JSON.stringify(ordered));
+      } catch (_) {}
     }, (err) => {
       console.error("Plans snapshot subscription error:", err);
       setDbError(err.message);
@@ -504,27 +549,31 @@ function App() {
           setHeroSlideDuration(data.heroSlideDuration);
           localStorage.setItem('hero_slide_duration', String(data.heroSlideDuration));
         }
+        if (data.homeMagazineSectionId !== undefined) {
+          setHomeMagazineSectionId(data.homeMagazineSectionId);
+          localStorage.setItem('home_magazine_section_id', data.homeMagazineSectionId);
+        }
+        if (data.homeMagazineLimit !== undefined) {
+          setHomeMagazineLimit(data.homeMagazineLimit);
+          localStorage.setItem('home_magazine_limit', String(data.homeMagazineLimit));
+        }
         if (Array.isArray(data.magazineSections) && data.magazineSections.length > 0) {
           setMagazineSections(data.magazineSections);
-          const mainSec = data.magazineSections.find((s: any) => s.id === 'main') || data.magazineSections[0];
-          if (mainSec && Array.isArray(mainSec.items)) {
-            setMagazineMoments(mainSec.items);
+          try {
+            localStorage.setItem('cached_magazine_sections', JSON.stringify(data.magazineSections));
+          } catch (_) {}
+          const targetSec = data.magazineSections.find((s: any) => s.id === (data.homeMagazineSectionId || 'main')) || data.magazineSections[0];
+          if (targetSec && Array.isArray(targetSec.items)) {
+            setMagazineMoments(targetSec.items);
+            try {
+              localStorage.setItem('cached_magazine_moments', JSON.stringify(targetSec.items));
+            } catch (_) {}
           }
-        } else if (Array.isArray(data.magazineMoments)) {
+        } else if (Array.isArray(data.magazineMoments) && data.magazineMoments.length > 0) {
           setMagazineMoments(data.magazineMoments);
-          setMagazineSections([
-            {
-              id: 'main',
-              title: 'MAGAZINE HOME',
-              subtitle: 'Curated Moments & Editorial Stories',
-              heroImg: '',
-              heroTitle: 'The Other Side of Paradise',
-              heroSubtitle: '나만의 감성으로 기록하고 기억하는 여행의 순간들.',
-              items: data.magazineMoments,
-              order: 0,
-              isDefault: true,
-            }
-          ]);
+          try {
+            localStorage.setItem('cached_magazine_moments', JSON.stringify(data.magazineMoments));
+          } catch (_) {}
         }
         if (data.homeGradientEnabled !== undefined) {
           setHomeGradientEnabled(data.homeGradientEnabled);
@@ -557,9 +606,12 @@ function App() {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setIsLoggedIn(true);
+        localStorage.setItem('isLoggedIn', 'true');
       } else {
         setIsLoggedIn(false);
+        localStorage.removeItem('isLoggedIn');
       }
+      setIsAuthReady(true);
     });
 
     return () => {
@@ -1000,12 +1052,13 @@ function App() {
     heroSlideDurationParam?: number,
     gradientEnabledParam?: boolean,
     gradientFromParam?: string,
-    gradientToParam?: string
+    gradientToParam?: string,
+    homeMagazineSectionIdParam?: string,
+    homeMagazineLimitParam?: number
   ) => {
     if (!isLoggedIn) return;
     try {
-      const momentsToSave = magazineMomentsParam !== undefined ? magazineMomentsParam : magazineMoments;
-      await setDoc(doc(db, 'users', 'public', 'settings', 'home'), cleanForFirestore({
+      const dataToSave: any = {
         title,
         subtitle,
         heroJourneyIds: heroIds,
@@ -1015,11 +1068,22 @@ function App() {
         marqueeMessage: marqueeMsg ?? marqueeMessage,
         marqueeSpeed: marqueeSpd ?? marqueeSpeed,
         heroSlideDuration: heroSlideDurationParam ?? heroSlideDuration,
-        magazineMoments: cleanForFirestore(momentsToSave),
         homeGradientEnabled: gradientEnabledParam !== undefined ? gradientEnabledParam : homeGradientEnabled,
         homeGradientFrom: gradientFromParam !== undefined ? gradientFromParam : homeGradientFrom,
         homeGradientTo: gradientToParam !== undefined ? gradientToParam : homeGradientTo,
-      }), { merge: true });
+      };
+
+      if (magazineMomentsParam !== undefined) {
+        dataToSave.magazineMoments = cleanForFirestore(magazineMomentsParam);
+      }
+      if (homeMagazineSectionIdParam !== undefined) {
+        dataToSave.homeMagazineSectionId = homeMagazineSectionIdParam;
+      }
+      if (homeMagazineLimitParam !== undefined) {
+        dataToSave.homeMagazineLimit = homeMagazineLimitParam;
+      }
+
+      await setDoc(doc(db, 'users', 'public', 'settings', 'home'), cleanForFirestore(dataToSave), { merge: true });
 
       setHeroJourneyIds(heroIds);
       if (autoSlide !== undefined) setHeroAutoSlide(autoSlide);
@@ -1031,7 +1095,17 @@ function App() {
         setHeroSlideDuration(heroSlideDurationParam);
         localStorage.setItem('hero_slide_duration', String(heroSlideDurationParam));
       }
-      if (magazineMomentsParam !== undefined) setMagazineMoments(magazineMomentsParam);
+      if (magazineMomentsParam !== undefined) {
+        setMagazineMoments(magazineMomentsParam);
+      }
+      if (homeMagazineSectionIdParam !== undefined) {
+        setHomeMagazineSectionId(homeMagazineSectionIdParam);
+        localStorage.setItem('home_magazine_section_id', homeMagazineSectionIdParam);
+      }
+      if (homeMagazineLimitParam !== undefined) {
+        setHomeMagazineLimit(homeMagazineLimitParam);
+        localStorage.setItem('home_magazine_limit', String(homeMagazineLimitParam));
+      }
       if (gradientEnabledParam !== undefined) {
         setHomeGradientEnabled(gradientEnabledParam);
         localStorage.setItem('home_gradient_enabled', String(gradientEnabledParam));
@@ -1060,6 +1134,9 @@ function App() {
         magazineMoments: cleanForFirestore(moments)
       }, { merge: true });
       setMagazineMoments(moments);
+      try {
+        localStorage.setItem('cached_magazine_moments', JSON.stringify(moments));
+      } catch (_) {}
     } catch (err) {
       console.error("Failed to save magazine moments:", err);
       alert("잡지 연출 저장에 실패했습니다.");
@@ -1073,14 +1150,13 @@ function App() {
       return;
     }
     try {
-      const mainSec = sections.find(s => s.id === 'main') || sections[0];
-      const mainMoments = mainSec ? (mainSec.items || []) : [];
       await setDoc(doc(db, 'users', 'public', 'settings', 'home'), {
         magazineSections: cleanForFirestore(sections),
-        magazineMoments: cleanForFirestore(mainMoments),
       }, { merge: true });
       setMagazineSections(sections);
-      setMagazineMoments(mainMoments);
+      try {
+        localStorage.setItem('cached_magazine_sections', JSON.stringify(sections));
+      } catch (_) {}
     } catch (err) {
       console.error("Failed to save magazine sections:", err);
       alert("매거진 설정 저장에 실패했습니다.");
@@ -1767,7 +1843,11 @@ function App() {
 
         {/* View Routing */}
         <div className={`w-full flex-grow ${(currentView === 'detail' || currentView === 'map') ? 'overflow-hidden flex flex-col h-full flex-1 min-h-0' : ''}`}>
-          {!isLoggedIn && !isShareMode ? (
+          {!isAuthReady ? (
+            <div className="min-h-[60vh] md:min-h-[70vh] flex flex-col items-center justify-center p-8 bg-transparent text-center w-full">
+              <div className="w-7 h-7 border-2 border-black/20 dark:border-white/20 border-t-black dark:border-t-white rounded-full animate-spin" />
+            </div>
+          ) : !isLoggedIn && !isShareMode ? (
             <div className="min-h-[60vh] md:min-h-[70vh] flex flex-col items-center justify-center p-8 bg-[#F4F3EF] dark:bg-[#0E0E0E] transition-colors text-center w-full">
               <div className="max-w-md flex flex-col items-center gap-5">
                 <h2 className="text-xl md:text-2xl font-black tracking-widest uppercase text-black dark:text-white">
@@ -1786,7 +1866,11 @@ function App() {
               </div>
             </div>
           ) : (
-            <>
+            <Suspense fallback={
+              <div className="min-h-[60vh] flex items-center justify-center p-8">
+                <div className="w-7 h-7 border-2 border-black/20 dark:border-white/20 border-t-black dark:border-t-white rounded-full animate-spin" />
+              </div>
+            }>
               {currentView === 'home' && (
                 <HomePage 
                   onNavigate={navigateTo} 
@@ -1826,6 +1910,9 @@ function App() {
                   homeGradientFrom={homeGradientFrom}
                   homeGradientTo={homeGradientTo}
                   magazineMoments={magazineMoments}
+                  magazineSections={magazineSections}
+                  homeMagazineSectionId={homeMagazineSectionId}
+                  homeMagazineLimit={homeMagazineLimit}
                   timelineData={timelineData}
                 />
               )}
@@ -1906,6 +1993,8 @@ function App() {
                   homeGradientEnabled={homeGradientEnabled}
                   homeGradientFrom={homeGradientFrom}
                   homeGradientTo={homeGradientTo}
+                  homeMagazineSectionId={homeMagazineSectionId}
+                  homeMagazineLimit={homeMagazineLimit}
                   onSaveAllHomeSettings={handleSaveSettings}
                   magazineMoments={magazineMoments}
                   magazineSections={magazineSections}
@@ -1976,104 +2065,107 @@ function App() {
                   </div>
                 )
               )}
-            </>
+            </Suspense>
           )}
         </div>
         
         {/* Footer: Hidden on JourneyDetail; rendered with mt-0 on ArchiveHub and MapHub */}
         {currentView !== 'detail' && <Footer className={(currentView === 'map' || currentView === 'archive') ? 'mt-0' : 'mt-12'} />}
 
-        {/* Auth Modal Popup */}
-        <AuthModal 
-          isOpen={isAuthModalOpen} 
-          onClose={() => setIsAuthModalOpen(false)} 
-          initialMode={authModalMode}
-        />
+        {/* Modals with Suspense */}
+        <Suspense fallback={null}>
+          {/* Auth Modal Popup */}
+          <AuthModal 
+            isOpen={isAuthModalOpen} 
+            onClose={() => setIsAuthModalOpen(false)} 
+            initialMode={authModalMode}
+          />
 
-        {/* Create Trip Modal Popup */}
-        <CreateTripModal
-          isOpen={isCreateModalOpen}
-          onClose={() => {
-            setIsCreateModalOpen(false);
-            setCreateCountryInitial('');
-          }}
-          onCreate={handleCreateJourney}
-          existingTags={existingTags}
-          initialCountry={createCountryInitial}
-        />
+          {/* Create Trip Modal Popup */}
+          <CreateTripModal
+            isOpen={isCreateModalOpen}
+            onClose={() => {
+              setIsCreateModalOpen(false);
+              setCreateCountryInitial('');
+            }}
+            onCreate={handleCreateJourney}
+            existingTags={existingTags}
+            initialCountry={createCountryInitial}
+          />
 
-        {/* Settings Modal Popup */}
-        <SettingsModal
-          isOpen={isManageModalOpen}
-          onClose={() => setIsManageModalOpen(false)}
-          homeTitle={homeTitle}
-          homeSubtitle={homeSubtitle}
-          onSaveSettings={handleSaveSettings}
-          trashedJourneys={trashedJourneys}
-          onRestoreJourney={handleRestoreJourney}
-          onPermanentDeleteJourney={handlePermanentDeleteJourney}
-          isLoggedIn={isLoggedIn}
-          trips={trips}
-          plans={plans}
-          initialHeroJourneyIds={heroJourneyIds}
-          heroAutoSlide={heroAutoSlide}
-          heroMediaType={heroMediaType}
-          marqueeShow={marqueeShow}
-          marqueeMessage={marqueeMessage}
-          marqueeSpeed={marqueeSpeed}
-        />
+          {/* Settings Modal Popup */}
+          <SettingsModal
+            isOpen={isManageModalOpen}
+            onClose={() => setIsManageModalOpen(false)}
+            homeTitle={homeTitle}
+            homeSubtitle={homeSubtitle}
+            onSaveSettings={handleSaveSettings}
+            trashedJourneys={trashedJourneys}
+            onRestoreJourney={handleRestoreJourney}
+            onPermanentDeleteJourney={handlePermanentDeleteJourney}
+            isLoggedIn={isLoggedIn}
+            trips={trips}
+            plans={plans}
+            initialHeroJourneyIds={heroJourneyIds}
+            heroAutoSlide={heroAutoSlide}
+            heroMediaType={heroMediaType}
+            marqueeShow={marqueeShow}
+            marqueeMessage={marqueeMessage}
+            marqueeSpeed={marqueeSpeed}
+          />
 
-        {/* Edit Trip Cover Modal */}
-        <EditTripModal
-          isOpen={editingTripId !== null}
-          onClose={() => setEditingTripId(null)}
-          trip={trips.find(t => String(t.id) === String(editingTripId)) || plans.find(p => String(p.id) === String(editingTripId))}
-          onSave={handleEditTripSave}
-          onMoveToPlans={handleMoveToPlans}
-          onMoveToArchive={handleMoveToArchive}
-          isLoggedIn={isLoggedIn}
-          existingTags={existingTags}
-        />
+          {/* Edit Trip Cover Modal */}
+          <EditTripModal
+            isOpen={editingTripId !== null}
+            onClose={() => setEditingTripId(null)}
+            trip={trips.find(t => String(t.id) === String(editingTripId)) || plans.find(p => String(p.id) === String(editingTripId))}
+            onSave={handleEditTripSave}
+            onMoveToPlans={handleMoveToPlans}
+            onMoveToArchive={handleMoveToArchive}
+            isLoggedIn={isLoggedIn}
+            existingTags={existingTags}
+          />
 
-        {/* Search Modal Popup */}
-        <SearchModal
-          isOpen={isSearchOpen}
-          onClose={() => setIsSearchOpen(false)}
-          trips={trips}
-          plans={plans}
-          timelineData={timelineData}
-          flightsByTrip={flightsByTrip}
-          staysByTrip={staysByTrip}
-          transitByTrip={transitByTrip}
-          onResultClick={handleSearchResultClick}
-        />
+          {/* Search Modal Popup */}
+          <SearchModal
+            isOpen={isSearchOpen}
+            onClose={() => setIsSearchOpen(false)}
+            trips={trips}
+            plans={plans}
+            timelineData={timelineData}
+            flightsByTrip={flightsByTrip}
+            staysByTrip={staysByTrip}
+            transitByTrip={transitByTrip}
+            onResultClick={handleSearchResultClick}
+          />
 
-        {/* Save Complete Auto-Dismiss Modal */}
-        <ConfirmModal
-          isOpen={showSaveCompleteModal}
-          title="SAVED"
-          message="All changes have been successfully saved."
-          confirmLabel="OK"
-          iconType="check"
-          singleButton
-          autoDismiss
-          autoDismissDuration={2000}
-          onConfirm={handleCloseSaveCompleteModal}
-          onCancel={handleCloseSaveCompleteModal}
-        />
+          {/* Save Complete Auto-Dismiss Modal */}
+          <ConfirmModal
+            isOpen={showSaveCompleteModal}
+            title="SAVED"
+            message="All changes have been successfully saved."
+            confirmLabel="OK"
+            iconType="check"
+            singleButton
+            autoDismiss
+            autoDismissDuration={2000}
+            onConfirm={handleCloseSaveCompleteModal}
+            onCancel={handleCloseSaveCompleteModal}
+          />
 
-        {/* Unsaved Changes Warning Modal */}
-        <ConfirmModal
-          isOpen={showUnsavedModal}
-          title="UNSAVED CHANGES"
-          message="Are you sure?"
-          confirmLabel="SAVE (Y)"
-          discardLabel="DISCARD (N)"
-          cancelLabel="SKIP (ESC)"
-          onConfirm={handleSaveAndNavigate}
-          onDiscard={handleDiscardAndNavigate}
-          onCancel={handleCancelUnsavedModal}
-        />
+          {/* Unsaved Changes Warning Modal */}
+          <ConfirmModal
+            isOpen={showUnsavedModal}
+            title="UNSAVED CHANGES"
+            message="Are you sure?"
+            confirmLabel="SAVE (Y)"
+            discardLabel="DISCARD (N)"
+            cancelLabel="SKIP (ESC)"
+            onConfirm={handleSaveAndNavigate}
+            onDiscard={handleDiscardAndNavigate}
+            onCancel={handleCancelUnsavedModal}
+          />
+        </Suspense>
       </div>
 
       {/* Splash Screen V0.7 */}

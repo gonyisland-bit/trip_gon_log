@@ -98,24 +98,54 @@ export function MagazineHubPage({
 
   // Fallback default sections if none exist yet
   const effectiveSections: MagazineSection[] = useMemo(() => {
-    if (sections && sections.length > 0) {
+    if (sections && sections.length > 1) {
       return [...sections].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     }
-    // Default fallback starter sections from active trips
-    const mainItems: MagazineItem[] = trips.slice(0, 6).map((t, idx) => ({
-      id: `fallback-${t.id}`,
-      tripId: t.id,
-      title: t.title.replace(/\s*\(Plan\)$/i, ''),
-      date: t.date,
-      location: t.locationStr || t.country,
-      placeName: (t.locations && t.locations[0]?.name) || t.locationStr,
-      caption: '',
-      img: t.img,
-      layoutType: idx % 4 === 0 ? 'tall' : idx % 4 === 2 ? 'wide' : 'normal',
-      order: idx,
-    }));
+    if (sections && sections.length === 1 && (sections[0].items && sections[0].items.length > 0) && !sections[0].isDefault) {
+      return [...sections];
+    }
 
-    return [
+    // Generate comprehensive magazine sections from active trips
+    const mainItems: MagazineItem[] = [];
+    trips.forEach((t, tIdx) => {
+      // Add cover/hero photo
+      if (t.img) {
+        mainItems.push({
+          id: `main-${t.id}-cover`,
+          tripId: t.id,
+          title: t.title.replace(/\s*\(Plan\)$/i, ''),
+          date: t.date,
+          location: t.locationStr || t.country,
+          placeName: (t.locations && t.locations[0]?.name) || t.locationStr,
+          caption: '',
+          img: t.img,
+          layoutType: tIdx % 3 === 0 ? 'tall' : tIdx % 3 === 1 ? 'wide' : 'normal',
+          order: mainItems.length,
+        });
+      }
+      // Add gallery photos if present
+      if (t.gallery && Array.isArray(t.gallery)) {
+        t.gallery.slice(0, 3).forEach((g: any, gIdx) => {
+          const url = typeof g === 'string' ? g : g?.url;
+          if (url) {
+            mainItems.push({
+              id: `main-${t.id}-g-${gIdx}`,
+              tripId: t.id,
+              title: (typeof g === 'object' && g?.place) ? g.place : t.title.replace(/\s*\(Plan\)$/i, ''),
+              date: (typeof g === 'object' && g?.date) ? g.date : t.date,
+              location: t.locationStr || t.country,
+              placeName: (typeof g === 'object' && g?.place) ? g.place : t.locationStr,
+              caption: typeof g === 'object' ? g?.imgNote || '' : '',
+              img: url,
+              layoutType: gIdx % 2 === 0 ? 'normal' : 'tall',
+              order: mainItems.length,
+            });
+          }
+        });
+      }
+    });
+
+    const defaultSections: MagazineSection[] = [
       {
         id: 'main',
         title: 'MAGAZINE HOME',
@@ -126,11 +156,65 @@ export function MagazineHubPage({
         heroDate: trips[0]?.date || '2024 — 2026',
         heroLocation: trips[0]?.locationStr || 'GLOBAL ARCHIVE',
         heroTripId: trips[0]?.id,
-        items: mainItems,
+        items: mainItems.slice(0, 24),
         order: 0,
         isDefault: true,
       }
     ];
+
+    // Add per-trip dedicated issue sections
+    trips.forEach((t, idx) => {
+      const tripItems: MagazineItem[] = [];
+      if (t.img) {
+        tripItems.push({
+          id: `issue-${t.id}-0`,
+          tripId: t.id,
+          title: t.title.replace(/\s*\(Plan\)$/i, ''),
+          date: t.date,
+          location: t.locationStr || t.country,
+          placeName: (t.locations && t.locations[0]?.name) || t.locationStr,
+          caption: '',
+          img: t.img,
+          layoutType: 'tall',
+          order: 0,
+        });
+      }
+      if (t.gallery && Array.isArray(t.gallery)) {
+        t.gallery.forEach((g: any, gIdx) => {
+          const url = typeof g === 'string' ? g : g?.url;
+          if (url) {
+            tripItems.push({
+              id: `issue-${t.id}-${gIdx + 1}`,
+              tripId: t.id,
+              title: (typeof g === 'object' && g?.place) ? g.place : `${t.title} #${gIdx + 1}`,
+              date: (typeof g === 'object' && g?.date) ? g.date : t.date,
+              location: t.locationStr || t.country,
+              placeName: (typeof g === 'object' && g?.place) ? g.place : t.locationStr,
+              caption: typeof g === 'object' ? g?.imgNote || '' : '',
+              img: url,
+              layoutType: gIdx % 3 === 0 ? 'tall' : gIdx % 3 === 1 ? 'wide' : 'normal',
+              order: tripItems.length,
+            });
+          }
+        });
+      }
+
+      defaultSections.push({
+        id: `trip-${t.id}`,
+        title: t.title.replace(/\s*\(Plan\)$/i, '').toUpperCase(),
+        subtitle: `${t.date} · ${t.locationStr || t.country || 'JOURNEY'}`,
+        heroImg: t.heroImg || t.img || '',
+        heroTitle: t.title.replace(/\s*\(Plan\)$/i, ''),
+        heroSubtitle: `${t.locationStr || t.country}에서 마주한 특별한 에디토리얼 순간들.`,
+        heroDate: t.date,
+        heroLocation: t.locationStr || t.country,
+        heroTripId: t.id,
+        items: tripItems,
+        order: idx + 1,
+      });
+    });
+
+    return defaultSections;
   }, [sections, trips]);
 
   // Touch swipe state for Hero section

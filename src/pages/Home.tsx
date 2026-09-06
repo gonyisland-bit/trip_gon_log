@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Menu, Edit2, Trash2, GripVertical, Copy, ArrowUp, Tag, ChevronDown, ChevronUp, Search, X, LayoutGrid, StretchHorizontal, List } from 'lucide-react';
-import { Trip, Plan, MagazineMoment, TimelineData } from '../types';
+import { Trip, Plan, MagazineMoment, MagazineSection, TimelineData } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { cleanAdministrativeDistricts, generateJourneyMessage } from '../components/SummaryView';
@@ -29,6 +29,9 @@ interface HomePageProps {
   homeGradientFrom?: string;
   homeGradientTo?: string;
   magazineMoments?: MagazineMoment[];
+  magazineSections?: MagazineSection[];
+  homeMagazineSectionId?: string;
+  homeMagazineLimit?: number;
   timelineData?: TimelineData;
 }
 
@@ -620,6 +623,9 @@ export function HomePage({
   homeGradientFrom,
   homeGradientTo,
   magazineMoments = [],
+  magazineSections = [],
+  homeMagazineSectionId = 'main',
+  homeMagazineLimit = 6,
   timelineData,
 }: HomePageProps) {
   const [activeFilter, setActiveFilter] = useState('All');
@@ -1408,21 +1414,35 @@ export function HomePage({
         {/* 02. EDITORIAL MAGAZINE MOMENTS (잡지 연출 섹션)                       */}
         {/* ─────────────────────────────────────────────────────────────────── */}
         {(() => {
-          // Display curated moments or fallback to top trips' imagery
-          const displayMoments: MagazineMoment[] = magazineMoments && magazineMoments.length > 0 
-            ? magazineMoments 
-            : trips.slice(0, 3).map((t, idx) => ({
-                id: `fallback-${t.id}`,
-                tripId: t.id,
-                title: t.title,
-                date: t.date,
-                location: t.locationStr,
-                placeName: (t.locations && t.locations[0]?.name) || '',
-                caption: '',
-                quote: '',
-                img: t.img,
-                order: idx,
-              }));
+          // 1. First find selected magazine section from master magazineSections
+          const selectedSection = (magazineSections && magazineSections.length > 0)
+            ? (magazineSections.find(s => s.id === homeMagazineSectionId) || magazineSections[0])
+            : null;
+
+          // 2. Extract items from selected section or fallback to magazineMoments or top trips
+          let rawMoments: MagazineMoment[] = [];
+          if (selectedSection && selectedSection.items && selectedSection.items.length > 0) {
+            rawMoments = selectedSection.items;
+          } else if (magazineMoments && magazineMoments.length > 0) {
+            rawMoments = magazineMoments;
+          } else {
+            rawMoments = trips.slice(0, 3).map((t, idx) => ({
+              id: `fallback-${t.id}`,
+              tripId: t.id,
+              title: t.title,
+              date: t.date,
+              location: t.locationStr,
+              placeName: (t.locations && t.locations[0]?.name) || '',
+              caption: '',
+              quote: '',
+              img: t.img,
+              order: idx,
+            }));
+          }
+
+          // 3. Apply homeMagazineLimit (default: 6)
+          const limit = homeMagazineLimit && homeMagazineLimit > 0 ? homeMagazineLimit : 6;
+          const displayMoments: MagazineMoment[] = rawMoments.slice(0, limit);
 
           if (displayMoments.length === 0) return null;
 
