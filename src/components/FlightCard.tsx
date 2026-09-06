@@ -240,6 +240,7 @@ export function FlightCard({
   };
 
   // Local state to prevent typing lag
+  const isFocusedRef = useRef<{ [key: string]: boolean }>({});
   const [localTitle, setLocalTitle] = useState(flight.title);
   const [localFromCode, setLocalFromCode] = useState(flight.fromCode);
   const [localFromTerminal, setLocalFromTerminal] = useState(getTerminalNumber(flight.fromTerminal));
@@ -250,14 +251,14 @@ export function FlightCard({
   const [localPnr, setLocalPnr] = useState(flight.pnr);
 
   useEffect(() => {
-    setLocalTitle(flight.title);
-    setLocalFromCode(flight.fromCode);
-    setLocalFromTerminal(getTerminalNumber(flight.fromTerminal));
-    setLocalFlightNo(flight.flightNo);
-    setLocalToCode(flight.toCode);
-    setLocalToTerminal(getTerminalNumber(flight.toTerminal));
-    setLocalSeat(flight.seat);
-    setLocalPnr(flight.pnr);
+    if (!isFocusedRef.current.title) setLocalTitle(flight.title);
+    if (!isFocusedRef.current.fromCode) setLocalFromCode(flight.fromCode);
+    if (!isFocusedRef.current.fromTerminal) setLocalFromTerminal(getTerminalNumber(flight.fromTerminal));
+    if (!isFocusedRef.current.flightNo) setLocalFlightNo(flight.flightNo);
+    if (!isFocusedRef.current.toCode) setLocalToCode(flight.toCode);
+    if (!isFocusedRef.current.toTerminal) setLocalToTerminal(getTerminalNumber(flight.toTerminal));
+    if (!isFocusedRef.current.seat) setLocalSeat(flight.seat);
+    if (!isFocusedRef.current.pnr) setLocalPnr(flight.pnr);
   }, [flight]);
 
   const filteredSuggestions = useMemo(() => {
@@ -306,7 +307,11 @@ export function FlightCard({
             type="text"
             value={localTitle}
             onChange={(e) => setLocalTitle(e.target.value.toUpperCase())}
-            onBlur={() => onUpdate(flight.id, 'title', localTitle)}
+            onFocus={() => { isFocusedRef.current.title = true; }}
+            onBlur={(e) => {
+              isFocusedRef.current.title = false;
+              onUpdate(flight.id, 'title', e.target.value.toUpperCase());
+            }}
             onClick={(e) => e.stopPropagation()}
             className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none text-[10px] md:text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm uppercase w-32 sm:w-40"
             placeholder="FLIGHT TITLE"
@@ -497,7 +502,11 @@ export function FlightCard({
                   type="text"
                   value={localFlightNo}
                   onChange={(e) => setLocalFlightNo(e.target.value.toUpperCase())}
-                  onBlur={() => onUpdate(flight.id, 'flightNo', localFlightNo)}
+                  onFocus={() => { isFocusedRef.current.flightNo = true; }}
+                  onBlur={(e) => {
+                    isFocusedRef.current.flightNo = false;
+                    onUpdate(flight.id, 'flightNo', e.target.value.toUpperCase());
+                  }}
                   onClick={(e) => e.stopPropagation()}
                   className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1a1a1a] px-1.5 text-[10px] sm:text-xs md:text-sm font-bold text-black dark:text-white tracking-wider text-center w-16 sm:w-20 outline-none border border-black/10 dark:border-white/10 rounded-sm z-10 uppercase font-mono"
                   placeholder="KE000"
@@ -660,7 +669,11 @@ export function FlightCard({
                 type="text"
                 value={localSeat}
                 onChange={(e) => setLocalSeat(e.target.value.toUpperCase())}
-                onBlur={() => onUpdate(flight.id, 'seat', localSeat)}
+                onFocus={() => { isFocusedRef.current.seat = true; }}
+                onBlur={(e) => {
+                  isFocusedRef.current.seat = false;
+                  onUpdate(flight.id, 'seat', e.target.value.toUpperCase());
+                }}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs sm:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full text-center md:text-left uppercase font-mono"
                 placeholder="00A"
@@ -678,7 +691,11 @@ export function FlightCard({
                 type="text"
                 value={localPnr}
                 onChange={(e) => setLocalPnr(e.target.value.toUpperCase())}
-                onBlur={() => onUpdate(flight.id, 'pnr', localPnr)}
+                onFocus={() => { isFocusedRef.current.pnr = true; }}
+                onBlur={(e) => {
+                  isFocusedRef.current.pnr = false;
+                  onUpdate(flight.id, 'pnr', e.target.value.toUpperCase());
+                }}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs sm:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full text-center md:text-left uppercase font-mono"
                 placeholder="XXXXXX"

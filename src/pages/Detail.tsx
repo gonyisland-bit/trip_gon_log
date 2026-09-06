@@ -554,18 +554,22 @@ function PlaceAutocompleteInput({
 }: PlaceAutocompleteInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
-  const [localVal, setLocalVal] = useState(value);
+  const [localVal, setLocalVal] = useState(value || '');
   const hasSelectedRef = useRef(false);
+  const isFocusedRef = useRef(false);
 
   useEffect(() => {
-    setLocalVal(value);
+    if (!isFocusedRef.current) {
+      setLocalVal(value || '');
+    }
   }, [value]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       e.stopPropagation();
-      const val = (e.target as HTMLInputElement).value || localVal;
+      const val = inputRef.current ? inputRef.current.value : ((e.target as HTMLInputElement).value || localVal);
+      setLocalVal(val);
       onChange(val);
     }
   };
@@ -610,8 +614,13 @@ function PlaceAutocompleteInput({
     };
   }, []);
 
+  const handleFocus = () => {
+    isFocusedRef.current = true;
+  };
+
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const finalVal = e.target.value;
+    isFocusedRef.current = false;
+    const finalVal = inputRef.current ? inputRef.current.value : e.target.value;
     setLocalVal(finalVal);
     // Delay the blur action slightly to allow the place_changed listener to run first
     setTimeout(() => {
@@ -636,6 +645,7 @@ function PlaceAutocompleteInput({
             setLocalVal(e.target.value);
             onChange(e.target.value);
           }}
+          onFocus={handleFocus}
           onCompositionEnd={(e) => {
             const val = (e.target as HTMLInputElement).value;
             setLocalVal(val);
@@ -5538,11 +5548,16 @@ function TimelineItemPlaceInput({
   isFrequent,
   item,
 }: TimelineItemPlaceInputProps) {
-  const [localVal, setLocalVal] = useState(initialValue);
+  const [localVal, setLocalVal] = useState(initialValue || '');
   const [showDropdown, setShowDropdown] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const isFocusedRef = useRef(false);
+  const isComposingRef = useRef(false);
 
   useEffect(() => {
-    setLocalVal(initialValue);
+    if (!isFocusedRef.current) {
+      setLocalVal(initialValue || '');
+    }
   }, [initialValue]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -5551,16 +5566,28 @@ function TimelineItemPlaceInput({
     onUpdatePlace(itemId, val);
   };
 
+  const handleCompositionStart = () => {
+    isComposingRef.current = true;
+  };
+
   const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
+    isComposingRef.current = false;
     const val = (e.target as HTMLInputElement).value;
     setLocalVal(val);
     onUpdatePlace(itemId, val);
   };
 
+  const handleFocus = () => {
+    isFocusedRef.current = true;
+    setShowDropdown(true);
+  };
+
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setLocalVal(val);
-    onUpdatePlace(itemId, val);
+    isFocusedRef.current = false;
+    isComposingRef.current = false;
+    const currentDomVal = inputRef.current ? inputRef.current.value : e.target.value;
+    setLocalVal(currentDomVal);
+    onUpdatePlace(itemId, currentDomVal);
     setTimeout(() => setShowDropdown(false), 250);
   };
 
@@ -5571,19 +5598,21 @@ function TimelineItemPlaceInput({
   };
 
   const filteredFrequent = frequentPlaces.filter(fp =>
-    fp.place.toLowerCase().includes(localVal.toLowerCase())
+    fp.place.toLowerCase().includes((localVal || '').toLowerCase())
   );
 
   return (
     <div className="w-full relative">
       <div className="flex items-center gap-1.5 w-full relative">
         <input
+          ref={inputRef}
           id={`title-input-${itemId}`}
           type="text"
           value={localVal}
           onChange={handleChange}
+          onCompositionStart={handleCompositionStart}
           onCompositionEnd={handleCompositionEnd}
-          onFocus={() => setShowDropdown(true)}
+          onFocus={handleFocus}
           onBlur={handleBlur}
           className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-sm md:text-base text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full select-text"
           placeholder="일정 이름"

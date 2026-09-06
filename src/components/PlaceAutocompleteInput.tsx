@@ -80,12 +80,21 @@ export function PlaceAutocompleteInput({
     };
   }, []);
 
+  const isFocusedRef = useRef(false);
+
   useEffect(() => {
-    setLocalValue(value);
+    if (!isFocusedRef.current) {
+      setLocalValue(value || '');
+    }
   }, [value]);
 
+  const handleFocus = () => {
+    isFocusedRef.current = true;
+  };
+
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const finalVal = e.target.value;
+    isFocusedRef.current = false;
+    const finalVal = inputRef.current ? inputRef.current.value : e.target.value;
     setLocalValue(finalVal);
     // Delay the blur action slightly to allow the place_changed listener to run first
     setTimeout(() => {
@@ -110,6 +119,7 @@ export function PlaceAutocompleteInput({
             setLocalValue(e.target.value);
             onChange(e.target.value);
           }}
+          onFocus={handleFocus}
           onCompositionEnd={(e) => {
             const val = (e.target as HTMLInputElement).value;
             setLocalValue(val);

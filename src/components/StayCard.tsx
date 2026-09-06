@@ -92,20 +92,22 @@ export function StayCard({
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const isFocusedRef = useRef<{ [key: string]: boolean }>({});
+
   useEffect(() => {
-    setLocalStatus(stay.status);
+    if (!isFocusedRef.current.status) setLocalStatus(stay.status);
   }, [stay.status]);
 
   useEffect(() => {
-    setLocalTitle(stay.title);
+    if (!isFocusedRef.current.title) setLocalTitle(stay.title);
   }, [stay.title]);
 
   useEffect(() => {
-    setLocalConfNo(stay.confNo);
+    if (!isFocusedRef.current.confNo) setLocalConfNo(stay.confNo);
   }, [stay.confNo]);
 
   useEffect(() => {
-    setLocalMemo(stay.memo === '메모를 입력하세요' ? '' : stay.memo);
+    if (!isFocusedRef.current.memo) setLocalMemo(stay.memo === '메모를 입력하세요' ? '' : stay.memo);
   }, [stay.memo]);
 
   const uploadMultipleAdditionalImages = async (files: File[]) => {
@@ -258,7 +260,11 @@ export function StayCard({
               type="text"
               value={localStatus}
               onChange={(e) => setLocalStatus(e.target.value)}
-              onBlur={() => onUpdate(stay.id, 'status', localStatus)}
+              onFocus={() => { isFocusedRef.current.status = true; }}
+              onBlur={(e) => {
+                isFocusedRef.current.status = false;
+                onUpdate(stay.id, 'status', e.target.value);
+              }}
               onClick={(e) => e.stopPropagation()}
               className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-[9px] md:text-[10px] text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-36 uppercase text-center"
               placeholder="STATUS"
@@ -278,7 +284,11 @@ export function StayCard({
                 type="text"
                 value={localTitle}
                 onChange={(e) => setLocalTitle(e.target.value)}
-                onBlur={() => onUpdate(stay.id, 'title', localTitle)}
+                onFocus={() => { isFocusedRef.current.title = true; }}
+                onBlur={(e) => {
+                  isFocusedRef.current.title = false;
+                  onUpdate(stay.id, 'title', e.target.value);
+                }}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-black text-lg md:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
                 placeholder="STAY TITLE"
@@ -330,7 +340,11 @@ export function StayCard({
                 type="text"
                 value={localConfNo}
                 onChange={(e) => setLocalConfNo(e.target.value)}
-                onBlur={() => onUpdate(stay.id, 'confNo', localConfNo)}
+                onFocus={() => { isFocusedRef.current.confNo = true; }}
+                onBlur={(e) => {
+                  isFocusedRef.current.confNo = false;
+                  onUpdate(stay.id, 'confNo', e.target.value);
+                }}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-28 text-right uppercase"
                 placeholder="HTL-0000"
@@ -458,7 +472,11 @@ export function StayCard({
                 <textarea
                   value={localMemo}
                   onChange={(e) => setLocalMemo(e.target.value)}
-                  onBlur={() => onUpdate(stay.id, 'memo', localMemo)}
+                  onFocus={() => { isFocusedRef.current.memo = true; }}
+                  onBlur={(e) => {
+                    isFocusedRef.current.memo = false;
+                    onUpdate(stay.id, 'memo', e.target.value);
+                  }}
                   onClick={(e) => e.stopPropagation()}
                   className="bg-black/5 dark:bg-white/10 p-1.5 outline-none text-xs md:text-sm text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full resize-none h-16"
                   placeholder="메모를 입력하세요 (방 정보, 체크인 안내 등)"

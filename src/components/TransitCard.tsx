@@ -112,6 +112,7 @@ export function TransitCard({
   const [attachmentLightboxOpen, setAttachmentLightboxOpen] = useState(false);
   const [attachmentLightboxIndex, setAttachmentLightboxIndex] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isFocusedRef = useRef<{ [key: string]: boolean }>({});
 
   const uploadFile = async (file: File) => {
     const user = auth.currentUser;
@@ -156,12 +157,12 @@ export function TransitCard({
   const isPdf = (url: string) => url?.toLowerCase().includes('.pdf') || url?.toLowerCase().includes('application%2Fpdf');
 
   useEffect(() => {
-    setLocalTitle(transit.title);
-    setLocalSeat(transit.seat);
-    setLocalBookingRef(transit.bookingRef);
-    setLocalMemo(transit.memo || '');
-    setLocalCarModel(transit.carModel || '');
-    setLocalCarNumber(transit.carNumber || '');
+    if (!isFocusedRef.current.title) setLocalTitle(transit.title);
+    if (!isFocusedRef.current.seat) setLocalSeat(transit.seat);
+    if (!isFocusedRef.current.bookingRef) setLocalBookingRef(transit.bookingRef);
+    if (!isFocusedRef.current.memo) setLocalMemo(transit.memo || '');
+    if (!isFocusedRef.current.carModel) setLocalCarModel(transit.carModel || '');
+    if (!isFocusedRef.current.carNumber) setLocalCarNumber(transit.carNumber || '');
   }, [transit]);
 
   const handlePlaceLinkClick = (e: React.MouseEvent, placeName: string) => {
@@ -329,7 +330,11 @@ export function TransitCard({
                 type="text"
                 value={localTitle}
                 onChange={(e) => setLocalTitle(e.target.value)}
-                onBlur={() => onUpdate(transit.id, 'title', localTitle)}
+                onFocus={() => { isFocusedRef.current.title = true; }}
+                onBlur={(e) => {
+                  isFocusedRef.current.title = false;
+                  onUpdate(transit.id, 'title', e.target.value);
+                }}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-black/5 dark:bg-white/10 px-1.5 py-0.5 outline-none font-black text-lg md:text-xl text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
                 placeholder={transit.transitType === 'car' ? "RENTAL COMPANY / TITLE" : "TRANSIT TITLE"}
@@ -543,7 +548,11 @@ export function TransitCard({
                       type="text"
                       value={localCarModel}
                       onChange={(e) => setLocalCarModel(e.target.value)}
-                      onBlur={() => onUpdate(transit.id, 'carModel', localCarModel)}
+                      onFocus={() => { isFocusedRef.current.carModel = true; }}
+                      onBlur={(e) => {
+                        isFocusedRef.current.carModel = false;
+                        onUpdate(transit.id, 'carModel', e.target.value);
+                      }}
                       onClick={(e) => e.stopPropagation()}
                       className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
                       placeholder="e.g. PRIUS / TESLA"
@@ -561,7 +570,11 @@ export function TransitCard({
                       type="text"
                       value={localCarNumber}
                       onChange={(e) => setLocalCarNumber(e.target.value)}
-                      onBlur={() => onUpdate(transit.id, 'carNumber', localCarNumber)}
+                      onFocus={() => { isFocusedRef.current.carNumber = true; }}
+                      onBlur={(e) => {
+                        isFocusedRef.current.carNumber = false;
+                        onUpdate(transit.id, 'carNumber', e.target.value);
+                      }}
                       onClick={(e) => e.stopPropagation()}
                       className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
                       placeholder="e.g. 12가 3456"
@@ -582,7 +595,11 @@ export function TransitCard({
                       type="text"
                       value={localSeat}
                       onChange={(e) => setLocalSeat(e.target.value)}
-                      onBlur={() => onUpdate(transit.id, 'seat', localSeat)}
+                      onFocus={() => { isFocusedRef.current.seat = true; }}
+                      onBlur={(e) => {
+                        isFocusedRef.current.seat = false;
+                        onUpdate(transit.id, 'seat', e.target.value);
+                      }}
                       onClick={(e) => e.stopPropagation()}
                       className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full"
                       placeholder="Car 0, 00A"
@@ -600,7 +617,11 @@ export function TransitCard({
                       type="text"
                       value={localBookingRef}
                       onChange={(e) => setLocalBookingRef(e.target.value)}
-                      onBlur={() => onUpdate(transit.id, 'bookingRef', localBookingRef)}
+                      onFocus={() => { isFocusedRef.current.bookingRef = true; }}
+                      onBlur={(e) => {
+                        isFocusedRef.current.bookingRef = false;
+                        onUpdate(transit.id, 'bookingRef', e.target.value);
+                      }}
                       onClick={(e) => e.stopPropagation()}
                       className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none text-xs md:text-sm font-bold text-black dark:text-white border border-black/10 dark:border-white/10 rounded-sm w-full uppercase"
                       placeholder="REF-000"
@@ -694,7 +715,11 @@ export function TransitCard({
                     type="text"
                     value={localMemo}
                     onChange={(e) => setLocalMemo(e.target.value)}
-                    onBlur={() => onUpdate(transit.id, 'memo', localMemo)}
+                    onFocus={() => { isFocusedRef.current.memo = true; }}
+                    onBlur={(e) => {
+                      isFocusedRef.current.memo = false;
+                      onUpdate(transit.id, 'memo', e.target.value);
+                    }}
                     onClick={(e) => e.stopPropagation()}
                     className="bg-transparent border-b border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none py-1 text-xs md:text-sm text-black dark:text-white w-full"
                     placeholder="Enter notes (platform, transfer directions, etc.)..."
