@@ -596,6 +596,70 @@ function App() {
     }
   }, [isLoggedIn, trips.length, plans.length]);
 
+  // Auto-sync magazine moments with latest timeline images if they were updated earlier
+  useEffect(() => {
+    if (!magazineSections || magazineSections.length === 0 || Object.keys(timelineData).length === 0) return;
+
+    const allTimelineItems: TimelineItem[] = [];
+    Object.values(timelineData).forEach(items => {
+      if (Array.isArray(items)) {
+        allTimelineItems.push(...items);
+      }
+    });
+    if (allTimelineItems.length === 0) return;
+
+    let hasDifferences = false;
+    const syncedSections = magazineSections.map(sec => {
+      let secChanged = false;
+      const syncedItems = (sec.items || []).map(m => {
+        if (!m.tripId) return m;
+
+        // Try to match timeline item
+        let match: TimelineItem | undefined;
+        if (m.timelineItemId !== undefined) {
+          match = allTimelineItems.find(t => Number(t.tripId) === Number(m.tripId) && Number(t.id) === Number(m.timelineItemId));
+        }
+        if (!match) {
+          match = allTimelineItems.find(t => 
+            Number(t.tripId) === Number(m.tripId) && 
+            t.img && 
+            (t.place === m.title || (t.date === m.date && t.place === m.placeName))
+          );
+        }
+
+        if (match && match.img && match.img !== m.img) {
+          secChanged = true;
+          hasDifferences = true;
+          return {
+            ...m,
+            timelineItemId: match.id,
+            img: match.img,
+          };
+        }
+        return m;
+      });
+
+      if (secChanged) {
+        return { ...sec, items: syncedItems };
+      }
+      return sec;
+    });
+
+    if (hasDifferences) {
+      setMagazineSections(syncedSections);
+      const mainSec = syncedSections.find(s => s.id === 'main') || syncedSections[0];
+      if (mainSec && mainSec.items) {
+        setMagazineMoments(mainSec.items);
+      }
+      if (isLoggedIn && isAdmin) {
+        setDoc(doc(db, 'users', 'public', 'settings', 'home'), {
+          magazineSections: cleanForFirestore(syncedSections),
+          magazineMoments: cleanForFirestore(mainSec?.items || []),
+        }, { merge: true }).catch((e) => console.warn('Background magazine sync persistence notice:', e));
+      }
+    }
+  }, [timelineData, magazineSections?.length, isLoggedIn, isAdmin]);
+
   // Sync state with browser History API and parse share param on initial load
   useEffect(() => {
     const path = window.location.pathname;
@@ -1312,6 +1376,97 @@ function App() {
       });
 
       await saveBatch.commit();
+
+      // ── 4. Auto-sync Magazine Moments and Sections with updated timeline items ──
+      const previousTimelineDocs = timelineSnap.docs.map(d => d.data() as TimelineItem);
+      const updatedTimelineMap = new Map<number, TimelineItem>();
+      updatedTimeline.forEach(item => updatedTimelineMap.set(Number(item.id), item));
+
+      let hasMagazineChanges = false;
+      const syncMoment = (m: MagazineMoment): MagazineMoment => {
+        if (Number(m.tripId) !== Number(tripId)) return m;
+
+        // 1. Match by timelineItemId
+        if (m.timelineItemId !== undefined && updatedTimelineMap.has(Number(m.timelineItemId))) {
+          const matched = updatedTimelineMap.get(Number(m.timelineItemId))!;
+          if (
+            (matched.img && matched.img !== m.img) ||
+            (matched.place && matched.place !== m.title) ||
+            (matched.location && matched.location !== m.placeName) ||
+            (matched.date && matched.date !== m.date)
+          ) {
+            hasMagazineChanges = true;
+            return {
+              ...m,
+              img: matched.img || m.img,
+              title: matched.place || m.title,
+              placeName: matched.location || matched.place || m.placeName,
+              date: matched.date || m.date,
+            };
+          }
+        }
+
+        // 2. Match by previous image URL or place+date match
+        for (const prevItem of previousTimelineDocs) {
+          const isImgMatch = Boolean(prevItem.img && m.img && (prevItem.img === m.img || prevItem.img.split('?')[0] === m.img.split('?')[0]));
+          const isPlaceMatch = Boolean(prevItem.place && m.title && prevItem.place.trim().toLowerCase() === m.title.trim().toLowerCase());
+
+          if (isImgMatch || isPlaceMatch) {
+            const currentItem = updatedTimelineMap.get(Number(prevItem.id));
+            if (currentItem && currentItem.img) {
+              hasMagazineChanges = true;
+              return {
+                ...m,
+                timelineItemId: currentItem.id,
+                img: currentItem.img,
+                title: currentItem.place || m.title,
+                placeName: currentItem.location || currentItem.place || m.placeName,
+                date: currentItem.date || m.date,
+              };
+            }
+          }
+        }
+
+        return m;
+      };
+
+      const updatedSections = (magazineSections || []).map(sec => {
+        let secChanged = false;
+        const newItems = (sec.items || []).map(m => {
+          const newM = syncMoment(m);
+          if (newM !== m) secChanged = true;
+          return newM;
+        });
+
+        let newHeroImg = sec.heroImg;
+        if (sec.heroTripId === tripId && updatedTrip.coverImage && updatedTrip.coverImage !== sec.heroImg) {
+          newHeroImg = updatedTrip.coverImage;
+          secChanged = true;
+        }
+
+        if (secChanged) {
+          hasMagazineChanges = true;
+          return { ...sec, items: newItems, heroImg: newHeroImg };
+        }
+        return sec;
+      });
+
+      const updatedMoments = (magazineMoments || []).map(m => syncMoment(m));
+
+      if (hasMagazineChanges) {
+        try {
+          const mainSec = updatedSections.find(s => s.id === 'main') || updatedSections[0];
+          const mainMoments = mainSec ? (mainSec.items || []) : updatedMoments;
+          await setDoc(doc(db, 'users', uid, 'settings', 'home'), {
+            magazineSections: cleanForFirestore(updatedSections),
+            magazineMoments: cleanForFirestore(mainMoments),
+          }, { merge: true });
+          setMagazineSections(updatedSections);
+          setMagazineMoments(mainMoments);
+        } catch (magErr) {
+          console.warn("Auto-syncing magazine items failed in background:", magErr);
+        }
+      }
 
       setMarqueeOverrideText("🎉 JOURNEY SAVED SUCCESSFULLY!");
       setTimeout(() => {

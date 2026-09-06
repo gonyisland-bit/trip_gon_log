@@ -20,15 +20,22 @@ export function PlaceAutocompleteInput({
 }: PlaceAutocompleteInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
-  const [localValue, setLocalValue] = useState(value);
   const hasSelectedRef = useRef(false);
+  const isFocusedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isFocusedRef.current && inputRef.current) {
+      inputRef.current.value = value || '';
+    }
+  }, [value]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       e.stopPropagation();
-      const val = (e.target as HTMLInputElement).value || localValue;
+      const val = inputRef.current ? inputRef.current.value : (e.target as HTMLInputElement).value;
       onChange(val);
+      (e.target as HTMLInputElement).blur();
     }
   };
 
@@ -65,7 +72,9 @@ export function PlaceAutocompleteInput({
             if (countryComp) countryName = countryComp.long_name;
           }
           hasSelectedRef.current = true;
-          setLocalValue(address);
+          if (inputRef.current) {
+            inputRef.current.value = address;
+          }
           onSelectPlaceRef.current(name, { lat, lng }, address, countryName);
         }
       } catch (err) {
@@ -80,14 +89,6 @@ export function PlaceAutocompleteInput({
     };
   }, []);
 
-  const isFocusedRef = useRef(false);
-
-  useEffect(() => {
-    if (!isFocusedRef.current) {
-      setLocalValue(value || '');
-    }
-  }, [value]);
-
   const handleFocus = () => {
     isFocusedRef.current = true;
   };
@@ -95,7 +96,6 @@ export function PlaceAutocompleteInput({
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     isFocusedRef.current = false;
     const finalVal = inputRef.current ? inputRef.current.value : e.target.value;
-    setLocalValue(finalVal);
     // Delay the blur action slightly to allow the place_changed listener to run first
     setTimeout(() => {
       if (hasSelectedRef.current) {
@@ -114,15 +114,10 @@ export function PlaceAutocompleteInput({
         <input
           ref={inputRef}
           type="text"
-          value={localValue}
-          onChange={(e) => {
-            setLocalValue(e.target.value);
-            onChange(e.target.value);
-          }}
+          defaultValue={value || ''}
           onFocus={handleFocus}
           onCompositionEnd={(e) => {
             const val = (e.target as HTMLInputElement).value;
-            setLocalValue(val);
             onChange(val);
           }}
           onBlur={handleBlur}

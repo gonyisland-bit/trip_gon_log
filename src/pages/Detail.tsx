@@ -554,13 +554,12 @@ function PlaceAutocompleteInput({
 }: PlaceAutocompleteInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
-  const [localVal, setLocalVal] = useState(value || '');
   const hasSelectedRef = useRef(false);
   const isFocusedRef = useRef(false);
 
   useEffect(() => {
-    if (!isFocusedRef.current) {
-      setLocalVal(value || '');
+    if (!isFocusedRef.current && inputRef.current) {
+      inputRef.current.value = value || '';
     }
   }, [value]);
 
@@ -568,9 +567,9 @@ function PlaceAutocompleteInput({
     if (e.key === 'Enter') {
       e.preventDefault();
       e.stopPropagation();
-      const val = inputRef.current ? inputRef.current.value : ((e.target as HTMLInputElement).value || localVal);
-      setLocalVal(val);
+      const val = inputRef.current ? inputRef.current.value : (e.target as HTMLInputElement).value;
       onChange(val);
+      (e.target as HTMLInputElement).blur();
     }
   };
 
@@ -599,7 +598,9 @@ function PlaceAutocompleteInput({
           const name = place.name || place.formatted_address || '';
           const address = place.formatted_address || name;
           hasSelectedRef.current = true; // Mark selection in progress to prevent blur race condition
-          setLocalVal(address);
+          if (inputRef.current) {
+            inputRef.current.value = address;
+          }
           onSelectPlaceRef.current(name, { lat, lng }, address);
         }
       } catch (err) {
@@ -621,7 +622,6 @@ function PlaceAutocompleteInput({
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     isFocusedRef.current = false;
     const finalVal = inputRef.current ? inputRef.current.value : e.target.value;
-    setLocalVal(finalVal);
     // Delay the blur action slightly to allow the place_changed listener to run first
     setTimeout(() => {
       if (hasSelectedRef.current) {
@@ -640,15 +640,10 @@ function PlaceAutocompleteInput({
         <input
           ref={inputRef}
           type="text"
-          value={localVal}
-          onChange={(e) => {
-            setLocalVal(e.target.value);
-            onChange(e.target.value);
-          }}
+          defaultValue={value || ''}
           onFocus={handleFocus}
           onCompositionEnd={(e) => {
             const val = (e.target as HTMLInputElement).value;
-            setLocalVal(val);
             onChange(val);
           }}
           onBlur={handleBlur}
@@ -3235,12 +3230,9 @@ export function JourneyDetailPage({
             {isEditing && draftTrip ? (
               <div className="flex-1 min-w-0">
                 <span className="text-[10px] uppercase tracking-widest text-black/50 dark:text-white/50 font-bold block mb-1">Journey Title</span>
-                <input
-                  type="text"
-                  value={draftTrip.title}
-                  onChange={(e) => setDraftTrip({ ...draftTrip, title: e.target.value })}
-                  className="text-base sm:text-lg md:text-xl font-black uppercase bg-black/5 dark:bg-white/10 border border-black/15 dark:border-white/15 px-2.5 py-1 outline-none w-full text-black dark:text-white rounded font-satoshi"
-                  placeholder="JOURNEY TITLE"
+                <JourneyTitleInput
+                  initialTitle={draftTrip.title}
+                  onUpdateTitle={(title) => setDraftTrip(prev => prev ? { ...prev, title } : null)}
                 />
               </div>
             ) : (
@@ -5527,6 +5519,53 @@ export function JourneyDetailPage({
   );
 }
 
+interface JourneyTitleInputProps {
+  initialTitle: string;
+  onUpdateTitle: (title: string) => void;
+}
+
+function JourneyTitleInput({ initialTitle, onUpdateTitle }: JourneyTitleInputProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const isFocusedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isFocusedRef.current && inputRef.current) {
+      inputRef.current.value = initialTitle || '';
+    }
+  }, [initialTitle]);
+
+  const commitTitle = (valOverride?: string) => {
+    const val = valOverride !== undefined ? valOverride : (inputRef.current ? inputRef.current.value : '');
+    onUpdateTitle(val);
+  };
+
+  return (
+    <input
+      ref={inputRef}
+      type="text"
+      defaultValue={initialTitle || ''}
+      onFocus={() => { isFocusedRef.current = true; }}
+      onCompositionEnd={(e) => {
+        const val = (e.target as HTMLInputElement).value;
+        commitTitle(val);
+      }}
+      onBlur={(e) => {
+        isFocusedRef.current = false;
+        const val = inputRef.current ? inputRef.current.value : e.target.value;
+        commitTitle(val);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          commitTitle();
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+      className="text-base sm:text-lg md:text-xl font-black uppercase bg-black/5 dark:bg-white/10 border border-black/15 dark:border-white/15 px-2.5 py-1 outline-none w-full text-black dark:text-white rounded font-satoshi"
+      placeholder="JOURNEY TITLE"
+    />
+  );
+}
+
 interface TimelineItemPlaceInputProps {
   itemId: number;
   initialValue: string;
@@ -5548,33 +5587,32 @@ function TimelineItemPlaceInput({
   isFrequent,
   item,
 }: TimelineItemPlaceInputProps) {
-  const [localVal, setLocalVal] = useState(initialValue || '');
+  const [filterVal, setFilterVal] = useState(initialValue || '');
   const [showDropdown, setShowDropdown] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const isFocusedRef = useRef(false);
-  const isComposingRef = useRef(false);
 
   useEffect(() => {
-    if (!isFocusedRef.current) {
-      setLocalVal(initialValue || '');
+    if (!isFocusedRef.current && inputRef.current) {
+      inputRef.current.value = initialValue || '';
+      setFilterVal(initialValue || '');
     }
   }, [initialValue]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setLocalVal(val);
+  const commitValue = (valOverride?: string) => {
+    const val = valOverride !== undefined ? valOverride : (inputRef.current ? inputRef.current.value : filterVal);
     onUpdatePlace(itemId, val);
   };
 
-  const handleCompositionStart = () => {
-    isComposingRef.current = true;
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setFilterVal(val);
   };
 
   const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
-    isComposingRef.current = false;
     const val = (e.target as HTMLInputElement).value;
-    setLocalVal(val);
-    onUpdatePlace(itemId, val);
+    setFilterVal(val);
+    commitValue(val);
   };
 
   const handleFocus = () => {
@@ -5584,21 +5622,31 @@ function TimelineItemPlaceInput({
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     isFocusedRef.current = false;
-    isComposingRef.current = false;
     const currentDomVal = inputRef.current ? inputRef.current.value : e.target.value;
-    setLocalVal(currentDomVal);
-    onUpdatePlace(itemId, currentDomVal);
+    setFilterVal(currentDomVal);
+    commitValue(currentDomVal);
     setTimeout(() => setShowDropdown(false), 250);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      commitValue();
+      (e.target as HTMLInputElement).blur();
+    }
+  };
+
   const handleSelect = (fp: any) => {
-    setLocalVal(fp.place);
+    if (inputRef.current) {
+      inputRef.current.value = fp.place;
+    }
+    setFilterVal(fp.place);
+    commitValue(fp.place);
     onSelectFrequent(item, fp);
     setShowDropdown(false);
   };
 
   const filteredFrequent = frequentPlaces.filter(fp =>
-    fp.place.toLowerCase().includes((localVal || '').toLowerCase())
+    fp.place.toLowerCase().includes((filterVal || '').toLowerCase())
   );
 
   return (
@@ -5608,12 +5656,12 @@ function TimelineItemPlaceInput({
           ref={inputRef}
           id={`title-input-${itemId}`}
           type="text"
-          value={localVal}
-          onChange={handleChange}
-          onCompositionStart={handleCompositionStart}
+          defaultValue={initialValue || ''}
+          onChange={handleInput}
           onCompositionEnd={handleCompositionEnd}
           onFocus={handleFocus}
           onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
           className="bg-black/5 dark:bg-white/10 px-1 py-0.5 outline-none font-bold text-sm md:text-base text-black dark:text-white rounded-none border border-black/10 dark:border-white/10 w-full select-text"
           placeholder="일정 이름"
         />
@@ -5621,9 +5669,9 @@ function TimelineItemPlaceInput({
           type="button"
           onClick={() => toggleFrequentPlace(item)}
           className="p-1 hover:text-yellow-500 text-black/30 dark:text-white/30 transition-colors shrink-0"
-          title={isFrequent(localVal) ? "자주 가는 장소 등록 해제" : "자주 가는 장소로 등록"}
+          title={isFrequent(inputRef.current?.value || filterVal) ? "자주 가는 장소 등록 해제" : "자주 가는 장소로 등록"}
         >
-          <Star className={`w-3.5 h-3.5 ${isFrequent(localVal) ? 'fill-yellow-400 text-yellow-500' : ''}`} />
+          <Star className={`w-3.5 h-3.5 ${isFrequent(inputRef.current?.value || filterVal) ? 'fill-yellow-400 text-yellow-500' : ''}`} />
         </button>
       </div>
 

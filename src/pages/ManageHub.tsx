@@ -985,6 +985,17 @@ export function ManageHubPage({
   // Add timeline item as a magazine moment
   const handleAddMomentFromTimeline = (item: TimelineItem & { journeyTitle?: string; journeyLocation?: string }) => {
     if (!item.img) return;
+
+    // Prevent duplicate addition in current section
+    const isDuplicate = momentsList.some(m => 
+      (m.timelineItemId !== undefined && m.timelineItemId === item.id) ||
+      (m.img && item.img && (m.img === item.img || m.img.split('?')[0] === item.img.split('?')[0]))
+    );
+    if (isDuplicate) {
+      alert("이미 현재 매거진 섹션에 등록된 이미지입니다.");
+      return;
+    }
+
     const parentTrip = trips.find(t => t.id === item.tripId);
     const pName = safeStr(item.place);
     const jTitle = safeStr(item.journeyTitle) || parentTrip?.title || '';
@@ -993,6 +1004,7 @@ export function ManageHubPage({
     const newMoment: MagazineMoment = {
       id: `moment-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       tripId: item.tripId,
+      timelineItemId: item.id,
       title: pName || jTitle || 'UNTITLED MOMENT',
       date: safeStr(item.date),
       placeName: locStr,
@@ -1990,12 +2002,18 @@ export function ManageHubPage({
                             const jTitle = safeStr(item.journeyTitle);
                             const displayTitle = pName || jTitle || 'MOMENT';
                             const itemDate = safeStr(item.date);
+                            const isAlreadyLinked = momentsList.some(m => 
+                              (m.timelineItemId !== undefined && m.timelineItemId === item.id) ||
+                              (m.img && item.img && (m.img === item.img || m.img.split('?')[0] === item.img.split('?')[0]))
+                            );
                             return (
                               <div
                                 key={`cand-${item.id || i}-${i}`}
                                 onClick={() => handleAddMomentFromTimeline(item)}
-                                className="group relative h-32 sm:h-40 bg-white dark:bg-[#121212] border border-black/15 dark:border-white/15 overflow-hidden cursor-pointer flex flex-col justify-end transition-all select-none rounded-none active:scale-95"
-                                title={`${displayTitle} (${itemDate})`}
+                                className={`group relative h-32 sm:h-40 bg-white dark:bg-[#121212] border border-black/15 dark:border-white/15 overflow-hidden flex flex-col justify-end transition-all select-none rounded-none ${
+                                  isAlreadyLinked ? 'cursor-default opacity-85' : 'cursor-pointer active:scale-95'
+                                }`}
+                                title={isAlreadyLinked ? `${displayTitle} (매거진 연동됨)` : `${displayTitle} (${itemDate})`}
                               >
                                 <img
                                   src={getEffectiveImageUrl(item.img || '')}
@@ -2004,9 +2022,21 @@ export function ManageHubPage({
                                   decoding="async"
                                   className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                 />
+
+                                {/* Minimal Checkmark Icon Badge (No Text) */}
+                                {isAlreadyLinked && (
+                                  <div 
+                                    className="absolute top-2 left-2 z-20 w-6 h-6 rounded-full bg-black/80 backdrop-blur-md border border-white/20 flex items-center justify-center text-emerald-400 shadow-md"
+                                    title="매거진 연동됨"
+                                  >
+                                    <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                                  </div>
+                                )}
                                 
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white font-mono text-xs font-black p-2 text-center z-10">
-                                  + ADD
+                                <div className={`absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white font-mono text-xs font-black p-2 text-center z-10 ${
+                                  isAlreadyLinked ? '!bg-black/60' : ''
+                                }`}>
+                                  {isAlreadyLinked ? 'ALREADY ADDED' : '+ ADD'}
                                 </div>
 
                                 <div className="relative z-10 w-full bg-gradient-to-t from-black/95 via-black/80 to-transparent p-2 pt-4 flex flex-col gap-0.5">

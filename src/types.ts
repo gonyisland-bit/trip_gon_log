@@ -170,6 +170,7 @@ export type TabType = 'summary' | 'timeline' | 'flights' | 'stays' | 'transit' |
 export interface MagazineMoment {
   id: string;
   tripId?: number;
+  timelineItemId?: number;
   title: string;
   date?: string;
   location?: string;
