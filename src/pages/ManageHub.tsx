@@ -332,6 +332,7 @@ export function ManageHubPage({
   const handleScanCleanup = async () => {
     setIsScanning(true);
     setCleanLog([]);
+    const uid = 'public';
     try {
       const validTripIds = new Set<string>();
       trips.forEach(t => validTripIds.add(String(t.id)));
@@ -339,12 +340,12 @@ export function ManageHubPage({
       trashedJourneys.forEach(t => validTripIds.add(String(t.id)));
 
       const [timelineSnap, staysSnap, flightsSnap, transitsSnap, tripsSnap, plansSnap] = await Promise.all([
-        getDocs(collection(db, 'timeline')),
-        getDocs(collection(db, 'stays')),
-        getDocs(collection(db, 'flights')),
-        getDocs(collection(db, 'transits')),
-        getDocs(collection(db, 'trips')),
-        getDocs(collection(db, 'plans'))
+        getDocs(collection(db, 'users', uid, 'timeline')),
+        getDocs(collection(db, 'users', uid, 'stays')),
+        getDocs(collection(db, 'users', uid, 'flights')),
+        getDocs(collection(db, 'users', uid, 'transits')),
+        getDocs(collection(db, 'users', uid, 'trips')),
+        getDocs(collection(db, 'users', uid, 'plans'))
       ]);
 
       const orphanedTimelineDocs: { id: string; tripId?: any }[] = [];
@@ -438,9 +439,9 @@ export function ManageHubPage({
       };
 
       setDiagReport(report);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Diagnostic scan error:', err);
-      alert('데이터베이스 진단 스캔 중 오류가 발생했습니다.');
+      alert(`데이터베이스 진단 스캔 중 오류가 발생했습니다:\n${err?.message || err}`);
     } finally {
       setIsScanning(false);
     }
@@ -457,34 +458,35 @@ export function ManageHubPage({
     let orphanedDeleted = 0;
     let subtitleCleaned = 0;
     let cacheCleaned = 0;
+    const uid = 'public';
 
     try {
       logs.push(`[${new Date().toLocaleTimeString()}] 🚀 데이터 최적화 및 클린화 작업 시작...`);
 
       // 1. Delete orphaned timeline docs
       for (const item of diagReport.orphanedTimelineDocs) {
-        await deleteDoc(doc(db, 'timeline', item.id));
+        await deleteDoc(doc(db, 'users', uid, 'timeline', item.id));
         orphanedDeleted++;
         logs.push(`- [타임라인] 고아 문서 안전 제거 (ID: ${item.id})`);
       }
 
       // 2. Delete orphaned stays
       for (const item of diagReport.orphanedStaysDocs) {
-        await deleteDoc(doc(db, 'stays', item.id));
+        await deleteDoc(doc(db, 'users', uid, 'stays', item.id));
         orphanedDeleted++;
         logs.push(`- [숙소] 고아 문서 안전 제거 (ID: ${item.id})`);
       }
 
       // 3. Delete orphaned flights
       for (const item of diagReport.orphanedFlightsDocs) {
-        await deleteDoc(doc(db, 'flights', item.id));
+        await deleteDoc(doc(db, 'users', uid, 'flights', item.id));
         orphanedDeleted++;
         logs.push(`- [항공] 고아 문서 안전 제거 (ID: ${item.id})`);
       }
 
       // 4. Delete orphaned transits
       for (const item of diagReport.orphanedTransitsDocs) {
-        await deleteDoc(doc(db, 'transits', item.id));
+        await deleteDoc(doc(db, 'users', uid, 'transits', item.id));
         orphanedDeleted++;
         logs.push(`- [교통] 고아 문서 안전 제거 (ID: ${item.id})`);
       }
@@ -492,7 +494,7 @@ export function ManageHubPage({
       // 5. Clean deprecated subtitle field
       for (const item of diagReport.deprecatedSubtitleDocs) {
         try {
-          await updateDoc(doc(db, item.collection, item.id), {
+          await updateDoc(doc(db, 'users', uid, item.collection, item.id), {
             subtitle: deleteField()
           });
           subtitleCleaned++;
@@ -516,9 +518,9 @@ export function ManageHubPage({
 
       // Refresh scan
       await handleScanCleanup();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Execute cleanup error:', err);
-      alert('정리 작업 중 오류가 발생했습니다.');
+      alert(`정리 작업 중 오류가 발생했습니다:\n${err?.message || err}`);
     } finally {
       setIsCleaning(false);
     }
