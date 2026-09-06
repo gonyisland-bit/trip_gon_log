@@ -464,7 +464,8 @@ export function ManageHubPage({
           if (moment.timelineItemId !== undefined) {
             const matchedTimeline = allActiveTimelineItems.find(t => Number(t.id) === Number(moment.timelineItemId));
             if (matchedTimeline) {
-              const expectedTitle = safeStr(matchedTimeline.place) || safeStr(matchedTimeline.journeyTitle) || 'UNTITLED';
+              const pTrip = trips.find(t => t.id === matchedTimeline.tripId) || plans.find(p => p.id === matchedTimeline.tripId);
+              const expectedTitle = safeStr(matchedTimeline.place) || safeStr(pTrip?.title) || 'UNTITLED';
               const cleanExpected = expectedTitle.toLowerCase();
               if (cleanExpected && mTitle && cleanExpected !== mTitle) {
                 outOfSyncMagazineMoments.push({
@@ -624,10 +625,10 @@ export function ManageHubPage({
             }
 
             if (matchedTimeline) {
-              const parentTrip = trips.find(t => t.id === matchedTimeline?.tripId);
+              const parentTrip = trips.find(t => t.id === matchedTimeline?.tripId) || plans.find(p => p.id === matchedTimeline?.tripId);
               const tripItems = allTripTimelineItems.filter(t => t.tripId === matchedTimeline?.tripId);
               const resolvedLoc = resolveTimelinePlaceName(matchedTimeline, tripItems, parentTrip);
-              const correctTitle = safeStr(matchedTimeline.place) || safeStr(matchedTimeline.journeyTitle) || item.title;
+              const correctTitle = safeStr(matchedTimeline.place) || safeStr(parentTrip?.title) || item.title;
               const correctDate = safeStr(matchedTimeline.date) || item.date;
 
               if (

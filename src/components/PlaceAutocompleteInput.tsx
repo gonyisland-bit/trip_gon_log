@@ -20,6 +20,8 @@ export function PlaceAutocompleteInput({
 }: PlaceAutocompleteInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
+  const isFocusedRef = useRef(false);
+  const hasSelectedRef = useRef(false);
   const lastTypedValRef = useRef(value || '');
 
   useEffect(() => {
