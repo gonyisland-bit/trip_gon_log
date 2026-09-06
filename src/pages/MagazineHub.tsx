@@ -350,21 +350,27 @@ export function MagazineHubPage({
     const isTextCard = item.isTextOnly || !item.img;
     const parentTrip = trips.find(t => t.id === item.tripId);
 
-    // Height & aspect ratio logic
+    // Height & aspect ratio logic:
+    // Portrait is 3:4.
+    // Landscape on mobile (< md) adapts to 4:3 for prominent vertical presence; on desktop (>= md) it aligns with 16:10.
     let visualFrameClass = 'aspect-[3/4] w-full';
     if (options.isMatchedHeight) {
-      // In a 3-col combined row (PL or LP), aspect-[16/10] (1.6:1) perfectly compensates for grid gap and aligns horizontal height with portrait (3:4) sibling
-      visualFrameClass = 'aspect-[16/10] w-full';
+      visualFrameClass = 'aspect-[4/3] md:aspect-[16/10] w-full';
     } else if (isLand) {
-      visualFrameClass = 'aspect-[16/10] w-full';
+      visualFrameClass = 'aspect-[4/3] md:aspect-[16/10] w-full';
     }
+
+    // Full-bleed expansion on mobile for landscape cards
+    const containerBleedClass = isLand
+      ? '-mx-4 sm:-mx-8 md:mx-0 w-[calc(100%+2rem)] sm:w-[calc(100%+4rem)] md:w-full'
+      : 'w-full';
 
     // Pure Text Card Rendering: No borders, no metadata headers/footers, ONLY text content
     if (isTextCard) {
       return (
         <article
           key={item.id || itemIndex}
-          className={`group flex flex-col w-full h-full justify-center transition-all duration-300 ${options.spanClass || ''}`}
+          className={`group flex flex-col h-full justify-center transition-all duration-300 ${containerBleedClass} ${options.spanClass || ''}`}
         >
           <div
             className={`relative ${visualFrameClass} overflow-hidden bg-transparent text-black dark:text-white p-4 sm:p-6 md:p-8 flex items-center justify-center select-none border-0`}
@@ -406,7 +412,7 @@ export function MagazineHubPage({
     return (
       <article
         key={item.id || itemIndex}
-        className={`group relative flex flex-col justify-between w-full h-full transition-all duration-300 select-none bg-transparent border-none shadow-none ${options.spanClass || ''}`}
+        className={`group relative flex flex-col justify-between h-full transition-all duration-300 select-none bg-transparent border-none shadow-none ${containerBleedClass} ${options.spanClass || ''}`}
       >
         {/* 1. Photo Section */}
         <div
@@ -435,7 +441,7 @@ export function MagazineHubPage({
         </div>
 
         {/* 2. Editorial Typography & Metadata (Home Magazine Style: Title -> Date -> Location Row) */}
-        <div className="pt-3.5 flex-1 flex flex-col justify-between text-black dark:text-white font-['Inter',sans-serif]">
+        <div className={`pt-3.5 flex-1 flex flex-col justify-between text-black dark:text-white font-['Inter',sans-serif] ${isLand ? 'px-4 sm:px-8 md:px-0' : ''}`}>
           <div className="flex flex-col">
             {/* 1) Title */}
             <h3

@@ -2941,10 +2941,10 @@ export function ManageHubPage({
 
                       let aspectClass = 'aspect-[3/4] w-full';
                       if (options.isMatchedHeight) {
-                        // In a 3-col combined row (PL or LP), aspect-[16/10] (1.6:1) perfectly aligns horizontal height with portrait (3:4) sibling
-                        aspectClass = 'aspect-[16/10] w-full';
+                        // In a 3-col combined row (PL or LP), aspect-[4/3] on mobile and aspect-[16/10] on desktop aligns horizontal height with portrait (3:4) sibling
+                        aspectClass = 'aspect-[4/3] md:aspect-[16/10] w-full';
                       } else if (isLandscape) {
-                        aspectClass = 'aspect-[16/10] w-full';
+                        aspectClass = 'aspect-[4/3] md:aspect-[16/10] w-full';
                       }
 
                       return (
