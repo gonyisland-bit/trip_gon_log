@@ -1457,7 +1457,7 @@ export function ManageHubPage({
     setIsSyncingMagazine(true);
 
     try {
-      // Gather all timeline items across all dates
+      // Gather all timeline items across all dates + gallery photos
       const allTimelineItems: TimelineItem[] = [];
       Object.values(timelineData || {}).forEach(dayItems => {
         if (Array.isArray(dayItems)) {
@@ -1465,18 +1465,53 @@ export function ManageHubPage({
         }
       });
 
+      // Also gather photos from journey gallery metadata to ensure parity with candidate pool
+      localJourneys.forEach(j => {
+        if (j.gallery && Array.isArray(j.gallery)) {
+          j.gallery.forEach((gItem, gIdx) => {
+            const url = typeof gItem === 'string' ? gItem : gItem?.url;
+            if (!url) return;
+            const gDate = typeof gItem === 'object' && gItem?.date ? gItem.date : j.date;
+            const gPlace = typeof gItem === 'object' && gItem?.place ? gItem.place : '';
+            const gMemo = typeof gItem === 'object' && gItem?.imgNote ? gItem.imgNote : '';
+            allTimelineItems.push({
+              id: 900000 + j.id * 1000 + gIdx,
+              time: typeof gItem === 'object' && gItem?.time ? gItem.time : '12:00',
+              type: 'PHOTO',
+              place: gPlace || j.locationStr || j.title.replace(/\s*\(Plan\)$/i, ''),
+              cost: '',
+              memo: gMemo,
+              img: url,
+              date: gDate,
+              tripId: j.id,
+            });
+          });
+        }
+      });
+
       let changesCount = 0;
       const updatedItems = (currentMagSection.items || []).map(item => {
         if (item.isTextOnly || !item.img) return item;
 
-        // Strict 1:1 match by timelineItemId or exact image URL
+        // Strict 1:1 match by timelineItemId, exact image URL, or trip+date+title smart match
         let matched: TimelineItem | undefined;
         if (item.timelineItemId !== undefined) {
-          matched = allTimelineItems.find(t => Number(t.id) === Number(item.timelineItemId));
+          matched = allTimelineItems.find(t => 
+            Number(t.id) === Number(item.timelineItemId) || 
+            String(t.id) === String(item.timelineItemId)
+          );
         }
         if (!matched && item.img) {
           const cleanImg = item.img.split('?')[0];
           matched = allTimelineItems.find(t => t.img && (t.img === item.img || t.img.split('?')[0] === cleanImg));
+        }
+        if (!matched && item.tripId && item.date && item.title) {
+          const cleanTitle = item.title.trim().toLowerCase();
+          matched = allTimelineItems.find(t =>
+            Number(t.tripId) === Number(item.tripId) &&
+            t.date === item.date &&
+            t.place && t.place.trim().toLowerCase() === cleanTitle
+          );
         }
 
         if (matched) {

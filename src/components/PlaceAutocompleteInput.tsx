@@ -96,6 +96,23 @@ export function PlaceAutocompleteInput({
     isFocusedRef.current = true;
   };
 
+  // Ensure IME composition commit when window loses focus (e.g. clicking outside browser window)
+  useEffect(() => {
+    const handleWindowBlur = () => {
+      if ((isFocusedRef.current || document.activeElement === inputRef.current) && inputRef.current) {
+        const domVal = inputRef.current.value || '';
+        const fallbackVal = lastTypedValRef.current || '';
+        const finalVal = fallbackVal.length >= domVal.length ? fallbackVal : domVal;
+        if (!hasSelectedRef.current && finalVal) {
+          onChange(finalVal);
+        }
+      }
+    };
+
+    window.addEventListener('blur', handleWindowBlur);
+    return () => window.removeEventListener('blur', handleWindowBlur);
+  }, [onChange]);
+
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const capturedVal = e.target.value;
     if (capturedVal) lastTypedValRef.current = capturedVal;

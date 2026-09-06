@@ -182,12 +182,18 @@ export function MagazineHubPage({
   const sectionItems: MagazineItem[] = useMemo(() => {
     if (!currentSection || !currentSection.items) return [];
 
-    // Fast lookup map for live timeline items
+    // Fast lookup maps for live timeline items
     const timelineByUrl = new Map<string, TimelineItem>();
+    const timelineById = new Map<number | string, TimelineItem>();
     if (timelineData) {
       Object.values(timelineData).forEach(items => {
         if (Array.isArray(items)) {
           items.forEach(t => {
+            if (t.id !== undefined) {
+              timelineById.set(t.id, t);
+              timelineById.set(Number(t.id), t);
+              timelineById.set(String(t.id), t);
+            }
             if (t.img) {
               timelineByUrl.set(t.img, t);
               const eff = getEffectiveImageUrl(t.img);
@@ -227,8 +233,23 @@ export function MagazineHubPage({
       .map(item => {
         if (item.isTextOnly || !item.img) return item;
 
-        // Sync with live timeline item if available
-        const matched = timelineByUrl.get(item.img) || timelineByUrl.get(getEffectiveImageUrl(item.img));
+        // Sync with live timeline item if available (ID match first, then URL, then date+place smart match)
+        let matched: TimelineItem | undefined;
+        if (item.timelineItemId !== undefined) {
+          matched = timelineById.get(Number(item.timelineItemId)) || timelineById.get(String(item.timelineItemId));
+        }
+        if (!matched && item.img) {
+          matched = timelineByUrl.get(item.img) || timelineByUrl.get(getEffectiveImageUrl(item.img));
+        }
+        if (!matched && item.tripId && item.date && item.title) {
+          const cleanTitle = item.title.trim().toLowerCase();
+          matched = allTimelineList.find(t =>
+            Number(t.tripId) === Number(item.tripId) &&
+            t.date === item.date &&
+            t.place && t.place.trim().toLowerCase() === cleanTitle
+          );
+        }
+
         const targetTripId = matched?.tripId || item.tripId;
         const parentTrip = trips.find(t => t.id === targetTripId);
         const tripTimeline = allTimelineList.filter(t => t.tripId === targetTripId);
@@ -240,7 +261,9 @@ export function MagazineHubPage({
 
           return {
             ...item,
+            timelineItemId: matched.id,
             tripId: targetTripId,
+            img: matched.img || item.img, // Live update to latest high-resolution photo from timeline
             title: pName || jTitle || item.title || 'UNTITLED MOMENT',
             placeName: resolvedLocation,
             location: resolvedLocation,
@@ -262,15 +285,20 @@ export function MagazineHubPage({
       });
   }, [currentSection, timelineData, trips]);
 
+  // Filter only items with actual photos for Lightbox (exclude text-only cards)
+  const photoItems = useMemo(() => {
+    return sectionItems.filter(item => !item.isTextOnly && !!item.img);
+  }, [sectionItems]);
+
   // Prepare images for Lightbox
   const lightboxImages = useMemo(() => {
-    return sectionItems.map(item => ({
+    return photoItems.map(item => ({
       url: getEffectiveImageUrl(item.img),
       date: item.date,
       place: item.placeName || item.location,
       imgNote: item.title,
     }));
-  }, [sectionItems]);
+  }, [photoItems]);
 
   // Find linked trip for hero
   const heroTrip = useMemo(() => {
@@ -411,6 +439,14 @@ export function MagazineHubPage({
       displayPlace = parentTrip?.locationStr || parentTrip?.country || 'VISITED PLACE';
     }
 
+    // Open Lightbox at correct photo index (excluding text-only cards)
+    const photoIdx = photoItems.findIndex(p => p.id === item.id);
+    const openLightbox = () => {
+      if (photoIdx !== -1) {
+        setLightboxIndex(photoIdx);
+      }
+    };
+
     // Direct jump handler to journey timeline
     const handleJumpToTimeline = (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -438,7 +474,7 @@ export function MagazineHubPage({
       >
         {/* 1. Photo Section */}
         <div
-          onClick={() => setLightboxIndex(itemIndex)}
+          onClick={openLightbox}
           className={`relative ${visualFrameClass} overflow-hidden bg-black/5 dark:bg-white/5 cursor-pointer border border-black/10 dark:border-white/10`}
         >
           <img
@@ -467,7 +503,7 @@ export function MagazineHubPage({
           <div className="flex flex-col">
             {/* 1) Title */}
             <h3
-              onClick={() => setLightboxIndex(itemIndex)}
+              onClick={openLightbox}
               className="text-base sm:text-lg md:text-xl font-black uppercase tracking-tight text-black dark:text-white font-sans line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors cursor-pointer"
             >
               {displayTitle}

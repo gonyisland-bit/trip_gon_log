@@ -615,16 +615,27 @@ function App() {
       const syncedItems = (sec.items || []).map(m => {
         if (!m.tripId) return m;
 
-        // Strict 1:1 match by timelineItemId or matching photo URL
+        // Strict 1:1 match by timelineItemId, matching photo URL, or trip+date+title smart match
         let match: TimelineItem | undefined;
         if (m.timelineItemId !== undefined) {
-          match = allTimelineItems.find(t => Number(t.tripId) === Number(m.tripId) && Number(t.id) === Number(m.timelineItemId));
+          match = allTimelineItems.find(t => 
+            Number(t.tripId) === Number(m.tripId) && 
+            (Number(t.id) === Number(m.timelineItemId) || String(t.id) === String(m.timelineItemId))
+          );
         }
         if (!match && m.img) {
           match = allTimelineItems.find(t => 
             Number(t.tripId) === Number(m.tripId) && 
             t.img && 
             (t.img === m.img || t.img.split('?')[0] === m.img.split('?')[0])
+          );
+        }
+        if (!match && m.tripId && m.date && m.title) {
+          const cleanTitle = m.title.trim().toLowerCase();
+          match = allTimelineItems.find(t =>
+            Number(t.tripId) === Number(m.tripId) &&
+            t.date === m.date &&
+            t.place && t.place.trim().toLowerCase() === cleanTitle
           );
         }
 
@@ -1411,7 +1422,7 @@ function App() {
           matched = updatedTimelineMap.get(Number(m.timelineItemId));
         }
 
-        // 2. Match ONLY by exact image URL or previous image match
+        // 2. Match by exact image URL, previous image match, or date+title smart match
         if (!matched && m.img) {
           matched = updatedTimeline.find(t => t.img && (t.img === m.img || t.img.split('?')[0] === m.img.split('?')[0]));
           if (!matched) {
@@ -1420,6 +1431,13 @@ function App() {
               matched = updatedTimelineMap.get(Number(prevItem.id));
             }
           }
+        }
+        if (!matched && m.date && m.title) {
+          const cleanTitle = m.title.trim().toLowerCase();
+          matched = updatedTimeline.find(t =>
+            t.date === m.date &&
+            t.place && t.place.trim().toLowerCase() === cleanTitle
+          );
         }
 
         if (matched) {
