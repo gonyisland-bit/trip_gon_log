@@ -1509,7 +1509,7 @@ export function HomePage({
                     return (
                       <div 
                         key={spreadIdx} 
-                        className="w-full shrink-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 items-stretch"
+                        className="w-full shrink-0 grid grid-cols-3 gap-3 sm:gap-6 md:gap-8 lg:gap-10 items-stretch"
                       >
                         {slice.map((moment, idx) => {
                           const parentTrip = trips.find(t => t.id === moment.tripId);
@@ -1575,8 +1575,8 @@ export function HomePage({
                                 />
                                 {/* Top-Right: Swiss Minimal Black Label (여행지명: TOKYO, OSAKA, etc.) */}
                                 {engCity && (
-                                  <div className="absolute top-3 right-3 pointer-events-none z-10">
-                                    <span className="px-2.5 py-1 text-[11px] sm:text-xs font-black font-['Inter',sans-serif] uppercase tracking-[0.2em] bg-black text-white leading-none inline-block shadow-sm">
+                                  <div className="absolute top-2 right-2 sm:top-3 sm:right-3 pointer-events-none z-10">
+                                    <span className="px-1.5 py-0.5 sm:px-2.5 sm:py-1 text-[9px] sm:text-xs font-black font-['Inter',sans-serif] uppercase tracking-wider sm:tracking-[0.2em] bg-black text-white leading-none inline-block shadow-sm">
                                       {engCity}
                                     </span>
                                   </div>
@@ -1584,27 +1584,27 @@ export function HomePage({
                               </div>
 
                               {/* 2. Editorial Text Hierarchy (Title + Date + Bottom Google Place / Arrow) */}
-                              <div className="pt-3.5 flex-1 flex flex-col justify-between text-black dark:text-white">
+                              <div className="pt-2 sm:pt-3.5 flex-1 flex flex-col justify-between text-black dark:text-white">
                                 <div className="flex flex-col">
                                   {/* 1) Timeline Title */}
-                                  <h3 className="text-base sm:text-lg md:text-xl font-black uppercase tracking-tight text-black dark:text-white font-sans line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
+                                  <h3 className="text-xs sm:text-base md:text-lg lg:text-xl font-black uppercase tracking-tight text-black dark:text-white font-sans line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
                                     {displayTitle}
                                   </h3>
 
                                   {/* 2) Date and Day (e.g. 2024.07.19 FRI) */}
                                   {dateWithDay && (
-                                    <div className="text-[11px] sm:text-xs font-mono font-bold text-black/50 dark:text-white/50 uppercase tracking-wider mt-1">
+                                    <div className="text-[9px] sm:text-[11px] md:text-xs font-mono font-bold text-black/50 dark:text-white/50 uppercase tracking-wider mt-1">
                                       {dateWithDay}
                                     </div>
                                   )}
                                 </div>
 
                                 {/* 3) Bottom Row: Google Autocomplete Place Name & Simple Arrow */}
-                                <div className="pt-3 mt-auto flex items-center justify-between text-xs font-sans text-black/75 dark:text-white/75 border-t border-black/10 dark:border-white/10">
-                                  <span className="font-bold tracking-tight truncate max-w-[85%]" title={displayPlace}>
+                                <div className="pt-2 sm:pt-3 mt-auto flex items-center justify-between text-[10px] sm:text-xs font-sans text-black/75 dark:text-white/75 border-t border-black/10 dark:border-white/10">
+                                  <span className="font-bold tracking-tight truncate max-w-[80%]" title={displayPlace}>
                                     {displayPlace}
                                   </span>
-                                  <span className="text-base font-bold text-black dark:text-white group-hover:translate-x-1.5 transition-transform shrink-0">
+                                  <span className="text-xs sm:text-base font-bold text-black dark:text-white group-hover:translate-x-1.5 transition-transform shrink-0">
                                     →
                                   </span>
                                 </div>

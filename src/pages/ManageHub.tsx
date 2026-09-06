@@ -208,13 +208,22 @@ export function ManageHubPage({
   });
 
   const [activeMagSectionId, setActiveMagSectionId] = useState<string>(() => {
-    const fromSession = sessionStorage.getItem('initialMagazineSectionId');
-    if (fromSession) {
+    const fromSession = sessionStorage.getItem('initialMagazineSectionId') || sessionStorage.getItem('lastMagazineSectionId');
+    if (sessionStorage.getItem('initialMagazineSectionId')) {
       sessionStorage.removeItem('initialMagazineSectionId');
+    }
+    if (fromSession) {
       return fromSession;
     }
     return 'main';
   });
+
+  // Keep lastMagazineSectionId synchronized with active section in manage mode
+  useEffect(() => {
+    if (activeMagSectionId) {
+      sessionStorage.setItem('lastMagazineSectionId', activeMagSectionId);
+    }
+  }, [activeMagSectionId]);
 
   const [momentsList, setMomentsList] = useState<MagazineMoment[]>(magazineMoments || []);
   const [selectedTripForMoments, setSelectedTripForMoments] = useState<number | null>(null);
@@ -856,6 +865,7 @@ export function ManageHubPage({
     const jLoc = parentTrip?.locationStr || (parentTrip?.locations && parentTrip.locations[0]?.name) || safeStr(item.journeyLocation);
     const locStr = safeStr(item.location) || pName;
 
+    const currentItems = [...(currentMagSection.items || [])];
     const newItem: MagazineItem = {
       id: `moment-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       tripId: item.tripId,
@@ -865,18 +875,30 @@ export function ManageHubPage({
       location: jLoc,
       img: item.img,
       layoutType: 'portrait',
-      order: (currentMagSection.items || []).length,
+      order: currentItems.length,
     };
+
+    let nextItems: MagazineItem[];
+    const selectedIdx = selectedMagCardId ? currentItems.findIndex(it => it.id === selectedMagCardId) : -1;
+    if (selectedIdx !== -1) {
+      // Insert right after the currently selected card
+      currentItems.splice(selectedIdx + 1, 0, newItem);
+      nextItems = currentItems.map((it, idx) => ({ ...it, order: idx }));
+    } else {
+      nextItems = [...currentItems, newItem].map((it, idx) => ({ ...it, order: idx }));
+    }
 
     setSectionsList(prev => prev.map(s => {
       if (s.id === currentMagSection.id) {
         return {
           ...s,
-          items: [...(s.items || []), newItem],
+          items: nextItems,
         };
       }
       return s;
     }));
+
+    setSelectedMagCardId(newItem.id);
   };
 
   const handleAddTextCardToCurrentSection = () => {

@@ -63,13 +63,32 @@ export function MagazineHubPage({
   isAdmin,
   isDarkMode,
 }: MagazineHubPageProps) {
-  // Active Section ID
+  // Active Section ID with sessionStorage restoration
   const [activeSectionId, setActiveSectionId] = useState<string>(() => {
-    return sections.length > 0 ? sections[0].id : 'main';
+    const saved = sessionStorage.getItem('lastMagazineSectionId');
+    if (saved && sections && sections.some(s => s.id === saved)) {
+      return saved;
+    }
+    return sections && sections.length > 0 ? sections[0].id : 'main';
   });
+
+  // Accordion drawer state for magazine issues showcase
+  const [isAccordionOpen, setIsAccordionOpen] = useState(false);
 
   // Lightbox state for high-res photo viewing
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  const handleSelectSection = (id: string) => {
+    setActiveSectionId(id);
+    sessionStorage.setItem('lastMagazineSectionId', id);
+  };
+
+  // Keep lastMagazineSectionId updated whenever activeSectionId changes
+  useEffect(() => {
+    if (activeSectionId) {
+      sessionStorage.setItem('lastMagazineSectionId', activeSectionId);
+    }
+  }, [activeSectionId]);
 
   // Scroll to top on mount or section switch
   useEffect(() => {
@@ -242,9 +261,11 @@ export function MagazineHubPage({
 
   // Jump to Manage Hub for this section
   const handleEditThisSection = () => {
+    const secId = currentSection?.id || 'main';
     sessionStorage.setItem('lastNonManageView', 'magazine');
     sessionStorage.setItem('initialManageTab', 'MAGAZINE');
-    sessionStorage.setItem('initialMagazineSectionId', currentSection?.id || 'main');
+    sessionStorage.setItem('initialMagazineSectionId', secId);
+    sessionStorage.setItem('lastMagazineSectionId', secId);
     onNavigate('manage');
   };
 
@@ -564,19 +585,19 @@ export function MagazineHubPage({
       )}
 
       {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* 2. SECTION NAVIGATOR / SELECTOR (Editorial Tabs)                     */}
+      {/* 2. SECTION NAVIGATOR / SELECTOR (Editorial Tabs & Showcase Accordion) */}
       {/* ─────────────────────────────────────────────────────────────────── */}
-      <div className="sticky top-14 sm:top-16 z-30 w-full bg-[#FAF9F6]/95 dark:bg-[#111111]/95 backdrop-blur-md border-b border-black/10 dark:border-white/10 px-4 sm:px-8 md:px-12 py-3 transition-colors">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          {/* Section Tabs */}
-          <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto hide-scrollbar py-1">
+      <div className="sticky top-14 sm:top-16 z-30 w-full bg-[#FAF9F6]/95 dark:bg-[#111111]/95 backdrop-blur-md border-b border-black/10 dark:border-white/10 px-4 sm:px-8 md:px-12 py-2.5 transition-colors">
+        <div className="flex items-center justify-between gap-3">
+          {/* Section Tabs (Horizontal Scrollable) */}
+          <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto hide-scrollbar py-1 flex-1 min-w-0">
             {effectiveSections.map((sec, idx) => {
               const isActive = sec.id === (currentSection?.id || activeSectionId);
               return (
                 <button
                   key={sec.id}
-                  onClick={() => setActiveSectionId(sec.id)}
-                  className={`px-3 py-1.5 text-xs sm:text-sm font-bold uppercase font-['Inter',sans-serif] tracking-wider transition-all border whitespace-nowrap cursor-pointer ${
+                  onClick={() => handleSelectSection(sec.id)}
+                  className={`px-3 py-1.5 text-xs sm:text-sm font-bold uppercase font-['Inter',sans-serif] tracking-wider transition-all border whitespace-nowrap cursor-pointer shrink-0 ${
                     isActive
                       ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-sm'
                       : 'bg-transparent border-black/10 dark:border-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
@@ -588,7 +609,113 @@ export function MagazineHubPage({
               );
             })}
           </div>
+
+          {/* Accordion Showcase Drawer Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setIsAccordionOpen(prev => !prev)}
+            className={`px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 border transition-all cursor-pointer shrink-0 ${
+              isAccordionOpen
+                ? 'bg-red-600 text-white border-red-600 shadow-sm'
+                : 'bg-black/5 dark:bg-white/5 border-black/15 dark:border-white/15 text-black/80 dark:text-white/80 hover:bg-black/10 dark:hover:bg-white/10'
+            }`}
+            title="매거진 커버 진열장 (Issue Showcase) 열기/닫기"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">ALL ISSUES</span>
+            <span className="text-[10px] opacity-75 font-mono">({effectiveSections.length})</span>
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isAccordionOpen ? 'rotate-180' : ''}`} />
+          </button>
         </div>
+
+        {/* Magazine Cover Showcase Accordion / Rack */}
+        {isAccordionOpen && (
+          <div className="mt-3 pt-3 border-t border-black/10 dark:border-white/10 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex items-center justify-between mb-3 px-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-red-600 dark:text-red-400">
+                  MAGAZINE RACK & ARCHIVE
+                </span>
+                <span className="text-[10px] text-black/40 dark:text-white/40 hidden sm:inline">
+                  — 커버를 선택하여 원하는 매거진 이슈를 바로 탐색하세요
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAccordionOpen(false)}
+                className="text-[10px] font-mono font-bold uppercase text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white cursor-pointer"
+              >
+                닫기 ✕
+              </button>
+            </div>
+
+            {/* Grid of Magazine Covers */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 pb-2 max-h-[60vh] overflow-y-auto pr-1">
+              {effectiveSections.map((sec, idx) => {
+                const isActive = sec.id === (currentSection?.id || activeSectionId);
+                const coverImg = sec.heroImg || (sec.items && sec.items.find(it => it.img)?.img) || '';
+                return (
+                  <div
+                    key={sec.id}
+                    onClick={() => {
+                      handleSelectSection(sec.id);
+                      setIsAccordionOpen(false);
+                    }}
+                    className={`group relative flex flex-col border transition-all cursor-pointer bg-white dark:bg-[#1a1a1a] select-none ${
+                      isActive
+                        ? 'border-red-600 dark:border-red-500 shadow-lg ring-2 ring-red-600/30 dark:ring-red-500/30'
+                        : 'border-black/10 dark:border-white/10 hover:border-black/40 dark:hover:border-white/40 hover:-translate-y-0.5'
+                    }`}
+                  >
+                    {/* Magazine Cover Image (3:4 ratio) */}
+                    <div className="relative aspect-[3/4] w-full overflow-hidden bg-black/10 dark:bg-white/10">
+                      {coverImg ? (
+                        <img
+                          src={getEffectiveImageUrl(coverImg)}
+                          alt={sec.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-zinc-900 text-white/40 font-mono text-[10px]">
+                          NO COVER
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80" />
+
+                      {/* Issue Number Badge */}
+                      <div className="absolute top-2 left-2 bg-black/75 backdrop-blur-xs text-white font-mono text-[9px] font-bold px-1.5 py-0.5 border border-white/20">
+                        #{String(idx + 1).padStart(2, '0')}
+                      </div>
+
+                      {/* Active Reading Badge */}
+                      {isActive && (
+                        <div className="absolute top-2 right-2 bg-red-600 text-white font-mono text-[8px] font-bold px-1.5 py-0.5 uppercase tracking-wider shadow-sm">
+                          READING
+                        </div>
+                      )}
+
+                      {/* Meta in Cover Bottom */}
+                      <div className="absolute bottom-2 left-2 right-2 text-white">
+                        <div className="text-[11px] font-black uppercase font-['Inter',sans-serif] tracking-tight leading-tight line-clamp-1 drop-shadow-sm">
+                          {sec.title}
+                        </div>
+                        <div className="text-[9px] font-mono text-white/70 mt-0.5 truncate">
+                          {sec.heroLocation || `${sec.items?.length || 0} STORIES`}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card Footer Info */}
+                    <div className="p-2 flex items-center justify-between text-[10px] font-mono font-bold text-black/60 dark:text-white/60 bg-[#FAF9F6] dark:bg-[#141414] border-t border-black/5 dark:border-white/5">
+                      <span className="truncate">{sec.items?.length || 0} Stories</span>
+                      <ArrowRight className="w-3 h-3 text-black/40 dark:text-white/40 group-hover:translate-x-0.5 group-hover:text-red-600 dark:group-hover:text-red-400 transition-all shrink-0" />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ─────────────────────────────────────────────────────────────────── */}

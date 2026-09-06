@@ -105,22 +105,51 @@ export function resolveTimelineItemLocation(
   timelineData?: { [date: string]: TimelineItem[] },
   parentTrip?: Trip | null
 ): string {
-  const extractPlace = (loc: any): string => {
-    if (!loc) return '';
-    if (typeof loc === 'string') {
-      const trimmed = loc.trim();
-      if (!trimmed) return '';
-      return trimmed.split(',')[0].trim();
+  const normalizeDateStr = (dateStr?: string): string => {
+    if (!dateStr) return '1970-01-01';
+    const clean = dateStr.trim();
+    const match = clean.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})/);
+    if (match) {
+      const y = match[1];
+      const m = match[2].padStart(2, '0');
+      const d = match[3].padStart(2, '0');
+      return `${y}-${m}-${d}`;
     }
-    if (typeof loc === 'object' && loc?.name) {
-      return String(loc.name).trim();
+    return clean;
+  };
+
+  const normalizeTimeStr = (timeStr?: string): string => {
+    if (!timeStr) return '00:00';
+    const clean = timeStr.trim();
+    const match = clean.match(/^(\d{1,2}):(\d{1,2})/);
+    if (match) {
+      const h = match[1].padStart(2, '0');
+      const m = match[2].padStart(2, '0');
+      return `${h}:${m}`;
+    }
+    return clean.padStart(5, '0');
+  };
+
+  const extractPlace = (loc: any, placeFallback?: string): string => {
+    if (loc) {
+      if (typeof loc === 'string') {
+        const trimmed = loc.trim();
+        if (trimmed) return trimmed.split(',')[0].trim();
+      } else if (typeof loc === 'object' && loc?.name) {
+        const nameStr = String(loc.name).trim();
+        if (nameStr) return nameStr;
+      }
+    }
+    if (placeFallback && typeof placeFallback === 'string') {
+      const pTrim = placeFallback.trim();
+      if (pTrim) return pTrim.split(',')[0].trim();
     }
     return '';
   };
 
   // 1. Direct location on matchedItem
   if (matchedItem) {
-    const directLoc = extractPlace(matchedItem.location);
+    const directLoc = extractPlace(matchedItem.location, matchedItem.place);
     if (directLoc) return directLoc;
   }
 
@@ -131,10 +160,10 @@ export function resolveTimelineItemLocation(
     Object.entries(timelineData).forEach(([dateStr, items]) => {
       if (Array.isArray(items)) {
         items.forEach(t => {
-          if (t.tripId === tripId) {
+          if (Number(t.tripId) === Number(tripId)) {
             const itemDate = t.date || dateStr || '';
             const itemTime = t.time || '00:00';
-            const sortKey = `${itemDate}_${itemTime}_${String(t.id).padStart(10, '0')}`;
+            const sortKey = `${normalizeDateStr(itemDate)}_${normalizeTimeStr(itemTime)}_${String(t.id).padStart(12, '0')}`;
             allTripItems.push({ ...t, date: itemDate, sortKey });
           }
         });
@@ -151,7 +180,7 @@ export function resolveTimelineItemLocation(
 
       if (matchIdx > 0) {
         for (let j = matchIdx - 1; j >= 0; j--) {
-          const prevLoc = extractPlace(allTripItems[j].location);
+          const prevLoc = extractPlace(allTripItems[j].location, allTripItems[j].place);
           if (prevLoc) {
             return prevLoc;
           }
@@ -159,10 +188,10 @@ export function resolveTimelineItemLocation(
       } else if (matchIdx === -1) {
         const targetDate = matchedItem.date || '';
         const targetTime = matchedItem.time || '00:00';
-        const targetKey = `${targetDate}_${targetTime}_${String(matchedItem.id || 0).padStart(10, '0')}`;
+        const targetKey = `${normalizeDateStr(targetDate)}_${normalizeTimeStr(targetTime)}_${String(matchedItem.id || 0).padStart(12, '0')}`;
         const earlierItems = allTripItems.filter(it => it.sortKey <= targetKey && it.id !== matchedItem.id);
         for (let j = earlierItems.length - 1; j >= 0; j--) {
-          const prevLoc = extractPlace(earlierItems[j].location);
+          const prevLoc = extractPlace(earlierItems[j].location, earlierItems[j].place);
           if (prevLoc) {
             return prevLoc;
           }
