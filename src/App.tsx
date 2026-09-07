@@ -19,7 +19,7 @@ const ConfirmModal = lazy(() => import('./components/ConfirmModal').then(m => ({
 import { Check, AlertTriangle } from 'lucide-react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { fetchCoordinates } from './utils/googleMapsHelper';
-import { resolveTimelinePlaceName } from './utils/magazineHelper';
+import { resolveTimelinePlaceName, buildDefaultMagazineSections } from './utils/magazineHelper';
 import { 
   initialTrips, 
   initialPlans, 
@@ -740,6 +740,17 @@ function App() {
       }
     }
   }, [timelineData, magazineSections?.length, isLoggedIn, isAdmin, trips, plans]);
+
+  // Hydrate default magazine sections if empty
+  useEffect(() => {
+    if (trips.length > 0 && (!magazineSections || magazineSections.length === 0)) {
+      const defaults = buildDefaultMagazineSections(trips, magazineMoments.length > 0 ? magazineMoments : undefined);
+      setMagazineSections(defaults);
+      try {
+        localStorage.setItem('cached_magazine_sections', JSON.stringify(defaults));
+      } catch (_) {}
+    }
+  }, [trips, magazineSections?.length]);
 
   // Sync state with browser History API and parse share param on initial load
   useEffect(() => {
