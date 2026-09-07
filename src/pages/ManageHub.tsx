@@ -3596,7 +3596,7 @@ export function ManageHubPage({
                                 {currentMagSection.heroDate}
                               </span>
                             )}
-                            <h2 className="text-xl sm:text-2xl md:text-3xl font-serif font-black uppercase tracking-tight text-white drop-shadow-md line-clamp-2">
+                            <h2 className="text-xl sm:text-2xl md:text-3xl font-satoshi font-black uppercase tracking-tight text-white drop-shadow-md line-clamp-2">
                               {currentMagSection.heroTitle || 'SECTION HERO TITLE'}
                             </h2>
                           </div>

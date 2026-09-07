@@ -606,7 +606,7 @@ export function MagazineHubPage({
               </div>
 
               {/* Bold Large Editorial Magazine Title */}
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif tracking-tight leading-[1.05] text-white drop-shadow-md">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-satoshi font-black tracking-tight leading-[1.05] uppercase text-white drop-shadow-md">
                 {currentSection.heroTitle || currentSection.title}
               </h1>
 
@@ -710,6 +710,8 @@ export function MagazineHubPage({
               {effectiveSections.map((sec, idx) => {
                 const isActive = sec.id === (currentSection?.id || activeSectionId);
                 const coverImg = sec.heroImg || (sec.items && sec.items.find(it => it.img)?.img) || '';
+                const displayHeroTitle = sec.heroTitle || sec.title;
+                const showSeparateSectionTitle = sec.heroTitle && sec.heroTitle.trim() !== '' && sec.heroTitle.trim().toLowerCase() !== sec.title.trim().toLowerCase();
                 return (
                   <div
                     key={sec.id}
@@ -728,7 +730,7 @@ export function MagazineHubPage({
                       {coverImg ? (
                         <img
                           src={getEffectiveImageUrl(coverImg)}
-                          alt={sec.title}
+                          alt={displayHeroTitle}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
@@ -736,27 +738,37 @@ export function MagazineHubPage({
                           NO COVER
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent opacity-90" />
+                      {/* Top & bottom gradient for optimal readability */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/70 opacity-90" />
 
-                      {/* Top Magazine Masthead Line on Cover */}
-                      <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-10 text-white">
-                        <div className="bg-black/85 backdrop-blur-xs text-white font-mono text-[9px] font-black px-1.5 py-0.5 border border-white/20 uppercase tracking-widest shadow-xs">
-                          ISSUE #{String(idx + 1).padStart(2, '0')}
-                        </div>
-                        {isActive && (
-                          <div className="bg-red-600 text-white font-mono text-[8px] font-bold px-1.5 py-0.5 uppercase tracking-wider shadow-sm">
-                            READING
+                      {/* Top Magazine Masthead & Hero Big Title on Cover */}
+                      <div className="absolute top-2.5 left-2.5 right-2.5 flex flex-col gap-1.5 z-10 text-white">
+                        <div className="flex items-center justify-between">
+                          <div className="bg-black/85 backdrop-blur-xs text-white font-mono text-[9px] font-black px-1.5 py-0.5 border border-white/20 uppercase tracking-widest shadow-xs">
+                            ISSUE #{String(idx + 1).padStart(2, '0')}
                           </div>
-                        )}
+                          {isActive && (
+                            <div className="bg-red-600 text-white font-mono text-[8px] font-bold px-1.5 py-0.5 uppercase tracking-wider shadow-sm">
+                              READING
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Hero Big Title (Magazine Masthead Style with Satoshi) */}
+                        <h4 className="text-xs sm:text-sm md:text-base font-satoshi font-black tracking-tight leading-[1.1] uppercase drop-shadow-md text-white line-clamp-2 pt-0.5">
+                          {displayHeroTitle}
+                        </h4>
                       </div>
 
-                      {/* Meta in Cover Bottom (Enlarged Magazine Title & Location) */}
-                      <div className="absolute bottom-3 left-3 right-3 text-white z-10 flex flex-col gap-0.5">
-                        <h4 className="text-sm sm:text-base font-serif font-black tracking-tight leading-snug line-clamp-2 uppercase drop-shadow-md text-white font-['Noto_Sans_KR',sans-serif]">
-                          {sec.title}
-                        </h4>
-                        <div className="text-[10px] sm:text-[11px] font-mono font-bold text-white/90 truncate tracking-wider uppercase drop-shadow-xs flex items-center gap-1 mt-0.5">
-                          <MapPin className="w-3 h-3 text-red-400 shrink-0" />
+                      {/* Meta in Cover Bottom (Section Title & Location) */}
+                      <div className="absolute bottom-2.5 left-2.5 right-2.5 text-white z-10 flex flex-col gap-0.5">
+                        {showSeparateSectionTitle && (
+                          <div className="text-[10px] sm:text-[11px] font-satoshi font-bold tracking-wider uppercase text-white/90 drop-shadow-md truncate">
+                            {sec.title}
+                          </div>
+                        )}
+                        <div className="text-[9px] sm:text-[10px] font-mono font-bold text-white/80 truncate tracking-wider uppercase drop-shadow-xs flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-2.5 h-2.5 text-red-400 shrink-0" />
                           <span className="truncate">{sec.heroLocation || `${sec.items?.length || 0} STORIES`}</span>
                         </div>
                       </div>
@@ -764,7 +776,7 @@ export function MagazineHubPage({
 
                     {/* Card Footer Info */}
                     <div className="p-2.5 flex items-center justify-between text-[10px] font-mono font-bold text-black/70 dark:text-white/70 bg-[#FAF9F6] dark:bg-[#141414] border-t border-black/5 dark:border-white/5">
-                      <span className="truncate font-sans font-semibold">{sec.items?.length || 0} Stories</span>
+                      <span className="truncate font-sans font-semibold">{sec.title}</span>
                       <ArrowRight className="w-3.5 h-3.5 text-black/40 dark:text-white/40 group-hover:translate-x-0.5 group-hover:text-red-600 dark:group-hover:text-red-400 transition-all shrink-0" />
                     </div>
                   </div>
