@@ -5,6 +5,7 @@ import {
   Save, 
   Trash2, 
   RotateCcw,
+  RotateCw,
   Copy, 
   ArrowRightLeft, 
   ArrowLeft,
@@ -246,6 +247,10 @@ export function ManageHubPage({
   const [newSectionSubtitle, setNewSectionSubtitle] = useState('');
   const [showAutoGenerateModal, setShowAutoGenerateModal] = useState(false);
   const [selectedTripForAutoGenerate, setSelectedTripForAutoGenerate] = useState<number | null>(null);
+
+  // Magazine Undo / Redo Snapshot Stack (History)
+  const [magUndoStack, setMagUndoStack] = useState<MagazineSection[][]>([]);
+  const [magRedoStack, setMagRedoStack] = useState<MagazineSection[][]>([]);
 
   // Firestore magazine sections direct diagnostic state
   const [firestoreMagSections, setFirestoreMagSections] = useState<MagazineSection[] | null>(null);
@@ -1018,20 +1023,89 @@ export function ManageHubPage({
     }
   };
 
-  // Keyboard Shortcuts: Ctrl+S to Save
+  // ── Magazine Undo / Redo Snapshot Helpers ────────────────────────
+  const pushMagazineSnapshot = () => {
+    setMagUndoStack(prev => {
+      const next = [...prev, JSON.parse(JSON.stringify(sectionsList))];
+      if (next.length > 30) next.shift(); // keep max 30 levels of history
+      return next;
+    });
+    setMagRedoStack([]); // Clear redo on any new edit
+  };
+
+  const handleMagazineUndo = () => {
+    if (magUndoStack.length === 0) return;
+    const previousSnapshot = magUndoStack[magUndoStack.length - 1];
+    const newUndoStack = magUndoStack.slice(0, magUndoStack.length - 1);
+
+    // Push current state to redo stack
+    setMagRedoStack(prev => [...prev, JSON.parse(JSON.stringify(sectionsList))]);
+    setMagUndoStack(newUndoStack);
+    setSectionsList(previousSnapshot);
+    if (previousSnapshot.length > 0 && !previousSnapshot.some(s => s.id === activeMagSectionId)) {
+      setActiveMagSectionId(previousSnapshot[0].id);
+    }
+  };
+
+  const handleMagazineRedo = () => {
+    if (magRedoStack.length === 0) return;
+    const nextSnapshot = magRedoStack[magRedoStack.length - 1];
+    const newRedoStack = magRedoStack.slice(0, magRedoStack.length - 1);
+
+    // Push current state to undo stack
+    setMagUndoStack(prev => [...prev, JSON.parse(JSON.stringify(sectionsList))]);
+    setMagRedoStack(newRedoStack);
+    setSectionsList(nextSnapshot);
+    if (nextSnapshot.length > 0 && !nextSnapshot.some(s => s.id === activeMagSectionId)) {
+      setActiveMagSectionId(nextSnapshot[0].id);
+    }
+  };
+
+  // Keyboard Shortcuts: Ctrl+S to Save, Ctrl+Z to Undo, Ctrl+Y / Ctrl+Shift+Z to Redo
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl + S / Cmd + S to save
+      // 1. Ctrl + S / Cmd + S to save
       if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
         e.preventDefault();
         if (activeMode === 'HOME') handleSaveHome();
         else if (activeMode === 'ARCHIVE') handleSaveJourney();
         else if (activeMode === 'MAGAZINE') handleSaveMagazine();
+        return;
+      }
+
+      // 2. Magazine Undo: Ctrl + Z / Cmd + Z (without Shift)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
+        if (activeMode === 'MAGAZINE') {
+          // If not typing in an active text input or textarea, or allow undoing card operations
+          const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+          const isInputFocused = targetTag === 'input' || targetTag === 'textarea';
+          if (!isInputFocused) {
+            e.preventDefault();
+            handleMagazineUndo();
+          }
+        }
+        return;
+      }
+
+      // 3. Magazine Redo: Ctrl + Y / Cmd + Y or Ctrl + Shift + Z / Cmd + Shift + Z
+      if (
+        ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) ||
+        ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'z' || e.key === 'Z'))
+      ) {
+        if (activeMode === 'MAGAZINE') {
+          const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+          const isInputFocused = targetTag === 'input' || targetTag === 'textarea';
+          if (!isInputFocused) {
+            e.preventDefault();
+            handleMagazineRedo();
+          }
+        }
+        return;
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeMode, isHomeDirty, isArchiveDirty, isMagazineDirty, title, subtitle, selectedHeroIds, autoSlide, showMarquee, homeMarquee, homeSpeed, mediaType, momentsList, slideDuration, gradientEnabled, gradientFrom, gradientTo, selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge, sectionsList]);
+  }, [activeMode, isHomeDirty, isArchiveDirty, isMagazineDirty, title, subtitle, selectedHeroIds, autoSlide, showMarquee, homeMarquee, homeSpeed, mediaType, momentsList, slideDuration, gradientEnabled, gradientFrom, gradientTo, selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge, sectionsList, magUndoStack, magRedoStack]);
 
   // Save Map Settings
   const handleSaveMapSettings = () => {
@@ -1268,6 +1342,7 @@ export function ManageHubPage({
       alert('섹션 제목을 입력해주세요.');
       return;
     }
+    pushMagazineSnapshot();
     const newId = `section-${Date.now()}`;
     const newSection: MagazineSection = {
       id: newId,
@@ -1295,6 +1370,8 @@ export function ManageHubPage({
       alert('여정을 찾을 수 없습니다.');
       return;
     }
+
+    pushMagazineSnapshot();
 
     const tripItems: MagazineItem[] = [];
     const seenImages = new Set<string>();
@@ -1377,7 +1454,6 @@ export function ManageHubPage({
       subtitle: `${targetTrip.date} · ${targetTrip.locationStr || targetTrip.country || 'JOURNEY'}`,
       heroImg: targetTrip.heroImg || targetTrip.img || (tripItems[0]?.img || ''),
       heroTitle: targetTrip.title.replace(/\s*\(Plan\)$/i, ''),
-      heroSubtitle: `${targetTrip.locationStr || targetTrip.country || ''}에서 마주한 특별한 에디토리얼 순간들.`,
       heroDate: targetTrip.date,
       heroLocation: targetTrip.locationStr || targetTrip.country,
       heroTripId: targetTrip.id,
@@ -1401,6 +1477,8 @@ export function ManageHubPage({
     if (!window.confirm(`'${target?.title || '선택한'}' 매거진 섹션을 삭제하시겠습니까?\n\n삭제된 섹션은 휴지통(TRASH) 탭에서 언제든 복원할 수 있습니다.`)) {
       return;
     }
+
+    pushMagazineSnapshot();
 
     try {
       // Local safety snapshot backup before deletion
@@ -1428,6 +1506,7 @@ export function ManageHubPage({
   const handleMoveSection = (index: number, direction: 'up' | 'down') => {
     const targetIdx = direction === 'up' ? index - 1 : index + 1;
     if (targetIdx < 0 || targetIdx >= sectionsList.length) return;
+    pushMagazineSnapshot();
     const copy = [...sectionsList];
     const [moved] = copy.splice(index, 1);
     copy.splice(targetIdx, 0, moved);
@@ -1435,6 +1514,7 @@ export function ManageHubPage({
   };
 
   const handleUpdateSectionField = (sectionId: string, field: keyof MagazineSection, val: any) => {
+    pushMagazineSnapshot();
     setSectionsList(prev => prev.map(s => s.id === sectionId ? { ...s, [field]: val } : s));
   };
 
@@ -1451,6 +1531,8 @@ export function ManageHubPage({
       alert("이미 현재 매거진 섹션에 등록된 이미지입니다.");
       return;
     }
+
+    pushMagazineSnapshot();
 
     const parentTrip = trips.find(t => t.id === item.tripId);
     const pName = safeStr(item.place);
@@ -1509,6 +1591,7 @@ export function ManageHubPage({
 
   const handleAddTextCardToCurrentSection = () => {
     if (!currentMagSection) return;
+    pushMagazineSnapshot();
     const currentItems = [...(currentMagSection.items || [])];
     const newTextItem: MagazineItem = {
       id: `text-card-${Date.now()}`,
@@ -1548,6 +1631,7 @@ export function ManageHubPage({
 
   const handleRemoveItemFromCurrentSection = (itemId: string) => {
     if (!currentMagSection) return;
+    pushMagazineSnapshot();
     setSectionsList(prev => prev.map(s => {
       if (s.id === currentMagSection.id) {
         return {
@@ -1561,6 +1645,7 @@ export function ManageHubPage({
 
   const handleMoveItemInCurrentSection = (index: number, direction: 'up' | 'down') => {
     if (!currentMagSection || !currentMagSection.items) return;
+    pushMagazineSnapshot();
     const items = [...currentMagSection.items];
     const targetIdx = direction === 'up' ? index - 1 : index + 1;
     if (targetIdx < 0 || targetIdx >= items.length) return;
@@ -1579,6 +1664,7 @@ export function ManageHubPage({
 
   const handleUpdateItemInCurrentSection = (itemId: string, field: keyof MagazineItem, val: any) => {
     if (!currentMagSection || !currentMagSection.items) return;
+    pushMagazineSnapshot();
     setSectionsList(prev => prev.map(s => {
       if (s.id === currentMagSection.id) {
         return {
@@ -1592,6 +1678,7 @@ export function ManageHubPage({
 
   const handleSetAsHeroFromItem = (item: MagazineItem) => {
     if (!currentMagSection) return;
+    pushMagazineSnapshot();
     setSectionsList(prev => prev.map(s => {
       if (s.id === currentMagSection.id) {
         return {
@@ -3349,6 +3436,26 @@ export function ManageHubPage({
                   MAGAZINE SECTIONS ({sectionsList.length})
                 </span>
                 <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 border-r border-black/10 dark:border-white/10 pr-2 mr-1">
+                    <button
+                      type="button"
+                      onClick={handleMagazineUndo}
+                      disabled={magUndoStack.length === 0}
+                      className="p-1.5 border border-black/20 dark:border-white/20 text-black dark:text-white disabled:opacity-20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                      title="실행 취소 (Ctrl+Z)"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleMagazineRedo}
+                      disabled={magRedoStack.length === 0}
+                      className="p-1.5 border border-black/20 dark:border-white/20 text-black dark:text-white disabled:opacity-20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                      title="다시 실행 (Ctrl+Y / Ctrl+Shift+Z)"
+                    >
+                      <RotateCw className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                   <button
                     type="button"
                     onClick={() => {
