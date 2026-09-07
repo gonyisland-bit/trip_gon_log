@@ -1432,12 +1432,19 @@ export function HomePage({
             ? (magazineSections.find(s => s.id === homeMagazineSectionId) || magazineSections[0])
             : null;
 
-          // 2. Extract items from selected section or fallback to magazineMoments or top trips
+          const handleGoToMagazineSection = () => {
+            if (selectedSection && selectedSection.id) {
+              sessionStorage.setItem('lastMagazineSectionId', String(selectedSection.id));
+            }
+            onNavigate('magazine');
+          };
+
+          // 2. Extract items from selected section or fallback to magazineMoments or top trips (exclude text-only cards to avoid broken images)
           let rawMoments: MagazineMoment[] = [];
           if (selectedSection && selectedSection.items && selectedSection.items.length > 0) {
-            rawMoments = selectedSection.items;
+            rawMoments = selectedSection.items.filter(item => !item.isTextOnly && Boolean(item.img));
           } else if (magazineMoments && magazineMoments.length > 0) {
-            rawMoments = magazineMoments;
+            rawMoments = magazineMoments.filter(item => !item.isTextOnly && Boolean(item.img));
           } else {
             rawMoments = trips.slice(0, 3).map((t, idx) => ({
               id: `fallback-${t.id}`,
@@ -1450,7 +1457,7 @@ export function HomePage({
               quote: '',
               img: t.img,
               order: idx,
-            }));
+            })).filter(item => Boolean(item.img));
           }
 
           // 3. Apply homeMagazineLimit (default: 6)
@@ -1479,7 +1486,7 @@ export function HomePage({
                   )}
                   <button
                     type="button"
-                    onClick={() => onNavigate('magazine')}
+                    onClick={handleGoToMagazineSection}
                     className="text-xs font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white underline decoration-1 underline-offset-4 cursor-pointer transition-colors"
                   >
                     VIEW MAGAZINE HUB →
@@ -1660,7 +1667,7 @@ export function HomePage({
               <div className="flex justify-center pt-6 pb-2 w-full">
                 <button
                   type="button"
-                  onClick={() => onNavigate('magazine')}
+                  onClick={handleGoToMagazineSection}
                   className="px-8 py-3 bg-black text-white dark:bg-white dark:text-black border border-black dark:border-white text-xs font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center gap-2.5 cursor-pointer shadow-md font-sans"
                 >
                   <span>EXPLORE MAGAZINE HUB</span>

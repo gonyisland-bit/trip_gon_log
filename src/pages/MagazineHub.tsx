@@ -104,6 +104,18 @@ export function MagazineHubPage({
     return buildDefaultMagazineSections(trips);
   }, [sections, trips]);
 
+  // Synchronize active section with sessionStorage (e.g. navigation from Home)
+  useEffect(() => {
+    const saved = sessionStorage.getItem('lastMagazineSectionId');
+    if (saved && effectiveSections.some(s => s.id === saved)) {
+      setActiveSectionId(saved);
+    } else if (!effectiveSections.some(s => s.id === activeSectionId)) {
+      if (effectiveSections.length > 0) {
+        setActiveSectionId(effectiveSections[0].id);
+      }
+    }
+  }, [effectiveSections]);
+
   // Touch swipe state for Hero section
   const touchStartXRef = useRef<number | null>(null);
 
