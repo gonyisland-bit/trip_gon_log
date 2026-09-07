@@ -40,8 +40,8 @@ function parseDateParts(dateStr: string, defaultYear?: number): Date | null {
   
   const clean = dateStr.trim();
   
-  // Match YYYY.MM.DD or YYYY-MM-DD or YYYY/MM/DD
-  const match = clean.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})/);
+  // Match YYYY.MM.DD or YYYY-MM-DD or YYYY/MM/DD (optional spaces around separators)
+  const match = clean.match(/^(\d{4})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})/);
   if (match) {
     const year = parseInt(match[1], 10);
     const month = parseInt(match[2], 10) - 1;
@@ -50,7 +50,7 @@ function parseDateParts(dateStr: string, defaultYear?: number): Date | null {
   }
   
   // Match YY.MM.DD or YY-MM-DD or YY/MM/DD (2-digit year)
-  const match2 = clean.match(/^(\d{2})[-./](\d{1,2})[-./](\d{1,2})/);
+  const match2 = clean.match(/^(\d{2})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})/);
   if (match2) {
     let year = parseInt(match2[1], 10);
     year += year < 50 ? 2000 : 1900;
@@ -60,7 +60,7 @@ function parseDateParts(dateStr: string, defaultYear?: number): Date | null {
   }
 
   // Match MM.DD (no year, e.g. "06.04")
-  const matchMD = clean.match(/^(\d{1,2})[-./](\d{1,2})/);
+  const matchMD = clean.match(/^(\d{1,2})\s*[-./]\s*(\d{1,2})/);
   if (matchMD) {
     const year = defaultYear || new Date().getFullYear();
     const month = parseInt(matchMD[1], 10) - 1;
@@ -73,36 +73,49 @@ function parseDateParts(dateStr: string, defaultYear?: number): Date | null {
 
 function calculateDays(dateRangeStr: string): number {
   if (!dateRangeStr) return 0;
-  const parts = dateRangeStr.split(/\s*[-—–]\s*/);
+  const parts = dateRangeStr.split(/\s*[-—–~]\s*/);
   if (parts.length < 2) return 1;
   const startDate = parseDateParts(parts[0].trim());
   const defaultYear = startDate ? startDate.getFullYear() : undefined;
   const endDate = parseDateParts(parts[1].trim(), defaultYear);
   if (!startDate || !endDate) return 1;
-  const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  const diffDays = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  return Math.max(1, diffDays);
 }
 
 // Format duration and day count in compact Swiss minimalist notation
 function getYearAndMonth(dateRangeStr?: string): { year: string; month: string; compactDate: string } {
   if (!dateRangeStr) return { year: '', month: '', compactDate: '' };
   const parts = dateRangeStr.split(/\s*[-—–~]\s*/).map(p => p.trim());
-  const parsePart = (str: string) => {
-    const match = str.match(/(\d{4})?[.-]?(\d{1,2})[.-](\d{1,2})/);
-    if (match) {
-      const y = match[1];
-      const m = match[2].padStart(2, '0');
-      const d = match[3].padStart(2, '0');
-      return { y, m, d, dateObj: new Date(parseInt(y || '2026', 10), parseInt(m, 10) - 1, parseInt(d, 10)) };
+
+  // Find any 4-digit year present in the string
+  const yearMatch = dateRangeStr.match(/(\d{4})/);
+  const commonYear = yearMatch ? yearMatch[1] : String(new Date().getFullYear());
+
+  const parsePart = (str: string, fallbackYear: string) => {
+    if (!str) return null;
+    const ymdMatch = str.match(/(\d{4})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})/);
+    if (ymdMatch) {
+      const y = ymdMatch[1];
+      const m = ymdMatch[2].padStart(2, '0');
+      const d = ymdMatch[3].padStart(2, '0');
+      return { y, m, d, dateObj: new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10)) };
+    }
+    const mdMatch = str.match(/(\d{1,2})\s*[-./]\s*(\d{1,2})/);
+    if (mdMatch) {
+      const y = fallbackYear;
+      const m = mdMatch[1].padStart(2, '0');
+      const d = mdMatch[2].padStart(2, '0');
+      return { y, m, d, dateObj: new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10)) };
     }
     return null;
   };
 
-  const p1 = parsePart(parts[0]);
-  const p2 = parts[1] ? parsePart(parts[1]) : null;
+  const p1 = parts[0] ? parsePart(parts[0], commonYear) : null;
+  const p2 = parts[1] ? parsePart(parts[1], p1?.y || commonYear) : null;
 
   const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-  const year = p1?.y || (p2?.y ?? '');
+  const year = p1?.y || p2?.y || (yearMatch ? yearMatch[1] : '');
   const monthNum = p1 ? p1.dateObj.getMonth() : (p2 ? p2.dateObj.getMonth() : -1);
   const month = monthNum >= 0 ? months[monthNum] : '';
 

@@ -606,7 +606,7 @@ export function MagazineHubPage({
               </div>
 
               {/* Bold Large Editorial Magazine Title */}
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-satoshi font-black tracking-tight leading-[1.05] uppercase text-white drop-shadow-md">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-satoshi font-light tracking-tight leading-[1.05] uppercase text-white drop-shadow-md">
                 {currentSection.heroTitle || currentSection.title}
               </h1>
 
@@ -754,8 +754,8 @@ export function MagazineHubPage({
                           )}
                         </div>
 
-                        {/* Hero Big Title (Magazine Masthead Style with Satoshi) */}
-                        <h4 className="text-xs sm:text-sm md:text-base font-satoshi font-black tracking-tight leading-[1.1] uppercase drop-shadow-md text-white line-clamp-2 pt-0.5">
+                        {/* Hero Big Title (Magazine Masthead Style with Satoshi Light) */}
+                        <h4 className="text-xs sm:text-sm md:text-base font-satoshi font-light tracking-tight leading-[1.1] uppercase drop-shadow-md text-white line-clamp-2 pt-0.5">
                           {displayHeroTitle}
                         </h4>
                       </div>
