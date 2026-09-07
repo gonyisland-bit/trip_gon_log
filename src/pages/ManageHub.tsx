@@ -1519,7 +1519,7 @@ export function ManageHubPage({
       location: currentMagSection.heroLocation || '',
       img: '',
       isTextOnly: true,
-      layoutType: 'landscape',
+      layoutType: 'portrait',
       order: currentItems.length,
     };
 
@@ -3440,7 +3440,7 @@ export function ManageHubPage({
               <div className="flex flex-col gap-6 bg-black/[0.02] dark:bg-white/[0.02] border border-black/10 dark:border-white/10 p-4 sm:p-6">
                 <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-red-600 dark:text-red-500" />
+                    <BookOpen className="w-4 h-4 text-red-600 dark:text-red-500" />
                     <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-black dark:text-white">
                       SECTION & HERO SETTINGS: [{currentMagSection.title}]
                     </h3>

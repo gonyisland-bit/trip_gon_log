@@ -565,57 +565,84 @@ export function MagazineHubPage({
             </>
           )}
 
-          {/* Hero Top Bar: Issue / Volume / Section Badge */}
-          <div className="absolute top-5 sm:top-6 left-6 sm:left-12 right-6 sm:right-12 z-20 flex items-center justify-between text-white/80">
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] sm:text-xs font-mono font-bold tracking-widest uppercase bg-white/20 backdrop-blur-md px-2.5 py-1 border border-white/20">
-                MAGAZINE ISSUE #{String(effectiveSections.findIndex(s => s.id === currentSection.id) + 1).padStart(2, '0')}
+          {/* Hero Top Bar: Magazine Masthead & Issue Barcode/Volume */}
+          <div className="absolute top-4 sm:top-6 left-4 sm:left-10 right-4 sm:right-10 z-20 flex items-center justify-between text-white/90 border-b border-white/20 pb-2.5">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <span className="text-[9px] sm:text-[10px] font-mono font-black tracking-widest uppercase bg-white text-black px-2 py-0.5 shadow-sm">
+                ISSUE N°{String(effectiveSections.findIndex(s => s.id === currentSection.id) + 1).padStart(2, '0')}
               </span>
-              <span className="text-[11px] font-mono tracking-wider uppercase opacity-80 hidden sm:inline">
-                {currentSection.title}
+              <span className="text-[10px] sm:text-xs font-mono font-bold tracking-widest uppercase text-white/90">
+                TRIPGON MAGAZINE
+              </span>
+            </div>
+            <div className="flex items-center gap-3 text-[10px] font-mono tracking-widest uppercase text-white/70">
+              <span className="hidden md:inline">VOL. {new Date().getFullYear()} · EDITORIAL EDITION</span>
+              <span className="hidden sm:inline bg-white/15 px-2 py-0.5 border border-white/20">
+                {currentSection.items?.length || 0} STORIES
               </span>
             </div>
           </div>
 
           {/* Hero Content (Centered Bottom Editorial Typography) */}
-          <div className="absolute bottom-8 sm:bottom-12 left-6 sm:left-12 right-6 sm:right-12 z-20 max-w-4xl flex flex-col gap-2.5 sm:gap-3 text-white">
-            {/* Meta Tags: Date & Location */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-[11px] sm:text-xs font-mono tracking-widest uppercase text-white/70">
-              {currentSection.heroDate && (
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5" />
-                  {currentSection.heroDate}
-                </span>
+          <div className="absolute bottom-6 sm:bottom-10 left-4 sm:left-10 right-4 sm:right-10 z-20 flex flex-col md:flex-row md:items-end justify-between gap-6 text-white">
+            <div className="max-w-3xl flex flex-col gap-2 sm:gap-3">
+              {/* Meta Tags: Date & Location */}
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[10px] sm:text-xs font-mono tracking-widest uppercase text-white/80">
+                {currentSection.heroDate && (
+                  <span className="flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5" />
+                    {currentSection.heroDate}
+                  </span>
+                )}
+                {currentSection.heroDate && currentSection.heroLocation && (
+                  <span className="opacity-40">/</span>
+                )}
+                {currentSection.heroLocation && (
+                  <span className="flex items-center gap-1.5 text-white font-bold bg-black/40 backdrop-blur-xs px-2 py-0.5 border border-white/20">
+                    <MapPin className="w-3.5 h-3.5 text-red-400" />
+                    {currentSection.heroLocation}
+                  </span>
+                )}
+              </div>
+
+              {/* Bold Large Editorial Magazine Title */}
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif tracking-tight leading-[1.05] text-white drop-shadow-md">
+                {currentSection.heroTitle || currentSection.title}
+              </h1>
+
+              {/* Editorial Subtitle / Memo */}
+              {(currentSection.heroSubtitle || currentSection.subtitle) && (
+                <p className="text-xs sm:text-sm md:text-base font-serif italic text-white/85 max-w-2xl leading-relaxed drop-shadow-xs">
+                  "{currentSection.heroSubtitle || currentSection.subtitle}"
+                </p>
               )}
-              {currentSection.heroDate && currentSection.heroLocation && (
-                <span className="opacity-40">|</span>
-              )}
-              {currentSection.heroLocation && (
-                <span className="flex items-center gap-1.5 text-white/90 font-bold">
-                  <MapPin className="w-3.5 h-3.5" />
-                  {currentSection.heroLocation}
-                </span>
+
+              {/* Link to Journey Detail */}
+              {heroTrip && (
+                <div className="pt-1.5">
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('detail', heroTrip.id)}
+                    className="inline-flex items-center gap-2 text-xs sm:text-sm font-mono font-bold uppercase tracking-widest text-white hover:text-white/80 underline decoration-1 underline-offset-8 cursor-pointer transition-colors"
+                  >
+                    <span>EXPLORE FULL JOURNEY ({heroTrip.title})</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
               )}
             </div>
 
-            {/* Bold Large Editorial Title */}
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif font-normal tracking-tight leading-[1.08] text-white drop-shadow-sm">
-              {currentSection.heroTitle || currentSection.title}
-            </h1>
-
-            {/* Link to Journey Detail */}
-            {heroTrip && (
-              <div className="pt-1">
-                <button
-                  type="button"
-                  onClick={() => onNavigate('detail', heroTrip.id)}
-                  className="inline-flex items-center gap-2 text-xs sm:text-sm font-mono font-bold uppercase tracking-widest text-white hover:text-white/80 underline decoration-1 underline-offset-8 cursor-pointer transition-colors"
-                >
-                  <span>EXPLORE FULL JOURNEY ({heroTrip.title})</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+            {/* Editorial Minimal Magazine Barcode / Archive Stamp (Bottom Right) */}
+            <div className="hidden lg:flex flex-col items-end gap-1 shrink-0 select-none opacity-85">
+              <div className="flex items-center gap-0.5 h-5">
+                {[2, 1, 3, 1, 2, 4, 1, 2, 3, 1, 2, 1, 3, 2].map((w, i) => (
+                  <div key={i} className="bg-white/80 h-full" style={{ width: `${w}px` }} />
+                ))}
               </div>
-            )}
+              <span className="text-[8px] font-mono tracking-widest text-white/70">
+                ISSN 2026-TRIPGON · #{String(currentSection.id).slice(-6).toUpperCase()}
+              </span>
+            </div>
           </div>
         </section>
       )}
@@ -718,24 +745,24 @@ export function MagazineHubPage({
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80" />
 
-                      {/* Issue Number Badge */}
-                      <div className="absolute top-2 left-2 bg-black/75 backdrop-blur-xs text-white font-mono text-[9px] font-bold px-1.5 py-0.5 border border-white/20">
-                        #{String(idx + 1).padStart(2, '0')}
+                      {/* Top Magazine Masthead Line on Cover */}
+                      <div className="absolute top-2 left-2 right-2 flex items-center justify-between z-10 text-white">
+                        <div className="bg-black/80 backdrop-blur-xs text-white font-mono text-[8px] font-black px-1.5 py-0.5 border border-white/20 uppercase tracking-widest">
+                          ISSUE #{String(idx + 1).padStart(2, '0')}
+                        </div>
+                        {isActive && (
+                          <div className="bg-red-600 text-white font-mono text-[8px] font-bold px-1.5 py-0.5 uppercase tracking-wider shadow-sm">
+                            READING
+                          </div>
+                        )}
                       </div>
 
-                      {/* Active Reading Badge */}
-                      {isActive && (
-                        <div className="absolute top-2 right-2 bg-red-600 text-white font-mono text-[8px] font-bold px-1.5 py-0.5 uppercase tracking-wider shadow-sm">
-                          READING
-                        </div>
-                      )}
-
                       {/* Meta in Cover Bottom */}
-                      <div className="absolute bottom-2 left-2 right-2 text-white">
-                        <div className="text-[11px] font-black uppercase font-['Inter',sans-serif] tracking-tight leading-tight line-clamp-1 drop-shadow-sm">
+                      <div className="absolute bottom-2.5 left-2.5 right-2.5 text-white z-10">
+                        <div className="text-[12px] font-serif font-bold tracking-tight leading-tight line-clamp-1 drop-shadow-md">
                           {sec.title}
                         </div>
-                        <div className="text-[9px] font-mono text-white/70 mt-0.5 truncate">
+                        <div className="text-[8px] font-mono text-white/80 mt-0.5 truncate tracking-wider uppercase">
                           {sec.heroLocation || `${sec.items?.length || 0} STORIES`}
                         </div>
                       </div>
