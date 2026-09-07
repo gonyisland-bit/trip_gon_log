@@ -214,4 +214,11 @@ export interface MagazineHubConfig {
   volumeText?: string;
 }
 
+export interface ArchiveHubConfig {
+  mainTitle?: string;
+  subtitle?: string;
+  badgeText?: string;
+  volumeText?: string;
+}
+
 export type TrashedItem = (Trip & { deletedType?: 'journey' }) | TrashedMagazineSection;

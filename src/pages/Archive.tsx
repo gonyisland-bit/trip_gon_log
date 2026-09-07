@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Plus, GripVertical, ChevronDown, ChevronUp, Tag, Search, X, LayoutGrid, StretchHorizontal, List, ArrowRight, ArrowUpDown } from 'lucide-react';
-import { Trip, Plan } from '../types';
+import { Trip, Plan, ArchiveHubConfig } from '../types';
 import { JourneyCardMenu, getEnglishCityName } from './Home';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
@@ -77,6 +77,7 @@ interface ArchiveHubPageProps {
   onMoveToArchive?: (plan: Plan) => void;
   onReorderTrips?: (orderedIds: number[]) => void;
   initialTagFilter?: string | null;
+  hubConfig?: ArchiveHubConfig;
 }
 
 function parseDateParts(dateStr: string, defaultYear?: number): Date | null {
@@ -220,6 +221,7 @@ export function ArchiveHubPage({
   onMoveToArchive,
   onReorderTrips,
   initialTagFilter,
+  hubConfig,
 }: ArchiveHubPageProps) {
   const [activeFilter, setActiveFilter] = useState(initialTagFilter || 'All');
   const [activeYearFilter, setActiveYearFilter] = useState('All');
@@ -230,6 +232,11 @@ export function ArchiveHubPage({
   const [hubSearchQuery, setHubSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'user' | 'date' | 'place'>('user');
   const [draggedTripId, setDraggedTripId] = useState<number | null>(null);
+
+  const headerBadge = hubConfig?.badgeText || 'JOURNEY ARCHIVE';
+  const headerVolume = hubConfig?.volumeText || `VOL. ${new Date().getFullYear()}`;
+  const headerMainTitle = hubConfig?.mainTitle || 'A VISUAL CHRONICLE OF JOURNEYS & TRAVEL ARCHIVES';
+  const headerSubtitle = hubConfig?.subtitle || '발걸음이 닿았던 모든 도시와 찬란했던 시간의 기록. 엄선된 사진과 함께 지난 여정들을 다시 마주합니다.';
 
   const combinedTrips = useMemo(() => {
     const list: Trip[] = [...trips];
@@ -499,13 +506,42 @@ export function ArchiveHubPage({
   return (
     <main onClick={() => setActiveCardId(null)} className="animate-in fade-in duration-500 min-h-screen w-full flex flex-col justify-between">
       <div>
-        {/* Minimal Swiss Header (Matching Home's 01 / TRIP style) */}
-        <div className="p-6 md:px-12 border-b border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] flex flex-col md:flex-row md:items-end justify-between gap-4 transition-colors">
-          {/* Left: Pure Minimal Title */}
-          <div className="flex flex-col gap-0.5">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
-              TRIP
+        {/* 1. Editorial Large Headline & Journey Masthead (Matching Magazine Hub Style) */}
+        <section className="w-full max-w-7xl mx-auto px-4 sm:px-8 md:px-12 pt-8 sm:pt-14 pb-8 border-b border-black/10 dark:border-white/10">
+          {/* Top Barcode & Category Tag */}
+          <div className="flex items-center justify-between text-xs font-mono tracking-widest uppercase text-black/60 dark:text-white/60 mb-4 sm:mb-6">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <span className="bg-black text-white dark:bg-white dark:text-black font-black px-2 py-0.5 text-[10px]">
+                JOURNEY DIRECTORY
+              </span>
+              <span className="font-bold text-red-600 dark:text-red-400">
+                {headerBadge}
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="hidden sm:inline">{headerVolume}</span>
+              <span>{tripStats.totalTrips} JOURNEYS RECORDED</span>
+            </div>
+          </div>
+
+          {/* Large Editorial Typography Title */}
+          <div className="flex flex-col gap-2 sm:gap-4 max-w-5xl">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-satoshi font-black uppercase tracking-tight leading-[0.98] text-black dark:text-white">
+              {headerMainTitle}
             </h1>
+            <p className="text-xs sm:text-sm md:text-base font-['Noto_Sans_KR',sans-serif] font-medium text-black/60 dark:text-white/60 max-w-2xl leading-relaxed pt-1 break-keep">
+              {headerSubtitle}
+            </p>
+          </div>
+        </section>
+
+        {/* Filter & Controls Bar */}
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 md:px-12 py-4 border-b border-black/10 dark:border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
+          {/* Left: Section Sub-label */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs sm:text-sm font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+              ALL ARCHIVES ({filteredTrips.length})
+            </span>
           </div>
           
           {/* Right: Active Filter, Search, and Controls Layout */}
@@ -913,8 +949,8 @@ export function ArchiveHubPage({
                   </div>
                 ) : (
                   <div className={cardViewMode === 'wide' 
-                    ? "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 p-4 md:p-12 w-full"
-                    : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 p-3 sm:p-6 md:p-12 w-full"
+                    ? "grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 p-4 sm:p-8 md:p-12 w-full max-w-7xl mx-auto"
+                    : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-6 md:gap-8 p-4 sm:p-8 md:p-12 w-full max-w-7xl mx-auto"
                   }>
                     {group.items.map((trip, index) => {
                       const { year, month, compactDate } = getYearAndMonth(trip.date);

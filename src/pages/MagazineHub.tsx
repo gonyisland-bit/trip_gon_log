@@ -810,16 +810,16 @@ export function MagazineHubPage({
         <div className="w-full flex flex-col flex-1">
           
           {/* Back to Hub Floating / Top Navigation Bar */}
-          <div className="w-full bg-black text-white px-4 sm:px-8 md:px-12 py-2.5 flex items-center justify-between text-xs font-mono tracking-wider uppercase z-30">
+          <div className="w-full bg-black/90 backdrop-blur-md text-white px-4 sm:px-8 md:px-12 py-3 flex items-center justify-between text-xs font-mono tracking-wider uppercase z-30 border-b border-white/10">
             <button
               type="button"
               onClick={handleBackToHub}
-              className="flex items-center gap-2 hover:text-red-400 font-bold transition-colors cursor-pointer group"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white hover:text-black border border-white/20 hover:border-white text-white font-semibold text-[11px] tracking-widest transition-all duration-200 cursor-pointer group shadow-sm"
             >
-              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-              <span>← ALL ISSUES (매거진 허브로 돌아가기)</span>
+              <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+              <span>ALL ISSUES</span>
             </button>
-            <span className="text-[10px] text-white/60 hidden sm:inline">
+            <span className="text-[11px] font-mono text-white/60 hidden sm:inline tracking-widest">
               ISSUE N°{String(effectiveSections.findIndex(s => s.id === (currentSection?.id || activeSectionId)) + 1).padStart(2, '0')} · {currentSection?.title}
             </span>
           </div>

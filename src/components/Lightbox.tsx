@@ -966,7 +966,7 @@ export function Lightbox({
       {/* Bottom Thumbnails Strip (hidden in slideshow mode) */}
       {images.length > 1 && !isSlideshow && (
         <div 
-          ref={thumbnailsContainerRef} 
+          ref={thumbnailsContainerRef}
           onScroll={handleThumbnailsScroll}
           onWheel={handleThumbnailsWheel}
           onTouchStart={() => {
@@ -996,7 +996,7 @@ export function Lightbox({
         >
           <div 
             ref={thumbnailsInnerRef} 
-            className="flex gap-2 w-max items-center"
+            className="flex gap-2 w-max items-center mx-auto"
             style={{
               paddingLeft: 'calc(50vw - 28px)',
               paddingRight: 'calc(50vw - 28px)',
@@ -1035,34 +1035,36 @@ export function Lightbox({
 
       {/* Bottom captions panel (normal mode only) */}
       {showLog && !isSlideshow && (
-        <div className="relative z-20 bg-black/90 border-t border-white/10 px-4 py-2.5 md:px-8 md:py-3 flex flex-col items-center justify-center gap-1 shrink-0 min-h-16 md:min-h-20 text-center w-full">
-          {(() => {
-            const primaryTitle = (currentMeta.place || currentMeta.imgNote || '').trim();
-            const secondaryLoc = (currentMeta.location && currentMeta.location.trim() !== primaryTitle) ? currentMeta.location.trim() : '';
+        <div className="relative z-20 bg-black/90 border-t border-white/10 px-4 py-2.5 md:px-8 md:py-3 flex flex-col items-center justify-center shrink-0 min-h-16 md:min-h-20 text-center w-full">
+          <div className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center text-center gap-1">
+            {(() => {
+              const primaryTitle = (currentMeta.place || currentMeta.imgNote || '').trim();
+              const secondaryLoc = (currentMeta.location && currentMeta.location.trim() !== primaryTitle) ? currentMeta.location.trim() : '';
 
-            return (
-              <>
-                {/* Main Photo Title: 일정 제목 (place) */}
-                {primaryTitle ? (
-                  <h4 className="text-white font-bold text-xs md:text-sm tracking-wide truncate max-w-2xl font-sans">
-                    {primaryTitle}
-                  </h4>
-                ) : null}
+              return (
+                <>
+                  {/* Main Photo Title: 일정 제목 (place) */}
+                  {primaryTitle ? (
+                    <h4 className="text-white font-bold text-xs md:text-sm tracking-wide text-center w-full font-sans">
+                      {primaryTitle}
+                    </h4>
+                  ) : null}
 
-                {/* Place Info: 구글 자동완성으로 입력된 위치명 (location) */}
-                {secondaryLoc ? (
-                  <div className="text-orange-400 dark:text-orange-300 font-semibold text-[11px] md:text-xs tracking-tight flex items-center justify-center gap-1 truncate max-w-xl">
-                    <MapPin className="w-3.5 h-3.5 shrink-0 text-orange-500" />
-                    <span className="truncate">{secondaryLoc}</span>
-                  </div>
-                ) : !primaryTitle ? (
-                  <div className="text-white/30 font-bold text-[10px] md:text-xs tracking-widest uppercase">
-                    No Location Tagged
-                  </div>
-                ) : null}
-              </>
-            );
-          })()}
+                  {/* Place Info: 구글 자동완성으로 입력된 위치명 (location) */}
+                  {secondaryLoc ? (
+                    <div className="text-orange-400 dark:text-orange-300 font-semibold text-[11px] md:text-xs tracking-tight flex items-center justify-center gap-1 text-center w-full">
+                      <MapPin className="w-3.5 h-3.5 shrink-0 text-orange-500" />
+                      <span className="text-center">{secondaryLoc}</span>
+                    </div>
+                  ) : !primaryTitle ? (
+                    <div className="text-white/30 font-bold text-[10px] md:text-xs tracking-widest uppercase text-center w-full">
+                      No Location Tagged
+                    </div>
+                  ) : null}
+                </>
+              );
+            })()}
+          </div>
         </div>
       )}
 

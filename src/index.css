@@ -5,6 +5,7 @@
 @layer base {
   html, body {
     -webkit-overflow-scrolling: touch;
+    font-family: 'Satoshi', 'Inter', 'Noto Sans KR', sans-serif;
   }
   
   #root {

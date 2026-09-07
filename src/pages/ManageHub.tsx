@@ -44,7 +44,7 @@ import {
 } from 'lucide-react';
 import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc, deleteField, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Trip, Plan, MagazineMoment, MagazineSection, MagazineItem, MagazineHubConfig, TimelineData, TimelineItem, TrashedMagazineSection } from '../types';
+import { Trip, Plan, MagazineMoment, MagazineSection, MagazineItem, MagazineHubConfig, ArchiveHubConfig, TimelineData, TimelineItem, TrashedMagazineSection } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { getEffectiveImageUrl, uploadFileToR2, deleteFileFromR2 } from '../utils/storageHelper';
 import { compressImage } from '../utils/imageHelper';
@@ -99,6 +99,8 @@ interface ManageHubPageProps {
   magazineSections?: MagazineSection[];
   magazineHubConfig?: MagazineHubConfig;
   onSaveMagazineHubConfig?: (config: MagazineHubConfig) => Promise<void>;
+  archiveHubConfig?: ArchiveHubConfig;
+  onSaveArchiveHubConfig?: (config: ArchiveHubConfig) => Promise<void>;
   timelineData?: TimelineData;
   onSaveMagazineMoments?: (moments: MagazineMoment[]) => Promise<void>;
   onSaveMagazineSections?: (sections: MagazineSection[]) => Promise<void>;
@@ -154,6 +156,8 @@ export function ManageHubPage({
   magazineSections = [],
   magazineHubConfig,
   onSaveMagazineHubConfig,
+  archiveHubConfig,
+  onSaveArchiveHubConfig,
   timelineData = {},
   onSaveMagazineMoments,
   onSaveMagazineSections,
@@ -194,6 +198,43 @@ export function ManageHubPage({
       console.error(err);
     } finally {
       setIsSavingHubHeader(false);
+    }
+  };
+
+  // Archive (Trip) Hub Header Configuration State
+  const [archiveHubMainTitle, setArchiveHubMainTitle] = useState(archiveHubConfig?.mainTitle || 'A VISUAL CHRONICLE OF JOURNEYS & TRAVEL ARCHIVES');
+  const [archiveHubSubtitle, setArchiveHubSubtitle] = useState(archiveHubConfig?.subtitle || '발걸음이 닿았던 모든 도시와 찬란했던 시간의 기록. 엄선된 사진과 함께 지난 여정들을 다시 마주합니다.');
+  const [archiveHubBadgeText, setArchiveHubBadgeText] = useState(archiveHubConfig?.badgeText || 'JOURNEY ARCHIVE');
+  const [archiveHubVolumeText, setArchiveHubVolumeText] = useState(archiveHubConfig?.volumeText || `VOL. ${new Date().getFullYear()}`);
+  const [isArchiveHubHeaderOpen, setIsArchiveHubHeaderOpen] = useState(false);
+  const [isSavingArchiveHubHeader, setIsSavingArchiveHubHeader] = useState(false);
+  const [archiveHubHeaderSaveSuccess, setArchiveHubHeaderSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    if (archiveHubConfig) {
+      if (archiveHubConfig.mainTitle !== undefined) setArchiveHubMainTitle(archiveHubConfig.mainTitle);
+      if (archiveHubConfig.subtitle !== undefined) setArchiveHubSubtitle(archiveHubConfig.subtitle);
+      if (archiveHubConfig.badgeText !== undefined) setArchiveHubBadgeText(archiveHubConfig.badgeText);
+      if (archiveHubConfig.volumeText !== undefined) setArchiveHubVolumeText(archiveHubConfig.volumeText);
+    }
+  }, [archiveHubConfig]);
+
+  const handleSaveArchiveHubHeader = async () => {
+    if (!onSaveArchiveHubConfig) return;
+    setIsSavingArchiveHubHeader(true);
+    try {
+      await onSaveArchiveHubConfig({
+        mainTitle: archiveHubMainTitle,
+        subtitle: archiveHubSubtitle,
+        badgeText: archiveHubBadgeText,
+        volumeText: archiveHubVolumeText,
+      });
+      setArchiveHubHeaderSaveSuccess(true);
+      setTimeout(() => setArchiveHubHeaderSaveSuccess(false), 2000);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSavingArchiveHubHeader(false);
     }
   };
 
@@ -2700,34 +2741,142 @@ export function ManageHubPage({
         {/* ─────────────────────────────────────────────────────────────────── */}
         {/* MODE: ARCHIVE (Left: Detailed Edit Form, Right: Reorderable List)  */}
         {/* ─────────────────────────────────────────────────────────────────── */}
+        {/* ─────────────────────────────────────────────────────────────────── */}
+        {/* MODE: ARCHIVE (Top: Header Config, Left: Edit Form, Right: List)    */}
+        {/* ─────────────────────────────────────────────────────────────────── */}
         {activeMode === 'ARCHIVE' && (
-          <div className="flex-1 flex flex-col lg:flex-row w-full overflow-hidden">
+          <div className="flex-1 flex flex-col w-full overflow-y-auto max-h-[calc(100vh-60px)]">
             
-            {/* Mobile Tab Switcher: LIST vs EDIT */}
-            <div className="lg:hidden flex border-b border-black/15 dark:border-white/15 bg-white dark:bg-[#111] shrink-0">
-              <button
-                type="button"
-                onClick={() => setMobileArchiveTab('LIST')}
-                className={`flex-1 py-2.5 text-xs font-black uppercase tracking-wider font-sans border-r border-black/15 dark:border-white/15 cursor-pointer ${
-                  mobileArchiveTab === 'LIST'
-                    ? 'bg-black text-white dark:bg-white dark:text-black'
-                    : 'text-black/60 dark:text-white/60'
-                }`}
-              >
-                여정 목록 (LIST: {localJourneys.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setMobileArchiveTab('EDIT')}
-                className={`flex-1 py-2.5 text-xs font-black uppercase tracking-wider font-sans cursor-pointer ${
-                  mobileArchiveTab === 'EDIT'
-                    ? 'bg-black text-white dark:bg-white dark:text-black'
-                    : 'text-black/60 dark:text-white/60'
-                }`}
-              >
-                상세 수정 (EDIT)
-              </button>
+            {/* 0. Journey Hub Main Header Configuration Accordion (Trip Hub Editorial Masthead) */}
+            <div className="w-full border-b border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] shrink-0">
+              <div className="w-full p-4 sm:px-8">
+                <button
+                  type="button"
+                  onClick={() => setIsArchiveHubHeaderOpen(!isArchiveHubHeaderOpen)}
+                  className="w-full flex items-center justify-between py-2 text-left cursor-pointer group select-none"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Sliders className="w-4 h-4 text-red-600 dark:text-red-400" />
+                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white font-['Noto_Sans_KR',sans-serif]">
+                      여정 허브 메인 헤더 & 소개글 설정 (JOURNEY ARCHIVE MAIN HEADER)
+                    </span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black uppercase">
+                      HUB CONFIG
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-mono text-black/50 dark:text-white/50 font-['Noto_Sans_KR',sans-serif]">
+                      {isArchiveHubHeaderOpen ? '접기 ▲' : '펼치기 ▼'}
+                    </span>
+                  </div>
+                </button>
+
+                {isArchiveHubHeaderOpen && (
+                  <div className="pt-4 pb-2 flex flex-col gap-4 border-t border-black/10 dark:border-white/10 animate-in fade-in duration-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Badge Text */}
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 font-['Noto_Sans_KR',sans-serif]">
+                          HUB BADGE TEXT (상단 태그 텍스트)
+                        </label>
+                        <input
+                          type="text"
+                          value={archiveHubBadgeText}
+                          onChange={e => setArchiveHubBadgeText(e.target.value)}
+                          placeholder="e.g. JOURNEY ARCHIVE"
+                          className="px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white font-['Noto_Sans_KR',sans-serif]"
+                        />
+                      </div>
+
+                      {/* Volume Text */}
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 font-['Noto_Sans_KR',sans-serif]">
+                          HUB VOLUME TEXT (발행 연도 / 볼륨)
+                        </label>
+                        <input
+                          type="text"
+                          value={archiveHubVolumeText}
+                          onChange={e => setArchiveHubVolumeText(e.target.value)}
+                          placeholder="e.g. VOL. 2026"
+                          className="px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white font-['Noto_Sans_KR',sans-serif]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Main Title */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 font-['Noto_Sans_KR',sans-serif]">
+                        MAIN HEADLINE TITLE (허브 메인 대형 헤드라인 타이틀)
+                      </label>
+                      <input
+                        type="text"
+                        value={archiveHubMainTitle}
+                        onChange={e => setArchiveHubMainTitle(e.target.value)}
+                        placeholder="e.g. A VISUAL CHRONICLE OF JOURNEYS & TRAVEL ARCHIVES"
+                        className="px-3 py-2 text-xs font-satoshi font-bold uppercase bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                      />
+                    </div>
+
+                    {/* Subtitle */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 font-['Noto_Sans_KR',sans-serif]">
+                        INTRO SUBTITLE / DESCRIPTION (허브 소개 및 설명 문구)
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={archiveHubSubtitle}
+                        onChange={e => setArchiveHubSubtitle(e.target.value)}
+                        placeholder="e.g. 발걸음이 닿았던 모든 도시와 찬란했던 시간의 기록. 엄선된 사진과 함께 지난 여정들을 다시 마주합니다."
+                        className="px-3 py-2 text-xs font-['Noto_Sans_KR',sans-serif] bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white resize-none"
+                      />
+                    </div>
+
+                    {/* Save Button for Hub Header */}
+                    <div className="flex items-center justify-between pt-2 border-t border-black/10 dark:border-white/10">
+                      <span className="text-[11px] font-mono text-black/50 dark:text-white/50 font-['Noto_Sans_KR',sans-serif]">
+                        * 수정 후 [SAVE TRIP HUB HEADER]를 누르면 여정 허브 메인에 즉시 반영됩니다.
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleSaveArchiveHubHeader}
+                        disabled={isSavingArchiveHubHeader}
+                        className="px-4 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 dark:hover:bg-red-500 hover:text-white transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer font-['Noto_Sans_KR',sans-serif]"
+                      >
+                        {isSavingArchiveHubHeader ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                        <span>{archiveHubHeaderSaveSuccess ? 'SAVED!' : 'SAVE TRIP HUB HEADER'}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
+
+            <div className="flex-1 flex flex-col lg:flex-row w-full overflow-hidden">
+              {/* Mobile Tab Switcher: LIST vs EDIT */}
+              <div className="lg:hidden flex border-b border-black/15 dark:border-white/15 bg-white dark:bg-[#111] shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setMobileArchiveTab('LIST')}
+                  className={`flex-1 py-2.5 text-xs font-black uppercase tracking-wider font-sans border-r border-black/15 dark:border-white/15 cursor-pointer ${
+                    mobileArchiveTab === 'LIST'
+                      ? 'bg-black text-white dark:bg-white dark:text-black'
+                      : 'text-black/60 dark:text-white/60'
+                  }`}
+                >
+                  여정 목록 (LIST: {localJourneys.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobileArchiveTab('EDIT')}
+                  className={`flex-1 py-2.5 text-xs font-black uppercase tracking-wider font-sans cursor-pointer ${
+                    mobileArchiveTab === 'EDIT'
+                      ? 'bg-black text-white dark:bg-white dark:text-black'
+                      : 'text-black/60 dark:text-white/60'
+                  }`}
+                >
+                  상세 수정 (EDIT)
+                </button>
+              </div>
 
             {/* Left: Journey Edit Form */}
             <div className={`w-full lg:w-3/5 border-b lg:border-b-0 lg:border-r border-black/15 dark:border-white/15 p-4 sm:p-8 overflow-y-auto max-h-[calc(100vh-110px)] lg:max-h-[calc(100vh-60px)] ${
@@ -3447,7 +3596,8 @@ export function ManageHubPage({
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
         {/* ─────────────────────────────────────────────────────────────────── */}
         {/* MODE: MAGAZINE (Sections, Hero, Layout & Moments Management)        */}

@@ -40,6 +40,7 @@ import {
   MagazineSection,
   MagazineItem,
   MagazineHubConfig,
+  ArchiveHubConfig,
   TrashedMagazineSection
 } from './types';
 import { auth, db } from './firebase';
@@ -130,6 +131,18 @@ function App() {
       mainTitle: 'A VISUAL ARCHIVE OF JOURNEYS, CURATED STORIES & MOMENTS',
       subtitle: '여행의 찬란한 순간과 에피소드를 엄선하여 잡지 형식으로 기록한 매거진 컬렉션입니다. 이슈를 선택하여 전체 화보와 이야기를 감상하세요.',
       badgeText: 'CURATED ARCHIVE',
+      volumeText: `VOL. ${new Date().getFullYear()}`,
+    };
+  });
+  const [archiveHubConfig, setArchiveHubConfig] = useState<ArchiveHubConfig>(() => {
+    try {
+      const cached = localStorage.getItem('cached_archive_hub_config');
+      if (cached) return JSON.parse(cached);
+    } catch (_) {}
+    return {
+      mainTitle: 'A VISUAL CHRONICLE OF JOURNEYS & TRAVEL ARCHIVES',
+      subtitle: '발걸음이 닿았던 모든 도시와 찬란했던 시간의 기록. 엄선된 사진과 함께 지난 여정들을 다시 마주합니다.',
+      badgeText: 'JOURNEY ARCHIVE',
       volumeText: `VOL. ${new Date().getFullYear()}`,
     };
   });
@@ -587,6 +600,12 @@ function App() {
             localStorage.setItem('cached_magazine_hub_config', JSON.stringify(data.magazineHubConfig));
           } catch (_) {}
         }
+        if (data.archiveHubConfig && typeof data.archiveHubConfig === 'object') {
+          setArchiveHubConfig(data.archiveHubConfig);
+          try {
+            localStorage.setItem('cached_archive_hub_config', JSON.stringify(data.archiveHubConfig));
+          } catch (_) {}
+        }
         if (Array.isArray(data.magazineSections) && data.magazineSections.length > 0) {
           setMagazineSections(data.magazineSections);
           try {
@@ -889,6 +908,11 @@ function App() {
 
     const effectiveView = view === 'plan' ? 'archive' : view;
     if (tripId) setActiveTripId(tripId);
+    if (effectiveView === 'magazine' && (!tagFilter || tagFilter === null)) {
+      try {
+        sessionStorage.setItem('magazineViewMode', 'hub');
+      } catch (_) {}
+    }
     setCurrentView(effectiveView);
     setSelectedTagFilter(tagFilter);
 
@@ -1210,6 +1234,26 @@ function App() {
     } catch (err) {
       console.error("Failed to save magazine hub config:", err);
       alert("매거진 허브 설정 저장에 실패했습니다.");
+      throw err;
+    }
+  };
+
+  const handleSaveArchiveHubConfig = async (config: ArchiveHubConfig) => {
+    if (!isLoggedIn || !isAdmin) {
+      alert("관리자(Admin)만 여정 허브 설정을 저장할 수 있습니다.");
+      return;
+    }
+    try {
+      await setDoc(doc(db, 'users', 'public', 'settings', 'home'), {
+        archiveHubConfig: cleanForFirestore(config),
+      }, { merge: true });
+      setArchiveHubConfig(config);
+      try {
+        localStorage.setItem('cached_archive_hub_config', JSON.stringify(config));
+      } catch (_) {}
+    } catch (err) {
+      console.error("Failed to save archive hub config:", err);
+      alert("여정 허브 설정 저장에 실패했습니다.");
       throw err;
     }
   };
@@ -2070,6 +2114,7 @@ function App() {
                     await batch.commit();
                   }}
                   initialTagFilter={selectedTagFilter}
+                  hubConfig={archiveHubConfig}
                 />
               )}
               {currentView === 'map' && (
@@ -2133,6 +2178,8 @@ function App() {
                   magazineSections={magazineSections}
                   magazineHubConfig={magazineHubConfig}
                   onSaveMagazineHubConfig={handleSaveMagazineHubConfig}
+                  archiveHubConfig={archiveHubConfig}
+                  onSaveArchiveHubConfig={handleSaveArchiveHubConfig}
                   timelineData={timelineData}
                   onSaveMagazineMoments={handleSaveMagazineMoments}
                   onSaveMagazineSections={handleSaveMagazineSections}
