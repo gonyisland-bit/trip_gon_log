@@ -16,6 +16,7 @@ export default {
         inter: ['Inter', '"Noto Sans KR"', 'sans-serif'],
         noto: ['"Noto Sans KR"', 'sans-serif'],
         serif: ['Satoshi', 'Inter', '"Noto Sans KR"', 'sans-serif'],
+        mono: ['"SF Mono"', 'Consolas', '"Noto Sans KR"', 'monospace'],
       },
     },
   },

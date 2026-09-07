@@ -539,6 +539,17 @@ export function ManageHubPage({
         }
       });
 
+      // Also collect gallery items from active journeys to recognize gallery-sourced moments
+      const galleryPhotoUrls = new Set<string>();
+      localJourneys.forEach(j => {
+        if (j.gallery && Array.isArray(j.gallery)) {
+          j.gallery.forEach((g: any) => {
+            const url = typeof g === 'string' ? g : g?.url;
+            if (url) galleryPhotoUrls.add(url);
+          });
+        }
+      });
+
       sectionsList.forEach(section => {
         (section.items || []).forEach(moment => {
           // 0. Protected cards: text-only cards, editorial quotes, custom cards without tripId are 100% protected
@@ -558,36 +569,28 @@ export function ManageHubPage({
             return;
           }
 
-          // 2. Out-of-sync or duplicate placeName check
-          const pName = (moment.placeName || '').trim().toLowerCase();
-          const mTitle = (moment.title || '').trim().toLowerCase();
-
-          // Check if placeName is duplicated with title
-          if (pName && mTitle && pName === mTitle) {
-            outOfSyncMagazineMoments.push({
-              sectionId: section.id,
-              sectionTitle: section.title,
-              momentId: moment.id,
-              title: moment.title,
-              reason: '제목과 장소명이 중복 표기됨 (타임라인 상속 장소로 최적화 필요)'
-            });
+          // 2. Gallery photos: if photo belongs to active journey's gallery, treat as valid without strict timeline place duplication check
+          if (moment.img && galleryPhotoUrls.has(moment.img)) {
             return;
           }
 
-          // Check if moment has matched timeline item whose title/place or image is out of sync
+          // 3. Check if moment has matched timeline item whose title/place or image is out of sync
           if (moment.timelineItemId !== undefined) {
             const matchedTimeline = allActiveTimelineItems.find(t => Number(t.id) === Number(moment.timelineItemId));
             if (matchedTimeline) {
               const pTrip = trips.find(t => t.id === matchedTimeline.tripId) || plans.find(p => p.id === matchedTimeline.tripId);
-              const expectedTitle = safeStr(matchedTimeline.place) || safeStr(pTrip?.title) || 'UNTITLED';
-              const cleanExpected = expectedTitle.toLowerCase();
-              if (cleanExpected && mTitle && cleanExpected !== mTitle) {
+              const expectedTitle = safeStr(matchedTimeline.place) || safeStr(pTrip?.title)?.replace(/\s*\(Plan\)$/i, '') || 'UNTITLED';
+              const cleanExpected = expectedTitle.trim().toLowerCase();
+              const mTitle = (moment.title || '').trim().toLowerCase();
+              
+              // Only report if expectedTitle exists, is different from custom title, and timeline image is missing or mismatched
+              if (cleanExpected && mTitle && cleanExpected !== mTitle && matchedTimeline.img && moment.img && matchedTimeline.img !== moment.img) {
                 outOfSyncMagazineMoments.push({
                   sectionId: section.id,
                   sectionTitle: section.title,
                   momentId: moment.id,
                   title: moment.title,
-                  reason: `타임라인 원본 제목('${matchedTimeline.place}')과 불일치`
+                  reason: `타임라인 원본 이미지/제목('${matchedTimeline.place}')과 불일치`
                 });
               }
             }
@@ -4003,7 +4006,7 @@ export function ManageHubPage({
                   className="px-3 py-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-black dark:text-white border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-                  <span>NEW SECTION</span>
+                  <span>신규 섹션 (NEW)</span>
                 </button>
                 <button
                   type="button"
@@ -4011,11 +4014,11 @@ export function ManageHubPage({
                     setSelectedTripForAutoGenerate(localJourneys[0]?.id ?? null);
                     setShowAutoGenerateModal(true);
                   }}
-                  className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
-                  title="특정 여정을 선택하여 매거진 섹션을 자동 생성합니다."
+                  className="px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                  title="선택한 여정의 커버, 갤러리 및 타임라인 사진으로 매거진 섹션을 자동 생성합니다."
                 >
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>FROM TRIP</span>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>여정 자동 생성 (AUTO-GENERATE)</span>
                 </button>
               </div>
             </div>
@@ -4230,7 +4233,7 @@ export function ManageHubPage({
                       className="px-3 py-1 bg-black text-white dark:bg-white dark:text-black text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>+ ADD TEXT CARD</span>
+                      <span>ADD TEXT CARD</span>
                     </button>
                   </div>
                 </div>
@@ -4243,7 +4246,7 @@ export function ManageHubPage({
                       <div className="py-12 text-center flex flex-col items-center justify-center gap-2 text-xs font-mono text-black/40 dark:text-white/40 border border-dashed border-black/20 dark:border-white/20 p-8">
                         <Layout className="w-6 h-6 opacity-30" />
                         <span>현재 섹션에 등록된 카드가 없습니다.</span>
-                        <span>아래 타임라인 사진에서 '+ ADD'를 누르거나 상단의 '+ ADD TEXT CARD'를 클릭해주세요.</span>
+                        <span>아래 타임라인 사진에서 '+ ADD'를 누르거나 상단의 'ADD TEXT CARD'를 클릭해주세요.</span>
                       </div>
                     );
                   }
@@ -4764,12 +4767,12 @@ export function ManageHubPage({
                 <div className="w-full max-w-md bg-white dark:bg-[#161616] border border-black dark:border-white p-6 shadow-2xl flex flex-col gap-4">
                   <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
                     <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-black dark:text-white">
-                      ADD NEW MAGAZINE SECTION
+                      ADD NEW MAGAZINE SECTION (새 섹션 추가)
                     </h3>
                     <button
                       type="button"
                       onClick={() => setShowAddSectionModal(false)}
-                      className="p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white"
+                      className="p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -4804,7 +4807,26 @@ export function ManageHubPage({
                     </div>
                   </div>
 
-                    <div className="flex items-center justify-end gap-2 pt-3 border-t border-black/10 dark:border-white/10">
+                  {/* Alternative Action: Auto-generate shortcut */}
+                  <div className="p-3 bg-red-500/5 border border-red-500/20 flex items-center justify-between gap-3">
+                    <div className="text-[11px] text-black/70 dark:text-white/70">
+                      여정의 사진과 스토리로 즉시 생성하시겠습니까?
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddSectionModal(false);
+                        setSelectedTripForAutoGenerate(localJourneys[0]?.id ?? null);
+                        setShowAutoGenerateModal(true);
+                      }}
+                      className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors shrink-0"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      <span>여정 자동 생성 →</span>
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-black/10 dark:border-white/10">
                     <button
                       type="button"
                       onClick={() => setShowAddSectionModal(false)}
@@ -4817,7 +4839,7 @@ export function ManageHubPage({
                       onClick={handleAddSection}
                       className="px-5 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider cursor-pointer hover:opacity-85 transition-opacity"
                     >
-                      CREATE
+                      CREATE SECTION
                     </button>
                   </div>
                 </div>
@@ -4830,9 +4852,9 @@ export function ManageHubPage({
                 <div className="w-full max-w-lg bg-white dark:bg-[#161616] border border-black dark:border-white p-6 shadow-2xl flex flex-col gap-4">
                   <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
                     <div className="flex items-center gap-2">
-                      <Layers className="w-4 h-4 text-red-600 dark:text-red-500" />
+                      <Sparkles className="w-4 h-4 text-red-600 dark:text-red-500" />
                       <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-black dark:text-white">
-                        GENERATE SECTION FROM TRIP
+                        여정 선택 및 매거진 섹션 자동 생성 (AUTO-GENERATE)
                       </h3>
                     </div>
                     <button
@@ -4845,12 +4867,12 @@ export function ManageHubPage({
                   </div>
 
                   <p className="text-xs text-black/70 dark:text-white/70 leading-relaxed font-sans">
-                    선택하신 여정의 커버 이미지와 타임라인/갤러리 사진을 수집하여 새 매거진 섹션을 즉시 구성합니다.
+                    선택하신 여정의 커버 이미지, 갤러리 및 타임라인 사진을 수집하여 잡지 스타일의 매거진 이슈 섹션을 즉시 구성합니다.
                   </p>
 
                   <div className="flex flex-col gap-2">
                     <label className="text-xs font-mono font-bold uppercase tracking-wider text-black/80 dark:text-white/80">
-                      SELECT JOURNEY
+                      SELECT JOURNEY (생성할 여정 선택)
                     </label>
                     <select
                       value={selectedTripForAutoGenerate ?? ''}
@@ -4881,7 +4903,7 @@ export function ManageHubPage({
                             {selected.locationStr || selected.country} · {selected.date}
                           </div>
                           <div className="text-[10px] font-mono text-red-600 dark:text-red-400 mt-0.5">
-                            * 갤러리/타임라인 사진을 포함하여 새 섹션이 생성됩니다.
+                            * 대표 커버, 갤러리 및 타임라인 사진으로 새 매거진 섹션이 자동 구성됩니다.
                           </div>
                         </div>
                       </div>
@@ -4906,8 +4928,8 @@ export function ManageHubPage({
                       }}
                       className="px-5 py-2 bg-red-600 text-white text-xs font-mono font-bold uppercase tracking-wider cursor-pointer hover:bg-red-700 disabled:opacity-30 flex items-center gap-1.5 shadow-sm"
                     >
-                      <Layers className="w-3.5 h-3.5" />
-                      <span>GENERATE</span>
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>GENERATE SECTION (자동 생성)</span>
                     </button>
                   </div>
                 </div>
