@@ -3628,7 +3628,7 @@ export function ManageHubPage({
                       value={currentMagSection.title || ''}
                       onChange={e => handleUpdateSectionField(currentMagSection.id, 'title', e.target.value)}
                       placeholder="e.g. TOKYO VIBES, JEJU ISLAND"
-                      className="px-3 py-2 text-xs font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none uppercase text-black dark:text-white"
+                      className="px-3 py-2 text-xs font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
                     />
                   </div>
 
@@ -4251,7 +4251,7 @@ export function ManageHubPage({
                         onChange={e => setNewSectionTitle(e.target.value)}
                         placeholder="e.g. TOKYO VIBES"
                         autoFocus
-                        className="px-3 py-2 text-xs font-bold uppercase bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                        className="px-3 py-2 text-xs font-bold bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
                       />
                     </div>
 

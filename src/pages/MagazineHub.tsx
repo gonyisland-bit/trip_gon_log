@@ -107,6 +107,38 @@ export function MagazineHubPage({
   // Touch swipe state for Hero section
   const touchStartXRef = useRef<number | null>(null);
 
+  // Horizontal Section Tabs Scroll Reference & State
+  const tabScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkTabScroll = () => {
+    if (!tabScrollRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = tabScrollRef.current;
+    setCanScrollLeft(scrollLeft > 4);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 4);
+  };
+
+  const handleScrollTab = (direction: 'left' | 'right') => {
+    if (!tabScrollRef.current) return;
+    const offset = direction === 'left' ? -220 : 220;
+    tabScrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+    setTimeout(checkTabScroll, 300);
+  };
+
+  useEffect(() => {
+    checkTabScroll();
+    window.addEventListener('resize', checkTabScroll);
+    return () => window.removeEventListener('resize', checkTabScroll);
+  }, [effectiveSections]);
+
+  // Keep active tab scrolled into view
+  useEffect(() => {
+    if (tabScrollRef.current) {
+      setTimeout(checkTabScroll, 200);
+    }
+  }, [activeSectionId]);
+
   // Switch to next/prev section
   const handlePrevSection = () => {
     if (effectiveSections.length <= 1) return;
@@ -643,44 +675,85 @@ export function MagazineHubPage({
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* 2. SECTION NAVIGATOR / SELECTOR (Editorial Tabs & Showcase Accordion) */}
       {/* ─────────────────────────────────────────────────────────────────── */}
-      <div className="sticky top-14 sm:top-16 z-30 w-full bg-white/40 dark:bg-[#111111]/95 backdrop-blur-md border-b border-black/10 dark:border-white/10 px-4 sm:px-8 md:px-12 py-2.5 transition-colors">
-        <div className="flex items-center justify-between gap-3">
-          {/* Section Tabs (Horizontal Scrollable) */}
-          <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto hide-scrollbar py-1 flex-1 min-w-0">
-            {effectiveSections.map((sec, idx) => {
-              const isActive = sec.id === (currentSection?.id || activeSectionId);
-              return (
-                <button
-                  key={sec.id}
-                  onClick={() => handleSelectSection(sec.id)}
-                  className={`px-3 py-1.5 text-xs sm:text-sm font-bold uppercase font-['Inter',sans-serif] tracking-wider transition-all border whitespace-nowrap cursor-pointer shrink-0 ${
-                    isActive
-                      ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-sm'
-                      : 'bg-transparent border-black/10 dark:border-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
-                  }`}
-                >
-                  <span className="font-mono text-[10px] opacity-60 mr-1.5">{String(idx + 1).padStart(2, '0')}.</span>
-                  {sec.title}
-                </button>
-              );
-            })}
+      <div className="sticky top-14 sm:top-16 z-30 w-full bg-white/40 dark:bg-[#111111]/95 backdrop-blur-md border-b border-black/10 dark:border-white/10 px-3 sm:px-8 md:px-12 py-2 transition-colors">
+        <div className="flex items-center justify-between gap-2 sm:gap-3">
+          {/* Section Tabs Wrapper with Subtle Left/Right Scroll Arrows */}
+          <div className="flex items-center gap-1 flex-1 min-w-0">
+            {/* Left Scroll Arrow */}
+            <button
+              type="button"
+              onClick={() => handleScrollTab('left')}
+              disabled={!canScrollLeft}
+              className={`p-1.5 rounded transition-all shrink-0 cursor-pointer ${
+                canScrollLeft
+                  ? 'text-black/80 dark:text-white/80 hover:bg-black/10 dark:hover:bg-white/10 hover:text-black dark:hover:text-white opacity-90'
+                  : 'text-black/20 dark:text-white/20 opacity-20 pointer-events-none'
+              }`}
+              title="이전 탭 보기"
+              aria-label="Scroll tabs left"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Section Tabs (Horizontal Scrollable) */}
+            <div
+              ref={tabScrollRef}
+              onScroll={checkTabScroll}
+              className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto hide-scrollbar py-0.5 flex-1 min-w-0 scroll-smooth"
+            >
+              {effectiveSections.map((sec, idx) => {
+                const isActive = sec.id === (currentSection?.id || activeSectionId);
+                return (
+                  <button
+                    key={sec.id}
+                    onClick={() => handleSelectSection(sec.id)}
+                    className={`px-2.5 py-1 text-[11px] sm:text-xs font-bold uppercase font-['Inter',sans-serif] tracking-wider transition-all border whitespace-nowrap cursor-pointer shrink-0 ${
+                      isActive
+                        ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
+                        : 'bg-transparent border-black/10 dark:border-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
+                    }`}
+                  >
+                    <span className="font-mono text-[9px] opacity-60 mr-1">{String(idx + 1).padStart(2, '0')}.</span>
+                    {sec.title}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Right Scroll Arrow */}
+            <button
+              type="button"
+              onClick={() => handleScrollTab('right')}
+              disabled={!canScrollRight}
+              className={`p-1.5 rounded transition-all shrink-0 cursor-pointer ${
+                canScrollRight
+                  ? 'text-black/80 dark:text-white/80 hover:bg-black/10 dark:hover:bg-white/10 hover:text-black dark:hover:text-white opacity-90'
+                  : 'text-black/20 dark:text-white/20 opacity-20 pointer-events-none'
+              }`}
+              title="다음 탭 보기"
+              aria-label="Scroll tabs right"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
           </div>
 
-          {/* Accordion Showcase Drawer Toggle Button */}
+          {/* Accordion Showcase Drawer Toggle Button (Simple ALL + Emphasized Arrow) */}
           <button
             type="button"
             onClick={() => setIsAccordionOpen(prev => !prev)}
-            className={`px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 border transition-all cursor-pointer shrink-0 ${
+            className={`px-2.5 sm:px-3 py-1 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 border transition-all cursor-pointer shrink-0 ${
               isAccordionOpen
-                ? 'bg-red-600 text-white border-red-600 shadow-sm'
-                : 'bg-black/5 dark:bg-white/5 border-black/15 dark:border-white/15 text-black/80 dark:text-white/80 hover:bg-black/10 dark:hover:bg-white/10'
+                ? 'bg-red-600 text-white border-red-600 shadow-xs'
+                : 'bg-black/5 dark:bg-white/5 border-black/20 dark:border-white/20 text-black dark:text-white hover:bg-black/10 dark:hover:bg-white/10 hover:border-black/40 dark:hover:border-white/40'
             }`}
             title="매거진 커버 진열장 (Issue Showcase) 열기/닫기"
           >
-            <BookOpen className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">ALL ISSUES</span>
+            <BookOpen className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />
+            <span>ALL</span>
             <span className="text-[10px] opacity-75 font-mono">({effectiveSections.length})</span>
-            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isAccordionOpen ? 'rotate-180' : ''}`} />
+            <div className={`p-0.5 rounded transition-transform duration-300 ${isAccordionOpen ? 'rotate-180 bg-white/20' : 'bg-red-600/10 dark:bg-red-500/20 text-red-600 dark:text-red-400'}`}>
+              <ChevronDown className="w-3.5 h-3.5 stroke-[2.5]" />
+            </div>
           </button>
         </div>
 
@@ -776,7 +849,7 @@ export function MagazineHubPage({
 
                     {/* Card Footer Info */}
                     <div className="p-2.5 flex items-center justify-between text-[10px] font-mono font-bold text-black/70 dark:text-white/70 bg-[#FAF9F6] dark:bg-[#141414] border-t border-black/5 dark:border-white/5">
-                      <span className="truncate font-sans font-semibold">{sec.title}</span>
+                      <span className="truncate font-sans font-semibold uppercase">{sec.title}</span>
                       <ArrowRight className="w-3.5 h-3.5 text-black/40 dark:text-white/40 group-hover:translate-x-0.5 group-hover:text-red-600 dark:group-hover:text-red-400 transition-all shrink-0" />
                     </div>
                   </div>
