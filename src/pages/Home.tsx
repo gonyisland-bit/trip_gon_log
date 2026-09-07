@@ -1455,6 +1455,29 @@ export function HomePage({
             || availableSections[0]
             || null;
 
+          const currentSecIndex = availableSections.findIndex(s => s.id === (selectedSection?.id || activeHomeSectionId));
+
+          const handleSelectSection = (sectionId: string) => {
+            setActiveHomeSectionId(sectionId);
+            setMagazineSpreadIndex(0);
+            const tabBtn = document.getElementById(`home-mag-tab-${sectionId}`);
+            if (tabBtn) {
+              tabBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }
+          };
+
+          const handlePrevSection = () => {
+            if (currentSecIndex > 0) {
+              handleSelectSection(availableSections[currentSecIndex - 1].id);
+            }
+          };
+
+          const handleNextSection = () => {
+            if (currentSecIndex < availableSections.length - 1) {
+              handleSelectSection(availableSections[currentSecIndex + 1].id);
+            }
+          };
+
           const handleGoToMagazineSection = () => {
             if (selectedSection && selectedSection.id) {
               sessionStorage.setItem('lastMagazineSectionId', String(selectedSection.id));
@@ -1484,21 +1507,15 @@ export function HomePage({
             })).filter(item => Boolean(item.img));
           }
 
-          // 3. Apply homeMagazineLimit (default: 6)
-          const limit = homeMagazineLimit && homeMagazineLimit > 0 ? homeMagazineLimit : 6;
-          const displayMoments: MagazineMoment[] = rawMoments.slice(0, limit);
+          // 3. Always display top 3 curated preview moments for the active section
+          const displayMoments: MagazineMoment[] = rawMoments.slice(0, 3);
 
           if (displayMoments.length === 0) return null;
-
-          const MOMENTS_PER_SPREAD = 3;
-          const totalSpreads = Math.ceil(displayMoments.length / MOMENTS_PER_SPREAD);
-          const currentSpread = Math.min(magazineSpreadIndex, Math.max(0, totalSpreads - 1));
-          const currentSlice = displayMoments.slice(currentSpread * MOMENTS_PER_SPREAD, (currentSpread + 1) * MOMENTS_PER_SPREAD);
 
           return (
             <div className="w-full border-t border-black/10 dark:border-white/10 mt-12 pt-12 px-4 sm:px-8 md:px-12 flex flex-col gap-6">
               {/* Section Header: Pure Swiss Minimal Magazine Header */}
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-black/15 dark:border-white/15">
+              <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 pb-4 border-b border-black/15 dark:border-white/15">
                 <div className="flex items-baseline gap-4 flex-wrap">
                   <h2 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
                     MAGAZINE
@@ -1517,227 +1534,126 @@ export function HomePage({
                   </button>
                 </div>
 
-                {/* Swiss Minimal Spread Navigation Controls */}
-                {totalSpreads > 1 && (
-                  <div className="flex items-center gap-3.5 shrink-0 self-start sm:self-auto">
-                    {/* Minimal Hero-Style Indicator Bars */}
-                    <div className="flex items-center gap-1.5">
-                      {Array.from({ length: totalSpreads }).map((_, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => setMagazineSpreadIndex(i)}
-                          className={`h-1.5 transition-all duration-300 cursor-pointer ${
-                            currentSpread === i 
-                              ? 'w-6 bg-black dark:bg-white' 
-                              : 'w-2 bg-black/20 dark:bg-white/20 hover:bg-black/50 dark:hover:bg-white/50'
-                          }`}
-                          title={`SPREAD ${i + 1}`}
-                        />
-                      ))}
+                {/* Section Selector Tabs & Adjacent Minimal Prev/Next Navigation Controls */}
+                <div className="flex items-center gap-3 max-w-full lg:max-w-2xl shrink-0 self-start sm:self-auto">
+                  {/* Section Tabs Scrollable Container */}
+                  {availableSections.length > 1 && (
+                    <div
+                      ref={homeMagTabsRef}
+                      className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar py-1 scroll-smooth"
+                    >
+                      {availableSections.map((sec) => {
+                        const isSelected = sec.id === (selectedSection?.id || activeHomeSectionId);
+                        return (
+                          <button
+                            key={sec.id}
+                            id={`home-mag-tab-${sec.id}`}
+                            type="button"
+                            onClick={() => handleSelectSection(sec.id)}
+                            className={`px-3.5 py-1.5 text-xs font-bold uppercase font-['Noto_Sans_KR',sans-serif] tracking-wider transition-all border whitespace-nowrap cursor-pointer shrink-0 ${
+                              isSelected
+                                ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
+                                : 'bg-transparent border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
+                            }`}
+                          >
+                            {sec.title}
+                          </button>
+                        );
+                      })}
                     </div>
+                  )}
 
-                    {/* Minimal Left / Right Arrows */}
-                    <div className="flex items-center gap-1">
+                  {/* Adjacent Left / Right Section Navigation Buttons (Classic Home Preview Style) */}
+                  {availableSections.length > 1 && (
+                    <div className="flex items-center gap-1 shrink-0">
                       <button
                         type="button"
-                        onClick={() => setMagazineSpreadIndex(prev => Math.max(0, prev - 1))}
-                        disabled={currentSpread === 0}
+                        onClick={handlePrevSection}
+                        disabled={currentSecIndex <= 0}
                         className="w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white"
-                        title="PREV"
+                        title="이전 섹션"
                       >
                         <ChevronLeft className="w-4 h-4 stroke-[2]" />
                       </button>
                       <button
                         type="button"
-                        onClick={() => setMagazineSpreadIndex(prev => Math.min(totalSpreads - 1, prev + 1))}
-                        disabled={currentSpread >= totalSpreads - 1}
+                        onClick={handleNextSection}
+                        disabled={currentSecIndex >= availableSections.length - 1}
                         className="w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white"
-                        title="NEXT"
+                        title="다음 섹션"
                       >
                         <ChevronRight className="w-4 h-4 stroke-[2]" />
                       </button>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
-              {/* Section Selector Tabs with Left/Right Scroll Navigation */}
-              {availableSections.length > 1 && (
-                <div className="flex items-center gap-1.5 max-w-full">
-                  {availableSections.length > 3 && (
-                    <button
-                      type="button"
-                      onClick={() => scrollHomeMagTabs('left')}
-                      className="p-1.5 border border-black/15 dark:border-white/15 bg-white dark:bg-[#181818] text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer shrink-0"
-                      title="이전 섹션"
+              {/* 3-Card Visual Grid (3:4 Ratio, Consistent with Magazine Preview Spread) */}
+              <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 items-stretch">
+                {displayMoments.map((moment, idx) => {
+                  const parentTrip = trips.find(t => t.id === moment.tripId);
+                  let matchedTimelineItem: any = null;
+                  if (allTimelineItems.length > 0 && moment.img) {
+                    const momentEffImg = getEffectiveImageUrl(moment.img);
+                    matchedTimelineItem = allTimelineItems.find(it => {
+                      if (!it.img) return false;
+                      if (it.img === moment.img) return true;
+                      return getEffectiveImageUrl(it.img) === momentEffImg;
+                    });
+                  }
+
+                  const displayTitle = matchedTimelineItem?.place?.trim() || moment.title || 'UNTITLED MOMENT';
+                  const rawDate = matchedTimelineItem?.date || moment.date;
+                  const dateWithDay = formatSimpleDateWithDay(rawDate);
+
+                  let resolvedGoogleLocation = '';
+                  if (matchedTimelineItem?.location) {
+                    if (typeof matchedTimelineItem.location === 'string' && matchedTimelineItem.location.trim()) {
+                      resolvedGoogleLocation = matchedTimelineItem.location.trim().split(',')[0].trim();
+                    } else if (typeof matchedTimelineItem.location === 'object' && (matchedTimelineItem.location as any)?.name) {
+                      resolvedGoogleLocation = (matchedTimelineItem.location as any).name;
+                    }
+                  }
+                  const displayPlace = resolvedGoogleLocation || moment.placeName || moment.location || parentTrip?.locationStr || parentTrip?.country || 'VISITED PLACE';
+
+                  return (
+                    <article
+                      key={moment.id || idx}
+                      onClick={() => handleGoToMagazineSection()}
+                      className="group flex flex-col justify-between cursor-pointer"
                     >
-                      <ChevronLeft className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-
-                  <div
-                    ref={homeMagTabsRef}
-                    className="flex items-center gap-2 overflow-x-auto hide-scrollbar py-1 scroll-smooth"
-                  >
-                    {availableSections.map((sec) => {
-                      const isSelected = sec.id === (selectedSection?.id || activeHomeSectionId);
-                      return (
-                        <button
-                          key={sec.id}
-                          type="button"
-                          onClick={() => {
-                            setActiveHomeSectionId(sec.id);
-                            setMagazineSpreadIndex(0);
-                          }}
-                          className={`px-3.5 py-1.5 text-xs font-bold uppercase font-['Noto_Sans_KR',sans-serif] tracking-wider transition-all border whitespace-nowrap cursor-pointer shrink-0 ${
-                            isSelected
-                              ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
-                              : 'bg-transparent border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
-                          }`}
-                        >
-                          {sec.title}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {availableSections.length > 3 && (
-                    <button
-                      type="button"
-                      onClick={() => scrollHomeMagTabs('right')}
-                      className="p-1.5 border border-black/15 dark:border-white/15 bg-white dark:bg-[#181818] text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer shrink-0"
-                      title="다음 섹션"
-                    >
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* Magazine Editorial Spread Layout: 3:4 Vertical Cards (Boundary-free Swiss Minimal) with Smooth Horizontal Slide & Mobile Touch Swipe */}
-              <div 
-                className="w-full overflow-hidden touch-pan-y"
-                onTouchStart={handleMagazineTouchStart}
-                onTouchMove={handleMagazineTouchMove}
-                onTouchEnd={(e) => handleMagazineTouchEnd(e, totalSpreads)}
-              >
-                <div 
-                  className="flex transition-transform duration-500 ease-out"
-                  style={{ transform: `translateX(-${currentSpread * 100}%)` }}
-                >
-                  {Array.from({ length: totalSpreads }).map((_, spreadIdx) => {
-                    const slice = displayMoments.slice(spreadIdx * MOMENTS_PER_SPREAD, (spreadIdx + 1) * MOMENTS_PER_SPREAD);
-                    return (
-                      <div 
-                        key={spreadIdx} 
-                        className="w-full shrink-0 grid grid-cols-3 gap-3 sm:gap-6 md:gap-8 lg:gap-10 items-stretch"
-                      >
-                        {slice.map((moment, idx) => {
-                          const parentTrip = trips.find(t => t.id === moment.tripId);
-                          const tripDestination = parentTrip?.locationStr || (parentTrip?.locations && parentTrip.locations[0]?.name) || moment.location || '';
-                          const engCity = getEnglishCityName(tripDestination) || 'JOURNEY';
-
-                          let matchedTimelineItem: any = null;
-                          if (allTimelineItems.length > 0 && moment.img) {
-                            const momentEffImg = getEffectiveImageUrl(moment.img);
-                            matchedTimelineItem = allTimelineItems.find(it => {
-                              if (!it.img) return false;
-                              if (it.img === moment.img) return true;
-                              return getEffectiveImageUrl(it.img) === momentEffImg;
-                            });
-                          }
-
-                          // 1. Title from timeline place or moment title
-                          const displayTitle = matchedTimelineItem?.place?.trim() || moment.title;
-
-                          // 2. Formatted date and day
-                          const rawDate = matchedTimelineItem?.date || moment.date;
-                          const dateWithDay = formatSimpleDateWithDay(rawDate);
-
-                          // 3. Google autocomplete location name for bottom row
-                          let resolvedGoogleLocation = '';
-                          if (matchedTimelineItem?.location) {
-                            if (typeof matchedTimelineItem.location === 'string' && matchedTimelineItem.location.trim()) {
-                              resolvedGoogleLocation = matchedTimelineItem.location.trim().split(',')[0].trim();
-                            } else if (typeof matchedTimelineItem.location === 'object' && (matchedTimelineItem.location as any)?.name) {
-                              resolvedGoogleLocation = (matchedTimelineItem.location as any).name;
-                            }
-                          }
-                          const displayPlace = resolvedGoogleLocation || moment.location || moment.placeName || cleanAdministrativeDistricts(moment.location || '') || 'VISITED PLACE';
-
-                          return (
-                            <div
-                              key={moment.id || idx}
-                              onClick={() => {
-                                if (isSwipingRef.current) return;
-                                if (moment.tripId) {
-                                  try {
-                                    localStorage.setItem('pending_detail_jump', JSON.stringify({
-                                      tab: 'timeline',
-                                      imgUrl: moment.img,
-                                      date: moment.date,
-                                      placeName: moment.placeName,
-                                      title: moment.title
-                                    }));
-                                  } catch (e) {
-                                    console.warn(e);
-                                  }
-                                  onNavigate('detail', moment.tripId);
-                                }
-                              }}
-                              className="group relative cursor-pointer flex flex-col justify-between transition-all duration-300 select-none bg-transparent border-none shadow-none"
-                            >
-                              {/* 1. Boundary-free Editorial Photo Section: 3:4 Vertical Frame */}
-                              <div className="w-full aspect-[3/4] overflow-hidden relative bg-black/5 dark:bg-white/5">
-                                <img
-                                  src={getEffectiveImageUrl(moment.img)}
-                                  alt={displayTitle}
-                                  className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out select-none"
-                                />
-                                {/* Top-Right: Swiss Minimal Black Label (여행지명: TOKYO, OSAKA, etc.) */}
-                                {engCity && (
-                                  <div className="absolute top-2 right-2 sm:top-3 sm:right-3 pointer-events-none z-10">
-                                    <span className="px-1.5 py-0.5 sm:px-2.5 sm:py-1 text-[9px] sm:text-xs font-black font-['Inter',sans-serif] uppercase tracking-wider sm:tracking-[0.2em] bg-black text-white leading-none inline-block shadow-sm">
-                                      {engCity}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* 2. Editorial Text Hierarchy (Title + Date + Bottom Google Place / Arrow) */}
-                              <div className="pt-2 sm:pt-3.5 flex-1 flex flex-col justify-between text-black dark:text-white">
-                                <div className="flex flex-col">
-                                  {/* 1) Timeline Title */}
-                                  <h3 className="text-xs sm:text-base md:text-lg lg:text-xl font-black uppercase tracking-tight text-black dark:text-white font-sans line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
-                                    {displayTitle}
-                                  </h3>
-
-                                  {/* 2) Date and Day (e.g. 2024.07.19 FRI) */}
-                                  {dateWithDay && (
-                                    <div className="text-[9px] sm:text-[11px] md:text-xs font-mono font-bold text-black/50 dark:text-white/50 uppercase tracking-wider mt-1">
-                                      {dateWithDay}
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* 3) Bottom Row: Google Autocomplete Place Name & Simple Arrow */}
-                                <div className="pt-2 sm:pt-3 mt-auto flex items-center justify-between text-[10px] sm:text-xs font-sans text-black/75 dark:text-white/75 border-t border-black/10 dark:border-white/10">
-                                  <span className="font-bold tracking-tight truncate max-w-[80%]" title={displayPlace}>
-                                    {displayPlace}
-                                  </span>
-                                  <span className="text-xs sm:text-base font-bold text-black dark:text-white group-hover:translate-x-1.5 transition-transform shrink-0">
-                                    →
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
+                      <div className="relative aspect-[3/4] w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+                        <img
+                          src={getEffectiveImageUrl(moment.img)}
+                          alt={displayTitle}
+                          loading="lazy"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none"
+                        />
+                        <div className="absolute top-3 left-3 bg-black/60 dark:bg-white/70 backdrop-blur-xs text-white dark:text-black font-mono text-[9px] font-bold px-1.5 py-0.5 uppercase tracking-widest">
+                          {String(idx + 1).padStart(2, '0')}
+                        </div>
                       </div>
-                    );
-                  })}
-                </div>
+
+                      <div className="pt-3.5 flex-1 flex flex-col justify-between text-black dark:text-white font-['Noto_Sans_KR',sans-serif]">
+                        <div>
+                          <h3 className="text-base sm:text-lg font-black uppercase tracking-tight text-black dark:text-white line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
+                            {displayTitle}
+                          </h3>
+                          {dateWithDay && (
+                            <div className="text-[11px] sm:text-xs font-mono font-bold text-black/50 dark:text-white/50 uppercase tracking-wider mt-1">
+                              {dateWithDay}
+                            </div>
+                          )}
+                        </div>
+                        <div className="pt-3 mt-auto flex items-center justify-between text-xs font-sans text-black/75 dark:text-white/75 border-t border-black/10 dark:border-white/10">
+                          <span className="font-bold tracking-tight truncate max-w-[85%]">{displayPlace}</span>
+                          <span className="text-base font-bold text-black dark:text-white group-hover:translate-x-1.5 transition-transform">→</span>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
 
               {/* EXPLORE MAGAZINE HUB Button */}

@@ -779,53 +779,85 @@ export function MagazineHubPage({
                   </h2>
                 </div>
 
-                {/* Section Selector Tabs with Left/Right Scroll Navigation */}
-                <div className="flex items-center gap-1.5 max-w-full lg:max-w-2xl">
-                  {effectiveSections.length > 3 && (
-                    <button
-                      type="button"
-                      onClick={() => scrollPreviewTabs('left')}
-                      className="p-1.5 border border-black/15 dark:border-white/15 bg-white dark:bg-[#181818] text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer shrink-0"
-                      title="이전 탭"
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                  
-                  <div 
-                    ref={previewTabsRef}
-                    className="flex items-center gap-2 overflow-x-auto hide-scrollbar py-1 scroll-smooth"
-                  >
-                    {effectiveSections.map((sec) => {
-                      const isSelected = sec.id === (currentPreviewSection?.id || hubPreviewSectionId);
-                      return (
-                        <button
-                          key={sec.id}
-                          type="button"
-                          onClick={() => setHubPreviewSectionId(sec.id)}
-                          className={`px-3.5 py-1.5 text-xs font-bold uppercase font-['Noto_Sans_KR',sans-serif] tracking-wider transition-all border whitespace-nowrap cursor-pointer shrink-0 ${
-                            isSelected
-                              ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
-                              : 'bg-transparent border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
-                          }`}
-                        >
-                          {sec.title}
-                        </button>
-                      );
-                    })}
-                  </div>
+                {/* Section Selector Tabs & Adjacent Minimal Prev/Next Navigation Controls */}
+                {(() => {
+                  const curPreviewIdx = effectiveSections.findIndex(s => s.id === (currentPreviewSection?.id || hubPreviewSectionId));
 
-                  {effectiveSections.length > 3 && (
-                    <button
-                      type="button"
-                      onClick={() => scrollPreviewTabs('right')}
-                      className="p-1.5 border border-black/15 dark:border-white/15 bg-white dark:bg-[#181818] text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer shrink-0"
-                      title="다음 탭"
-                    >
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
+                  const handleSelectPreviewSection = (sectionId: string) => {
+                    setHubPreviewSectionId(sectionId);
+                    const tabBtn = document.getElementById(`mag-hub-preview-tab-${sectionId}`);
+                    if (tabBtn) {
+                      tabBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                    }
+                  };
+
+                  const handlePrevPreviewSection = () => {
+                    if (curPreviewIdx > 0) {
+                      handleSelectPreviewSection(effectiveSections[curPreviewIdx - 1].id);
+                    }
+                  };
+
+                  const handleNextPreviewSection = () => {
+                    if (curPreviewIdx < effectiveSections.length - 1) {
+                      handleSelectPreviewSection(effectiveSections[curPreviewIdx + 1].id);
+                    }
+                  };
+
+                  return (
+                    <div className="flex items-center gap-3 max-w-full lg:max-w-2xl shrink-0 self-start sm:self-auto">
+                      {/* Section Tabs Scrollable Container */}
+                      {effectiveSections.length > 1 && (
+                        <div 
+                          ref={previewTabsRef}
+                          className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar py-1 scroll-smooth"
+                        >
+                          {effectiveSections.map((sec) => {
+                            const isSelected = sec.id === (currentPreviewSection?.id || hubPreviewSectionId);
+                            return (
+                              <button
+                                key={sec.id}
+                                id={`mag-hub-preview-tab-${sec.id}`}
+                                type="button"
+                                onClick={() => handleSelectPreviewSection(sec.id)}
+                                className={`px-3.5 py-1.5 text-xs font-bold uppercase font-['Noto_Sans_KR',sans-serif] tracking-wider transition-all border whitespace-nowrap cursor-pointer shrink-0 ${
+                                  isSelected
+                                    ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
+                                    : 'bg-transparent border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
+                                }`}
+                              >
+                                {sec.title}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Adjacent Left / Right Section Navigation Buttons (Classic Home Preview Style) */}
+                      {effectiveSections.length > 1 && (
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={handlePrevPreviewSection}
+                            disabled={curPreviewIdx <= 0}
+                            className="w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white"
+                            title="이전 섹션"
+                          >
+                            <ChevronLeft className="w-4 h-4 stroke-[2]" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleNextPreviewSection}
+                            disabled={curPreviewIdx >= effectiveSections.length - 1}
+                            className="w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white"
+                            title="다음 섹션"
+                          >
+                            <ChevronRight className="w-4 h-4 stroke-[2]" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* 3:4 Preview Cards (Up to 3 Items) */}
