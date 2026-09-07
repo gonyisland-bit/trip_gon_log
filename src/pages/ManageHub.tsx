@@ -92,7 +92,8 @@ interface ManageHubPageProps {
     gradientFromParam?: string,
     gradientToParam?: string,
     homeMagazineSectionIdParam?: string,
-    homeMagazineLimitParam?: number
+    homeMagazineLimitParam?: number,
+    magazineSectionsParam?: MagazineSection[]
   ) => Promise<void>;
   // Magazine Highlights & Sections
   magazineMoments?: MagazineMoment[];
@@ -104,6 +105,7 @@ interface ManageHubPageProps {
   timelineData?: TimelineData;
   onSaveMagazineMoments?: (moments: MagazineMoment[]) => Promise<void>;
   onSaveMagazineSections?: (sections: MagazineSection[]) => Promise<void>;
+  onUpdateMagazineSections?: (sections: MagazineSection[]) => void;
   // Trash bin
   trashedJourneys: Trip[];
   trashedSections?: TrashedMagazineSection[];
@@ -161,6 +163,7 @@ export function ManageHubPage({
   timelineData = {},
   onSaveMagazineMoments,
   onSaveMagazineSections,
+  onUpdateMagazineSections,
   onDirtyChange,
   saveRef,
 }: ManageHubPageProps) {
@@ -344,6 +347,18 @@ export function ManageHubPage({
       setSectionsList(magazineSections);
     }
   }, [magazineSections]);
+
+  // Keep parent App state & localStorage in sync with latest sectionsList
+  useEffect(() => {
+    if (sectionsList && sectionsList.length > 0) {
+      if (onUpdateMagazineSections) {
+        onUpdateMagazineSections(sectionsList);
+      }
+      try {
+        localStorage.setItem('cached_magazine_sections', JSON.stringify(sectionsList));
+      } catch (_) {}
+    }
+  }, [sectionsList, onUpdateMagazineSections]);
 
   useEffect(() => {
     if (magazineMoments && magazineMoments.length > 0) {
@@ -1991,7 +2006,8 @@ export function ManageHubPage({
         gradientFrom,
         gradientTo,
         homeMagSectionId,
-        homeMagLimit
+        homeMagLimit,
+        sectionsList
       );
 
       // 2. Save Journey if currently editing one

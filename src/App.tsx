@@ -703,6 +703,7 @@ function App() {
 
   // Auto-sync magazine moments with latest timeline data (Strict image/ID match & closest prior location)
   useEffect(() => {
+    if (!settingsLoaded) return;
     if (!magazineSections || magazineSections.length === 0 || Object.keys(timelineData).length === 0) return;
 
     const allTimelineItems: TimelineItem[] = [];
@@ -792,7 +793,7 @@ function App() {
         }, { merge: true }).catch((e) => console.warn('Background magazine sync persistence notice:', e));
       }
     }
-  }, [timelineData, magazineSections?.length, isLoggedIn, isAdmin, trips, plans]);
+  }, [settingsLoaded, timelineData, magazineSections?.length, isLoggedIn, isAdmin, trips, plans]);
 
   // Hydrate default magazine sections ONLY after Firestore settings have responded and magazineSections is still empty
   useEffect(() => {
@@ -1141,7 +1142,8 @@ function App() {
     gradientFromParam?: string,
     gradientToParam?: string,
     homeMagazineSectionIdParam?: string,
-    homeMagazineLimitParam?: number
+    homeMagazineLimitParam?: number,
+    magazineSectionsParam?: MagazineSection[]
   ) => {
     if (!isLoggedIn) return;
     try {
@@ -1169,9 +1171,8 @@ function App() {
       if (homeMagazineLimitParam !== undefined) {
         dataToSave.homeMagazineLimit = homeMagazineLimitParam;
       }
-      // Always include magazineSections to prevent accidental field loss on home settings save
-      if (magazineSections && magazineSections.length > 0) {
-        dataToSave.magazineSections = cleanForFirestore(magazineSections);
+      if (magazineSectionsParam !== undefined && Array.isArray(magazineSectionsParam) && magazineSectionsParam.length > 0) {
+        dataToSave.magazineSections = cleanForFirestore(magazineSectionsParam);
       }
 
       await setDoc(doc(db, 'users', 'public', 'settings', 'home'), cleanForFirestore(dataToSave), { merge: true });
@@ -1188,6 +1189,12 @@ function App() {
       }
       if (magazineMomentsParam !== undefined) {
         setMagazineMoments(magazineMomentsParam);
+      }
+      if (magazineSectionsParam !== undefined && Array.isArray(magazineSectionsParam) && magazineSectionsParam.length > 0) {
+        setMagazineSections(magazineSectionsParam);
+        try {
+          localStorage.setItem('cached_magazine_sections', JSON.stringify(magazineSectionsParam));
+        } catch (_) {}
       }
       if (homeMagazineSectionIdParam !== undefined) {
         setHomeMagazineSectionId(homeMagazineSectionIdParam);
@@ -1293,6 +1300,13 @@ function App() {
       alert("매거진 설정 저장에 실패했습니다.");
       throw err;
     }
+  };
+
+  const handleUpdateMagazineSections = (sections: MagazineSection[]) => {
+    setMagazineSections(sections);
+    try {
+      localStorage.setItem('cached_magazine_sections', JSON.stringify(sections));
+    } catch (_) {}
   };
 
   // Helper to generate date list for shifting logic
@@ -2200,6 +2214,7 @@ function App() {
                   timelineData={timelineData}
                   onSaveMagazineMoments={handleSaveMagazineMoments}
                   onSaveMagazineSections={handleSaveMagazineSections}
+                  onUpdateMagazineSections={handleUpdateMagazineSections}
                   trashedJourneys={trashedJourneys}
                   trashedSections={trashedSections}
                   onRestoreJourney={handleRestoreJourney}
