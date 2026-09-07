@@ -1435,6 +1435,7 @@ export function HomePage({
           const handleGoToMagazineSection = () => {
             if (selectedSection && selectedSection.id) {
               sessionStorage.setItem('lastMagazineSectionId', String(selectedSection.id));
+              sessionStorage.setItem('magazineViewMode', 'section');
             }
             onNavigate('magazine');
           };
