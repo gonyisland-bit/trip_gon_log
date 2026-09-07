@@ -3912,79 +3912,71 @@ export function ManageHubPage({
               )}
             </div>
 
-            {/* 1. Section Selector & Action Bar (가로 스크롤 없는 반응형 flex-wrap 레이아웃) */}
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pb-3 border-b border-black/15 dark:border-white/15">
-              {/* Left: Section Tabs Strip */}
-              <div className="flex items-center flex-wrap gap-2 flex-1 min-w-0">
-                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 mr-1 shrink-0">
-                  SECTIONS ({sectionsList.length}):
+            {/* 1. Section Selector & Action Bar (컴팩트 드롭다운 + 순서이동/삭제 + NEW 액션 바) */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-3 border-b border-black/15 dark:border-white/15">
+              {/* Left: Compact Section Select & Reorder/Delete */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 shrink-0">
+                  SECTION:
                 </span>
-                {sectionsList.map((sec, idx) => {
-                  const isActive = sec.id === activeMagSectionId;
+                <select
+                  value={activeMagSectionId}
+                  onChange={e => {
+                    const sec = sectionsList.find(s => s.id === e.target.value);
+                    if (sec) {
+                      setActiveMagSectionId(sec.id);
+                      setMomentsList(sec.items || []);
+                      setSelectedMagCardId(null);
+                    }
+                  }}
+                  className="px-3 py-1.5 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white rounded-none cursor-pointer focus:border-black dark:focus:border-white min-w-[200px] max-w-full sm:max-w-[340px]"
+                >
+                  {sectionsList.map((sec, idx) => (
+                    <option key={sec.id} value={sec.id}>
+                      {String(idx + 1).padStart(2, '0')}. {sec.title} ({sec.items?.length || 0} stories)
+                    </option>
+                  ))}
+                </select>
+
+                {/* Current Section Quick Actions (Reorder & Delete) */}
+                {(() => {
+                  const activeIdx = sectionsList.findIndex(s => s.id === activeMagSectionId);
                   return (
-                    <div
-                      key={sec.id}
-                      className={`group flex items-center border transition-all ${
-                        isActive 
-                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs' 
-                          : 'bg-white dark:bg-[#181818] text-black/70 dark:text-white/70 border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white'
-                      }`}
-                    >
+                    <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={() => {
-                          setActiveMagSectionId(sec.id);
-                          setMomentsList(sec.items || []);
-                          setSelectedMagCardId(null);
-                        }}
-                        className="px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer"
+                        onClick={() => activeIdx > 0 && handleMoveSection(activeIdx, 'up')}
+                        disabled={activeIdx <= 0}
+                        className="p-1.5 border border-black/20 dark:border-white/20 bg-white dark:bg-[#161616] text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer transition-colors"
+                        title="섹션 앞으로 이동"
                       >
-                        <span>{String(idx + 1).padStart(2, '0')}.</span>
-                        <span>{sec.title}</span>
-                        <span className={`text-[10px] px-1.5 py-0.2 ${isActive ? 'bg-white/20 dark:bg-black/20' : 'bg-black/10 dark:bg-white/10'}`}>
-                          {sec.items?.length || 0}
-                        </span>
+                        <ChevronUp className="w-3.5 h-3.5" />
                       </button>
-
-                      {/* Active Section Quick Actions (Reorder & Delete) */}
-                      {isActive && (
-                        <div className="flex items-center border-l border-white/20 dark:border-black/20 pr-1">
-                          <button
-                            type="button"
-                            onClick={() => handleMoveSection(idx, 'up')}
-                            disabled={idx === 0}
-                            className="p-1 hover:bg-white/20 dark:hover:bg-black/20 disabled:opacity-20 cursor-pointer"
-                            title="섹션 앞으로 이동"
-                          >
-                            <ChevronUp className="w-3 h-3 -rotate-90" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleMoveSection(idx, 'down')}
-                            disabled={idx === sectionsList.length - 1}
-                            className="p-1 hover:bg-white/20 dark:hover:bg-black/20 disabled:opacity-20 cursor-pointer"
-                            title="섹션 뒤로 이동"
-                          >
-                            <ChevronDown className="w-3 h-3 -rotate-90" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteSection(sec.id)}
-                            disabled={sectionsList.length <= 1}
-                            className="p-1 text-red-400 hover:bg-red-500/20 disabled:opacity-20 cursor-pointer"
-                            title={sectionsList.length <= 1 ? "최소 1개의 섹션은 유지되어야 합니다" : "섹션 삭제"}
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => activeIdx < sectionsList.length - 1 && handleMoveSection(activeIdx, 'down')}
+                        disabled={activeIdx >= sectionsList.length - 1}
+                        className="p-1.5 border border-black/20 dark:border-white/20 bg-white dark:bg-[#161616] text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer transition-colors"
+                        title="섹션 뒤로 이동"
+                      >
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteSection(activeMagSectionId)}
+                        disabled={sectionsList.length <= 1}
+                        className="p-1.5 border border-red-500/30 text-red-500 hover:bg-red-500/10 disabled:opacity-20 cursor-pointer transition-colors"
+                        title={sectionsList.length <= 1 ? "최소 1개의 섹션은 유지되어야 합니다" : "현재 섹션 삭제"}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   );
-                })}
+                })()}
               </div>
 
-              {/* Right: Section Actions (Auto-generate, New Section, Undo/Redo) */}
-              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+              {/* Right: Undo/Redo & Simplified NEW Button */}
+              <div className="flex items-center gap-2 shrink-0">
                 <div className="flex items-center gap-1 border-r border-black/15 dark:border-white/15 pr-2 mr-1">
                   <button
                     type="button"
@@ -4008,22 +4000,11 @@ export function ManageHubPage({
                 <button
                   type="button"
                   onClick={() => setShowAddSectionModal(true)}
-                  className="px-3 py-1.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-black dark:text-white border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-colors"
+                  className="px-3.5 py-1.5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hover:opacity-85 shadow-xs transition-opacity"
+                  title="새 섹션 생성 (직접 생성 또는 여정에서 자동완성 선택 가능)"
                 >
-                  <Plus className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-                  <span>신규 섹션 (NEW)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedTripForAutoGenerate(localJourneys[0]?.id ?? null);
-                    setShowAutoGenerateModal(true);
-                  }}
-                  className="px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
-                  title="선택한 여정의 커버, 갤러리 및 타임라인 사진으로 매거진 섹션을 자동 생성합니다."
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>여정 자동 생성 (AUTO-GENERATE)</span>
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>NEW</span>
                 </button>
               </div>
             </div>
