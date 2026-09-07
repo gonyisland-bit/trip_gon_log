@@ -1264,40 +1264,26 @@ export function HomePage({
                     </h3>
 
                     {/* Bottom Unified Metadata Bar: Uniform Small Font Weight */}
-                    <div className="flex items-center gap-2 text-[11px] sm:text-xs text-black/60 dark:text-white/60 font-mono flex-wrap truncate">
-                      {trip.locationStr && (
-                        <>
-                          <span className="font-semibold text-black/75 dark:text-white/75 truncate">{cleanAdministrativeDistricts(trip.locationStr).replace(/,/g, ' · ')}</span>
-                          <span className="opacity-40">·</span>
-                        </>
-                      )}
-                      <span>{formattedDate}</span>
-                      {days > 0 && (
-                        <>
-                          <span className="opacity-40">·</span>
-                          <span>{days} DAYS</span>
-                        </>
-                      )}
+                    <div className="flex items-center justify-between gap-2 text-[11px] sm:text-xs text-black/60 dark:text-white/60 font-mono">
+                      <div className="flex items-center gap-2 truncate min-w-0">
+                        {trip.locationStr && (
+                          <>
+                            <span className="font-semibold text-black/75 dark:text-white/75 truncate">{cleanAdministrativeDistricts(trip.locationStr).replace(/,/g, ' · ')}</span>
+                            <span className="opacity-40 shrink-0">·</span>
+                          </>
+                        )}
+                        <span className="shrink-0">{formattedDate}</span>
+                        {days > 0 && (
+                          <>
+                            <span className="opacity-40 shrink-0">·</span>
+                            <span className="shrink-0">{days} DAYS</span>
+                          </>
+                        )}
+                      </div>
+                      <span className="text-sm font-bold text-black dark:text-white group-hover:translate-x-1 transition-transform shrink-0 pl-2">
+                        →
+                      </span>
                     </div>
-                  </div>
-
-                  {/* Right Menu */}
-                  <div className="flex items-center pr-3 sm:pr-5 md:pr-6 shrink-0" onClick={(e) => e.stopPropagation()}>
-                    <JourneyCardMenu
-                      isLoggedIn={isLoggedIn}
-                      onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
-                      onDelete={onDeleteTrip ? () => onDeleteTrip(trip.id) : undefined}
-                      onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
-                      onMove={() => {
-                        if (isItemPlan) {
-                          handleMoveToArchive(trip as Plan);
-                        } else if (onMoveToPlans) {
-                          onMoveToPlans(trip);
-                        }
-                      }}
-                      moveLabel={isItemPlan ? "LOG" : "PLAN"}
-                      variant="minimal"
-                    />
                   </div>
                 </div>
               );
@@ -1316,13 +1302,11 @@ export function HomePage({
               const isItemPlan = Boolean((trip as any).isPlan || (plans && plans.some(p => String(p.id) === String(trip.id))) || trip.tags?.includes('Plan') || trip.title.includes('(Plan)'));
 
               return (
-                <div
+                <article
                   key={trip.id}
                   onClick={() => onNavigate('detail', trip.id)}
-                  className={`group relative flex flex-col justify-between cursor-pointer transition-all duration-300 select-none rounded-none border bg-white dark:bg-[#121212] ${
-                    isCardActive
-                      ? 'border-red-600 dark:border-red-500 shadow-md ring-1 ring-red-600/30'
-                      : 'border-black/15 dark:border-white/15 hover:border-black/40 dark:hover:border-white/40'
+                  className={`group flex flex-col justify-between cursor-pointer select-none rounded-none transition-all duration-300 ${
+                    isCardActive ? 'ring-2 ring-red-600/40 dark:ring-red-500/40 p-1 bg-black/5 dark:bg-white/5' : ''
                   }`}
                   draggable={isLoggedIn}
                   onDragStart={(e) => handleTripDragStart(e, trip.id)}
@@ -1330,88 +1314,67 @@ export function HomePage({
                   onDrop={handleTripDrop}
                   onDragEnd={() => setDraggedTripId(null)}
                 >
-                  {/* 1. Header: Year/Month & Bold Prominent Title (Completely separated above photo) */}
-                  <div className="p-3.5 sm:p-4 flex flex-col gap-1.5 border-b border-black/10 dark:border-white/10 bg-black/[0.01] dark:bg-white/[0.01]">
-                    {/* Top Row: Year, Month, Issue Number & Status */}
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
-                        <span className="text-red-600 dark:text-red-500 font-black">#{issueNumber}</span>
-                        <span className="opacity-30">/</span>
-                        <span className="text-black dark:text-white font-black">{year || '2024'}</span>
-                        {month && <span className="opacity-30">/</span>}
-                        {month && <span className="uppercase text-black/80 dark:text-white/80">{month}</span>}
-                      </div>
-
-                      {/* Status Tag */}
-                      {isItemPlan ? (
-                        <span className="px-2 py-0.5 text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider font-mono bg-black text-white dark:bg-white dark:text-black border border-black/20 dark:border-white/20 rounded-none leading-none">
-                          PLAN
-                        </span>
-                      ) : trip.statusBadge ? (
-                        <span className={`px-2 py-0.5 text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider font-mono rounded-none leading-none ${
-                          trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
-                        }`}>
-                          {trip.statusBadge}
-                        </span>
-                      ) : null}
-                    </div>
-
-                    {/* Prominent Bold Title */}
-                    <h3 className={`${cardViewMode === 'wide' ? 'text-lg sm:text-xl md:text-2xl' : 'text-base sm:text-lg'} font-black uppercase tracking-tight font-sans text-black dark:text-white line-clamp-2 leading-tight group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors pt-0.5`}>
-                      {trip.title}
-                    </h3>
-                  </div>
-
-                  {/* 2. Photo Frame: 100% Unobstructed, Clear, No Dark Overlays */}
-                  <div className={`relative ${cardViewMode === 'wide' ? 'aspect-[16/10]' : 'aspect-[3/4]'} w-full overflow-hidden bg-black/5 dark:bg-white/5`}>
+                  {/* 1. Photo Frame: Top position with fixed aspect ratio, fully unobstructed with subtle minimal badge */}
+                  <div className={`relative ${cardViewMode === 'wide' ? 'aspect-[16/10]' : 'aspect-[3/4]'} w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10`}>
                     <CardMedia
                       img={trip.img}
                       title={trip.title}
                       videoUrl={trip.videoUrl}
                       isActive={isCardActive}
                     />
-                  </div>
 
-                  {/* 3. Bottom Meta Bar: Location, Date, Duration in Uniform Small Font Weight */}
-                  <div className="px-3.5 sm:px-4 py-2.5 flex items-center justify-between border-t border-black/10 dark:border-white/10 text-[11px] sm:text-xs font-mono text-black/60 dark:text-white/60 bg-black/[0.02] dark:bg-white/[0.02]">
-                    <div className="flex items-center gap-1.5 truncate min-w-0 pr-2">
-                      {trip.locationStr && (
-                        <>
-                          <span className="font-semibold text-black/80 dark:text-white/80 truncate">
-                            {cleanAdministrativeDistricts(trip.locationStr).replace(/,/g, ' · ')}
-                          </span>
-                          <span className="opacity-40 shrink-0">·</span>
-                        </>
-                      )}
-                      <span className="shrink-0">{compactDate || trip.date}</span>
-                      {days > 0 && (
-                        <>
-                          <span className="opacity-40 shrink-0">·</span>
-                          <span className="shrink-0">{days}D</span>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Hamburger menu */}
-                    <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
-                      <JourneyCardMenu
-                        isLoggedIn={isLoggedIn}
-                        onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
-                        onDelete={onDeleteTrip ? () => onDeleteTrip(trip.id) : undefined}
-                        onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
-                        onMove={() => {
-                          if (isItemPlan) {
-                            handleMoveToArchive(trip as Plan);
-                          } else if (onMoveToPlans) {
-                            onMoveToPlans(trip);
-                          }
-                        }}
-                        moveLabel={isItemPlan ? "LOG" : "PLAN"}
-                        variant="minimal"
-                      />
+                    {/* Minimal Top-Left Floating Index / Date Badge (Semi-transparent Swiss tag) */}
+                    <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10 pointer-events-none">
+                      <div className="bg-black/70 dark:bg-white/80 backdrop-blur-xs text-white dark:text-black font-mono text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 uppercase tracking-wider shadow-xs">
+                        <span className="text-red-400 dark:text-red-600 font-black">#{issueNumber}</span>
+                        <span className="opacity-40 mx-1">/</span>
+                        <span>{year || '2024'}{month ? ` ${month}` : ''}</span>
+                      </div>
+                      {isItemPlan ? (
+                        <span className="bg-black text-white dark:bg-white dark:text-black border border-white/30 dark:border-black/30 font-mono text-[9px] font-black px-1.5 py-0.5 uppercase tracking-wider">
+                          PLAN
+                        </span>
+                      ) : trip.statusBadge ? (
+                        <span className={`font-mono text-[9px] font-black px-1.5 py-0.5 uppercase tracking-wider ${
+                          trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
+                        }`}>
+                          {trip.statusBadge}
+                        </span>
+                      ) : null}
                     </div>
                   </div>
-                </div>
+
+                  {/* 2. Text Stack on Background (Magazine-style open text layout) */}
+                  <div className="pt-3 flex-1 flex flex-col justify-between text-black dark:text-white">
+                    <div>
+                      {/* Prominent Bold Title (Fixed 2-line clamp with uniform line height) */}
+                      <h3 className={`${cardViewMode === 'wide' ? 'text-base sm:text-lg md:text-xl' : 'text-sm sm:text-base md:text-lg'} font-black uppercase tracking-tight font-sans text-black dark:text-white line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors`}>
+                        {trip.title}
+                      </h3>
+
+                      {/* Date & Duration Row */}
+                      <div className="text-[10px] sm:text-[11px] font-mono font-medium text-black/50 dark:text-white/50 tracking-wider mt-1 flex items-center gap-1.5">
+                        <span>{compactDate || trip.date}</span>
+                        {days > 0 && (
+                          <>
+                            <span className="opacity-40">·</span>
+                            <span>{days} DAYS</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Bottom Metadata & Arrow Bar (Clean border line like magazine moments) */}
+                    <div className="pt-2.5 mt-2.5 flex items-center justify-between text-[11px] sm:text-xs font-mono text-black/70 dark:text-white/70 border-t border-black/10 dark:border-white/10">
+                      <span className="font-semibold tracking-tight truncate max-w-[85%] text-black/80 dark:text-white/80">
+                        {trip.locationStr ? cleanAdministrativeDistricts(trip.locationStr).replace(/,/g, ' · ') : 'GLOBAL'}
+                      </span>
+                      <span className="text-sm font-bold text-black dark:text-white group-hover:translate-x-1 transition-transform shrink-0">
+                        →
+                      </span>
+                    </div>
+                  </div>
+                </article>
               );
             })}
           </div>
