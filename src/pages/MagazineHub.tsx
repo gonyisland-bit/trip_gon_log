@@ -78,12 +78,19 @@ export function MagazineHubPage({
 
   // View Mode: 'hub' (Magazine Directory & Showcase) or 'section' (Individual Section Detail)
   const [viewMode, setViewMode] = useState<'hub' | 'section'>(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('section')) return 'section';
     const savedMode = sessionStorage.getItem('magazineViewMode');
     return savedMode === 'section' ? 'section' : 'hub';
   });
 
   // Active Section ID for Section Detail view
   const [activeSectionId, setActiveSectionId] = useState<string>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const secParam = params.get('section');
+    if (secParam && sections && sections.some(s => s.id === secParam)) {
+      return secParam;
+    }
     const saved = sessionStorage.getItem('lastMagazineSectionId');
     if (saved && sections && sections.some(s => s.id === saved)) {
       return saved;
@@ -106,6 +113,43 @@ export function MagazineHubPage({
   // Lightbox state for high-res photo viewing
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
+  // PopState handler for browser back / forward navigation within MagazineHub
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      const state = event.state;
+      const params = new URLSearchParams(window.location.search);
+      const secParam = params.get('section');
+
+      if (state && state.view === 'magazine') {
+        if (state.mode === 'section' || secParam) {
+          const targetId = state.sectionId || secParam;
+          if (targetId) {
+            setActiveSectionId(targetId);
+            setHubPreviewSectionId(targetId);
+          }
+          setViewMode('section');
+          sessionStorage.setItem('magazineViewMode', 'section');
+        } else {
+          setViewMode('hub');
+          sessionStorage.setItem('magazineViewMode', 'hub');
+        }
+      } else if (!state && (window.location.pathname === '/magazine' || window.location.hash === '#magazine')) {
+        if (secParam) {
+          setActiveSectionId(secParam);
+          setHubPreviewSectionId(secParam);
+          setViewMode('section');
+          sessionStorage.setItem('magazineViewMode', 'section');
+        } else {
+          setViewMode('hub');
+          sessionStorage.setItem('magazineViewMode', 'hub');
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   // Synchronize active section with sessionStorage
   useEffect(() => {
     const saved = sessionStorage.getItem('lastMagazineSectionId');
@@ -126,12 +170,22 @@ export function MagazineHubPage({
     setViewMode('section');
     sessionStorage.setItem('lastMagazineSectionId', id);
     sessionStorage.setItem('magazineViewMode', 'section');
+    window.history.pushState(
+      { view: 'magazine', mode: 'section', sectionId: id },
+      '',
+      `/magazine?section=${encodeURIComponent(id)}`
+    );
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   };
 
   const handleBackToHub = () => {
     setViewMode('hub');
     sessionStorage.setItem('magazineViewMode', 'hub');
+    if (window.history.state?.mode === 'section') {
+      window.history.back();
+    } else {
+      window.history.pushState({ view: 'magazine', mode: 'hub' }, '', '/magazine');
+    }
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   };
 
@@ -139,6 +193,13 @@ export function MagazineHubPage({
     setActiveSectionId(id);
     setHubPreviewSectionId(id);
     sessionStorage.setItem('lastMagazineSectionId', id);
+    if (viewMode === 'section') {
+      window.history.replaceState(
+        { view: 'magazine', mode: 'section', sectionId: id },
+        '',
+        `/magazine?section=${encodeURIComponent(id)}`
+      );
+    }
   };
 
   // Keep lastMagazineSectionId updated whenever activeSectionId changes
@@ -192,14 +253,14 @@ export function MagazineHubPage({
     if (effectiveSections.length <= 1) return;
     const currIdx = effectiveSections.findIndex(s => s.id === (currentSection?.id || activeSectionId));
     const prevIdx = (currIdx - 1 + effectiveSections.length) % effectiveSections.length;
-    setActiveSectionId(effectiveSections[prevIdx].id);
+    handleSelectSection(effectiveSections[prevIdx].id);
   };
 
   const handleNextSection = () => {
     if (effectiveSections.length <= 1) return;
     const currIdx = effectiveSections.findIndex(s => s.id === (currentSection?.id || activeSectionId));
     const nextIdx = (currIdx + 1) % effectiveSections.length;
-    setActiveSectionId(effectiveSections[nextIdx].id);
+    handleSelectSection(effectiveSections[nextIdx].id);
   };
 
   const handleHeroTouchStart = (e: React.TouchEvent) => {

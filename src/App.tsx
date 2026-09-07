@@ -828,6 +828,8 @@ function App() {
         initialView = 'map';
       } else if (path === '/manage' || window.location.hash === '#manage') {
         initialView = 'manage';
+      } else if (path === '/magazine' || window.location.hash === '#magazine') {
+        initialView = 'magazine';
       } else if (path === '/detail' || idParam) {
         initialView = 'detail';
         if (idParam) {
@@ -887,7 +889,18 @@ function App() {
         }
         setCurrentView(state.view);
       } else {
-        setCurrentView('home');
+        const path = window.location.pathname;
+        if (path === '/magazine' || window.location.hash === '#magazine') {
+          setCurrentView('magazine');
+        } else if (path === '/archive' || window.location.hash === '#archive') {
+          setCurrentView('archive');
+        } else if (path === '/map' || window.location.hash === '#map') {
+          setCurrentView('map');
+        } else if (path === '/manage' || window.location.hash === '#manage') {
+          setCurrentView('manage');
+        } else {
+          setCurrentView('home');
+        }
       }
     };
 
@@ -935,7 +948,11 @@ function App() {
         const isShare = (effectiveView === 'detail' && (tripId === activeTripId || tripId === null || tripId === idToUse)) ? isShareMode : false;
         path = idToUse ? `/detail?id=${idToUse}${isShare ? '&share=true' : ''}` : '/detail';
       }
-      window.history.pushState({ view: effectiveView, tripId: tripId || activeTripId }, '', path);
+      window.history.pushState({ 
+        view: effectiveView, 
+        mode: effectiveView === 'magazine' ? 'hub' : undefined, 
+        tripId: tripId || activeTripId 
+      }, '', path);
     }
   };
 
