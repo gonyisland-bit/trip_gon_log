@@ -44,7 +44,7 @@ import {
 } from 'lucide-react';
 import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc, deleteField, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Trip, Plan, MagazineMoment, MagazineSection, MagazineItem, TimelineData, TimelineItem, TrashedMagazineSection } from '../types';
+import { Trip, Plan, MagazineMoment, MagazineSection, MagazineItem, MagazineHubConfig, TimelineData, TimelineItem, TrashedMagazineSection } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { getEffectiveImageUrl, uploadFileToR2, deleteFileFromR2 } from '../utils/storageHelper';
 import { compressImage } from '../utils/imageHelper';
@@ -97,6 +97,8 @@ interface ManageHubPageProps {
   // Magazine Highlights & Sections
   magazineMoments?: MagazineMoment[];
   magazineSections?: MagazineSection[];
+  magazineHubConfig?: MagazineHubConfig;
+  onSaveMagazineHubConfig?: (config: MagazineHubConfig) => Promise<void>;
   timelineData?: TimelineData;
   onSaveMagazineMoments?: (moments: MagazineMoment[]) => Promise<void>;
   onSaveMagazineSections?: (sections: MagazineSection[]) => Promise<void>;
@@ -150,12 +152,51 @@ export function ManageHubPage({
   isDarkMode,
   magazineMoments = [],
   magazineSections = [],
+  magazineHubConfig,
+  onSaveMagazineHubConfig,
   timelineData = {},
   onSaveMagazineMoments,
   onSaveMagazineSections,
   onDirtyChange,
   saveRef,
 }: ManageHubPageProps) {
+  // Magazine Hub Header Configuration State
+  const [hubMainTitle, setHubMainTitle] = useState(magazineHubConfig?.mainTitle || 'A VISUAL ARCHIVE OF JOURNEYS, CURATED STORIES & MOMENTS');
+  const [hubSubtitle, setHubSubtitle] = useState(magazineHubConfig?.subtitle || '여행의 찬란한 순간과 에피소드를 엄선하여 잡지 형식으로 기록한 매거진 컬렉션입니다. 이슈를 선택하여 전체 화보와 이야기를 감상하세요.');
+  const [hubBadgeText, setHubBadgeText] = useState(magazineHubConfig?.badgeText || 'CURATED ARCHIVE');
+  const [hubVolumeText, setHubVolumeText] = useState(magazineHubConfig?.volumeText || `VOL. ${new Date().getFullYear()}`);
+  const [isHubHeaderOpen, setIsHubHeaderOpen] = useState(false);
+  const [isSavingHubHeader, setIsSavingHubHeader] = useState(false);
+  const [hubHeaderSaveSuccess, setHubHeaderSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    if (magazineHubConfig) {
+      if (magazineHubConfig.mainTitle !== undefined) setHubMainTitle(magazineHubConfig.mainTitle);
+      if (magazineHubConfig.subtitle !== undefined) setHubSubtitle(magazineHubConfig.subtitle);
+      if (magazineHubConfig.badgeText !== undefined) setHubBadgeText(magazineHubConfig.badgeText);
+      if (magazineHubConfig.volumeText !== undefined) setHubVolumeText(magazineHubConfig.volumeText);
+    }
+  }, [magazineHubConfig]);
+
+  const handleSaveHubHeader = async () => {
+    if (!onSaveMagazineHubConfig) return;
+    setIsSavingHubHeader(true);
+    try {
+      await onSaveMagazineHubConfig({
+        mainTitle: hubMainTitle,
+        subtitle: hubSubtitle,
+        badgeText: hubBadgeText,
+        volumeText: hubVolumeText,
+      });
+      setHubHeaderSaveSuccess(true);
+      setTimeout(() => setHubHeaderSaveSuccess(false), 2000);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSavingHubHeader(false);
+    }
+  };
+
   // Top-level mode tabs ordered: 'HOME' | 'ARCHIVE' | 'MAGAZINE' | 'MAP' | 'TRASH' | 'CLEANUP'
   const [activeMode, setActiveMode] = useState<'HOME' | 'ARCHIVE' | 'MAGAZINE' | 'MAP' | 'TRASH' | 'CLEANUP'>(() => {
     const fromSession = sessionStorage.getItem('initialManageTab');
@@ -3429,6 +3470,108 @@ export function ManageHubPage({
               </div>
             </div>
 
+            {/* 0. Magazine Hub Main Header & Intro Configuration Accordion (허브 메인 내용 편집 기능) */}
+            <div className="flex flex-col border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02]">
+              <button
+                type="button"
+                onClick={() => setIsHubHeaderOpen(prev => !prev)}
+                className="w-full px-4 sm:px-6 py-3.5 flex items-center justify-between bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Sliders className="w-4 h-4 text-red-600 dark:text-red-400" />
+                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                    매거진 허브 메인 헤더 & 소개글 설정 (MAGAZINE HUB MAIN HEADER)
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black uppercase">
+                    HUB CONFIG
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-mono text-black/50 dark:text-white/50">
+                    {isHubHeaderOpen ? '접기 ▲' : '펼치기 ▼'}
+                  </span>
+                </div>
+              </button>
+
+              {isHubHeaderOpen && (
+                <div className="p-4 sm:p-6 flex flex-col gap-4 border-t border-black/10 dark:border-white/10 animate-in fade-in duration-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Badge Text */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                        HUB BADGE TEXT (상단 태그 텍스트)
+                      </label>
+                      <input
+                        type="text"
+                        value={hubBadgeText}
+                        onChange={e => setHubBadgeText(e.target.value)}
+                        placeholder="e.g. CURATED ARCHIVE"
+                        className="px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                      />
+                    </div>
+
+                    {/* Volume Text */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                        HUB VOLUME TEXT (발행 연도 / 볼륨)
+                      </label>
+                      <input
+                        type="text"
+                        value={hubVolumeText}
+                        onChange={e => setHubVolumeText(e.target.value)}
+                        placeholder="e.g. VOL. 2026"
+                        className="px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Main Title */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                      MAIN HEADLINE TITLE (허브 메인 대형 헤드라인 타이틀)
+                    </label>
+                    <input
+                      type="text"
+                      value={hubMainTitle}
+                      onChange={e => setHubMainTitle(e.target.value)}
+                      placeholder="e.g. A VISUAL ARCHIVE OF JOURNEYS, CURATED STORIES & MOMENTS"
+                      className="px-3 py-2 text-xs font-satoshi font-bold uppercase bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                    />
+                  </div>
+
+                  {/* Subtitle */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                      INTRO SUBTITLE / DESCRIPTION (허브 소개 및 설명 문구)
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={hubSubtitle}
+                      onChange={e => setHubSubtitle(e.target.value)}
+                      placeholder="e.g. 여행의 찬란한 순간과 에피소드를 엄선하여 잡지 형식으로 기록한 매거진 컬렉션입니다."
+                      className="px-3 py-2 text-xs font-['Noto_Sans_KR',sans-serif] bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white resize-none"
+                    />
+                  </div>
+
+                  {/* Save Button for Hub Header */}
+                  <div className="flex items-center justify-between pt-2 border-t border-black/10 dark:border-white/10">
+                    <span className="text-[11px] font-mono text-black/50 dark:text-white/50">
+                      * 수정 후 [SAVE HUB HEADER]를 누르면 매거진 허브 메인에 즉시 반영됩니다.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleSaveHubHeader}
+                      disabled={isSavingHubHeader}
+                      className="px-4 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 dark:hover:bg-red-500 hover:text-white transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+                    >
+                      {isSavingHubHeader ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                      <span>{hubHeaderSaveSuccess ? 'SAVED!' : 'SAVE HUB HEADER'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* 1. Section Selector & Manager Bar */}
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
@@ -3542,7 +3685,7 @@ export function ManageHubPage({
               </div>
             </div>
 
-            {/* 2. Active Section Settings & Hero Configuration */}
+            {/* 2. Active Section Settings & Dual Live Previews (Hero & Hub Card) */}
             {currentMagSection && (
               <div className="flex flex-col gap-6 bg-black/[0.02] dark:bg-white/[0.02] border border-black/10 dark:border-white/10 p-4 sm:p-6">
                 <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
@@ -3559,61 +3702,118 @@ export function ManageHubPage({
                   )}
                 </div>
 
-                {/* Hero Live Preview (실제 비율로 시원하게 라이브 로딩) */}
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
-                      HERO LIVE PREVIEW (히어로 실제 비율 미리보기)
-                    </span>
-                    <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
-                      * 하단 큐레이팅 사진에서 [★ SET AS HERO]를 클릭하면 즉시 반영됩니다.
-                    </span>
+                {/* Dual Live Previews Grid: 1) Hero Banner Preview + 2) Hub Section Card Preview */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                  
+                  {/* Preview 1: Hero Banner (7 cols on lg) */}
+                  <div className="lg:col-span-7 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                        1. HERO BANNER LIVE PREVIEW
+                      </span>
+                    </div>
+
+                    <div className="w-full h-56 sm:h-64 relative overflow-hidden bg-black/10 dark:bg-white/5 border border-black/15 dark:border-white/15 group">
+                      {currentMagSection.heroImg ? (
+                        <>
+                          <img
+                            src={getEffectiveImageUrl(currentMagSection.heroImg)}
+                            alt={currentMagSection.heroTitle || 'Hero'}
+                            className="w-full h-full object-cover object-center"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent pointer-events-none" />
+                          <div className="absolute inset-0 p-4 sm:p-5 flex flex-col justify-between text-white pointer-events-none">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] font-mono font-bold uppercase tracking-widest px-2 py-0.5 bg-black/60 backdrop-blur-xs border border-white/20">
+                                HERO PREVIEW
+                              </span>
+                              {currentMagSection.heroLocation && (
+                                <span className="text-[10px] font-mono tracking-widest uppercase text-white/80">
+                                  {currentMagSection.heroLocation}
+                                </span>
+                              )}
+                            </div>
+                            <div>
+                              {currentMagSection.heroDate && (
+                                <span className="text-[10px] font-mono uppercase tracking-widest text-white/70 block mb-1">
+                                  {currentMagSection.heroDate}
+                                </span>
+                              )}
+                              <h2 className="text-lg sm:text-xl font-satoshi font-light uppercase tracking-tight text-white drop-shadow-md line-clamp-2">
+                                {currentMagSection.heroTitle || 'SECTION HERO TITLE'}
+                              </h2>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-center p-6 text-black/40 dark:text-white/40">
+                          <Sparkles className="w-6 h-6 opacity-40" />
+                          <span className="text-xs font-mono font-bold uppercase tracking-wider">
+                            히어로 이미지가 지정되지 않았습니다.
+                          </span>
+                          <span className="text-[10px] font-mono">
+                            하단 사진에서 [★ SET AS HERO] 버튼을 눌러 지정해주세요.
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="w-full h-52 sm:h-64 md:h-72 relative overflow-hidden bg-black/10 dark:bg-white/5 border border-black/15 dark:border-white/15 group">
-                    {currentMagSection.heroImg ? (
-                      <>
-                        <img
-                          src={getEffectiveImageUrl(currentMagSection.heroImg)}
-                          alt={currentMagSection.heroTitle || 'Hero'}
-                          className="w-full h-full object-cover object-center"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
-                        <div className="absolute inset-0 p-5 sm:p-8 flex flex-col justify-between text-white pointer-events-none">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-mono font-bold uppercase tracking-widest px-2 py-0.5 bg-black/60 backdrop-blur-xs border border-white/20">
-                              HERO PREVIEW
-                            </span>
-                            {currentMagSection.heroLocation && (
-                              <span className="text-[11px] font-mono tracking-widest uppercase text-white/80">
-                                {currentMagSection.heroLocation}
-                              </span>
-                            )}
-                          </div>
-                          <div>
-                            {currentMagSection.heroDate && (
-                              <span className="text-[11px] font-mono uppercase tracking-widest text-white/70 block mb-1">
-                                {currentMagSection.heroDate}
-                              </span>
-                            )}
-                            <h2 className="text-xl sm:text-2xl md:text-3xl font-satoshi font-light uppercase tracking-tight text-white drop-shadow-md line-clamp-2">
-                              {currentMagSection.heroTitle || 'SECTION HERO TITLE'}
-                            </h2>
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-center p-6 text-black/40 dark:text-white/40">
-                        <Sparkles className="w-6 h-6 opacity-40" />
-                        <span className="text-xs font-mono font-bold uppercase tracking-wider">
-                          히어로 이미지가 지정되지 않았습니다.
-                        </span>
-                        <span className="text-[11px] font-mono">
-                          하단 큐레이팅된 사진 목록에서 [★ SET AS HERO] 버튼을 눌러 지정해주세요.
-                        </span>
+                  {/* Preview 2: Hub Section Card Live Preview (MOUTHWASH style, 5 cols on lg) */}
+                  <div className="lg:col-span-5 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-400">
+                        2. HUB SECTION CARD LIVE PREVIEW (실시간 허브 카드)
+                      </span>
+                    </div>
+
+                    <div className="w-full p-3.5 bg-white dark:bg-[#141414] border border-black/15 dark:border-white/15 shadow-sm flex flex-col items-center">
+                      {/* MOUTHWASH Card Top Bold Title */}
+                      <div className="min-h-[2.8rem] flex items-center justify-center mb-2 px-1 w-full">
+                        <h4 className="text-sm sm:text-base font-satoshi font-black uppercase tracking-tight text-center leading-[1.12] text-black dark:text-white line-clamp-2">
+                          {currentMagSection.heroTitle || currentMagSection.title || 'UNTITLED ISSUE'}
+                        </h4>
                       </div>
-                    )}
+
+                      {/* Photo Frame (3:4 ratio) */}
+                      <div className="relative aspect-[3/4] w-full max-w-[200px] overflow-hidden bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15">
+                        {currentMagSection.heroImg ? (
+                          <img
+                            src={getEffectiveImageUrl(currentMagSection.heroImg)}
+                            alt="Card Preview"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[10px] font-mono text-black/40 dark:text-white/40">
+                            NO COVER
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Bottom Meta */}
+                      <div className="pt-2.5 flex flex-col items-center justify-center text-center font-['Inter',sans-serif] gap-0.5 w-full">
+                        <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 flex items-center justify-center gap-1">
+                          <span className="text-red-600 dark:text-red-400 font-black">
+                            ISSUE {String(sectionsList.findIndex(s => s.id === currentMagSection.id) + 1).padStart(2, '0')}
+                          </span>
+                          {currentMagSection.heroDate && (
+                            <>
+                              <span className="opacity-30">/</span>
+                              <span>{currentMagSection.heroDate}</span>
+                            </>
+                          )}
+                        </div>
+                        <div className="text-[9px] font-sans font-semibold tracking-wide uppercase text-black/50 dark:text-white/50 flex items-center justify-center gap-1.5">
+                          {currentMagSection.heroLocation && (
+                            <span className="truncate max-w-[140px]">{currentMagSection.heroLocation}</span>
+                          )}
+                          {currentMagSection.heroLocation && <span className="opacity-40">·</span>}
+                          <span>{currentMagSection.items?.length || 0} STORIES</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
+
                 </div>
 
                 {/* Simplified Section Settings Form */}

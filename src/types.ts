@@ -207,4 +207,11 @@ export interface TrashedMagazineSection extends MagazineSection {
   deletedAt?: number;
 }
 
+export interface MagazineHubConfig {
+  mainTitle?: string;
+  subtitle?: string;
+  badgeText?: string;
+  volumeText?: string;
+}
+
 export type TrashedItem = (Trip & { deletedType?: 'journey' }) | TrashedMagazineSection;

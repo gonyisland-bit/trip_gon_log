@@ -39,6 +39,7 @@ import {
   MagazineMoment,
   MagazineSection,
   MagazineItem,
+  MagazineHubConfig,
   TrashedMagazineSection
 } from './types';
 import { auth, db } from './firebase';
@@ -119,6 +120,18 @@ function App() {
   const [homeMagazineLimit, setHomeMagazineLimit] = useState<number>(() => {
     const saved = localStorage.getItem('home_magazine_limit');
     return saved ? parseInt(saved, 10) : 6;
+  });
+  const [magazineHubConfig, setMagazineHubConfig] = useState<MagazineHubConfig>(() => {
+    try {
+      const cached = localStorage.getItem('cached_magazine_hub_config');
+      if (cached) return JSON.parse(cached);
+    } catch (_) {}
+    return {
+      mainTitle: 'A VISUAL ARCHIVE OF JOURNEYS, CURATED STORIES & MOMENTS',
+      subtitle: '여행의 찬란한 순간과 에피소드를 엄선하여 잡지 형식으로 기록한 매거진 컬렉션입니다. 이슈를 선택하여 전체 화보와 이야기를 감상하세요.',
+      badgeText: 'CURATED ARCHIVE',
+      volumeText: `VOL. ${new Date().getFullYear()}`,
+    };
   });
   const [showSettings, setShowSettings] = useState<boolean>(false);
   
@@ -567,6 +580,12 @@ function App() {
         if (data.homeMagazineLimit !== undefined) {
           setHomeMagazineLimit(data.homeMagazineLimit);
           localStorage.setItem('home_magazine_limit', String(data.homeMagazineLimit));
+        }
+        if (data.magazineHubConfig && typeof data.magazineHubConfig === 'object') {
+          setMagazineHubConfig(data.magazineHubConfig);
+          try {
+            localStorage.setItem('cached_magazine_hub_config', JSON.stringify(data.magazineHubConfig));
+          } catch (_) {}
         }
         if (Array.isArray(data.magazineSections) && data.magazineSections.length > 0) {
           setMagazineSections(data.magazineSections);
@@ -1171,6 +1190,26 @@ function App() {
     } catch (err) {
       console.error("Failed to save magazine moments:", err);
       alert("잡지 연출 저장에 실패했습니다.");
+      throw err;
+    }
+  };
+
+  const handleSaveMagazineHubConfig = async (config: MagazineHubConfig) => {
+    if (!isLoggedIn || !isAdmin) {
+      alert("관리자(Admin)만 매거진 허브 설정을 저장할 수 있습니다.");
+      return;
+    }
+    try {
+      await setDoc(doc(db, 'users', 'public', 'settings', 'home'), {
+        magazineHubConfig: cleanForFirestore(config),
+      }, { merge: true });
+      setMagazineHubConfig(config);
+      try {
+        localStorage.setItem('cached_magazine_hub_config', JSON.stringify(config));
+      } catch (_) {}
+    } catch (err) {
+      console.error("Failed to save magazine hub config:", err);
+      alert("매거진 허브 설정 저장에 실패했습니다.");
       throw err;
     }
   };
@@ -2092,6 +2131,8 @@ function App() {
                   onSaveAllHomeSettings={handleSaveSettings}
                   magazineMoments={magazineMoments}
                   magazineSections={magazineSections}
+                  magazineHubConfig={magazineHubConfig}
+                  onSaveMagazineHubConfig={handleSaveMagazineHubConfig}
                   timelineData={timelineData}
                   onSaveMagazineMoments={handleSaveMagazineMoments}
                   onSaveMagazineSections={handleSaveMagazineSections}
@@ -2111,6 +2152,7 @@ function App() {
               {currentView === 'magazine' && (
                 <MagazineHubPage
                   sections={magazineSections}
+                  hubConfig={magazineHubConfig}
                   trips={trips}
                   plans={plans}
                   timelineData={timelineData}

@@ -4,6 +4,7 @@ import {
   Plan, 
   MagazineSection, 
   MagazineItem, 
+  MagazineHubConfig,
   TimelineData,
   TimelineItem
 } from '../types';
@@ -46,6 +47,7 @@ function formatSimpleDateWithDay(dateStr?: string): string {
 
 interface MagazineHubPageProps {
   sections: MagazineSection[];
+  hubConfig?: MagazineHubConfig;
   trips: Trip[];
   plans?: Plan[];
   timelineData?: TimelineData;
@@ -57,6 +59,7 @@ interface MagazineHubPageProps {
 
 export function MagazineHubPage({
   sections = [],
+  hubConfig,
   trips = [],
   plans = [],
   timelineData = {},
@@ -356,7 +359,6 @@ export function MagazineHubPage({
   // Preview items for Hub lower showcase
   const previewItems: MagazineItem[] = useMemo(() => {
     const raw = getSynchronizedItems(currentPreviewSection);
-    // Take top 3 photo items for clean editorial display
     return raw.filter(it => !it.isTextOnly && Boolean(it.img)).slice(0, 3);
   }, [currentPreviewSection, timelineById, timelineByUrl, allTimelineList, trips]);
 
@@ -460,7 +462,7 @@ export function MagazineHubPage({
           <div
             className={`relative ${visualFrameClass} overflow-hidden bg-transparent text-black dark:text-white p-4 sm:p-6 md:p-8 flex items-center justify-center select-none border-0`}
           >
-            <p className="font-['Inter',sans-serif] font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-tight leading-snug break-keep text-black dark:text-white text-center">
+            <p className="font-['Noto_Sans_KR',sans-serif] font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-tight leading-snug break-keep text-black dark:text-white text-center">
               {item.textContent || item.title}
             </p>
           </div>
@@ -529,7 +531,7 @@ export function MagazineHubPage({
           </div>
         </div>
 
-        <div className={`pt-3.5 flex-1 flex flex-col justify-between text-black dark:text-white font-['Inter',sans-serif] ${isLand ? 'px-4 sm:px-8 md:px-0' : ''}`}>
+        <div className={`pt-3.5 flex-1 flex flex-col justify-between text-black dark:text-white font-['Noto_Sans_KR',sans-serif] ${isLand ? 'px-4 sm:px-8 md:px-0' : ''}`}>
           <div className="flex flex-col">
             <h3
               onClick={openLightbox}
@@ -562,6 +564,11 @@ export function MagazineHubPage({
     );
   };
 
+  const headerMainTitle = hubConfig?.mainTitle || 'A VISUAL ARCHIVE OF JOURNEYS, CURATED STORIES & MOMENTS';
+  const headerSubtitle = hubConfig?.subtitle || '여행의 찬란한 순간과 에피소드를 엄선하여 잡지 형식으로 기록한 매거진 컬렉션입니다. 이슈를 선택하여 전체 화보와 이야기를 감상하세요.';
+  const headerBadge = hubConfig?.badgeText || 'CURATED ARCHIVE';
+  const headerVolume = hubConfig?.volumeText || `VOL. ${new Date().getFullYear()}`;
+
   return (
     <main className="min-h-screen w-full bg-transparent dark:bg-[#111111] text-black dark:text-white flex flex-col font-sans transition-colors duration-300">
       
@@ -579,29 +586,29 @@ export function MagazineHubPage({
                   MAGAZINE DIRECTORY
                 </span>
                 <span className="font-bold text-red-600 dark:text-red-400">
-                  CURATED ARCHIVE
+                  {headerBadge}
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="hidden sm:inline">VOL. {new Date().getFullYear()}</span>
+                <span className="hidden sm:inline">{headerVolume}</span>
                 <span>{effectiveSections.length} ISSUES PUBLISHED</span>
               </div>
             </div>
 
-            {/* DashDigital Style Large Editorial Typography Title */}
+            {/* MOUTHWASH Style Large Editorial Typography Title */}
             <div className="flex flex-col gap-2 sm:gap-4 max-w-5xl">
               <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-satoshi font-black uppercase tracking-tight leading-[0.98] text-black dark:text-white">
-                A VISUAL ARCHIVE OF JOURNEYS, CURATED STORIES & MOMENTS
+                {headerMainTitle}
               </h1>
-              <p className="text-xs sm:text-sm md:text-base font-sans font-medium text-black/60 dark:text-white/60 max-w-2xl leading-relaxed pt-1">
-                여행의 찬란한 순간과 에피소드를 엄선하여 잡지 형식으로 기록한 매거진 컬렉션입니다. 이슈를 선택하여 전체 화보와 이야기를 감상하세요.
+              <p className="text-xs sm:text-sm md:text-base font-['Noto_Sans_KR',sans-serif] font-medium text-black/60 dark:text-white/60 max-w-2xl leading-relaxed pt-1 break-keep">
+                {headerSubtitle}
               </p>
             </div>
           </section>
 
-          {/* 1-2. Magazine Issues Directory Grid (DashDigital Style Covers) */}
+          {/* 1-2. Magazine Issues Directory Grid (MOUTHWASH Magazine Style Cards) */}
           <section className="w-full max-w-7xl mx-auto px-4 sm:px-8 md:px-12 py-10 sm:py-16">
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-8 sm:mb-12 border-b border-black/10 dark:border-white/10 pb-4">
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-red-600 dark:text-red-400" />
                 <h2 className="text-sm sm:text-base font-mono font-bold uppercase tracking-wider text-black dark:text-white">
@@ -613,22 +620,29 @@ export function MagazineHubPage({
               </span>
             </div>
 
-            {/* Magazine Cover Cards Grid (3:4 ratio) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8">
+            {/* Magazine Cover Cards Grid (Responsive 1 -> 2 -> 3 Columns like Trip Archive) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 sm:gap-12 md:gap-16">
               {effectiveSections.map((sec, idx) => {
                 const coverImg = sec.heroImg || (sec.items && sec.items.find(it => it.img)?.img) || '';
                 const displayHeroTitle = sec.heroTitle || sec.title;
-                const formattedIndex = `00-${idx + 1}`;
+                const formattedNumber = String(idx + 1).padStart(2, '0');
                 const itemCount = sec.items?.length || 0;
 
                 return (
                   <article
                     key={sec.id}
                     onClick={() => handleOpenSection(sec.id)}
-                    className="group relative flex flex-col cursor-pointer bg-white dark:bg-[#181818] border border-black/10 dark:border-white/10 hover:border-black/50 dark:hover:border-white/50 transition-all duration-300 hover:-translate-y-1.5 shadow-sm hover:shadow-xl"
+                    className="group relative flex flex-col cursor-pointer transition-all duration-300 select-none"
                   >
-                    {/* 3:4 Vertical Magazine Cover Container */}
-                    <div className="relative aspect-[3/4] w-full overflow-hidden bg-black/10 dark:bg-white/10">
+                    {/* 1. MOUTHWASH Style: Larger Bold Centered Title on Top */}
+                    <div className="min-h-[3.2rem] sm:min-h-[4rem] flex items-center justify-center mb-3 sm:mb-4 px-1">
+                      <h3 className="text-lg sm:text-xl md:text-2xl font-satoshi font-black uppercase tracking-tight text-center leading-[1.12] text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors line-clamp-2">
+                        {displayHeroTitle}
+                      </h3>
+                    </div>
+
+                    {/* 2. Photo Frame (Clean Frame, No Boxy Badges inside, Smooth Hover Zoom) */}
+                    <div className="relative aspect-[3/4] sm:aspect-[4/5] md:aspect-[3/4] w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15 shadow-xs group-hover:shadow-xl transition-all duration-500">
                       {coverImg ? (
                         <img
                           src={getEffectiveImageUrl(coverImg)}
@@ -643,54 +657,35 @@ export function MagazineHubPage({
                         </div>
                       )}
 
-                      {/* Editorial Dark Gradients */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/60 opacity-90" />
-
-                      {/* Top Header on Cover: Numbering & Masthead */}
-                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10 text-white">
-                        <span className="bg-black/70 backdrop-blur-xs text-white font-mono text-[9px] sm:text-[10px] font-black px-2 py-0.5 border border-white/20 uppercase tracking-widest">
-                          ISSUE {formattedIndex}
-                        </span>
-                        <div className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <ArrowUpRight className="w-4 h-4 text-white" />
-                        </div>
-                      </div>
-
-                      {/* Center / Top Satoshi Light Big Title on Cover */}
-                      <div className="absolute top-12 left-3.5 right-3.5 z-10 text-white">
-                        <h3 className="text-base sm:text-lg md:text-xl font-satoshi font-light tracking-tight leading-[1.15] uppercase text-white drop-shadow-md line-clamp-3">
-                          {displayHeroTitle}
-                        </h3>
-                      </div>
-
-                      {/* Bottom Info on Cover */}
-                      <div className="absolute bottom-3 left-3.5 right-3.5 z-10 flex flex-col gap-1 text-white">
-                        {sec.heroLocation && (
-                          <div className="flex items-center gap-1 text-[10px] sm:text-[11px] font-mono font-bold text-white/90 truncate uppercase tracking-wider drop-shadow-xs">
-                            <MapPin className="w-3 h-3 text-red-400 shrink-0" />
-                            <span className="truncate">{sec.heroLocation}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center justify-between text-[9px] sm:text-[10px] font-mono uppercase tracking-widest text-white/70">
-                          <span>{sec.heroDate || 'ARCHIVED'}</span>
-                          <span className="bg-white/20 px-1.5 py-0.5 border border-white/20 text-white font-bold">
-                            {itemCount} STORIES
-                          </span>
+                      {/* Subtle hover overlay with minimal top-right expand arrow */}
+                      <div className="absolute inset-0 bg-black/15 opacity-0 group-hover:opacity-100 transition-opacity flex items-start justify-end p-3">
+                        <div className="w-8 h-8 rounded-full bg-black/75 dark:bg-white/90 backdrop-blur-xs flex items-center justify-center text-white dark:text-black shadow-md transform group-hover:scale-100 scale-90 transition-transform">
+                          <ArrowUpRight className="w-4 h-4" />
                         </div>
                       </div>
                     </div>
 
-                    {/* Meta Footer beneath Cover (DashDigital Style) */}
-                    <div className="p-3.5 flex flex-col gap-1.5 border-t border-black/10 dark:border-white/10 bg-[#FAF9F6] dark:bg-[#141414] flex-1 justify-between">
-                      <div className="flex items-center justify-between text-[10px] font-mono font-bold text-black/50 dark:text-white/50 uppercase tracking-wider">
-                        <span>{sec.heroDate ? `${sec.heroDate.split('-')[0]} EDITION` : 'MAGAZINE EDITION'}</span>
-                        <span className="font-sans font-bold text-red-600 dark:text-red-400 group-hover:translate-x-0.5 transition-transform">
-                          READ ISSUE →
-                        </span>
+                    {/* 3. MOUTHWASH Style: Clean 2-Line Meta beneath Photo (Inter Font) */}
+                    <div className="pt-3.5 flex flex-col items-center justify-center text-center font-['Inter',sans-serif] gap-1">
+                      {/* Row 1: Issue Number & Date */}
+                      <div className="text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 flex items-center justify-center gap-1.5">
+                        <span className="text-red-600 dark:text-red-400 font-black">ISSUE {formattedNumber}</span>
+                        {sec.heroDate && (
+                          <>
+                            <span className="opacity-30">/</span>
+                            <span>{sec.heroDate}</span>
+                          </>
+                        )}
                       </div>
-                      <h4 className="text-xs sm:text-sm font-bold font-['Inter',sans-serif] uppercase tracking-tight text-black dark:text-white line-clamp-1 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
-                        {sec.title}
-                      </h4>
+
+                      {/* Row 2: Location & Stories Count */}
+                      <div className="text-[10px] sm:text-[11px] font-sans font-semibold tracking-wide uppercase text-black/50 dark:text-white/50 flex items-center justify-center gap-2">
+                        {sec.heroLocation && (
+                          <span className="truncate max-w-[200px]">{sec.heroLocation}</span>
+                        )}
+                        {sec.heroLocation && <span className="opacity-40">·</span>}
+                        <span>{itemCount} STORIES</span>
+                      </div>
                     </div>
                   </article>
                 );
@@ -709,7 +704,7 @@ export function MagazineHubPage({
                     <Sparkles className="w-3.5 h-3.5" />
                     CURATED PREVIEW SPREAD
                   </span>
-                  <h2 className="text-2xl sm:text-3xl font-black uppercase font-['Inter',sans-serif] tracking-tight text-black dark:text-white">
+                  <h2 className="text-2xl sm:text-3xl font-black uppercase font-['Noto_Sans_KR',sans-serif] tracking-tight text-black dark:text-white">
                     {currentPreviewSection?.title || 'FEATURED STORIES'}
                   </h2>
                 </div>
@@ -723,7 +718,7 @@ export function MagazineHubPage({
                         key={sec.id}
                         type="button"
                         onClick={() => setHubPreviewSectionId(sec.id)}
-                        className={`px-3 py-1 text-xs font-bold uppercase font-['Inter',sans-serif] tracking-wider transition-all border whitespace-nowrap cursor-pointer ${
+                        className={`px-3 py-1 text-xs font-bold uppercase font-['Noto_Sans_KR',sans-serif] tracking-wider transition-all border whitespace-nowrap cursor-pointer ${
                           isSelected
                             ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
                             : 'bg-transparent border-black/10 dark:border-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -766,13 +761,13 @@ export function MagazineHubPage({
                           </div>
                         </div>
 
-                        <div className="pt-3.5 flex-1 flex flex-col justify-between text-black dark:text-white font-['Inter',sans-serif]">
+                        <div className="pt-3.5 flex-1 flex flex-col justify-between text-black dark:text-white font-['Noto_Sans_KR',sans-serif]">
                           <div>
                             <h3 className="text-base sm:text-lg font-black uppercase tracking-tight text-black dark:text-white line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
                               {displayTitle}
                             </h3>
                             {dateWithDay && (
-                              <div className="text-[11px] font-mono font-bold text-black/50 dark:text-white/50 uppercase tracking-wider mt-1">
+                              <div className="text-[11px] sm:text-xs font-mono font-bold text-black/50 dark:text-white/50 uppercase tracking-wider mt-1">
                                 {dateWithDay}
                               </div>
                             )}
