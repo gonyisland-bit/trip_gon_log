@@ -1212,38 +1212,45 @@ export function HomePage({
               const isCardActive = activeCardId === trip.id;
               const { year, month } = getYearAndMonth(trip.date);
               const formattedDate = formatNonRepeatingDate(trip.date);
+              const issueNumber = String((trip.displayOrder ?? index) + 1).padStart(2, '0');
+              const days = calculateDays(trip.date);
 
               return (
                 <div
                   key={trip.id}
                   onClick={() => onNavigate('detail', trip.id)}
-                  className={`group flex flex-row items-stretch border-b border-black/15 dark:border-white/15 transition-colors cursor-pointer w-full select-none ${
+                  className={`group flex flex-row items-stretch border-b border-black/15 dark:border-white/15 transition-colors cursor-pointer w-full select-none rounded-none ${
                     isCardActive 
-                      ? 'bg-neutral-100 dark:bg-white/[0.08] border-l-[4px] border-l-red-600 dark:border-l-red-500' 
-                      : 'border-l-[4px] border-l-transparent hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
+                      ? 'bg-neutral-100 dark:bg-white/[0.08] border-l-[3px] border-l-red-600 dark:border-l-red-500' 
+                      : 'border-l-[3px] border-l-transparent hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
                   }`}
                 >
-                  {/* Thumbnail: 1:1 full-height square edge-to-edge */}
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 aspect-square self-stretch shrink-0 border-r border-black/15 dark:border-white/15 overflow-hidden rounded-none relative bg-black/10">
-                    <img src={getEffectiveImageUrl(trip.img)} alt={trip.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  {/* Monospace Index Column */}
+                  <div className="w-11 sm:w-14 md:w-16 flex items-center justify-center font-mono font-black text-sm sm:text-lg text-black/30 dark:text-white/30 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors shrink-0 border-r border-black/10 dark:border-white/10 select-none">
+                    {issueNumber}
                   </div>
 
-                  {/* Meta */}
-                  <div className="flex-1 min-w-0 py-2 px-3 sm:px-4 md:px-6 flex flex-col justify-center gap-0.5">
-                    {/* Top row: Year & Month badge (grid style emphasis) + Status */}
+                  {/* Thumbnail: Sharp Rectangular Edge-to-Edge */}
+                  <div className="w-20 h-16 sm:w-28 sm:h-20 aspect-[4/3] self-stretch shrink-0 border-r border-black/10 dark:border-white/10 overflow-hidden rounded-none relative bg-black/10">
+                    <img src={getEffectiveImageUrl(trip.img)} alt={trip.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  </div>
+
+                  {/* Meta Information Stack */}
+                  <div className="flex-1 min-w-0 py-2.5 px-3 sm:px-5 md:px-6 flex flex-col justify-center gap-1">
+                    {/* Top Row: Year/Month & Status Badge */}
                     <div className="flex items-center gap-2 flex-wrap">
                       {(year || month) && (
                         <div className="flex items-baseline gap-1 font-mono leading-none">
-                          {year && <span className="font-black text-xs sm:text-sm text-black dark:text-white tracking-tight">{year}</span>}
-                          {month && <span className="font-black text-[11px] sm:text-xs text-red-600 dark:text-red-500 uppercase tracking-tight">{month}</span>}
+                          {year && <span className="font-black text-[11px] sm:text-xs text-black dark:text-white tracking-tight">{year}</span>}
+                          {month && <span className="font-black text-[10px] sm:text-[11px] text-red-600 dark:text-red-500 uppercase tracking-tight">{month}</span>}
                         </div>
                       )}
                       {((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
-                        <span className="text-[9.5px] sm:text-[10px] font-black px-1.5 py-0.5 font-mono uppercase bg-black text-white dark:bg-white dark:text-black border border-white/40 dark:border-black/40 tracking-wider shadow-xs leading-none">
+                        <span className="text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 font-mono uppercase bg-black text-white dark:bg-white dark:text-black border border-white/30 dark:border-black/30 tracking-wider shadow-none rounded-none leading-none">
                           PLAN
                         </span>
                       ) : trip.statusBadge ? (
-                        <span className={`text-[9.5px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-none font-mono uppercase tracking-wider shadow-xs leading-none ${
+                        <span className={`text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-none font-mono uppercase tracking-wider shadow-none leading-none ${
                           trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
                         }`}>
                           {trip.statusBadge}
@@ -1252,24 +1259,25 @@ export function HomePage({
                     </div>
 
                     {/* Title */}
-                    <h3 className="font-black text-sm sm:text-base md:text-lg text-black dark:text-white uppercase font-['Inter',sans-serif] tracking-tight truncate">
+                    <h3 className="font-black text-sm sm:text-base md:text-lg text-black dark:text-white uppercase font-sans tracking-tight truncate group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
                       {trip.title}
                     </h3>
 
-                    {/* Non-repeating Date & Location */}
-                    <div className="flex items-center gap-2 text-[10.5px] sm:text-xs text-black/60 dark:text-white/60 font-mono flex-wrap">
+                    {/* Date & Location */}
+                    <div className="flex items-center gap-2 text-[11px] sm:text-xs text-black/60 dark:text-white/60 font-mono flex-wrap">
                       <span className="font-bold text-black/80 dark:text-white/80">{formattedDate}</span>
+                      {days > 0 && <span className="opacity-50">· {days}D</span>}
                       {trip.locationStr && (
                         <>
-                          <span>·</span>
-                          <span className="text-black/70 dark:text-white/70">{cleanAdministrativeDistricts(trip.locationStr).replace(/,/g, ' · ')}</span>
+                          <span className="opacity-30">/</span>
+                          <span className="text-black/70 dark:text-white/70 truncate">{cleanAdministrativeDistricts(trip.locationStr).replace(/,/g, ' · ')}</span>
                         </>
                       )}
                     </div>
                   </div>
 
-                  {/* Right Menu (Unboxed, NO right arrow button) */}
-                  <div className="flex items-center pr-2 sm:pr-4 md:pr-6 shrink-0" onClick={(e) => e.stopPropagation()}>
+                  {/* Right Menu */}
+                  <div className="flex items-center pr-3 sm:pr-5 md:pr-6 shrink-0" onClick={(e) => e.stopPropagation()}>
                     {(() => {
                       const isItemPlan = Boolean((trip as any).isPlan || (plans && plans.some(p => String(p.id) === String(trip.id))) || trip.tags?.includes('Plan') || trip.title.includes('(Plan)'));
                       return (
@@ -1305,24 +1313,18 @@ export function HomePage({
               const days = calculateDays(trip.date);
               const isCardActive = activeCardId === trip.id;
               const issueNumber = String((trip.displayOrder ?? index) + 1).padStart(2, '0');
+              const isItemPlan = Boolean((trip as any).isPlan || (plans && plans.some(p => String(p.id) === String(trip.id))) || trip.tags?.includes('Plan') || trip.title.includes('(Plan)'));
 
               return (
                 <div key={trip.id} className="relative group">
-                  {/* Ambient Glow Aura */}
-                  <div
-                    className={`absolute -inset-1.5 rounded-2xl bg-gradient-to-tr from-red-600/30 via-orange-500/20 to-amber-400/25 blur-xl transition-all duration-500 pointer-events-none -z-10 ${
-                      isCardActive ? 'opacity-80 scale-105' : 'opacity-0 group-hover:opacity-50 scale-100'
-                    }`}
-                  />
-
                   <div
                     style={{ containerType: 'inline-size' }}
-                    className={`cursor-pointer ${cardViewMode === 'wide' ? 'aspect-[16/10]' : 'aspect-[3/4]'} w-full overflow-hidden transition-all border relative shadow-[0_0_15px_rgba(0,0,0,0.08)] dark:shadow-[0_0_15px_rgba(255,255,255,0.03)] ${
+                    className={`cursor-pointer ${cardViewMode === 'wide' ? 'aspect-[16/10]' : 'aspect-[3/4]'} w-full overflow-hidden transition-all border relative rounded-none ${
                       draggedTripId === trip.id ? 'opacity-40' : 'opacity-100'
                     } ${
                       isCardActive
-                        ? 'border-red-600 dark:border-red-400 ring-2 ring-red-600/20 dark:ring-red-400/20 scale-[1.01] shadow-lg'
-                        : 'border-black/10 dark:border-white/10 bg-[#111]'
+                        ? 'border-red-600 dark:border-red-400 ring-2 ring-red-600/20 dark:ring-red-400/20 shadow-lg'
+                        : 'border-black/15 dark:border-white/15 hover:border-black/40 dark:hover:border-white/40 bg-[#111]'
                     }`}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1342,85 +1344,101 @@ export function HomePage({
                       isActive={isCardActive}
                     />
 
-                    {/* Magazine Overlay Gradient */}
-                    <div className="absolute inset-0 magazine-card-gradient pointer-events-none" />
+                    {/* Swiss Soft Vignette Gradients (Top & Bottom only, Center is clear) */}
+                    <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/65 via-black/30 to-transparent pointer-events-none" />
+                    <div className={`absolute inset-x-0 bottom-0 ${cardViewMode === 'wide' ? 'h-36' : 'h-44'} bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none`} />
 
-                    {/* Swiss Editorial Poster Text Layout */}
-                    <div className="absolute inset-0 p-4 sm:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
-                      {/* Top Header Row: Giant Bold Year & Month / Status Badge (Aligned with Year) */}
+                    {/* Swiss Editorial Poster Layout */}
+                    <div className="absolute inset-0 p-3 sm:p-4 md:p-5 flex flex-col justify-between z-10 text-white pointer-events-none">
+                      {/* Top Header Row: Sharp Index Box + Status Badge */}
                       <div className="flex justify-between items-start w-full">
-                        {year ? (
-                          <div className="flex flex-col leading-none">
-                            <span className="text-[10cqw] font-black font-sans tracking-tighter leading-none text-white drop-shadow-md">
-                              {year}
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-black/50 backdrop-blur-xs border border-white/25 text-white font-mono text-[10px] sm:text-[11px] font-bold tracking-wider uppercase rounded-none leading-none shadow-xs">
+                          <span className="text-red-500 font-black">#{issueNumber}</span>
+                          <span className="opacity-40">/</span>
+                          <span>{year}{month ? ` ${month}` : ''}</span>
+                        </div>
+
+                        {/* Top Right Badges */}
+                        <div className="flex items-center gap-1.5">
+                          {cardViewMode === 'wide' && days > 0 && (
+                            <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider bg-black/50 text-white/80 border border-white/20 rounded-none leading-none">
+                              {days} DAYS
                             </span>
-                            {month && (
-                              <span className="text-[7cqw] font-sans font-black tracking-tight text-white/95 uppercase mt-0.5 leading-none">
-                                {month}
-                              </span>
+                          )}
+                          {isItemPlan ? (
+                            <span className="px-2 py-0.5 text-[9.5px] sm:text-[10.5px] font-black uppercase tracking-wider font-mono bg-black text-white dark:bg-white dark:text-black border border-white/40 dark:border-black/40 rounded-none leading-none">
+                              PLAN
+                            </span>
+                          ) : trip.statusBadge ? (
+                            <span className={`px-2 py-0.5 text-[9.5px] sm:text-[10.5px] font-black uppercase tracking-wider font-mono rounded-none leading-none ${
+                              trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
+                            }`}>
+                              {trip.statusBadge}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      {/* Bottom Footer Area: Mode-dependent layout */}
+                      {cardViewMode === 'wide' ? (
+                        /* WIDE MODE: Horizontal Split (Title Left, Meta Right) */
+                        <div className="mt-auto flex flex-col sm:flex-row sm:items-end justify-between gap-2.5 w-full max-w-full pb-0.5">
+                          <div className="flex flex-col gap-0.5 max-w-full sm:max-w-[65%]">
+                            <h3 className="text-base sm:text-lg md:text-xl font-black uppercase tracking-tight leading-tight font-sans text-white drop-shadow-sm line-clamp-2">
+                              {trip.title}
+                            </h3>
+                          </div>
+
+                          <div className="flex flex-col sm:items-end gap-0.5 shrink-0 text-white/95">
+                            {trip.locationStr && (
+                              <div className="text-xs sm:text-[13px] font-sans font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 bg-red-500 rounded-none shrink-0" />
+                                <span className="truncate max-w-[200px] sm:max-w-[260px]">
+                                  {cleanAdministrativeDistricts(trip.locationStr).replace(/,/g, ' · ')}
+                                </span>
+                              </div>
                             )}
+                            <div className="text-[10px] sm:text-[11px] font-mono font-medium text-white/75 tracking-wider">
+                              {compactDate || trip.date}
+                            </div>
                           </div>
-                        ) : <div />}
-
-                        {/* Responsive Large Bold Tag Box: PLAN or Status Badge (NEW/EDITING) */}
-                        {((trip as any).isPlan || trip.tags?.includes('Plan') || trip.title.includes('(Plan)')) ? (
-                          <span className="px-2.5 sm:px-3.5 py-0.5 sm:py-1 text-[5.5cqw] sm:text-[6.5cqw] font-black uppercase tracking-wider font-mono shadow-md bg-black text-white dark:bg-white dark:text-black border border-white/40 dark:border-black/40 leading-none">
-                            PLAN
-                          </span>
-                        ) : trip.statusBadge ? (
-                          <span className={`px-2.5 sm:px-3.5 py-0.5 sm:py-1 text-[5.5cqw] sm:text-[6.5cqw] font-black uppercase tracking-wider font-mono shadow-md leading-none ${
-                            trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
-                          }`}>
-                            {trip.statusBadge}
-                          </span>
-                        ) : null}
-                      </div>
-
-                      {/* Bottom Footer Row: Title, Location, Date (3-tier clean stack) */}
-                      <div className="mt-auto flex flex-col gap-1 w-full max-w-[88%]">
-                        <h3 className="text-[5.8cqw] sm:text-[6.2cqw] font-black uppercase tracking-tight leading-[1.28] py-0.5 font-sans text-white drop-shadow-md line-clamp-2">
-                          {trip.title}
-                        </h3>
-                        {trip.locationStr && (
-                          <div className={cardViewMode === 'wide'
-                            ? "text-sm sm:text-base md:text-lg font-sans font-bold uppercase tracking-wider text-white/95 truncate drop-shadow-sm py-0.5"
-                            : "text-[11px] sm:text-xs md:text-[3.8cqw] font-sans font-black uppercase tracking-wider text-white/95 truncate drop-shadow-sm py-0.5"
-                          }>
-                            {cleanAdministrativeDistricts(trip.locationStr).replace(/,/g, ' · ')}
+                        </div>
+                      ) : (
+                        /* GRID MODE: 3-Tier Clean Swiss Stack */
+                        <div className="mt-auto flex flex-col gap-1 w-full max-w-[90%] pb-0.5">
+                          <h3 className="text-[14px] sm:text-[16px] md:text-[17px] font-black uppercase tracking-tight leading-snug font-sans text-white drop-shadow-sm line-clamp-2">
+                            {trip.title}
+                          </h3>
+                          {trip.locationStr && (
+                            <div className="text-[11px] sm:text-xs font-sans font-bold uppercase tracking-wider text-white/90 truncate flex items-center gap-1.5">
+                              <span className="w-1 h-1 bg-red-500 rounded-none shrink-0" />
+                              <span className="truncate">{cleanAdministrativeDistricts(trip.locationStr).replace(/,/g, ' · ')}</span>
+                            </div>
+                          )}
+                          <div className="text-[10px] sm:text-[11px] font-mono font-medium text-white/75 tracking-wider truncate flex items-center gap-1.5">
+                            <span>{compactDate || trip.date}</span>
+                            {days > 0 && <span className="opacity-50">· {days}D</span>}
                           </div>
-                        )}
-                        {trip.date && (
-                          <div className={cardViewMode === 'wide'
-                            ? "text-xs sm:text-sm font-sans font-semibold text-white/85 tracking-wider truncate py-0.5"
-                            : "text-[10px] sm:text-[11px] md:text-[3.4cqw] font-sans font-bold text-white/85 tracking-wider truncate py-0.5"
-                          }>
-                            {compactDate || trip.date}
-                          </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Hamburger menu */}
-                    {(() => {
-                      const isItemPlan = Boolean((trip as any).isPlan || (plans && plans.some(p => String(p.id) === String(trip.id))) || trip.tags?.includes('Plan') || trip.title.includes('(Plan)'));
-                      return (
-                        <JourneyCardMenu
-                          className="absolute bottom-3 right-3 z-30"
-                          isLoggedIn={isLoggedIn}
-                          onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
-                          onDelete={onDeleteTrip ? () => onDeleteTrip(trip.id) : undefined}
-                          onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
-                          onMove={() => {
-                            if (isItemPlan) {
-                              handleMoveToArchive(trip as Plan);
-                            } else if (onMoveToPlans) {
-                              onMoveToPlans(trip);
-                            }
-                          }}
-                          moveLabel={isItemPlan ? "LOG" : "PLAN"}
-                        />
-                      );
-                    })()}
+                    <JourneyCardMenu
+                      className="absolute bottom-2.5 right-2.5 z-30"
+                      isLoggedIn={isLoggedIn}
+                      onEdit={onEditTrip ? () => onEditTrip(trip.id) : undefined}
+                      onDelete={onDeleteTrip ? () => onDeleteTrip(trip.id) : undefined}
+                      onClone={onCloneTrip ? () => onCloneTrip(trip.id) : undefined}
+                      onMove={() => {
+                        if (isItemPlan) {
+                          handleMoveToArchive(trip as Plan);
+                        } else if (onMoveToPlans) {
+                          onMoveToPlans(trip);
+                        }
+                      }}
+                      moveLabel={isItemPlan ? "LOG" : "PLAN"}
+                    />
                   </div>
                 </div>
               );
