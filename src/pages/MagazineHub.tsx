@@ -226,6 +226,9 @@ export function MagazineHubPage({
 
   // Touch swipe state for Hero section
   const touchStartXRef = useRef<number | null>(null);
+  // Touch swipe state for Bottom Preview section
+  const previewTouchStartXRef = useRef<number | null>(null);
+  const previewTouchStartYRef = useRef<number | null>(null);
 
   // Horizontal Section Tabs Scroll Reference & State
   const tabScrollRef = useRef<HTMLDivElement>(null);
@@ -765,45 +768,46 @@ export function MagazineHubPage({
           </section>
 
           {/* 1-3. Lower Selected Magazine Preview Section (Curated Preview Spread) */}
-          <section className="w-full bg-black/[0.02] dark:bg-white/[0.02] border-t border-black/10 dark:border-white/10 py-12 sm:py-20">
-            <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 md:px-12 flex flex-col gap-8">
-              
-              {/* Header with Section Switching Tabs & Read Full Issue CTA */}
-              <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 border-b border-black/10 dark:border-white/10 pb-4">
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs sm:text-[13px] font-bold tracking-tight text-red-600 dark:text-red-400 font-['Inter',sans-serif]">
-                    Magazine preview
-                  </span>
-                  <h2 className="text-2xl sm:text-3xl font-black uppercase font-['Noto_Sans_KR',sans-serif] tracking-tight text-black dark:text-white">
-                    {currentPreviewSection?.title || 'FEATURED STORIES'}
-                  </h2>
-                </div>
+          {(() => {
+            const curPreviewIdx = effectiveSections.findIndex(s => s.id === (currentPreviewSection?.id || hubPreviewSectionId));
+            const safePreviewIdx = Math.max(0, curPreviewIdx);
 
-                {/* Section Selector Tabs & Adjacent Minimal Prev/Next Navigation Controls */}
-                {(() => {
-                  const curPreviewIdx = effectiveSections.findIndex(s => s.id === (currentPreviewSection?.id || hubPreviewSectionId));
+            const handleSelectPreviewSection = (sectionId: string) => {
+              setHubPreviewSectionId(sectionId);
+              const tabBtn = document.getElementById(`mag-hub-preview-tab-${sectionId}`);
+              if (tabBtn) {
+                tabBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+              }
+            };
 
-                  const handleSelectPreviewSection = (sectionId: string) => {
-                    setHubPreviewSectionId(sectionId);
-                    const tabBtn = document.getElementById(`mag-hub-preview-tab-${sectionId}`);
-                    if (tabBtn) {
-                      tabBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-                    }
-                  };
+            const handlePrevPreviewSection = () => {
+              if (safePreviewIdx > 0) {
+                handleSelectPreviewSection(effectiveSections[safePreviewIdx - 1].id);
+              }
+            };
 
-                  const handlePrevPreviewSection = () => {
-                    if (curPreviewIdx > 0) {
-                      handleSelectPreviewSection(effectiveSections[curPreviewIdx - 1].id);
-                    }
-                  };
+            const handleNextPreviewSection = () => {
+              if (safePreviewIdx < effectiveSections.length - 1) {
+                handleSelectPreviewSection(effectiveSections[safePreviewIdx + 1].id);
+              }
+            };
 
-                  const handleNextPreviewSection = () => {
-                    if (curPreviewIdx < effectiveSections.length - 1) {
-                      handleSelectPreviewSection(effectiveSections[curPreviewIdx + 1].id);
-                    }
-                  };
+            return (
+              <section className="w-full bg-black/[0.02] dark:bg-white/[0.02] border-t border-black/10 dark:border-white/10 py-12 sm:py-20">
+                <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 md:px-12 flex flex-col gap-8">
+                  
+                  {/* Header with Section Switching Tabs & Read Full Issue CTA */}
+                  <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 border-b border-black/10 dark:border-white/10 pb-4">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs sm:text-[13px] font-bold tracking-tight text-red-600 dark:text-red-400 font-['Inter',sans-serif]">
+                        Magazine preview
+                      </span>
+                      <h2 className="text-2xl sm:text-3xl font-black uppercase font-['Noto_Sans_KR',sans-serif] tracking-tight text-black dark:text-white">
+                        {currentPreviewSection?.title || 'FEATURED STORIES'}
+                      </h2>
+                    </div>
 
-                  return (
+                    {/* Section Selector Tabs & Adjacent Minimal Prev/Next Navigation Controls */}
                     <div className="flex items-center gap-3 max-w-full lg:max-w-2xl shrink-0 self-start sm:self-auto">
                       {/* Section Tabs Scrollable Container */}
                       {effectiveSections.length > 1 && (
@@ -832,13 +836,13 @@ export function MagazineHubPage({
                         </div>
                       )}
 
-                      {/* Adjacent Left / Right Section Navigation Buttons (Classic Home Preview Style) */}
+                      {/* Adjacent Left / Right Section Navigation Buttons */}
                       {effectiveSections.length > 1 && (
                         <div className="flex items-center gap-1 shrink-0">
                           <button
                             type="button"
                             onClick={handlePrevPreviewSection}
-                            disabled={curPreviewIdx <= 0}
+                            disabled={safePreviewIdx <= 0}
                             className="w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white"
                             title="이전 섹션"
                           >
@@ -847,7 +851,7 @@ export function MagazineHubPage({
                           <button
                             type="button"
                             onClick={handleNextPreviewSection}
-                            disabled={curPreviewIdx >= effectiveSections.length - 1}
+                            disabled={safePreviewIdx >= effectiveSections.length - 1}
                             className="w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white"
                             title="다음 섹션"
                           >
@@ -856,81 +860,116 @@ export function MagazineHubPage({
                         </div>
                       )}
                     </div>
-                  );
-                })()}
-              </div>
+                  </div>
 
-              {/* 3:4 Preview Cards (Up to 3 Items) */}
-              {previewItems.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 items-stretch">
-                  {previewItems.map((item, pIdx) => {
-                    const displayTitle = item.title;
-                    const dateWithDay = formatSimpleDateWithDay(item.date);
-                    let displayPlace = item.placeName || item.location || '';
-                    const parentTrip = trips.find(t => t.id === item.tripId);
-                    if (!displayPlace || displayPlace.trim() === '' || displayPlace.trim().toLowerCase() === displayTitle.trim().toLowerCase()) {
-                      displayPlace = parentTrip?.locationStr || parentTrip?.country || 'VISITED PLACE';
-                    }
+                  {/* Sliding 3:4 Preview Cards (Smooth Horizontal Slide & Touch Swipe) */}
+                  <div
+                    className="w-full overflow-hidden touch-pan-y"
+                    onTouchStart={(e) => {
+                      previewTouchStartXRef.current = e.touches[0].clientX;
+                      previewTouchStartYRef.current = e.touches[0].clientY;
+                    }}
+                    onTouchEnd={(e) => {
+                      if (previewTouchStartXRef.current === null || previewTouchStartYRef.current === null) return;
+                      const deltaX = e.changedTouches[0].clientX - previewTouchStartXRef.current;
+                      const deltaY = e.changedTouches[0].clientY - previewTouchStartYRef.current;
+                      previewTouchStartXRef.current = null;
+                      previewTouchStartYRef.current = null;
+                      if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY)) {
+                        if (deltaX < 0) {
+                          handleNextPreviewSection();
+                        } else {
+                          handlePrevPreviewSection();
+                        }
+                      }
+                    }}
+                  >
+                    <div
+                      className="flex transition-transform duration-500 ease-out"
+                      style={{ transform: `translateX(-${safePreviewIdx * 100}%)` }}
+                    >
+                      {effectiveSections.map((sec, sIdx) => {
+                        const secItems = getSynchronizedItems(sec).filter(it => !it.isTextOnly && Boolean(it.img)).slice(0, 3);
 
-                    return (
-                      <article
-                        key={item.id || pIdx}
-                        onClick={() => handleOpenSection(currentPreviewSection?.id || activeSectionId)}
-                        className="group flex flex-col justify-between cursor-pointer"
-                      >
-                        <div className="relative aspect-[3/4] w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
-                          <img
-                            src={getEffectiveImageUrl(item.img)}
-                            alt={displayTitle}
-                            loading="lazy"
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none"
-                          />
-                          <div className="absolute top-3 left-3 bg-black/60 dark:bg-white/70 backdrop-blur-xs text-white dark:text-black font-mono text-[9px] font-bold px-1.5 py-0.5 uppercase tracking-widest">
-                            {String(pIdx + 1).padStart(2, '0')}
-                          </div>
-                        </div>
+                        return (
+                          <div key={sec.id || sIdx} className="w-full shrink-0">
+                            {secItems.length > 0 ? (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 items-stretch">
+                                {secItems.map((item, pIdx) => {
+                                  const displayTitle = item.title;
+                                  const dateWithDay = formatSimpleDateWithDay(item.date);
+                                  let displayPlace = item.placeName || item.location || '';
+                                  const parentTrip = trips.find(t => t.id === item.tripId);
+                                  if (!displayPlace || displayPlace.trim() === '' || displayPlace.trim().toLowerCase() === displayTitle.trim().toLowerCase()) {
+                                    displayPlace = parentTrip?.locationStr || parentTrip?.country || 'VISITED PLACE';
+                                  }
 
-                        <div className="pt-3.5 flex-1 flex flex-col justify-between text-black dark:text-white font-['Noto_Sans_KR',sans-serif]">
-                          <div>
-                            <h3 className="text-base sm:text-lg font-black uppercase tracking-tight text-black dark:text-white line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
-                              {displayTitle}
-                            </h3>
-                            {dateWithDay && (
-                              <div className="text-[11px] sm:text-xs font-mono font-bold text-black/50 dark:text-white/50 uppercase tracking-wider mt-1">
-                                {dateWithDay}
+                                  return (
+                                    <article
+                                      key={item.id || pIdx}
+                                      onClick={() => handleOpenSection(sec.id)}
+                                      className="group flex flex-col justify-between cursor-pointer"
+                                    >
+                                      <div className="relative aspect-[3/4] w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+                                        <img
+                                          src={getEffectiveImageUrl(item.img)}
+                                          alt={displayTitle}
+                                          loading="lazy"
+                                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none"
+                                        />
+                                        <div className="absolute top-3 left-3 bg-black/60 dark:bg-white/70 backdrop-blur-xs text-white dark:text-black font-mono text-[9px] font-bold px-1.5 py-0.5 uppercase tracking-widest">
+                                          {String(pIdx + 1).padStart(2, '0')}
+                                        </div>
+                                      </div>
+
+                                      <div className="pt-3.5 flex-1 flex flex-col justify-between text-black dark:text-white font-['Noto_Sans_KR',sans-serif]">
+                                        <div>
+                                          <h3 className="text-base sm:text-lg font-black uppercase tracking-tight text-black dark:text-white line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
+                                            {displayTitle}
+                                          </h3>
+                                          {dateWithDay && (
+                                            <div className="text-[11px] sm:text-xs font-mono font-bold text-black/50 dark:text-white/50 uppercase tracking-wider mt-1">
+                                              {dateWithDay}
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="pt-3 mt-auto flex items-center justify-between text-xs font-sans text-black/75 dark:text-white/75 border-t border-black/10 dark:border-white/10">
+                                          <span className="font-bold tracking-tight truncate max-w-[85%]">{displayPlace}</span>
+                                          <span className="text-base font-bold text-black dark:text-white group-hover:translate-x-1.5 transition-transform">→</span>
+                                        </div>
+                                      </div>
+                                    </article>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="py-12 text-center text-xs font-mono text-black/40 dark:text-white/40 border border-dashed border-black/20 dark:border-white/20 p-6">
+                                NO PREVIEW MOMENTS AVAILABLE IN THIS ISSUE
                               </div>
                             )}
                           </div>
-                          <div className="pt-3 mt-auto flex items-center justify-between text-xs font-sans text-black/75 dark:text-white/75 border-t border-black/10 dark:border-white/10">
-                            <span className="font-bold tracking-tight truncate max-w-[85%]">{displayPlace}</span>
-                            <span className="text-base font-bold text-black dark:text-white group-hover:translate-x-1.5 transition-transform">→</span>
-                          </div>
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="py-12 text-center text-xs font-mono text-black/40 dark:text-white/40 border border-dashed border-black/20 dark:border-white/20 p-6">
-                  NO PREVIEW MOMENTS AVAILABLE IN THIS ISSUE
-                </div>
-              )}
+                        );
+                      })}
+                    </div>
+                  </div>
 
-              {/* Read Full Issue Button */}
-              {currentPreviewSection && (
-                <div className="pt-4 flex justify-center">
-                  <button
-                    type="button"
-                    onClick={() => handleOpenSection(currentPreviewSection.id)}
-                    className="px-8 py-3.5 bg-black text-white dark:bg-white dark:text-black text-xs sm:text-sm font-mono font-bold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 hover:text-white dark:hover:text-white transition-all shadow-md cursor-pointer flex items-center gap-2 group"
-                  >
-                    <span>READ FULL ISSUE ({currentPreviewSection.title})</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </button>
+                  {/* Read Full Issue Button */}
+                  {currentPreviewSection && (
+                    <div className="pt-4 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenSection(currentPreviewSection.id)}
+                        className="px-8 py-3.5 bg-black text-white dark:bg-white dark:text-black text-xs sm:text-sm font-mono font-bold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 hover:text-white dark:hover:text-white transition-all shadow-md cursor-pointer flex items-center gap-2 group"
+                      >
+                        <span>READ FULL</span>
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </section>
+              </section>
+            );
+          })()}
         </div>
       ) : (
         /* ═════════════════════════════════════════════════════════════════ */
