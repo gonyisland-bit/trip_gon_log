@@ -344,7 +344,15 @@ export function ManageHubPage({
 
   useEffect(() => {
     if (magazineSections && magazineSections.length > 0) {
-      setSectionsList(magazineSections);
+      setSectionsList(prev => {
+        // If current local list has items not yet in incoming props (e.g. freshly created section), preserve them
+        const incomingIds = new Set(magazineSections.map(s => s.id));
+        const localNewSections = prev.filter(s => !incomingIds.has(s.id));
+        if (localNewSections.length > 0) {
+          return [...magazineSections, ...localNewSections].map((s, idx) => ({ ...s, order: idx }));
+        }
+        return magazineSections;
+      });
     }
   }, [magazineSections]);
 
@@ -1459,7 +1467,7 @@ export function ManageHubPage({
   };
 
   // Section Management Handlers
-  const handleAddSection = () => {
+  const handleAddSection = async () => {
     if (!newSectionTitle.trim()) {
       alert('섹션 제목을 입력해주세요.');
       return;
@@ -1479,14 +1487,26 @@ export function ManageHubPage({
       order: sectionsList.length,
       isDefault: false,
     };
-    setSectionsList(prev => [...prev, newSection]);
+    const updated = [...sectionsList, newSection];
+    setSectionsList(updated);
     setActiveMagSectionId(newId);
+    sessionStorage.setItem('lastMagazineSectionId', newId);
     setNewSectionTitle('');
     setNewSectionSubtitle('');
     setShowAddSectionModal(false);
+
+    if (onUpdateMagazineSections) {
+      onUpdateMagazineSections(updated);
+    }
+    try {
+      localStorage.setItem('cached_magazine_sections', JSON.stringify(updated));
+    } catch (_) {}
+    if (onSaveMagazineSections) {
+      onSaveMagazineSections(updated).catch(e => console.warn('Auto-save new section notice:', e));
+    }
   };
 
-  const handleAutoGenerateSectionFromTrip = (tripId: number) => {
+  const handleAutoGenerateSectionFromTrip = async (tripId: number) => {
     const targetTrip = localJourneys.find(j => Number(j.id) === Number(tripId)) || trips.find(t => Number(t.id) === Number(tripId)) || plans.find(p => Number(p.id) === Number(tripId));
     if (!targetTrip) {
       alert('여정을 찾을 수 없습니다.');
@@ -1584,10 +1604,22 @@ export function ManageHubPage({
       isDefault: false,
     };
 
-    setSectionsList(prev => [...prev, newSection]);
+    const updated = [...sectionsList, newSection];
+    setSectionsList(updated);
     setActiveMagSectionId(newSectionId);
+    sessionStorage.setItem('lastMagazineSectionId', newSectionId);
     setShowAutoGenerateModal(false);
     setSelectedTripForAutoGenerate(null);
+
+    if (onUpdateMagazineSections) {
+      onUpdateMagazineSections(updated);
+    }
+    try {
+      localStorage.setItem('cached_magazine_sections', JSON.stringify(updated));
+    } catch (_) {}
+    if (onSaveMagazineSections) {
+      onSaveMagazineSections(updated).catch(e => console.warn('Auto-save generated section notice:', e));
+    }
   };
 
   const handleDeleteSection = async (sectionId: string) => {
@@ -4877,7 +4909,7 @@ export function ManageHubPage({
                       SELECT JOURNEY (생성할 여정 선택)
                     </label>
                     <select
-                      value={selectedTripForAutoGenerate ?? ''}
+                      value={selectedTripForAutoGenerate ?? (localJourneys[0]?.id || '')}
                       onChange={e => setSelectedTripForAutoGenerate(Number(e.target.value))}
                       className="px-3 py-2.5 text-xs font-mono font-bold bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
                     >
@@ -4890,7 +4922,8 @@ export function ManageHubPage({
                   </div>
 
                   {(() => {
-                    const selected = localJourneys.find(j => Number(j.id) === Number(selectedTripForAutoGenerate));
+                    const effectiveTripId = selectedTripForAutoGenerate ?? localJourneys[0]?.id;
+                    const selected = localJourneys.find(j => Number(j.id) === Number(effectiveTripId));
                     if (!selected) return null;
                     return (
                       <div className="p-3 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center gap-3">
@@ -4922,10 +4955,11 @@ export function ManageHubPage({
                     </button>
                     <button
                       type="button"
-                      disabled={!selectedTripForAutoGenerate}
+                      disabled={localJourneys.length === 0}
                       onClick={() => {
-                        if (selectedTripForAutoGenerate) {
-                          handleAutoGenerateSectionFromTrip(selectedTripForAutoGenerate);
+                        const targetId = selectedTripForAutoGenerate ?? localJourneys[0]?.id;
+                        if (targetId) {
+                          handleAutoGenerateSectionFromTrip(targetId);
                         }
                       }}
                       className="px-5 py-2 bg-red-600 text-white text-xs font-mono font-bold uppercase tracking-wider cursor-pointer hover:bg-red-700 disabled:opacity-30 flex items-center gap-1.5 shadow-sm"
