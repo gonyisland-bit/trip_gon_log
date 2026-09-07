@@ -107,6 +107,16 @@ export function MagazineHubPage({
     return sections && sections.length > 0 ? sections[0].id : 'main';
   });
 
+  const previewTabsRef = useRef<HTMLDivElement>(null);
+  const scrollPreviewTabs = (direction: 'left' | 'right') => {
+    if (previewTabsRef.current) {
+      previewTabsRef.current.scrollBy({
+        left: direction === 'left' ? -220 : 220,
+        behavior: 'smooth',
+      });
+    }
+  };
+
   // Accordion drawer state for magazine issues showcase in Section view
   const [isAccordionOpen, setIsAccordionOpen] = useState(false);
 
@@ -759,36 +769,62 @@ export function MagazineHubPage({
             <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 md:px-12 flex flex-col gap-8">
               
               {/* Header with Section Switching Tabs & Read Full Issue CTA */}
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-black/10 dark:border-white/10 pb-4">
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-red-600 dark:text-red-400 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    CURATED PREVIEW SPREAD
+              <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 border-b border-black/10 dark:border-white/10 pb-4">
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs sm:text-[13px] font-bold tracking-tight text-red-600 dark:text-red-400 font-['Inter',sans-serif]">
+                    Magazine preview
                   </span>
                   <h2 className="text-2xl sm:text-3xl font-black uppercase font-['Noto_Sans_KR',sans-serif] tracking-tight text-black dark:text-white">
                     {currentPreviewSection?.title || 'FEATURED STORIES'}
                   </h2>
                 </div>
 
-                {/* Section Selector Tabs for Preview */}
-                <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar py-1">
-                  {effectiveSections.map((sec) => {
-                    const isSelected = sec.id === (currentPreviewSection?.id || hubPreviewSectionId);
-                    return (
-                      <button
-                        key={sec.id}
-                        type="button"
-                        onClick={() => setHubPreviewSectionId(sec.id)}
-                        className={`px-3 py-1 text-xs font-bold uppercase font-['Noto_Sans_KR',sans-serif] tracking-wider transition-all border whitespace-nowrap cursor-pointer ${
-                          isSelected
-                            ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
-                            : 'bg-transparent border-black/10 dark:border-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-                        }`}
-                      >
-                        {sec.title}
-                      </button>
-                    );
-                  })}
+                {/* Section Selector Tabs with Left/Right Scroll Navigation */}
+                <div className="flex items-center gap-1.5 max-w-full lg:max-w-2xl">
+                  {effectiveSections.length > 3 && (
+                    <button
+                      type="button"
+                      onClick={() => scrollPreviewTabs('left')}
+                      className="p-1.5 border border-black/15 dark:border-white/15 bg-white dark:bg-[#181818] text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer shrink-0"
+                      title="이전 탭"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  
+                  <div 
+                    ref={previewTabsRef}
+                    className="flex items-center gap-2 overflow-x-auto hide-scrollbar py-1 scroll-smooth"
+                  >
+                    {effectiveSections.map((sec) => {
+                      const isSelected = sec.id === (currentPreviewSection?.id || hubPreviewSectionId);
+                      return (
+                        <button
+                          key={sec.id}
+                          type="button"
+                          onClick={() => setHubPreviewSectionId(sec.id)}
+                          className={`px-3.5 py-1.5 text-xs font-bold uppercase font-['Noto_Sans_KR',sans-serif] tracking-wider transition-all border whitespace-nowrap cursor-pointer shrink-0 ${
+                            isSelected
+                              ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
+                              : 'bg-transparent border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
+                          }`}
+                        >
+                          {sec.title}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {effectiveSections.length > 3 && (
+                    <button
+                      type="button"
+                      onClick={() => scrollPreviewTabs('right')}
+                      className="p-1.5 border border-black/15 dark:border-white/15 bg-white dark:bg-[#181818] text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer shrink-0"
+                      title="다음 탭"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
 

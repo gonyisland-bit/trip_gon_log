@@ -654,6 +654,25 @@ export function HomePage({
   };
 
   const [magazineSpreadIndex, setMagazineSpreadIndex] = useState(0);
+  const [activeHomeSectionId, setActiveHomeSectionId] = useState<string>(() => {
+    return homeMagazineSectionId || 'main';
+  });
+
+  useEffect(() => {
+    if (homeMagazineSectionId) {
+      setActiveHomeSectionId(homeMagazineSectionId);
+    }
+  }, [homeMagazineSectionId]);
+
+  const homeMagTabsRef = useRef<HTMLDivElement>(null);
+  const scrollHomeMagTabs = (direction: 'left' | 'right') => {
+    if (homeMagTabsRef.current) {
+      homeMagTabsRef.current.scrollBy({
+        left: direction === 'left' ? -220 : 220,
+        behavior: 'smooth',
+      });
+    }
+  };
 
   // Gradient background state
   const [gradientEnabled, setGradientEnabled] = useState<boolean>(() => {
@@ -1427,10 +1446,14 @@ export function HomePage({
         {/* 02. EDITORIAL MAGAZINE MOMENTS (잡지 연출 섹션)                       */}
         {/* ─────────────────────────────────────────────────────────────────── */}
         {(() => {
-          // 1. First find selected magazine section from master magazineSections
-          const selectedSection = (magazineSections && magazineSections.length > 0)
-            ? (magazineSections.find(s => s.id === homeMagazineSectionId) || magazineSections[0])
-            : null;
+          // 1. First find selected magazine section from master magazineSections or active tab
+          const availableSections = (magazineSections && magazineSections.length > 0)
+            ? magazineSections
+            : [];
+          const selectedSection = availableSections.find(s => s.id === activeHomeSectionId)
+            || availableSections.find(s => s.id === homeMagazineSectionId)
+            || availableSections[0]
+            || null;
 
           const handleGoToMagazineSection = () => {
             if (selectedSection && selectedSection.id) {
@@ -1473,9 +1496,9 @@ export function HomePage({
           const currentSlice = displayMoments.slice(currentSpread * MOMENTS_PER_SPREAD, (currentSpread + 1) * MOMENTS_PER_SPREAD);
 
           return (
-            <div className="w-full border-t border-black/10 dark:border-white/10 mt-12 pt-12 px-4 sm:px-8 md:px-12 flex flex-col gap-8">
+            <div className="w-full border-t border-black/10 dark:border-white/10 mt-12 pt-12 px-4 sm:px-8 md:px-12 flex flex-col gap-6">
               {/* Section Header: Pure Swiss Minimal Magazine Header */}
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-black/15 dark:border-white/15">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-black/15 dark:border-white/15">
                 <div className="flex items-baseline gap-4 flex-wrap">
                   <h2 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
                     MAGAZINE
@@ -1538,6 +1561,59 @@ export function HomePage({
                   </div>
                 )}
               </div>
+
+              {/* Section Selector Tabs with Left/Right Scroll Navigation */}
+              {availableSections.length > 1 && (
+                <div className="flex items-center gap-1.5 max-w-full">
+                  {availableSections.length > 3 && (
+                    <button
+                      type="button"
+                      onClick={() => scrollHomeMagTabs('left')}
+                      className="p-1.5 border border-black/15 dark:border-white/15 bg-white dark:bg-[#181818] text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer shrink-0"
+                      title="이전 섹션"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+
+                  <div
+                    ref={homeMagTabsRef}
+                    className="flex items-center gap-2 overflow-x-auto hide-scrollbar py-1 scroll-smooth"
+                  >
+                    {availableSections.map((sec) => {
+                      const isSelected = sec.id === (selectedSection?.id || activeHomeSectionId);
+                      return (
+                        <button
+                          key={sec.id}
+                          type="button"
+                          onClick={() => {
+                            setActiveHomeSectionId(sec.id);
+                            setMagazineSpreadIndex(0);
+                          }}
+                          className={`px-3.5 py-1.5 text-xs font-bold uppercase font-['Noto_Sans_KR',sans-serif] tracking-wider transition-all border whitespace-nowrap cursor-pointer shrink-0 ${
+                            isSelected
+                              ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
+                              : 'bg-transparent border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
+                          }`}
+                        >
+                          {sec.title}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {availableSections.length > 3 && (
+                    <button
+                      type="button"
+                      onClick={() => scrollHomeMagTabs('right')}
+                      className="p-1.5 border border-black/15 dark:border-white/15 bg-white dark:bg-[#181818] text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer shrink-0"
+                      title="다음 섹션"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              )}
 
               {/* Magazine Editorial Spread Layout: 3:4 Vertical Cards (Boundary-free Swiss Minimal) with Smooth Horizontal Slide & Mobile Touch Swipe */}
               <div 
