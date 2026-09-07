@@ -3912,9 +3912,13 @@ export function ManageHubPage({
               )}
             </div>
 
-            {/* 1. Section Switcher Bar */}
-            <div className="flex items-center justify-between gap-2 overflow-x-auto pb-2 border-b border-black/15 dark:border-white/15">
-              <div className="flex items-center gap-2">
+            {/* 1. Section Selector & Action Bar (가로 스크롤 없는 반응형 flex-wrap 레이아웃) */}
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pb-3 border-b border-black/15 dark:border-white/15">
+              {/* Left: Section Tabs Strip */}
+              <div className="flex items-center flex-wrap gap-2 flex-1 min-w-0">
+                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 mr-1 shrink-0">
+                  SECTIONS ({sectionsList.length}):
+                </span>
                 {sectionsList.map((sec, idx) => {
                   const isActive = sec.id === activeMagSectionId;
                   return (
@@ -3933,7 +3937,7 @@ export function ManageHubPage({
                           setMomentsList(sec.items || []);
                           setSelectedMagCardId(null);
                         }}
-                        className="px-3 py-2 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer"
+                        className="px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer"
                       >
                         <span>{String(idx + 1).padStart(2, '0')}.</span>
                         <span>{sec.title}</span>
@@ -3979,7 +3983,8 @@ export function ManageHubPage({
                 })}
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              {/* Right: Section Actions (Auto-generate, New Section, Undo/Redo) */}
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
                 <div className="flex items-center gap-1 border-r border-black/15 dark:border-white/15 pr-2 mr-1">
                   <button
                     type="button"
@@ -4003,7 +4008,7 @@ export function ManageHubPage({
                 <button
                   type="button"
                   onClick={() => setShowAddSectionModal(true)}
-                  className="px-3 py-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-black dark:text-white border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-colors"
+                  className="px-3 py-1.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-black dark:text-white border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
                   <span>신규 섹션 (NEW)</span>
@@ -4014,7 +4019,7 @@ export function ManageHubPage({
                     setSelectedTripForAutoGenerate(localJourneys[0]?.id ?? null);
                     setShowAutoGenerateModal(true);
                   }}
-                  className="px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                  className="px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
                   title="선택한 여정의 커버, 갤러리 및 타임라인 사진으로 매거진 섹션을 자동 생성합니다."
                 >
                   <Sparkles className="w-3.5 h-3.5" />
