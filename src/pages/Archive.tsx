@@ -830,34 +830,37 @@ export function ArchiveHubPage({
               {showGroupHeader && (
                 <div 
                   onClick={() => toggleSection(group.key)}
-                  className="flex items-center justify-between px-4 sm:px-6 md:px-12 py-3.5 sm:py-4 border-b border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] cursor-pointer hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors select-none group"
+                  className="w-full border-b border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] cursor-pointer hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors select-none group"
                 >
-                  <div className="flex items-baseline gap-3">
-                    <h2 className="text-xl sm:text-2xl md:text-3xl font-black uppercase font-sans tracking-tight text-black dark:text-white">
-                      {group.title}
-                    </h2>
-                    <span className="font-mono text-xs font-bold text-black/40 dark:text-white/40 tracking-wider">
-                      {group.items.length} {group.items.length === 1 ? 'JOURNEY' : 'JOURNEYS'}
-                    </span>
+                  <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-12 py-3.5 sm:py-4 flex items-center justify-between">
+                    <div className="flex items-baseline gap-3">
+                      <h2 className="text-xl sm:text-2xl md:text-3xl font-black uppercase font-sans tracking-tight text-black dark:text-white">
+                        {group.title}
+                      </h2>
+                      <span className="font-mono text-xs font-bold text-black/40 dark:text-white/40 tracking-wider">
+                        {group.items.length} {group.items.length === 1 ? 'JOURNEY' : 'JOURNEYS'}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="p-1 text-black/50 dark:text-white/50 group-hover:text-black dark:group-hover:text-white transition-colors"
+                    >
+                      {isCollapsed ? (
+                        <ChevronDown className="w-5 h-5" />
+                      ) : (
+                        <ChevronUp className="w-5 h-5" />
+                      )}
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    className="p-1 text-black/50 dark:text-white/50 group-hover:text-black dark:group-hover:text-white transition-colors"
-                  >
-                    {isCollapsed ? (
-                      <ChevronDown className="w-5 h-5" />
-                    ) : (
-                      <ChevronUp className="w-5 h-5" />
-                    )}
-                  </button>
                 </div>
               )}
 
               {/* Group Body: List or Grid */}
               {!isCollapsed && (
                 cardViewMode === 'list' ? (
-                  <div className="flex flex-col w-full border-b border-black/15 dark:border-white/15">
-                    {group.items.map((trip, index) => {
+                  <div className="w-full border-b border-black/15 dark:border-white/15">
+                    <div className="flex flex-col w-full max-w-7xl mx-auto px-4 sm:px-8 md:px-12">
+                      {group.items.map((trip, index) => {
                       const isCardActive = activeCardId === trip.id;
                       const { year, month } = getYearAndMonth(trip.date);
                       const formattedDate = formatNonRepeatingDate(trip.date);
@@ -946,6 +949,7 @@ export function ArchiveHubPage({
                         </div>
                       );
                     })}
+                    </div>
                   </div>
                 ) : (
                   <div className={cardViewMode === 'wide' 

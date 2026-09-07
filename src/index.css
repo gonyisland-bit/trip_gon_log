@@ -3,9 +3,13 @@
 @tailwind utilities;
 
 @layer base {
-  html, body {
+  *, ::before, ::after {
+    font-family: 'Satoshi', 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  
+  html, body, input, textarea, button, select {
     -webkit-overflow-scrolling: touch;
-    font-family: 'Satoshi', 'Inter', 'Noto Sans KR', sans-serif;
+    font-family: 'Satoshi', 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
   
   #root {

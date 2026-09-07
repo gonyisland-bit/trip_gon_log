@@ -870,13 +870,35 @@ export function ManageHubPage({
     return JSON.stringify(sectionsList) !== JSON.stringify(magazineSections || []);
   }, [sectionsList, magazineSections]);
 
-  const isCurrentDirty = (activeMode === 'HOME' && isHomeDirty) || (activeMode === 'ARCHIVE' && isArchiveDirty) || (activeMode === 'MAGAZINE' && isMagazineDirty);
+  // Dirty tracking for Archive & Magazine Hub Headers
+  const isArchiveHubHeaderDirty = useMemo(() => {
+    if (!archiveHubConfig) return false;
+    return (
+      archiveHubMainTitle !== (archiveHubConfig.mainTitle || '') ||
+      archiveHubSubtitle !== (archiveHubConfig.subtitle || '') ||
+      archiveHubBadgeText !== (archiveHubConfig.badgeText || '') ||
+      archiveHubVolumeText !== (archiveHubConfig.volumeText || '')
+    );
+  }, [archiveHubConfig, archiveHubMainTitle, archiveHubSubtitle, archiveHubBadgeText, archiveHubVolumeText]);
+
+  const isMagazineHubHeaderDirty = useMemo(() => {
+    if (!magazineHubConfig) return false;
+    return (
+      hubMainTitle !== (magazineHubConfig.mainTitle || '') ||
+      hubSubtitle !== (magazineHubConfig.subtitle || '') ||
+      hubBadgeText !== (magazineHubConfig.badgeText || '') ||
+      hubVolumeText !== (magazineHubConfig.volumeText || '')
+    );
+  }, [magazineHubConfig, hubMainTitle, hubSubtitle, hubBadgeText, hubVolumeText]);
+
+  // Unified global dirty state across all management tabs & sub-settings
+  const isAnyDirty = isHomeDirty || isArchiveDirty || isMagazineDirty || isArchiveHubHeaderDirty || isMagazineHubHeaderDirty;
 
   useEffect(() => {
     if (onDirtyChange) {
-      onDirtyChange(isCurrentDirty);
+      onDirtyChange(isAnyDirty);
     }
-  }, [isCurrentDirty, onDirtyChange]);
+  }, [isAnyDirty, onDirtyChange]);
 
   // Sync journeys from props with localStorage order preservation
   useEffect(() => {
@@ -1926,6 +1948,119 @@ export function ManageHubPage({
     }
   };
 
+  // Unified Save All Changes Function across all tabs & sections
+  const [isSavingAll, setIsSavingAll] = useState(false);
+  const [saveAllSuccess, setSaveAllSuccess] = useState(false);
+
+  const handleSaveAllChanges = async (showModal: boolean = true) => {
+    if (isSavingAll) return;
+    setIsSavingAll(true);
+    try {
+      // 1. Save Home Settings
+      localStorage.setItem('playVideoOnActivate', String(playVideoOnActivate));
+      localStorage.setItem('home_journey_limit', String(homeJourneyLimit));
+      localStorage.setItem('hero_slide_duration', String(slideDuration));
+      localStorage.setItem('home_gradient_enabled', String(gradientEnabled));
+      localStorage.setItem('home_gradient_from', gradientFrom);
+      localStorage.setItem('home_gradient_to', gradientTo);
+      localStorage.setItem('home_magazine_section_id', homeMagSectionId);
+      localStorage.setItem('home_magazine_limit', String(homeMagLimit));
+      window.dispatchEvent(new CustomEvent('homeConfigChanged', {
+        detail: {
+          gradientEnabled,
+          gradientFrom,
+          gradientTo,
+        }
+      }));
+
+      await onSaveAllHomeSettings(
+        title,
+        subtitle,
+        selectedHeroIds,
+        autoSlide,
+        showMarquee,
+        homeMarquee,
+        homeSpeed,
+        mediaType,
+        momentsList,
+        slideDuration,
+        gradientEnabled,
+        gradientFrom,
+        gradientTo,
+        homeMagSectionId,
+        homeMagLimit
+      );
+
+      // 2. Save Journey if currently editing one
+      if (selectedJourney) {
+        await onSaveTrip(selectedJourney.id, {
+          title: editTitle,
+          date: editDate,
+          locationStr: editLocation,
+          country: editCountry,
+          tags: editTags,
+          img: editImg,
+          videoUrl: editVideoUrl,
+          heroImg: editHeroImg,
+          heroVideoUrl: editHeroVideoUrl,
+          statusBadge: editStatusBadge,
+        });
+      }
+
+      // 3. Save Journey Hub Header if configured
+      if (onSaveArchiveHubConfig) {
+        await onSaveArchiveHubConfig({
+          mainTitle: archiveHubMainTitle,
+          subtitle: archiveHubSubtitle,
+          badgeText: archiveHubBadgeText,
+          volumeText: archiveHubVolumeText,
+        });
+      }
+
+      // 4. Save Magazine Hub Header if configured
+      if (onSaveMagazineHubConfig) {
+        await onSaveMagazineHubConfig({
+          mainTitle: hubMainTitle,
+          subtitle: hubSubtitle,
+          badgeText: hubBadgeText,
+          volumeText: hubVolumeText,
+        });
+      }
+
+      // 5. Save Magazine Sections
+      if (onSaveMagazineSections) {
+        await onSaveMagazineSections(sectionsList);
+      } else if (onSaveMagazineMoments) {
+        const mainSec = sectionsList.find(s => s.id === 'main') || sectionsList[0];
+        await onSaveMagazineMoments(mainSec?.items || []);
+      }
+
+      setSaveAllSuccess(true);
+      setHomeSaveSuccess(true);
+      setTripSaveSuccess(true);
+      setMagazineSaveSuccess(true);
+      setArchiveHubHeaderSaveSuccess(true);
+      setHubHeaderSaveSuccess(true);
+      if (showModal) {
+        setShowSaveSuccessModal(true);
+      }
+      setTimeout(() => {
+        setSaveAllSuccess(false);
+        setHomeSaveSuccess(false);
+        setTripSaveSuccess(false);
+        setMagazineSaveSuccess(false);
+        setArchiveHubHeaderSaveSuccess(false);
+        setHubHeaderSaveSuccess(false);
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to save all management changes:', err);
+      alert('설정 저장 중 오류가 발생했습니다.');
+      throw err;
+    } finally {
+      setIsSavingAll(false);
+    }
+  };
+
   // Directly read magazineSections from Firestore for diagnostics
   const handleLoadFirestoreMagazineSections = async () => {
     setIsLoadingFirestoreMag(true);
@@ -1989,20 +2124,12 @@ export function ManageHubPage({
     }
   };
 
-  // Sync saveRef with the current active mode's save handler
+  // Sync saveRef with the unified save handler so any unsaved state across all tabs gets saved before navigating away
   useEffect(() => {
     if (saveRef) {
-      if (activeMode === 'HOME') {
-        saveRef.current = handleSaveHome;
-      } else if (activeMode === 'ARCHIVE') {
-        saveRef.current = handleSaveJourney;
-      } else if (activeMode === 'MAGAZINE') {
-        saveRef.current = handleSaveMagazine;
-      } else {
-        saveRef.current = null;
-      }
+      saveRef.current = () => handleSaveAllChanges(false);
     }
-  }, [saveRef, activeMode, handleSaveHome, handleSaveJourney, handleSaveMagazine]);
+  }, [saveRef, handleSaveAllChanges]);
 
   const isSelectedPlan = Boolean(
     selectedJourney && (
@@ -2031,8 +2158,8 @@ export function ManageHubPage({
   return (
     <main className="min-h-screen w-full bg-[#FAF9F6] dark:bg-[#141414] text-black dark:text-white flex flex-col font-sans select-none animate-in fade-in duration-300">
       
-      {/* 1. Header Toolbar with Swiss Minimal Mode Switcher: HOME / ARCHIVE / MAGAZINE / MAP / TRASH / CLEANUP */}
-      <div className="border-b border-black/15 dark:border-white/15 px-4 sm:px-8 py-3 bg-white dark:bg-[#111111] flex flex-wrap items-center justify-between gap-4 sticky top-0 z-30">
+      {/* 1. Header Toolbar with Swiss Minimal Mode Switcher & Unified SAVE ALL CHANGES Action */}
+      <div className="border-b border-black/15 dark:border-white/15 px-4 sm:px-8 py-2.5 bg-white dark:bg-[#111111] flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30">
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
@@ -2053,31 +2180,65 @@ export function ManageHubPage({
           </div>
         </div>
 
-        {/* Mode Switcher: HOME / TRIP / MAGAZINE / MAP / TRASH / CLEANUP */}
-        <div className="flex items-center border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 p-0.5 rounded-none overflow-x-auto">
-          {(['HOME', 'ARCHIVE', 'MAGAZINE', 'MAP', 'TRASH', 'CLEANUP'] as const).map(mode => (
-            <button
-              key={mode}
-              onClick={() => {
-                setActiveMode(mode);
-                if (mode === 'CLEANUP' && !diagReport && !isScanning) {
-                  handleScanCleanup();
-                }
-              }}
-              className={`px-3 sm:px-4 py-1.5 text-xs font-black uppercase tracking-wider font-sans transition-colors cursor-pointer whitespace-nowrap ${
-                activeMode === mode
-                  ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
-                  : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-              }`}
-            >
-              {mode === 'ARCHIVE' ? 'TRIP' : (mode === 'CLEANUP' ? 'OPTIMIZE' : mode)}
-              {mode === 'TRASH' && trashedJourneys.length > 0 && (
-                <span className="ml-1 text-[9px] font-mono px-1 bg-red-600 text-white">
-                  {trashedJourneys.length}
-                </span>
-              )}
-            </button>
-          ))}
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Mode Switcher: HOME / TRIP / MAGAZINE / MAP / TRASH / CLEANUP */}
+          <div className="flex items-center border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 p-0.5 rounded-none overflow-x-auto">
+            {(['HOME', 'ARCHIVE', 'MAGAZINE', 'MAP', 'TRASH', 'CLEANUP'] as const).map(mode => (
+              <button
+                key={mode}
+                onClick={() => {
+                  setActiveMode(mode);
+                  if (mode === 'CLEANUP' && !diagReport && !isScanning) {
+                    handleScanCleanup();
+                  }
+                }}
+                className={`px-3 sm:px-4 py-1.5 text-xs font-black uppercase tracking-wider font-sans transition-colors cursor-pointer whitespace-nowrap ${
+                  activeMode === mode
+                    ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                    : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                }`}
+              >
+                {mode === 'ARCHIVE' ? 'TRIP' : (mode === 'CLEANUP' ? 'OPTIMIZE' : mode)}
+                {mode === 'TRASH' && trashedJourneys.length > 0 && (
+                  <span className="ml-1 text-[9px] font-mono px-1 bg-red-600 text-white">
+                    {trashedJourneys.length}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Top Permanent Unified SAVE ALL Button */}
+          <button
+            type="button"
+            onClick={() => handleSaveAllChanges(true)}
+            disabled={isSavingAll}
+            className={`px-4 py-1.5 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-xs transition-all border ${
+              saveAllSuccess
+                ? '!bg-emerald-600 !text-white !border-emerald-600'
+                : isAnyDirty
+                  ? 'bg-red-600 text-white border-red-600 hover:bg-red-700 animate-pulse'
+                  : 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white hover:opacity-85'
+            }`}
+            title="모든 탭과 섹션의 변경사항을 즉시 통합 저장합니다."
+          >
+            {isSavingAll ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : saveAllSuccess ? (
+              <Check className="w-3.5 h-3.5" />
+            ) : (
+              <Save className="w-3.5 h-3.5" />
+            )}
+            <span>
+              {saveAllSuccess
+                ? 'ALL SAVED!'
+                : isSavingAll
+                  ? 'SAVING...'
+                  : isAnyDirty
+                    ? '● SAVE ALL'
+                    : 'SAVE ALL'}
+            </span>
+          </button>
         </div>
       </div>
 
@@ -2090,13 +2251,26 @@ export function ManageHubPage({
         {activeMode === 'HOME' && (
           <div className="w-full max-w-3xl mx-auto p-4 sm:p-8 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200">
             <div className="flex flex-col gap-8">
+              {/* Header Title */}
+              <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
+                <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                  APP & HOMEPAGE CONFIGURATION
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                  HOME SETTING
+                </h2>
+                <p className="text-xs text-black/60 dark:text-white/60 font-mono">
+                  [홈페이지 메인 타이틀, 마퀴 배너, 히어로 슬라이드 및 큐레이션 매거진 설정]
+                </p>
+              </div>
+
               {/* ═══════════════════════════════════════════════════════════════ */}
               {/* SECTION: MAIN (메인 & 마퀴 설정)                              */}
               {/* ═══════════════════════════════════════════════════════════════ */}
               <section className="flex flex-col gap-6 pt-2">
-                  <div className="flex items-center justify-between border-b-2 border-black dark:border-white pb-2">
-                    <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
-                      MAIN
+                  <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
+                    <h3 className="text-lg font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                      MAIN & MARQUEE
                     </h3>
                   </div>
 
@@ -2747,6 +2921,19 @@ export function ManageHubPage({
         {activeMode === 'ARCHIVE' && (
           <div className="flex-1 flex flex-col w-full overflow-y-auto max-h-[calc(100vh-60px)]">
             
+            {/* Top Bar with Header */}
+            <div className="w-full px-4 sm:px-8 pt-6 pb-4 border-b border-black/15 dark:border-white/15 shrink-0">
+              <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                JOURNEY LOGS & PLANNER MANAGEMENT
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                TRIP SETTING
+              </h2>
+              <p className="text-xs text-black/60 dark:text-white/60 font-mono mt-1">
+                [여정 허브 헤더 소개글 설정 및 개별 여정 정보·사진·태그·순서 통합 관리]
+              </p>
+            </div>
+
             {/* 0. Journey Hub Main Header Configuration Accordion (Trip Hub Editorial Masthead) */}
             <div className="w-full border-b border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] shrink-0">
               <div className="w-full p-4 sm:px-8">
@@ -3606,16 +3793,16 @@ export function ManageHubPage({
           <div className="w-full max-w-5xl mx-auto p-4 sm:p-8 flex flex-col gap-8 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200">
             
             {/* Top Bar with Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-black/15 dark:border-white/15 pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-black dark:border-white pb-4">
               <div>
                 <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
                   EDITORIAL MAGAZINE CURATION
                 </span>
-                <h2 className="text-2xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
-                  매거진 섹션 및 에디토리얼 관리
+                <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                  MAGAZINE SETTING
                 </h2>
-                <p className="text-xs text-black/60 dark:text-white/60 mt-0.5">
-                  기본 홈 매거진 및 여정별·테마별 섹션을 추가하고 잡지 스타일의 리듬감 있는 레이아웃을 구성합니다.
+                <p className="text-xs text-black/60 dark:text-white/60 font-mono mt-1">
+                  [매거진 허브 메인 소개글 및 이슈 섹션별 에디토리얼 화보와 스토리 모먼트 관리]
                 </p>
               </div>
             </div>
@@ -3629,7 +3816,7 @@ export function ManageHubPage({
               >
                 <div className="flex items-center gap-2.5">
                   <Sliders className="w-4 h-4 text-red-600 dark:text-red-400" />
-                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white font-['Noto_Sans_KR',sans-serif]">
                     매거진 허브 메인 헤더 & 소개글 설정 (MAGAZINE HUB MAIN HEADER)
                   </span>
                   <span className="text-[10px] font-mono px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black uppercase">
@@ -3637,7 +3824,7 @@ export function ManageHubPage({
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-mono text-black/50 dark:text-white/50">
+                  <span className="text-[11px] font-mono text-black/50 dark:text-white/50 font-['Noto_Sans_KR',sans-serif]">
                     {isHubHeaderOpen ? '접기 ▲' : '펼치기 ▼'}
                   </span>
                 </div>
@@ -3648,7 +3835,7 @@ export function ManageHubPage({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Badge Text */}
                     <div className="flex flex-col gap-1">
-                      <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                      <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 font-['Noto_Sans_KR',sans-serif]">
                         HUB BADGE TEXT (상단 태그 텍스트)
                       </label>
                       <input
@@ -3656,13 +3843,13 @@ export function ManageHubPage({
                         value={hubBadgeText}
                         onChange={e => setHubBadgeText(e.target.value)}
                         placeholder="e.g. CURATED ARCHIVE"
-                        className="px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                        className="px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white font-['Noto_Sans_KR',sans-serif]"
                       />
                     </div>
 
                     {/* Volume Text */}
                     <div className="flex flex-col gap-1">
-                      <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                      <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 font-['Noto_Sans_KR',sans-serif]">
                         HUB VOLUME TEXT (발행 연도 / 볼륨)
                       </label>
                       <input
@@ -3670,14 +3857,14 @@ export function ManageHubPage({
                         value={hubVolumeText}
                         onChange={e => setHubVolumeText(e.target.value)}
                         placeholder="e.g. VOL. 2026"
-                        className="px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                        className="px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white font-['Noto_Sans_KR',sans-serif]"
                       />
                     </div>
                   </div>
 
                   {/* Main Title */}
                   <div className="flex flex-col gap-1">
-                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 font-['Noto_Sans_KR',sans-serif]">
                       MAIN HEADLINE TITLE (허브 메인 대형 헤드라인 타이틀)
                     </label>
                     <input
@@ -3691,7 +3878,7 @@ export function ManageHubPage({
 
                   {/* Subtitle */}
                   <div className="flex flex-col gap-1">
-                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 font-['Noto_Sans_KR',sans-serif]">
                       INTRO SUBTITLE / DESCRIPTION (허브 소개 및 설명 문구)
                     </label>
                     <textarea
@@ -3705,76 +3892,26 @@ export function ManageHubPage({
 
                   {/* Save Button for Hub Header */}
                   <div className="flex items-center justify-between pt-2 border-t border-black/10 dark:border-white/10">
-                    <span className="text-[11px] font-mono text-black/50 dark:text-white/50">
-                      * 수정 후 [SAVE HUB HEADER]를 누르면 매거진 허브 메인에 즉시 반영됩니다.
+                    <span className="text-[11px] font-mono text-black/50 dark:text-white/50 font-['Noto_Sans_KR',sans-serif]">
+                      * 수정 후 [SAVE MAGAZINE HUB HEADER]를 누르면 매거진 허브 메인에 즉시 반영됩니다.
                     </span>
                     <button
                       type="button"
                       onClick={handleSaveHubHeader}
                       disabled={isSavingHubHeader}
-                      className="px-4 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 dark:hover:bg-red-500 hover:text-white transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+                      className="px-4 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 dark:hover:bg-red-500 hover:text-white transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer font-['Noto_Sans_KR',sans-serif]"
                     >
                       {isSavingHubHeader ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                      <span>{hubHeaderSaveSuccess ? 'SAVED!' : 'SAVE HUB HEADER'}</span>
+                      <span>{hubHeaderSaveSuccess ? 'SAVED!' : 'SAVE MAGAZINE HUB HEADER'}</span>
                     </button>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* 1. Section Selector & Manager Bar */}
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
-                  MAGAZINE SECTIONS ({sectionsList.length})
-                </span>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1 border-r border-black/10 dark:border-white/10 pr-2 mr-1">
-                    <button
-                      type="button"
-                      onClick={handleMagazineUndo}
-                      disabled={magUndoStack.length === 0}
-                      className="p-1.5 border border-black/20 dark:border-white/20 text-black dark:text-white disabled:opacity-20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
-                      title="실행 취소 (Ctrl+Z)"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleMagazineRedo}
-                      disabled={magRedoStack.length === 0}
-                      className="p-1.5 border border-black/20 dark:border-white/20 text-black dark:text-white disabled:opacity-20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
-                      title="다시 실행 (Ctrl+Y / Ctrl+Shift+Z)"
-                    >
-                      <RotateCw className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedTripForAutoGenerate(localJourneys[0]?.id ?? null);
-                      setShowAutoGenerateModal(true);
-                    }}
-                    className="px-3 py-1.5 bg-red-600 text-white text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hover:bg-red-700 transition-colors shadow-xs"
-                    title="기존 여정의 타임라인/갤러리 사진으로 새 섹션을 자동 생성합니다"
-                  >
-                    <Layers className="w-3.5 h-3.5" />
-                    <span>GENERATE FROM TRIP</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowAddSectionModal(true)}
-                    className="px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hover:opacity-85 transition-opacity"
-                    title="새로운 빈 매거진 섹션을 생성합니다"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>NEW SECTION</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Sections Tab Strip */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-black/10 dark:border-white/10">
+            {/* 1. Section Switcher Bar */}
+            <div className="flex items-center justify-between gap-2 overflow-x-auto pb-2 border-b border-black/15 dark:border-white/15">
+              <div className="flex items-center gap-2">
                 {sectionsList.map((sec, idx) => {
                   const isActive = sec.id === activeMagSectionId;
                   return (
@@ -3788,9 +3925,14 @@ export function ManageHubPage({
                     >
                       <button
                         type="button"
-                        onClick={() => setActiveMagSectionId(sec.id)}
+                        onClick={() => {
+                          setActiveMagSectionId(sec.id);
+                          setMomentsList(sec.items || []);
+                          setSelectedMagCardId(null);
+                        }}
                         className="px-3 py-2 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer"
                       >
+                        <span>{String(idx + 1).padStart(2, '0')}.</span>
                         <span>{sec.title}</span>
                         <span className={`text-[10px] px-1.5 py-0.2 ${isActive ? 'bg-white/20 dark:bg-black/20' : 'bg-black/10 dark:bg-white/10'}`}>
                           {sec.items?.length || 0}
@@ -3833,6 +3975,49 @@ export function ManageHubPage({
                   );
                 })}
               </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1 border-r border-black/15 dark:border-white/15 pr-2 mr-1">
+                  <button
+                    type="button"
+                    onClick={handleMagazineUndo}
+                    disabled={magUndoStack.length === 0}
+                    className="p-1.5 border border-black/20 dark:border-white/20 text-black dark:text-white disabled:opacity-20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                    title="실행 취소 (Ctrl+Z)"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleMagazineRedo}
+                    disabled={magRedoStack.length === 0}
+                    className="p-1.5 border border-black/20 dark:border-white/20 text-black dark:text-white disabled:opacity-20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                    title="다시 실행 (Ctrl+Y / Ctrl+Shift+Z)"
+                  >
+                    <RotateCw className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddSectionModal(true)}
+                  className="px-3 py-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-black dark:text-white border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+                  <span>NEW SECTION</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedTripForAutoGenerate(localJourneys[0]?.id ?? null);
+                    setShowAutoGenerateModal(true);
+                  }}
+                  className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                  title="특정 여정을 선택하여 매거진 섹션을 자동 생성합니다."
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>FROM TRIP</span>
+                </button>
+              </div>
             </div>
 
             {/* 2. Active Section Settings & Dual Live Previews (Hero & Hub Card) */}
@@ -3852,27 +4037,27 @@ export function ManageHubPage({
                   )}
                 </div>
 
-                {/* Dual Live Previews Grid: 1) Hero Banner Preview + 2) Hub Section Card Preview */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                {/* Dual Live Previews Grid: 1) Hero Banner Preview + 2) Hub Section Card Preview (Matched Heights) */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
                   
                   {/* Preview 1: Hero Banner (7 cols on lg) */}
-                  <div className="lg:col-span-7 flex flex-col gap-2">
+                  <div className="lg:col-span-7 flex flex-col gap-2 h-full">
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
                         1. HERO BANNER LIVE PREVIEW
                       </span>
                     </div>
 
-                    <div className="w-full h-56 sm:h-64 relative overflow-hidden bg-black/10 dark:bg-white/5 border border-black/15 dark:border-white/15 group">
+                    <div className="w-full flex-1 min-h-[340px] sm:min-h-[360px] relative overflow-hidden bg-black/10 dark:bg-white/5 border border-black/15 dark:border-white/15 group flex flex-col justify-between">
                       {currentMagSection.heroImg ? (
                         <>
                           <img
                             src={getEffectiveImageUrl(currentMagSection.heroImg)}
                             alt={currentMagSection.heroTitle || 'Hero'}
-                            className="w-full h-full object-cover object-center"
+                            className="absolute inset-0 w-full h-full object-cover object-center"
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent pointer-events-none" />
-                          <div className="absolute inset-0 p-4 sm:p-5 flex flex-col justify-between text-white pointer-events-none">
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-black/20 pointer-events-none" />
+                          <div className="relative z-10 p-4 sm:p-5 flex flex-col justify-between h-full text-white pointer-events-none">
                             <div className="flex items-center justify-between">
                               <span className="text-[9px] font-mono font-bold uppercase tracking-widest px-2 py-0.5 bg-black/60 backdrop-blur-xs border border-white/20">
                                 HERO PREVIEW
@@ -3910,23 +4095,23 @@ export function ManageHubPage({
                   </div>
 
                   {/* Preview 2: Hub Section Card Live Preview (MOUTHWASH style, 5 cols on lg) */}
-                  <div className="lg:col-span-5 flex flex-col gap-2">
+                  <div className="lg:col-span-5 flex flex-col gap-2 h-full">
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-400">
                         2. HUB SECTION CARD LIVE PREVIEW (실시간 허브 카드)
                       </span>
                     </div>
 
-                    <div className="w-full p-3.5 bg-white dark:bg-[#141414] border border-black/15 dark:border-white/15 shadow-sm flex flex-col items-center">
+                    <div className="w-full flex-1 min-h-[340px] sm:min-h-[360px] p-3.5 bg-white dark:bg-[#141414] border border-black/15 dark:border-white/15 shadow-sm flex flex-col items-center justify-between">
                       {/* MOUTHWASH Card Top Bold Title */}
-                      <div className="min-h-[2.8rem] flex items-center justify-center mb-2 px-1 w-full">
+                      <div className="min-h-[2.8rem] flex items-center justify-center mb-1 px-1 w-full">
                         <h4 className="text-sm sm:text-base font-satoshi font-black uppercase tracking-tight text-center leading-[1.12] text-black dark:text-white line-clamp-2">
                           {currentMagSection.heroTitle || currentMagSection.title || 'UNTITLED ISSUE'}
                         </h4>
                       </div>
 
                       {/* Photo Frame (3:4 ratio) */}
-                      <div className="relative aspect-[3/4] w-full max-w-[200px] overflow-hidden bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15">
+                      <div className="relative aspect-[3/4] w-full max-w-[180px] overflow-hidden bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15 my-auto">
                         {currentMagSection.heroImg ? (
                           <img
                             src={getEffectiveImageUrl(currentMagSection.heroImg)}
@@ -4736,13 +4921,16 @@ export function ManageHubPage({
         {/* ─────────────────────────────────────────────────────────────────── */}
         {activeMode === 'MAP' && (
           <div className="w-full max-w-2xl mx-auto p-6 sm:p-12 flex flex-col gap-8 animate-in fade-in duration-200">
-            <div className="border-b border-black/15 dark:border-white/15 pb-4">
+            <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
               <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
                 WORLD MAP PREFERENCES
               </span>
-              <h2 className="text-2xl font-black uppercase tracking-tight text-black dark:text-white">
-                전세계 지도 설정
+              <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                MAP SETTING
               </h2>
+              <p className="text-xs text-black/60 dark:text-white/60 font-mono">
+                [전세계 지도 타일셋 스타일 및 표시 옵션 설정]
+              </p>
             </div>
 
             <div className="flex flex-col gap-6">
@@ -4814,13 +5002,13 @@ export function ManageHubPage({
         {/* ─────────────────────────────────────────────────────────────────── */}
         {activeMode === 'TRASH' && (
           <div className="w-full max-w-3xl mx-auto p-6 sm:p-12 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200">
-            <div className="border-b border-black/15 dark:border-white/15 pb-4">
+            <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
               <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
                 TRASH REPOSITORY
               </span>
               <div className="flex items-baseline justify-between flex-wrap gap-2">
-                <h2 className="text-2xl font-black uppercase tracking-tight text-black dark:text-white">
-                  휴지통 관리 ({trashedJourneys.length + trashedSections.length})
+                <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                  TRASH SETTING ({trashedJourneys.length + trashedSections.length})
                 </h2>
                 <span className="text-xs font-mono text-black/50 dark:text-white/50">
                   삭제된 여정 및 매거진 섹션은 영구 삭제 전까지 안전하게 보관됩니다.
@@ -4980,9 +5168,12 @@ export function ManageHubPage({
             <div className="flex flex-col gap-2 border-b-2 border-black dark:border-white pb-4">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
+                  <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                    DATABASE INTEGRITY & REPOSITORY OPTIMIZER
+                  </span>
                   <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans flex items-center gap-2.5">
                     <Database className="w-6 h-6 sm:w-7 sm:h-7 text-red-600 dark:text-red-500" />
-                    <span>SYSTEM OPTIMIZER & CLEANUP</span>
+                    <span>CLEANUP & OPTIMIZE</span>
                   </h2>
                   <p className="text-xs text-black/60 dark:text-white/60 font-mono mt-1">
                     [데이터베이스 무결성 검사 및 불필요한 찌꺼기 / 고아 데이터 안전 선별 정리]
