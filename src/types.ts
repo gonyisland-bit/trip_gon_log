@@ -202,3 +202,9 @@ export interface MagazineSection {
   isDefault?: boolean;
 }
 
+export interface TrashedMagazineSection extends MagazineSection {
+  deletedType?: 'magazine_section';
+  deletedAt?: number;
+}
+
+export type TrashedItem = (Trip & { deletedType?: 'journey' }) | TrashedMagazineSection;

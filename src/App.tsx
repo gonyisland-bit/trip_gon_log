@@ -38,7 +38,8 @@ import {
   TransitItem,
   MagazineMoment,
   MagazineSection,
-  MagazineItem
+  MagazineItem,
+  TrashedMagazineSection
 } from './types';
 import { auth, db } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -148,6 +149,7 @@ function App() {
     return [];
   });
   const [trashedJourneys, setTrashedJourneys] = useState<Trip[]>([]);
+  const [trashedSections, setTrashedSections] = useState<TrashedMagazineSection[]>([]);
   const [activeTripId, setActiveTripId] = useState<number | null>(null);
   const [selectedTagFilter, setSelectedTagFilter] = useState<string | null>(null);
   const [dbError, setDbError] = useState<string | null>(null);
@@ -527,11 +529,18 @@ function App() {
     });
 
     const unsubTrash = onSnapshot(collection(db, 'users', uid, 'trash'), (snapshot) => {
-      const list: Trip[] = [];
+      const journeyList: Trip[] = [];
+      const sectionList: TrashedMagazineSection[] = [];
       snapshot.forEach(doc => {
-        list.push(doc.data() as Trip);
+        const data = doc.data();
+        if (data.deletedType === 'magazine_section' || (data.items && data.id && typeof data.id === 'string' && !data.locationStr && !data.tags)) {
+          sectionList.push(data as TrashedMagazineSection);
+        } else {
+          journeyList.push(data as Trip);
+        }
       });
-      setTrashedJourneys(list.sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0)));
+      setTrashedJourneys(journeyList.sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0)));
+      setTrashedSections(sectionList.sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0)));
     }, (err) => {
       console.error("Trash snapshot subscription error:", err);
     });
@@ -1718,6 +1727,69 @@ function App() {
     }
   };
 
+  const handleDeleteMagazineSection = async (sectionId: string) => {
+    if (!isLoggedIn || !isAdmin) return;
+    const target = magazineSections.find(s => s.id === sectionId);
+    if (!target) return;
+
+    try {
+      // 1. Move section to trash collection
+      const trashedSectionData: TrashedMagazineSection = {
+        ...target,
+        deletedType: 'magazine_section',
+        deletedAt: Date.now()
+      };
+      await setDoc(doc(db, 'users', 'public', 'trash', `section-${sectionId}`), cleanForFirestore(trashedSectionData));
+
+      // 2. Remove from active sections & save
+      const updated = magazineSections.filter(s => s.id !== sectionId).map((s, idx) => ({ ...s, order: idx }));
+      await handleSaveMagazineSections(updated);
+      alert(`'${target.title}' 매거진 섹션이 휴지통으로 이동되었습니다.\n\n휴지통(TRASH) 탭에서 복원하거나 완전히 삭제할 수 있습니다.`);
+    } catch (err) {
+      console.error("Error soft-deleting magazine section:", err);
+      alert("매거진 섹션 삭제 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleRestoreMagazineSection = async (sectionId: string) => {
+    if (!isLoggedIn || !isAdmin) return;
+    const trashed = trashedSections.find(s => s.id === sectionId || `section-${s.id}` === sectionId);
+    if (!trashed) return;
+
+    try {
+      const { deletedType: _, deletedAt: __, ...cleanSection } = trashed;
+      const docId = trashed.id.startsWith('section-') ? trashed.id : `section-${trashed.id}`;
+      
+      // 1. Delete from trash
+      await deleteDoc(doc(db, 'users', 'public', 'trash', docId));
+
+      // 2. Add to active magazine sections
+      const updated = [...magazineSections, { ...cleanSection, order: magazineSections.length }];
+      await handleSaveMagazineSections(updated);
+      alert(`'${trashed.title}' 매거진 섹션이 성공적으로 복구되었습니다.`);
+    } catch (err) {
+      console.error("Error restoring magazine section:", err);
+      alert("매거진 섹션 복구 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handlePermanentDeleteMagazineSection = async (sectionId: string) => {
+    if (!isLoggedIn || !isAdmin) return;
+    const trashed = trashedSections.find(s => s.id === sectionId || `section-${s.id}` === sectionId);
+    const title = trashed?.title || '이 매거진 섹션';
+
+    if (!window.confirm(`'${title}' 매거진 섹션을 영구 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) return;
+
+    try {
+      const docId = trashed ? (trashed.id.startsWith('section-') ? trashed.id : `section-${trashed.id}`) : sectionId;
+      await deleteDoc(doc(db, 'users', 'public', 'trash', docId));
+      alert(`'${title}' 매거진 섹션이 영구 삭제되었습니다.`);
+    } catch (err) {
+      console.error("Error permanently deleting magazine section:", err);
+      alert("매거진 섹션 영구 삭제에 실패했습니다.");
+    }
+  };
+
   // Redirect guest if they try to view a Plan detail page
   useEffect(() => {
     if (currentView === 'detail' && activeTrip) {
@@ -2024,8 +2096,12 @@ function App() {
                   onSaveMagazineMoments={handleSaveMagazineMoments}
                   onSaveMagazineSections={handleSaveMagazineSections}
                   trashedJourneys={trashedJourneys}
+                  trashedSections={trashedSections}
                   onRestoreJourney={handleRestoreJourney}
                   onPermanentDeleteJourney={handlePermanentDeleteJourney}
+                  onDeleteMagazineSection={handleDeleteMagazineSection}
+                  onRestoreMagazineSection={handleRestoreMagazineSection}
+                  onPermanentDeleteMagazineSection={handlePermanentDeleteMagazineSection}
                   isLoggedIn={isLoggedIn}
                   isDarkMode={isDarkMode}
                   onDirtyChange={setIsManageDirty}

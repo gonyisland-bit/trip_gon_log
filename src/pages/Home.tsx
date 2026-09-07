@@ -1455,10 +1455,15 @@ export function HomePage({
             <div className="w-full border-t border-black/10 dark:border-white/10 mt-12 pt-12 px-4 sm:px-8 md:px-12 flex flex-col gap-8">
               {/* Section Header: Pure Swiss Minimal Magazine Header */}
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-black/15 dark:border-white/15">
-                <div className="flex items-baseline gap-4">
+                <div className="flex items-baseline gap-4 flex-wrap">
                   <h2 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
                     MAGAZINE
                   </h2>
+                  {selectedSection && (
+                    <span className="text-xs font-mono font-bold uppercase tracking-wider px-2 py-0.5 border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 text-black/70 dark:text-white/70">
+                      {selectedSection.title}
+                    </span>
+                  )}
                   <button
                     type="button"
                     onClick={() => onNavigate('magazine')}

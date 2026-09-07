@@ -43,7 +43,7 @@ import {
 } from 'lucide-react';
 import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc, deleteField, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Trip, Plan, MagazineMoment, MagazineSection, MagazineItem, TimelineData, TimelineItem } from '../types';
+import { Trip, Plan, MagazineMoment, MagazineSection, MagazineItem, TimelineData, TimelineItem, TrashedMagazineSection } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { getEffectiveImageUrl, uploadFileToR2, deleteFileFromR2 } from '../utils/storageHelper';
 import { compressImage } from '../utils/imageHelper';
@@ -101,8 +101,12 @@ interface ManageHubPageProps {
   onSaveMagazineSections?: (sections: MagazineSection[]) => Promise<void>;
   // Trash bin
   trashedJourneys: Trip[];
+  trashedSections?: TrashedMagazineSection[];
   onRestoreJourney: (id: number) => Promise<void>;
   onPermanentDeleteJourney: (id: number) => Promise<void>;
+  onDeleteMagazineSection?: (sectionId: string) => Promise<void>;
+  onRestoreMagazineSection?: (sectionId: string) => Promise<void>;
+  onPermanentDeleteMagazineSection?: (sectionId: string) => Promise<void>;
   isLoggedIn: boolean;
   isDarkMode: boolean;
   onDirtyChange?: (isDirty: boolean) => void;
@@ -135,8 +139,12 @@ export function ManageHubPage({
   homeMagazineLimit = 6,
   onSaveAllHomeSettings,
   trashedJourneys,
+  trashedSections = [],
   onRestoreJourney,
   onPermanentDeleteJourney,
+  onDeleteMagazineSection,
+  onRestoreMagazineSection,
+  onPermanentDeleteMagazineSection,
   isLoggedIn,
   isDarkMode,
   magazineMoments = [],
@@ -446,6 +454,11 @@ export function ManageHubPage({
 
       sectionsList.forEach(section => {
         (section.items || []).forEach(moment => {
+          // 0. Protected cards: text-only cards, editorial quotes, custom cards without tripId are 100% protected
+          if (moment.isTextOnly || !moment.tripId) {
+            return;
+          }
+
           // 1. Orphaned check: tripId doesn't exist in active trips/plans/trash
           if (moment.tripId !== undefined && moment.tripId !== null && !validTripIds.has(String(moment.tripId))) {
             orphanedMagazineMoments.push({
@@ -551,6 +564,11 @@ export function ManageHubPage({
     const uid = 'public';
 
     try {
+      // Create safety snapshot before any DB operations
+      try {
+        localStorage.setItem(`cached_magazine_sections_backup_cleanup_${Date.now()}`, JSON.stringify(sectionsList));
+      } catch (_) {}
+
       logs.push(`[${new Date().toLocaleTimeString()}] 🚀 데이터 최적화 및 클린화 작업 시작...`);
 
       // 1. Delete orphaned timeline docs
@@ -1374,13 +1392,26 @@ export function ManageHubPage({
     setSelectedTripForAutoGenerate(null);
   };
 
-  const handleDeleteSection = (sectionId: string) => {
+  const handleDeleteSection = async (sectionId: string) => {
     if (sectionsList.length <= 1) {
       alert('최소 1개의 매거진 섹션은 유지되어야 합니다.');
       return;
     }
     const target = sectionsList.find(s => s.id === sectionId);
-    if (window.confirm(`'${target?.title || '선택한'}' 매거진 섹션을 삭제하시겠습니까?`)) {
+    if (!window.confirm(`'${target?.title || '선택한'}' 매거진 섹션을 삭제하시겠습니까?\n\n삭제된 섹션은 휴지통(TRASH) 탭에서 언제든 복원할 수 있습니다.`)) {
+      return;
+    }
+
+    try {
+      // Local safety snapshot backup before deletion
+      try {
+        localStorage.setItem(`cached_magazine_sections_backup_${Date.now()}`, JSON.stringify(sectionsList));
+      } catch (_) {}
+
+      if (onDeleteMagazineSection) {
+        await onDeleteMagazineSection(sectionId);
+      }
+
       setSectionsList(prev => {
         const filtered = prev.filter(s => s.id !== sectionId);
         const reordered = filtered.map((s, idx) => ({ ...s, order: idx }));
@@ -1389,6 +1420,8 @@ export function ManageHubPage({
         }
         return reordered;
       });
+    } catch (err) {
+      console.error('Failed to delete magazine section:', err);
     }
   };
 
@@ -3322,18 +3355,20 @@ export function ManageHubPage({
                       setSelectedTripForAutoGenerate(localJourneys[0]?.id ?? null);
                       setShowAutoGenerateModal(true);
                     }}
-                    className="px-3 py-1 bg-red-600 text-white text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hover:bg-red-700 transition-colors shadow-xs"
+                    className="px-3 py-1.5 bg-red-600 text-white text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hover:bg-red-700 transition-colors shadow-xs"
+                    title="기존 여정의 타임라인/갤러리 사진으로 새 섹션을 자동 생성합니다"
                   >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>+ 여정 자동 생성 (AUTO-GENERATE)</span>
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>GENERATE FROM TRIP</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowAddSectionModal(true)}
-                    className="px-3 py-1 bg-black text-white dark:bg-white dark:text-black text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity"
+                    className="px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hover:opacity-85 transition-opacity"
+                    title="새로운 빈 매거진 섹션을 생성합니다"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>+ 빈 섹션 추가</span>
+                    <span>NEW SECTION</span>
                   </button>
                 </div>
               </div>
@@ -4127,20 +4162,20 @@ export function ManageHubPage({
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-black/10 dark:border-white/10">
+                    <div className="flex items-center justify-end gap-2 pt-3 border-t border-black/10 dark:border-white/10">
                     <button
                       type="button"
                       onClick={() => setShowAddSectionModal(false)}
-                      className="px-4 py-2 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase cursor-pointer"
+                      className="px-4 py-2 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                     >
                       CANCEL
                     </button>
                     <button
                       type="button"
                       onClick={handleAddSection}
-                      className="px-5 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider cursor-pointer hover:opacity-85"
+                      className="px-5 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider cursor-pointer hover:opacity-85 transition-opacity"
                     >
-                      CREATE SECTION
+                      CREATE
                     </button>
                   </div>
                 </div>
@@ -4153,27 +4188,27 @@ export function ManageHubPage({
                 <div className="w-full max-w-lg bg-white dark:bg-[#161616] border border-black dark:border-white p-6 shadow-2xl flex flex-col gap-4">
                   <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
                     <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-red-600 dark:text-red-500" />
+                      <Layers className="w-4 h-4 text-red-600 dark:text-red-500" />
                       <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-black dark:text-white">
-                        AUTO-GENERATE SECTION FROM JOURNEY
+                        GENERATE SECTION FROM TRIP
                       </h3>
                     </div>
                     <button
                       type="button"
                       onClick={() => setShowAutoGenerateModal(false)}
-                      className="p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white"
+                      className="p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
 
                   <p className="text-xs text-black/70 dark:text-white/70 leading-relaxed font-sans">
-                    선택하신 여정의 대표 커버 이미지, 갤러리 및 타임라인 사진들을 자동으로 수집하여 최적의 매거진 이슈 섹션으로 즉시 구성합니다.
+                    선택하신 여정의 커버 이미지와 타임라인/갤러리 사진을 수집하여 새 매거진 섹션을 즉시 구성합니다.
                   </p>
 
                   <div className="flex flex-col gap-2">
                     <label className="text-xs font-mono font-bold uppercase tracking-wider text-black/80 dark:text-white/80">
-                      SELECT JOURNEY (여정 선택)
+                      SELECT JOURNEY
                     </label>
                     <select
                       value={selectedTripForAutoGenerate ?? ''}
@@ -4215,7 +4250,7 @@ export function ManageHubPage({
                     <button
                       type="button"
                       onClick={() => setShowAutoGenerateModal(false)}
-                      className="px-4 py-2 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase cursor-pointer"
+                      className="px-4 py-2 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                     >
                       CANCEL
                     </button>
@@ -4229,8 +4264,8 @@ export function ManageHubPage({
                       }}
                       className="px-5 py-2 bg-red-600 text-white text-xs font-mono font-bold uppercase tracking-wider cursor-pointer hover:bg-red-700 disabled:opacity-30 flex items-center gap-1.5 shadow-sm"
                     >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>GENERATE SECTION (자동 생성)</span>
+                      <Layers className="w-3.5 h-3.5" />
+                      <span>GENERATE</span>
                     </button>
                   </div>
                 </div>
@@ -4326,73 +4361,154 @@ export function ManageHubPage({
               <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
                 TRASH REPOSITORY
               </span>
-              <div className="flex items-baseline justify-between">
+              <div className="flex items-baseline justify-between flex-wrap gap-2">
                 <h2 className="text-2xl font-black uppercase tracking-tight text-black dark:text-white">
-                  휴지통 관리 ({trashedJourneys.length})
+                  휴지통 관리 ({trashedJourneys.length + trashedSections.length})
                 </h2>
                 <span className="text-xs font-mono text-black/50 dark:text-white/50">
-                  삭제된 여정은 영구 삭제 전까지 안전하게 보관됩니다.
+                  삭제된 여정 및 매거진 섹션은 영구 삭제 전까지 안전하게 보관됩니다.
                 </span>
               </div>
             </div>
 
-            {trashedJourneys.length === 0 ? (
+            {trashedJourneys.length === 0 && trashedSections.length === 0 ? (
               <div className="py-20 text-center flex flex-col items-center justify-center gap-2 text-black/40 dark:text-white/40 font-mono text-xs">
                 <Trash2 className="w-8 h-8 opacity-40 mb-1" />
                 <span>휴지통이 비어 있습니다.</span>
               </div>
             ) : (
-              <div className="flex flex-col gap-3">
-                {trashedJourneys.map(journey => (
-                  <div
-                    key={journey.id}
-                    className="p-3.5 border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] flex items-center justify-between gap-4"
-                  >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-14 h-14 aspect-square border border-black/15 dark:border-white/15 shrink-0 overflow-hidden bg-black/10">
-                        <img
-                          src={getEffectiveImageUrl(journey.img)}
-                          alt={journey.title}
-                          className="w-full h-full object-cover grayscale opacity-75"
-                        />
-                      </div>
-                      <div className="min-w-0">
-                        <h4 className="text-sm font-black font-sans uppercase tracking-tight text-black dark:text-white truncate line-through opacity-75">
-                          {journey.title}
-                        </h4>
-                        <span className="text-[11px] font-mono text-black/50 dark:text-white/50 block mt-0.5">
-                          {journey.date} · {journey.locationStr}
-                        </span>
-                      </div>
-                    </div>
+              <div className="flex flex-col gap-6">
+                {/* 1. Trashed Magazine Sections */}
+                {trashedSections.length > 0 && (
+                  <div className="flex flex-col gap-3">
+                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-400">
+                      MAGAZINE SECTIONS ({trashedSections.length})
+                    </span>
+                    <div className="flex flex-col gap-2">
+                      {trashedSections.map(section => (
+                        <div
+                          key={section.id}
+                          className="p-3.5 border border-red-500/20 bg-red-500/[0.02] flex items-center justify-between gap-4"
+                        >
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            <div className="w-14 h-14 aspect-square border border-black/15 dark:border-white/15 shrink-0 overflow-hidden bg-black/10 flex items-center justify-center">
+                              {section.heroImg || (section.items && section.items[0]?.img) ? (
+                                <img
+                                  src={getEffectiveImageUrl(section.heroImg || section.items[0]?.img || '')}
+                                  alt={section.title}
+                                  className="w-full h-full object-cover grayscale opacity-75"
+                                />
+                              ) : (
+                                <BookOpen className="w-6 h-6 text-black/40 dark:text-white/40" />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.2 bg-red-600/10 text-red-600 dark:text-red-400">
+                                  MAGAZINE SECTION
+                                </span>
+                                <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                                  {section.items?.length || 0} items
+                                </span>
+                              </div>
+                              <h4 className="text-sm font-black font-sans uppercase tracking-tight text-black dark:text-white truncate mt-0.5 line-through opacity-75">
+                                {section.title}
+                              </h4>
+                              {section.subtitle && (
+                                <span className="text-[11px] font-mono text-black/50 dark:text-white/50 block">
+                                  {section.subtitle}
+                                </span>
+                              )}
+                            </div>
+                          </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => onRestoreJourney(journey.id)}
-                        className="px-3 py-1.5 border border-black/20 dark:border-white/20 text-xs font-black uppercase tracking-wider font-sans hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
-                        title="여정 복구"
-                      >
-                        <RotateCcw className="w-3.5 h-3.5" />
-                        <span>복구</span>
-                      </button>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => onRestoreMagazineSection && onRestoreMagazineSection(section.id)}
+                              className="px-3 py-1.5 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                              title="매거진 섹션 복원"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              <span>RESTORE</span>
+                            </button>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (confirm(`'${journey.title}' 여정을 영구적으로 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) {
-                            onPermanentDeleteJourney(journey.id);
-                          }
-                        }}
-                        className="px-3 py-1.5 text-red-600 dark:text-red-400 border border-red-600/30 dark:border-red-400/30 text-xs font-black uppercase tracking-wider font-sans hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
-                        title="영구 삭제"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>영구 삭제</span>
-                      </button>
+                            <button
+                              type="button"
+                              onClick={() => onPermanentDeleteMagazineSection && onPermanentDeleteMagazineSection(section.id)}
+                              className="px-3 py-1.5 text-red-600 dark:text-red-400 border border-red-600/30 dark:border-red-400/30 text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                              title="영구 삭제"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>DELETE</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
+                )}
+
+                {/* 2. Trashed Journeys */}
+                {trashedJourneys.length > 0 && (
+                  <div className="flex flex-col gap-3">
+                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                      JOURNEYS ({trashedJourneys.length})
+                    </span>
+                    <div className="flex flex-col gap-2">
+                      {trashedJourneys.map(journey => (
+                        <div
+                          key={journey.id}
+                          className="p-3.5 border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] flex items-center justify-between gap-4"
+                        >
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            <div className="w-14 h-14 aspect-square border border-black/15 dark:border-white/15 shrink-0 overflow-hidden bg-black/10">
+                              <img
+                                src={getEffectiveImageUrl(journey.img)}
+                                alt={journey.title}
+                                className="w-full h-full object-cover grayscale opacity-75"
+                              />
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="text-sm font-black font-sans uppercase tracking-tight text-black dark:text-white truncate line-through opacity-75">
+                                {journey.title}
+                              </h4>
+                              <span className="text-[11px] font-mono text-black/50 dark:text-white/50 block mt-0.5">
+                                {journey.date} · {journey.locationStr}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => onRestoreJourney(journey.id)}
+                              className="px-3 py-1.5 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                              title="여정 복구"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              <span>RESTORE</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (confirm(`'${journey.title}' 여정을 영구적으로 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) {
+                                  onPermanentDeleteJourney(journey.id);
+                                }
+                              }}
+                              className="px-3 py-1.5 text-red-600 dark:text-red-400 border border-red-600/30 dark:border-red-400/30 text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                              title="영구 삭제"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>DELETE</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
