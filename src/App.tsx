@@ -191,6 +191,8 @@ function App() {
   const manageSaveRef = useRef<((showModal?: boolean) => Promise<void>) | null>(null);
   const postSaveNavTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const postSaveNavTargetRef = useRef<{ view: string; tripId: number | null } | null>(null);
+  // settingsLoaded: true once Firestore settings/home listener fires (prevents premature hydration)
+  const [settingsLoaded, setSettingsLoaded] = useState<boolean>(false);
 
   const handleCloseSaveCompleteModal = () => {
     setShowSaveCompleteModal(false);
@@ -588,8 +590,12 @@ function App() {
           localStorage.setItem('home_gradient_to', data.homeGradientTo);
         }
       }
+      // Always mark settings as loaded, even if doc doesn't exist (prevents premature hydration)
+      setSettingsLoaded(true);
     }, (err) => {
       console.error("Settings snapshot subscription error:", err);
+      // Still mark as loaded on error, so hydration can proceed with fallback
+      setSettingsLoaded(true);
     });
 
     const unsubAdmin = onSnapshot(doc(db, 'users', uid, 'settings', 'admin'), (docSnap) => {
@@ -741,8 +747,9 @@ function App() {
     }
   }, [timelineData, magazineSections?.length, isLoggedIn, isAdmin, trips, plans]);
 
-  // Hydrate default magazine sections if empty
+  // Hydrate default magazine sections ONLY after Firestore settings have responded and magazineSections is still empty
   useEffect(() => {
+    if (!settingsLoaded) return; // Wait for Firestore settings/home listener to fire first
     if (trips.length > 0 && (!magazineSections || magazineSections.length === 0)) {
       const defaults = buildDefaultMagazineSections(trips, magazineMoments.length > 0 ? magazineMoments : undefined);
       setMagazineSections(defaults);
@@ -750,7 +757,7 @@ function App() {
         localStorage.setItem('cached_magazine_sections', JSON.stringify(defaults));
       } catch (_) {}
     }
-  }, [trips, magazineSections?.length]);
+  }, [settingsLoaded, trips, magazineSections?.length]);
 
   // Sync state with browser History API and parse share param on initial load
   useEffect(() => {
@@ -1092,6 +1099,10 @@ function App() {
       }
       if (homeMagazineLimitParam !== undefined) {
         dataToSave.homeMagazineLimit = homeMagazineLimitParam;
+      }
+      // Always include magazineSections to prevent accidental field loss on home settings save
+      if (magazineSections && magazineSections.length > 0) {
+        dataToSave.magazineSections = cleanForFirestore(magazineSections);
       }
 
       await setDoc(doc(db, 'users', 'public', 'settings', 'home'), cleanForFirestore(dataToSave), { merge: true });

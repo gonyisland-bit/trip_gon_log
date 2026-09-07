@@ -41,7 +41,7 @@ import {
   Server,
   Terminal
 } from 'lucide-react';
-import { collection, getDocs, doc, deleteDoc, updateDoc, deleteField } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc, deleteField, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Trip, Plan, MagazineMoment, MagazineSection, MagazineItem, TimelineData, TimelineItem } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -238,6 +238,11 @@ export function ManageHubPage({
   const [newSectionSubtitle, setNewSectionSubtitle] = useState('');
   const [showAutoGenerateModal, setShowAutoGenerateModal] = useState(false);
   const [selectedTripForAutoGenerate, setSelectedTripForAutoGenerate] = useState<number | null>(null);
+
+  // Firestore magazine sections direct diagnostic state
+  const [firestoreMagSections, setFirestoreMagSections] = useState<MagazineSection[] | null>(null);
+  const [isLoadingFirestoreMag, setIsLoadingFirestoreMag] = useState(false);
+  const [firestoreMagLoadedAt, setFirestoreMagLoadedAt] = useState<string | null>(null);
 
   useEffect(() => {
     if (magazineSections && magazineSections.length > 0) {
@@ -1716,6 +1721,69 @@ export function ManageHubPage({
       alert('매거진 설정 저장에 실패했습니다.');
     } finally {
       setIsSavingMagazine(false);
+    }
+  };
+
+  // Directly read magazineSections from Firestore for diagnostics
+  const handleLoadFirestoreMagazineSections = async () => {
+    setIsLoadingFirestoreMag(true);
+    try {
+      const snap = await getDoc(doc(db, 'users', 'public', 'settings', 'home'));
+      if (snap.exists()) {
+        const data = snap.data();
+        const sections = Array.isArray(data.magazineSections) ? data.magazineSections as MagazineSection[] : [];
+        setFirestoreMagSections(sections);
+        setFirestoreMagLoadedAt(new Date().toLocaleTimeString());
+      } else {
+        setFirestoreMagSections([]);
+        setFirestoreMagLoadedAt(new Date().toLocaleTimeString());
+      }
+    } catch (err: any) {
+      console.error('Firestore direct read error:', err);
+      alert(`Firestore 직접 읽기 실패: ${err?.message || err}`);
+    } finally {
+      setIsLoadingFirestoreMag(false);
+    }
+  };
+
+  // Force restore: load Firestore data into current sectionsList and save
+  const handleForceRestoreSectionsFromFirestore = () => {
+    if (!firestoreMagSections || firestoreMagSections.length === 0) {
+      alert('Firestore에 복구할 데이터가 없습니다. 먼저 진단 스캔을 실행해주세요.');
+      return;
+    }
+    setSectionsList(firestoreMagSections);
+    setActiveMagSectionId(firestoreMagSections[0]?.id || 'main');
+    alert(`✅ Firestore에서 ${firestoreMagSections.length}개 섹션을 현재 편집기로 불러왔습니다.\n매거진 모드로 이동 후 "SAVE MAGAZINE SETTINGS" 버튼으로 최종 저장하세요.`);
+    setActiveMode('MAGAZINE');
+  };
+
+  // Force push: save current sectionsList directly to Firestore (emergency save)
+  const handleForceSaveCurrentSectionsToFirestore = async () => {
+    if (sectionsList.length === 0) {
+      alert('현재 섹션 목록이 비어있어 저장할 수 없습니다.');
+      return;
+    }
+    if (!confirm(`현재 편집기의 ${sectionsList.length}개 섹션을 Firestore에 강제 저장하시겠습니까?`)) return;
+    try {
+      const cleaned = sectionsList.map((s, idx) => ({
+        ...s,
+        order: idx,
+        items: (s.items || []).map((it, iIdx) => ({ ...it, order: iIdx })),
+      }));
+      if (onSaveMagazineSections) {
+        await onSaveMagazineSections(cleaned);
+      } else {
+        await setDoc(doc(db, 'users', 'public', 'settings', 'home'), {
+          magazineSections: cleaned,
+        }, { merge: true });
+      }
+      alert(`✅ ${cleaned.length}개 섹션이 Firestore에 성공적으로 저장되었습니다!`);
+      // Refresh diagnostics
+      await handleLoadFirestoreMagazineSections();
+    } catch (err: any) {
+      console.error('Force save error:', err);
+      alert(`강제 저장 실패: ${err?.message || err}`);
     }
   };
 
@@ -4392,7 +4460,87 @@ export function ManageHubPage({
               </div>
             </div>
 
+            {/* 0. Magazine Sections Firestore Direct Diagnostic Panel */}
+            <div className="border border-red-500/40 bg-red-500/[0.03] p-4 flex flex-col gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                    MAGAZINE SECTIONS FIRESTORE DIAGNOSTIC
+                  </span>
+                  <span className="text-xs text-black/70 dark:text-white/70">
+                    Firestore에 실제 저장된 매거진 섹션 데이터를 직접 읽어서 확인하고 복구합니다.
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={handleLoadFirestoreMagazineSections}
+                    disabled={isLoadingFirestoreMag}
+                    className="px-3 py-2 bg-black text-white dark:bg-white dark:text-black text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hover:opacity-80 disabled:opacity-40 transition-all"
+                  >
+                    {isLoadingFirestoreMag ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5" />}
+                    <span>Firestore 직접 읽기 (SCAN)</span>
+                  </button>
+                  {firestoreMagSections && firestoreMagSections.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleForceRestoreSectionsFromFirestore}
+                      className="px-3 py-2 bg-emerald-600 text-white text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hover:bg-emerald-700 transition-all"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>편집기로 불러오기 (RESTORE)</span>
+                    </button>
+                  )}
+                  {sectionsList.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleForceSaveCurrentSectionsToFirestore}
+                      className="px-3 py-2 bg-red-600 text-white text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hover:bg-red-700 transition-all"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      <span>현재 섹션 강제 저장 (FORCE SAVE)</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Diagnostic Result */}
+              {firestoreMagSections !== null && (
+                <div className="flex flex-col gap-2">
+                  <div className={`flex items-center gap-2 text-xs font-mono font-bold ${firestoreMagSections.length > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}`}>
+                    {firestoreMagSections.length > 0 ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                    <span>
+                      Firestore 저장 상태: {firestoreMagSections.length > 0 ? `${firestoreMagSections.length}개 섹션 발견 (데이터 존재)` : '❌ magazineSections 필드 없음 또는 빈 배열 (데이터 없음)'}
+                    </span>
+                    {firestoreMagLoadedAt && <span className="text-black/40 dark:text-white/40 text-[10px] font-normal ml-2">조회 시각: {firestoreMagLoadedAt}</span>}
+                  </div>
+                  {firestoreMagSections.length > 0 && (
+                    <div className="space-y-1.5 max-h-40 overflow-y-auto border border-black/10 dark:border-white/10 p-3 bg-white dark:bg-[#121212]">
+                      {firestoreMagSections.map((sec, idx) => (
+                        <div key={sec.id} className="flex items-center justify-between text-xs py-1 border-b border-black/5 dark:border-white/5 last:border-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-mono text-black/40 dark:text-white/40">#{idx + 1}</span>
+                            <span className="font-bold text-black dark:text-white uppercase">{sec.title}</span>
+                            <span className="text-black/50 dark:text-white/50 font-normal">{sec.subtitle}</span>
+                          </div>
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 bg-black/5 dark:bg-white/5">
+                            {sec.items?.length || 0} items
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {firestoreMagSections.length === 0 && (
+                    <div className="p-3 bg-red-500/5 border border-red-500/20 text-xs text-red-700 dark:text-red-400">
+                      ⚠️ Firestore에 매거진 섹션 데이터가 없습니다. "현재 섹션 강제 저장 (FORCE SAVE)" 버튼으로 현재 편집기 섹션을 저장하거나, MAGAZINE 탭에서 섹션을 다시 구성 후 저장하세요.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* 1. Absolute Safety Guarantee Notice Banner */}
+
             <div className="bg-emerald-500/10 border border-emerald-500/30 p-4 flex items-start gap-3">
               <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
               <div className="text-xs leading-relaxed">
