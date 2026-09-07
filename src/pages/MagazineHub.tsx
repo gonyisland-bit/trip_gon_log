@@ -894,7 +894,7 @@ export function MagazineHubPage({
                         return (
                           <div key={sec.id || sIdx} className="w-full shrink-0">
                             {secItems.length > 0 ? (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 items-stretch">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 items-stretch">
                                 {secItems.map((item, pIdx) => {
                                   const displayTitle = item.title;
                                   const dateWithDay = formatSimpleDateWithDay(item.date);
@@ -910,32 +910,32 @@ export function MagazineHubPage({
                                       onClick={() => handleOpenSection(sec.id)}
                                       className="group flex flex-col justify-between cursor-pointer"
                                     >
-                                      <div className="relative aspect-[3/4] w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+                                      <div className="relative aspect-[16/10] w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
                                         <img
                                           src={getEffectiveImageUrl(item.img)}
                                           alt={displayTitle}
                                           loading="lazy"
                                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none"
                                         />
-                                        <div className="absolute top-3 left-3 bg-black/60 dark:bg-white/70 backdrop-blur-xs text-white dark:text-black font-mono text-[9px] font-bold px-1.5 py-0.5 uppercase tracking-widest">
+                                        <div className="absolute top-2.5 left-2.5 bg-black/60 dark:bg-white/70 backdrop-blur-xs text-white dark:text-black font-mono text-[9px] font-bold px-1.5 py-0.5 uppercase tracking-widest">
                                           {String(pIdx + 1).padStart(2, '0')}
                                         </div>
                                       </div>
 
-                                      <div className="pt-3.5 flex-1 flex flex-col justify-between text-black dark:text-white font-['Noto_Sans_KR',sans-serif]">
+                                      <div className="pt-2.5 flex-1 flex flex-col justify-between text-black dark:text-white font-['Noto_Sans_KR',sans-serif]">
                                         <div>
-                                          <h3 className="text-base sm:text-lg font-black uppercase tracking-tight text-black dark:text-white line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
+                                          <h3 className="text-sm sm:text-base font-bold uppercase tracking-tight text-black dark:text-white line-clamp-1 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
                                             {displayTitle}
                                           </h3>
                                           {dateWithDay && (
-                                            <div className="text-[11px] sm:text-xs font-mono font-bold text-black/50 dark:text-white/50 uppercase tracking-wider mt-1">
+                                            <div className="text-[10px] sm:text-[11px] font-mono font-medium text-black/50 dark:text-white/50 uppercase tracking-wider mt-0.5">
                                               {dateWithDay}
                                             </div>
                                           )}
                                         </div>
-                                        <div className="pt-3 mt-auto flex items-center justify-between text-xs font-sans text-black/75 dark:text-white/75 border-t border-black/10 dark:border-white/10">
-                                          <span className="font-bold tracking-tight truncate max-w-[85%]">{displayPlace}</span>
-                                          <span className="text-base font-bold text-black dark:text-white group-hover:translate-x-1.5 transition-transform">→</span>
+                                        <div className="pt-2 mt-auto flex items-center justify-between text-[11px] sm:text-xs font-sans text-black/70 dark:text-white/70 border-t border-black/10 dark:border-white/10">
+                                          <span className="font-semibold tracking-tight truncate max-w-[85%]">{displayPlace}</span>
+                                          <span className="text-sm font-bold text-black dark:text-white group-hover:translate-x-1 transition-transform">→</span>
                                         </div>
                                       </div>
                                     </article>
