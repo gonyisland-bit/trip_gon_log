@@ -208,27 +208,76 @@ export function formatNonRepeatingDate(dateRangeStr?: string): string {
   return dateRangeStr;
 }
 
-// Helper to format country and city (e.g. 대한민국, 서울)
+const COUNTRY_NAME_EN: Record<string, string> = {
+  '대한민국': 'KOREA',
+  '한국': 'KOREA',
+  '남한': 'KOREA',
+  'KOREA': 'KOREA',
+  'SOUTH KOREA': 'KOREA',
+  '일본': 'JAPAN',
+  'JAPAN': 'JAPAN',
+  '미국': 'USA',
+  'USA': 'USA',
+  'UNITED STATES': 'USA',
+  '프랑스': 'FRANCE',
+  'FRANCE': 'FRANCE',
+  '이탈리아': 'ITALY',
+  'ITALY': 'ITALY',
+  '스페인': 'SPAIN',
+  'SPAIN': 'SPAIN',
+  '영국': 'UK',
+  'UK': 'UK',
+  '대만': 'TAIWAN',
+  'TAIWAN': 'TAIWAN',
+  '베트남': 'VIETNAM',
+  'VIETNAM': 'VIETNAM',
+  '태국': 'THAILAND',
+  'THAI': 'THAILAND',
+  'THAILAND': 'THAILAND',
+  '중국': 'CHINA',
+  'CHINA': 'CHINA',
+  '홍콩': 'HONG KONG',
+  'HONG KONG': 'HONG KONG',
+  '마카오': 'MACAU',
+  'MACAU': 'MACAU',
+  '싱가포르': 'SINGAPORE',
+  'SINGAPORE': 'SINGAPORE',
+  '독일': 'GERMANY',
+  'GERMANY': 'GERMANY',
+  '스위스': 'SWITZERLAND',
+  'SWITZERLAND': 'SWITZERLAND',
+  '오스트리아': 'AUSTRIA',
+  'AUSTRIA': 'AUSTRIA',
+  '호주': 'AUSTRALIA',
+  'AUSTRALIA': 'AUSTRALIA',
+  '체코': 'CZECH',
+  '헝가리': 'HUNGARY',
+  '캐나다': 'CANADA',
+  'CANADA': 'CANADA',
+};
+
+// Helper to format country and city (나라명 영문 대문자 통일)
 export function formatCountryAndCity(trip: { country?: string; locationStr?: string }): string {
-  let country = trip.country?.trim() || '';
+  let rawCountry = trip.country?.trim() || '';
   const location = trip.locationStr?.trim() || '';
 
-  if (!country && location) {
+  if (!rawCountry && location) {
     const match = location.match(/,\s*(SOUTH KOREA|KOREA|대한민국|한국|JAPAN|일본|VIETNAM|베트남|THAILAND|태국|TAIWAN|대만|CHINA|중국|USA|미국|FRANCE|프랑스|ITALY|이탈리아|UK|영국|SPAIN|스페인)/i);
     if (match) {
-      country = match[1].trim();
+      rawCountry = match[1].trim();
     }
   }
 
+  const enCountry = COUNTRY_NAME_EN[rawCountry] || COUNTRY_NAME_EN[rawCountry.toUpperCase()] || (rawCountry ? rawCountry.toUpperCase() : '');
   const city = cleanAdministrativeDistricts(location);
 
-  if (country && city) {
-    if (country.toLowerCase() === city.toLowerCase()) return country;
-    return `${country}, ${city}`;
+  if (enCountry && city) {
+    if (enCountry.toLowerCase() === city.toLowerCase()) return enCountry;
+    return `${enCountry}, ${city}`;
   }
-  if (country) return country;
+  if (enCountry) return enCountry;
   if (city) return city;
-  return location || '전체 여정';
+  return location || 'KOREA';
 }
 
 // Helper to get structured 3-line card display data
@@ -266,10 +315,10 @@ export function getTripCardDisplayData(trip: Trip, index: number) {
   const monthNum = p1 ? p1.dateObj.getMonth() : (p2 ? p2.dateObj.getMonth() : -1);
   const month = monthNum >= 0 ? months[monthNum] : '';
 
-  // 1번째 줄: 년도 월 (2026, JUN)
-  const line1YearMonth = month ? `${year}, ${month}` : year;
+  // 사진 위 1번줄: 년도, 월 (2026, JUN)
+  const topYearMonth = month ? `${year}, ${month}` : year;
 
-  // 2번째 줄: 날짜, 기간 (08.13-08.15, 4 DAYS)
+  // 사진 아래 2번줄: 날짜, 기간 (08.13-08.15, 4 DAYS)
   let dateRange = '';
   if (p1 && p2) {
     dateRange = `${p1.m}.${p1.d}-${p2.m}.${p2.d}`;
@@ -281,12 +330,12 @@ export function getTripCardDisplayData(trip: Trip, index: number) {
   const dayStr = days === 1 ? '1 DAY' : `${days} DAYS`;
   const line2DateDays = dateRange ? `${dateRange}, ${dayStr}` : dayStr;
 
-  // 3번째 줄: 나라, 도시
+  // 사진 아래 3번줄: 나라명, 도시 (나라명 영문 대문자 통일)
   const line3CountryCity = formatCountryAndCity(trip);
 
   return {
     issueNumber,
-    line1YearMonth,
+    topYearMonth,
     line2DateDays,
     line3CountryCity,
   };
@@ -1033,11 +1082,11 @@ export function ArchiveHubPage({
                   </div>
                 ) : (
                   <div className={cardViewMode === 'wide' 
-                    ? "grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 p-4 sm:p-8 md:p-12 w-full max-w-7xl mx-auto"
-                    : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 p-3 sm:p-6 md:p-12 w-full max-w-7xl mx-auto"
+                    ? "grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-12 sm:gap-y-16 p-4 sm:p-8 md:p-12 w-full max-w-7xl mx-auto"
+                    : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-10 sm:gap-y-14 md:gap-y-16 p-3 sm:p-6 md:p-12 w-full max-w-7xl mx-auto"
                   }>
                     {group.items.map((trip, index) => {
-                      const { issueNumber, line1YearMonth, line2DateDays, line3CountryCity } = getTripCardDisplayData(trip, index);
+                      const { issueNumber, topYearMonth, line2DateDays, line3CountryCity } = getTripCardDisplayData(trip, index);
                       const isCardActive = activeCardId === trip.id;
                       const isPlan = Boolean(
                         (trip as any).isPlan ||
@@ -1059,23 +1108,20 @@ export function ArchiveHubPage({
                           onDrop={handleTripDrop}
                           onDragEnd={() => setDraggedTripId(null)}
                         >
-                          {/* 1. 사진 상단 1번줄: 번호, 타이틀 (번호포함 Inter Bold 폰트 사이즈 업, 2줄 분량 감안) */}
-                          <div className="mb-2.5 min-h-[3.25rem] sm:min-h-[3.75rem] flex items-start gap-2 min-w-0">
-                            <span className="font-['Inter',sans-serif] font-bold text-base sm:text-lg md:text-[19px] text-black dark:text-white shrink-0">
-                              {issueNumber}
-                            </span>
-                            <h3 className="font-['Inter','Noto_Sans_KR',sans-serif] font-bold text-base sm:text-lg md:text-[19px] text-black dark:text-white line-clamp-2 leading-snug tracking-tight group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
-                              {trip.title}
-                            </h3>
+                          {/* 1. 사진 위 1번줄: 년도, 월 볼드 큰 크기 (2026, JUN) */}
+                          <div className="mb-2.5 flex items-baseline justify-between min-w-0">
+                            <div className="font-['Inter',sans-serif] font-black text-xl sm:text-2xl md:text-[26px] tracking-tight text-black dark:text-white leading-none">
+                              {topYearMonth}
+                            </div>
                             {isPlan && (
-                              <span className="ml-auto text-[9.5px] font-['Inter',sans-serif] font-bold text-red-500 dark:text-red-400 shrink-0 self-start mt-0.5">
+                              <span className="text-[9.5px] font-['Inter',sans-serif] font-bold text-red-500 dark:text-red-400 tracking-wider">
                                 PLAN
                               </span>
                             )}
                           </div>
 
-                          {/* 2. 사진 중간: 1:1 정방형 SNS 사진 (검정 블록 없음) */}
-                          <div className="relative aspect-square w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+                          {/* 2. 사진 중간: 1:1 정방형 SNS 사진 */}
+                          <div className="relative aspect-square w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm">
                             <CardMedia
                               img={trip.img}
                               title={trip.title}
@@ -1084,19 +1130,19 @@ export function ArchiveHubPage({
                             />
                           </div>
 
-                          {/* 3. 사진 하단: 검정 색상 통일 (한글 Noto Sans, 영문 Inter) */}
-                          <div className="mt-2.5 flex flex-col gap-0.5 text-black dark:text-white">
-                            {/* 1번째 줄: 년도 월 (2026, JUN) */}
-                            <div className="text-xs sm:text-[13px] font-['Inter',sans-serif] font-medium text-black dark:text-white tracking-wide">
-                              {line1YearMonth}
-                            </div>
+                          {/* 3. 사진 하단 텍스트: 검정 색상 통일 */}
+                          <div className="mt-3 flex flex-col gap-1 text-black dark:text-white">
+                            {/* 사진 아래 1번줄: 제목 (넘버제외) 볼드 글씨 */}
+                            <h3 className="font-['Noto_Sans_KR','Inter',sans-serif] font-bold text-base sm:text-lg md:text-[19px] leading-snug tracking-tight text-black dark:text-white line-clamp-2 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
+                              {trip.title}
+                            </h3>
 
-                            {/* 2번째 줄: 날짜, 기간 (08.13-08.15, 4 DAYS) */}
+                            {/* 사진 아래 2번줄: 날짜, 기간 (08.13-08.15, 4 DAYS) */}
                             <div className="text-xs sm:text-[13px] font-['Inter',sans-serif] font-medium text-black dark:text-white tracking-wide">
                               {line2DateDays}
                             </div>
 
-                            {/* 3번째 줄: 나라, 도시 */}
+                            {/* 사진 아래 3번줄: 나라명, 도시 (나라명 영문 대문자 통일) */}
                             <div className="text-xs sm:text-[13px] font-['Noto_Sans_KR','Inter',sans-serif] font-medium text-black dark:text-white truncate">
                               {line3CountryCity}
                             </div>
