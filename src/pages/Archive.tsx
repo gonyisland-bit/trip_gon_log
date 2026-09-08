@@ -208,6 +208,90 @@ export function formatNonRepeatingDate(dateRangeStr?: string): string {
   return dateRangeStr;
 }
 
+// Helper to format country and city (e.g. 대한민국, 서울)
+export function formatCountryAndCity(trip: { country?: string; locationStr?: string }): string {
+  let country = trip.country?.trim() || '';
+  const location = trip.locationStr?.trim() || '';
+
+  if (!country && location) {
+    const match = location.match(/,\s*(SOUTH KOREA|KOREA|대한민국|한국|JAPAN|일본|VIETNAM|베트남|THAILAND|태국|TAIWAN|대만|CHINA|중국|USA|미국|FRANCE|프랑스|ITALY|이탈리아|UK|영국|SPAIN|스페인)/i);
+    if (match) {
+      country = match[1].trim();
+    }
+  }
+
+  const city = cleanAdministrativeDistricts(location);
+
+  if (country && city) {
+    if (country.toLowerCase() === city.toLowerCase()) return country;
+    return `${country}, ${city}`;
+  }
+  if (country) return country;
+  if (city) return city;
+  return location || '전체 여정';
+}
+
+// Helper to get structured 3-line card display data
+export function getTripCardDisplayData(trip: Trip, index: number) {
+  const issueNumber = String((trip.displayOrder ?? index) + 1).padStart(2, '0');
+  const days = calculateDays(trip.date);
+  const parts = trip.date ? trip.date.split(/\s*[-—–~]\s*/).map(p => p.trim()) : [];
+  const yearMatch = trip.date ? trip.date.match(/(\d{4})/) : null;
+  const commonYear = yearMatch ? yearMatch[1] : String(new Date().getFullYear());
+
+  const parsePart = (str: string, fallbackYear: string) => {
+    if (!str) return null;
+    const ymdMatch = str.match(/(\d{4})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})/);
+    if (ymdMatch) {
+      const y = ymdMatch[1];
+      const m = ymdMatch[2].padStart(2, '0');
+      const d = ymdMatch[3].padStart(2, '0');
+      return { y, m, d, dateObj: new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10)) };
+    }
+    const mdMatch = str.match(/(\d{1,2})\s*[-./]\s*(\d{1,2})/);
+    if (mdMatch) {
+      const y = fallbackYear;
+      const m = mdMatch[1].padStart(2, '0');
+      const d = mdMatch[2].padStart(2, '0');
+      return { y, m, d, dateObj: new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10)) };
+    }
+    return null;
+  };
+
+  const p1 = parts[0] ? parsePart(parts[0], commonYear) : null;
+  const p2 = parts[1] ? parsePart(parts[1], p1?.y || commonYear) : null;
+
+  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  const year = p1?.y || p2?.y || (yearMatch ? yearMatch[1] : String(new Date().getFullYear()));
+  const monthNum = p1 ? p1.dateObj.getMonth() : (p2 ? p2.dateObj.getMonth() : -1);
+  const month = monthNum >= 0 ? months[monthNum] : '';
+
+  // 1번째 줄: 년도 월 (2026, JUN)
+  const line1YearMonth = month ? `${year}, ${month}` : year;
+
+  // 2번째 줄: 날짜, 기간 (08.13-08.15, 4 DAYS)
+  let dateRange = '';
+  if (p1 && p2) {
+    dateRange = `${p1.m}.${p1.d}-${p2.m}.${p2.d}`;
+  } else if (p1) {
+    dateRange = `${p1.m}.${p1.d}`;
+  } else {
+    dateRange = trip.date;
+  }
+  const dayStr = days === 1 ? '1 DAY' : `${days} DAYS`;
+  const line2DateDays = dateRange ? `${dateRange}, ${dayStr}` : dayStr;
+
+  // 3번째 줄: 나라, 도시
+  const line3CountryCity = formatCountryAndCity(trip);
+
+  return {
+    issueNumber,
+    line1YearMonth,
+    line2DateDays,
+    line3CountryCity,
+  };
+}
+
 export function ArchiveHubPage({
   trips,
   plans = [],
@@ -953,11 +1037,8 @@ export function ArchiveHubPage({
                     : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 p-3 sm:p-6 md:p-12 w-full max-w-7xl mx-auto"
                   }>
                     {group.items.map((trip, index) => {
-                      const { year, month, compactDate } = getYearAndMonth(trip.date);
-                      const formattedDate = formatNonRepeatingDate(trip.date);
-                      const days = calculateDays(trip.date);
+                      const { issueNumber, line1YearMonth, line2DateDays, line3CountryCity } = getTripCardDisplayData(trip, index);
                       const isCardActive = activeCardId === trip.id;
-                      const issueNumber = String((trip.displayOrder ?? index) + 1).padStart(2, '0');
                       const isPlan = Boolean(
                         (trip as any).isPlan ||
                         (plans && plans.some(p => String(p.id) === String(trip.id))) ||
@@ -978,22 +1059,22 @@ export function ArchiveHubPage({
                           onDrop={handleTripDrop}
                           onDragEnd={() => setDraggedTripId(null)}
                         >
-                          {/* 1. Card Top: Number + Title (01 + 여정이름, 약간 큰 미디움) */}
-                          <div className="mb-2.5 flex items-baseline gap-2 min-w-0">
-                            <span className="font-mono text-sm sm:text-base font-medium text-black/45 dark:text-white/45 shrink-0">
+                          {/* 1. 사진 상단 1번줄: 번호, 타이틀 (번호포함 Inter Bold 폰트 사이즈 업, 2줄 분량 감안) */}
+                          <div className="mb-2.5 min-h-[3.25rem] sm:min-h-[3.75rem] flex items-start gap-2 min-w-0">
+                            <span className="font-['Inter',sans-serif] font-bold text-base sm:text-lg md:text-[19px] text-black dark:text-white shrink-0">
                               {issueNumber}
                             </span>
-                            <h3 className="text-sm sm:text-base md:text-[17px] font-medium text-black dark:text-white truncate tracking-tight group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors font-['Noto_Sans_KR',sans-serif]">
+                            <h3 className="font-['Inter','Noto_Sans_KR',sans-serif] font-bold text-base sm:text-lg md:text-[19px] text-black dark:text-white line-clamp-2 leading-snug tracking-tight group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
                               {trip.title}
                             </h3>
                             {isPlan && (
-                              <span className="ml-auto text-[9px] font-mono font-medium text-red-500 dark:text-red-400 shrink-0">
+                              <span className="ml-auto text-[9.5px] font-['Inter',sans-serif] font-bold text-red-500 dark:text-red-400 shrink-0 self-start mt-0.5">
                                 PLAN
                               </span>
                             )}
                           </div>
 
-                          {/* 2. Card Middle: 1:1 SNS Photo Frame (순수 정방형, 검정 블록 배지 없음) */}
+                          {/* 2. 사진 중간: 1:1 정방형 SNS 사진 (검정 블록 없음) */}
                           <div className="relative aspect-square w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
                             <CardMedia
                               img={trip.img}
@@ -1003,22 +1084,22 @@ export function ArchiveHubPage({
                             />
                           </div>
 
-                          {/* 3. Card Bottom: Date, Duration, Location (미니멀 SNS 감성 메타) */}
-                          <div className="mt-2.5 flex flex-col gap-0.5 text-black dark:text-white font-['Noto_Sans_KR',sans-serif]">
-                            <div className="flex items-center gap-1.5 font-mono text-[10.5px] sm:text-[11.5px] text-black/50 dark:text-white/50">
-                              <span>{formattedDate || compactDate || trip.date}</span>
-                              {days > 0 && (
-                                <>
-                                  <span className="opacity-30">·</span>
-                                  <span>{days} DAYS</span>
-                                </>
-                              )}
+                          {/* 3. 사진 하단: 검정 색상 통일 (한글 Noto Sans, 영문 Inter) */}
+                          <div className="mt-2.5 flex flex-col gap-0.5 text-black dark:text-white">
+                            {/* 1번째 줄: 년도 월 (2026, JUN) */}
+                            <div className="text-xs sm:text-[13px] font-['Inter',sans-serif] font-medium text-black dark:text-white tracking-wide">
+                              {line1YearMonth}
                             </div>
-                            {trip.locationStr && (
-                              <div className="text-[11px] sm:text-xs text-black/75 dark:text-white/75 font-medium truncate">
-                                {cleanAdministrativeDistricts(trip.locationStr).replace(/,/g, ' · ')}
-                              </div>
-                            )}
+
+                            {/* 2번째 줄: 날짜, 기간 (08.13-08.15, 4 DAYS) */}
+                            <div className="text-xs sm:text-[13px] font-['Inter',sans-serif] font-medium text-black dark:text-white tracking-wide">
+                              {line2DateDays}
+                            </div>
+
+                            {/* 3번째 줄: 나라, 도시 */}
+                            <div className="text-xs sm:text-[13px] font-['Noto_Sans_KR','Inter',sans-serif] font-medium text-black dark:text-white truncate">
+                              {line3CountryCity}
+                            </div>
                           </div>
                         </article>
                       );
