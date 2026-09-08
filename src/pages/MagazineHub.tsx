@@ -160,6 +160,20 @@ export function MagazineHubPage({
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  // Listen for resetMagazineHub custom event when user clicks MAGAZINE header link
+  useEffect(() => {
+    const handleResetHub = () => {
+      setViewMode('hub');
+      try {
+        sessionStorage.setItem('magazineViewMode', 'hub');
+      } catch (_) {}
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    };
+
+    window.addEventListener('resetMagazineHub', handleResetHub);
+    return () => window.removeEventListener('resetMagazineHub', handleResetHub);
+  }, []);
+
   // Synchronize active section with sessionStorage
   useEffect(() => {
     const saved = sessionStorage.getItem('lastMagazineSectionId');

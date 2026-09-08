@@ -3467,7 +3467,9 @@ export function JourneyDetailPage({
       {/* Left: Map & Info Section (Responsive Height driven by mobileSheetSnap) */}
       <section 
         className={`w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-black/20 dark:border-white/20 relative transition-all duration-300 md:h-full shrink-0 ${
-          mobileSheetSnap === 'expanded' ? 'max-md:h-[18dvh]' : 'max-md:h-[48dvh]'
+          mobileSheetSnap === 'expanded' 
+            ? 'max-md:h-0 max-md:opacity-0 max-md:border-none overflow-hidden pointer-events-none' 
+            : 'max-md:h-[36dvh]'
         }`}
         onClick={() => {
           if (window.innerWidth < 768 && mobileSheetSnap === 'expanded') {
@@ -3685,7 +3687,7 @@ export function JourneyDetailPage({
       {/* Right: Record / Tabs Section (Responsive Bottom Sheet on Mobile) */}
       <section 
         className={`w-full md:w-1/2 flex flex-col bg-white dark:bg-[#0A0A0A] transition-all duration-300 flex-grow md:h-full overflow-hidden ${
-          mobileSheetSnap === 'expanded' ? 'max-md:h-[82dvh]' : 'max-md:h-[52dvh]'
+          mobileSheetSnap === 'expanded' ? 'max-md:h-full max-md:flex-1' : 'max-md:h-[64dvh]'
         }`}
       >
         {/* Mobile Bottom Sheet Grab Handle */}

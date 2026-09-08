@@ -287,7 +287,7 @@ function App() {
   // Guest accounts can only edit journeys, while admin accounts (including other admin accounts) have full hub management rights
   const isAdmin = isLoggedIn && !isGuest;
 
-  // Global shortcuts: Ctrl+K (Search), F (Fullscreen)
+  // Global shortcuts: Ctrl+K (Search), Ctrl+, (Settings), Ctrl+Shift+L (Night Mode), F (Fullscreen)
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       // 1. Search shortcut Ctrl+K / Cmd+K
@@ -297,11 +297,42 @@ function App() {
         return;
       }
 
-      // 2. Ignore single-key shortcuts if user is currently typing
+      // 2. Settings / Management Hub shortcut: Ctrl + , (Cmd + ,)
+      if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+        e.preventDefault();
+        if (isLoggedIn && isAdmin) {
+          if (currentView === 'manage') {
+            const returnView = sessionStorage.getItem('lastNonManageView') || 'home';
+            navigateTo(returnView);
+          } else {
+            sessionStorage.setItem('lastNonManageView', currentView);
+            sessionStorage.setItem('initialManageTab', currentView.toUpperCase());
+            navigateTo('manage');
+          }
+        } else {
+          setIsManageModalOpen(true);
+        }
+        return;
+      }
+
+      // 3. Night Mode Toggle shortcut: Ctrl + Shift + L (Cmd + Shift + L)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'l' || e.key === 'L')) {
+        e.preventDefault();
+        setIsDarkMode(prev => {
+          const next = !prev;
+          try {
+            localStorage.setItem('isDarkMode', String(next));
+          } catch (_) {}
+          return next;
+        });
+        return;
+      }
+
+      // 4. Ignore single-key shortcuts if user is currently typing
       const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName) || (e.target as HTMLElement)?.isContentEditable;
       if (isInput) return;
 
-      // 3. F key: Toggle Fullscreen across whole app
+      // 5. F key: Toggle Fullscreen across whole app
       if (e.key === 'f' || e.key === 'F') {
         e.preventDefault();
         if (!document.fullscreenElement) {
@@ -313,7 +344,7 @@ function App() {
     };
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, []);
+  }, [isLoggedIn, isAdmin, currentView]);
 
   // Redirect non-admin if they try to access Management Hub
   useEffect(() => {

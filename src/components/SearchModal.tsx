@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Search, Plane, Bed, Train, Clock, Compass } from 'lucide-react';
 import { Trip, TimelineItem, FlightItem, StayItem, TransitItem } from '../types';
+import { matchesCountryOrQuery } from '../utils/countryHelper';
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -82,8 +83,9 @@ export function SearchModal({
         const matchTitle = t.title.toLowerCase().includes(q);
         const matchLoc = t.locationStr?.toLowerCase().includes(q);
         const matchTags = (t.tags || []).some(tag => tag.toLowerCase().includes(q));
+        const matchCountry = matchesCountryOrQuery(t, q);
 
-        if (matchTitle || matchLoc || matchTags) {
+        if (matchTitle || matchLoc || matchTags || matchCountry) {
           searchResults.push({
             id: `trip-${t.id}`,
             tripId: t.id,

@@ -57,6 +57,12 @@ export function Navigation({
         navigateTo('manage');
       }
     } else {
+      if (view === 'magazine') {
+        try {
+          sessionStorage.setItem('magazineViewMode', 'hub');
+        } catch (_) {}
+        window.dispatchEvent(new CustomEvent('resetMagazineHub'));
+      }
       navigateTo(view);
     }
   };
@@ -116,7 +122,13 @@ export function Navigation({
               TRIP
             </button>
             <button 
-              onClick={() => navigateTo('magazine')} 
+              onClick={() => {
+                try {
+                  sessionStorage.setItem('magazineViewMode', 'hub');
+                } catch (_) {}
+                window.dispatchEvent(new CustomEvent('resetMagazineHub'));
+                navigateTo('magazine');
+              }} 
               className={`text-xs md:text-sm font-black tracking-widest uppercase transition-colors cursor-pointer py-1 ${
                 currentView === 'magazine' 
                   ? 'text-black dark:text-white border-b-2 border-black dark:border-white' 
@@ -169,7 +181,7 @@ export function Navigation({
                   ? 'text-red-600 dark:text-red-500 bg-black/5 dark:bg-white/5'
                   : 'text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white'
               }`}
-              title={currentView === 'manage' ? "홈으로 돌아가기 (Close Settings)" : "설정 (Settings)"}
+              title={currentView === 'manage' ? "홈으로 돌아가기 (Ctrl + ,)" : "설정 / 관리자 허브 (Ctrl + ,)"}
             >
               <SlidersHorizontal className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             </button>
@@ -182,7 +194,7 @@ export function Navigation({
             type="button"
             onClick={() => setIsDarkMode(!isDarkMode)}
             className="hidden md:flex p-2 sm:p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors cursor-pointer items-center justify-center"
-            title={isDarkMode ? "라이트 모드로 전환" : "나이트 모드로 전환"}
+            title={isDarkMode ? "라이트 모드로 전환 (Ctrl + Shift + L)" : "나이트 모드로 전환 (Ctrl + Shift + L)"}
           >
             {isDarkMode ? (
               <Sun className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-amber-500" />
