@@ -622,9 +622,9 @@ function PlaceAutocompleteInput({
     isFocusedRef.current = true;
   };
 
-  // Ensure IME composition commit when window loses focus (e.g. clicking outside browser window)
+  // Ensure IME composition commit when window loses focus (e.g. clicking outside browser window, Chrome split view tab switch)
   useEffect(() => {
-    const handleWindowBlur = () => {
+    const handleCommitOnFocusLoss = () => {
       if ((isFocusedRef.current || document.activeElement === inputRef.current) && inputRef.current) {
         const domVal = inputRef.current.value || '';
         const fallbackVal = lastTypedValRef.current || '';
@@ -635,8 +635,14 @@ function PlaceAutocompleteInput({
       }
     };
 
-    window.addEventListener('blur', handleWindowBlur);
-    return () => window.removeEventListener('blur', handleWindowBlur);
+    window.addEventListener('blur', handleCommitOnFocusLoss);
+    document.addEventListener('visibilitychange', handleCommitOnFocusLoss);
+    window.addEventListener('pagehide', handleCommitOnFocusLoss);
+    return () => {
+      window.removeEventListener('blur', handleCommitOnFocusLoss);
+      document.removeEventListener('visibilitychange', handleCommitOnFocusLoss);
+      window.removeEventListener('pagehide', handleCommitOnFocusLoss);
+    };
   }, [onChange]);
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -5585,6 +5591,10 @@ function JourneyTitleInput({ initialTitle, onUpdateTitle }: JourneyTitleInputPro
 
   useEffect(() => {
     if (!isFocusedRef.current && inputRef.current) {
+      if (lastTypedValRef.current && lastTypedValRef.current !== initialTitle && lastTypedValRef.current.trim() !== '') {
+        commitTitle(lastTypedValRef.current);
+        return;
+      }
       inputRef.current.value = initialTitle || '';
       lastTypedValRef.current = initialTitle || '';
     }
@@ -5622,18 +5632,24 @@ function JourneyTitleInput({ initialTitle, onUpdateTitle }: JourneyTitleInputPro
     }, 50);
   };
 
-  // Ensure title commit when window loses focus (e.g. clicking outside browser window)
+  // Ensure title commit when window loses focus (e.g. clicking outside browser window, Chrome split view tab switch)
   useEffect(() => {
-    const handleWindowBlur = () => {
+    const handleCommitOnFocusLoss = () => {
       if ((isFocusedRef.current || document.activeElement === inputRef.current) && inputRef.current) {
         const domVal = inputRef.current.value || '';
         const fallbackVal = lastTypedValRef.current || '';
-        const bestVal = fallbackVal.length >= domVal.length ? fallbackVal : domVal;
+        const bestVal = (fallbackVal && fallbackVal.length >= domVal.length) ? fallbackVal : domVal;
         commitTitle(bestVal);
       }
     };
-    window.addEventListener('blur', handleWindowBlur);
-    return () => window.removeEventListener('blur', handleWindowBlur);
+    window.addEventListener('blur', handleCommitOnFocusLoss);
+    document.addEventListener('visibilitychange', handleCommitOnFocusLoss);
+    window.addEventListener('pagehide', handleCommitOnFocusLoss);
+    return () => {
+      window.removeEventListener('blur', handleCommitOnFocusLoss);
+      document.removeEventListener('visibilitychange', handleCommitOnFocusLoss);
+      window.removeEventListener('pagehide', handleCommitOnFocusLoss);
+    };
   }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -5692,6 +5708,10 @@ function TimelineItemPlaceInput({
 
   useEffect(() => {
     if (!isFocusedRef.current && inputRef.current) {
+      if (lastTypedValRef.current && lastTypedValRef.current !== initialValue && lastTypedValRef.current.trim() !== '') {
+        commitValue(lastTypedValRef.current);
+        return;
+      }
       inputRef.current.value = initialValue || '';
       lastTypedValRef.current = initialValue || '';
       setFilterVal(initialValue || '');
@@ -5741,19 +5761,25 @@ function TimelineItemPlaceInput({
     }, 50);
   };
 
-  // Ensure place value commit when window loses focus (e.g. clicking outside browser window)
+  // Ensure place value commit when window loses focus (e.g. clicking outside browser window, Chrome split view tab switch)
   useEffect(() => {
-    const handleWindowBlur = () => {
+    const handleCommitOnFocusLoss = () => {
       if ((isFocusedRef.current || document.activeElement === inputRef.current) && inputRef.current) {
         const domVal = inputRef.current.value || '';
         const fallbackVal = lastTypedValRef.current || '';
-        const finalVal = fallbackVal.length >= domVal.length ? fallbackVal : domVal;
+        const finalVal = (fallbackVal && fallbackVal.length >= domVal.length) ? fallbackVal : domVal;
         commitValue(finalVal);
       }
     };
-    window.addEventListener('blur', handleWindowBlur);
-    return () => window.removeEventListener('blur', handleWindowBlur);
-  }, []);
+    window.addEventListener('blur', handleCommitOnFocusLoss);
+    document.addEventListener('visibilitychange', handleCommitOnFocusLoss);
+    window.addEventListener('pagehide', handleCommitOnFocusLoss);
+    return () => {
+      window.removeEventListener('blur', handleCommitOnFocusLoss);
+      document.removeEventListener('visibilitychange', handleCommitOnFocusLoss);
+      window.removeEventListener('pagehide', handleCommitOnFocusLoss);
+    };
+  }, [itemId, filterVal]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {

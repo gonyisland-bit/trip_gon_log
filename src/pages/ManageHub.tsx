@@ -2264,30 +2264,28 @@ export function ManageHubPage({
             type="button"
             onClick={() => handleSaveAllChanges(true)}
             disabled={isSavingAll}
-            className={`px-4 py-1.5 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-xs transition-all border ${
+            className={`px-4 py-1.5 text-xs font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-colors border ${
               saveAllSuccess
                 ? '!bg-emerald-600 !text-white !border-emerald-600'
                 : isAnyDirty
-                  ? 'bg-red-600 text-white border-red-600 hover:bg-red-700 animate-pulse'
+                  ? 'bg-red-600 text-white border-red-600 hover:bg-red-700'
                   : 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white hover:opacity-85'
             }`}
             title="모든 탭과 섹션의 변경사항을 즉시 통합 저장합니다."
           >
             {isSavingAll ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
             ) : saveAllSuccess ? (
-              <Check className="w-3.5 h-3.5" />
+              <Check className="w-3.5 h-3.5 shrink-0" />
             ) : (
-              <Save className="w-3.5 h-3.5" />
+              <Save className="w-3.5 h-3.5 shrink-0" />
             )}
-            <span>
+            <span className="whitespace-nowrap">
               {saveAllSuccess
                 ? 'ALL SAVED!'
                 : isSavingAll
                   ? 'SAVING...'
-                  : isAnyDirty
-                    ? '● SAVE ALL'
-                    : 'SAVE ALL'}
+                  : 'SAVE ALL'}
             </span>
           </button>
         </div>

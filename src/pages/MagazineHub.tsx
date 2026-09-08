@@ -708,8 +708,8 @@ export function MagazineHubPage({
               </span>
             </div>
 
-            {/* Magazine Cover Cards Grid (Responsive 1 -> 2 -> 3 -> 4 Columns) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-8 sm:gap-10 md:gap-12">
+            {/* Magazine Cover Cards Grid (Responsive 1 -> 2 -> 3 Columns consistently on desktop) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 sm:gap-10 md:gap-12">
               {effectiveSections.map((sec, idx) => {
                 const coverImg = sec.heroImg || (sec.items && sec.items.find(it => it.img)?.img) || '';
                 const displayHeroTitle = sec.heroTitle || sec.title;

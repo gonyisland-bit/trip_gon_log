@@ -96,9 +96,9 @@ export function PlaceAutocompleteInput({
     isFocusedRef.current = true;
   };
 
-  // Ensure IME composition commit when window loses focus (e.g. clicking outside browser window)
+  // Ensure IME composition commit when window loses focus (e.g. clicking outside browser window, Chrome split view tab switch)
   useEffect(() => {
-    const handleWindowBlur = () => {
+    const handleCommitOnFocusLoss = () => {
       if ((isFocusedRef.current || document.activeElement === inputRef.current) && inputRef.current) {
         const domVal = inputRef.current.value || '';
         const fallbackVal = lastTypedValRef.current || '';
@@ -109,8 +109,14 @@ export function PlaceAutocompleteInput({
       }
     };
 
-    window.addEventListener('blur', handleWindowBlur);
-    return () => window.removeEventListener('blur', handleWindowBlur);
+    window.addEventListener('blur', handleCommitOnFocusLoss);
+    document.addEventListener('visibilitychange', handleCommitOnFocusLoss);
+    window.addEventListener('pagehide', handleCommitOnFocusLoss);
+    return () => {
+      window.removeEventListener('blur', handleCommitOnFocusLoss);
+      document.removeEventListener('visibilitychange', handleCommitOnFocusLoss);
+      window.removeEventListener('pagehide', handleCommitOnFocusLoss);
+    };
   }, [onChange]);
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
