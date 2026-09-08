@@ -1094,6 +1094,7 @@ export function ArchiveHubPage({
                         trip.tags?.includes('Plan') ||
                         trip.title?.includes('(Plan)')
                       );
+                      const isWide = cardViewMode === 'wide';
 
                       return (
                         <article
@@ -1108,9 +1109,9 @@ export function ArchiveHubPage({
                           onDrop={handleTripDrop}
                           onDragEnd={() => setDraggedTripId(null)}
                         >
-                          {/* 1. 사진 위 1번줄: 년도, 월 볼드 큰 크기 (2026, JUN) */}
+                          {/* 1. 사진 위 1번줄: 년도, 월 볼드 큰 크기 (와이드 뷰에서는 더 웅장하게 확대) */}
                           <div className="mb-2.5 flex items-baseline justify-between min-w-0">
-                            <div className="font-['Inter',sans-serif] font-black text-xl sm:text-2xl md:text-[26px] tracking-tight text-black dark:text-white leading-none">
+                            <div className={`font-['Inter',sans-serif] font-black ${isWide ? 'text-2xl sm:text-3xl md:text-4xl' : 'text-xl sm:text-2xl md:text-[26px]'} tracking-tight text-black dark:text-white leading-none`}>
                               {topYearMonth}
                             </div>
                             {isPlan && (
@@ -1120,8 +1121,8 @@ export function ArchiveHubPage({
                             )}
                           </div>
 
-                          {/* 2. 사진 중간: 1:1 정방형 SNS 사진 (와이드 뷰에서는 3:4 세로형 사진) */}
-                          <div className={`relative ${cardViewMode === 'wide' ? 'aspect-[3/4]' : 'aspect-square'} w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm`}>
+                          {/* 2. 사진 중간: 그리드는 1:1 정방형 SNS 사진, 와이드 뷰는 4:3 시원한 가로형 사진 */}
+                          <div className={`relative ${isWide ? 'aspect-[4/3]' : 'aspect-square'} w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm`}>
                             <CardMedia
                               img={trip.img}
                               title={trip.title}
@@ -1130,20 +1131,20 @@ export function ArchiveHubPage({
                             />
                           </div>
 
-                          {/* 3. 사진 하단 텍스트: 검정 색상 통일 */}
-                          <div className="mt-3 flex flex-col gap-1 text-black dark:text-white">
+                          {/* 3. 사진 하단 텍스트: 검정 색상 통일 (와이드 뷰에서는 비례 확대) */}
+                          <div className={`mt-3 flex flex-col ${isWide ? 'gap-1.5' : 'gap-1'} text-black dark:text-white`}>
                             {/* 사진 아래 1번줄: 제목 (넘버제외) 볼드 글씨 */}
-                            <h3 className="font-['Noto_Sans_KR','Inter',sans-serif] font-bold text-base sm:text-lg md:text-[19px] leading-snug tracking-tight text-black dark:text-white line-clamp-2 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
+                            <h3 className={`font-['Noto_Sans_KR','Inter',sans-serif] font-bold ${isWide ? 'text-lg sm:text-xl md:text-2xl' : 'text-base sm:text-lg md:text-[19px]'} leading-snug tracking-tight text-black dark:text-white line-clamp-2 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors`}>
                               {trip.title}
                             </h3>
 
                             {/* 사진 아래 2번줄: 날짜, 기간 (08.13-08.15, 4 DAYS) */}
-                            <div className="text-xs sm:text-[13px] font-['Inter',sans-serif] font-medium text-black dark:text-white tracking-wide">
+                            <div className={`${isWide ? 'text-xs sm:text-sm md:text-[15px]' : 'text-xs sm:text-[13px]'} font-['Inter',sans-serif] font-medium text-black dark:text-white tracking-wide`}>
                               {line2DateDays}
                             </div>
 
                             {/* 사진 아래 3번줄: 나라명, 도시 (나라명 영문 대문자 통일) */}
-                            <div className="text-xs sm:text-[13px] font-['Noto_Sans_KR','Inter',sans-serif] font-medium text-black dark:text-white truncate">
+                            <div className={`${isWide ? 'text-xs sm:text-sm md:text-[15px]' : 'text-xs sm:text-[13px]'} font-['Noto_Sans_KR','Inter',sans-serif] font-medium text-black dark:text-white truncate`}>
                               {line3CountryCity}
                             </div>
                           </div>
