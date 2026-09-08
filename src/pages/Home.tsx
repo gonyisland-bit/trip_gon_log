@@ -1296,16 +1296,22 @@ export function HomePage({
           }>
             {filteredTrips.slice(0, journeyLimit).map((trip, index) => {
               const { year, month, compactDate } = getYearAndMonth(trip.date);
+              const formattedDate = formatNonRepeatingDate(trip.date);
               const days = calculateDays(trip.date);
               const isCardActive = activeCardId === trip.id;
               const issueNumber = String((trip.displayOrder ?? index) + 1).padStart(2, '0');
-              const isItemPlan = Boolean((trip as any).isPlan || (plans && plans.some(p => String(p.id) === String(trip.id))) || trip.tags?.includes('Plan') || trip.title.includes('(Plan)'));
+              const isItemPlan = Boolean(
+                (trip as any).isPlan ||
+                (plans && plans.some(p => String(p.id) === String(trip.id))) ||
+                trip.tags?.includes('Plan') ||
+                trip.title?.includes('(Plan)')
+              );
 
               return (
                 <article
                   key={trip.id}
                   onClick={() => onNavigate('detail', trip.id)}
-                  className={`group flex flex-col justify-between cursor-pointer select-none rounded-none transition-all duration-300 ${
+                  className={`group flex flex-col cursor-pointer select-none rounded-none transition-all duration-300 ${
                     isCardActive ? 'ring-2 ring-red-600/40 dark:ring-red-500/40 p-1 bg-black/5 dark:bg-white/5' : ''
                   }`}
                   draggable={isLoggedIn}
@@ -1314,65 +1320,47 @@ export function HomePage({
                   onDrop={handleTripDrop}
                   onDragEnd={() => setDraggedTripId(null)}
                 >
-                  {/* 1. Photo Frame: Top position with fixed aspect ratio, fully unobstructed with subtle minimal badge */}
-                  <div className={`relative ${cardViewMode === 'wide' ? 'aspect-[16/10]' : 'aspect-[3/4]'} w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10`}>
+                  {/* 1. Card Top: Number + Title (01 + 여정이름, 약간 큰 미디움) */}
+                  <div className="mb-2.5 flex items-baseline gap-2 min-w-0">
+                    <span className="font-mono text-sm sm:text-base font-medium text-black/45 dark:text-white/45 shrink-0">
+                      {issueNumber}
+                    </span>
+                    <h3 className="text-sm sm:text-base md:text-[17px] font-medium text-black dark:text-white truncate tracking-tight group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors font-['Noto_Sans_KR',sans-serif]">
+                      {trip.title}
+                    </h3>
+                    {isItemPlan && (
+                      <span className="ml-auto text-[9px] font-mono font-medium text-red-500 dark:text-red-400 shrink-0">
+                        PLAN
+                      </span>
+                    )}
+                  </div>
+
+                  {/* 2. Card Middle: 1:1 SNS Photo Frame (순수 정방형, 검정 블록 배지 없음) */}
+                  <div className="relative aspect-square w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
                     <CardMedia
                       img={trip.img}
                       title={trip.title}
                       videoUrl={trip.videoUrl}
                       isActive={isCardActive}
                     />
-
-                    {/* Minimal Top-Left Floating Index / Date Badge (Semi-transparent Swiss tag) */}
-                    <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10 pointer-events-none">
-                      <div className="bg-black/70 dark:bg-white/80 backdrop-blur-xs text-white dark:text-black font-mono text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 uppercase tracking-wider shadow-xs">
-                        <span className="text-red-400 dark:text-red-600 font-black">#{issueNumber}</span>
-                        <span className="opacity-40 mx-1">/</span>
-                        <span>{year || '2024'}{month ? ` ${month}` : ''}</span>
-                      </div>
-                      {isItemPlan ? (
-                        <span className="bg-black text-white dark:bg-white dark:text-black border border-white/30 dark:border-black/30 font-mono text-[9px] font-black px-1.5 py-0.5 uppercase tracking-wider">
-                          PLAN
-                        </span>
-                      ) : trip.statusBadge ? (
-                        <span className={`font-mono text-[9px] font-black px-1.5 py-0.5 uppercase tracking-wider ${
-                          trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
-                        }`}>
-                          {trip.statusBadge}
-                        </span>
-                      ) : null}
-                    </div>
                   </div>
 
-                  {/* 2. Text Stack on Background (Magazine-style open text layout) */}
-                  <div className="pt-3 flex-1 flex flex-col justify-between text-black dark:text-white">
-                    <div>
-                      {/* Prominent Bold Title (Fixed 2-line clamp with uniform line height) */}
-                      <h3 className={`${cardViewMode === 'wide' ? 'text-base sm:text-lg md:text-xl' : 'text-sm sm:text-base md:text-lg'} font-black uppercase tracking-tight font-sans text-black dark:text-white line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors`}>
-                        {trip.title}
-                      </h3>
-
-                      {/* Date & Duration Row */}
-                      <div className="text-[10px] sm:text-[11px] font-mono font-medium text-black/50 dark:text-white/50 tracking-wider mt-1 flex items-center gap-1.5">
-                        <span>{compactDate || trip.date}</span>
-                        {days > 0 && (
-                          <>
-                            <span className="opacity-40">·</span>
-                            <span>{days} DAYS</span>
-                          </>
-                        )}
+                  {/* 3. Card Bottom: Date, Duration, Location (미니멀 SNS 감성 메타) */}
+                  <div className="mt-2.5 flex flex-col gap-0.5 text-black dark:text-white font-['Noto_Sans_KR',sans-serif]">
+                    <div className="flex items-center gap-1.5 font-mono text-[10.5px] sm:text-[11.5px] text-black/50 dark:text-white/50">
+                      <span>{formattedDate || compactDate || trip.date}</span>
+                      {days > 0 && (
+                        <>
+                          <span className="opacity-30">·</span>
+                          <span>{days} DAYS</span>
+                        </>
+                      )}
+                    </div>
+                    {trip.locationStr && (
+                      <div className="text-[11px] sm:text-xs text-black/75 dark:text-white/75 font-medium truncate">
+                        {cleanAdministrativeDistricts(trip.locationStr).replace(/,/g, ' · ')}
                       </div>
-                    </div>
-
-                    {/* Bottom Metadata & Arrow Bar (Clean border line like magazine moments) */}
-                    <div className="pt-2.5 mt-2.5 flex items-center justify-between text-[11px] sm:text-xs font-mono text-black/70 dark:text-white/70 border-t border-black/10 dark:border-white/10">
-                      <span className="font-semibold tracking-tight truncate max-w-[85%] text-black/80 dark:text-white/80">
-                        {trip.locationStr ? cleanAdministrativeDistricts(trip.locationStr).replace(/,/g, ' · ') : 'GLOBAL'}
-                      </span>
-                      <span className="text-sm font-bold text-black dark:text-white group-hover:translate-x-1 transition-transform shrink-0">
-                        →
-                      </span>
-                    </div>
+                    )}
                   </div>
                 </article>
               );
