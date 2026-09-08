@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import { Navigation } from './components/Navigation';
 import { Footer } from './components/Footer';
 import { HomePage } from './pages/Home';
+import { ScrollToTop } from './components/ScrollToTop';
 
 // Lazy loaded non-home pages & modals for fast initial load
 const ArchiveHubPage = lazy(() => import('./pages/Archive').then(m => ({ default: m.ArchiveHubPage })));
@@ -99,7 +100,10 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
     return localStorage.getItem('isLoggedIn') === 'true' || Boolean(auth.currentUser);
   });
-  const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
+  const [isAuthReady, setIsAuthReady] = useState<boolean>(() => {
+    // Optimistic initial auth readiness: if login flag or cached trips exist, render immediately
+    return localStorage.getItem('isLoggedIn') === 'true' || Boolean(localStorage.getItem('cached_trips'));
+  });
   const [adminEmails, setAdminEmails] = useState<string[]>(ADMIN_EMAILS);
   const [magazineMoments, setMagazineMoments] = useState<MagazineMoment[]>(() => {
     try {
@@ -853,11 +857,11 @@ function App() {
     // Splash screen timers
     const fadeTimer = setTimeout(() => {
       setFadeSplash(true);
-    }, 1200);
+    }, 900);
 
     const removeTimer = setTimeout(() => {
       setShowSplash(false);
-    }, 1500);
+    }, 1300);
 
     return () => {
       clearTimeout(fadeTimer);
@@ -2385,34 +2389,41 @@ function App() {
             onCancel={handleCancelUnsavedModal}
           />
         </Suspense>
+
+        {/* Global Floating Scroll To Top Navigator */}
+        {currentView !== 'detail' && currentView !== 'map' && <ScrollToTop />}
       </div>
 
-      {/* Splash Screen V0.7 */}
+      {/* Minimal Swiss Editorial Splash Screen */}
       {showSplash && (
-        <div className={`fixed inset-0 z-[99999] flex flex-col justify-between items-center bg-white dark:bg-[#141414] p-8 md:p-12 splash-container ${fadeSplash ? 'splash-container-fade' : 'splash-container-active'}`}>
+        <div className={`fixed inset-0 z-[99999] flex flex-col justify-between items-center bg-[#FBFBFA] dark:bg-[#121212] p-8 md:p-14 select-none splash-container ${fadeSplash ? 'splash-container-fade' : 'splash-container-active'}`}>
           {/* Top Micro Masthead */}
-          <div className="flex items-center gap-2 text-[10px] font-mono font-black uppercase tracking-[0.3em] text-black/60 dark:text-white/60">
-            <span>TRIP GON LOG</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
+          <div className="flex items-center gap-2.5 text-[9.5px] sm:text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-black/50 dark:text-white/50">
+            <span>TRIPGON LOG</span>
+            <span className="opacity-30">/</span>
             <span>AUTONOMOUS JOURNAL</span>
           </div>
 
-          {/* Center Giant Satoshi Typography */}
-          <div className="flex flex-col items-center select-none text-center">
-            <h1 className="text-5xl sm:text-7xl md:text-9xl font-black font-satoshi tracking-tighter text-black dark:text-white leading-none">
+          {/* Center Brand Minimal Typography */}
+          <div className="flex flex-col items-center text-center max-w-xl px-4">
+            <h1 className="text-4xl sm:text-6xl md:text-8xl font-black font-['Inter',sans-serif] tracking-tighter text-black dark:text-white leading-none">
               Tripgon log
             </h1>
-            <div className="h-[2px] w-16 bg-red-600 my-4" />
-            <span className="text-xs sm:text-sm font-mono font-bold uppercase tracking-[0.35em] text-black/40 dark:text-white/40">
-              EDITORIAL LOG SYSTEM
-            </span>
+            <div className="h-[1px] w-12 bg-black/20 dark:bg-white/20 my-5 sm:my-6" />
+            <p className="text-[10.5px] sm:text-xs font-mono font-medium uppercase tracking-[0.35em] text-black/45 dark:text-white/45">
+              A VISUAL CHRONICLE OF TRAVELS & ARCHIVES
+            </p>
           </div>
 
-          {/* Bottom Version */}
-          <div className="flex items-center gap-3 text-[10px] font-mono text-black/40 dark:text-white/40 uppercase tracking-widest">
-            <span>V0.7</span>
-            <span>·</span>
-            <span>SYSTEM READY</span>
+          {/* Bottom Minimal Line & Status */}
+          <div className="flex flex-col items-center gap-3 w-48 sm:w-56">
+            <div className="w-full h-[1.5px] bg-black/10 dark:bg-white/10 overflow-hidden relative rounded-none">
+              <div className="w-full h-full bg-black dark:bg-white splash-progress-bar" />
+            </div>
+            <div className="flex items-center justify-between w-full text-[9px] font-mono text-black/40 dark:text-white/40 uppercase tracking-widest">
+              <span>VOL. 2026</span>
+              <span>SYSTEM READY</span>
+            </div>
           </div>
         </div>
       )}
