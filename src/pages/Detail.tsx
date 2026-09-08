@@ -4214,24 +4214,8 @@ export function JourneyDetailPage({
                                   })()}
                                 </div>
                                 <div className="flex items-center gap-1.5 mt-1.5 h-6">
-                                  {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleToggleExcludeFromMap(item)}
-                                      className="p-1 hover:text-red-600 dark:hover:text-red-400 transition-colors select-none cursor-pointer"
-                                      title={isExcluded ? "지도에 표시하기 (현재 OFF)" : "지도에서 제외하기 (현재 ON)"}
-                                    >
-                                      {isExcluded ? (
-                                        <MapPinOff className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
-                                      ) : (
-                                        <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-                                      )}
-                                    </button>
-                                  ) : (
-                                    <div className="w-5 h-5" />
-                                  )}
-
-                                  {!isEditing && isActive ? (
+                                  {/* 활성화(isActive) 시: 재생 버튼이 항상 1순위로 가장 왼쪽에 위치하여 일관된 위치 제공 */}
+                                  {!isEditing && isActive && (
                                     <button
                                       type="button"
                                       onClick={(e) => {
@@ -4244,8 +4228,25 @@ export function JourneyDetailPage({
                                     >
                                       <Play className="w-2.5 h-2.5 fill-current ml-0.5" />
                                     </button>
-                                  ) : (
-                                    <div className="w-5 h-5" />
+                                  )}
+
+                                  {/* 장소 좌표가 있는 경우: 지도 표시 토글 핀 아이콘 */}
+                                  {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleToggleExcludeFromMap(item);
+                                      }}
+                                      className="p-1 hover:text-red-600 dark:hover:text-red-400 transition-colors select-none cursor-pointer shrink-0"
+                                      title={isExcluded ? "지도에 표시하기 (현재 OFF)" : "지도에서 제외하기 (현재 ON)"}
+                                    >
+                                      {isExcluded ? (
+                                        <MapPinOff className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
+                                      ) : (
+                                        <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+                                      )}
+                                    </button>
                                   )}
                                 </div>
                               </div>
@@ -4348,9 +4349,13 @@ export function JourneyDetailPage({
                                   </div>
                                 </div>
                               ) : (
-                                /* View Mode: Location link below title */
+                                /* View Mode: Location text & isolated Google Maps link (prevents accidental clicks on mobile) */
                                 item.location && item.location.trim() !== '' && (
-                                  <div className="mt-0.5 flex items-center">
+                                  <div className="mt-0.5 flex items-center gap-1.5 text-xs font-sans text-black/65 dark:text-white/65">
+                                    <MapPin className="w-3.5 h-3.5 text-red-500/70 dark:text-red-400/70 shrink-0" />
+                                    <span className="truncate max-w-[170px] sm:max-w-md font-medium text-black/75 dark:text-white/75">
+                                      {item.location}
+                                    </span>
                                     <button
                                       type="button"
                                       onClick={(e) => {
@@ -4358,11 +4363,11 @@ export function JourneyDetailPage({
                                         const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location || '')}`;
                                         setMapConfirm({ placeName: item.location || '', url });
                                       }}
-                                      className="inline-flex items-center gap-1.5 text-xs font-sans text-black/65 dark:text-white/65 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer group/loc not-italic"
-                                      title="구글 지도에서 위치 확인"
+                                      className="p-1 -m-1 text-black/40 hover:text-red-600 dark:text-white/40 dark:hover:text-red-400 transition-colors cursor-pointer shrink-0 rounded hover:bg-black/5 dark:hover:bg-white/5"
+                                      title="구글 지도에서 위치 확인 (새 창)"
+                                      aria-label="구글 지도 열기"
                                     >
-                                      <MapPin className="w-3.5 h-3.5 text-red-500 shrink-0 group-hover/loc:scale-110 transition-transform" />
-                                      <span className="truncate max-w-[220px] sm:max-w-md font-medium">{item.location}</span>
+                                      <ExternalLink className="w-3 h-3" />
                                     </button>
                                   </div>
                                 )
