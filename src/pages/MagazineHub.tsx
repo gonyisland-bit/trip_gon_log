@@ -652,7 +652,7 @@ export function MagazineHubPage({
       {viewMode === 'hub' ? (
         <div className="w-full flex flex-col flex-1">
           {/* 1-1. Editorial Large Headline & Directory Masthead */}
-          <section className="w-full max-w-7xl mx-auto px-4 sm:px-8 md:px-12 pt-8 sm:pt-14 pb-8 border-b border-black/10 dark:border-white/10">
+          <section className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 pt-8 sm:pt-14 pb-8 border-b border-black/10 dark:border-white/10">
             {/* Top Barcode & Category Tag */}
             <div className="flex items-center justify-between text-xs font-mono tracking-widest uppercase text-black/60 dark:text-white/60 mb-4 sm:mb-6">
               <div className="flex items-center gap-2.5 sm:gap-3">
@@ -681,7 +681,7 @@ export function MagazineHubPage({
           </section>
 
           {/* 1-2. Magazine Issues Directory Grid (MOUTHWASH Magazine Style Cards) */}
-          <section className="w-full max-w-7xl mx-auto px-4 sm:px-8 md:px-12 py-10 sm:py-16">
+          <section className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-10 sm:py-16">
             <div className="flex items-center justify-between mb-8 sm:mb-12 border-b border-black/10 dark:border-white/10 pb-4">
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-red-600 dark:text-red-400" />
@@ -694,8 +694,8 @@ export function MagazineHubPage({
               </span>
             </div>
 
-            {/* Magazine Cover Cards Grid (Responsive 1 -> 2 -> 3 Columns like Trip Archive) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 sm:gap-12 md:gap-16">
+            {/* Magazine Cover Cards Grid (Responsive 1 -> 2 -> 3 -> 4 Columns) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-8 sm:gap-10 md:gap-12">
               {effectiveSections.map((sec, idx) => {
                 const coverImg = sec.heroImg || (sec.items && sec.items.find(it => it.img)?.img) || '';
                 const displayHeroTitle = sec.heroTitle || sec.title;
@@ -794,7 +794,7 @@ export function MagazineHubPage({
 
             return (
               <section className="w-full bg-black/[0.02] dark:bg-white/[0.02] border-t border-black/10 dark:border-white/10 py-12 sm:py-20">
-                <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 md:px-12 flex flex-col gap-8">
+                <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 flex flex-col gap-8">
                   
                   {/* Header with Section Switching Tabs & Read Full Issue CTA */}
                   <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 border-b border-black/10 dark:border-white/10 pb-4">
@@ -1294,7 +1294,7 @@ export function MagazineHubPage({
           </div>
 
           {/* 2-3. SECTION CONTENT (Curated Moments & Stories) */}
-          <section className="w-full max-w-7xl mx-auto px-4 sm:px-8 md:px-12 py-10 sm:py-16 flex-1">
+          <section className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-10 sm:py-16 flex-1">
             <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 border-b border-black/15 dark:border-white/15 pb-4 mb-8 sm:mb-12">
               <div className="flex flex-col gap-1">
                 <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-red-600 dark:text-red-400">

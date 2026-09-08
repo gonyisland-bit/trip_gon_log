@@ -640,7 +640,7 @@ export function ArchiveHubPage({
     <main onClick={() => setActiveCardId(null)} className="animate-in fade-in duration-500 min-h-screen w-full flex flex-col justify-between">
       <div>
         {/* 1. Editorial Large Headline & Journey Masthead (Matching Magazine Hub Style) */}
-        <section className="w-full max-w-7xl mx-auto px-4 sm:px-8 md:px-12 pt-8 sm:pt-14 pb-8 border-b border-black/10 dark:border-white/10">
+        <section className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 pt-8 sm:pt-14 pb-8 border-b border-black/10 dark:border-white/10">
           {/* Top Barcode & Category Tag */}
           <div className="flex items-center justify-between text-xs font-mono tracking-widest uppercase text-black/60 dark:text-white/60 mb-4 sm:mb-6">
             <div className="flex items-center gap-2.5 sm:gap-3">
@@ -669,7 +669,7 @@ export function ArchiveHubPage({
         </section>
 
         {/* Filter & Controls Bar */}
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 md:px-12 py-4 border-b border-black/10 dark:border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
+        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-4 border-b border-black/10 dark:border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
           {/* Left: Section Sub-label */}
           <div className="flex items-center gap-2">
             <span className="text-xs sm:text-sm font-mono font-bold uppercase tracking-wider text-black dark:text-white">
@@ -965,7 +965,7 @@ export function ArchiveHubPage({
                   onClick={() => toggleSection(group.key)}
                   className="w-full border-b border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] cursor-pointer hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors select-none group"
                 >
-                  <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-12 py-3.5 sm:py-4 flex items-center justify-between">
+                  <div className="max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-3.5 sm:py-4 flex items-center justify-between">
                     <div className="flex items-baseline gap-3">
                       <h2 className="text-xl sm:text-2xl md:text-3xl font-black uppercase font-sans tracking-tight text-black dark:text-white">
                         {group.title}
@@ -992,7 +992,7 @@ export function ArchiveHubPage({
               {!isCollapsed && (
                 cardViewMode === 'list' ? (
                   <div className="w-full border-b border-black/15 dark:border-white/15">
-                    <div className="flex flex-col w-full max-w-7xl mx-auto px-4 sm:px-8 md:px-12">
+                    <div className="flex flex-col w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12">
                       {group.items.map((trip, index) => {
                         const isCardActive = activeCardId === trip.id;
                         const { year, month } = getYearAndMonth(trip.date);
@@ -1082,8 +1082,8 @@ export function ArchiveHubPage({
                   </div>
                 ) : (
                   <div className={cardViewMode === 'wide' 
-                    ? "grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-12 sm:gap-y-16 p-4 sm:p-8 md:p-12 w-full max-w-7xl mx-auto"
-                    : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-10 sm:gap-y-14 md:gap-y-16 p-3 sm:p-6 md:p-12 w-full max-w-7xl mx-auto"
+                    ? "grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-12 sm:gap-y-16 p-4 sm:p-8 md:p-12 w-full max-w-[1920px] mx-auto"
+                    : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-x-4 sm:gap-x-6 gap-y-10 sm:gap-y-14 md:gap-y-16 p-3 sm:p-6 md:p-12 w-full max-w-[1920px] mx-auto"
                   }>
                     {group.items.map((trip, index) => {
                       const { issueNumber, topYearMonth, line2DateDays, line3CountryCity } = getTripCardDisplayData(trip, index);
@@ -1120,8 +1120,8 @@ export function ArchiveHubPage({
                             )}
                           </div>
 
-                          {/* 2. 사진 중간: 1:1 정방형 SNS 사진 */}
-                          <div className="relative aspect-square w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm">
+                          {/* 2. 사진 중간: 1:1 정방형 SNS 사진 (와이드 뷰에서는 3:4 세로형 사진) */}
+                          <div className={`relative ${cardViewMode === 'wide' ? 'aspect-[3/4]' : 'aspect-square'} w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm`}>
                             <CardMedia
                               img={trip.img}
                               title={trip.title}
@@ -1161,7 +1161,7 @@ export function ArchiveHubPage({
 
       {/* ===== Bottom Bold Typography Statistics Banner (Seamlessly attached without white gap) ===== */}
       <footer className="w-full border-t border-black/15 dark:border-white/15 bg-black/[0.03] dark:bg-white/[0.03] py-8 sm:py-12 md:py-16 px-6 sm:px-12 md:px-16 mt-0 transition-colors">
-        <div className="max-w-7xl mx-auto flex flex-col gap-2.5 sm:gap-3 font-['Inter',sans-serif]">
+        <div className="max-w-[1920px] mx-auto flex flex-col gap-2.5 sm:gap-3 font-['Inter',sans-serif]">
           <span className="text-xs font-black text-black/40 dark:text-white/40 tracking-[0.25em] uppercase">
             TOTAL TRAVEL RECORD
           </span>

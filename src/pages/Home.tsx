@@ -1195,237 +1195,241 @@ export function HomePage({
       {/* 01. TRIP (통합 여정 목록 섹션)                                       */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       <section className="flex flex-col w-full overflow-hidden transition-colors border-t border-black/10 dark:border-white/10">
-        <div className="p-6 md:px-12 border-b border-black/15 dark:border-white/15 flex flex-col md:flex-row md:items-end justify-between gap-4 transition-colors">
-          {/* Left: Pure Minimal Title */}
-          <div className="flex flex-col gap-0.5">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
-              TRIP
-            </h2>
-          </div>
-
-          {/* Right: Controls (View Modes, Tag Filter, All Trips) */}
-          <div className="flex flex-col gap-2 w-full md:w-auto relative z-20">
-            <div className="flex items-center justify-between md:justify-end gap-2.5 w-full flex-wrap">
-              {/* 1. Simple Tag Filter Button */}
-              <button
-                type="button"
-                onClick={() => setIsTagAccordionOpen(prev => !prev)}
-                className={`text-[10px] sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-xs transition-all flex items-center gap-1.5 cursor-pointer ${
-                  activeFilter !== 'All'
-                    ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
-                    : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5'
-                }`}
-                title="TAG FILTER"
-              >
-                <Tag className="w-3.5 h-3.5" />
-                <span>{activeFilter === 'All' ? 'TAG' : `#${activeFilter}`}</span>
-                {isTagAccordionOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-              </button>
-
-              {/* Reset Tag filter button if not 'All' */}
-              {activeFilter !== 'All' && (
-                <button
-                  type="button"
-                  onClick={() => setActiveFilter('All')}
-                  className="text-[9px] px-1.5 py-1 uppercase font-bold tracking-wider text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer flex items-center gap-0.5"
-                  title="RESET"
-                >
-                  <X className="w-3 h-3" />
-                  RESET
-                </button>
-              )}
-
-              {/* 2. View Mode Switcher (Grid / Wide / List) */}
-              <div className="flex items-center border border-black/15 dark:border-white/15 rounded-xs p-0.5 bg-black/5 dark:bg-white/5 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => handleSetCardViewMode('grid')}
-                  className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
-                    cardViewMode === 'grid' 
-                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
-                      : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
-                  }`}
-                  title="GRID"
-                >
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSetCardViewMode('wide')}
-                  className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
-                    cardViewMode === 'wide' 
-                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
-                      : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
-                  }`}
-                  title="WIDE"
-                >
-                  <StretchHorizontal className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSetCardViewMode('list')}
-                  className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
-                    cardViewMode === 'list' 
-                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
-                      : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
-                  }`}
-                  title="LIST"
-                >
-                  <List className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {/* 3. All Trips Button */}
-              <button 
-                type="button"
-                onClick={() => onNavigate('archive')} 
-                className="text-[11px] sm:text-xs font-mono font-bold uppercase tracking-widest flex items-center hover:opacity-60 shrink-0 ml-1 cursor-pointer text-black dark:text-white"
-                title="ALL TRIPS"
-              >
-                ALL TRIPS <ArrowRight className="w-3.5 h-3.5 ml-1" />
-              </button>
+        <div className="w-full border-b border-black/15 dark:border-white/15">
+          <div className="w-full max-w-[1920px] mx-auto p-6 md:px-12 flex flex-col md:flex-row md:items-end justify-between gap-4 transition-colors">
+            {/* Left: Pure Minimal Title */}
+            <div className="flex flex-col gap-0.5">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                TRIP
+              </h2>
             </div>
 
-            {/* Collapsible Content: Search input & Tag pills */}
-            {isTagAccordionOpen && (
-              <div className="flex flex-col gap-2 p-3 bg-[#F9F8F6] dark:bg-[#181818] border border-black/15 dark:border-white/15 rounded-sm shadow-xl animate-in fade-in slide-in-from-top-1 duration-150 mt-1 md:absolute md:top-full md:right-0 md:w-80">
-                {/* Tag Search Input */}
-                <div className="relative flex items-center">
-                  <Search className="w-3 h-3 text-black/40 dark:text-white/40 absolute left-2 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={tagSearchQuery}
-                    onChange={(e) => setTagSearchQuery(e.target.value)}
-                    placeholder="태그 검색..."
-                    className="w-full pl-7 pr-7 py-1 text-[10px] bg-white dark:bg-[#222222] border border-black/10 dark:border-white/10 rounded-sm font-bold outline-none text-black dark:text-white placeholder:text-black/30 dark:placeholder:text-white/30"
-                  />
-                  {tagSearchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setTagSearchQuery('')}
-                      className="absolute right-2 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  )}
+            {/* Right: Controls (View Modes, Tag Filter, All Trips) */}
+            <div className="flex flex-col gap-2 w-full md:w-auto relative z-20">
+              <div className="flex items-center justify-between md:justify-end gap-2.5 w-full flex-wrap">
+                {/* 1. Simple Tag Filter Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsTagAccordionOpen(prev => !prev)}
+                  className={`text-[10px] sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                    activeFilter !== 'All'
+                      ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
+                      : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5'
+                  }`}
+                  title="TAG FILTER"
+                >
+                  <Tag className="w-3.5 h-3.5" />
+                  <span>{activeFilter === 'All' ? 'TAG' : `#${activeFilter}`}</span>
+                  {isTagAccordionOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                </button>
+
+                {/* Reset Tag filter button if not 'All' */}
+                {activeFilter !== 'All' && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveFilter('All')}
+                    className="text-[9px] px-1.5 py-1 uppercase font-bold tracking-wider text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer flex items-center gap-0.5"
+                    title="RESET"
+                  >
+                    <X className="w-3 h-3" />
+                    RESET
+                  </button>
+                )}
+
+                {/* 2. View Mode Switcher (Grid / Wide / List) */}
+                <div className="flex items-center border border-black/15 dark:border-white/15 rounded-xs p-0.5 bg-black/5 dark:bg-white/5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleSetCardViewMode('grid')}
+                    className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
+                      cardViewMode === 'grid' 
+                        ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
+                        : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                    }`}
+                    title="GRID"
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSetCardViewMode('wide')}
+                    className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
+                      cardViewMode === 'wide' 
+                        ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
+                        : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                    }`}
+                    title="WIDE"
+                  >
+                    <StretchHorizontal className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSetCardViewMode('list')}
+                    className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
+                      cardViewMode === 'list' 
+                        ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
+                        : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                    }`}
+                    title="LIST"
+                  >
+                    <List className="w-3.5 h-3.5" />
+                  </button>
                 </div>
 
-                {/* Tag Buttons */}
-                <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pt-1">
-                  {visibleTags.map(f => (
-                    <button
-                      key={f}
-                      type="button"
-                      onClick={() => {
-                        setActiveFilter(f);
-                      }}
-                      className={`text-[9.5px] px-2.5 py-1 uppercase font-bold tracking-wider border rounded-sm transition-colors shrink-0 cursor-pointer ${
-                        activeFilter === f
-                          ? 'border-black bg-black text-white dark:border-white dark:bg-white dark:text-black'
-                          : 'border-black/15 bg-black/4 dark:bg-white/5 text-black/60 hover:border-black/40 dark:border-white/15 dark:text-white/60 dark:hover:border-white/40'
-                      }`}
-                    >
-                      {f === 'All' ? '전체 (All)' : `#${f}`}
-                    </button>
-                  ))}
-                  {visibleTags.length === 0 && (
-                    <span className="text-[10px] text-black/40 dark:text-white/40 py-1 italic">
-                      검색 결과가 없습니다.
-                    </span>
-                  )}
-                </div>
+                {/* 3. All Trips Button */}
+                <button 
+                  type="button"
+                  onClick={() => onNavigate('archive')} 
+                  className="text-[11px] sm:text-xs font-mono font-bold uppercase tracking-widest flex items-center hover:opacity-60 shrink-0 ml-1 cursor-pointer text-black dark:text-white"
+                  title="ALL TRIPS"
+                >
+                  ALL TRIPS <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                </button>
               </div>
-            )}
+
+              {/* Collapsible Content: Search input & Tag pills */}
+              {isTagAccordionOpen && (
+                <div className="flex flex-col gap-2 p-3 bg-[#F9F8F6] dark:bg-[#181818] border border-black/15 dark:border-white/15 rounded-sm shadow-xl animate-in fade-in slide-in-from-top-1 duration-150 mt-1 md:absolute md:top-full md:right-0 md:w-80">
+                  {/* Tag Search Input */}
+                  <div className="relative flex items-center">
+                    <Search className="w-3 h-3 text-black/40 dark:text-white/40 absolute left-2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={tagSearchQuery}
+                      onChange={(e) => setTagSearchQuery(e.target.value)}
+                      placeholder="태그 검색..."
+                      className="w-full pl-7 pr-7 py-1 text-[10px] bg-white dark:bg-[#222222] border border-black/10 dark:border-white/10 rounded-sm font-bold outline-none text-black dark:text-white placeholder:text-black/30 dark:placeholder:text-white/30"
+                    />
+                    {tagSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setTagSearchQuery('')}
+                        className="absolute right-2 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Tag Buttons */}
+                  <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pt-1">
+                    {visibleTags.map(f => (
+                      <button
+                        key={f}
+                        type="button"
+                        onClick={() => {
+                          setActiveFilter(f);
+                        }}
+                        className={`text-[9.5px] px-2.5 py-1 uppercase font-bold tracking-wider border rounded-sm transition-colors shrink-0 cursor-pointer ${
+                          activeFilter === f
+                            ? 'border-black bg-black text-white dark:border-white dark:bg-white dark:text-black'
+                            : 'border-black/15 bg-black/4 dark:bg-white/5 text-black/60 hover:border-black/40 dark:border-white/15 dark:text-white/60 dark:hover:border-white/40'
+                        }`}
+                      >
+                        {f === 'All' ? '전체 (All)' : `#${f}`}
+                      </button>
+                    ))}
+                    {visibleTags.length === 0 && (
+                      <span className="text-[10px] text-black/40 dark:text-white/40 py-1 italic">
+                        검색 결과가 없습니다.
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {cardViewMode === 'list' ? (
-          <div className="flex flex-col w-full border-t border-black/15 dark:border-white/15">
-            {filteredTrips.slice(0, 8).map((trip, index) => {
-              const isCardActive = activeCardId === trip.id;
-              const { year, month } = getYearAndMonth(trip.date);
-              const formattedDate = formatNonRepeatingDate(trip.date);
-              const issueNumber = String((trip.displayOrder ?? index) + 1).padStart(2, '0');
-              const days = calculateDays(trip.date);
-              const isItemPlan = Boolean((trip as any).isPlan || (plans && plans.some(p => String(p.id) === String(trip.id))) || trip.tags?.includes('Plan') || trip.title.includes('(Plan)'));
+          <div className="w-full border-b border-black/15 dark:border-white/15">
+            <div className="flex flex-col w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12">
+              {filteredTrips.slice(0, 8).map((trip, index) => {
+                const isCardActive = activeCardId === trip.id;
+                const { year, month } = getYearAndMonth(trip.date);
+                const formattedDate = formatNonRepeatingDate(trip.date);
+                const issueNumber = String((trip.displayOrder ?? index) + 1).padStart(2, '0');
+                const days = calculateDays(trip.date);
+                const isItemPlan = Boolean((trip as any).isPlan || (plans && plans.some(p => String(p.id) === String(trip.id))) || trip.tags?.includes('Plan') || trip.title.includes('(Plan)'));
 
-              return (
-                <div
-                  key={trip.id}
-                  onClick={() => onNavigate('detail', trip.id)}
-                  className={`group flex flex-row items-stretch border-b border-black/15 dark:border-white/15 transition-colors cursor-pointer w-full select-none rounded-none ${
-                    isCardActive 
-                      ? 'bg-neutral-100 dark:bg-white/[0.08] border-l-[3px] border-l-red-600 dark:border-l-red-500' 
-                      : 'border-l-[3px] border-l-transparent hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
-                  }`}
-                >
-                  {/* Monospace Index Column */}
-                  <div className="w-11 sm:w-14 md:w-16 flex items-center justify-center font-mono font-black text-sm sm:text-lg text-black/30 dark:text-white/30 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors shrink-0 border-r border-black/10 dark:border-white/10 select-none">
-                    {issueNumber}
-                  </div>
-
-                  {/* Thumbnail: Unobstructed Clean Photo */}
-                  <div className="w-24 sm:w-32 aspect-[4/3] self-stretch shrink-0 border-r border-black/10 dark:border-white/10 overflow-hidden rounded-none relative bg-black/10">
-                    <img src={getEffectiveImageUrl(trip.img)} alt={trip.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none" />
-                  </div>
-
-                  {/* Meta Information Stack */}
-                  <div className="flex-1 min-w-0 py-3 px-3.5 sm:px-5 md:px-6 flex flex-col justify-between gap-1.5">
-                    {/* Top Row: Year/Month & Status Badge */}
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 font-mono text-[11px] sm:text-xs">
-                        <span className="font-black text-black dark:text-white tracking-tight">{year || '2024'}</span>
-                        {month && <span className="opacity-30">/</span>}
-                        {month && <span className="font-bold text-red-600 dark:text-red-500 uppercase tracking-tight">{month}</span>}
-                      </div>
-                      {isItemPlan ? (
-                        <span className="px-2 py-0.5 text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider font-mono bg-black text-white dark:bg-white dark:text-black border border-black/20 dark:border-white/20 rounded-none leading-none">
-                          PLAN
-                        </span>
-                      ) : trip.statusBadge ? (
-                        <span className={`px-2 py-0.5 text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider font-mono rounded-none leading-none ${
-                          trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
-                        }`}>
-                          {trip.statusBadge}
-                        </span>
-                      ) : null}
+                return (
+                  <div
+                    key={trip.id}
+                    onClick={() => onNavigate('detail', trip.id)}
+                    className={`group flex flex-row items-stretch border-b border-black/15 dark:border-white/15 transition-colors cursor-pointer w-full select-none rounded-none ${
+                      isCardActive 
+                        ? 'bg-neutral-100 dark:bg-white/[0.08] border-l-[3px] border-l-red-600 dark:border-l-red-500' 
+                        : 'border-l-[3px] border-l-transparent hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
+                    }`}
+                  >
+                    {/* Monospace Index Column */}
+                    <div className="w-11 sm:w-14 md:w-16 flex items-center justify-center font-mono font-black text-sm sm:text-lg text-black/30 dark:text-white/30 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors shrink-0 border-r border-black/10 dark:border-white/10 select-none">
+                      {issueNumber}
                     </div>
 
-                    {/* Prominent Title */}
-                    <h3 className="font-black text-base sm:text-lg md:text-xl text-black dark:text-white uppercase font-sans tracking-tight truncate group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
-                      {trip.title}
-                    </h3>
+                    {/* Thumbnail: Unobstructed Clean Photo */}
+                    <div className="w-24 sm:w-32 aspect-[4/3] self-stretch shrink-0 border-r border-black/10 dark:border-white/10 overflow-hidden rounded-none relative bg-black/10">
+                      <img src={getEffectiveImageUrl(trip.img)} alt={trip.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none" />
+                    </div>
 
-                    {/* Bottom Unified Metadata Bar: Uniform Small Font Weight */}
-                    <div className="flex items-center justify-between gap-2 text-[11px] sm:text-xs text-black/60 dark:text-white/60 font-mono">
-                      <div className="flex items-center gap-2 truncate min-w-0">
-                        {trip.locationStr && (
-                          <>
-                            <span className="font-semibold text-black/75 dark:text-white/75 truncate">{cleanAdministrativeDistricts(trip.locationStr).replace(/,/g, ' · ')}</span>
-                            <span className="opacity-40 shrink-0">·</span>
-                          </>
-                        )}
-                        <span className="shrink-0">{formattedDate}</span>
-                        {days > 0 && (
-                          <>
-                            <span className="opacity-40 shrink-0">·</span>
-                            <span className="shrink-0">{days} DAYS</span>
-                          </>
-                        )}
+                    {/* Meta Information Stack */}
+                    <div className="flex-1 min-w-0 py-3 px-3.5 sm:px-5 md:px-6 flex flex-col justify-between gap-1.5">
+                      {/* Top Row: Year/Month & Status Badge */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 font-mono text-[11px] sm:text-xs">
+                          <span className="font-black text-black dark:text-white tracking-tight">{year || '2024'}</span>
+                          {month && <span className="opacity-30">/</span>}
+                          {month && <span className="font-bold text-red-600 dark:text-red-500 uppercase tracking-tight">{month}</span>}
+                        </div>
+                        {isItemPlan ? (
+                          <span className="px-2 py-0.5 text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider font-mono bg-black text-white dark:bg-white dark:text-black border border-black/20 dark:border-white/20 rounded-none leading-none">
+                            PLAN
+                          </span>
+                        ) : trip.statusBadge ? (
+                          <span className={`px-2 py-0.5 text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider font-mono rounded-none leading-none ${
+                            trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
+                          }`}>
+                            {trip.statusBadge}
+                          </span>
+                        ) : null}
                       </div>
-                      <span className="text-sm font-bold text-black dark:text-white group-hover:translate-x-1 transition-transform shrink-0 pl-2">
-                        →
-                      </span>
+
+                      {/* Prominent Title */}
+                      <h3 className="font-black text-base sm:text-lg md:text-xl text-black dark:text-white uppercase font-sans tracking-tight truncate group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
+                        {trip.title}
+                      </h3>
+
+                      {/* Bottom Unified Metadata Bar: Uniform Small Font Weight */}
+                      <div className="flex items-center justify-between gap-2 text-[11px] sm:text-xs text-black/60 dark:text-white/60 font-mono">
+                        <div className="flex items-center gap-2 truncate min-w-0">
+                          {trip.locationStr && (
+                            <>
+                              <span className="font-semibold text-black/75 dark:text-white/75 truncate">{cleanAdministrativeDistricts(trip.locationStr).replace(/,/g, ' · ')}</span>
+                              <span className="opacity-40 shrink-0">·</span>
+                            </>
+                          )}
+                          <span className="shrink-0">{formattedDate}</span>
+                          {days > 0 && (
+                            <>
+                              <span className="opacity-40 shrink-0">·</span>
+                              <span className="shrink-0">{days} DAYS</span>
+                            </>
+                          )}
+                        </div>
+                        <span className="text-sm font-bold text-black dark:text-white group-hover:translate-x-1 transition-transform shrink-0 pl-2">
+                          →
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         ) : (
           <div className={cardViewMode === 'wide' 
-            ? "grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-12 sm:gap-y-16 p-4 sm:p-8 md:p-12 w-full"
-            : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-10 sm:gap-y-14 md:gap-y-16 p-3 sm:p-6 md:p-12 w-full"
+            ? "grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-12 sm:gap-y-16 p-4 sm:p-8 md:p-12 w-full max-w-[1920px] mx-auto"
+            : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-x-4 sm:gap-x-6 gap-y-10 sm:gap-y-14 md:gap-y-16 p-3 sm:p-6 md:p-12 w-full max-w-[1920px] mx-auto"
           }>
             {filteredTrips.slice(0, journeyLimit).map((trip, index) => {
               const { issueNumber, topYearMonth, line2DateDays, line3CountryCity } = getTripCardDisplayData(trip, index);
@@ -1462,8 +1466,8 @@ export function HomePage({
                     )}
                   </div>
 
-                  {/* 2. 사진 중간: 1:1 정방형 SNS 사진 */}
-                  <div className="relative aspect-square w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm">
+                  {/* 2. 사진 중간: 1:1 정방형 SNS 사진 (와이드 뷰에서는 3:4 세로형 사진) */}
+                  <div className={`relative ${cardViewMode === 'wide' ? 'aspect-[3/4]' : 'aspect-square'} w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm`}>
                     <CardMedia
                       img={trip.img}
                       title={trip.title}
@@ -1497,7 +1501,7 @@ export function HomePage({
 
         {/* VIEW ALL Button (유도 버튼: 여정이 한도보다 많을 때 노출) */}
         {filteredTrips.length > journeyLimit && (
-          <div className="flex justify-center pt-6 pb-2 px-4 sm:px-6 md:px-12 w-full">
+          <div className="flex justify-center pt-6 pb-2 px-4 sm:px-6 md:px-12 w-full max-w-[1920px] mx-auto">
             <button
               type="button"
               onClick={() => onNavigate('archive')}
@@ -1558,7 +1562,7 @@ export function HomePage({
           if (availableSections.length === 0) return null;
 
           return (
-            <div className="w-full border-t border-black/10 dark:border-white/10 mt-12 pt-12 px-4 sm:px-8 md:px-12 flex flex-col gap-6">
+            <div className="w-full max-w-[1920px] mx-auto border-t border-black/10 dark:border-white/10 mt-12 pt-12 px-4 sm:px-8 md:px-12 flex flex-col gap-6">
               {/* Section Header: Pure Swiss Minimal Magazine Header */}
               <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 pb-4 border-b border-black/15 dark:border-white/15">
                 <div className="flex items-baseline gap-4 flex-wrap">
