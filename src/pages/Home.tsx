@@ -1429,7 +1429,7 @@ export function HomePage({
         ) : (
           <div className={cardViewMode === 'wide' 
             ? "grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-12 sm:gap-y-16 p-4 sm:p-8 md:p-12 w-full max-w-[1920px] mx-auto"
-            : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-x-4 sm:gap-x-6 gap-y-10 sm:gap-y-14 md:gap-y-16 p-3 sm:p-6 md:p-12 w-full max-w-[1920px] mx-auto"
+            : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-10 sm:gap-y-14 md:gap-y-16 p-3 sm:p-6 md:p-12 w-full max-w-[1920px] mx-auto"
           }>
             {filteredTrips.slice(0, journeyLimit).map((trip, index) => {
               const { issueNumber, topYearMonth, line2DateDays, line3CountryCity } = getTripCardDisplayData(trip, index);
