@@ -775,7 +775,7 @@ function App() {
       const syncedItems = (sec.items || []).map(m => {
         if (!m.tripId) return m;
 
-        // Strict 1:1 match by timelineItemId, matching photo URL, or trip+date+title smart match
+        // Strict 1:1 match by timelineItemId only
         let match: TimelineItem | undefined;
         if (m.timelineItemId !== undefined) {
           match = allTimelineItems.find(t => 
@@ -783,46 +783,31 @@ function App() {
             (Number(t.id) === Number(m.timelineItemId) || String(t.id) === String(m.timelineItemId))
           );
         }
-        if (!match && m.img) {
-          match = allTimelineItems.find(t => 
-            Number(t.tripId) === Number(m.tripId) && 
-            t.img && 
-            (t.img === m.img || t.img.split('?')[0] === m.img.split('?')[0])
-          );
-        }
-        if (!match && m.tripId && m.date && m.title) {
-          const cleanTitle = m.title.trim().toLowerCase();
-          match = allTimelineItems.find(t =>
-            Number(t.tripId) === Number(m.tripId) &&
-            t.date === m.date &&
-            t.place && t.place.trim().toLowerCase() === cleanTitle
-          );
-        }
 
         if (match) {
           const parentTrip = trips.find(trip => Number(trip.id) === Number(m.tripId)) || plans.find(plan => Number(plan.id) === Number(m.tripId));
           const tripTimeline = allTimelineItems.filter(t => Number(t.tripId) === Number(m.tripId));
           const resolvedPlace = resolveTimelinePlaceName(match, tripTimeline, parentTrip);
-          const newImg = match.img || m.img;
           const newTitle = match.place || m.title;
           const newDate = match.date || m.date;
 
+          // Never overwrite m.img unless m.img is completely empty
+          const newImg = m.img || match.img || '';
+
           if (
-            m.img !== newImg ||
+            (!m.img && newImg) ||
             m.title !== newTitle ||
-            m.placeName !== resolvedPlace ||
-            m.date !== newDate ||
-            m.timelineItemId !== match.id
+            (resolvedPlace && m.placeName !== resolvedPlace) ||
+            (newDate && m.date !== newDate)
           ) {
             secChanged = true;
             hasDifferences = true;
             return {
               ...m,
-              timelineItemId: match.id,
               img: newImg,
               title: newTitle,
-              placeName: resolvedPlace,
-              date: newDate,
+              placeName: resolvedPlace || m.placeName,
+              date: newDate || m.date,
             };
           }
         }
