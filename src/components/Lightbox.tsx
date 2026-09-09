@@ -47,6 +47,25 @@ export function Lightbox({
   const [fadeOutSrc, setFadeOutSrc] = useState<string | null>(null);
   const [fadeOutActive, setFadeOutActive] = useState(false);
 
+  // Ambient Blur Background crossfade state
+  const [ambientCurrUrl, setAmbientCurrUrl] = useState<string>(images[currentIndex]?.url || '');
+  const [ambientPrevUrl, setAmbientPrevUrl] = useState<string | null>(null);
+  const [isAmbientFading, setIsAmbientFading] = useState<boolean>(false);
+
+  useEffect(() => {
+    const nextUrl = images[currentIndex]?.url || '';
+    if (nextUrl && nextUrl !== ambientCurrUrl) {
+      setAmbientPrevUrl(ambientCurrUrl);
+      setAmbientCurrUrl(nextUrl);
+      setIsAmbientFading(true);
+      const timer = setTimeout(() => {
+        setAmbientPrevUrl(null);
+        setIsAmbientFading(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [currentIndex, images, ambientCurrUrl]);
+
   const dragStart = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const imgRef = useRef<HTMLImageElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -624,13 +643,37 @@ export function Lightbox({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[10000] bg-black flex flex-col select-none animate-in fade-in duration-75 will-change-transform"
+      className="fixed inset-0 z-[10000] bg-black flex flex-col select-none animate-in fade-in duration-75 will-change-transform overflow-hidden"
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
+      {/* ── Ambient Blur Background (사진 고유 색감 퍼짐 효과) ── */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none select-none z-0" aria-hidden="true">
+        {/* Current ambient blurred image */}
+        {ambientCurrUrl && (
+          <div
+            className="absolute inset-0 scale-125 bg-cover bg-center blur-3xl opacity-50 transition-all duration-500 will-change-transform"
+            style={{ backgroundImage: `url("${ambientCurrUrl}")` }}
+          />
+        )}
+
+        {/* Previous ambient blurred image for smooth 500ms crossfade transition */}
+        {ambientPrevUrl && (
+          <div
+            className={`absolute inset-0 scale-125 bg-cover bg-center blur-3xl transition-all duration-500 will-change-transform ${
+              isAmbientFading ? 'opacity-0' : 'opacity-50'
+            }`}
+            style={{ backgroundImage: `url("${ambientPrevUrl}")` }}
+          />
+        )}
+
+        {/* 40% Black Dim Overlay on top of ambient blur */}
+        <div className="absolute inset-0 bg-black/40" />
+      </div>
+
       {/* ── SLIDESHOW MODE OVERLAY ── */}
       {isSlideshow && (
         <div className="absolute inset-0 z-30 flex flex-col pointer-events-none">
