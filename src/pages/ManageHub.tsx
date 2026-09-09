@@ -342,14 +342,27 @@ export function ManageHubPage({
   const [isLoadingFirestoreMag, setIsLoadingFirestoreMag] = useState(false);
   const [firestoreMagLoadedAt, setFirestoreMagLoadedAt] = useState<string | null>(null);
 
+  const isLocalEditingRef = useRef(false);
+
   useEffect(() => {
     if (magazineSections && magazineSections.length > 0) {
+      if (isLocalEditingRef.current) {
+        // Local edit just performed; consume echo without overwriting local state
+        isLocalEditingRef.current = false;
+        return;
+      }
       setSectionsList(prev => {
+        // Deep comparison to avoid unnecessary state updates & re-render loops
+        if (JSON.stringify(prev) === JSON.stringify(magazineSections)) {
+          return prev;
+        }
         // If current local list has items not yet in incoming props (e.g. freshly created section), preserve them
         const incomingIds = new Set(magazineSections.map(s => s.id));
         const localNewSections = prev.filter(s => !incomingIds.has(s.id));
         if (localNewSections.length > 0) {
-          return [...magazineSections, ...localNewSections].map((s, idx) => ({ ...s, order: idx }));
+          const merged = [...magazineSections, ...localNewSections].map((s, idx) => ({ ...s, order: idx }));
+          if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
+          return merged;
         }
         return magazineSections;
       });
@@ -359,6 +372,7 @@ export function ManageHubPage({
   // Keep parent App state & localStorage in sync with latest sectionsList
   useEffect(() => {
     if (sectionsList && sectionsList.length > 0) {
+      isLocalEditingRef.current = true;
       if (onUpdateMagazineSections) {
         onUpdateMagazineSections(sectionsList);
       }
@@ -1854,6 +1868,12 @@ export function ManageHubPage({
 
   const handleRemoveItemFromCurrentSection = (itemId: string) => {
     if (!currentMagSection) return;
+    if (selectedMagCardId === itemId) {
+      setSelectedMagCardId(null);
+    }
+    if (inlineAddMenuCardId === itemId) {
+      setInlineAddMenuCardId(null);
+    }
     pushMagazineSnapshot();
     setSectionsList(prev => prev.map(s => {
       if (s.id === currentMagSection.id) {
@@ -4262,7 +4282,7 @@ export function ManageHubPage({
                 </div>
 
                 {/* Simplified Section Settings Form */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-black/10 dark:border-white/10">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2 border-t border-black/10 dark:border-white/10">
                   {/* Section Title */}
                   <div className="flex flex-col gap-1">
                     <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
@@ -4291,6 +4311,20 @@ export function ManageHubPage({
                     />
                   </div>
 
+                  {/* Location or Custom Theme */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                      LOCATION / THEME (위치 또는 테마명)
+                    </label>
+                    <input
+                      type="text"
+                      value={currentMagSection.heroLocation || ''}
+                      onChange={e => handleUpdateSectionField(currentMagSection.id, 'heroLocation', e.target.value)}
+                      placeholder="e.g. TOKYO 또는 여행 음식, 쇼핑거리"
+                      className="px-3 py-2 text-xs font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                    />
+                  </div>
+
                   {/* Linked Trip */}
                   <div className="flex flex-col gap-1">
                     <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
@@ -4301,7 +4335,7 @@ export function ManageHubPage({
                       onChange={e => handleUpdateSectionField(currentMagSection.id, 'heroTripId', e.target.value ? Number(e.target.value) : undefined)}
                       className="px-3 py-2 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
                     >
-                      <option value="">-- NO LINKED JOURNEY --</option>
+                      <option value="">-- NO LINKED JOURNEY (복합 여정) --</option>
                       {localJourneys.map(j => (
                         <option key={j.id} value={j.id}>
                           {j.title.replace(/\s*\(Plan\)$/i, '')} ({j.locationStr || j.country})
@@ -4409,7 +4443,9 @@ export function ManageHubPage({
                     if (matched) {
                       const pName = matched.place?.trim() || '';
                       const jTitle = parentTrip?.title?.replace(/\s*\(Plan\)$/i, '') || '';
-                      const resolvedLocation = resolveTimelinePlaceName(matched, tripTimeline, parentTrip);
+                      // If user explicitly edited item.placeName or item.location, preserve it!
+                      const customPlace = item.placeName?.trim();
+                      const resolvedLocation = customPlace || resolveTimelinePlaceName(matched, tripTimeline, parentTrip);
                       return {
                         ...item,
                         tripId: targetTripId,
@@ -4423,7 +4459,7 @@ export function ManageHubPage({
                       let resolvedLocation = item.placeName || '';
                       const pName = (item.title || '').trim().toLowerCase();
                       if (!resolvedLocation || resolvedLocation.trim().toLowerCase() === pName) {
-                        resolvedLocation = parentTrip?.locationStr || (parentTrip?.locations && parentTrip.locations[0]?.name) || parentTrip?.country || 'VISITED PLACE';
+                        resolvedLocation = parentTrip?.locationStr || (parentTrip?.locations && parentTrip.locations[0]?.name) || parentTrip?.country || currentMagSection.heroLocation || 'VISITED PLACE';
                       }
                       return {
                         ...item,
@@ -4528,59 +4564,37 @@ export function ManageHubPage({
                                 {isLandscape ? '가로형 ⟳' : '세로형 ⟳'}
                               </button>
                               {isCardSelected && (
-                                <div className="relative flex items-center gap-1 animate-in fade-in">
+                                <div className="flex items-center gap-1.5 animate-in fade-in">
                                   <span className="px-1.5 py-0.5 text-[9px] font-mono font-black uppercase bg-black text-white dark:bg-white dark:text-black tracking-wider">
                                     SELECTED
                                   </span>
-                                  <div className="relative">
+                                  <div className="flex items-center gap-1 border-l border-black/20 dark:border-white/20 pl-1.5 ml-0.5">
                                     <button
                                       type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setInlineAddMenuCardId(prev => prev === item.id ? null : item.id);
-                                      }}
-                                      className="px-2 py-0.5 text-[9px] font-mono font-black uppercase bg-red-600 text-white hover:bg-red-700 transition-colors flex items-center gap-1 cursor-pointer shadow-xs"
-                                      title="이 카드 바로 다음에 새 카드 삽입"
+                                      onClick={() => handleAddTextCardToCurrentSection()}
+                                      className="px-2 py-0.5 text-[10px] font-mono font-bold lowercase border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1 cursor-pointer"
+                                      title="현재 카드 바로 뒤에 텍스트 카드 삽입"
                                     >
-                                      <Plus className="w-2.5 h-2.5" />
-                                      <span>ADD +</span>
+                                      <Plus className="w-3 h-3" />
+                                      <span>text</span>
                                     </button>
-
-                                    {inlineAddMenuCardId === item.id && (
-                                      <div 
-                                        className="absolute left-0 top-full mt-1 z-50 bg-white dark:bg-[#181818] border border-black dark:border-white shadow-2xl flex flex-col min-w-[140px] animate-in fade-in zoom-in-95 duration-100"
-                                        onClick={e => e.stopPropagation()}
-                                      >
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setInlineAddMenuCardId(null);
-                                            handleAddTextCardToCurrentSection();
-                                          }}
-                                          className="px-2.5 py-1.5 text-left text-[11px] font-mono font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 border-b border-black/10 dark:border-white/10 cursor-pointer"
-                                        >
-                                          <Plus className="w-3 h-3" />
-                                          <span>+ 텍스트 카드</span>
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setInlineAddMenuCardId(null);
-                                            const linkedId = currentMagSection?.heroTripId || (currentMagSection?.items && currentMagSection.items[0]?.tripId);
-                                            if (linkedId) {
-                                              setSelectedTripForMoments(linkedId);
-                                            } else if (selectedTripForMoments === null && localJourneys.length > 0) {
-                                              setSelectedTripForMoments(localJourneys[0].id);
-                                            }
-                                            setShowQuickPhotoPicker(true);
-                                          }}
-                                          className="px-2.5 py-1.5 text-left text-[11px] font-mono font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer"
-                                        >
-                                          <ImageIcon className="w-3 h-3" />
-                                          <span>+ 사진 선택</span>
-                                        </button>
-                                      </div>
-                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const linkedId = currentMagSection?.heroTripId || (currentMagSection?.items && currentMagSection.items[0]?.tripId);
+                                        if (linkedId) {
+                                          setSelectedTripForMoments(linkedId);
+                                        } else if (selectedTripForMoments === null && localJourneys.length > 0) {
+                                          setSelectedTripForMoments(localJourneys[0].id);
+                                        }
+                                        setShowQuickPhotoPicker(true);
+                                      }}
+                                      className="px-2 py-0.5 text-[10px] font-mono font-bold lowercase bg-black text-white dark:bg-white dark:text-black hover:opacity-85 transition-opacity flex items-center gap-1 cursor-pointer"
+                                      title="현재 카드 바로 뒤에 사진 삽입"
+                                    >
+                                      <ImageIcon className="w-3 h-3" />
+                                      <span>photo</span>
+                                    </button>
                                   </div>
                                 </div>
                               )}
@@ -4685,68 +4699,32 @@ export function ManageHubPage({
                                   {item.title || 'UNTITLED MOMENT'}
                                 </div>
                               </div>
-                              <div className="flex items-center justify-between gap-2">
-                                <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                                  <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-black/40 dark:text-white/40">
-                                    PLACE · 자동 매핑
-                                  </span>
-                                  <div className="text-xs sm:text-sm font-bold font-['Inter',sans-serif] text-black dark:text-white truncate" title={item.placeName || item.location}>
-                                    {item.placeName || item.location || 'VISITED PLACE'}
-                                  </div>
-                                </div>
-                                {item.date && (
-                                  <div className="flex flex-col items-end gap-0.5 shrink-0">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                                     <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-black/40 dark:text-white/40">
-                                      DATE
+                                      PLACE / THEME · 직접 입력 가능
                                     </span>
-                                    <div className="text-[11px] sm:text-xs font-mono font-bold text-black/60 dark:text-white/60">
-                                      {item.date}
-                                    </div>
+                                    <input
+                                      type="text"
+                                      value={item.placeName || item.location || ''}
+                                      onChange={e => handleUpdateItemInCurrentSection(item.id, 'placeName', e.target.value)}
+                                      placeholder="장소명 또는 테마(ex. 여행 음식, 쇼핑거리)..."
+                                      className="text-xs sm:text-sm font-bold font-['Inter',sans-serif] text-black dark:text-white bg-transparent border-b border-black/15 dark:border-white/15 focus:border-black dark:focus:border-white outline-none w-full py-0.5 placeholder:font-normal placeholder:text-black/30 dark:placeholder:text-white/30"
+                                    />
                                   </div>
-                                )}
+                                  {item.date && (
+                                    <div className="flex flex-col items-end gap-0.5 shrink-0">
+                                      <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-black/40 dark:text-white/40">
+                                        DATE
+                                      </span>
+                                      <div className="text-[11px] sm:text-xs font-mono font-bold text-black/60 dark:text-white/60">
+                                        {item.date}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          )}
-
-                          {/* Inline Insert Bottom Bar when Selected */}
-                          {isCardSelected && (
-                            <div 
-                              className="mt-2 pt-2 border-t border-dashed border-black/20 dark:border-white/20 flex flex-wrap items-center justify-between gap-1.5 animate-in fade-in"
-                              onClick={e => e.stopPropagation()}
-                            >
-                              <span className="text-[9px] font-mono font-bold text-red-600 dark:text-red-400 uppercase tracking-wider">
-                                + INSERT AFTER THIS CARD:
-                              </span>
-                              <div className="flex items-center gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => handleAddTextCardToCurrentSection()}
-                                  className="px-2.5 py-1 text-[10px] font-mono font-bold border border-black/30 dark:border-white/30 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1 cursor-pointer"
-                                  title="현재 카드 바로 뒤에 텍스트 카드 삽입"
-                                >
-                                  <Plus className="w-3 h-3" />
-                                  <span>+ TEXT</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const linkedId = currentMagSection?.heroTripId || (currentMagSection?.items && currentMagSection.items[0]?.tripId);
-                                    if (linkedId) {
-                                      setSelectedTripForMoments(linkedId);
-                                    } else if (selectedTripForMoments === null && localJourneys.length > 0) {
-                                      setSelectedTripForMoments(localJourneys[0].id);
-                                    }
-                                    setShowQuickPhotoPicker(true);
-                                  }}
-                                  className="px-2.5 py-1 text-[10px] font-mono font-bold bg-black text-white dark:bg-white dark:text-black hover:opacity-85 transition-opacity flex items-center gap-1 cursor-pointer"
-                                  title="현재 카드 바로 뒤에 타임라인 사진 삽입"
-                                >
-                                  <ImageIcon className="w-3 h-3" />
-                                  <span>+ PHOTO</span>
-                                </button>
-                              </div>
-                            </div>
-                          )}
+                            )}
                         </div>
                       );
                     };
