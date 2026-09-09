@@ -18,15 +18,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap" rel="stylesheet">
 
-    <!-- Leaflet CSS & JS -->
+    <!-- Preconnect for external CDNs -->
+    <link rel="preconnect" href="https://unpkg.com" crossorigin>
+    <link rel="preconnect" href="https://maps.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+
+    <!-- Leaflet CSS & JS (Deferred) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
-    <!-- Google Maps JS SDK (Places Library) -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD3v6WKVr8wXirD5npL-DVDJMWrZUFm7xY&libraries=places"></script>
+    <!-- Google Maps JS SDK (Places Library, Deferred) -->
+    <script defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD3v6WKVr8wXirD5npL-DVDJMWrZUFm7xY&libraries=places"></script>
 
-    <!-- EXIF-JS for parsing image metadata -->
-    <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+    <!-- EXIF-JS for parsing image metadata (Deferred) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/exif-js"></script>
   </head>
   <body>
     <div id="root"></div>

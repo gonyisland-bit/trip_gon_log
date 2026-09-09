@@ -4,19 +4,45 @@ import { Footer } from './components/Footer';
 import { HomePage } from './pages/Home';
 import { ScrollToTop } from './components/ScrollToTop';
 
-// Lazy loaded non-home pages & modals for fast initial load
-const ArchiveHubPage = lazy(() => import('./pages/Archive').then(m => ({ default: m.ArchiveHubPage })));
-const MapHubPage = lazy(() => import('./pages/MapHub').then(m => ({ default: m.MapHubPage })));
-const ManageHubPage = lazy(() => import('./pages/ManageHub').then(m => ({ default: m.ManageHubPage })));
-const MagazineHubPage = lazy(() => import('./pages/MagazineHub').then(m => ({ default: m.MagazineHubPage })));
-const JourneyDetailPage = lazy(() => import('./pages/Detail').then(m => ({ default: m.JourneyDetailPage })));
+// Resilient lazy import with automatic retry on chunk loading failure (e.g. browser reconnect or new deploy)
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  factory: () => Promise<{ default: T }>
+) {
+  return lazy(async () => {
+    try {
+      return await factory();
+    } catch (error) {
+      console.warn("Chunk load failed, retrying once in 800ms...", error);
+      try {
+        await new Promise(resolve => setTimeout(resolve, 800));
+        return await factory();
+      } catch (retryError) {
+        console.error("Chunk load retry failed, performing auto reload:", retryError);
+        const lastReloadKey = 'chunk_reload_ts';
+        const lastReload = parseInt(sessionStorage.getItem(lastReloadKey) || '0', 10);
+        if (Date.now() - lastReload > 10000) {
+          sessionStorage.setItem(lastReloadKey, Date.now().toString());
+          window.location.reload();
+        }
+        throw retryError;
+      }
+    }
+  });
+}
 
-const AuthModal = lazy(() => import('./components/AuthModal').then(m => ({ default: m.AuthModal })));
-const CreateTripModal = lazy(() => import('./components/CreateTripModal').then(m => ({ default: m.CreateTripModal })));
-const SettingsModal = lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
-const SearchModal = lazy(() => import('./components/SearchModal').then(m => ({ default: m.SearchModal })));
-const EditTripModal = lazy(() => import('./components/EditTripModal').then(m => ({ default: m.EditTripModal })));
-const ConfirmModal = lazy(() => import('./components/ConfirmModal').then(m => ({ default: m.ConfirmModal })));
+// Lazy loaded non-home pages & modals with auto retry on reconnect
+const ArchiveHubPage = lazyWithRetry(() => import('./pages/Archive').then(m => ({ default: m.ArchiveHubPage })));
+const MapHubPage = lazyWithRetry(() => import('./pages/MapHub').then(m => ({ default: m.MapHubPage })));
+const ManageHubPage = lazyWithRetry(() => import('./pages/ManageHub').then(m => ({ default: m.ManageHubPage })));
+const MagazineHubPage = lazyWithRetry(() => import('./pages/MagazineHub').then(m => ({ default: m.MagazineHubPage })));
+const JourneyDetailPage = lazyWithRetry(() => import('./pages/Detail').then(m => ({ default: m.JourneyDetailPage })));
+
+const AuthModal = lazyWithRetry(() => import('./components/AuthModal').then(m => ({ default: m.AuthModal })));
+const CreateTripModal = lazyWithRetry(() => import('./components/CreateTripModal').then(m => ({ default: m.CreateTripModal })));
+const SettingsModal = lazyWithRetry(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
+const SearchModal = lazyWithRetry(() => import('./components/SearchModal').then(m => ({ default: m.SearchModal })));
+const EditTripModal = lazyWithRetry(() => import('./components/EditTripModal').then(m => ({ default: m.EditTripModal })));
+const ConfirmModal = lazyWithRetry(() => import('./components/ConfirmModal').then(m => ({ default: m.ConfirmModal })));
 import { Check, AlertTriangle } from 'lucide-react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { fetchCoordinates } from './utils/googleMapsHelper';
@@ -92,8 +118,51 @@ function applyJourneyOrder<T extends { id: number; displayOrder?: number }>(item
 
 const ADMIN_EMAILS = ['gonyisland@google.com'];
 
+function getInitialNavigationState(): { view: string; tripId: number | null; isShare: boolean } {
+  try {
+    const path = window.location.pathname;
+    const params = new URLSearchParams(window.location.search);
+    const idParam = params.get('id');
+    const shareParam = params.get('share');
+    const isShare = shareParam === 'true';
+
+    if (isShare && idParam) {
+      return { view: 'detail', tripId: Number(idParam), isShare: true };
+    }
+
+    if (path === '/archive' || window.location.hash === '#archive' || path === '/plan' || window.location.hash === '#plan') {
+      return { view: 'archive', tripId: null, isShare: false };
+    }
+    if (path === '/map' || window.location.hash === '#map') {
+      return { view: 'map', tripId: null, isShare: false };
+    }
+    if (path === '/manage' || window.location.hash === '#manage') {
+      return { view: 'manage', tripId: null, isShare: false };
+    }
+    if (path === '/magazine' || window.location.hash === '#magazine') {
+      return { view: 'magazine', tripId: null, isShare: false };
+    }
+    if (path === '/detail' || idParam) {
+      return { view: 'detail', tripId: idParam ? Number(idParam) : null, isShare: false };
+    }
+
+    const lastView = sessionStorage.getItem('lastView') || localStorage.getItem('lastView');
+    if (lastView && ['home', 'archive', 'map', 'manage', 'magazine', 'detail'].includes(lastView)) {
+      const lastTripId = sessionStorage.getItem('lastTripId') || localStorage.getItem('lastTripId');
+      return {
+        view: lastView,
+        tripId: lastTripId ? Number(lastTripId) : null,
+        isShare: false,
+      };
+    }
+  } catch (_) {}
+
+  return { view: 'home', tripId: null, isShare: false };
+}
+
 function App() {
-  const [currentView, setCurrentView] = useState<string>('home'); 
+  const [initialNavState] = useState(() => getInitialNavigationState());
+  const [currentView, setCurrentView] = useState<string>(() => initialNavState.view); 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     return localStorage.getItem('isDarkMode') === 'true';
   });
@@ -152,7 +221,7 @@ function App() {
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
-  const [isShareMode, setIsShareMode] = useState<boolean>(false);
+  const [isShareMode, setIsShareMode] = useState<boolean>(() => initialNavState.isShare);
   const [showSplash, setShowSplash] = useState<boolean>(() => {
     try {
       if (localStorage.getItem('has_visited') || sessionStorage.getItem('splash_shown')) {
@@ -184,7 +253,7 @@ function App() {
   });
   const [trashedJourneys, setTrashedJourneys] = useState<Trip[]>([]);
   const [trashedSections, setTrashedSections] = useState<TrashedMagazineSection[]>([]);
-  const [activeTripId, setActiveTripId] = useState<number | null>(null);
+  const [activeTripId, setActiveTripId] = useState<number | null>(() => initialNavState.tripId);
   const [selectedTagFilter, setSelectedTagFilter] = useState<string | null>(null);
   const [dbError, setDbError] = useState<string | null>(null);
   const [tripsLoaded, setTripsLoaded] = useState<boolean>(false);
@@ -847,50 +916,13 @@ function App() {
     }
   }, [settingsLoaded, trips, magazineSections?.length]);
 
-  // Sync state with browser History API and parse share param on initial load
+  // Sync state with browser History API on initial load
   useEffect(() => {
-    const path = window.location.pathname;
-    const params = new URLSearchParams(window.location.search);
-    const idParam = params.get('id');
-    const shareParam = params.get('share');
-
-    let initialView = 'home';
-    let initialTripId: number | null = null;
-    const isShare = shareParam === 'true';
-
-    if (isShare && idParam) {
-      initialView = 'detail';
-      initialTripId = Number(idParam);
-      setIsShareMode(true);
-    } else {
-      if (path === '/archive' || window.location.hash === '#archive' || path === '/plan' || window.location.hash === '#plan') {
-        initialView = 'archive';
-      } else if (path === '/map' || window.location.hash === '#map') {
-        initialView = 'map';
-      } else if (path === '/manage' || window.location.hash === '#manage') {
-        initialView = 'manage';
-      } else if (path === '/magazine' || window.location.hash === '#magazine') {
-        initialView = 'magazine';
-      } else if (path === '/detail' || idParam) {
-        initialView = 'detail';
-        if (idParam) {
-          initialTripId = Number(idParam);
-        }
-      } else {
-        const lastView = sessionStorage.getItem('lastView') || localStorage.getItem('lastView');
-        if (lastView && ['home', 'archive', 'map', 'manage', 'magazine', 'detail'].includes(lastView)) {
-          initialView = lastView;
-          const lastTripId = sessionStorage.getItem('lastTripId') || localStorage.getItem('lastTripId');
-          if (lastTripId) initialTripId = Number(lastTripId);
-        }
-      }
-    }
-
-    if (initialTripId) {
-      setActiveTripId(initialTripId);
-    }
-    setCurrentView(initialView);
-    window.history.replaceState({ view: initialView, tripId: initialTripId, isShare }, '', window.location.pathname + window.location.search);
+    window.history.replaceState(
+      { view: initialNavState.view, tripId: initialNavState.tripId, isShare: initialNavState.isShare },
+      '',
+      window.location.pathname + window.location.search
+    );
 
     try {
       localStorage.setItem('has_visited', 'true');
@@ -2176,14 +2208,6 @@ function App() {
         {/* Marquee Banner - Only on Home View (Swiss Minimal Journal Ticker) */}
         {currentView === 'home' && marqueeShow && (
           <div className="w-full bg-black/[0.025] dark:bg-white/[0.035] border-y border-black/10 dark:border-white/10 backdrop-blur-xs py-1.5 overflow-hidden flex items-center shrink-0 transition-colors duration-300 select-none text-black dark:text-white">
-            {/* Fixed Left Ticker Badge */}
-            <div className="flex items-center gap-1.5 px-3 sm:px-4 py-0.5 border-r border-black/10 dark:border-white/10 shrink-0 z-10 bg-[#FBFBFA]/90 dark:bg-[#121212]/90 backdrop-blur-xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-500 animate-pulse" />
-              <span className="font-mono text-[9.5px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-red-600 dark:text-red-400">
-                DISPATCH
-              </span>
-            </div>
-
             <div 
               className="animate-marquee hover:[animation-play-state:paused] text-xs sm:text-[12.5px] font-mono font-bold tracking-wider uppercase flex items-center" 
               style={{ '--marquee-speed': `${(marqueeSpeed / 1.5) * 1.43 * 2}s` } as React.CSSProperties}
