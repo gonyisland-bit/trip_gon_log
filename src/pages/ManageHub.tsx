@@ -2178,8 +2178,8 @@ export function ManageHubPage({
       }
     });
 
-    // 4. Gallery photos (타임라인에 미포함된 갤러리 고유 사진만 보충)
-    if (targetTrip.gallery && Array.isArray(targetTrip.gallery)) {
+    // 4. Gallery photos (타임라인 사진이 전혀 없는 경우에만 폴백으로 보충)
+    if (uniqueCandidates.length === 0 && targetTrip.gallery && Array.isArray(targetTrip.gallery)) {
       targetTrip.gallery.forEach((g: any, gIdx) => {
         const rawUrl = typeof g === 'string' ? g : g?.url;
         const url = (rawUrl || '').trim();
@@ -2206,21 +2206,23 @@ export function ManageHubPage({
       });
     }
 
-    // 5. Cover photo (타임라인/갤러리에 전혀 없는 경우에만 보충)
-    const coverUrl = (targetTrip.img || '').trim();
-    if (coverUrl && !seenImages.has(coverUrl)) {
-      seenImages.add(coverUrl);
-      uniqueCandidates.push({
-        img: coverUrl,
-        date: targetTrip.date || '',
-        time: '',
-        displayOrder: 9999,
-        title: targetTrip.title.replace(/\s*\(Plan\)$/i, ''),
-        placeName: (targetTrip.locations && targetTrip.locations[0]?.name) || targetTrip.locationStr || '',
-        location: targetTrip.locationStr || targetTrip.country || '',
-        caption: '',
-        sourcePriority: 2,
-      });
+    // 5. Cover photo (타임라인 및 갤러리 사진이 전혀 없는 경우에만 단독 폴백 보충)
+    if (uniqueCandidates.length === 0) {
+      const coverUrl = (targetTrip.heroImg || targetTrip.img || '').trim();
+      if (coverUrl && !seenImages.has(coverUrl)) {
+        seenImages.add(coverUrl);
+        uniqueCandidates.push({
+          img: coverUrl,
+          date: targetTrip.date || '',
+          time: '',
+          displayOrder: 0,
+          title: targetTrip.title.replace(/\s*\(Plan\)$/i, ''),
+          placeName: (targetTrip.locations && targetTrip.locations[0]?.name) || targetTrip.locationStr || '',
+          location: targetTrip.locationStr || targetTrip.country || '',
+          caption: '',
+          sourcePriority: 2,
+        });
+      }
     }
 
     const totalCount = uniqueCandidates.length;
@@ -2327,7 +2329,7 @@ export function ManageHubPage({
       id: newSectionId,
       title: targetTrip.title.replace(/\s*\(Plan\)$/i, '').toUpperCase(),
       subtitle: `${targetTrip.date} · ${targetTrip.locationStr || targetTrip.country || 'JOURNEY'}`,
-      heroImg: randomHeroCard?.img || targetTrip.img || '',
+      heroImg: randomHeroCard?.img || targetTrip.heroImg || targetTrip.img || '',
       heroTitle: targetTrip.title.replace(/\s*\(Plan\)$/i, ''),
       heroDate: randomHeroCard?.date || targetTrip.date || '',
       heroLocation: randomHeroCard?.placeName || randomHeroCard?.location || targetTrip.locationStr || targetTrip.country || '',
