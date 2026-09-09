@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   ChevronUp, 
   ChevronDown, 
@@ -439,7 +439,10 @@ export function ManageHubPage({
   const [isHeroDragActive, setIsHeroDragActive] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [pendingJourneyId, setPendingJourneyId] = useState<number | null>(null);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [showSaveSuccessModal, setShowSaveSuccessModal] = useState(false);
+  const [showQuickPhotoPicker, setShowQuickPhotoPicker] = useState(false);
+  const [inlineAddMenuCardId, setInlineAddMenuCardId] = useState<string | null>(null);
 
   // ── CLEANUP & OPTIMIZER STATE & HANDLERS ──
   interface DiagnosticReport {
@@ -852,6 +855,9 @@ export function ManageHubPage({
     return localJourneys.find(j => j.id === selectedJourneyId);
   }, [localJourneys, selectedJourneyId]);
 
+  // Saved sections snapshot reference to track magazine mutations accurately
+  const savedSectionsJsonRef = useRef<string>(JSON.stringify(magazineSections && magazineSections.length > 0 ? magazineSections : sectionsList));
+
   // Dirty tracking for HOME configuration & magazine moments
   const isHomeDirty = useMemo(() => {
     return (
@@ -872,7 +878,7 @@ export function ManageHubPage({
       homeMagLimit !== (homeMagazineLimit || 6) ||
       JSON.stringify(momentsList) !== JSON.stringify(magazineMoments || [])
     );
-  }, [title, homeTitle, subtitle, homeSubtitle, selectedHeroIds, heroJourneyIds, autoSlide, heroAutoSlide, slideDuration, heroSlideDuration, mediaType, heroMediaType, showMarquee, marqueeShow, homeMarquee, marqueeMessage, homeSpeed, marqueeSpeed, gradientEnabled, homeGradientEnabled, gradientFrom, homeGradientFrom, gradientTo, homeGradientTo, homeMagSectionId, homeMagazineSectionId, homeMagLimit, homeMagazineLimit, momentsList, magazineMoments]);
+  }, [title, homeTitle, subtitle, homeSubtitle, selectedHeroIds, heroJourneyIds, autoSlide, heroAutoSlide, slideDuration, heroSlideDuration, mediaType, heroMediaType, showMarquee, marqueeShow, homeMarquee, marqueeMessage, homeSpeed, marqueeSpeed, gradientEnabled, homeGradientEnabled, gradientFrom, homeGradientFrom, gradientTo, homeGradientTo, homeMagSectionId, homeMagazineSectionId, homeMagLimit, homeMagazineLimit, momentsList, magazineMoments, homeJourneyLimit]);
 
   // Dirty tracking for currently selected journey in ARCHIVE mode
   const isArchiveDirty = useMemo(() => {
@@ -893,8 +899,8 @@ export function ManageHubPage({
 
   // Dirty tracking for MAGAZINE sections & moments
   const isMagazineDirty = useMemo(() => {
-    return JSON.stringify(sectionsList) !== JSON.stringify(magazineSections || []);
-  }, [sectionsList, magazineSections]);
+    return savedSectionsJsonRef.current !== JSON.stringify(sectionsList);
+  }, [sectionsList]);
 
   // Dirty tracking for Archive & Magazine Hub Headers
   const isArchiveHubHeaderDirty = useMemo(() => {
@@ -925,6 +931,69 @@ export function ManageHubPage({
       onDirtyChange(isAnyDirty);
     }
   }, [isAnyDirty, onDirtyChange]);
+
+  // Reset all edited state back to origin (props)
+  const handleResetAllState = () => {
+    setTitle(homeTitle || '');
+    setSubtitle(homeSubtitle || '');
+    setSelectedHeroIds(heroJourneyIds || []);
+    setAutoSlide(heroAutoSlide);
+    setSlideDuration(heroSlideDuration || 6);
+    setMediaType(heroMediaType || 'image');
+    setShowMarquee(marqueeShow);
+    setHomeMarquee(marqueeMessage || '');
+    setHomeSpeed(marqueeSpeed || 50);
+    setGradientEnabled(homeGradientEnabled ?? false);
+    setGradientFrom(homeGradientFrom || '#F7F2EB');
+    setGradientTo(homeGradientTo || '#E7DEC8');
+    setHomeMagSectionId(homeMagazineSectionId || 'main');
+    setHomeMagLimit(homeMagazineLimit || 6);
+    setHomeJourneyLimit(parseInt(localStorage.getItem('home_journey_limit') || '4', 10));
+    setMomentsList(magazineMoments || []);
+
+    if (selectedJourney) {
+      setEditTitle(selectedJourney.title || '');
+      setEditDate(selectedJourney.date || '');
+      setEditLocation(selectedJourney.locationStr || '');
+      setEditCountry(selectedJourney.country || '');
+      setEditTags(selectedJourney.tags || []);
+      setEditImg(selectedJourney.img || '');
+      setEditVideoUrl(selectedJourney.videoUrl || '');
+      setEditHeroImg(selectedJourney.heroImg || '');
+      setEditHeroVideoUrl(selectedJourney.heroVideoUrl || '');
+      setEditStatusBadge(selectedJourney.statusBadge || '');
+    }
+
+    if (savedSectionsJsonRef.current) {
+      try {
+        setSectionsList(JSON.parse(savedSectionsJsonRef.current));
+      } catch (_) {}
+    }
+
+    if (archiveHubConfig) {
+      setArchiveHubMainTitle(archiveHubConfig.mainTitle || 'A VISUAL CHRONICLE OF JOURNEYS & TRAVEL ARCHIVES');
+      setArchiveHubSubtitle(archiveHubConfig.subtitle || '발걸음이 닿았던 모든 도시와 찬란했던 시간의 기록. 엄선된 사진과 함께 지난 여정들을 다시 마주합니다.');
+      setArchiveHubBadgeText(archiveHubConfig.badgeText || 'JOURNEY ARCHIVE');
+      setArchiveHubVolumeText(archiveHubConfig.volumeText || `VOL. ${new Date().getFullYear()}`);
+    }
+
+    if (magazineHubConfig) {
+      setHubMainTitle(magazineHubConfig.mainTitle || 'A VISUAL ARCHIVE OF JOURNEYS, CURATED STORIES & MOMENTS');
+      setHubSubtitle(magazineHubConfig.subtitle || '여행의 찬란한 순간과 에피소드를 엄선하여 잡지 형식으로 기록한 매거진 컬렉션입니다. 이슈를 선택하여 전체 화보와 이야기를 감상하세요.');
+      setHubBadgeText(magazineHubConfig.badgeText || 'CURATED ARCHIVE');
+      setHubVolumeText(magazineHubConfig.volumeText || `VOL. ${new Date().getFullYear()}`);
+    }
+  };
+
+  // Guarded navigation execution helper
+  const executeWithGuard = (action: () => void) => {
+    if (isAnyDirty) {
+      setPendingAction(() => action);
+      setShowUnsavedModal(true);
+    } else {
+      action();
+    }
+  };
 
   // Sync journeys from props with localStorage order preservation
   useEffect(() => {
@@ -1985,6 +2054,7 @@ export function ManageHubPage({
         const mainSec = sectionsList.find(s => s.id === 'main') || sectionsList[0];
         await onSaveMagazineMoments(mainSec?.items || []);
       }
+      savedSectionsJsonRef.current = JSON.stringify(sectionsList);
       setMagazineSaveSuccess(true);
       if (showModal) {
         setShowSaveSuccessModal(true);
@@ -2086,6 +2156,7 @@ export function ManageHubPage({
         await onSaveMagazineMoments(mainSec?.items || []);
       }
 
+      savedSectionsJsonRef.current = JSON.stringify(sectionsList);
       setSaveAllSuccess(true);
       setHomeSaveSuccess(true);
       setTripSaveSuccess(true);
@@ -2214,7 +2285,7 @@ export function ManageHubPage({
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
-              onNavigate(getReturnView());
+              executeWithGuard(() => onNavigate(getReturnView()));
             }}
             className="p-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer rounded-none"
             title="돌아가기"
@@ -2238,10 +2309,13 @@ export function ManageHubPage({
               <button
                 key={mode}
                 onClick={() => {
-                  setActiveMode(mode);
-                  if (mode === 'CLEANUP' && !diagReport && !isScanning) {
-                    handleScanCleanup();
-                  }
+                  if (activeMode === mode) return;
+                  executeWithGuard(() => {
+                    setActiveMode(mode);
+                    if (mode === 'CLEANUP' && !diagReport && !isScanning) {
+                      handleScanCleanup();
+                    }
+                  });
                 }}
                 className={`px-3 sm:px-4 py-1.5 text-xs font-black uppercase tracking-wider font-sans transition-colors cursor-pointer whitespace-nowrap ${
                   activeMode === mode
@@ -3738,13 +3812,11 @@ export function ManageHubPage({
                       onDragOver={e => handleDragOver(e, idx)}
                       onDrop={e => handleDrop(e, idx)}
                       onClick={() => {
-                        if (selectedJourneyId !== journey.id && isArchiveDirty) {
-                          setPendingJourneyId(journey.id);
-                          setShowUnsavedModal(true);
-                        } else {
+                        if (selectedJourneyId === journey.id) return;
+                        executeWithGuard(() => {
                           setSelectedJourneyId(journey.id);
                           setMobileArchiveTab('EDIT');
-                        }
+                        });
                       }}
                       className={`p-2.5 border transition-all flex items-center gap-2.5 cursor-pointer rounded-none ${
                         isSelected
@@ -3754,16 +3826,16 @@ export function ManageHubPage({
                     >
                       {/* Drag Grip handle */}
                       <div className="cursor-grab active:cursor-grabbing text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white shrink-0">
-                        <GripVertical className="w-3.5 h-3.5" />
+                        <GripVertical className="w-4 h-4" />
                       </div>
 
-                      {/* Order Controls: ▲ & ▼ */}
+                      {/* Reorder [▲] / [▼] Minimal Stepper */}
                       <div className="flex flex-col gap-0.5 shrink-0" onClick={e => e.stopPropagation()}>
                         <button
                           type="button"
                           onClick={() => handleMoveOrder(idx, 'up')}
                           disabled={idx === 0}
-                          className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+                          className="p-0.5 border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer"
                           title="위로 이동"
                         >
                           <ChevronUp className="w-3.5 h-3.5" />
@@ -3772,7 +3844,7 @@ export function ManageHubPage({
                           type="button"
                           onClick={() => handleMoveOrder(idx, 'down')}
                           disabled={idx === localJourneys.length - 1}
-                          className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+                          className="p-0.5 border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer"
                           title="아래로 이동"
                         >
                           <ChevronDown className="w-3.5 h-3.5" />
@@ -3819,7 +3891,7 @@ export function ManageHubPage({
                         type="button"
                         onClick={e => {
                           e.stopPropagation();
-                          onNavigate('detail', journey.id);
+                          executeWithGuard(() => onNavigate('detail', journey.id));
                         }}
                         className="p-1.5 text-black/40 dark:text-white/40 hover:text-red-600 dark:hover:text-red-500 hover:bg-black/5 dark:hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
                         title="여정 상세 페이지 바로 보기"
@@ -3968,11 +4040,14 @@ export function ManageHubPage({
                 <select
                   value={activeMagSectionId}
                   onChange={e => {
-                    const sec = sectionsList.find(s => s.id === e.target.value);
+                    const nextId = e.target.value;
+                    const sec = sectionsList.find(s => s.id === nextId);
                     if (sec) {
-                      setActiveMagSectionId(sec.id);
-                      setMomentsList(sec.items || []);
-                      setSelectedMagCardId(null);
+                      executeWithGuard(() => {
+                        setActiveMagSectionId(sec.id);
+                        setMomentsList(sec.items || []);
+                        setSelectedMagCardId(null);
+                      });
                     }
                   }}
                   className="px-3 py-1.5 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white rounded-none cursor-pointer focus:border-black dark:focus:border-white min-w-[200px] max-w-full sm:max-w-[340px]"
@@ -4453,9 +4528,61 @@ export function ManageHubPage({
                                 {isLandscape ? '가로형 ⟳' : '세로형 ⟳'}
                               </button>
                               {isCardSelected && (
-                                <span className="px-1.5 py-0.5 text-[9px] font-mono font-black uppercase bg-black text-white dark:bg-white dark:text-black tracking-wider animate-in fade-in">
-                                  SELECTED
-                                </span>
+                                <div className="relative flex items-center gap-1 animate-in fade-in">
+                                  <span className="px-1.5 py-0.5 text-[9px] font-mono font-black uppercase bg-black text-white dark:bg-white dark:text-black tracking-wider">
+                                    SELECTED
+                                  </span>
+                                  <div className="relative">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setInlineAddMenuCardId(prev => prev === item.id ? null : item.id);
+                                      }}
+                                      className="px-2 py-0.5 text-[9px] font-mono font-black uppercase bg-red-600 text-white hover:bg-red-700 transition-colors flex items-center gap-1 cursor-pointer shadow-xs"
+                                      title="이 카드 바로 다음에 새 카드 삽입"
+                                    >
+                                      <Plus className="w-2.5 h-2.5" />
+                                      <span>ADD +</span>
+                                    </button>
+
+                                    {inlineAddMenuCardId === item.id && (
+                                      <div 
+                                        className="absolute left-0 top-full mt-1 z-50 bg-white dark:bg-[#181818] border border-black dark:border-white shadow-2xl flex flex-col min-w-[140px] animate-in fade-in zoom-in-95 duration-100"
+                                        onClick={e => e.stopPropagation()}
+                                      >
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setInlineAddMenuCardId(null);
+                                            handleAddTextCardToCurrentSection();
+                                          }}
+                                          className="px-2.5 py-1.5 text-left text-[11px] font-mono font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 border-b border-black/10 dark:border-white/10 cursor-pointer"
+                                        >
+                                          <Plus className="w-3 h-3" />
+                                          <span>+ 텍스트 카드</span>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setInlineAddMenuCardId(null);
+                                            const linkedId = currentMagSection?.heroTripId || (currentMagSection?.items && currentMagSection.items[0]?.tripId);
+                                            if (linkedId) {
+                                              setSelectedTripForMoments(linkedId);
+                                            } else if (selectedTripForMoments === null && localJourneys.length > 0) {
+                                              setSelectedTripForMoments(localJourneys[0].id);
+                                            }
+                                            setShowQuickPhotoPicker(true);
+                                          }}
+                                          className="px-2.5 py-1.5 text-left text-[11px] font-mono font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer"
+                                        >
+                                          <ImageIcon className="w-3 h-3" />
+                                          <span>+ 사진 선택</span>
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
                               )}
                             </div>
 
@@ -4577,6 +4704,46 @@ export function ManageHubPage({
                                     </div>
                                   </div>
                                 )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Inline Insert Bottom Bar when Selected */}
+                          {isCardSelected && (
+                            <div 
+                              className="mt-2 pt-2 border-t border-dashed border-black/20 dark:border-white/20 flex flex-wrap items-center justify-between gap-1.5 animate-in fade-in"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <span className="text-[9px] font-mono font-bold text-red-600 dark:text-red-400 uppercase tracking-wider">
+                                + INSERT AFTER THIS CARD:
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleAddTextCardToCurrentSection()}
+                                  className="px-2.5 py-1 text-[10px] font-mono font-bold border border-black/30 dark:border-white/30 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1 cursor-pointer"
+                                  title="현재 카드 바로 뒤에 텍스트 카드 삽입"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                  <span>+ TEXT</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const linkedId = currentMagSection?.heroTripId || (currentMagSection?.items && currentMagSection.items[0]?.tripId);
+                                    if (linkedId) {
+                                      setSelectedTripForMoments(linkedId);
+                                    } else if (selectedTripForMoments === null && localJourneys.length > 0) {
+                                      setSelectedTripForMoments(localJourneys[0].id);
+                                    }
+                                    setShowQuickPhotoPicker(true);
+                                  }}
+                                  className="px-2.5 py-1 text-[10px] font-mono font-bold bg-black text-white dark:bg-white dark:text-black hover:opacity-85 transition-opacity flex items-center gap-1 cursor-pointer"
+                                  title="현재 카드 바로 뒤에 타임라인 사진 삽입"
+                                >
+                                  <ImageIcon className="w-3 h-3" />
+                                  <span>+ PHOTO</span>
+                                </button>
                               </div>
                             </div>
                           )}
@@ -5613,7 +5780,7 @@ export function ManageHubPage({
         <button
           type="button"
           onClick={() => {
-            onNavigate(getReturnView());
+            executeWithGuard(() => onNavigate(getReturnView()));
           }}
           className="w-12 h-12 rounded-full flex items-center justify-center shadow-2xl bg-white dark:bg-[#1a1a1a] text-black dark:text-white border border-black/15 dark:border-white/15 hover:scale-110 active:scale-95 transition-all cursor-pointer"
           title="뷰 모드로 이동"
@@ -5624,35 +5791,195 @@ export function ManageHubPage({
 
       {/* 4. Common Minimal Unsaved Changes Modal */}
       <ConfirmModal
-        isOpen={showUnsavedModal && pendingJourneyId !== null}
+        isOpen={showUnsavedModal}
         title="UNSAVED CHANGES"
-        message="Are you sure?"
+        message="Are you sure you want to leave? Any unsaved changes will be lost."
         confirmLabel="SAVE (Y)"
         discardLabel="DISCARD (N)"
         cancelLabel="SKIP (ESC)"
         onConfirm={async () => {
-          if (pendingJourneyId !== null) {
-            await handleSaveJourney();
+          try {
+            await handleSaveAllChanges(false);
+            setShowSaveSuccessModal(true);
+          } catch (e) {
+            console.error("Auto save failed:", e);
+          }
+          setShowUnsavedModal(false);
+          if (pendingAction) {
+            const act = pendingAction;
+            setPendingAction(null);
+            act();
+          } else if (pendingJourneyId !== null) {
             setSelectedJourneyId(pendingJourneyId);
             setPendingJourneyId(null);
             setMobileArchiveTab('EDIT');
-            setShowSaveSuccessModal(true);
           }
-          setShowUnsavedModal(false);
         }}
         onDiscard={() => {
-          if (pendingJourneyId !== null) {
+          handleResetAllState();
+          setShowUnsavedModal(false);
+          if (pendingAction) {
+            const act = pendingAction;
+            setPendingAction(null);
+            act();
+          } else if (pendingJourneyId !== null) {
             setSelectedJourneyId(pendingJourneyId);
             setPendingJourneyId(null);
             setMobileArchiveTab('EDIT');
           }
-          setShowUnsavedModal(false);
         }}
         onCancel={() => {
-          setPendingJourneyId(null);
           setShowUnsavedModal(false);
+          setPendingAction(null);
+          setPendingJourneyId(null);
         }}
       />
+
+      {/* Quick Photo Picker Floating Modal */}
+      {showQuickPhotoPicker && (
+        <div 
+          className="fixed inset-0 z-[650] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
+          onClick={() => setShowQuickPhotoPicker(false)}
+        >
+          <div 
+            className="w-full max-w-3xl max-h-[85vh] bg-white dark:bg-[#161616] border border-black dark:border-white shadow-2xl flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02]">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-red-600 dark:text-red-400" />
+                <h3 className="text-xs sm:text-sm font-mono font-black uppercase tracking-wider text-black dark:text-white">
+                  QUICK PHOTO PICKER (+ INSERT AFTER SELECTED CARD)
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowQuickPhotoPicker(false)}
+                className="p-1 hover:bg-black/10 dark:hover:bg-white/10 text-black dark:text-white cursor-pointer"
+                title="닫기"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Filter / Search Bar */}
+            <div className="p-3 border-b border-black/10 dark:border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-2 bg-black/[0.01] dark:bg-white/[0.01]">
+              <select
+                value={selectedTripForMoments === null ? '' : selectedTripForMoments}
+                onChange={e => setSelectedTripForMoments(e.target.value === '' ? null : Number(e.target.value))}
+                className="px-2.5 py-1.5 text-xs font-mono font-bold bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+              >
+                <option value="">-- 여정 선택 (SELECT JOURNEY) --</option>
+                {localJourneys.map(j => (
+                  <option key={j.id} value={j.id}>
+                    {j.title.replace(/\s*\(Plan\)$/i, '')} ({j.locationStr || j.country})
+                  </option>
+                ))}
+              </select>
+
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
+                <input
+                  type="text"
+                  value={momentSearchQuery}
+                  onChange={e => setMomentSearchQuery(e.target.value)}
+                  placeholder="장소, 메모, 날짜 검색..."
+                  className="w-full pl-8 pr-2.5 py-1.5 text-xs font-mono font-bold bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                />
+              </div>
+            </div>
+
+            {/* Photo Candidates Grid */}
+            <div className="flex-1 overflow-y-auto p-3">
+              {candidateTimelineItems.length === 0 ? (
+                <div className="py-12 text-center flex flex-col items-center justify-center gap-2 text-black/40 dark:text-white/40 font-mono text-xs">
+                  <ImageIcon className="w-8 h-8 opacity-40" />
+                  <span>선택된 여정의 사진이 없거나 검색 결과가 없습니다. 상단에서 여정을 선택해주세요.</span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+                  {candidateTimelineItems.map((photoItem, pIdx) => {
+                    const pName = safeStr(photoItem.place);
+                    const jTitle = safeStr(photoItem.journeyTitle);
+                    const displayTitle = pName || jTitle || 'MOMENT';
+                    const itemDate = safeStr(photoItem.date);
+
+                    const isAttached = (currentMagSection?.items || []).some(m =>
+                      (m.timelineItemId !== undefined && Number(m.timelineItemId) === Number(photoItem.id)) ||
+                      (m.img && photoItem.img && (m.img === photoItem.img || m.img.split('?')[0] === photoItem.img.split('?')[0]))
+                    );
+
+                    return (
+                      <div
+                        key={`quick-picker-${photoItem.id || pIdx}-${pIdx}`}
+                        onClick={() => {
+                          if (isAttached) {
+                            alert("이미 현재 매거진 섹션에 등록된 사진입니다.");
+                            return;
+                          }
+                          handleAddItemToCurrentSection(photoItem);
+                          setShowQuickPhotoPicker(false);
+                        }}
+                        className={`group relative aspect-[3/4] bg-black/5 dark:bg-white/5 border overflow-hidden flex flex-col justify-end transition-all select-none ${
+                          isAttached
+                            ? 'border-black/20 dark:border-white/20 opacity-40 grayscale cursor-not-allowed'
+                            : 'border-black/15 dark:border-white/15 cursor-pointer active:scale-95 hover:border-black dark:hover:border-white shadow-xs'
+                        }`}
+                        title={isAttached ? '이미 등록된 사진' : '클릭하여 다음 위치에 삽입'}
+                      >
+                        <img
+                          src={getEffectiveImageUrl(photoItem.img || '')}
+                          alt={displayTitle}
+                          loading="lazy"
+                          className={`absolute inset-0 w-full h-full object-cover transition-transform duration-300 ${
+                            !isAttached ? 'group-hover:scale-105' : ''
+                          }`}
+                        />
+                        {isAttached ? (
+                          <div className="absolute top-2 left-2 z-20 flex items-center gap-1 px-1.5 py-0.5 bg-black/90 text-white dark:bg-white dark:text-black text-[9px] font-mono font-black uppercase">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                            <span>ATTACHED</span>
+                          </div>
+                        ) : (
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white font-mono text-xs font-black p-2 text-center z-10">
+                            + INSERT HERE
+                          </div>
+                        )}
+
+                        <div className="relative z-10 w-full bg-gradient-to-t from-black/95 via-black/80 to-transparent p-2 pt-3 flex flex-col gap-0.5">
+                          <span className="text-[11px] font-bold text-white truncate leading-tight">
+                            {displayTitle}
+                          </span>
+                          {itemDate && (
+                            <span className="text-[9px] font-mono text-white/70 truncate">
+                              {itemDate}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3 border-t border-black/15 dark:border-white/15 flex items-center justify-between bg-black/[0.02] dark:bg-white/[0.02]">
+              <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                * 사진을 클릭하면 현재 선택된 카드의 바로 다음 위치에 삽입됩니다.
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowQuickPhotoPicker(false)}
+                className="px-4 py-1.5 text-xs font-mono font-bold border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
+              >
+                닫기 (CLOSE)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Save Success Auto-Dismiss Modal */}
       <ConfirmModal
