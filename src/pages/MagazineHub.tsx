@@ -722,15 +722,20 @@ export function MagazineHubPage({
                     onClick={() => handleOpenSection(sec.id)}
                     className="group relative flex flex-col cursor-pointer transition-all duration-300 select-none"
                   >
-                    {/* 1. MOUTHWASH Style: Larger Bold Centered Title on Top */}
-                    <div className="min-h-[3.2rem] sm:min-h-[4rem] flex items-center justify-center mb-3 sm:mb-4 px-1">
-                      <h3 className="text-lg sm:text-xl md:text-2xl font-satoshi font-black uppercase tracking-tight text-center leading-[1.12] text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors line-clamp-2">
-                        {displayHeroTitle}
-                      </h3>
+                    {/* 1. Swiss Editorial Micro Header above photo */}
+                    <div className="flex items-center justify-between pb-2 text-[10px] sm:text-[11px] font-mono tracking-widest uppercase text-black/60 dark:text-white/60">
+                      <div className="flex items-center gap-1.5 font-bold">
+                        <span className="text-red-600 dark:text-red-400 font-black">NO. {formattedNumber}</span>
+                        <span className="opacity-30">/</span>
+                        <span>ISSUE</span>
+                      </div>
+                      <span className="text-[9.5px] font-semibold tracking-wider text-black/45 dark:text-white/45">
+                        {itemCount} {itemCount === 1 ? 'STORY' : 'STORIES'}
+                      </span>
                     </div>
 
-                    {/* 2. Photo Frame (Clean Frame, No Boxy Badges inside, Smooth Hover Zoom) */}
-                    <div className="relative aspect-[3/4] sm:aspect-[4/5] md:aspect-[3/4] w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15 shadow-xs group-hover:shadow-xl transition-all duration-500">
+                    {/* 2. Photo Frame: Strict 3:4 Vertical Editorial Aspect */}
+                    <div className="relative aspect-[3/4] w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15 shadow-xs group-hover:shadow-xl transition-all duration-500">
                       {coverImg ? (
                         <img
                           src={getEffectiveImageUrl(coverImg)}
@@ -753,26 +758,25 @@ export function MagazineHubPage({
                       </div>
                     </div>
 
-                    {/* 3. MOUTHWASH Style: Clean 2-Line Meta beneath Photo (Inter Font) */}
-                    <div className="pt-3.5 flex flex-col items-center justify-center text-center font-['Inter',sans-serif] gap-1">
-                      {/* Row 1: Issue Number & Date */}
-                      <div className="text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 flex items-center justify-center gap-1.5">
-                        <span className="text-red-600 dark:text-red-400 font-black">ISSUE {formattedNumber}</span>
-                        {sec.heroDate && (
-                          <>
-                            <span className="opacity-30">/</span>
-                            <span>{sec.heroDate}</span>
-                          </>
-                        )}
+                    {/* 3. Swiss Modern Journal Typography beneath Photo */}
+                    <div className="pt-3 flex flex-col text-black dark:text-white">
+                      {/* Row 1: Location & Sub-category in Red Monospace */}
+                      <div className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-[0.18em] text-red-600 dark:text-red-400 truncate">
+                        {sec.heroLocation || 'CURATED TRAVEL ARCHIVE'}
                       </div>
 
-                      {/* Row 2: Location & Stories Count */}
-                      <div className="text-[10px] sm:text-[11px] font-sans font-semibold tracking-wide uppercase text-black/50 dark:text-white/50 flex items-center justify-center gap-2">
-                        {sec.heroLocation && (
-                          <span className="truncate max-w-[200px]">{sec.heroLocation}</span>
-                        )}
-                        {sec.heroLocation && <span className="opacity-40">·</span>}
-                        <span>{itemCount} STORIES</span>
+                      {/* Row 2: Main Headline Title (Bold & Snug, line-clamp-2) */}
+                      <h3 className="text-base sm:text-lg md:text-xl font-satoshi font-black uppercase tracking-tight leading-snug text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors line-clamp-2 mt-1">
+                        {displayHeroTitle}
+                      </h3>
+
+                      {/* Row 3: Editorial Rule + Date + Read Issue Action */}
+                      <div className="mt-2.5 pt-2 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-[10px] sm:text-[11px] font-mono text-black/50 dark:text-white/50 tracking-wider">
+                        <span>{sec.heroDate || 'VOL. 2026'}</span>
+                        <span className="font-bold text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 flex items-center gap-1 group-hover:translate-x-0.5 transition-all">
+                          <span>READ ISSUE</span>
+                          <span className="text-xs">↗</span>
+                        </span>
                       </div>
                     </div>
                   </article>
@@ -936,20 +940,21 @@ export function MagazineHubPage({
                                         </div>
                                       </div>
 
-                                      <div className="pt-2.5 flex-1 flex flex-col justify-between text-black dark:text-white font-['Noto_Sans_KR',sans-serif]">
+                                      <div className="pt-2.5 flex-1 flex flex-col justify-between text-black dark:text-white">
                                         <div>
-                                          <h3 className="text-sm sm:text-base font-bold uppercase tracking-tight text-black dark:text-white line-clamp-1 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
+                                          <div className="text-[10px] font-mono font-bold uppercase tracking-[0.15em] text-red-600 dark:text-red-400 truncate">
+                                            {displayPlace}
+                                          </div>
+                                          <h3 className="text-sm sm:text-base font-bold uppercase tracking-tight text-black dark:text-white line-clamp-1 leading-snug group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors mt-0.5 font-['Noto_Sans_KR',sans-serif]">
                                             {displayTitle}
                                           </h3>
-                                          {dateWithDay && (
-                                            <div className="text-[10px] sm:text-[11px] font-mono font-medium text-black/50 dark:text-white/50 uppercase tracking-wider mt-0.5">
-                                              {dateWithDay}
-                                            </div>
-                                          )}
                                         </div>
-                                        <div className="pt-2 mt-auto flex items-center justify-between text-[11px] sm:text-xs font-sans text-black/70 dark:text-white/70 border-t border-black/10 dark:border-white/10">
-                                          <span className="font-semibold tracking-tight truncate max-w-[85%]">{displayPlace}</span>
-                                          <span className="text-sm font-bold text-black dark:text-white group-hover:translate-x-1 transition-transform">→</span>
+                                        <div className="pt-2 mt-auto flex items-center justify-between text-[10px] sm:text-[11px] font-mono text-black/50 dark:text-white/50 border-t border-black/10 dark:border-white/10 tracking-wider">
+                                          <span>{dateWithDay}</span>
+                                          <span className="font-bold text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                                            <span>VIEW</span>
+                                            <span>→</span>
+                                          </span>
                                         </div>
                                       </div>
                                     </article>

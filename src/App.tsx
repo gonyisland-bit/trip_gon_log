@@ -155,7 +155,7 @@ function App() {
   const [isShareMode, setIsShareMode] = useState<boolean>(false);
   const [showSplash, setShowSplash] = useState<boolean>(() => {
     try {
-      if (sessionStorage.getItem('splash_shown')) {
+      if (localStorage.getItem('has_visited') || sessionStorage.getItem('splash_shown')) {
         return false;
       }
     } catch (_) {}
@@ -876,10 +876,10 @@ function App() {
           initialTripId = Number(idParam);
         }
       } else {
-        const lastView = sessionStorage.getItem('lastView');
+        const lastView = sessionStorage.getItem('lastView') || localStorage.getItem('lastView');
         if (lastView && ['home', 'archive', 'map', 'manage', 'magazine', 'detail'].includes(lastView)) {
           initialView = lastView;
-          const lastTripId = sessionStorage.getItem('lastTripId');
+          const lastTripId = sessionStorage.getItem('lastTripId') || localStorage.getItem('lastTripId');
           if (lastTripId) initialTripId = Number(lastTripId);
         }
       }
@@ -892,12 +892,14 @@ function App() {
     window.history.replaceState({ view: initialView, tripId: initialTripId, isShare }, '', window.location.pathname + window.location.search);
 
     try {
+      localStorage.setItem('has_visited', 'true');
+      localStorage.setItem('last_active_time', Date.now().toString());
       sessionStorage.setItem('splash_shown', 'true');
     } catch (_) {}
 
     // BFCache (pageshow) listener: if restored from browser cache, dismiss splash instantly
     const handlePageShow = (e: PageTransitionEvent) => {
-      if (e.persisted || sessionStorage.getItem('splash_shown')) {
+      if (e.persisted || localStorage.getItem('has_visited') || sessionStorage.getItem('splash_shown')) {
         setShowSplash(false);
         setFadeSplash(true);
       }
@@ -988,10 +990,14 @@ function App() {
     // Always scroll to top when changing views
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
 
-    sessionStorage.setItem('lastView', effectiveView);
-    if (tripId || activeTripId) {
-      sessionStorage.setItem('lastTripId', String(tripId || activeTripId));
-    }
+    try {
+      sessionStorage.setItem('lastView', effectiveView);
+      localStorage.setItem('lastView', effectiveView);
+      if (tripId || activeTripId) {
+        sessionStorage.setItem('lastTripId', String(tripId || activeTripId));
+        localStorage.setItem('lastTripId', String(tripId || activeTripId));
+      }
+    } catch (_) {}
 
     if (pushHistory) {
       let path = '/';
