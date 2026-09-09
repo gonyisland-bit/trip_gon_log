@@ -55,7 +55,7 @@ import { resolveTimelinePlaceName, buildDefaultMagazineSections } from '../utils
 interface ManageHubPageProps {
   trips: Trip[];
   plans: Plan[];
-  onNavigate: (view: string, tripId?: number | null) => void;
+  onNavigate: (view: string, tripId?: number | null, pushHistory?: boolean, tagFilter?: string | null, force?: boolean) => void;
   onSaveTrip: (tripId: number, updatedData: Partial<Trip>) => Promise<void>;
   onDeleteTrip: (tripId: number) => Promise<void>;
   onCloneTrip: (tripId: number) => Promise<void>;
@@ -1079,6 +1079,12 @@ export function ManageHubPage({
     setHubSubtitle(magSnap.subtitle);
     setHubBadgeText(magSnap.badgeText);
     setHubVolumeText(magSnap.volumeText);
+  };
+
+  // Safe navigation helper that explicitly clears dirty flag and passes force=true to App.tsx
+  const navigateSafely = (view: string, tripId: number | null = null) => {
+    if (onDirtyChange) onDirtyChange(false);
+    onNavigate(view, tripId, true, null, true);
   };
 
   // Guarded navigation execution helper
@@ -2471,7 +2477,7 @@ export function ManageHubPage({
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
-              executeWithGuard(() => onNavigate(getReturnView()));
+              executeWithGuard(() => navigateSafely(getReturnView()));
             }}
             className="p-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer rounded-none"
             title="돌아가기"
@@ -4077,7 +4083,7 @@ export function ManageHubPage({
                         type="button"
                         onClick={e => {
                           e.stopPropagation();
-                          executeWithGuard(() => onNavigate('detail', journey.id));
+                          executeWithGuard(() => navigateSafely('detail', journey.id));
                         }}
                         className="p-1.5 text-black/40 dark:text-white/40 hover:text-red-600 dark:hover:text-red-500 hover:bg-black/5 dark:hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
                         title="여정 상세 페이지 바로 보기"
@@ -5947,7 +5953,7 @@ export function ManageHubPage({
         <button
           type="button"
           onClick={() => {
-            executeWithGuard(() => onNavigate(getReturnView()));
+            executeWithGuard(() => navigateSafely(getReturnView()));
           }}
           className="w-12 h-12 rounded-full flex items-center justify-center shadow-2xl bg-white dark:bg-[#1a1a1a] text-black dark:text-white border border-black/15 dark:border-white/15 hover:scale-110 active:scale-95 transition-all cursor-pointer"
           title="뷰 모드로 이동"
@@ -5966,6 +5972,7 @@ export function ManageHubPage({
         cancelLabel="SKIP (ESC)"
         onConfirm={async () => {
           setShowUnsavedModal(false);
+          if (onDirtyChange) onDirtyChange(false);
           const act = pendingAction;
           const targetJourneyId = pendingJourneyId;
           setPendingAction(null);
@@ -5988,13 +5995,15 @@ export function ManageHubPage({
         onDiscard={() => {
           handleResetAllState();
           setShowUnsavedModal(false);
-          if (pendingAction) {
-            const act = pendingAction;
-            setPendingAction(null);
+          if (onDirtyChange) onDirtyChange(false);
+          const act = pendingAction;
+          const targetJourneyId = pendingJourneyId;
+          setPendingAction(null);
+          setPendingJourneyId(null);
+          if (act) {
             act();
-          } else if (pendingJourneyId !== null) {
-            setSelectedJourneyId(pendingJourneyId);
-            setPendingJourneyId(null);
+          } else if (targetJourneyId !== null) {
+            setSelectedJourneyId(targetJourneyId);
             setMobileArchiveTab('EDIT');
           }
         }}
