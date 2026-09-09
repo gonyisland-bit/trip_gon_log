@@ -919,19 +919,44 @@ export function ManageHubPage({
     volumeText: magazineHubConfig?.volumeText || `VOL. ${new Date().getFullYear()}`,
   });
 
+  // Helper to normalize journey data for reliable dirty tracking
+  const getNormalizedJourneyData = (j: any) => ({
+    title: (j?.title || '').trim(),
+    date: (j?.date || '').trim(),
+    locationStr: (j?.locationStr || '').trim(),
+    country: (j?.country || '').trim(),
+    tags: Array.isArray(j?.tags) ? [...j.tags].map(t => String(t).trim()).sort() : [],
+    img: (j?.img || '').trim(),
+    videoUrl: (j?.videoUrl || '').trim(),
+    heroImg: (j?.heroImg || '').trim(),
+    heroVideoUrl: (j?.heroVideoUrl || '').trim(),
+    statusBadge: (j?.statusBadge || '').trim(),
+  });
+
   // Dirty tracking for HOME configuration
   const isHomeDirty = useMemo(() => {
     const snap = savedHomeSnapshotRef.current;
+    if (!snap) return false;
+
+    let snapHeroIdsStr = '[]';
+    try {
+      const parsed = JSON.parse(snap.selectedHeroIds || '[]');
+      snapHeroIdsStr = JSON.stringify(Array.isArray(parsed) ? [...parsed].sort() : []);
+    } catch (_) {
+      snapHeroIdsStr = '[]';
+    }
+    const currentHeroIdsStr = JSON.stringify(Array.isArray(selectedHeroIds) ? [...selectedHeroIds].sort() : []);
+
     return (
-      title !== snap.title ||
-      subtitle !== snap.subtitle ||
+      (title || '').trim() !== (snap.title || '').trim() ||
+      (subtitle || '').trim() !== (snap.subtitle || '').trim() ||
       homeJourneyLimit !== snap.homeJourneyLimit ||
-      JSON.stringify(selectedHeroIds) !== snap.selectedHeroIds ||
+      currentHeroIdsStr !== snapHeroIdsStr ||
       autoSlide !== snap.autoSlide ||
       slideDuration !== snap.slideDuration ||
       mediaType !== snap.mediaType ||
       showMarquee !== snap.showMarquee ||
-      homeMarquee !== snap.homeMarquee ||
+      (homeMarquee || '').trim() !== (snap.homeMarquee || '').trim() ||
       homeSpeed !== snap.homeSpeed ||
       gradientEnabled !== snap.gradientEnabled ||
       gradientFrom !== snap.gradientFrom ||
@@ -944,8 +969,8 @@ export function ManageHubPage({
   // Dirty tracking for currently selected journey in ARCHIVE mode
   const isArchiveDirty = useMemo(() => {
     if (!selectedJourney) return false;
-    const snapStr = savedArchiveSnapshotRef.current[selectedJourney.id];
-    const currentData = {
+    const snapStr = savedArchiveSnapshotRef.current[selectedJourney.id] || JSON.stringify(getNormalizedJourneyData(selectedJourney));
+    const currentData = getNormalizedJourneyData({
       title: editTitle,
       date: editDate,
       locationStr: editLocation,
@@ -956,27 +981,13 @@ export function ManageHubPage({
       heroImg: editHeroImg,
       heroVideoUrl: editHeroVideoUrl,
       statusBadge: editStatusBadge,
-    };
-    if (!snapStr) {
-      return (
-        editTitle !== (selectedJourney.title || '') ||
-        editDate !== (selectedJourney.date || '') ||
-        editLocation !== (selectedJourney.locationStr || '') ||
-        editCountry !== (selectedJourney.country || '') ||
-        JSON.stringify(editTags) !== JSON.stringify(selectedJourney.tags || []) ||
-        editImg !== (selectedJourney.img || '') ||
-        editVideoUrl !== (selectedJourney.videoUrl || '') ||
-        editHeroImg !== (selectedJourney.heroImg || '') ||
-        editHeroVideoUrl !== (selectedJourney.heroVideoUrl || '') ||
-        editStatusBadge !== (selectedJourney.statusBadge || '')
-      );
-    }
+    });
     return JSON.stringify(currentData) !== snapStr;
   }, [selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge]);
 
   // Dirty tracking for MAGAZINE sections & moments
   const isMagazineDirty = useMemo(() => {
-    return savedSectionsJsonRef.current !== JSON.stringify(sectionsList);
+    return (savedSectionsJsonRef.current || '[]') !== JSON.stringify(sectionsList);
   }, [sectionsList]);
 
   // Dirty tracking for Archive & Magazine Hub Headers
@@ -1148,6 +1159,10 @@ export function ManageHubPage({
       setEditHeroVideoUrl(selectedJourney.heroVideoUrl || '');
       setEditStatusBadge(selectedJourney.statusBadge || '');
       setTripSaveSuccess(false);
+
+      if (!savedArchiveSnapshotRef.current[selectedJourney.id]) {
+        savedArchiveSnapshotRef.current[selectedJourney.id] = JSON.stringify(getNormalizedJourneyData(selectedJourney));
+      }
     }
   }, [selectedJourneyId, selectedJourney]);
 
@@ -1220,7 +1235,7 @@ export function ManageHubPage({
         statusBadge: editStatusBadge,
       });
 
-      savedArchiveSnapshotRef.current[selectedJourney.id] = JSON.stringify({
+      savedArchiveSnapshotRef.current[selectedJourney.id] = JSON.stringify(getNormalizedJourneyData({
         title: editTitle,
         date: editDate,
         locationStr: editLocation,
@@ -1231,9 +1246,10 @@ export function ManageHubPage({
         heroImg: editHeroImg,
         heroVideoUrl: editHeroVideoUrl,
         statusBadge: editStatusBadge,
-      });
+      }));
 
       setTripSaveSuccess(true);
+      if (onDirtyChange) onDirtyChange(false);
       if (showModal) {
         setShowSaveSuccessModal(true);
       }
@@ -1342,6 +1358,7 @@ export function ManageHubPage({
         homeMagLimit,
       };
       setHomeSaveSuccess(true);
+      if (onDirtyChange) onDirtyChange(false);
       if (showModal) {
         setShowSaveSuccessModal(true);
       }
@@ -2352,6 +2369,7 @@ export function ManageHubPage({
         volumeText: hubVolumeText,
       };
       setMagazineSaveSuccess(true);
+      if (onDirtyChange) onDirtyChange(false);
       if (showModal) {
         setShowSaveSuccessModal(true);
       }
@@ -2502,6 +2520,7 @@ export function ManageHubPage({
       setMagazineSaveSuccess(true);
       setArchiveHubHeaderSaveSuccess(true);
       setHubHeaderSaveSuccess(true);
+      if (onDirtyChange) onDirtyChange(false);
       if (showModal) {
         setShowSaveSuccessModal(true);
       }
@@ -6185,6 +6204,7 @@ export function ManageHubPage({
         cancelLabel="SKIP (ESC)"
         onConfirm={async () => {
           setShowUnsavedModal(false);
+          setShowSaveSuccessModal(false);
           if (onDirtyChange) onDirtyChange(false);
           const act = pendingAction;
           const targetJourneyId = pendingJourneyId;
@@ -6193,16 +6213,18 @@ export function ManageHubPage({
 
           try {
             await handleSaveAllChanges(false);
-            setShowSaveSuccessModal(true);
           } catch (e) {
             console.error("Auto save failed:", e);
           }
 
           if (act) {
+            // Immediately execute navigation action (e.g. view mode) without showing modal
             act();
           } else if (targetJourneyId !== null) {
             setSelectedJourneyId(targetJourneyId);
             setMobileArchiveTab('EDIT');
+          } else {
+            setShowSaveSuccessModal(true);
           }
         }}
         onDiscard={() => {
@@ -6382,7 +6404,7 @@ export function ManageHubPage({
         iconType="check"
         singleButton
         autoDismiss
-        autoDismissDuration={2000}
+        autoDismissDuration={1200}
         onConfirm={() => setShowSaveSuccessModal(false)}
         onCancel={() => setShowSaveSuccessModal(false)}
       />
