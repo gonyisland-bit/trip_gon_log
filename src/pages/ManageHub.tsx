@@ -195,6 +195,12 @@ export function ManageHubPage({
         badgeText: hubBadgeText,
         volumeText: hubVolumeText,
       });
+      savedMagazineHubHeaderRef.current = {
+        mainTitle: hubMainTitle,
+        subtitle: hubSubtitle,
+        badgeText: hubBadgeText,
+        volumeText: hubVolumeText,
+      };
       setHubHeaderSaveSuccess(true);
       setTimeout(() => setHubHeaderSaveSuccess(false), 2000);
     } catch (err) {
@@ -232,6 +238,12 @@ export function ManageHubPage({
         badgeText: archiveHubBadgeText,
         volumeText: archiveHubVolumeText,
       });
+      savedArchiveHubHeaderRef.current = {
+        mainTitle: archiveHubMainTitle,
+        subtitle: archiveHubSubtitle,
+        badgeText: archiveHubBadgeText,
+        volumeText: archiveHubVolumeText,
+      };
       setArchiveHubHeaderSaveSuccess(true);
       setTimeout(() => setArchiveHubHeaderSaveSuccess(false), 2000);
     } catch (err) {
@@ -869,46 +881,97 @@ export function ManageHubPage({
     return localJourneys.find(j => j.id === selectedJourneyId);
   }, [localJourneys, selectedJourneyId]);
 
+  // ── Snapshot References for instant and reliable Dirty tracking ──
+  const savedHomeSnapshotRef = useRef({
+    title: homeTitle || '',
+    subtitle: homeSubtitle || '',
+    homeJourneyLimit: parseInt(localStorage.getItem('home_journey_limit') || '4', 10),
+    selectedHeroIds: JSON.stringify(heroJourneyIds || []),
+    autoSlide: heroAutoSlide,
+    slideDuration: heroSlideDuration || 6,
+    mediaType: heroMediaType || 'image',
+    showMarquee: marqueeShow,
+    homeMarquee: marqueeMessage || '',
+    homeSpeed: marqueeSpeed || 50,
+    gradientEnabled: homeGradientEnabled ?? false,
+    gradientFrom: homeGradientFrom || '#F7F2EB',
+    gradientTo: homeGradientTo || '#E7DEC8',
+    homeMagSectionId: homeMagazineSectionId || 'main',
+    homeMagLimit: homeMagazineLimit || 6,
+  });
+
+  const savedArchiveSnapshotRef = useRef<Record<number, string>>({});
+
   // Saved sections snapshot reference to track magazine mutations accurately
   const savedSectionsJsonRef = useRef<string>(JSON.stringify(magazineSections && magazineSections.length > 0 ? magazineSections : sectionsList));
 
-  // Dirty tracking for HOME configuration & magazine moments
+  const savedArchiveHubHeaderRef = useRef({
+    mainTitle: archiveHubConfig?.mainTitle || 'A VISUAL CHRONICLE OF JOURNEYS & TRAVEL ARCHIVES',
+    subtitle: archiveHubConfig?.subtitle || '발걸음이 닿았던 모든 도시와 찬란했던 시간의 기록. 엄선된 사진과 함께 지난 여정들을 다시 마주합니다.',
+    badgeText: archiveHubConfig?.badgeText || 'JOURNEY ARCHIVE',
+    volumeText: archiveHubConfig?.volumeText || `VOL. ${new Date().getFullYear()}`,
+  });
+
+  const savedMagazineHubHeaderRef = useRef({
+    mainTitle: magazineHubConfig?.mainTitle || 'A VISUAL ARCHIVE OF JOURNEYS, CURATED STORIES & MOMENTS',
+    subtitle: magazineHubConfig?.subtitle || '여행의 찬란한 순간과 에피소드를 엄선하여 잡지 형식으로 기록한 매거진 컬렉션입니다. 이슈를 선택하여 전체 화보와 이야기를 감상하세요.',
+    badgeText: magazineHubConfig?.badgeText || 'CURATED ARCHIVE',
+    volumeText: magazineHubConfig?.volumeText || `VOL. ${new Date().getFullYear()}`,
+  });
+
+  // Dirty tracking for HOME configuration
   const isHomeDirty = useMemo(() => {
+    const snap = savedHomeSnapshotRef.current;
     return (
-      title !== (homeTitle || '') ||
-      subtitle !== (homeSubtitle || '') ||
-      homeJourneyLimit !== parseInt(localStorage.getItem('home_journey_limit') || '4', 10) ||
-      JSON.stringify(selectedHeroIds) !== JSON.stringify(heroJourneyIds || []) ||
-      autoSlide !== heroAutoSlide ||
-      slideDuration !== heroSlideDuration ||
-      mediaType !== heroMediaType ||
-      showMarquee !== marqueeShow ||
-      homeMarquee !== (marqueeMessage || '') ||
-      homeSpeed !== (marqueeSpeed || 50) ||
-      gradientEnabled !== (homeGradientEnabled ?? false) ||
-      gradientFrom !== (homeGradientFrom || '#F7F2EB') ||
-      gradientTo !== (homeGradientTo || '#E7DEC8') ||
-      homeMagSectionId !== (homeMagazineSectionId || 'main') ||
-      homeMagLimit !== (homeMagazineLimit || 6) ||
-      JSON.stringify(momentsList) !== JSON.stringify(magazineMoments || [])
+      title !== snap.title ||
+      subtitle !== snap.subtitle ||
+      homeJourneyLimit !== snap.homeJourneyLimit ||
+      JSON.stringify(selectedHeroIds) !== snap.selectedHeroIds ||
+      autoSlide !== snap.autoSlide ||
+      slideDuration !== snap.slideDuration ||
+      mediaType !== snap.mediaType ||
+      showMarquee !== snap.showMarquee ||
+      homeMarquee !== snap.homeMarquee ||
+      homeSpeed !== snap.homeSpeed ||
+      gradientEnabled !== snap.gradientEnabled ||
+      gradientFrom !== snap.gradientFrom ||
+      gradientTo !== snap.gradientTo ||
+      homeMagSectionId !== snap.homeMagSectionId ||
+      homeMagLimit !== snap.homeMagLimit
     );
-  }, [title, homeTitle, subtitle, homeSubtitle, selectedHeroIds, heroJourneyIds, autoSlide, heroAutoSlide, slideDuration, heroSlideDuration, mediaType, heroMediaType, showMarquee, marqueeShow, homeMarquee, marqueeMessage, homeSpeed, marqueeSpeed, gradientEnabled, homeGradientEnabled, gradientFrom, homeGradientFrom, gradientTo, homeGradientTo, homeMagSectionId, homeMagazineSectionId, homeMagLimit, homeMagazineLimit, momentsList, magazineMoments, homeJourneyLimit]);
+  }, [title, subtitle, homeJourneyLimit, selectedHeroIds, autoSlide, slideDuration, mediaType, showMarquee, homeMarquee, homeSpeed, gradientEnabled, gradientFrom, gradientTo, homeMagSectionId, homeMagLimit]);
 
   // Dirty tracking for currently selected journey in ARCHIVE mode
   const isArchiveDirty = useMemo(() => {
     if (!selectedJourney) return false;
-    return (
-      editTitle !== (selectedJourney.title || '') ||
-      editDate !== (selectedJourney.date || '') ||
-      editLocation !== (selectedJourney.locationStr || '') ||
-      editCountry !== (selectedJourney.country || '') ||
-      JSON.stringify(editTags) !== JSON.stringify(selectedJourney.tags || []) ||
-      editImg !== (selectedJourney.img || '') ||
-      editVideoUrl !== (selectedJourney.videoUrl || '') ||
-      editHeroImg !== (selectedJourney.heroImg || '') ||
-      editHeroVideoUrl !== (selectedJourney.heroVideoUrl || '') ||
-      editStatusBadge !== (selectedJourney.statusBadge || '')
-    );
+    const snapStr = savedArchiveSnapshotRef.current[selectedJourney.id];
+    const currentData = {
+      title: editTitle,
+      date: editDate,
+      locationStr: editLocation,
+      country: editCountry,
+      tags: editTags,
+      img: editImg,
+      videoUrl: editVideoUrl,
+      heroImg: editHeroImg,
+      heroVideoUrl: editHeroVideoUrl,
+      statusBadge: editStatusBadge,
+    };
+    if (!snapStr) {
+      return (
+        editTitle !== (selectedJourney.title || '') ||
+        editDate !== (selectedJourney.date || '') ||
+        editLocation !== (selectedJourney.locationStr || '') ||
+        editCountry !== (selectedJourney.country || '') ||
+        JSON.stringify(editTags) !== JSON.stringify(selectedJourney.tags || []) ||
+        editImg !== (selectedJourney.img || '') ||
+        editVideoUrl !== (selectedJourney.videoUrl || '') ||
+        editHeroImg !== (selectedJourney.heroImg || '') ||
+        editHeroVideoUrl !== (selectedJourney.heroVideoUrl || '') ||
+        editStatusBadge !== (selectedJourney.statusBadge || '')
+      );
+    }
+    return JSON.stringify(currentData) !== snapStr;
   }, [selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge]);
 
   // Dirty tracking for MAGAZINE sections & moments
@@ -918,24 +981,24 @@ export function ManageHubPage({
 
   // Dirty tracking for Archive & Magazine Hub Headers
   const isArchiveHubHeaderDirty = useMemo(() => {
-    if (!archiveHubConfig) return false;
+    const snap = savedArchiveHubHeaderRef.current;
     return (
-      archiveHubMainTitle !== (archiveHubConfig.mainTitle || '') ||
-      archiveHubSubtitle !== (archiveHubConfig.subtitle || '') ||
-      archiveHubBadgeText !== (archiveHubConfig.badgeText || '') ||
-      archiveHubVolumeText !== (archiveHubConfig.volumeText || '')
+      archiveHubMainTitle !== snap.mainTitle ||
+      archiveHubSubtitle !== snap.subtitle ||
+      archiveHubBadgeText !== snap.badgeText ||
+      archiveHubVolumeText !== snap.volumeText
     );
-  }, [archiveHubConfig, archiveHubMainTitle, archiveHubSubtitle, archiveHubBadgeText, archiveHubVolumeText]);
+  }, [archiveHubMainTitle, archiveHubSubtitle, archiveHubBadgeText, archiveHubVolumeText]);
 
   const isMagazineHubHeaderDirty = useMemo(() => {
-    if (!magazineHubConfig) return false;
+    const snap = savedMagazineHubHeaderRef.current;
     return (
-      hubMainTitle !== (magazineHubConfig.mainTitle || '') ||
-      hubSubtitle !== (magazineHubConfig.subtitle || '') ||
-      hubBadgeText !== (magazineHubConfig.badgeText || '') ||
-      hubVolumeText !== (magazineHubConfig.volumeText || '')
+      hubMainTitle !== snap.mainTitle ||
+      hubSubtitle !== snap.subtitle ||
+      hubBadgeText !== snap.badgeText ||
+      hubVolumeText !== snap.volumeText
     );
-  }, [magazineHubConfig, hubMainTitle, hubSubtitle, hubBadgeText, hubVolumeText]);
+  }, [hubMainTitle, hubSubtitle, hubBadgeText, hubVolumeText]);
 
   // Unified global dirty state across all management tabs & sub-settings
   const isAnyDirty = isHomeDirty || isArchiveDirty || isMagazineDirty || isArchiveHubHeaderDirty || isMagazineHubHeaderDirty;
@@ -946,36 +1009,57 @@ export function ManageHubPage({
     }
   }, [isAnyDirty, onDirtyChange]);
 
-  // Reset all edited state back to origin (props)
+  // Reset all edited state back to saved snapshots
   const handleResetAllState = () => {
-    setTitle(homeTitle || '');
-    setSubtitle(homeSubtitle || '');
-    setSelectedHeroIds(heroJourneyIds || []);
-    setAutoSlide(heroAutoSlide);
-    setSlideDuration(heroSlideDuration || 6);
-    setMediaType(heroMediaType || 'image');
-    setShowMarquee(marqueeShow);
-    setHomeMarquee(marqueeMessage || '');
-    setHomeSpeed(marqueeSpeed || 50);
-    setGradientEnabled(homeGradientEnabled ?? false);
-    setGradientFrom(homeGradientFrom || '#F7F2EB');
-    setGradientTo(homeGradientTo || '#E7DEC8');
-    setHomeMagSectionId(homeMagazineSectionId || 'main');
-    setHomeMagLimit(homeMagazineLimit || 6);
-    setHomeJourneyLimit(parseInt(localStorage.getItem('home_journey_limit') || '4', 10));
-    setMomentsList(magazineMoments || []);
+    const homeSnap = savedHomeSnapshotRef.current;
+    setTitle(homeSnap.title);
+    setSubtitle(homeSnap.subtitle);
+    try {
+      setSelectedHeroIds(JSON.parse(homeSnap.selectedHeroIds));
+    } catch (_) {
+      setSelectedHeroIds([]);
+    }
+    setAutoSlide(homeSnap.autoSlide);
+    setSlideDuration(homeSnap.slideDuration);
+    setMediaType(homeSnap.mediaType);
+    setShowMarquee(homeSnap.showMarquee);
+    setHomeMarquee(homeSnap.homeMarquee);
+    setHomeSpeed(homeSnap.homeSpeed);
+    setGradientEnabled(homeSnap.gradientEnabled);
+    setGradientFrom(homeSnap.gradientFrom);
+    setGradientTo(homeSnap.gradientTo);
+    setHomeMagSectionId(homeSnap.homeMagSectionId);
+    setHomeMagLimit(homeSnap.homeMagLimit);
+    setHomeJourneyLimit(homeSnap.homeJourneyLimit);
 
     if (selectedJourney) {
-      setEditTitle(selectedJourney.title || '');
-      setEditDate(selectedJourney.date || '');
-      setEditLocation(selectedJourney.locationStr || '');
-      setEditCountry(selectedJourney.country || '');
-      setEditTags(selectedJourney.tags || []);
-      setEditImg(selectedJourney.img || '');
-      setEditVideoUrl(selectedJourney.videoUrl || '');
-      setEditHeroImg(selectedJourney.heroImg || '');
-      setEditHeroVideoUrl(selectedJourney.heroVideoUrl || '');
-      setEditStatusBadge(selectedJourney.statusBadge || '');
+      const snapStr = savedArchiveSnapshotRef.current[selectedJourney.id];
+      if (snapStr) {
+        try {
+          const d = JSON.parse(snapStr);
+          setEditTitle(d.title || '');
+          setEditDate(d.date || '');
+          setEditLocation(d.locationStr || '');
+          setEditCountry(d.country || '');
+          setEditTags(d.tags || []);
+          setEditImg(d.img || '');
+          setEditVideoUrl(d.videoUrl || '');
+          setEditHeroImg(d.heroImg || '');
+          setEditHeroVideoUrl(d.heroVideoUrl || '');
+          setEditStatusBadge(d.statusBadge || '');
+        } catch (_) {}
+      } else {
+        setEditTitle(selectedJourney.title || '');
+        setEditDate(selectedJourney.date || '');
+        setEditLocation(selectedJourney.locationStr || '');
+        setEditCountry(selectedJourney.country || '');
+        setEditTags(selectedJourney.tags || []);
+        setEditImg(selectedJourney.img || '');
+        setEditVideoUrl(selectedJourney.videoUrl || '');
+        setEditHeroImg(selectedJourney.heroImg || '');
+        setEditHeroVideoUrl(selectedJourney.heroVideoUrl || '');
+        setEditStatusBadge(selectedJourney.statusBadge || '');
+      }
     }
 
     if (savedSectionsJsonRef.current) {
@@ -984,19 +1068,17 @@ export function ManageHubPage({
       } catch (_) {}
     }
 
-    if (archiveHubConfig) {
-      setArchiveHubMainTitle(archiveHubConfig.mainTitle || 'A VISUAL CHRONICLE OF JOURNEYS & TRAVEL ARCHIVES');
-      setArchiveHubSubtitle(archiveHubConfig.subtitle || '발걸음이 닿았던 모든 도시와 찬란했던 시간의 기록. 엄선된 사진과 함께 지난 여정들을 다시 마주합니다.');
-      setArchiveHubBadgeText(archiveHubConfig.badgeText || 'JOURNEY ARCHIVE');
-      setArchiveHubVolumeText(archiveHubConfig.volumeText || `VOL. ${new Date().getFullYear()}`);
-    }
+    const archSnap = savedArchiveHubHeaderRef.current;
+    setArchiveHubMainTitle(archSnap.mainTitle);
+    setArchiveHubSubtitle(archSnap.subtitle);
+    setArchiveHubBadgeText(archSnap.badgeText);
+    setArchiveHubVolumeText(archSnap.volumeText);
 
-    if (magazineHubConfig) {
-      setHubMainTitle(magazineHubConfig.mainTitle || 'A VISUAL ARCHIVE OF JOURNEYS, CURATED STORIES & MOMENTS');
-      setHubSubtitle(magazineHubConfig.subtitle || '여행의 찬란한 순간과 에피소드를 엄선하여 잡지 형식으로 기록한 매거진 컬렉션입니다. 이슈를 선택하여 전체 화보와 이야기를 감상하세요.');
-      setHubBadgeText(magazineHubConfig.badgeText || 'CURATED ARCHIVE');
-      setHubVolumeText(magazineHubConfig.volumeText || `VOL. ${new Date().getFullYear()}`);
-    }
+    const magSnap = savedMagazineHubHeaderRef.current;
+    setHubMainTitle(magSnap.mainTitle);
+    setHubSubtitle(magSnap.subtitle);
+    setHubBadgeText(magSnap.badgeText);
+    setHubVolumeText(magSnap.volumeText);
   };
 
   // Guarded navigation execution helper
@@ -1132,6 +1214,19 @@ export function ManageHubPage({
         statusBadge: editStatusBadge,
       });
 
+      savedArchiveSnapshotRef.current[selectedJourney.id] = JSON.stringify({
+        title: editTitle,
+        date: editDate,
+        locationStr: editLocation,
+        country: editCountry,
+        tags: editTags,
+        img: editImg,
+        videoUrl: editVideoUrl,
+        heroImg: editHeroImg,
+        heroVideoUrl: editHeroVideoUrl,
+        statusBadge: editStatusBadge,
+      });
+
       setTripSaveSuccess(true);
       if (showModal) {
         setShowSaveSuccessModal(true);
@@ -1223,6 +1318,23 @@ export function ManageHubPage({
         homeMagSectionId,
         homeMagLimit
       );
+      savedHomeSnapshotRef.current = {
+        title,
+        subtitle,
+        homeJourneyLimit,
+        selectedHeroIds: JSON.stringify(selectedHeroIds),
+        autoSlide,
+        slideDuration,
+        mediaType,
+        showMarquee,
+        homeMarquee,
+        homeSpeed,
+        gradientEnabled,
+        gradientFrom,
+        gradientTo,
+        homeMagSectionId,
+        homeMagLimit,
+      };
       setHomeSaveSuccess(true);
       if (showModal) {
         setShowSaveSuccessModal(true);
@@ -1280,9 +1392,14 @@ export function ManageHubPage({
       // 1. Ctrl + S / Cmd + S to save
       if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
         e.preventDefault();
+        e.stopPropagation();
+        if (showUnsavedModal) {
+          return;
+        }
         if (activeMode === 'HOME') handleSaveHome();
         else if (activeMode === 'ARCHIVE') handleSaveJourney();
         else if (activeMode === 'MAGAZINE') handleSaveMagazine();
+        else handleSaveAllChanges(true);
         return;
       }
 
@@ -2075,6 +2192,12 @@ export function ManageHubPage({
         await onSaveMagazineMoments(mainSec?.items || []);
       }
       savedSectionsJsonRef.current = JSON.stringify(sectionsList);
+      savedMagazineHubHeaderRef.current = {
+        mainTitle: hubMainTitle,
+        subtitle: hubSubtitle,
+        badgeText: hubBadgeText,
+        volumeText: hubVolumeText,
+      };
       setMagazineSaveSuccess(true);
       if (showModal) {
         setShowSaveSuccessModal(true);
@@ -2146,6 +2269,18 @@ export function ManageHubPage({
           heroVideoUrl: editHeroVideoUrl,
           statusBadge: editStatusBadge,
         });
+        savedArchiveSnapshotRef.current[selectedJourney.id] = JSON.stringify({
+          title: editTitle,
+          date: editDate,
+          locationStr: editLocation,
+          country: editCountry,
+          tags: editTags,
+          img: editImg,
+          videoUrl: editVideoUrl,
+          heroImg: editHeroImg,
+          heroVideoUrl: editHeroVideoUrl,
+          statusBadge: editStatusBadge,
+        });
       }
 
       // 3. Save Journey Hub Header if configured
@@ -2156,6 +2291,12 @@ export function ManageHubPage({
           badgeText: archiveHubBadgeText,
           volumeText: archiveHubVolumeText,
         });
+        savedArchiveHubHeaderRef.current = {
+          mainTitle: archiveHubMainTitle,
+          subtitle: archiveHubSubtitle,
+          badgeText: archiveHubBadgeText,
+          volumeText: archiveHubVolumeText,
+        };
       }
 
       // 4. Save Magazine Hub Header if configured
@@ -2166,6 +2307,12 @@ export function ManageHubPage({
           badgeText: hubBadgeText,
           volumeText: hubVolumeText,
         });
+        savedMagazineHubHeaderRef.current = {
+          mainTitle: hubMainTitle,
+          subtitle: hubSubtitle,
+          badgeText: hubBadgeText,
+          volumeText: hubVolumeText,
+        };
       }
 
       // 5. Save Magazine Sections
@@ -2176,7 +2323,26 @@ export function ManageHubPage({
         await onSaveMagazineMoments(mainSec?.items || []);
       }
 
+      // 6. Update all snapshot refs to ensure isAnyDirty is 100% false immediately
+      savedHomeSnapshotRef.current = {
+        title,
+        subtitle,
+        homeJourneyLimit,
+        selectedHeroIds: JSON.stringify(selectedHeroIds),
+        autoSlide,
+        slideDuration,
+        mediaType,
+        showMarquee,
+        homeMarquee,
+        homeSpeed,
+        gradientEnabled,
+        gradientFrom,
+        gradientTo,
+        homeMagSectionId,
+        homeMagLimit,
+      };
       savedSectionsJsonRef.current = JSON.stringify(sectionsList);
+
       setSaveAllSuccess(true);
       setHomeSaveSuccess(true);
       setTripSaveSuccess(true);
@@ -5799,20 +5965,23 @@ export function ManageHubPage({
         discardLabel="DISCARD (N)"
         cancelLabel="SKIP (ESC)"
         onConfirm={async () => {
+          setShowUnsavedModal(false);
+          const act = pendingAction;
+          const targetJourneyId = pendingJourneyId;
+          setPendingAction(null);
+          setPendingJourneyId(null);
+
           try {
             await handleSaveAllChanges(false);
             setShowSaveSuccessModal(true);
           } catch (e) {
             console.error("Auto save failed:", e);
           }
-          setShowUnsavedModal(false);
-          if (pendingAction) {
-            const act = pendingAction;
-            setPendingAction(null);
+
+          if (act) {
             act();
-          } else if (pendingJourneyId !== null) {
-            setSelectedJourneyId(pendingJourneyId);
-            setPendingJourneyId(null);
+          } else if (targetJourneyId !== null) {
+            setSelectedJourneyId(targetJourneyId);
             setMobileArchiveTab('EDIT');
           }
         }}

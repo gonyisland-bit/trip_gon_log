@@ -1246,6 +1246,8 @@ function App() {
 
       await setDoc(doc(db, 'users', 'public', 'settings', 'home'), cleanForFirestore(dataToSave), { merge: true });
 
+      setHomeTitle(title);
+      setHomeSubtitle(subtitle);
       setHeroJourneyIds(heroIds);
       if (autoSlide !== undefined) setHeroAutoSlide(autoSlide);
       if (heroMediaTypeParam !== undefined) setHeroMediaType(heroMediaTypeParam);
