@@ -4173,8 +4173,8 @@ export function ManageHubPage({
                   {/* Preview 1: Hero Banner (7 cols on lg) */}
                   <div className="lg:col-span-7 flex flex-col gap-2 h-full">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
-                        1. HERO BANNER LIVE PREVIEW
+                      <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 whitespace-nowrap">
+                        1. HERO BANNER · 미리보기
                       </span>
                     </div>
 
@@ -4227,8 +4227,8 @@ export function ManageHubPage({
                   {/* Preview 2: Hub Section Card Live Preview (MOUTHWASH style, 5 cols on lg) */}
                   <div className="lg:col-span-5 flex flex-col gap-2 h-full">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-400">
-                        2. HUB SECTION CARD LIVE PREVIEW (실시간 허브 카드)
+                      <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-400 whitespace-nowrap">
+                        2. HUB CARD · 실시간 카드
                       </span>
                     </div>
 
@@ -4284,9 +4284,9 @@ export function ManageHubPage({
                 {/* Simplified Section Settings Form */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2 border-t border-black/10 dark:border-white/10">
                   {/* Section Title */}
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
-                      SECTION TITLE (섹션 이름)
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 whitespace-nowrap truncate" title="SECTION TITLE · 섹션명">
+                      SECTION TITLE · 섹션명
                     </label>
                     <input
                       type="text"
@@ -4298,9 +4298,9 @@ export function ManageHubPage({
                   </div>
 
                   {/* Hero Big Title */}
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
-                      HERO BIG TITLE (히어로 대형 타이틀)
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 whitespace-nowrap truncate" title="HERO TITLE · 대표 제목">
+                      HERO TITLE · 대표 제목
                     </label>
                     <input
                       type="text"
@@ -4312,9 +4312,9 @@ export function ManageHubPage({
                   </div>
 
                   {/* Location or Custom Theme */}
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
-                      LOCATION / THEME (위치 또는 테마명)
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 whitespace-nowrap truncate" title="LOCATION · 위치 / 테마">
+                      LOCATION · 위치 / 테마
                     </label>
                     <input
                       type="text"
@@ -4326,9 +4326,9 @@ export function ManageHubPage({
                   </div>
 
                   {/* Linked Trip */}
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
-                      LINKED JOURNEY (연계 여정 상세 연결)
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 whitespace-nowrap truncate" title="LINKED TRIP · 연계 여정">
+                      LINKED TRIP · 연계 여정
                     </label>
                     <select
                       value={currentMagSection.heroTripId || ''}
@@ -4537,7 +4537,13 @@ export function ManageHubPage({
                       return (
                         <div
                           key={item.id || idx}
-                          onClick={() => setSelectedMagCardId(prev => prev === item.id ? null : item.id)}
+                          onClick={() => {
+                            setSelectedMagCardId(prev => {
+                              const next = prev === item.id ? null : item.id;
+                              if (!next) setInlineAddMenuCardId(null);
+                              return next;
+                            });
+                          }}
                           className={`flex flex-col gap-3 p-4 bg-white dark:bg-[#161616] border transition-all shadow-xs h-full cursor-pointer select-none ${options.spanClass || ''} ${
                             isCardSelected
                               ? 'border-black dark:border-white ring-2 ring-black dark:ring-white shadow-md bg-black/[0.02] dark:bg-white/[0.04]'
@@ -4558,44 +4564,58 @@ export function ManageHubPage({
                               <button
                                 type="button"
                                 onClick={() => handleUpdateItemInCurrentSection(item.id, 'layoutType', isLandscape ? 'portrait' : 'landscape')}
-                                className="px-2 py-0.5 text-[10px] font-mono font-bold uppercase border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
+                                className="px-1.5 py-0.5 text-[10px] font-mono font-bold uppercase border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
                                 title="가로형/세로형 비율 전환"
                               >
-                                {isLandscape ? '가로형 ⟳' : '세로형 ⟳'}
+                                {isLandscape ? '가로 ⟳' : '세로 ⟳'}
                               </button>
                               {isCardSelected && (
-                                <div className="flex items-center gap-1.5 animate-in fade-in">
-                                  <span className="px-1.5 py-0.5 text-[9px] font-mono font-black uppercase bg-black text-white dark:bg-white dark:text-black tracking-wider">
-                                    SELECTED
-                                  </span>
-                                  <div className="flex items-center gap-1 border-l border-black/20 dark:border-white/20 pl-1.5 ml-0.5">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleAddTextCardToCurrentSection()}
-                                      className="px-2 py-0.5 text-[10px] font-mono font-bold lowercase border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1 cursor-pointer"
-                                      title="현재 카드 바로 뒤에 텍스트 카드 삽입"
-                                    >
-                                      <Plus className="w-3 h-3" />
-                                      <span>text</span>
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const linkedId = currentMagSection?.heroTripId || (currentMagSection?.items && currentMagSection.items[0]?.tripId);
-                                        if (linkedId) {
-                                          setSelectedTripForMoments(linkedId);
-                                        } else if (selectedTripForMoments === null && localJourneys.length > 0) {
-                                          setSelectedTripForMoments(localJourneys[0].id);
-                                        }
-                                        setShowQuickPhotoPicker(true);
-                                      }}
-                                      className="px-2 py-0.5 text-[10px] font-mono font-bold lowercase bg-black text-white dark:bg-white dark:text-black hover:opacity-85 transition-opacity flex items-center gap-1 cursor-pointer"
-                                      title="현재 카드 바로 뒤에 사진 삽입"
-                                    >
-                                      <ImageIcon className="w-3 h-3" />
-                                      <span>photo</span>
-                                    </button>
-                                  </div>
+                                <div className="relative flex items-center animate-in fade-in">
+                                  <button
+                                    type="button"
+                                    onClick={() => setInlineAddMenuCardId(prev => prev === item.id ? null : item.id)}
+                                    className="px-2 py-0.5 text-[10px] font-mono font-bold uppercase bg-red-600 hover:bg-red-700 text-white flex items-center gap-1 transition-colors cursor-pointer shadow-xs"
+                                    title="현재 카드 바로 뒤에 추가"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                    <span>ADD</span>
+                                  </button>
+
+                                  {/* Compact Popover Dropdown */}
+                                  {inlineAddMenuCardId === item.id && (
+                                    <div className="absolute left-0 top-full mt-1 z-30 bg-white dark:bg-[#1c1c1c] border border-black/20 dark:border-white/20 shadow-xl py-1 flex flex-col min-w-[90px] animate-in fade-in zoom-in-95 duration-100">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setInlineAddMenuCardId(null);
+                                          handleAddTextCardToCurrentSection();
+                                        }}
+                                        className="px-2.5 py-1.5 text-left text-[11px] font-mono font-bold hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-1.5 text-black dark:text-white cursor-pointer transition-colors"
+                                        title="텍스트 카드 추가"
+                                      >
+                                        <Plus className="w-3 h-3 text-red-500" />
+                                        <span>text</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setInlineAddMenuCardId(null);
+                                          const linkedId = currentMagSection?.heroTripId || (currentMagSection?.items && currentMagSection.items[0]?.tripId);
+                                          if (linkedId) {
+                                            setSelectedTripForMoments(linkedId);
+                                          } else if (selectedTripForMoments === null && localJourneys.length > 0) {
+                                            setSelectedTripForMoments(localJourneys[0].id);
+                                          }
+                                          setShowQuickPhotoPicker(true);
+                                        }}
+                                        className="px-2.5 py-1.5 text-left text-[11px] font-mono font-bold hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-1.5 text-black dark:text-white cursor-pointer transition-colors"
+                                        title="사진 카드 추가"
+                                      >
+                                        <ImageIcon className="w-3 h-3 text-red-500" />
+                                        <span>photo</span>
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -4636,7 +4656,10 @@ export function ManageHubPage({
                               <button
                                 type="button"
                                 onClick={() => {
-                                  if (selectedMagCardId === item.id) setSelectedMagCardId(null);
+                                  if (selectedMagCardId === item.id) {
+                                    setSelectedMagCardId(null);
+                                    setInlineAddMenuCardId(null);
+                                  }
                                   handleRemoveItemFromCurrentSection(item.id);
                                 }}
                                 className="p-1 text-red-500 hover:bg-red-500/10 border border-red-500/30 cursor-pointer"
