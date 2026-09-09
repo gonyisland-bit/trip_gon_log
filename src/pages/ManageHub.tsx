@@ -1721,76 +1721,138 @@ export function ManageHubPage({
 
     pushMagazineSnapshot();
 
-    const tripItems: MagazineItem[] = [];
-    const seenImages = new Set<string>();
+    const rawCandidates: {
+      img: string;
+      date: string;
+      time: string;
+      displayOrder: number;
+      title: string;
+      placeName: string;
+      location: string;
+      caption: string;
+      timelineItemId?: number;
+      sourcePriority: number; // 0 for timeline, 1 for gallery, 2 for cover
+    }[] = [];
 
-    // 1. Cover photo
-    if (targetTrip.img) {
-      seenImages.add(targetTrip.img);
-      tripItems.push({
-        id: `auto-${targetTrip.id}-cover-${Date.now()}`,
-        tripId: targetTrip.id,
-        title: targetTrip.title.replace(/\s*\(Plan\)$/i, ''),
-        date: targetTrip.date,
-        location: targetTrip.locationStr || targetTrip.country,
-        placeName: (targetTrip.locations && targetTrip.locations[0]?.name) || targetTrip.locationStr,
-        caption: '',
-        img: targetTrip.img,
-        layoutType: 'portrait',
-        order: tripItems.length,
-      });
-    }
+    // 1. Timeline items for this trip (Primary source of truth for timeline order)
+    Object.values(timelineData || {}).forEach(dayItems => {
+      if (Array.isArray(dayItems)) {
+        dayItems.forEach((tItem, tIdx) => {
+          if (Number(tItem.tripId) === Number(targetTrip.id) && tItem.img) {
+            const pName = safeStr(tItem.place);
+            const jTitle = targetTrip.title.replace(/\s*\(Plan\)$/i, '');
+            const displayTitle = pName || jTitle || 'MOMENT';
+            const itemDate = safeStr(tItem.date) || targetTrip.date || '';
+            const itemTime = safeStr(tItem.time) || safeStr((tItem as any).startTime) || '';
+            const orderNum = typeof (tItem as any).displayOrder === 'number' ? (tItem as any).displayOrder : tIdx;
+
+            rawCandidates.push({
+              img: tItem.img,
+              date: itemDate,
+              time: itemTime,
+              displayOrder: orderNum,
+              title: displayTitle,
+              placeName: pName || targetTrip.locationStr || '',
+              location: targetTrip.locationStr || targetTrip.country || '',
+              caption: safeStr(tItem.memo),
+              timelineItemId: tItem.id,
+              sourcePriority: 0,
+            });
+          }
+        });
+      }
+    });
 
     // 2. Gallery photos
     if (targetTrip.gallery && Array.isArray(targetTrip.gallery)) {
       targetTrip.gallery.forEach((g: any, gIdx) => {
         const url = typeof g === 'string' ? g : g?.url;
-        if (url && !seenImages.has(url)) {
-          seenImages.add(url);
+        if (url) {
           const gTitle = (typeof g === 'object' && g?.place) ? g.place : `${targetTrip.title.replace(/\s*\(Plan\)$/i, '')} #${gIdx + 1}`;
-          const gDate = (typeof g === 'object' && g?.date) ? g.date : targetTrip.date;
-          const gLoc = (typeof g === 'object' && g?.place) ? g.place : targetTrip.locationStr;
+          const gDate = (typeof g === 'object' && g?.date) ? g.date : targetTrip.date || '';
+          const gTime = (typeof g === 'object' && g?.time) ? g.time : '';
+          const gLoc = (typeof g === 'object' && g?.place) ? g.place : targetTrip.locationStr || '';
           const gMemo = typeof g === 'object' ? g?.imgNote || '' : '';
-          tripItems.push({
-            id: `auto-${targetTrip.id}-g-${gIdx}-${Date.now()}`,
-            tripId: targetTrip.id,
-            title: gTitle,
-            date: gDate,
-            location: targetTrip.locationStr || targetTrip.country,
-            placeName: gLoc,
-            caption: gMemo,
+
+          rawCandidates.push({
             img: url,
-            layoutType: gIdx % 3 === 0 ? 'portrait' : gIdx % 3 === 1 ? 'landscape' : 'wide',
-            order: tripItems.length,
+            date: gDate,
+            time: gTime,
+            displayOrder: 1000 + gIdx,
+            title: gTitle,
+            placeName: gLoc,
+            location: targetTrip.locationStr || targetTrip.country || '',
+            caption: gMemo,
+            sourcePriority: 1,
           });
         }
       });
     }
 
-    // 3. Timeline items for this trip
-    Object.values(timelineData || {}).forEach(dayItems => {
-      if (Array.isArray(dayItems)) {
-        dayItems.forEach(tItem => {
-          if (Number(tItem.tripId) === Number(targetTrip.id) && tItem.img && !seenImages.has(tItem.img)) {
-            seenImages.add(tItem.img);
-            const pName = safeStr(tItem.place);
-            const jTitle = targetTrip.title.replace(/\s*\(Plan\)$/i, '');
-            const displayTitle = pName || jTitle || 'MOMENT';
-            const itemDate = safeStr(tItem.date) || targetTrip.date;
-            tripItems.push({
-              id: `auto-${targetTrip.id}-tl-${tItem.id}-${Date.now()}`,
-              tripId: targetTrip.id,
-              timelineItemId: tItem.id,
-              title: displayTitle,
-              date: itemDate,
-              placeName: pName || targetTrip.locationStr,
-              location: targetTrip.locationStr || targetTrip.country,
-              caption: safeStr(tItem.memo),
-              img: tItem.img,
-              layoutType: tripItems.length % 3 === 0 ? 'portrait' : 'landscape',
-              order: tripItems.length,
-            });
-          }
+    // 3. Cover photo (참여하되 타임라인 사진보다 우선순위는 뒤로 두고 시간 순서대로 정렬)
+    if (targetTrip.img) {
+      rawCandidates.push({
+        img: targetTrip.img,
+        date: targetTrip.date || '',
+        time: '',
+        displayOrder: -1,
+        title: targetTrip.title.replace(/\s*\(Plan\)$/i, ''),
+        placeName: (targetTrip.locations && targetTrip.locations[0]?.name) || targetTrip.locationStr || '',
+        location: targetTrip.locationStr || targetTrip.country || '',
+        caption: '',
+        sourcePriority: 2,
+      });
+    }
+
+    // 4. 시간순 정렬 (날짜 -> 시간 -> sourcePriority -> displayOrder)
+    rawCandidates.sort((a, b) => {
+      // 1) date 오름차순
+      const dateA = a.date.trim();
+      const dateB = b.date.trim();
+      if (dateA && dateB && dateA !== dateB) {
+        return dateA.localeCompare(dateB);
+      }
+      if (dateA && !dateB) return -1;
+      if (!dateA && dateB) return 1;
+
+      // 2) time 오름차순
+      const timeA = a.time.trim();
+      const timeB = b.time.trim();
+      if (timeA && timeB && timeA !== timeB) {
+        return timeA.localeCompare(timeB);
+      }
+      if (timeA && !timeB) return -1;
+      if (!timeA && timeB) return 1;
+
+      // 3) sourcePriority (timeline이 gallery/cover보다 우선)
+      if (a.sourcePriority !== b.sourcePriority) {
+        return a.sourcePriority - b.sourcePriority;
+      }
+
+      // 4) displayOrder
+      return a.displayOrder - b.displayOrder;
+    });
+
+    // 5. 중복 이미지 필터링 및 MagazineItem 목록 생성
+    const tripItems: MagazineItem[] = [];
+    const seenImages = new Set<string>();
+
+    rawCandidates.forEach(cand => {
+      if (!seenImages.has(cand.img)) {
+        seenImages.add(cand.img);
+        const idx = tripItems.length;
+        tripItems.push({
+          id: `auto-${targetTrip.id}-${cand.timelineItemId || idx}-${Date.now()}-${idx}`,
+          tripId: Number(targetTrip.id),
+          timelineItemId: cand.timelineItemId,
+          title: cand.title,
+          date: cand.date,
+          placeName: cand.placeName,
+          location: cand.location,
+          caption: cand.caption,
+          img: cand.img,
+          layoutType: idx % 3 === 0 ? 'portrait' : idx % 3 === 1 ? 'landscape' : 'portrait',
+          order: idx,
         });
       }
     });
@@ -1800,11 +1862,12 @@ export function ManageHubPage({
       id: newSectionId,
       title: targetTrip.title.replace(/\s*\(Plan\)$/i, '').toUpperCase(),
       subtitle: `${targetTrip.date} · ${targetTrip.locationStr || targetTrip.country || 'JOURNEY'}`,
+      // 히어로 이미지는 섹션 헤더에만 지정하고, 카드 #01번을 강제로 덮어쓰지 않음
       heroImg: targetTrip.heroImg || targetTrip.img || (tripItems[0]?.img || ''),
       heroTitle: targetTrip.title.replace(/\s*\(Plan\)$/i, ''),
       heroDate: targetTrip.date,
       heroLocation: targetTrip.locationStr || targetTrip.country,
-      heroTripId: targetTrip.id,
+      heroTripId: Number(targetTrip.id),
       items: tripItems,
       order: sectionsList.length,
       isDefault: false,
@@ -5188,7 +5251,11 @@ export function ManageHubPage({
                       type="button"
                       onClick={() => {
                         setShowAddSectionModal(false);
-                        setSelectedTripForAutoGenerate(localJourneys[0]?.id ?? null);
+                        const existingTripIds = new Set(
+                          sectionsList.map(s => s.heroTripId).filter((id): id is number => id !== undefined && id !== null)
+                        );
+                        const firstUncreated = localJourneys.find(j => !existingTripIds.has(Number(j.id)));
+                        setSelectedTripForAutoGenerate(firstUncreated ? firstUncreated.id : (localJourneys[0]?.id ?? null));
                         setShowAutoGenerateModal(true);
                       }}
                       className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors shrink-0"
@@ -5243,40 +5310,91 @@ export function ManageHubPage({
                   </p>
 
                   <div className="flex flex-col gap-2">
-                    <label className="text-xs font-mono font-bold uppercase tracking-wider text-black/80 dark:text-white/80">
-                      SELECT JOURNEY (생성할 여정 선택)
+                    <label className="text-xs font-mono font-bold uppercase tracking-wider text-black/80 dark:text-white/80 flex items-center justify-between">
+                      <span>SELECT JOURNEY (생성할 여정 선택)</span>
+                      <span className="text-[10px] text-black/50 dark:text-white/50 lowercase">
+                        총 {localJourneys.length}개 중 {sectionsList.filter(s => s.heroTripId).length}개 섹션 생성됨
+                      </span>
                     </label>
                     <select
                       value={selectedTripForAutoGenerate ?? (localJourneys[0]?.id || '')}
                       onChange={e => setSelectedTripForAutoGenerate(Number(e.target.value))}
-                      className="px-3 py-2.5 text-xs font-mono font-bold bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white"
+                      className="px-3 py-2.5 text-xs font-mono font-bold bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white cursor-pointer"
                     >
-                      {localJourneys.map(j => (
-                        <option key={j.id} value={j.id}>
-                          {j.title.replace(/\s*\(Plan\)$/i, '')} ({j.locationStr || j.country} · {j.date})
-                        </option>
-                      ))}
+                      {(() => {
+                        const existingTripIds = new Set(
+                          sectionsList.map(s => s.heroTripId).filter((id): id is number => id !== undefined && id !== null)
+                        );
+                        const uncreatedJourneys = localJourneys.filter(j => !existingTripIds.has(Number(j.id)));
+                        const createdJourneys = localJourneys.filter(j => existingTripIds.has(Number(j.id)));
+
+                        return (
+                          <>
+                            {uncreatedJourneys.length > 0 && (
+                              <optgroup label="── 미생성 여정 (NEW) ──">
+                                {uncreatedJourneys.map(j => (
+                                  <option key={j.id} value={j.id}>
+                                    {j.title.replace(/\s*\(Plan\)$/i, '')} ({j.locationStr || j.country} · {j.date})
+                                  </option>
+                                ))}
+                              </optgroup>
+                            )}
+                            {createdJourneys.length > 0 && (
+                              <optgroup label="── 이미 섹션으로 생성된 여정 (ALREADY CREATED) ──">
+                                {createdJourneys.map(j => (
+                                  <option key={j.id} value={j.id}>
+                                    ✓ [생성완료] {j.title.replace(/\s*\(Plan\)$/i, '')} ({j.locationStr || j.country} · {j.date})
+                                  </option>
+                                ))}
+                              </optgroup>
+                            )}
+                          </>
+                        );
+                      })()}
                     </select>
                   </div>
 
                   {(() => {
+                    const existingTripIds = new Set(
+                      sectionsList.map(s => s.heroTripId).filter((id): id is number => id !== undefined && id !== null)
+                    );
                     const effectiveTripId = selectedTripForAutoGenerate ?? localJourneys[0]?.id;
                     const selected = localJourneys.find(j => Number(j.id) === Number(effectiveTripId));
                     if (!selected) return null;
+                    const isAlreadyCreated = existingTripIds.has(Number(selected.id));
+
                     return (
-                      <div className="p-3 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center gap-3">
-                        <div className="w-14 h-14 aspect-square bg-black/10 overflow-hidden shrink-0 border border-black/10">
+                      <div className={`p-3 border flex items-center gap-3 ${
+                        isAlreadyCreated 
+                          ? 'bg-amber-500/5 dark:bg-amber-500/10 border-amber-500/30' 
+                          : 'bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10'
+                      }`}>
+                        <div className="w-14 h-14 aspect-square bg-black/10 overflow-hidden shrink-0 border border-black/10 relative">
                           <img src={getEffectiveImageUrl(selected.img)} alt={selected.title} className="w-full h-full object-cover" />
+                          {isAlreadyCreated && (
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                              <span className="text-[8px] font-mono font-bold text-white uppercase px-1 bg-amber-600">CREATED</span>
+                            </div>
+                          )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="text-xs font-bold text-black dark:text-white uppercase truncate">
-                            {selected.title}
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-black dark:text-white uppercase truncate">
+                              {selected.title}
+                            </span>
+                            {isAlreadyCreated && (
+                              <span className="px-1.5 py-0.2 text-[9px] font-mono font-bold uppercase bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 shrink-0">
+                                이미 생성됨
+                              </span>
+                            )}
                           </div>
-                          <div className="text-[11px] font-mono text-black/60 dark:text-white/60">
+                          <div className="text-[11px] font-mono text-black/60 dark:text-white/60 mt-0.5">
                             {selected.locationStr || selected.country} · {selected.date}
                           </div>
-                          <div className="text-[10px] font-mono text-red-600 dark:text-red-400 mt-0.5">
-                            * 대표 커버, 갤러리 및 타임라인 사진으로 새 매거진 섹션이 자동 구성됩니다.
+                          <div className={`text-[10px] font-mono mt-1 ${isAlreadyCreated ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-red-600 dark:text-red-400'}`}>
+                            {isAlreadyCreated 
+                              ? '* 이미 매거진 섹션으로 등록된 여정입니다. 중복 생성이 필요한 경우에만 진행해주세요.'
+                              : '* 타임라인 시간 순서(일정 흐름)대로 매거진 섹션이 자동 구성됩니다.'}
                           </div>
                         </div>
                       </div>
@@ -5291,20 +5409,31 @@ export function ManageHubPage({
                     >
                       CANCEL
                     </button>
-                    <button
-                      type="button"
-                      disabled={localJourneys.length === 0}
-                      onClick={() => {
-                        const targetId = selectedTripForAutoGenerate ?? localJourneys[0]?.id;
-                        if (targetId) {
-                          handleAutoGenerateSectionFromTrip(targetId);
-                        }
-                      }}
-                      className="px-5 py-2 bg-red-600 text-white text-xs font-mono font-bold uppercase tracking-wider cursor-pointer hover:bg-red-700 disabled:opacity-30 flex items-center gap-1.5 shadow-sm"
-                    >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>GENERATE SECTION (자동 생성)</span>
-                    </button>
+                    {(() => {
+                      const existingTripIds = new Set(
+                        sectionsList.map(s => s.heroTripId).filter((id): id is number => id !== undefined && id !== null)
+                      );
+                      const targetId = selectedTripForAutoGenerate ?? localJourneys[0]?.id;
+                      const isAlreadyCreated = targetId ? existingTripIds.has(Number(targetId)) : false;
+
+                      return (
+                        <button
+                          type="button"
+                          disabled={localJourneys.length === 0}
+                          onClick={() => {
+                            if (targetId) {
+                              handleAutoGenerateSectionFromTrip(targetId);
+                            }
+                          }}
+                          className={`px-5 py-2 text-white text-xs font-mono font-bold uppercase tracking-wider cursor-pointer disabled:opacity-30 flex items-center gap-1.5 shadow-sm transition-colors ${
+                            isAlreadyCreated ? 'bg-amber-600 hover:bg-amber-700' : 'bg-red-600 hover:bg-red-700'
+                          }`}
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>{isAlreadyCreated ? 'GENERATE AGAIN (중복 생성)' : 'GENERATE SECTION (자동 생성)'}</span>
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
