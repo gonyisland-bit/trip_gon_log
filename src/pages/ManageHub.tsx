@@ -50,8 +50,12 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { getEffectiveImageUrl, uploadFileToR2, deleteFileFromR2 } from '../utils/storageHelper';
 import { compressImage } from '../utils/imageHelper';
 import { inspectAndPrepareVideo } from '../utils/videoHelper';
-import { cleanAdministrativeDistricts, resolveTimelineItemLocation } from '../components/SummaryView';
-import { resolveTimelinePlaceName, buildDefaultMagazineSections } from '../utils/magazineHelper';
+import { 
+  resolveTimelinePlaceName, 
+  buildDefaultMagazineSections,
+  computeEditorialLayoutTypes,
+  compareMagazineItemsChronologically
+} from '../utils/magazineHelper';
 
 interface ManageHubPageProps {
   trips: Trip[];
@@ -2228,79 +2232,7 @@ export function ManageHubPage({
     const totalCount = uniqueCandidates.length;
 
     // 6. 에디토리얼 행(Row) 기반 레이아웃 배치 계산
-    const plannedRowTypes: ('PL' | 'PPP' | 'LP' | 'LL')[] = [];
-    const rowCycle: ('PL' | 'PPP' | 'LP' | 'LL')[] = ['PL', 'PPP', 'LP', 'LL', 'PL', 'LL', 'LP', 'PPP'];
-    let rem = totalCount;
-    let cycleIdx = 0;
-
-    while (rem > 0) {
-      if (rem === 1) {
-        break; // 단독 카드는 landscape로 채움
-      }
-      if (rem === 5) {
-        // 2 + 3 (PL/LP + PPP)
-        plannedRowTypes.push(cycleIdx % 2 === 0 ? 'PL' : 'LP');
-        plannedRowTypes.push('PPP');
-        rem -= 5;
-        break;
-      }
-      if (rem === 4) {
-        // 2 + 2 (PL + LP)
-        plannedRowTypes.push('PL');
-        plannedRowTypes.push('LP');
-        rem -= 4;
-        break;
-      }
-      if (rem === 3) {
-        // 3 (PPP)
-        plannedRowTypes.push('PPP');
-        rem -= 3;
-        break;
-      }
-      if (rem === 2) {
-        // 2 (PL or LL or LP)
-        const pref = rowCycle[cycleIdx % rowCycle.length];
-        plannedRowTypes.push(pref === 'PPP' ? 'LL' : pref);
-        rem -= 2;
-        break;
-      }
-
-      // rem >= 6
-      const preferred = rowCycle[cycleIdx % rowCycle.length];
-      cycleIdx++;
-      const rowLen = preferred === 'PPP' ? 3 : 2;
-
-      // 이 행을 선택했을 때 잔여 개수가 1이 되는 것을 방지
-      if (rem - rowLen === 1) {
-        if (rowLen === 2) {
-          plannedRowTypes.push('PPP');
-          rem -= 3;
-        } else {
-          plannedRowTypes.push('PL');
-          rem -= 2;
-        }
-      } else {
-        plannedRowTypes.push(preferred);
-        rem -= rowLen;
-      }
-    }
-
-    const assignedLayoutTypes: ('portrait' | 'landscape')[] = [];
-    plannedRowTypes.forEach(r => {
-      if (r === 'PL') {
-        assignedLayoutTypes.push('portrait', 'landscape');
-      } else if (r === 'LP') {
-        assignedLayoutTypes.push('landscape', 'portrait');
-      } else if (r === 'PPP') {
-        assignedLayoutTypes.push('portrait', 'portrait', 'portrait');
-      } else if (r === 'LL') {
-        assignedLayoutTypes.push('landscape', 'landscape');
-      }
-    });
-
-    while (assignedLayoutTypes.length < totalCount) {
-      assignedLayoutTypes.push('landscape');
-    }
+    const assignedLayoutTypes = computeEditorialLayoutTypes(totalCount);
 
     // 7. MagazineItem 목록 생성
     const tripItems: MagazineItem[] = uniqueCandidates.map((cand, idx) => ({
@@ -2597,6 +2529,8 @@ export function ManageHubPage({
     setIsSyncingMagazine(true);
 
     try {
+      pushMagazineSnapshot();
+
       // Gather all timeline items across all dates + gallery photos
       const allTimelineItems: TimelineItem[] = [];
       Object.values(timelineData || {}).forEach(dayItems => {
@@ -2629,8 +2563,15 @@ export function ManageHubPage({
         }
       });
 
+      // 1. Identify if this section is linked to a specific journey
+      const linkedTripId = currentMagSection.heroTripId || (
+        currentMagSection.id.startsWith('trip-section-') ? Number(currentMagSection.id.split('-')[2]) : undefined
+      ) || (
+        currentMagSection.id.startsWith('section-') ? Number(currentMagSection.id.split('-')[1]) : undefined
+      ) || currentMagSection.items?.find(i => i.tripId)?.tripId;
+
       let changesCount = 0;
-      const updatedItems = (currentMagSection.items || []).map(item => {
+      const updatedExistingItems = (currentMagSection.items || []).map(item => {
         if (item.isTextOnly || !item.img) return item;
 
         // Strict 1:1 match by timelineItemId, exact image URL, or trip+date+title smart match
@@ -2697,9 +2638,113 @@ export function ManageHubPage({
         return item;
       });
 
+      let addedCount = 0;
+      let finalItems = [...updatedExistingItems];
+
+      // 2. If this section is linked to a specific journey, sync newly added timeline items
+      if (linkedTripId !== undefined) {
+        const targetTrip = localJourneys.find(j => Number(j.id) === Number(linkedTripId));
+        const tripTimelineItems = allTimelineItems.filter(t => Number(t.tripId) === Number(linkedTripId));
+
+        // Create timeline map for fast ID lookup
+        const timelineMap = new Map<string | number, TimelineItem>();
+        allTimelineItems.forEach(t => {
+          timelineMap.set(t.id, t);
+          timelineMap.set(Number(t.id), t);
+        });
+
+        // Track existing images and timeline item IDs to prevent duplicate insertion
+        const existingImages = new Set<string>();
+        const existingTimelineIds = new Set<string | number>();
+
+        finalItems.forEach(item => {
+          if (item.img) {
+            const clean = item.img.trim();
+            existingImages.add(clean);
+            existingImages.add(clean.split('?')[0]);
+          }
+          if (item.timelineItemId !== undefined) {
+            existingTimelineIds.add(item.timelineItemId);
+            existingTimelineIds.add(Number(item.timelineItemId));
+          }
+        });
+
+        // Find candidate timeline items from target trip with photos not yet in section
+        const newCandidateItems: MagazineItem[] = [];
+        tripTimelineItems.forEach(tItem => {
+          const cleanUrl = (tItem.img || '').trim();
+          if (!cleanUrl) return;
+
+          const baseCleanUrl = cleanUrl.split('?')[0];
+          const isImageSeen = existingImages.has(cleanUrl) || existingImages.has(baseCleanUrl);
+          const isIdSeen = tItem.id !== undefined && (existingTimelineIds.has(tItem.id) || existingTimelineIds.has(Number(tItem.id)));
+
+          if (!isImageSeen && !isIdSeen) {
+            existingImages.add(cleanUrl);
+            existingImages.add(baseCleanUrl);
+            if (tItem.id !== undefined) {
+              existingTimelineIds.add(tItem.id);
+              existingTimelineIds.add(Number(tItem.id));
+            }
+
+            const pName = (tItem.place || '').trim();
+            const jTitle = targetTrip ? targetTrip.title.replace(/\s*\(Plan\)$/i, '') : '';
+            const displayTitle = pName || jTitle || 'MOMENT';
+            const itemDate = (tItem.date || targetTrip?.date || '').trim();
+            const resolvedLoc = resolveTimelinePlaceName(tItem, tripTimelineItems, targetTrip);
+
+            newCandidateItems.push({
+              id: `auto-${linkedTripId}-${tItem.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+              tripId: Number(linkedTripId),
+              timelineItemId: tItem.id,
+              title: displayTitle,
+              date: itemDate,
+              placeName: resolvedLoc || pName || targetTrip?.locationStr || '',
+              location: targetTrip?.locationStr || targetTrip?.country || '',
+              caption: (tItem.memo || '').trim(),
+              img: cleanUrl,
+              layoutType: 'portrait',
+              order: 0,
+            });
+            addedCount++;
+          }
+        });
+
+        if (newCandidateItems.length > 0) {
+          finalItems = [...finalItems, ...newCandidateItems];
+        }
+
+        // 3. Sort all items chronologically according to the journey's timeline order (date -> time -> order -> id)
+        finalItems.sort((a, b) => compareMagazineItemsChronologically(a, b, timelineMap));
+
+        // 4. If new items were added, balance editorial row layout types
+        if (addedCount > 0) {
+          const balancedLayouts = computeEditorialLayoutTypes(finalItems.length);
+          finalItems = finalItems.map((item, idx) => ({
+            ...item,
+            order: idx,
+            layoutType: item.isTextOnly ? item.layoutType : (balancedLayouts[idx] || item.layoutType || 'portrait'),
+          }));
+        } else {
+          finalItems = finalItems.map((item, idx) => ({
+            ...item,
+            order: idx,
+          }));
+        }
+      } else {
+        finalItems = finalItems.map((item, idx) => ({
+          ...item,
+          order: idx,
+        }));
+      }
+
       const updatedSections = sectionsList.map(s => {
         if (s.id === currentMagSection.id) {
-          return { ...s, items: updatedItems };
+          return { 
+            ...s, 
+            heroTripId: s.heroTripId || (linkedTripId ? Number(linkedTripId) : undefined),
+            items: finalItems 
+          };
         }
         return s;
       });
@@ -2708,7 +2753,19 @@ export function ManageHubPage({
       if (onSaveMagazineSections) {
         await onSaveMagazineSections(updatedSections);
       }
-      alert(`타임라인 기준 매거진 동기화가 완료되었습니다.\n(${changesCount}개 항목 최신화 및 저장 완료)`);
+      try {
+        localStorage.setItem('cached_magazine_sections', JSON.stringify(updatedSections));
+      } catch (_) {}
+
+      if (addedCount > 0 && changesCount > 0) {
+        alert(`타임라인 기준 매거진 동기화가 완료되었습니다.\n(${changesCount}개 기존 항목 최신화 및 ${addedCount}개 신규 타임라인 항목 추가/시간순 정렬 완료)`);
+      } else if (addedCount > 0) {
+        alert(`타임라인 기준 매거진 동기화가 완료되었습니다.\n(${addedCount}개 신규 타임라인 항목 추가 및 시간순 정렬 완료)`);
+      } else if (changesCount > 0) {
+        alert(`타임라인 기준 매거진 동기화가 완료되었습니다.\n(${changesCount}개 항목 최신화 완료)`);
+      } else {
+        alert('모든 매거진 카드가 이미 타임라인 최신 데이터와 일치합니다.');
+      }
     } catch (err: any) {
       console.error('Failed to sync magazine with timeline:', err);
       alert('타임라인 동기화 중 오류가 발생했습니다: ' + (err?.message || err));

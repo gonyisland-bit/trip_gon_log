@@ -223,3 +223,125 @@ export function buildDefaultMagazineSections(
   return starterSections;
 }
 
+/**
+ * Calculates optimal 2-col and 3-col editorial row layout pattern ('PL', 'PPP', 'LP', 'LL')
+ * so that magazine cards display in visually balanced magazine editorial layouts without hanging single cards.
+ */
+export function computeEditorialLayoutTypes(count: number): ('portrait' | 'landscape')[] {
+  if (count <= 0) return [];
+  if (count === 1) return ['landscape'];
+
+  const plannedRowTypes: ('PL' | 'PPP' | 'LP' | 'LL')[] = [];
+  const rowCycle: ('PL' | 'PPP' | 'LP' | 'LL')[] = ['PL', 'PPP', 'LP', 'LL', 'PL', 'LL', 'LP', 'PPP'];
+  let rem = count;
+  let cycleIdx = 0;
+
+  while (rem > 0) {
+    if (rem === 1) {
+      break;
+    }
+    if (rem === 5) {
+      plannedRowTypes.push(cycleIdx % 2 === 0 ? 'PL' : 'LP');
+      plannedRowTypes.push('PPP');
+      rem -= 5;
+      break;
+    }
+    if (rem === 4) {
+      plannedRowTypes.push('PL');
+      plannedRowTypes.push('LP');
+      rem -= 4;
+      break;
+    }
+    if (rem === 3) {
+      plannedRowTypes.push('PPP');
+      rem -= 3;
+      break;
+    }
+    if (rem === 2) {
+      const pref = rowCycle[cycleIdx % rowCycle.length];
+      plannedRowTypes.push(pref === 'PPP' ? 'LL' : pref);
+      rem -= 2;
+      break;
+    }
+
+    const preferred = rowCycle[cycleIdx % rowCycle.length];
+    cycleIdx++;
+    const rowLen = preferred === 'PPP' ? 3 : 2;
+
+    if (rem - rowLen === 1) {
+      if (rowLen === 2) {
+        plannedRowTypes.push('PPP');
+        rem -= 3;
+      } else {
+        plannedRowTypes.push('PL');
+        rem -= 2;
+      }
+    } else {
+      plannedRowTypes.push(preferred);
+      rem -= rowLen;
+    }
+  }
+
+  const assignedLayoutTypes: ('portrait' | 'landscape')[] = [];
+  plannedRowTypes.forEach(r => {
+    if (r === 'PL') {
+      assignedLayoutTypes.push('portrait', 'landscape');
+    } else if (r === 'LP') {
+      assignedLayoutTypes.push('landscape', 'portrait');
+    } else if (r === 'PPP') {
+      assignedLayoutTypes.push('portrait', 'portrait', 'portrait');
+    } else if (r === 'LL') {
+      assignedLayoutTypes.push('landscape', 'landscape');
+    }
+  });
+
+  while (assignedLayoutTypes.length < count) {
+    assignedLayoutTypes.push('landscape');
+  }
+
+  return assignedLayoutTypes;
+}
+
+/**
+ * Compares two MagazineItems chronologically based on their linked timeline item's
+ * date -> time -> displayOrder -> id, preserving custom text cards in appropriate order.
+ */
+export function compareMagazineItemsChronologically(
+  a: MagazineItem,
+  b: MagazineItem,
+  timelineMap: Map<string | number, TimelineItem>
+): number {
+  const tA = a.timelineItemId !== undefined ? timelineMap.get(a.timelineItemId) || timelineMap.get(Number(a.timelineItemId)) : undefined;
+  const tB = b.timelineItemId !== undefined ? timelineMap.get(b.timelineItemId) || timelineMap.get(Number(b.timelineItemId)) : undefined;
+
+  const dateA = (tA?.date || a.date || '').trim();
+  const dateB = (tB?.date || b.date || '').trim();
+  if (dateA && dateB && dateA !== dateB) {
+    return dateA.localeCompare(dateB);
+  }
+  if (dateA && !dateB) return -1;
+  if (!dateA && dateB) return 1;
+
+  const timeA = (tA?.time || (tA as any)?.startTime || '').trim();
+  const timeB = (tB?.time || (tB as any)?.startTime || '').trim();
+  if (timeA && timeB && timeA !== timeB) {
+    return timeA.localeCompare(timeB);
+  }
+  if (timeA && !timeB) return -1;
+  if (!timeA && timeB) return 1;
+
+  const orderA = typeof (tA as any)?.displayOrder === 'number' ? (tA as any).displayOrder : -1;
+  const orderB = typeof (tB as any)?.displayOrder === 'number' ? (tB as any).displayOrder : -1;
+  if (orderA !== -1 && orderB !== -1 && orderA !== orderB) {
+    return orderA - orderB;
+  }
+
+  const idA = tA ? Number(tA.id) : 999999;
+  const idB = tB ? Number(tB.id) : 999999;
+  if (idA !== idB) {
+    return idA - idB;
+  }
+
+  return (a.order ?? 0) - (b.order ?? 0);
+}
+

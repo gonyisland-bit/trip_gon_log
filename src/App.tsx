@@ -43,10 +43,14 @@ const SettingsModal = lazyWithRetry(() => import('./components/SettingsModal').t
 const SearchModal = lazyWithRetry(() => import('./components/SearchModal').then(m => ({ default: m.SearchModal })));
 const EditTripModal = lazyWithRetry(() => import('./components/EditTripModal').then(m => ({ default: m.EditTripModal })));
 const ConfirmModal = lazyWithRetry(() => import('./components/ConfirmModal').then(m => ({ default: m.ConfirmModal })));
-import { Check, AlertTriangle } from 'lucide-react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { fetchCoordinates } from './utils/googleMapsHelper';
-import { resolveTimelinePlaceName, buildDefaultMagazineSections } from './utils/magazineHelper';
+import { 
+  resolveTimelinePlaceName, 
+  buildDefaultMagazineSections,
+  computeEditorialLayoutTypes,
+  compareMagazineItemsChronologically
+} from './utils/magazineHelper';
 import { 
   initialTrips, 
   initialPlans, 
@@ -1790,11 +1794,88 @@ function App() {
 
       const updatedSections = (magazineSections || []).map(sec => {
         let secChanged = false;
-        const newItems = (sec.items || []).map(m => {
+        let newItems = (sec.items || []).map(m => {
           const newM = syncMoment(m);
           if (newM !== m) secChanged = true;
           return newM;
         });
+
+        // If this section is linked to the currently updated trip, also sync newly added timeline items
+        const isLinkedSection = Number(sec.heroTripId) === Number(tripId) || 
+          sec.id === `section-${tripId}` || 
+          sec.id.startsWith(`trip-section-${tripId}-`);
+
+        if (isLinkedSection) {
+          const existingImages = new Set<string>();
+          const existingTimelineIds = new Set<string | number>();
+
+          newItems.forEach(item => {
+            if (item.img) {
+              const clean = item.img.trim();
+              existingImages.add(clean);
+              existingImages.add(clean.split('?')[0]);
+            }
+            if (item.timelineItemId !== undefined) {
+              existingTimelineIds.add(item.timelineItemId);
+              existingTimelineIds.add(Number(item.timelineItemId));
+            }
+          });
+
+          let newItemsAdded = false;
+          const candidateItems: MagazineItem[] = [];
+
+          updatedTimeline.forEach(tItem => {
+            const cleanUrl = (tItem.img || '').trim();
+            if (!cleanUrl) return;
+
+            const baseCleanUrl = cleanUrl.split('?')[0];
+            const isImageSeen = existingImages.has(cleanUrl) || existingImages.has(baseCleanUrl);
+            const isIdSeen = tItem.id !== undefined && (existingTimelineIds.has(tItem.id) || existingTimelineIds.has(Number(tItem.id)));
+
+            if (!isImageSeen && !isIdSeen) {
+              existingImages.add(cleanUrl);
+              existingImages.add(baseCleanUrl);
+              if (tItem.id !== undefined) {
+                existingTimelineIds.add(tItem.id);
+                existingTimelineIds.add(Number(tItem.id));
+              }
+
+              const pName = (tItem.place || '').trim();
+              const jTitle = updatedTrip ? updatedTrip.title.replace(/\s*\(Plan\)$/i, '') : '';
+              const displayTitle = pName || jTitle || 'MOMENT';
+              const itemDate = (tItem.date || updatedTrip?.date || '').trim();
+              const resolvedLoc = resolveTimelinePlaceName(tItem, updatedTimeline, updatedTrip);
+
+              candidateItems.push({
+                id: `auto-${tripId}-${tItem.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                tripId: Number(tripId),
+                timelineItemId: tItem.id,
+                title: displayTitle,
+                date: itemDate,
+                placeName: resolvedLoc || pName || updatedTrip?.locationStr || '',
+                location: updatedTrip?.locationStr || updatedTrip?.country || '',
+                caption: (tItem.memo || '').trim(),
+                img: cleanUrl,
+                layoutType: 'portrait',
+                order: 0,
+              });
+              newItemsAdded = true;
+            }
+          });
+
+          if (newItemsAdded) {
+            secChanged = true;
+            newItems = [...newItems, ...candidateItems];
+            newItems.sort((a, b) => compareMagazineItemsChronologically(a, b, updatedTimelineMap));
+
+            const balancedLayouts = computeEditorialLayoutTypes(newItems.length);
+            newItems = newItems.map((item, idx) => ({
+              ...item,
+              order: idx,
+              layoutType: item.isTextOnly ? item.layoutType : (balancedLayouts[idx] || item.layoutType || 'portrait'),
+            }));
+          }
+        }
 
         let newHeroImg = sec.heroImg;
         const tripCover = updatedTrip.heroImg || updatedTrip.img;
