@@ -488,14 +488,22 @@ export function Lightbox({
   };
 
   const handlePrev = useCallback(() => {
+    if (isSlideshow) {
+      stopSlideshow();
+      setSlideProgress(0);
+    }
     const nextIndex = (currentIndex - 1 + images.length) % images.length;
     onNavigate(nextIndex);
-  }, [currentIndex, images.length, onNavigate]);
+  }, [currentIndex, images.length, onNavigate, isSlideshow, stopSlideshow]);
 
   const handleNext = useCallback(() => {
+    if (isSlideshow) {
+      stopSlideshow();
+      setSlideProgress(0);
+    }
     const nextIndex = (currentIndex + 1) % images.length;
     onNavigate(nextIndex);
-  }, [currentIndex, images.length, onNavigate]);
+  }, [currentIndex, images.length, onNavigate, isSlideshow, stopSlideshow]);
 
   // ESC & Arrow & Space key handling
   useEffect(() => {
@@ -508,15 +516,16 @@ export function Lightbox({
           onClose();
         }
       }
+      // Arrow keys work in both normal and slideshow modes (playing or paused)
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handlePrev();
+      }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleNext();
+      }
       if (!isSlideshow) {
-        if (e.key === 'ArrowLeft') {
-          e.preventDefault();
-          handlePrev();
-        }
-        if (e.key === 'ArrowRight') {
-          e.preventDefault();
-          handleNext();
-        }
         if (e.key === '+' || e.key === '=' || e.code === 'NumpadAdd') {
           e.preventDefault();
           handleZoomIn();
@@ -655,7 +664,7 @@ export function Lightbox({
         {/* Current ambient blurred image */}
         {ambientCurrUrl && (
           <div
-            className="absolute inset-0 scale-125 bg-cover bg-center blur-3xl opacity-50 transition-all duration-500 will-change-transform"
+            className="absolute inset-0 scale-125 bg-cover bg-center blur-3xl opacity-80 brightness-115 saturate-150 transition-all duration-500 will-change-transform"
             style={{ backgroundImage: `url("${ambientCurrUrl}")` }}
           />
         )}
@@ -663,15 +672,15 @@ export function Lightbox({
         {/* Previous ambient blurred image for smooth 500ms crossfade transition */}
         {ambientPrevUrl && (
           <div
-            className={`absolute inset-0 scale-125 bg-cover bg-center blur-3xl transition-all duration-500 will-change-transform ${
-              isAmbientFading ? 'opacity-0' : 'opacity-50'
+            className={`absolute inset-0 scale-125 bg-cover bg-center blur-3xl brightness-115 saturate-150 transition-all duration-500 will-change-transform ${
+              isAmbientFading ? 'opacity-0' : 'opacity-80'
             }`}
             style={{ backgroundImage: `url("${ambientPrevUrl}")` }}
           />
         )}
 
-        {/* 40% Black Dim Overlay on top of ambient blur */}
-        <div className="absolute inset-0 bg-black/40" />
+        {/* 20% Black Dim Overlay on top of ambient blur */}
+        <div className="absolute inset-0 bg-black/20" />
       </div>
 
       {/* ── SLIDESHOW MODE OVERLAY ── */}
@@ -893,11 +902,13 @@ export function Lightbox({
         className="flex-grow flex items-center justify-center relative overflow-hidden w-full"
         onWheel={isSlideshow ? undefined : handleWheel}
       >
-        {/* Left Arrow (normal mode only) */}
-        {!isSlideshow && images.length > 1 && (
+        {/* Left Arrow */}
+        {images.length > 1 && (
           <button
             onClick={handlePrev}
-            className="absolute left-4 md:left-8 z-20 p-2 md:p-3 bg-white/5 hover:bg-white/15 active:bg-white/25 border border-white/10 hover:border-white/30 text-white rounded-full transition-all focus:outline-none hidden md:flex"
+            className="absolute left-3 md:left-8 z-40 p-2 md:p-3 bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-xs border border-white/20 hover:border-white/40 text-white rounded-full transition-all focus:outline-none flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
+            title="이전 사진 (←)"
+            aria-label="Previous photo"
           >
             <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
           </button>
@@ -995,11 +1006,13 @@ export function Lightbox({
           )}
         </div>
 
-        {/* Right Arrow (normal mode only) */}
-        {!isSlideshow && images.length > 1 && (
+        {/* Right Arrow */}
+        {images.length > 1 && (
           <button
             onClick={handleNext}
-            className="absolute right-4 md:right-8 z-20 p-2 md:p-3 bg-white/5 hover:bg-white/15 active:bg-white/25 border border-white/10 hover:border-white/30 text-white rounded-full transition-all focus:outline-none hidden md:flex"
+            className="absolute right-3 md:right-8 z-40 p-2 md:p-3 bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-xs border border-white/20 hover:border-white/40 text-white rounded-full transition-all focus:outline-none flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
+            title="다음 사진 (→)"
+            aria-label="Next photo"
           >
             <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
           </button>
