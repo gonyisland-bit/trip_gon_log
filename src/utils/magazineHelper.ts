@@ -1,11 +1,22 @@
-import { TimelineItem, Trip, MagazineSection, MagazineItem } from '../types';
+import { TimelineItem, Trip, Plan, MagazineSection, MagazineItem } from '../types';
 
-// Convert "10:30 AM" or "15:30" into total minutes from midnight for accurate chronological sorting
-function parseTimeToMinutes(timeStr?: string): number {
-  if (!timeStr) return 720; // default 12:00 PM
+// Convert "10:30 AM" or "15:30" or "07:00 PM" into total minutes from midnight (0..1440) for accurate sorting
+export function parseTimeToMinutes(timeStr?: string | null): number {
+  if (!timeStr) return -1;
   const clean = timeStr.trim();
-  const match = clean.match(/^(\d+):(\d+)\s*(AM|PM)?$/i);
-  if (!match) return 720;
+  if (!clean) return -1;
+  const match = clean.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i);
+  if (!match) {
+    const simpleMatch = clean.match(/^(\d{1,2})\s*(AM|PM)$/i);
+    if (simpleMatch) {
+      let h = parseInt(simpleMatch[1], 10);
+      const ampm = simpleMatch[2].toUpperCase();
+      if (ampm === 'PM' && h < 12) h += 12;
+      if (ampm === 'AM' && h === 12) h = 0;
+      return h * 60;
+    }
+    return -1;
+  }
   let hours = parseInt(match[1], 10);
   const minutes = parseInt(match[2], 10);
   const ampm = match[3]?.toUpperCase();
@@ -16,6 +27,46 @@ function parseTimeToMinutes(timeStr?: string): number {
     hours = 0;
   }
   return hours * 60 + minutes;
+}
+
+// Normalize any date format ("2025.04.12", "2025-04-12", "2025/04/12", "2025.04.12 - 2025.04.15") to standard YYYY-MM-DD
+export function normalizeDateStr(dateStr?: string | null): string {
+  if (!dateStr) return '';
+  const clean = dateStr.trim();
+  if (!clean) return '';
+  const dateMatch = clean.match(/(\d{4})[./\-](\d{1,2})[./\-](\d{1,2})/);
+  if (dateMatch) {
+    const y = dateMatch[1];
+    const m = dateMatch[2].padStart(2, '0');
+    const d = dateMatch[3].padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  return clean.split(/\s*[-~]\s*/)[0].trim().replace(/[./]/g, '-');
+}
+
+// Sorts trip timeline items in strict canonical chronological order (date -> time in minutes -> displayOrder -> id)
+export function getSortedTripTimeline(items: TimelineItem[]): TimelineItem[] {
+  return [...items].sort((a, b) => {
+    const dateA = normalizeDateStr(a.date);
+    const dateB = normalizeDateStr(b.date);
+    if (dateA !== dateB) return dateA.localeCompare(dateB);
+
+    const minA = parseTimeToMinutes(a.time || (a as any).startTime);
+    const minB = parseTimeToMinutes(b.time || (b as any).startTime);
+    if (minA !== -1 && minB !== -1 && minA !== minB) {
+      return minA - minB;
+    }
+    if (minA !== -1 && minB === -1) return -1;
+    if (minA === -1 && minB !== -1) return 1;
+
+    const orderA = typeof (a as any).displayOrder === 'number' ? (a as any).displayOrder : -1;
+    const orderB = typeof (b as any).displayOrder === 'number' ? (b as any).displayOrder : -1;
+    if (orderA !== -1 && orderB !== -1 && orderA !== orderB) {
+      return orderA - orderB;
+    }
+
+    return (a.id || 0) - (b.id || 0);
+  });
 }
 
 // Convert YYYY.MM.DD or YYYY-MM-DD or Day X to comparable number
@@ -311,24 +362,28 @@ export function compareMagazineItemsChronologically(
   b: MagazineItem,
   timelineMap: Map<string | number, TimelineItem>
 ): number {
-  const tA = a.timelineItemId !== undefined ? timelineMap.get(a.timelineItemId) || timelineMap.get(Number(a.timelineItemId)) : undefined;
-  const tB = b.timelineItemId !== undefined ? timelineMap.get(b.timelineItemId) || timelineMap.get(Number(b.timelineItemId)) : undefined;
+  const tA = a.timelineItemId !== undefined 
+    ? (timelineMap.get(a.timelineItemId) || timelineMap.get(Number(a.timelineItemId)) || timelineMap.get(String(a.timelineItemId))) 
+    : (a.img ? timelineMap.get(a.img.trim().split('?')[0]) : undefined);
+  const tB = b.timelineItemId !== undefined 
+    ? (timelineMap.get(b.timelineItemId) || timelineMap.get(Number(b.timelineItemId)) || timelineMap.get(String(b.timelineItemId))) 
+    : (b.img ? timelineMap.get(b.img.trim().split('?')[0]) : undefined);
 
-  const dateA = (tA?.date || a.date || '').trim();
-  const dateB = (tB?.date || b.date || '').trim();
+  const dateA = normalizeDateStr(tA?.date || a.date);
+  const dateB = normalizeDateStr(tB?.date || b.date);
   if (dateA && dateB && dateA !== dateB) {
     return dateA.localeCompare(dateB);
   }
   if (dateA && !dateB) return -1;
   if (!dateA && dateB) return 1;
 
-  const timeA = (tA?.time || (tA as any)?.startTime || '').trim();
-  const timeB = (tB?.time || (tB as any)?.startTime || '').trim();
-  if (timeA && timeB && timeA !== timeB) {
-    return timeA.localeCompare(timeB);
+  const minA = parseTimeToMinutes(tA?.time || (tA as any)?.startTime);
+  const minB = parseTimeToMinutes(tB?.time || (tB as any)?.startTime);
+  if (minA !== -1 && minB !== -1 && minA !== minB) {
+    return minA - minB;
   }
-  if (timeA && !timeB) return -1;
-  if (!timeA && timeB) return 1;
+  if (minA !== -1 && minB === -1) return -1;
+  if (minA === -1 && minB !== -1) return 1;
 
   const orderA = typeof (tA as any)?.displayOrder === 'number' ? (tA as any).displayOrder : -1;
   const orderB = typeof (tB as any)?.displayOrder === 'number' ? (tB as any).displayOrder : -1;
@@ -343,5 +398,249 @@ export function compareMagazineItemsChronologically(
   }
 
   return (a.order ?? 0) - (b.order ?? 0);
+}
+
+/**
+ * Synchronizes magazine section items with a trip's timeline items:
+ * 1. Matches existing cards (by timelineItemId, image URL, or date+place) and updates placeName, title, date, img
+ * 2. Detects newly added timeline items with images
+ * 3. Integrates new items and sorts all items according to the timeline's strict chronological sequence
+ * 4. Balances layout types (computeEditorialLayoutTypes) if items were added
+ */
+export function syncSectionItemsWithTimeline(
+  existingItems: MagazineItem[],
+  tripTimelineItems: TimelineItem[],
+  parentTrip?: Trip | Plan
+): {
+  syncedItems: MagazineItem[];
+  changesCount: number;
+  addedCount: number;
+} {
+  const sortedTimeline = getSortedTripTimeline(tripTimelineItems);
+
+  // Map timeline items by ID, string ID, and clean image URL
+  const timelineItemMap = new Map<string | number, TimelineItem>();
+  const timelineIndexMap = new Map<string | number, number>();
+
+  sortedTimeline.forEach((t, idx) => {
+    timelineItemMap.set(t.id, t);
+    timelineItemMap.set(String(t.id), t);
+    timelineIndexMap.set(t.id, idx);
+    timelineIndexMap.set(String(t.id), idx);
+
+    if (t.img) {
+      const cleanImg = t.img.trim().split('?')[0];
+      timelineItemMap.set(cleanImg, t);
+      timelineIndexMap.set(cleanImg, idx);
+    }
+  });
+
+  let changesCount = 0;
+
+  // 1. Update and enrich existing items
+  const updatedExistingItems = existingItems.map(item => {
+    if (item.isTextOnly || !item.img) return item;
+
+    // Resolve matching timeline item
+    let matched: TimelineItem | undefined;
+    if (item.timelineItemId !== undefined) {
+      matched = timelineItemMap.get(item.timelineItemId) || timelineItemMap.get(String(item.timelineItemId));
+    }
+    if (!matched && item.img) {
+      const cleanImg = item.img.trim().split('?')[0];
+      matched = timelineItemMap.get(cleanImg);
+    }
+    if (!matched && item.date && item.title) {
+      const normDate = normalizeDateStr(item.date);
+      const cleanTitle = item.title.trim().toLowerCase();
+      matched = sortedTimeline.find(t => 
+        normalizeDateStr(t.date) === normDate &&
+        t.place && t.place.trim().toLowerCase() === cleanTitle
+      );
+    }
+
+    if (matched) {
+      const resolvedLoc = resolveTimelinePlaceName(matched, sortedTimeline, parentTrip);
+      const newTitle = matched.place?.trim() || item.title;
+      const newDate = matched.date || item.date;
+      const newImg = matched.img || item.img;
+
+      if (
+        item.title !== newTitle ||
+        item.placeName !== resolvedLoc ||
+        item.date !== newDate ||
+        item.img !== newImg ||
+        item.timelineItemId !== matched.id
+      ) {
+        changesCount++;
+        return {
+          ...item,
+          timelineItemId: matched.id,
+          title: newTitle,
+          placeName: resolvedLoc,
+          date: newDate,
+          img: newImg,
+        };
+      }
+    } else {
+      // Fix duplicate title/placeName if present
+      const pName = (item.placeName || '').trim().toLowerCase();
+      const mTitle = (item.title || '').trim().toLowerCase();
+      if (pName && mTitle && pName === mTitle) {
+        const fallbackLoc = parentTrip?.locationStr || (parentTrip?.locations && parentTrip.locations[0]?.name) || parentTrip?.country || 'VISITED PLACE';
+        changesCount++;
+        return {
+          ...item,
+          placeName: fallbackLoc,
+        };
+      }
+    }
+
+    return item;
+  });
+
+  // Track existing image URLs and timeline IDs
+  const existingImages = new Set<string>();
+  const existingTimelineIds = new Set<string | number>();
+
+  updatedExistingItems.forEach(item => {
+    if (item.img) {
+      const clean = item.img.trim();
+      existingImages.add(clean);
+      existingImages.add(clean.split('?')[0]);
+    }
+    if (item.timelineItemId !== undefined) {
+      existingTimelineIds.add(item.timelineItemId);
+      existingTimelineIds.add(String(item.timelineItemId));
+      existingTimelineIds.add(Number(item.timelineItemId));
+    }
+  });
+
+  // 2. Identify newly added timeline items with images
+  let addedCount = 0;
+  const newCandidateItems: MagazineItem[] = [];
+  const tripIdNum = parentTrip ? Number(parentTrip.id) : undefined;
+
+  sortedTimeline.forEach(tItem => {
+    const cleanUrl = (tItem.img || '').trim();
+    if (!cleanUrl) return;
+
+    const baseCleanUrl = cleanUrl.split('?')[0];
+    const isImageSeen = existingImages.has(cleanUrl) || existingImages.has(baseCleanUrl);
+    const isIdSeen = tItem.id !== undefined && (
+      existingTimelineIds.has(tItem.id) || 
+      existingTimelineIds.has(String(tItem.id)) || 
+      existingTimelineIds.has(Number(tItem.id))
+    );
+
+    if (!isImageSeen && !isIdSeen) {
+      existingImages.add(cleanUrl);
+      existingImages.add(baseCleanUrl);
+      if (tItem.id !== undefined) {
+        existingTimelineIds.add(tItem.id);
+        existingTimelineIds.add(String(tItem.id));
+        existingTimelineIds.add(Number(tItem.id));
+      }
+
+      const pName = (tItem.place || '').trim();
+      const jTitle = parentTrip ? parentTrip.title.replace(/\s*\(Plan\)$/i, '') : '';
+      const displayTitle = pName || jTitle || 'MOMENT';
+      const itemDate = (tItem.date || parentTrip?.date || '').trim();
+      const resolvedLoc = resolveTimelinePlaceName(tItem, sortedTimeline, parentTrip);
+
+      newCandidateItems.push({
+        id: `auto-${tripIdNum || tItem.tripId || 'item'}-${tItem.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        tripId: tripIdNum || tItem.tripId,
+        timelineItemId: tItem.id,
+        title: displayTitle,
+        date: itemDate,
+        placeName: resolvedLoc || pName || parentTrip?.locationStr || '',
+        location: parentTrip?.locationStr || parentTrip?.country || '',
+        caption: (tItem.memo || '').trim(),
+        img: cleanUrl,
+        layoutType: 'portrait',
+        order: 0,
+      });
+      addedCount++;
+    }
+  });
+
+  // 3. Merge existing and newly added items
+  let finalItems = [...updatedExistingItems, ...newCandidateItems];
+
+  // Helper to determine exact sorting index
+  const getSortKey = (card: MagazineItem) => {
+    let matchedT: TimelineItem | undefined;
+    if (card.timelineItemId !== undefined) {
+      matchedT = timelineItemMap.get(card.timelineItemId) || timelineItemMap.get(String(card.timelineItemId));
+    }
+    if (!matchedT && card.img) {
+      matchedT = timelineItemMap.get(card.img.trim().split('?')[0]);
+    }
+
+    const tIdx = matchedT ? timelineIndexMap.get(matchedT.id) : undefined;
+    const dateStr = normalizeDateStr(matchedT?.date || card.date || '');
+    const minutes = parseTimeToMinutes(matchedT?.time || (matchedT as any)?.startTime);
+    const displayOrder = typeof (matchedT as any)?.displayOrder === 'number' ? (matchedT as any).displayOrder : 999999;
+    const id = matchedT ? Number(matchedT.id) : 999999;
+    const fallbackOrder = typeof card.order === 'number' ? card.order : 999999;
+
+    return { tIdx, dateStr, minutes, displayOrder, id, fallbackOrder };
+  };
+
+  // 4. Sort all items in strict timeline sequence
+  finalItems.sort((a, b) => {
+    const keyA = getSortKey(a);
+    const keyB = getSortKey(b);
+
+    // If both items correspond to timeline items in the sorted timeline, follow that exact order!
+    if (keyA.tIdx !== undefined && keyB.tIdx !== undefined) {
+      return keyA.tIdx - keyB.tIdx;
+    }
+
+    // Otherwise, chronological comparison
+    if (keyA.dateStr && keyB.dateStr && keyA.dateStr !== keyB.dateStr) {
+      return keyA.dateStr.localeCompare(keyB.dateStr);
+    }
+    if (keyA.dateStr && !keyB.dateStr) return -1;
+    if (!keyA.dateStr && keyB.dateStr) return 1;
+
+    if (keyA.minutes !== -1 && keyB.minutes !== -1 && keyA.minutes !== keyB.minutes) {
+      return keyA.minutes - keyB.minutes;
+    }
+    if (keyA.minutes !== -1 && keyB.minutes === -1) return -1;
+    if (keyA.minutes === -1 && keyB.minutes !== -1) return 1;
+
+    if (keyA.displayOrder !== keyB.displayOrder) {
+      return keyA.displayOrder - keyB.displayOrder;
+    }
+
+    if (keyA.id !== keyB.id) {
+      return keyA.id - keyB.id;
+    }
+
+    return keyA.fallbackOrder - keyB.fallbackOrder;
+  });
+
+  // 5. If new items were added, recalculate balanced editorial row layouts
+  if (addedCount > 0) {
+    const balancedLayouts = computeEditorialLayoutTypes(finalItems.length);
+    finalItems = finalItems.map((item, idx) => ({
+      ...item,
+      order: idx,
+      layoutType: item.isTextOnly ? item.layoutType : (balancedLayouts[idx] || item.layoutType || 'portrait'),
+    }));
+  } else {
+    finalItems = finalItems.map((item, idx) => ({
+      ...item,
+      order: idx,
+    }));
+  }
+
+  return {
+    syncedItems: finalItems,
+    changesCount,
+    addedCount,
+  };
 }
 

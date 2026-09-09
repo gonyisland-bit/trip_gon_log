@@ -54,7 +54,8 @@ import {
   resolveTimelinePlaceName, 
   buildDefaultMagazineSections,
   computeEditorialLayoutTypes,
-  compareMagazineItemsChronologically
+  compareMagazineItemsChronologically,
+  syncSectionItemsWithTimeline
 } from '../utils/magazineHelper';
 
 interface ManageHubPageProps {
@@ -2531,11 +2532,16 @@ export function ManageHubPage({
     try {
       pushMagazineSnapshot();
 
-      // Gather all timeline items across all dates + gallery photos
+      // Gather all timeline items across all dates with dateKey preserved + gallery photos
       const allTimelineItems: TimelineItem[] = [];
-      Object.values(timelineData || {}).forEach(dayItems => {
+      Object.entries(timelineData || {}).forEach(([dateKey, dayItems]) => {
         if (Array.isArray(dayItems)) {
-          allTimelineItems.push(...dayItems);
+          dayItems.forEach(item => {
+            allTimelineItems.push({
+              ...item,
+              date: item.date || dateKey,
+            });
+          });
         }
       });
 
@@ -2570,180 +2576,27 @@ export function ManageHubPage({
         currentMagSection.id.startsWith('section-') ? Number(currentMagSection.id.split('-')[1]) : undefined
       ) || currentMagSection.items?.find(i => i.tripId)?.tripId;
 
-      let changesCount = 0;
-      const updatedExistingItems = (currentMagSection.items || []).map(item => {
-        if (item.isTextOnly || !item.img) return item;
+      const targetTrip = linkedTripId !== undefined 
+        ? localJourneys.find(j => Number(j.id) === Number(linkedTripId))
+        : undefined;
 
-        // Strict 1:1 match by timelineItemId, exact image URL, or trip+date+title smart match
-        let matched: TimelineItem | undefined;
-        if (item.timelineItemId !== undefined) {
-          matched = allTimelineItems.find(t => 
-            Number(t.id) === Number(item.timelineItemId) || 
-            String(t.id) === String(item.timelineItemId)
-          );
-        }
-        if (!matched && item.img) {
-          const cleanImg = item.img.split('?')[0];
-          matched = allTimelineItems.find(t => t.img && (t.img === item.img || t.img.split('?')[0] === cleanImg));
-        }
-        if (!matched && item.tripId && item.date && item.title) {
-          const cleanTitle = item.title.trim().toLowerCase();
-          matched = allTimelineItems.find(t =>
-            Number(t.tripId) === Number(item.tripId) &&
-            t.date === item.date &&
-            t.place && t.place.trim().toLowerCase() === cleanTitle
-          );
-        }
+      const candidateTimeline = linkedTripId !== undefined
+        ? allTimelineItems.filter(t => Number(t.tripId) === Number(linkedTripId))
+        : allTimelineItems;
 
-        if (matched) {
-          const parentTrip = trips.find(t => t.id === matched?.tripId) || plans.find(p => p.id === matched?.tripId);
-          const tripTimeline = allTimelineItems.filter(t => t.tripId === matched?.tripId);
-          const resolvedLoc = resolveTimelinePlaceName(matched, tripTimeline, parentTrip);
-          const newTitle = matched.place?.trim() || item.title;
-          const newDate = matched.date || item.date;
-          const newImg = matched.img || item.img;
-
-          if (
-            item.title !== newTitle ||
-            item.placeName !== resolvedLoc ||
-            item.date !== newDate ||
-            item.img !== newImg ||
-            item.timelineItemId !== matched.id
-          ) {
-            changesCount++;
-            return {
-              ...item,
-              timelineItemId: matched.id,
-              title: newTitle,
-              placeName: resolvedLoc,
-              date: newDate,
-              img: newImg,
-            };
-          }
-        } else {
-          // If title and placeName are identical, fix duplicate placeName
-          const pName = (item.placeName || '').trim().toLowerCase();
-          const mTitle = (item.title || '').trim().toLowerCase();
-          if (pName && mTitle && pName === mTitle) {
-            const parentTrip = trips.find(t => t.id === item.tripId) || plans.find(p => p.id === item.tripId);
-            const fallbackLoc = parentTrip?.locationStr || (parentTrip?.locations && parentTrip.locations[0]?.name) || parentTrip?.country || 'VISITED PLACE';
-            changesCount++;
-            return {
-              ...item,
-              placeName: fallbackLoc,
-            };
-          }
-        }
-
-        return item;
-      });
-
-      let addedCount = 0;
-      let finalItems = [...updatedExistingItems];
-
-      // 2. If this section is linked to a specific journey, sync newly added timeline items
-      if (linkedTripId !== undefined) {
-        const targetTrip = localJourneys.find(j => Number(j.id) === Number(linkedTripId));
-        const tripTimelineItems = allTimelineItems.filter(t => Number(t.tripId) === Number(linkedTripId));
-
-        // Create timeline map for fast ID lookup
-        const timelineMap = new Map<string | number, TimelineItem>();
-        allTimelineItems.forEach(t => {
-          timelineMap.set(t.id, t);
-          timelineMap.set(Number(t.id), t);
-        });
-
-        // Track existing images and timeline item IDs to prevent duplicate insertion
-        const existingImages = new Set<string>();
-        const existingTimelineIds = new Set<string | number>();
-
-        finalItems.forEach(item => {
-          if (item.img) {
-            const clean = item.img.trim();
-            existingImages.add(clean);
-            existingImages.add(clean.split('?')[0]);
-          }
-          if (item.timelineItemId !== undefined) {
-            existingTimelineIds.add(item.timelineItemId);
-            existingTimelineIds.add(Number(item.timelineItemId));
-          }
-        });
-
-        // Find candidate timeline items from target trip with photos not yet in section
-        const newCandidateItems: MagazineItem[] = [];
-        tripTimelineItems.forEach(tItem => {
-          const cleanUrl = (tItem.img || '').trim();
-          if (!cleanUrl) return;
-
-          const baseCleanUrl = cleanUrl.split('?')[0];
-          const isImageSeen = existingImages.has(cleanUrl) || existingImages.has(baseCleanUrl);
-          const isIdSeen = tItem.id !== undefined && (existingTimelineIds.has(tItem.id) || existingTimelineIds.has(Number(tItem.id)));
-
-          if (!isImageSeen && !isIdSeen) {
-            existingImages.add(cleanUrl);
-            existingImages.add(baseCleanUrl);
-            if (tItem.id !== undefined) {
-              existingTimelineIds.add(tItem.id);
-              existingTimelineIds.add(Number(tItem.id));
-            }
-
-            const pName = (tItem.place || '').trim();
-            const jTitle = targetTrip ? targetTrip.title.replace(/\s*\(Plan\)$/i, '') : '';
-            const displayTitle = pName || jTitle || 'MOMENT';
-            const itemDate = (tItem.date || targetTrip?.date || '').trim();
-            const resolvedLoc = resolveTimelinePlaceName(tItem, tripTimelineItems, targetTrip);
-
-            newCandidateItems.push({
-              id: `auto-${linkedTripId}-${tItem.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-              tripId: Number(linkedTripId),
-              timelineItemId: tItem.id,
-              title: displayTitle,
-              date: itemDate,
-              placeName: resolvedLoc || pName || targetTrip?.locationStr || '',
-              location: targetTrip?.locationStr || targetTrip?.country || '',
-              caption: (tItem.memo || '').trim(),
-              img: cleanUrl,
-              layoutType: 'portrait',
-              order: 0,
-            });
-            addedCount++;
-          }
-        });
-
-        if (newCandidateItems.length > 0) {
-          finalItems = [...finalItems, ...newCandidateItems];
-        }
-
-        // 3. Sort all items chronologically according to the journey's timeline order (date -> time -> order -> id)
-        finalItems.sort((a, b) => compareMagazineItemsChronologically(a, b, timelineMap));
-
-        // 4. If new items were added, balance editorial row layout types
-        if (addedCount > 0) {
-          const balancedLayouts = computeEditorialLayoutTypes(finalItems.length);
-          finalItems = finalItems.map((item, idx) => ({
-            ...item,
-            order: idx,
-            layoutType: item.isTextOnly ? item.layoutType : (balancedLayouts[idx] || item.layoutType || 'portrait'),
-          }));
-        } else {
-          finalItems = finalItems.map((item, idx) => ({
-            ...item,
-            order: idx,
-          }));
-        }
-      } else {
-        finalItems = finalItems.map((item, idx) => ({
-          ...item,
-          order: idx,
-        }));
-      }
+      // 2. Run robust chronological synchronization
+      const { syncedItems, changesCount, addedCount } = syncSectionItemsWithTimeline(
+        currentMagSection.items || [],
+        candidateTimeline,
+        targetTrip
+      );
 
       const updatedSections = sectionsList.map(s => {
         if (s.id === currentMagSection.id) {
           return { 
             ...s, 
             heroTripId: s.heroTripId || (linkedTripId ? Number(linkedTripId) : undefined),
-            items: finalItems 
+            items: syncedItems 
           };
         }
         return s;
