@@ -1096,6 +1096,10 @@ export function ArchiveHubPage({
                       );
                       const isWide = cardViewMode === 'wide';
 
+                      const [dateRangeOnly, durationBadge] = line2DateDays.includes(',') 
+                        ? line2DateDays.split(',').map(s => s.trim()) 
+                        : [line2DateDays, ''];
+
                       return (
                         <article
                           key={trip.id}
@@ -1109,43 +1113,54 @@ export function ArchiveHubPage({
                           onDrop={handleTripDrop}
                           onDragEnd={() => setDraggedTripId(null)}
                         >
-                          {/* 1. 사진 위 1번줄: 년도, 월 볼드 큰 크기 (와이드 뷰에서는 더 웅장하게 확대) */}
-                          <div className="mb-2.5 flex items-baseline justify-between min-w-0">
-                            <div className={`font-['Inter',sans-serif] font-black ${isWide ? 'text-2xl sm:text-3xl md:text-4xl' : 'text-xl sm:text-2xl md:text-[26px]'} tracking-tight text-black dark:text-white leading-none`}>
-                              {topYearMonth}
-                            </div>
-                            {isPlan && (
-                              <span className="text-[9.5px] font-['Inter',sans-serif] font-bold text-red-500 dark:text-red-400 tracking-wider">
-                                PLAN
+                          {/* 1. Swiss Archive Index: Top Micro Header (Date/Month Badge + Country/City + Plan Tag) */}
+                          <div className="mb-2 flex items-baseline justify-between min-w-0 font-mono text-black dark:text-white">
+                            <div className="flex items-center gap-1.5">
+                              <span className={`font-black tracking-tight ${isWide ? 'text-lg sm:text-xl md:text-2xl' : 'text-sm sm:text-base md:text-lg'} leading-none text-black dark:text-white`}>
+                                [ {topYearMonth} ]
                               </span>
-                            )}
+                            </div>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-[10px] sm:text-[11px] font-bold tracking-wider text-black/50 dark:text-white/50 uppercase truncate max-w-[120px] sm:max-w-[180px]">
+                                {line3CountryCity}
+                              </span>
+                              {isPlan && (
+                                <span className="text-[9px] font-mono font-black text-red-600 dark:text-red-400 border border-red-600/40 dark:border-red-400/40 px-1 py-0.2 tracking-wider shrink-0">
+                                  PLAN
+                                </span>
+                              )}
+                            </div>
                           </div>
 
-                          {/* 2. 사진 중간: 그리드는 1:1 정방형 SNS 사진, 와이드 뷰는 4:3 시원한 가로형 사진 */}
-                          <div className={`relative ${isWide ? 'aspect-[4/3]' : 'aspect-square'} w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm`}>
+                          {/* 2. Photo Frame: 1:1 Square (Grid) or 4:3 (Wide) with Subtle Border & Duration Badge */}
+                          <div className={`relative ${isWide ? 'aspect-[4/3]' : 'aspect-square'} w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15 rounded-xs shadow-xs group-hover:shadow-md transition-all duration-300`}>
                             <CardMedia
                               img={trip.img}
                               title={trip.title}
                               videoUrl={trip.videoUrl}
                               isActive={isCardActive}
                             />
+                            {durationBadge && (
+                              <div className="absolute bottom-2 right-2 bg-black/70 dark:bg-white/80 backdrop-blur-xs text-white dark:text-black font-mono text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 tracking-wider uppercase">
+                                {durationBadge}
+                              </div>
+                            )}
                           </div>
 
-                          {/* 3. 사진 하단 텍스트: 검정 색상 통일 (와이드 뷰에서는 비례 확대) */}
-                          <div className={`mt-3 flex flex-col ${isWide ? 'gap-1.5' : 'gap-1'} text-black dark:text-white`}>
-                            {/* 사진 아래 1번줄: 제목 (넘버제외) 볼드 글씨 */}
-                            <h3 className={`font-['Noto_Sans_KR','Inter',sans-serif] font-bold ${isWide ? 'text-lg sm:text-xl md:text-2xl' : 'text-base sm:text-lg md:text-[19px]'} leading-snug tracking-tight text-black dark:text-white line-clamp-2 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors`}>
+                          {/* 3. Swiss Archive Meta beneath Photo */}
+                          <div className="mt-2.5 flex flex-col text-black dark:text-white">
+                            {/* Main Title (Snug, bold, line-clamp-1) */}
+                            <h3 className={`font-satoshi font-black ${isWide ? 'text-lg sm:text-xl md:text-2xl' : 'text-base sm:text-lg md:text-[19px]'} leading-snug tracking-tight text-black dark:text-white line-clamp-1 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors`}>
                               {trip.title}
                             </h3>
 
-                            {/* 사진 아래 2번줄: 날짜, 기간 (08.13-08.15, 4 DAYS) */}
-                            <div className={`${isWide ? 'text-xs sm:text-sm md:text-[15px]' : 'text-xs sm:text-[13px]'} font-['Inter',sans-serif] font-medium text-black dark:text-white tracking-wide`}>
-                              {line2DateDays}
-                            </div>
-
-                            {/* 사진 아래 3번줄: 나라명, 도시 (나라명 영문 대문자 통일) */}
-                            <div className={`${isWide ? 'text-xs sm:text-sm md:text-[15px]' : 'text-xs sm:text-[13px]'} font-['Noto_Sans_KR','Inter',sans-serif] font-medium text-black dark:text-white truncate`}>
-                              {line3CountryCity}
+                            {/* Dual Column Rule: Date on Left, LOG -> on Right */}
+                            <div className="pt-1.5 mt-1 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-[11px] sm:text-xs font-mono text-black/60 dark:text-white/60 tracking-wider">
+                              <span>{dateRangeOnly || trip.date}</span>
+                              <span className="font-bold text-black dark:text-white uppercase group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors flex items-center gap-1 group-hover:translate-x-0.5">
+                                <span>LOG</span>
+                                <span className="text-[10px]">→</span>
+                              </span>
                             </div>
                           </div>
                         </article>

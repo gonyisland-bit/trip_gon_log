@@ -206,8 +206,7 @@ function App() {
   });
   const [heroAutoSlide, setHeroAutoSlide] = useState<boolean>(true);
   const [marqueeShow, setMarqueeShow] = useState<boolean>(() => {
-    const saved = localStorage.getItem('marqueeShow');
-    return saved !== null ? saved === 'true' : true;
+    return localStorage.getItem('marqueeShow') === 'true';
   });
   const [marqueeMessage, setMarqueeMessage] = useState<string>("🎉 WELCOME TO TRIPGON LOG! PLAN YOUR JOURNEY OR EXPLORE ARCHIVED LOGS.");
   const [marqueeSpeed, setMarqueeSpeed] = useState<number>(30);
@@ -618,9 +617,18 @@ function App() {
         if (Array.isArray(data.heroJourneyIds)) setHeroJourneyIds(data.heroJourneyIds);
         if (data.heroAutoSlide !== undefined) setHeroAutoSlide(data.heroAutoSlide);
         if (data.heroMediaType !== undefined) setHeroMediaType(data.heroMediaType);
-        if (data.marqueeShow !== undefined) setMarqueeShow(data.marqueeShow);
-        if (data.marqueeMessage !== undefined) setMarqueeMessage(data.marqueeMessage);
-        if (data.marqueeSpeed !== undefined) setMarqueeSpeed(data.marqueeSpeed);
+        if (data.marqueeShow !== undefined) {
+          setMarqueeShow(data.marqueeShow);
+          localStorage.setItem('marqueeShow', String(data.marqueeShow));
+        }
+        if (data.marqueeMessage !== undefined) {
+          setMarqueeMessage(data.marqueeMessage);
+          localStorage.setItem('marqueeMessage', data.marqueeMessage);
+        }
+        if (data.marqueeSpeed !== undefined) {
+          setMarqueeSpeed(data.marqueeSpeed);
+          localStorage.setItem('marqueeSpeed', String(data.marqueeSpeed));
+        }
         if (data.heroSlideDuration !== undefined) {
           setHeroSlideDuration(data.heroSlideDuration);
           localStorage.setItem('hero_slide_duration', String(data.heroSlideDuration));
@@ -1241,9 +1249,18 @@ function App() {
       setHeroJourneyIds(heroIds);
       if (autoSlide !== undefined) setHeroAutoSlide(autoSlide);
       if (heroMediaTypeParam !== undefined) setHeroMediaType(heroMediaTypeParam);
-      if (showMarquee !== undefined) setMarqueeShow(showMarquee);
-      if (marqueeMsg !== undefined) setMarqueeMessage(marqueeMsg);
-      if (marqueeSpd !== undefined) setMarqueeSpeed(marqueeSpd);
+      if (showMarquee !== undefined) {
+        setMarqueeShow(showMarquee);
+        localStorage.setItem('marqueeShow', String(showMarquee));
+      }
+      if (marqueeMsg !== undefined) {
+        setMarqueeMessage(marqueeMsg);
+        localStorage.setItem('marqueeMessage', marqueeMsg);
+      }
+      if (marqueeSpd !== undefined) {
+        setMarqueeSpeed(marqueeSpd);
+        localStorage.setItem('marqueeSpeed', String(marqueeSpd));
+      }
       if (heroSlideDurationParam !== undefined) {
         setHeroSlideDuration(heroSlideDurationParam);
         localStorage.setItem('hero_slide_duration', String(heroSlideDurationParam));
@@ -2058,11 +2075,19 @@ function App() {
           isHomeGradientActive={isHomeGradientActive}
         />
 
-        {/* Marquee Banner - Only on Home View */}
+        {/* Marquee Banner - Only on Home View (Swiss Minimal Journal Ticker) */}
         {currentView === 'home' && marqueeShow && (
-          <div className="w-full bg-black text-white dark:bg-white dark:text-black border-b border-black dark:border-white py-2 overflow-hidden flex items-center shrink-0 transition-colors duration-300 select-none">
+          <div className="w-full bg-black/[0.025] dark:bg-white/[0.035] border-y border-black/10 dark:border-white/10 backdrop-blur-xs py-1.5 overflow-hidden flex items-center shrink-0 transition-colors duration-300 select-none text-black dark:text-white">
+            {/* Fixed Left Ticker Badge */}
+            <div className="flex items-center gap-1.5 px-3 sm:px-4 py-0.5 border-r border-black/10 dark:border-white/10 shrink-0 z-10 bg-[#FBFBFA]/90 dark:bg-[#121212]/90 backdrop-blur-xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-500 animate-pulse" />
+              <span className="font-mono text-[9.5px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-red-600 dark:text-red-400">
+                DISPATCH
+              </span>
+            </div>
+
             <div 
-              className="animate-marquee hover:[animation-play-state:paused] text-xs md:text-sm font-mono font-black tracking-widest uppercase flex items-center" 
+              className="animate-marquee hover:[animation-play-state:paused] text-xs sm:text-[12.5px] font-mono font-bold tracking-wider uppercase flex items-center" 
               style={{ '--marquee-speed': `${(marqueeSpeed / 1.5) * 1.43 * 2}s` } as React.CSSProperties}
             >
               {marqueeTrips.length > 0 ? (
@@ -2073,13 +2098,13 @@ function App() {
                         <button
                           type="button"
                           onClick={() => navigateTo('detail', t.id)}
-                          className="hover:text-amber-400 dark:hover:text-amber-600 transition-all cursor-pointer font-black px-2 py-0.5 rounded hover:bg-white/10 dark:hover:bg-black/10 active:scale-95 inline-flex items-center gap-1.5"
+                          className="hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer font-bold px-2 py-0.5 rounded-none active:scale-95 inline-flex items-center gap-1.5"
                           title={`${t.title} 바로가기`}
                         >
-                          <span>{t.title.toUpperCase()}</span>
-                          {t.date && <span className="opacity-50 text-[10px] font-mono">({t.date.split('.')[0] || t.date.slice(0, 4)})</span>}
+                          <span className="text-black dark:text-white hover:text-red-600 dark:hover:text-red-400 transition-colors">{t.title.toUpperCase()}</span>
+                          {t.date && <span className="opacity-45 text-[10px] font-mono font-medium">({t.date.split('.')[0] || t.date.slice(0, 4)})</span>}
                         </button>
-                        <span className="text-amber-500 font-bold mx-3 text-xs">✦</span>
+                        <span className="text-red-600 dark:text-red-400 font-bold mx-3 text-xs opacity-60">/</span>
                       </span>
                     ))}
                   </div>
@@ -2089,21 +2114,23 @@ function App() {
                         <button
                           type="button"
                           onClick={() => navigateTo('detail', t.id)}
-                          className="hover:text-amber-400 dark:hover:text-amber-600 transition-all cursor-pointer font-black px-2 py-0.5 rounded hover:bg-white/10 dark:hover:bg-black/10 active:scale-95 inline-flex items-center gap-1.5"
+                          className="hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer font-bold px-2 py-0.5 rounded-none active:scale-95 inline-flex items-center gap-1.5"
                           title={`${t.title} 바로가기`}
                         >
-                          <span>{t.title.toUpperCase()}</span>
-                          {t.date && <span className="opacity-50 text-[10px] font-mono">({t.date.split('.')[0] || t.date.slice(0, 4)})</span>}
+                          <span className="text-black dark:text-white hover:text-red-600 dark:hover:text-red-400 transition-colors">{t.title.toUpperCase()}</span>
+                          {t.date && <span className="opacity-45 text-[10px] font-mono font-medium">({t.date.split('.')[0] || t.date.slice(0, 4)})</span>}
                         </button>
-                        <span className="text-amber-500 font-bold mx-3 text-xs">✦</span>
+                        <span className="text-red-600 dark:text-red-400 font-bold mx-3 text-xs opacity-60">/</span>
                       </span>
                     ))}
                   </div>
                 </>
               ) : (
                 <>
-                  <span>{displayMarqueeText}</span>
-                  <span>{displayMarqueeText}</span>
+                  <span className="px-4 text-black/70 dark:text-white/70">{displayMarqueeText}</span>
+                  <span className="text-red-600 dark:text-red-400 font-bold mx-3 text-xs opacity-60">/</span>
+                  <span className="px-4 text-black/70 dark:text-white/70">{displayMarqueeText}</span>
+                  <span className="text-red-600 dark:text-red-400 font-bold mx-3 text-xs opacity-60">/</span>
                 </>
               )}
             </div>
