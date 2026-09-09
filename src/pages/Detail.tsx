@@ -647,7 +647,9 @@ function PlaceAutocompleteInput({
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const capturedVal = e.target.value;
-    if (capturedVal) lastTypedValRef.current = capturedVal;
+    if (capturedVal && capturedVal.length >= (lastTypedValRef.current?.length || 0)) {
+      lastTypedValRef.current = capturedVal;
+    }
     // Delay the blur action slightly to allow the place_changed listener to run first
     setTimeout(() => {
       isFocusedRef.current = false;
@@ -674,6 +676,10 @@ function PlaceAutocompleteInput({
           onFocus={handleFocus}
           onChange={(e) => {
             lastTypedValRef.current = e.target.value;
+          }}
+          onCompositionUpdate={(e) => {
+            const val = (e.target as HTMLInputElement).value;
+            if (val) lastTypedValRef.current = val;
           }}
           onCompositionEnd={(e) => {
             const val = (e.target as HTMLInputElement).value;
@@ -5613,6 +5619,11 @@ function JourneyTitleInput({ initialTitle, onUpdateTitle }: JourneyTitleInputPro
     lastTypedValRef.current = e.target.value;
   };
 
+  const handleCompositionUpdate = (e: React.CompositionEvent<HTMLInputElement>) => {
+    const val = (e.target as HTMLInputElement).value;
+    if (val) lastTypedValRef.current = val;
+  };
+
   const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
     const val = (e.target as HTMLInputElement).value;
     lastTypedValRef.current = val;
@@ -5621,14 +5632,17 @@ function JourneyTitleInput({ initialTitle, onUpdateTitle }: JourneyTitleInputPro
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const capturedVal = e.target.value;
-    if (capturedVal) lastTypedValRef.current = capturedVal;
+    if (capturedVal && capturedVal.length >= (lastTypedValRef.current?.length || 0)) {
+      lastTypedValRef.current = capturedVal;
+    }
+    const domVal = inputRef.current ? inputRef.current.value : capturedVal;
+    const fallbackVal = lastTypedValRef.current;
+    const bestVal = (fallbackVal && fallbackVal.length >= domVal.length) ? fallbackVal : domVal;
+    commitTitle(bestVal);
+
     if (blurTimerRef.current) clearTimeout(blurTimerRef.current);
     blurTimerRef.current = setTimeout(() => {
       isFocusedRef.current = false;
-      const domVal = inputRef.current ? inputRef.current.value : '';
-      const fallbackVal = lastTypedValRef.current;
-      const bestVal = (fallbackVal && fallbackVal.length >= domVal.length) ? fallbackVal : domVal;
-      commitTitle(bestVal);
     }, 50);
   };
 
@@ -5669,6 +5683,7 @@ function JourneyTitleInput({ initialTitle, onUpdateTitle }: JourneyTitleInputPro
         isFocusedRef.current = true; 
       }}
       onChange={handleInput}
+      onCompositionUpdate={handleCompositionUpdate}
       onCompositionEnd={handleCompositionEnd}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
@@ -5734,6 +5749,14 @@ function TimelineItemPlaceInput({
     setFilterVal(val);
   };
 
+  const handleCompositionUpdate = (e: React.CompositionEvent<HTMLInputElement>) => {
+    const val = (e.target as HTMLInputElement).value;
+    if (val) {
+      lastTypedValRef.current = val;
+      setFilterVal(val);
+    }
+  };
+
   const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
     const val = (e.target as HTMLInputElement).value;
     lastTypedValRef.current = val;
@@ -5749,16 +5772,19 @@ function TimelineItemPlaceInput({
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const capturedVal = e.target.value;
-    if (capturedVal) lastTypedValRef.current = capturedVal;
+    if (capturedVal && capturedVal.length >= (lastTypedValRef.current?.length || 0)) {
+      lastTypedValRef.current = capturedVal;
+    }
+    const domVal = inputRef.current ? inputRef.current.value : capturedVal;
+    const fallbackVal = lastTypedValRef.current;
+    const finalVal = (fallbackVal && fallbackVal.length >= domVal.length) ? fallbackVal : domVal;
+    commitValue(finalVal);
+
     if (blurTimerRef.current) clearTimeout(blurTimerRef.current);
     blurTimerRef.current = setTimeout(() => {
       isFocusedRef.current = false;
-      const domVal = inputRef.current ? inputRef.current.value : '';
-      const fallbackVal = lastTypedValRef.current;
-      const finalVal = (fallbackVal && fallbackVal.length >= domVal.length) ? fallbackVal : domVal;
-      commitValue(finalVal);
       setShowDropdown(false);
-    }, 50);
+    }, 150);
   };
 
   // Ensure place value commit when window loses focus (e.g. clicking outside browser window, Chrome split view tab switch)
@@ -5812,6 +5838,7 @@ function TimelineItemPlaceInput({
           type="text"
           defaultValue={initialValue || ''}
           onChange={handleInput}
+          onCompositionUpdate={handleCompositionUpdate}
           onCompositionEnd={handleCompositionEnd}
           onFocus={handleFocus}
           onBlur={handleBlur}

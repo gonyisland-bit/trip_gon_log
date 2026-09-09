@@ -100,10 +100,7 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
     return localStorage.getItem('isLoggedIn') === 'true' || Boolean(auth.currentUser);
   });
-  const [isAuthReady, setIsAuthReady] = useState<boolean>(() => {
-    // Optimistic initial auth readiness: if login flag or cached trips exist, render immediately
-    return localStorage.getItem('isLoggedIn') === 'true' || Boolean(localStorage.getItem('cached_trips'));
-  });
+  const [isAuthReady, setIsAuthReady] = useState<boolean>(true);
   const [adminEmails, setAdminEmails] = useState<string[]>(ADMIN_EMAILS);
   const [magazineMoments, setMagazineMoments] = useState<MagazineMoment[]>(() => {
     try {
@@ -156,7 +153,14 @@ function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [isShareMode, setIsShareMode] = useState<boolean>(false);
-  const [showSplash, setShowSplash] = useState<boolean>(true);
+  const [showSplash, setShowSplash] = useState<boolean>(() => {
+    try {
+      if (sessionStorage.getItem('splash_shown')) {
+        return false;
+      }
+    } catch (_) {}
+    return true;
+  });
   const [fadeSplash, setFadeSplash] = useState<boolean>(false);
   const [isManageModalOpen, setIsManageModalOpen] = useState<boolean>(false);
   const [createModalType, setCreateModalType] = useState<'archive' | 'plan'>('archive');
@@ -873,8 +877,10 @@ function App() {
         }
       } else {
         const lastView = sessionStorage.getItem('lastView');
-        if (lastView && ['home', 'archive', 'map', 'manage', 'magazine'].includes(lastView)) {
+        if (lastView && ['home', 'archive', 'map', 'manage', 'magazine', 'detail'].includes(lastView)) {
           initialView = lastView;
+          const lastTripId = sessionStorage.getItem('lastTripId');
+          if (lastTripId) initialTripId = Number(lastTripId);
         }
       }
     }
@@ -885,16 +891,30 @@ function App() {
     setCurrentView(initialView);
     window.history.replaceState({ view: initialView, tripId: initialTripId, isShare }, '', window.location.pathname + window.location.search);
 
-    // Splash screen timers
+    try {
+      sessionStorage.setItem('splash_shown', 'true');
+    } catch (_) {}
+
+    // BFCache (pageshow) listener: if restored from browser cache, dismiss splash instantly
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted || sessionStorage.getItem('splash_shown')) {
+        setShowSplash(false);
+        setFadeSplash(true);
+      }
+    };
+    window.addEventListener('pageshow', handlePageShow);
+
+    // Splash screen timers only if splash is currently showing
     const fadeTimer = setTimeout(() => {
       setFadeSplash(true);
-    }, 900);
+    }, 800);
 
     const removeTimer = setTimeout(() => {
       setShowSplash(false);
-    }, 1300);
+    }, 1100);
 
     return () => {
+      window.removeEventListener('pageshow', handlePageShow);
       clearTimeout(fadeTimer);
       clearTimeout(removeTimer);
     };
