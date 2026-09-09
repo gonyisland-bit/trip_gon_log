@@ -12,6 +12,36 @@
     <meta name="pinterest" content="nohover" />
     <title>Tripgon log — Your Personal Travel Magazine</title>
     
+    <!-- Instant Theme & Background to eliminate white flash on browser reconnect -->
+    <script>
+      (function() {
+        try {
+          var isDark = localStorage.getItem('isDarkMode') === 'true';
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (_) {}
+      })();
+    </script>
+    <style>
+      :root {
+        background-color: #FAF9F6;
+        color: #000000;
+      }
+      html.dark {
+        background-color: #141414;
+        color: #ffffff;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #FAF9F6;
+      }
+      html.dark body {
+        background-color: #141414;
+      }
+    </style>
+    
     <!-- Fonts: Inter, Satoshi & Noto Sans KR -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

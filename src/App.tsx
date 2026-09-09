@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import { Navigation } from './components/Navigation';
 import { Footer } from './components/Footer';
 import { HomePage } from './pages/Home';
+import { ArchiveHubPage } from './pages/Archive';
+import { MagazineHubPage } from './pages/MagazineHub';
 import { ScrollToTop } from './components/ScrollToTop';
 
 // Resilient lazy import with automatic retry on chunk loading failure (e.g. browser reconnect or new deploy)
@@ -30,11 +32,9 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
   });
 }
 
-// Lazy loaded non-home pages & modals with auto retry on reconnect
-const ArchiveHubPage = lazyWithRetry(() => import('./pages/Archive').then(m => ({ default: m.ArchiveHubPage })));
+// Lazy loaded secondary pages & modals with auto retry on reconnect
 const MapHubPage = lazyWithRetry(() => import('./pages/MapHub').then(m => ({ default: m.MapHubPage })));
 const ManageHubPage = lazyWithRetry(() => import('./pages/ManageHub').then(m => ({ default: m.ManageHubPage })));
-const MagazineHubPage = lazyWithRetry(() => import('./pages/MagazineHub').then(m => ({ default: m.MagazineHubPage })));
 const JourneyDetailPage = lazyWithRetry(() => import('./pages/Detail').then(m => ({ default: m.JourneyDetailPage })));
 
 const AuthModal = lazyWithRetry(() => import('./components/AuthModal').then(m => ({ default: m.AuthModal })));
@@ -222,15 +222,6 @@ function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [isShareMode, setIsShareMode] = useState<boolean>(() => initialNavState.isShare);
-  const [showSplash, setShowSplash] = useState<boolean>(() => {
-    try {
-      if (localStorage.getItem('has_visited') || sessionStorage.getItem('splash_shown')) {
-        return false;
-      }
-    } catch (_) {}
-    return true;
-  });
-  const [fadeSplash, setFadeSplash] = useState<boolean>(false);
   const [isManageModalOpen, setIsManageModalOpen] = useState<boolean>(false);
   const [createModalType, setCreateModalType] = useState<'archive' | 'plan'>('archive');
   const [createCountryInitial, setCreateCountryInitial] = useState<string>('');
@@ -259,10 +250,34 @@ function App() {
   const [tripsLoaded, setTripsLoaded] = useState<boolean>(false);
   const [plansLoaded, setPlansLoaded] = useState<boolean>(false);
   
-  const [timelineData, setTimelineData] = useState<TimelineData>({});
-  const [flightsByTrip, setFlightsByTrip] = useState<{ [id: number]: FlightItem[] }>({});
-  const [staysByTrip, setStaysByTrip] = useState<{ [id: number]: StayItem[] }>({});
-  const [transitByTrip, setTransitByTrip] = useState<{ [id: number]: TransitItem[] }>({});
+  const [timelineData, setTimelineData] = useState<TimelineData>(() => {
+    try {
+      const cached = localStorage.getItem('cached_timeline');
+      if (cached) return JSON.parse(cached);
+    } catch (_) {}
+    return {};
+  });
+  const [flightsByTrip, setFlightsByTrip] = useState<{ [id: number]: FlightItem[] }>(() => {
+    try {
+      const cached = localStorage.getItem('cached_flights');
+      if (cached) return JSON.parse(cached);
+    } catch (_) {}
+    return {};
+  });
+  const [staysByTrip, setStaysByTrip] = useState<{ [id: number]: StayItem[] }>(() => {
+    try {
+      const cached = localStorage.getItem('cached_stays');
+      if (cached) return JSON.parse(cached);
+    } catch (_) {}
+    return {};
+  });
+  const [transitByTrip, setTransitByTrip] = useState<{ [id: number]: TransitItem[] }>(() => {
+    try {
+      const cached = localStorage.getItem('cached_transits');
+      if (cached) return JSON.parse(cached);
+    } catch (_) {}
+    return {};
+  });
   const [homeTitle, setHomeTitle] = useState("Your Personal Travel Magazine.");
   const [homeSubtitle, setHomeSubtitle] = useState("나만의 감성으로 기록하고 보관하는 여행 아카이브.");
   const [heroJourneyIds, setHeroJourneyIds] = useState<number[]>([]);
@@ -599,6 +614,9 @@ function App() {
       });
       setTimelineData(grouped);
       setDbError(null);
+      try {
+        localStorage.setItem('cached_timeline', JSON.stringify(grouped));
+      } catch (_) {}
     }, (err) => {
       console.error("Timeline snapshot subscription error:", err);
       setDbError(err.message);
@@ -618,6 +636,9 @@ function App() {
       });
       setFlightsByTrip(grouped);
       setDbError(null);
+      try {
+        localStorage.setItem('cached_flights', JSON.stringify(grouped));
+      } catch (_) {}
     }, (err) => {
       console.error("Flights snapshot subscription error:", err);
       setDbError(err.message);
@@ -637,6 +658,9 @@ function App() {
       });
       setStaysByTrip(grouped);
       setDbError(null);
+      try {
+        localStorage.setItem('cached_stays', JSON.stringify(grouped));
+      } catch (_) {}
     }, (err) => {
       console.error("Stays snapshot subscription error:", err);
       setDbError(err.message);
@@ -656,6 +680,9 @@ function App() {
       });
       setTransitByTrip(grouped);
       setDbError(null);
+      try {
+        localStorage.setItem('cached_transits', JSON.stringify(grouped));
+      } catch (_) {}
     }, (err) => {
       console.error("Transit snapshot subscription error:", err);
       setDbError(err.message);
@@ -929,30 +956,6 @@ function App() {
       localStorage.setItem('last_active_time', Date.now().toString());
       sessionStorage.setItem('splash_shown', 'true');
     } catch (_) {}
-
-    // BFCache (pageshow) listener: if restored from browser cache, dismiss splash instantly
-    const handlePageShow = (e: PageTransitionEvent) => {
-      if (e.persisted || localStorage.getItem('has_visited') || sessionStorage.getItem('splash_shown')) {
-        setShowSplash(false);
-        setFadeSplash(true);
-      }
-    };
-    window.addEventListener('pageshow', handlePageShow);
-
-    // Splash screen timers only if splash is currently showing
-    const fadeTimer = setTimeout(() => {
-      setFadeSplash(true);
-    }, 800);
-
-    const removeTimer = setTimeout(() => {
-      setShowSplash(false);
-    }, 1100);
-
-    return () => {
-      window.removeEventListener('pageshow', handlePageShow);
-      clearTimeout(fadeTimer);
-      clearTimeout(removeTimer);
-    };
   }, []);
 
   // Listen to popstate events for browser back/forward navigation
@@ -2600,40 +2603,6 @@ function App() {
         {/* Global Floating Scroll To Top Navigator */}
         {currentView !== 'detail' && currentView !== 'map' && <ScrollToTop />}
       </div>
-
-      {/* Minimal Swiss Editorial Splash Screen */}
-      {showSplash && (
-        <div className={`fixed inset-0 z-[99999] flex flex-col justify-between items-center bg-[#FBFBFA] dark:bg-[#121212] p-8 md:p-14 select-none splash-container ${fadeSplash ? 'splash-container-fade' : 'splash-container-active'}`}>
-          {/* Top Micro Masthead */}
-          <div className="flex items-center gap-2.5 text-[9.5px] sm:text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-black/50 dark:text-white/50">
-            <span>TRIPGON LOG</span>
-            <span className="opacity-30">/</span>
-            <span>AUTONOMOUS JOURNAL</span>
-          </div>
-
-          {/* Center Brand Minimal Typography */}
-          <div className="flex flex-col items-center text-center max-w-xl px-4">
-            <h1 className="text-4xl sm:text-6xl md:text-8xl font-black font-['Inter',sans-serif] tracking-tighter text-black dark:text-white leading-none">
-              Tripgon log
-            </h1>
-            <div className="h-[1px] w-12 bg-black/20 dark:bg-white/20 my-5 sm:my-6" />
-            <p className="text-[10.5px] sm:text-xs font-mono font-medium uppercase tracking-[0.35em] text-black/45 dark:text-white/45">
-              A VISUAL CHRONICLE OF TRAVELS & ARCHIVES
-            </p>
-          </div>
-
-          {/* Bottom Minimal Line & Status */}
-          <div className="flex flex-col items-center gap-3 w-48 sm:w-56">
-            <div className="w-full h-[1.5px] bg-black/10 dark:bg-white/10 overflow-hidden relative rounded-none">
-              <div className="w-full h-full bg-black dark:bg-white splash-progress-bar" />
-            </div>
-            <div className="flex items-center justify-between w-full text-[9px] font-mono text-black/40 dark:text-white/40 uppercase tracking-widest">
-              <span>VOL. 2026</span>
-              <span>SYSTEM READY</span>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
