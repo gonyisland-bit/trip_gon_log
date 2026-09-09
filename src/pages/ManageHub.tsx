@@ -115,6 +115,7 @@ interface ManageHubPageProps {
   onDeleteMagazineSection?: (sectionId: string) => Promise<void>;
   onRestoreMagazineSection?: (sectionId: string) => Promise<void>;
   onPermanentDeleteMagazineSection?: (sectionId: string) => Promise<void>;
+  onBatchPermanentDelete?: (params: { journeyIds: number[]; sectionIds: string[] }) => Promise<void>;
   isLoggedIn: boolean;
   isDarkMode: boolean;
   onDirtyChange?: (isDirty: boolean) => void;
@@ -153,6 +154,7 @@ export function ManageHubPage({
   onDeleteMagazineSection,
   onRestoreMagazineSection,
   onPermanentDeleteMagazineSection,
+  onBatchPermanentDelete,
   isLoggedIn,
   isDarkMode,
   magazineMoments = [],
@@ -508,6 +510,159 @@ export function ManageHubPage({
   useEffect(() => {
     setShowScrollTop(false);
   }, [activeMode]);
+
+  // ── TRASH REPOSITORY STATE & SELECTION ──
+  const [selectedTrashJourneyIds, setSelectedTrashJourneyIds] = useState<number[]>([]);
+  const [selectedTrashSectionIds, setSelectedTrashSectionIds] = useState<string[]>([]);
+  const [isDeletingTrash, setIsDeletingTrash] = useState(false);
+  const [trashDeleteModal, setTrashDeleteModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => Promise<void>;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: async () => {},
+  });
+
+  // Clear selections when activeMode changes
+  useEffect(() => {
+    setSelectedTrashJourneyIds([]);
+    setSelectedTrashSectionIds([]);
+  }, [activeMode]);
+
+  const handleToggleSelectAllTrash = () => {
+    const totalCount = trashedJourneys.length + trashedSections.length;
+    const selectedCount = selectedTrashJourneyIds.length + selectedTrashSectionIds.length;
+    if (selectedCount === totalCount && totalCount > 0) {
+      setSelectedTrashJourneyIds([]);
+      setSelectedTrashSectionIds([]);
+    } else {
+      setSelectedTrashJourneyIds(trashedJourneys.map(j => j.id));
+      setSelectedTrashSectionIds(trashedSections.map(s => s.id));
+    }
+  };
+
+  const handleToggleTrashJourney = (id: number) => {
+    setSelectedTrashJourneyIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleToggleTrashSection = (id: string) => {
+    setSelectedTrashSectionIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const requestPermanentDeleteSingleJourney = (journey: Trip) => {
+    setTrashDeleteModal({
+      isOpen: true,
+      title: 'PERMANENT DELETE',
+      message: `'${journey.title}' 여정을 영구 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`,
+      onConfirm: async () => {
+        try {
+          setIsDeletingTrash(true);
+          await onPermanentDeleteJourney(journey.id);
+          setSelectedTrashJourneyIds(prev => prev.filter(x => x !== journey.id));
+        } finally {
+          setIsDeletingTrash(false);
+        }
+      },
+    });
+  };
+
+  const requestPermanentDeleteSingleSection = (section: TrashedMagazineSection) => {
+    setTrashDeleteModal({
+      isOpen: true,
+      title: 'PERMANENT DELETE',
+      message: `'${section.title}' 매거진 섹션을 영구 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`,
+      onConfirm: async () => {
+        if (!onPermanentDeleteMagazineSection) return;
+        try {
+          setIsDeletingTrash(true);
+          await onPermanentDeleteMagazineSection(section.id);
+          setSelectedTrashSectionIds(prev => prev.filter(x => x !== section.id));
+        } finally {
+          setIsDeletingTrash(false);
+        }
+      },
+    });
+  };
+
+  const requestBatchDeleteSelected = () => {
+    const totalSelected = selectedTrashJourneyIds.length + selectedTrashSectionIds.length;
+    if (totalSelected === 0) return;
+
+    setTrashDeleteModal({
+      isOpen: true,
+      title: 'PERMANENT DELETE',
+      message: `선택한 ${totalSelected}개 항목을 영구 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`,
+      onConfirm: async () => {
+        try {
+          setIsDeletingTrash(true);
+          if (onBatchPermanentDelete) {
+            await onBatchPermanentDelete({
+              journeyIds: selectedTrashJourneyIds,
+              sectionIds: selectedTrashSectionIds,
+            });
+          } else {
+            for (const jId of selectedTrashJourneyIds) {
+              await onPermanentDeleteJourney(jId);
+            }
+            if (onPermanentDeleteMagazineSection) {
+              for (const sId of selectedTrashSectionIds) {
+                await onPermanentDeleteMagazineSection(sId);
+              }
+            }
+          }
+          setSelectedTrashJourneyIds([]);
+          setSelectedTrashSectionIds([]);
+        } finally {
+          setIsDeletingTrash(false);
+        }
+      },
+    });
+  };
+
+  const requestEmptyTrash = () => {
+    const totalCount = trashedJourneys.length + trashedSections.length;
+    if (totalCount === 0) return;
+
+    setTrashDeleteModal({
+      isOpen: true,
+      title: 'EMPTY TRASH',
+      message: `휴지통의 모든 항목(${totalCount}개)을 영구 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`,
+      onConfirm: async () => {
+        try {
+          setIsDeletingTrash(true);
+          const allJourneyIds = trashedJourneys.map(j => j.id);
+          const allSectionIds = trashedSections.map(s => s.id);
+          if (onBatchPermanentDelete) {
+            await onBatchPermanentDelete({
+              journeyIds: allJourneyIds,
+              sectionIds: allSectionIds,
+            });
+          } else {
+            for (const jId of allJourneyIds) {
+              await onPermanentDeleteJourney(jId);
+            }
+            if (onPermanentDeleteMagazineSection) {
+              for (const sId of allSectionIds) {
+                await onPermanentDeleteMagazineSection(sId);
+              }
+            }
+          }
+          setSelectedTrashJourneyIds([]);
+          setSelectedTrashSectionIds([]);
+        } finally {
+          setIsDeletingTrash(false);
+        }
+      },
+    });
+  };
 
   // ── CLEANUP & OPTIMIZER STATE & HANDLERS ──
   interface DiagnosticReport {
@@ -2721,9 +2876,9 @@ export function ManageHubPage({
                 }`}
               >
                 {mode === 'ARCHIVE' ? 'TRIP' : (mode === 'CLEANUP' ? 'OPTIMIZE' : mode)}
-                {mode === 'TRASH' && trashedJourneys.length > 0 && (
-                  <span className="ml-1 text-[9px] font-mono px-1 bg-red-600 text-white">
-                    {trashedJourneys.length}
+                {mode === 'TRASH' && (trashedJourneys.length + trashedSections.length) > 0 && (
+                  <span className="ml-1 text-[9px] font-mono px-1 bg-red-600 text-white font-bold">
+                    {trashedJourneys.length + trashedSections.length}
                   </span>
                 )}
               </button>
@@ -5700,6 +5855,54 @@ export function ManageHubPage({
               </div>
             </div>
 
+            {/* Action Toolbar: Multi-select & Batch Actions */}
+            {(trashedJourneys.length > 0 || trashedSections.length > 0) && (
+              <div className="flex items-center justify-between gap-3 p-3 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] flex-wrap">
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={
+                        selectedTrashJourneyIds.length + selectedTrashSectionIds.length === trashedJourneys.length + trashedSections.length &&
+                        trashedJourneys.length + trashedSections.length > 0
+                      }
+                      onChange={handleToggleSelectAllTrash}
+                      className="w-4 h-4 rounded border-black/30 dark:border-white/30 text-red-600 focus:ring-red-500 cursor-pointer accent-red-600"
+                    />
+                    <span>
+                      전체 선택 ({selectedTrashJourneyIds.length + selectedTrashSectionIds.length} / {trashedJourneys.length + trashedSections.length})
+                    </span>
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* Batch Delete Selected */}
+                  <button
+                    type="button"
+                    onClick={requestBatchDeleteSelected}
+                    disabled={selectedTrashJourneyIds.length + selectedTrashSectionIds.length === 0 || isDeletingTrash}
+                    className="px-3 py-1.5 bg-red-600 text-white text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-700 disabled:opacity-40 disabled:pointer-events-none transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    title="선택된 항목 영구 삭제"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>선택 삭제 ({selectedTrashJourneyIds.length + selectedTrashSectionIds.length})</span>
+                  </button>
+
+                  {/* Empty All Trash */}
+                  <button
+                    type="button"
+                    onClick={requestEmptyTrash}
+                    disabled={trashedJourneys.length + trashedSections.length === 0 || isDeletingTrash}
+                    className="px-3 py-1.5 border border-red-600/40 text-red-600 dark:text-red-400 text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    title="휴지통의 모든 항목을 영구 삭제합니다."
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>휴지통 비우기</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
             {trashedJourneys.length === 0 && trashedSections.length === 0 ? (
               <div className="py-20 text-center flex flex-col items-center justify-center gap-2 text-black/40 dark:text-white/40 font-mono text-xs">
                 <Trash2 className="w-8 h-8 opacity-40 mb-1" />
@@ -5714,66 +5917,83 @@ export function ManageHubPage({
                       MAGAZINE SECTIONS ({trashedSections.length})
                     </span>
                     <div className="flex flex-col gap-2">
-                      {trashedSections.map(section => (
-                        <div
-                          key={section.id}
-                          className="p-3.5 border border-red-500/20 bg-red-500/[0.02] flex items-center justify-between gap-4"
-                        >
-                          <div className="flex items-center gap-3.5 min-w-0">
-                            <div className="w-14 h-14 aspect-square border border-black/15 dark:border-white/15 shrink-0 overflow-hidden bg-black/10 flex items-center justify-center">
-                              {section.heroImg || (section.items && section.items[0]?.img) ? (
-                                <img
-                                  src={getEffectiveImageUrl(section.heroImg || section.items[0]?.img || '')}
-                                  alt={section.title}
-                                  className="w-full h-full object-cover grayscale opacity-75"
-                                />
-                              ) : (
-                                <BookOpen className="w-6 h-6 text-black/40 dark:text-white/40" />
-                              )}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.2 bg-red-600/10 text-red-600 dark:text-red-400">
-                                  MAGAZINE SECTION
-                                </span>
-                                <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
-                                  {section.items?.length || 0} items
-                                </span>
+                      {trashedSections.map(section => {
+                        const isSelected = selectedTrashSectionIds.includes(section.id);
+                        return (
+                          <div
+                            key={section.id}
+                            onClick={() => handleToggleTrashSection(section.id)}
+                            className={`p-3.5 border transition-all flex items-center justify-between gap-4 cursor-pointer ${
+                              isSelected
+                                ? 'border-red-600 bg-red-500/10 shadow-xs'
+                                : 'border-red-500/20 bg-red-500/[0.02] hover:border-red-500/40'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3.5 min-w-0">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleTrashSection(section.id);
+                                }}
+                                className="w-4 h-4 rounded border-black/30 dark:border-white/30 text-red-600 focus:ring-red-500 cursor-pointer accent-red-600 shrink-0"
+                              />
+                              <div className="w-14 h-14 aspect-square border border-black/15 dark:border-white/15 shrink-0 overflow-hidden bg-black/10 flex items-center justify-center">
+                                {section.heroImg || (section.items && section.items[0]?.img) ? (
+                                  <img
+                                    src={getEffectiveImageUrl(section.heroImg || section.items[0]?.img || '')}
+                                    alt={section.title}
+                                    className="w-full h-full object-cover grayscale opacity-75"
+                                  />
+                                ) : (
+                                  <BookOpen className="w-6 h-6 text-black/40 dark:text-white/40" />
+                                )}
                               </div>
-                              <h4 className="text-sm font-black font-sans uppercase tracking-tight text-black dark:text-white truncate mt-0.5 line-through opacity-75">
-                                {section.title}
-                              </h4>
-                              {section.subtitle && (
-                                <span className="text-[11px] font-mono text-black/50 dark:text-white/50 block">
-                                  {section.subtitle}
-                                </span>
-                              )}
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.2 bg-red-600/10 text-red-600 dark:text-red-400">
+                                    MAGAZINE SECTION
+                                  </span>
+                                  <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                                    {section.items?.length || 0} items
+                                  </span>
+                                </div>
+                                <h4 className="text-sm font-black font-sans uppercase tracking-tight text-black dark:text-white truncate mt-0.5 line-through opacity-75">
+                                  {section.title}
+                                </h4>
+                                {section.subtitle && (
+                                  <span className="text-[11px] font-mono text-black/50 dark:text-white/50 block">
+                                    {section.subtitle}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                type="button"
+                                onClick={() => onRestoreMagazineSection && onRestoreMagazineSection(section.id)}
+                                className="px-3 py-1.5 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                                title="매거진 섹션 복원"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                <span>RESTORE</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => requestPermanentDeleteSingleSection(section)}
+                                className="px-3 py-1.5 text-red-600 dark:text-red-400 border border-red-600/30 dark:border-red-400/30 text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                                title="영구 삭제"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>DELETE</span>
+                              </button>
                             </div>
                           </div>
-
-                          <div className="flex items-center gap-2 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => onRestoreMagazineSection && onRestoreMagazineSection(section.id)}
-                              className="px-3 py-1.5 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
-                              title="매거진 섹션 복원"
-                            >
-                              <RotateCcw className="w-3.5 h-3.5" />
-                              <span>RESTORE</span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => onPermanentDeleteMagazineSection && onPermanentDeleteMagazineSection(section.id)}
-                              className="px-3 py-1.5 text-red-600 dark:text-red-400 border border-red-600/30 dark:border-red-400/30 text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
-                              title="영구 삭제"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                              <span>DELETE</span>
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -5785,56 +6005,69 @@ export function ManageHubPage({
                       JOURNEYS ({trashedJourneys.length})
                     </span>
                     <div className="flex flex-col gap-2">
-                      {trashedJourneys.map(journey => (
-                        <div
-                          key={journey.id}
-                          className="p-3.5 border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] flex items-center justify-between gap-4"
-                        >
-                          <div className="flex items-center gap-3.5 min-w-0">
-                            <div className="w-14 h-14 aspect-square border border-black/15 dark:border-white/15 shrink-0 overflow-hidden bg-black/10">
-                              <img
-                                src={getEffectiveImageUrl(journey.img)}
-                                alt={journey.title}
-                                className="w-full h-full object-cover grayscale opacity-75"
+                      {trashedJourneys.map(journey => {
+                        const isSelected = selectedTrashJourneyIds.includes(journey.id);
+                        return (
+                          <div
+                            key={journey.id}
+                            onClick={() => handleToggleTrashJourney(journey.id)}
+                            className={`p-3.5 border transition-all flex items-center justify-between gap-4 cursor-pointer ${
+                              isSelected
+                                ? 'border-red-600 bg-red-500/10 shadow-xs'
+                                : 'border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:border-black/30 dark:hover:border-white/30'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3.5 min-w-0">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleTrashJourney(journey.id);
+                                }}
+                                className="w-4 h-4 rounded border-black/30 dark:border-white/30 text-red-600 focus:ring-red-500 cursor-pointer accent-red-600 shrink-0"
                               />
+                              <div className="w-14 h-14 aspect-square border border-black/15 dark:border-white/15 shrink-0 overflow-hidden bg-black/10">
+                                <img
+                                  src={getEffectiveImageUrl(journey.img)}
+                                  alt={journey.title}
+                                  className="w-full h-full object-cover grayscale opacity-75"
+                                />
+                              </div>
+                              <div className="min-w-0">
+                                <h4 className="text-sm font-black font-sans uppercase tracking-tight text-black dark:text-white truncate line-through opacity-75">
+                                  {journey.title}
+                                </h4>
+                                <span className="text-[11px] font-mono text-black/50 dark:text-white/50 block mt-0.5">
+                                  {journey.date} · {journey.locationStr}
+                                </span>
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <h4 className="text-sm font-black font-sans uppercase tracking-tight text-black dark:text-white truncate line-through opacity-75">
-                                {journey.title}
-                              </h4>
-                              <span className="text-[11px] font-mono text-black/50 dark:text-white/50 block mt-0.5">
-                                {journey.date} · {journey.locationStr}
-                              </span>
+
+                            <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                type="button"
+                                onClick={() => onRestoreJourney(journey.id)}
+                                className="px-3 py-1.5 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                                title="여정 복구"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                <span>RESTORE</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => requestPermanentDeleteSingleJourney(journey)}
+                                className="px-3 py-1.5 text-red-600 dark:text-red-400 border border-red-600/30 dark:border-red-400/30 text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
+                                title="영구 삭제"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>DELETE</span>
+                              </button>
                             </div>
                           </div>
-
-                          <div className="flex items-center gap-2 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => onRestoreJourney(journey.id)}
-                              className="px-3 py-1.5 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
-                              title="여정 복구"
-                            >
-                              <RotateCcw className="w-3.5 h-3.5" />
-                              <span>RESTORE</span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (confirm(`'${journey.title}' 여정을 영구적으로 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) {
-                                  onPermanentDeleteJourney(journey.id);
-                                }
-                              }}
-                              className="px-3 py-1.5 text-red-600 dark:text-red-400 border border-red-600/30 dark:border-red-400/30 text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
-                              title="영구 삭제"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                              <span>DELETE</span>
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -6320,6 +6553,25 @@ export function ManageHubPage({
           setShowUnsavedModal(false);
           setPendingAction(null);
           setPendingJourneyId(null);
+        }}
+      />
+
+      {/* 5. Trash Bin Permanent Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={trashDeleteModal.isOpen}
+        title={trashDeleteModal.title}
+        message={trashDeleteModal.message}
+        confirmLabel="DELETE (Y)"
+        cancelLabel="CANCEL (N, ESC)"
+        confirmVariant="danger"
+        iconType="alert"
+        onConfirm={async () => {
+          const action = trashDeleteModal.onConfirm;
+          setTrashDeleteModal(prev => ({ ...prev, isOpen: false }));
+          await action();
+        }}
+        onCancel={() => {
+          setTrashDeleteModal(prev => ({ ...prev, isOpen: false }));
         }}
       />
 

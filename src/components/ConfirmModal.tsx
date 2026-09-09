@@ -108,11 +108,15 @@ export function ConfirmModal({
         e.stopPropagation();
         e.stopImmediatePropagation();
         handleImmediateClose(onConfirm);
-      } else if ((e.key === 'n' || e.key === 'N' || e.key === 'd' || e.key === 'D') && onDiscard) {
+      } else if (e.key === 'n' || e.key === 'N' || e.key === 'd' || e.key === 'D') {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
-        handleImmediateClose(onDiscard);
+        if (onDiscard) {
+          handleImmediateClose(onDiscard);
+        } else {
+          handleImmediateClose(onCancel);
+        }
       }
     };
 

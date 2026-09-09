@@ -1887,11 +1887,6 @@ function App() {
 
   const handlePermanentDeleteJourney = async (tripId: number) => {
     if (!isLoggedIn) return;
-    const trashed = trashedJourneys.find(t => t.id === tripId);
-    const journeyTitle = trashed?.title || '이 여정';
-
-    const confirmed = window.confirm(`'${journeyTitle}' 여정을 영구 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다. 모든 타임라인, 비행, 숙소 데이터가 삭제됩니다.`);
-    if (!confirmed) return;
 
     try {
       const batch = writeBatch(db);
@@ -1922,10 +1917,12 @@ function App() {
       });
 
       await batch.commit();
-      alert(`'${journeyTitle}' 여정이 영구 삭제되었습니다.`);
+
+      // Local state update immediately
+      setTrashedJourneys(prev => prev.filter(t => t.id !== tripId));
     } catch (err: any) {
       console.error("Error permanently deleting journey:", err);
-      alert("영구 삭제에 실패했습니다.");
+      throw err;
     }
   };
 
@@ -1996,9 +1993,6 @@ function App() {
   const handlePermanentDeleteMagazineSection = async (sectionId: string) => {
     if (!isLoggedIn || !isAdmin) return;
     const trashed = trashedSections.find(s => s.id === sectionId || s.docId === sectionId || `section-${s.id}` === sectionId);
-    const title = trashed?.title || '이 매거진 섹션';
-
-    if (!window.confirm(`'${title}' 매거진 섹션을 영구 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) return;
 
     try {
       // Collect all possible trash docIds to ensure 100% complete deletion from trash
@@ -2021,11 +2015,82 @@ function App() {
 
       // Local state update immediately so it never stays in the UI
       setTrashedSections(prev => prev.filter(s => s.id !== sectionId && s.docId !== trashed?.docId && `section-${s.id}` !== sectionId));
-
-      alert(`'${title}' 매거진 섹션이 영구 삭제되었습니다.`);
     } catch (err) {
       console.error("Error permanently deleting magazine section:", err);
-      alert("매거진 섹션 영구 삭제에 실패했습니다.");
+      throw err;
+    }
+  };
+
+  const handleBatchPermanentDelete = async (params: { journeyIds: number[]; sectionIds: string[] }) => {
+    if (!isLoggedIn || !isAdmin) return;
+    const { journeyIds, sectionIds } = params;
+    if (journeyIds.length === 0 && sectionIds.length === 0) return;
+
+    try {
+      // 1. Delete Magazine Sections
+      if (sectionIds.length > 0) {
+        const targetSectionDocIds = new Set<string>();
+        sectionIds.forEach(sId => {
+          const sec = trashedSections.find(s => s.id === sId || s.docId === sId || `section-${s.id}` === sId);
+          if (sec?.docId) targetSectionDocIds.add(sec.docId);
+          targetSectionDocIds.add(sId);
+          targetSectionDocIds.add(sId.startsWith('section-') ? sId : `section-${sId}`);
+          if (sec?.id) {
+            targetSectionDocIds.add(sec.id);
+            targetSectionDocIds.add(sec.id.startsWith('section-') ? sec.id : `section-${sec.id}`);
+          }
+        });
+
+        await Promise.all(
+          Array.from(targetSectionDocIds).map(dId => 
+            deleteDoc(doc(db, 'users', 'public', 'trash', dId)).catch(err => console.warn('deleteDoc error:', err))
+          )
+        );
+
+        setTrashedSections(prev => prev.filter(s => 
+          !sectionIds.includes(s.id) && (!s.docId || !targetSectionDocIds.has(s.docId))
+        ));
+      }
+
+      // 2. Delete Journeys & Sub-items
+      if (journeyIds.length > 0) {
+        const batch = writeBatch(db);
+        const journeyIdSet = new Set(journeyIds.map(Number));
+
+        journeyIds.forEach(jId => {
+          const trashRef = doc(db, 'users', 'public', 'trash', String(jId));
+          batch.delete(trashRef);
+        });
+
+        const timelineRef = collection(db, 'users', 'public', 'timeline');
+        const timelineSnap = await getDocs(timelineRef);
+        timelineSnap.forEach(doc => {
+          const data = doc.data();
+          if (journeyIdSet.has(Number(data.tripId))) batch.delete(doc.ref);
+        });
+
+        const flightsSnap = await getDocs(collection(db, 'users', 'public', 'flights'));
+        flightsSnap.forEach(doc => {
+          if (journeyIdSet.has(Number(doc.data().tripId))) batch.delete(doc.ref);
+        });
+
+        const staysSnap = await getDocs(collection(db, 'users', 'public', 'stays'));
+        staysSnap.forEach(doc => {
+          if (journeyIdSet.has(Number(doc.data().tripId))) batch.delete(doc.ref);
+        });
+
+        const transitsSnap = await getDocs(collection(db, 'users', 'public', 'transits'));
+        transitsSnap.forEach(doc => {
+          if (journeyIdSet.has(Number(doc.data().tripId))) batch.delete(doc.ref);
+        });
+
+        await batch.commit();
+
+        setTrashedJourneys(prev => prev.filter(t => !journeyIdSet.has(t.id)));
+      }
+    } catch (err) {
+      console.error("Error in batch permanent delete:", err);
+      throw err;
     }
   };
 
@@ -2357,6 +2422,7 @@ function App() {
                   onDeleteMagazineSection={handleDeleteMagazineSection}
                   onRestoreMagazineSection={handleRestoreMagazineSection}
                   onPermanentDeleteMagazineSection={handlePermanentDeleteMagazineSection}
+                  onBatchPermanentDelete={handleBatchPermanentDelete}
                   isLoggedIn={isLoggedIn}
                   isDarkMode={isDarkMode}
                   onDirtyChange={setIsManageDirty}
