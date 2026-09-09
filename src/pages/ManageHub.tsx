@@ -1833,29 +1833,113 @@ export function ManageHubPage({
       return a.displayOrder - b.displayOrder;
     });
 
-    // 5. 중복 이미지 필터링 및 MagazineItem 목록 생성
-    const tripItems: MagazineItem[] = [];
+    // 5. 중복 이미지 필터링
+    const uniqueCandidates: typeof rawCandidates = [];
     const seenImages = new Set<string>();
-
     rawCandidates.forEach(cand => {
       if (!seenImages.has(cand.img)) {
         seenImages.add(cand.img);
-        const idx = tripItems.length;
-        tripItems.push({
-          id: `auto-${targetTrip.id}-${cand.timelineItemId || idx}-${Date.now()}-${idx}`,
-          tripId: Number(targetTrip.id),
-          timelineItemId: cand.timelineItemId,
-          title: cand.title,
-          date: cand.date,
-          placeName: cand.placeName,
-          location: cand.location,
-          caption: cand.caption,
-          img: cand.img,
-          layoutType: idx % 3 === 0 ? 'portrait' : idx % 3 === 1 ? 'landscape' : 'portrait',
-          order: idx,
-        });
+        uniqueCandidates.push(cand);
       }
     });
+
+    const totalCount = uniqueCandidates.length;
+
+    // 6. 에디토리얼 행(Row) 기반 레이아웃 배치 계산
+    // 사용 가능한 완결형 행:
+    // - PL: 세로 1 + 가로 1 (합 2개, 3열 꽉 참)
+    // - LP: 가로 1 + 세로 1 (합 2개, 3열 꽉 참)
+    // - PPP: 세로 3개 (합 3개, 3열 꽉 참)
+    // - LL: 가로 2개 (합 2개, 2열 꽉 참)
+    // * 세로 2개만 덩그라니 남는 PP(미완결 행)는 배제
+    const plannedRowTypes: ('PL' | 'PPP' | 'LP' | 'LL')[] = [];
+    const rowCycle: ('PL' | 'PPP' | 'LP' | 'LL')[] = ['PL', 'PPP', 'LP', 'LL', 'PL', 'LL', 'LP', 'PPP'];
+    let rem = totalCount;
+    let cycleIdx = 0;
+
+    while (rem > 0) {
+      if (rem === 1) {
+        break; // 단독 카드는 landscape로 채움
+      }
+      if (rem === 5) {
+        // 2 + 3 (PL/LP + PPP)
+        plannedRowTypes.push(cycleIdx % 2 === 0 ? 'PL' : 'LP');
+        plannedRowTypes.push('PPP');
+        rem -= 5;
+        break;
+      }
+      if (rem === 4) {
+        // 2 + 2 (PL + LP)
+        plannedRowTypes.push('PL');
+        plannedRowTypes.push('LP');
+        rem -= 4;
+        break;
+      }
+      if (rem === 3) {
+        // 3 (PPP)
+        plannedRowTypes.push('PPP');
+        rem -= 3;
+        break;
+      }
+      if (rem === 2) {
+        // 2 (PL or LL or LP)
+        const pref = rowCycle[cycleIdx % rowCycle.length];
+        plannedRowTypes.push(pref === 'PPP' ? 'LL' : pref);
+        rem -= 2;
+        break;
+      }
+
+      // rem >= 6
+      const preferred = rowCycle[cycleIdx % rowCycle.length];
+      cycleIdx++;
+      const rowLen = preferred === 'PPP' ? 3 : 2;
+
+      // 이 행을 선택했을 때 잔여 개수가 1이 되는 것을 방지
+      if (rem - rowLen === 1) {
+        if (rowLen === 2) {
+          plannedRowTypes.push('PPP');
+          rem -= 3;
+        } else {
+          plannedRowTypes.push('PL');
+          rem -= 2;
+        }
+      } else {
+        plannedRowTypes.push(preferred);
+        rem -= rowLen;
+      }
+    }
+
+    const assignedLayoutTypes: ('portrait' | 'landscape')[] = [];
+    plannedRowTypes.forEach(r => {
+      if (r === 'PL') {
+        assignedLayoutTypes.push('portrait', 'landscape');
+      } else if (r === 'LP') {
+        assignedLayoutTypes.push('landscape', 'portrait');
+      } else if (r === 'PPP') {
+        assignedLayoutTypes.push('portrait', 'portrait', 'portrait');
+      } else if (r === 'LL') {
+        assignedLayoutTypes.push('landscape', 'landscape');
+      }
+    });
+
+    while (assignedLayoutTypes.length < totalCount) {
+      assignedLayoutTypes.push('landscape');
+    }
+
+    // 7. MagazineItem 목록 생성
+    const tripItems: MagazineItem[] = uniqueCandidates.map((cand, idx) => ({
+      id: `auto-${targetTrip.id}-${cand.timelineItemId || idx}-${Date.now()}-${idx}`,
+      tripId: Number(targetTrip.id),
+      timelineItemId: cand.timelineItemId,
+      title: cand.title,
+      date: cand.date,
+      placeName: cand.placeName,
+      location: cand.location,
+      caption: cand.caption,
+      img: cand.img,
+      layoutType: assignedLayoutTypes[idx] || 'portrait',
+      order: idx,
+    }));
 
     const newSectionId = `trip-section-${targetTrip.id}-${Date.now()}`;
     const newSection: MagazineSection = {
