@@ -370,6 +370,78 @@ export function ManageHubPage({
   const [magRedoStack, setMagRedoStack] = useState<MagazineSection[][]>([]);
 
   // Firestore magazine sections direct diagnostic state
+  // Restore Lost Magazine Sections state
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [availableBackups, setAvailableBackups] = useState<{ key: string; label: string; count: number; sections: MagazineSection[] }[]>([]);
+
+  const handleOpenRestoreModal = () => {
+    const backups: { key: string; label: string; count: number; sections: MagazineSection[] }[] = [];
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('cached_magazine_sections_backup_') || k === 'cached_magazine_sections')) {
+          try {
+            const raw = localStorage.getItem(k);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                const tsMatch = k.match(/\d+$/);
+                const dateStr = tsMatch ? new Date(Number(tsMatch[0])).toLocaleString() : (k === 'cached_magazine_sections' ? '최근 로컬 캐시' : k);
+                backups.push({
+                  key: k,
+                  label: `${dateStr} (${parsed.length}개 섹션)`,
+                  count: parsed.length,
+                  sections: parsed,
+                });
+              }
+            }
+          } catch (_) {}
+        }
+      }
+    } catch (_) {}
+    setAvailableBackups(backups.sort((a, b) => b.key.localeCompare(a.key)));
+    setShowRestoreModal(true);
+  };
+
+  const handleRestoreDefaultSections = () => {
+    pushMagazineSnapshot();
+    const defaults = buildDefaultMagazineSections(trips);
+    const hasMain = sectionsList.some(s => s.isDefault || s.id === 'main');
+    let updated = [...sectionsList];
+    if (!hasMain && defaults.length > 0) {
+      updated.unshift(defaults[0]);
+    }
+    defaults.slice(1).forEach(defSec => {
+      const exists = updated.some(s => s.title === defSec.title || (defSec.heroTripId && s.heroTripId === defSec.heroTripId));
+      if (!exists) {
+        updated.push(defSec);
+      }
+    });
+    const reordered = updated.map((sec, idx) => ({ ...sec, order: idx }));
+    setSectionsList(reordered);
+    if (reordered.length > 0) {
+      setActiveMagSectionId(reordered[0].id);
+    }
+    if (onUpdateMagazineSections) onUpdateMagazineSections(reordered);
+    setShowRestoreModal(false);
+    alert(`기본 매거진 홈 및 추천 섹션 ${reordered.length - sectionsList.length}개가 복구되었습니다.\n"SAVE MAGAZINE SETTINGS" 또는 "SAVE ALL" 버튼을 눌러 영구 저장하세요.`);
+  };
+
+  const handleApplyBackup = (sections: MagazineSection[]) => {
+    if (!sections || sections.length === 0) return;
+    if (!confirm(`선택한 백업(${sections.length}개 섹션)으로 복원하시겠습니까?\n현재 변경사항은 실행 취소(Ctrl+Z)로 되돌릴 수 있습니다.`)) return;
+    pushMagazineSnapshot();
+    const reordered = sections.map((s, idx) => ({ ...s, order: idx }));
+    setSectionsList(reordered);
+    if (reordered.length > 0) {
+      setActiveMagSectionId(reordered[0].id);
+    }
+    if (onUpdateMagazineSections) onUpdateMagazineSections(reordered);
+    setShowRestoreModal(false);
+    alert(`백업 데이터(${reordered.length}개 섹션)가 복원되었습니다.\n"SAVE MAGAZINE SETTINGS" 또는 "SAVE ALL" 버튼을 눌러 최종 저장하세요.`);
+  };
+
+  // Firestore magazine sections direct diagnostic state
   const [firestoreMagSections, setFirestoreMagSections] = useState<MagazineSection[] | null>(null);
   const [isLoadingFirestoreMag, setIsLoadingFirestoreMag] = useState(false);
   const [firestoreMagLoadedAt, setFirestoreMagLoadedAt] = useState<string | null>(null);
@@ -1927,9 +1999,6 @@ export function ManageHubPage({
     try {
       localStorage.setItem('cached_magazine_sections', JSON.stringify(updated));
     } catch (_) {}
-    if (onSaveMagazineSections) {
-      onSaveMagazineSections(updated).catch(e => console.warn('Auto-save new section notice:', e));
-    }
   };
 
   const handleAutoGenerateSectionFromTrip = async (tripId: number) => {
@@ -2052,12 +2121,6 @@ export function ManageHubPage({
     const totalCount = uniqueCandidates.length;
 
     // 4. 에디토리얼 행(Row) 기반 레이아웃 배치 계산
-    // 사용 가능한 완결형 행:
-    // - PL: 세로 1 + 가로 1 (합 2개, 3열 꽉 참)
-    // - LP: 가로 1 + 세로 1 (합 2개, 3열 꽉 참)
-    // - PPP: 세로 3개 (합 3개, 3열 꽉 참)
-    // - LL: 가로 2개 (합 2개, 2열 꽉 참)
-    // * 세로 2개만 덩그라니 남는 PP(미완결 행)는 배제
     const plannedRowTypes: ('PL' | 'PPP' | 'LP' | 'LL')[] = [];
     const rowCycle: ('PL' | 'PPP' | 'LP' | 'LL')[] = ['PL', 'PPP', 'LP', 'LL', 'PL', 'LL', 'LP', 'PPP'];
     let rem = totalCount;
@@ -2147,45 +2210,30 @@ export function ManageHubPage({
       order: idx,
     }));
 
+    // 6. 히어로 이미지 무작위(랜덤) 자동 선택 (섹션 내부 카드 사진 중 1장)
+    const validCardImages = tripItems.map(it => it.img).filter(Boolean);
+    const randomHeroImg = validCardImages.length > 0
+      ? validCardImages[Math.floor(Math.random() * validCardImages.length)]
+      : (targetTrip.img || '');
+
     const newSectionId = `trip-section-${targetTrip.id}-${Date.now()}`;
 
-    // 기존 섹션 중 동일 여정 연동 섹션(잔여물/찌꺼기) 검출 및 깨끗한 교체(Replace)
-    const existingIndex = sectionsList.findIndex(
-      s => s.heroTripId === Number(targetTrip.id) ||
-           s.id.startsWith(`trip-section-${targetTrip.id}-`) ||
-           s.items.some(it => Number(it.tripId) === Number(targetTrip.id))
-    );
-
-    const filteredSections = sectionsList.filter(
-      s => s.heroTripId !== Number(targetTrip.id) &&
-           !s.id.startsWith(`trip-section-${targetTrip.id}-`) &&
-           !s.items.some(it => Number(it.tripId) === Number(targetTrip.id))
-    );
-
-    const newSectionOrder = existingIndex >= 0 ? existingIndex : filteredSections.length;
+    // 7. 기존 매거진 섹션 100% 보존 - 기존 어떤 섹션도 임의 삭제/덮어쓰지 않고 맨 뒤에 순수 추가
     const newSection: MagazineSection = {
       id: newSectionId,
       title: targetTrip.title.replace(/\s*\(Plan\)$/i, '').toUpperCase(),
       subtitle: `${targetTrip.date} · ${targetTrip.locationStr || targetTrip.country || 'JOURNEY'}`,
-      // 히어로 이미지는 섹션 헤더에만 지정하고, 카드 #01번을 강제로 덮어쓰지 않음
-      heroImg: targetTrip.heroImg || targetTrip.img || (tripItems[0]?.img || ''),
+      heroImg: randomHeroImg,
       heroTitle: targetTrip.title.replace(/\s*\(Plan\)$/i, ''),
       heroDate: targetTrip.date,
       heroLocation: targetTrip.locationStr || targetTrip.country,
       heroTripId: Number(targetTrip.id),
       items: tripItems,
-      order: newSectionOrder,
+      order: sectionsList.length,
       isDefault: false,
     };
 
-    let updated: MagazineSection[];
-    if (existingIndex >= 0) {
-      updated = [...filteredSections];
-      updated.splice(existingIndex, 0, newSection);
-      updated = updated.map((sec, idx) => ({ ...sec, order: idx }));
-    } else {
-      updated = [...filteredSections, newSection].map((sec, idx) => ({ ...sec, order: idx }));
-    }
+    const updated = [...sectionsList, newSection].map((sec, idx) => ({ ...sec, order: idx }));
 
     setSectionsList(updated);
     setActiveMagSectionId(newSectionId);
@@ -2193,15 +2241,13 @@ export function ManageHubPage({
     setShowAutoGenerateModal(false);
     setSelectedTripForAutoGenerate(null);
 
+    // 주의: 강제 DB 저장은 절대 하지 않고, 오직 상위 상태 갱신 및 캐시만 보관하여 사용자가 SAVE 버튼을 눌렀을 때만 DB에 영구 반영되도록 보호
     if (onUpdateMagazineSections) {
       onUpdateMagazineSections(updated);
     }
     try {
       localStorage.setItem('cached_magazine_sections', JSON.stringify(updated));
     } catch (_) {}
-    if (onSaveMagazineSections) {
-      onSaveMagazineSections(updated).catch(e => console.warn('Auto-save generated section notice:', e));
-    }
   };
 
   const handleDeleteSection = async (sectionId: string) => {
@@ -2728,6 +2774,32 @@ export function ManageHubPage({
         homeMagLimit,
       };
       savedSectionsJsonRef.current = JSON.stringify(sectionsList);
+      if (selectedJourney) {
+        savedArchiveSnapshotRef.current[selectedJourney.id] = JSON.stringify(getNormalizedJourneyData({
+          title: editTitle,
+          date: editDate,
+          locationStr: editLocation,
+          country: editCountry,
+          tags: editTags,
+          img: editImg,
+          videoUrl: editVideoUrl,
+          heroImg: editHeroImg,
+          heroVideoUrl: editHeroVideoUrl,
+          statusBadge: editStatusBadge,
+        }));
+      }
+      savedArchiveHubHeaderRef.current = {
+        mainTitle: archiveHubMainTitle,
+        subtitle: archiveHubSubtitle,
+        badgeText: archiveHubBadgeText,
+        volumeText: archiveHubVolumeText,
+      };
+      savedMagazineHubHeaderRef.current = {
+        mainTitle: hubMainTitle,
+        subtitle: hubSubtitle,
+        badgeText: hubBadgeText,
+        volumeText: hubVolumeText,
+      };
 
       setSaveAllSuccess(true);
       setHomeSaveSuccess(true);
@@ -4705,6 +4777,15 @@ export function ManageHubPage({
                     <RotateCw className="w-3.5 h-3.5" />
                   </button>
                 </div>
+                <button
+                  type="button"
+                  onClick={handleOpenRestoreModal}
+                  className="px-3 py-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer text-black dark:text-white transition-colors"
+                  title="유실된 매거진 섹션 복구 (기본 섹션 복구 또는 로컬 백업 스냅샷에서 불러오기)"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  <span>RESTORE</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => setShowAddSectionModal(true)}
@@ -6755,6 +6836,128 @@ export function ManageHubPage({
         onConfirm={() => setShowCleanSuccessModal(false)}
         onCancel={() => setShowCleanSuccessModal(false)}
       />
+
+      {/* Restore Magazine Sections Modal */}
+      {showRestoreModal && (
+        <div className="fixed inset-0 z-[650] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150" onClick={() => setShowRestoreModal(false)}>
+          <div className="w-full max-w-lg bg-white dark:bg-[#161616] border border-black dark:border-white p-6 shadow-2xl flex flex-col gap-4 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <RotateCcw className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                  매거진 섹션 복구 (RESTORE MAGAZINE SECTIONS)
+                </h3>
+              </div>
+              <button type="button" onClick={() => setShowRestoreModal(false)} className="p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-black/70 dark:text-white/70 font-sans leading-relaxed">
+              기존에 누락되었거나 실수로 지워진 매거진 섹션들을 안전하게 복구할 수 있습니다.
+            </p>
+
+            {/* Option 1: Restore Default Magazine Home */}
+            <div className="p-3.5 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-black uppercase text-black dark:text-white">
+                  1. 기본 매거진 홈 & 누락 섹션 복구
+                </span>
+                <button
+                  type="button"
+                  onClick={handleRestoreDefaultSections}
+                  className="px-3 py-1 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:opacity-85 cursor-pointer"
+                >
+                  기본 홈 복구 실행
+                </button>
+              </div>
+              <span className="text-[11px] text-black/50 dark:text-white/50 leading-relaxed">
+                메인 기본 매거진(MAGAZINE HOME) 및 주요 여정 섹션이 목록에서 누락된 경우 즉시 복원합니다.
+              </span>
+            </div>
+
+            {/* Option 2: Local Backups */}
+            <div className="flex flex-col gap-2 pt-2">
+              <span className="text-xs font-mono font-black uppercase text-black dark:text-white">
+                2. 로컬 백업 스냅샷에서 불러오기 ({availableBackups.length}개 발견)
+              </span>
+              {availableBackups.length === 0 ? (
+                <div className="p-4 text-center text-xs font-mono text-black/40 dark:text-white/40 border border-dashed border-black/15 dark:border-white/15">
+                  저장된 로컬 백업 스냅샷이 없습니다.
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+                  {availableBackups.map(b => (
+                    <div key={b.key} className="p-2.5 border border-black/15 dark:border-white/15 flex items-center justify-between gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                      <div className="min-w-0">
+                        <div className="text-xs font-mono font-bold text-black dark:text-white truncate">
+                          {b.label}
+                        </div>
+                        <div className="text-[10px] font-mono text-black/50 dark:text-white/50 truncate">
+                          섹션: {b.sections.map(s => s.title).join(', ')}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleApplyBackup(b.sections)}
+                        className="px-2.5 py-1 text-xs font-mono font-bold border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors shrink-0 cursor-pointer"
+                      >
+                        불러오기
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Option 3: Firestore Data Restore */}
+            <div className="p-3.5 border border-blue-500/20 bg-blue-500/5 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-black uppercase text-blue-700 dark:text-blue-300">
+                  3. 서버(Firestore) 저장본 확인 및 복원
+                </span>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await handleLoadFirestoreMagazineSections();
+                  }}
+                  disabled={isLoadingFirestoreMag}
+                  className="px-3 py-1 bg-blue-600 text-white text-xs font-mono font-bold uppercase tracking-wider hover:bg-blue-700 cursor-pointer disabled:opacity-50"
+                >
+                  {isLoadingFirestoreMag ? '조회 중...' : '서버 데이터 조회'}
+                </button>
+              </div>
+              {firestoreMagSections && (
+                <div className="flex items-center justify-between pt-2 border-t border-blue-500/20">
+                  <span className="text-[11px] font-mono text-blue-800 dark:text-blue-200">
+                    서버 저장본: 총 {firestoreMagSections.length}개 섹션 ({firestoreMagLoadedAt})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleForceRestoreSectionsFromFirestore();
+                      setShowRestoreModal(false);
+                    }}
+                    className="px-2.5 py-1 bg-blue-600 text-white text-[11px] font-mono font-bold uppercase cursor-pointer hover:bg-blue-700"
+                  >
+                    이 데이터로 복원
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-black/10 dark:border-white/10 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowRestoreModal(false)}
+                className="px-4 py-2 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase cursor-pointer hover:bg-black/5 dark:hover:bg-white/5"
+              >
+                닫기 (CLOSE)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
