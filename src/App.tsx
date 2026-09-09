@@ -598,9 +598,17 @@ function App() {
       snapshot.forEach(doc => {
         const data = doc.data();
         if (data.deletedType === 'magazine_section' || (data.items && data.id && typeof data.id === 'string' && !data.locationStr && !data.tags)) {
-          sectionList.push(data as TrashedMagazineSection);
+          sectionList.push({
+            ...data,
+            id: data.id || doc.id,
+            docId: doc.id,
+          } as unknown as TrashedMagazineSection);
         } else {
-          journeyList.push(data as Trip);
+          journeyList.push({
+            ...data,
+            id: typeof data.id === 'number' ? data.id : (Number(doc.id) || data.id),
+            docId: doc.id,
+          } as unknown as Trip);
         }
       });
       setTrashedJourneys(journeyList.sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0)));
@@ -1947,15 +1955,33 @@ function App() {
 
   const handleRestoreMagazineSection = async (sectionId: string) => {
     if (!isLoggedIn || !isAdmin) return;
-    const trashed = trashedSections.find(s => s.id === sectionId || `section-${s.id}` === sectionId);
+    const trashed = trashedSections.find(s => s.id === sectionId || s.docId === sectionId || `section-${s.id}` === sectionId);
     if (!trashed) return;
 
     try {
-      const { deletedType: _, deletedAt: __, ...cleanSection } = trashed;
-      const docId = trashed.id.startsWith('section-') ? trashed.id : `section-${trashed.id}`;
+      const { deletedType: _, deletedAt: __, docId: ___, ...cleanSection } = trashed as any;
       
+      // Collect all possible trash docIds to ensure 100% complete deletion from trash
+      const targetDocIds = new Set<string>();
+      if (trashed.docId) targetDocIds.add(trashed.docId);
+      if (sectionId) {
+        targetDocIds.add(sectionId);
+        targetDocIds.add(sectionId.startsWith('section-') ? sectionId : `section-${sectionId}`);
+      }
+      if (trashed.id) {
+        targetDocIds.add(trashed.id);
+        targetDocIds.add(trashed.id.startsWith('section-') ? trashed.id : `section-${trashed.id}`);
+      }
+
       // 1. Delete from trash
-      await deleteDoc(doc(db, 'users', 'public', 'trash', docId));
+      await Promise.all(
+        Array.from(targetDocIds).map(dId => 
+          deleteDoc(doc(db, 'users', 'public', 'trash', dId)).catch(err => console.warn('deleteDoc error:', err))
+        )
+      );
+
+      // Local state update immediately
+      setTrashedSections(prev => prev.filter(s => s.id !== sectionId && s.docId !== trashed.docId && `section-${s.id}` !== sectionId));
 
       // 2. Add to active magazine sections
       const updated = [...magazineSections, { ...cleanSection, order: magazineSections.length }];
@@ -1969,14 +1995,33 @@ function App() {
 
   const handlePermanentDeleteMagazineSection = async (sectionId: string) => {
     if (!isLoggedIn || !isAdmin) return;
-    const trashed = trashedSections.find(s => s.id === sectionId || `section-${s.id}` === sectionId);
+    const trashed = trashedSections.find(s => s.id === sectionId || s.docId === sectionId || `section-${s.id}` === sectionId);
     const title = trashed?.title || '이 매거진 섹션';
 
     if (!window.confirm(`'${title}' 매거진 섹션을 영구 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) return;
 
     try {
-      const docId = trashed ? (trashed.id.startsWith('section-') ? trashed.id : `section-${trashed.id}`) : sectionId;
-      await deleteDoc(doc(db, 'users', 'public', 'trash', docId));
+      // Collect all possible trash docIds to ensure 100% complete deletion from trash
+      const targetDocIds = new Set<string>();
+      if (trashed?.docId) targetDocIds.add(trashed.docId);
+      if (sectionId) {
+        targetDocIds.add(sectionId);
+        targetDocIds.add(sectionId.startsWith('section-') ? sectionId : `section-${sectionId}`);
+      }
+      if (trashed?.id) {
+        targetDocIds.add(trashed.id);
+        targetDocIds.add(trashed.id.startsWith('section-') ? trashed.id : `section-${trashed.id}`);
+      }
+
+      await Promise.all(
+        Array.from(targetDocIds).map(dId => 
+          deleteDoc(doc(db, 'users', 'public', 'trash', dId)).catch(err => console.warn('deleteDoc error:', err))
+        )
+      );
+
+      // Local state update immediately so it never stays in the UI
+      setTrashedSections(prev => prev.filter(s => s.id !== sectionId && s.docId !== trashed?.docId && `section-${s.id}` !== sectionId));
+
       alert(`'${title}' 매거진 섹션이 영구 삭제되었습니다.`);
     } catch (err) {
       console.error("Error permanently deleting magazine section:", err);

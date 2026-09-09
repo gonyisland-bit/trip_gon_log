@@ -205,6 +205,7 @@ export interface MagazineSection {
 export interface TrashedMagazineSection extends MagazineSection {
   deletedType?: 'magazine_section';
   deletedAt?: number;
+  docId?: string;
 }
 
 export interface MagazineHubConfig {

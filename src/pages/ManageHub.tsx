@@ -9,6 +9,7 @@ import {
   Copy, 
   ArrowRightLeft, 
   ArrowLeft,
+  ArrowUp,
   Upload, 
   Calendar, 
   MapPin, 
@@ -469,6 +470,44 @@ export function ManageHubPage({
   const [showSaveSuccessModal, setShowSaveSuccessModal] = useState(false);
   const [showQuickPhotoPicker, setShowQuickPhotoPicker] = useState(false);
   const [inlineAddMenuCardId, setInlineAddMenuCardId] = useState<string | null>(null);
+
+  // Scroll to Top state and handlers for ManageHub containers
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const activeScrollContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const handleContainerScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const st = e.currentTarget.scrollTop;
+    if (st > 300) {
+      if (!showScrollTop) setShowScrollTop(true);
+    } else {
+      if (showScrollTop) setShowScrollTop(false);
+    }
+    activeScrollContainerRef.current = e.currentTarget;
+  };
+
+  useEffect(() => {
+    const handleWinScroll = () => {
+      if (window.scrollY > 300) {
+        if (!showScrollTop) setShowScrollTop(true);
+      } else if (!activeScrollContainerRef.current || activeScrollContainerRef.current.scrollTop <= 300) {
+        if (showScrollTop) setShowScrollTop(false);
+      }
+    };
+    window.addEventListener('scroll', handleWinScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleWinScroll);
+  }, [showScrollTop]);
+
+  const scrollToTop = () => {
+    if (activeScrollContainerRef.current) {
+      activeScrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Reset scroll top visibility when activeMode changes
+  useEffect(() => {
+    setShowScrollTop(false);
+  }, [activeMode]);
 
   // ── CLEANUP & OPTIMIZER STATE & HANDLERS ──
   interface DiagnosticReport {
@@ -2730,7 +2769,10 @@ export function ManageHubPage({
         {/* MODE: HOME (Full App & Home Settings Integration)                   */}
         {/* ─────────────────────────────────────────────────────────────────── */}
         {activeMode === 'HOME' && (
-          <div className="w-full max-w-3xl mx-auto p-4 sm:p-8 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200">
+          <div
+            onScroll={handleContainerScroll}
+            className="w-full max-w-3xl mx-auto p-4 sm:p-8 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200"
+          >
             <div className="flex flex-col gap-8">
               {/* Header Title */}
               <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
@@ -3400,7 +3442,10 @@ export function ManageHubPage({
         {/* MODE: ARCHIVE (Top: Header Config, Left: Edit Form, Right: List)    */}
         {/* ─────────────────────────────────────────────────────────────────── */}
         {activeMode === 'ARCHIVE' && (
-          <div className="flex-1 flex flex-col w-full overflow-y-auto max-h-[calc(100vh-60px)]">
+          <div
+            onScroll={handleContainerScroll}
+            className="flex-1 flex flex-col w-full overflow-y-auto max-h-[calc(100vh-60px)]"
+          >
             
             {/* Top Bar with Header */}
             <div className="w-full px-4 sm:px-8 pt-6 pb-4 border-b border-black/15 dark:border-white/15 shrink-0">
@@ -3547,9 +3592,12 @@ export function ManageHubPage({
               </div>
 
             {/* Left: Journey Edit Form */}
-            <div className={`w-full lg:w-3/5 border-b lg:border-b-0 lg:border-r border-black/15 dark:border-white/15 p-4 sm:p-8 overflow-y-auto max-h-[calc(100vh-110px)] lg:max-h-[calc(100vh-60px)] ${
-              mobileArchiveTab === 'EDIT' ? 'block' : 'hidden lg:block'
-            }`}>
+            <div
+              onScroll={handleContainerScroll}
+              className={`w-full lg:w-3/5 border-b lg:border-b-0 lg:border-r border-black/15 dark:border-white/15 p-4 sm:p-8 overflow-y-auto max-h-[calc(100vh-110px)] lg:max-h-[calc(100vh-60px)] ${
+                mobileArchiveTab === 'EDIT' ? 'block' : 'hidden lg:block'
+              }`}
+            >
               {selectedJourney ? (
                 <div className="flex flex-col gap-6 max-w-2xl mx-auto">
                   
@@ -4145,9 +4193,12 @@ export function ManageHubPage({
             </div>
 
             {/* Right: Reorderable Journey List with Drag & Drop + [▲] / [▼] buttons */}
-            <div className={`w-full lg:w-2/5 p-4 sm:p-6 overflow-y-auto max-h-[calc(100vh-110px)] lg:max-h-[calc(100vh-60px)] bg-black/[0.01] dark:bg-white/[0.01] ${
-              mobileArchiveTab === 'LIST' ? 'block' : 'hidden lg:block'
-            }`}>
+            <div
+              onScroll={handleContainerScroll}
+              className={`w-full lg:w-2/5 p-4 sm:p-6 overflow-y-auto max-h-[calc(100vh-110px)] lg:max-h-[calc(100vh-60px)] bg-black/[0.01] dark:bg-white/[0.01] ${
+                mobileArchiveTab === 'LIST' ? 'block' : 'hidden lg:block'
+              }`}
+            >
               <div className="flex items-center justify-between mb-4 pb-2 border-b border-black/15 dark:border-white/15">
                 <span className="text-xs font-black uppercase tracking-wider font-sans">
                   JOURNEYS ORDER & SELECTION ({localJourneys.length})
@@ -4269,7 +4320,10 @@ export function ManageHubPage({
         {/* MODE: MAGAZINE (Sections, Hero, Layout & Moments Management)        */}
         {/* ─────────────────────────────────────────────────────────────────── */}
         {activeMode === 'MAGAZINE' && (
-          <div className="w-full max-w-5xl mx-auto p-4 sm:p-8 flex flex-col gap-8 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200">
+          <div
+            onScroll={handleContainerScroll}
+            className="w-full max-w-5xl mx-auto p-4 sm:p-8 flex flex-col gap-8 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200"
+          >
             
             {/* Top Bar with Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-black dark:border-white pb-4">
@@ -4401,11 +4455,10 @@ export function ManageHubPage({
                     const nextId = e.target.value;
                     const sec = sectionsList.find(s => s.id === nextId);
                     if (sec) {
-                      executeWithGuard(() => {
-                        setActiveMagSectionId(sec.id);
-                        setMomentsList(sec.items || []);
-                        setSelectedMagCardId(null);
-                      });
+                      setActiveMagSectionId(sec.id);
+                      setMomentsList(sec.items || []);
+                      setSelectedMagCardId(null);
+                      sessionStorage.setItem('lastMagazineSectionId', sec.id);
                     }
                   }}
                   className="px-3 py-1.5 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white rounded-none cursor-pointer focus:border-black dark:focus:border-white min-w-[200px] max-w-full sm:max-w-[340px]"
@@ -5629,7 +5682,10 @@ export function ManageHubPage({
         {/* MODE: TRASH (Trash Bin - Restoring & Permanent Deletion)            */}
         {/* ─────────────────────────────────────────────────────────────────── */}
         {activeMode === 'TRASH' && (
-          <div className="w-full max-w-3xl mx-auto p-6 sm:p-12 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200">
+          <div
+            onScroll={handleContainerScroll}
+            className="w-full max-w-3xl mx-auto p-6 sm:p-12 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200"
+          >
             <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
               <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
                 TRASH REPOSITORY
@@ -5791,7 +5847,10 @@ export function ManageHubPage({
         {/* MODE: CLEANUP & DATABASE OPTIMIZER (데이터 클린화 및 최적화 도구)     */}
         {/* ─────────────────────────────────────────────────────────────────── */}
         {activeMode === 'CLEANUP' && (
-          <div className="w-full max-w-4xl mx-auto p-4 sm:p-8 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200">
+          <div
+            onScroll={handleContainerScroll}
+            className="w-full max-w-4xl mx-auto p-4 sm:p-8 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200"
+          >
             {/* Header Title Section */}
             <div className="flex flex-col gap-2 border-b-2 border-black dark:border-white pb-4">
               <div className="flex flex-wrap items-center justify-between gap-4">
@@ -6193,6 +6252,21 @@ export function ManageHubPage({
           <Eye className="w-5 h-5" />
         </button>
       </div>
+
+      {/* Floating Scroll To Top Button (Right Bottom) */}
+      <button
+        type="button"
+        onClick={scrollToTop}
+        aria-label="맨 위로 이동"
+        title="맨 위로 이동 (TOP)"
+        className={`fixed bottom-6 right-6 z-[600] w-12 h-12 rounded-full flex items-center justify-center shadow-2xl bg-black text-white dark:bg-white dark:text-black border border-white/20 dark:border-black/20 transition-all duration-300 cursor-pointer select-none group ${
+          showScrollTop
+            ? 'opacity-100 translate-y-0 pointer-events-auto hover:scale-110 active:scale-95'
+            : 'opacity-0 translate-y-4 pointer-events-none'
+        }`}
+      >
+        <ArrowUp className="w-5 h-5 stroke-[2.5] group-hover:-translate-y-0.5 transition-transform duration-200" />
+      </button>
 
       {/* 4. Common Minimal Unsaved Changes Modal */}
       <ConfirmModal
