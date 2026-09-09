@@ -183,7 +183,7 @@ export function buildDefaultMagazineSections(
       heroTitle: 'The Other Side of Paradise',
       heroDate: mainTrip?.date || '2024 — 2026',
       heroLocation: mainTrip?.locationStr || 'GLOBAL ARCHIVE',
-      heroTripId: mainTrip?.id,
+      heroTripId: undefined,
       items: (magazineMoments && magazineMoments.length > 0) ? magazineMoments : makeStarterItems(mainTrip),
       order: 0,
       isDefault: true,

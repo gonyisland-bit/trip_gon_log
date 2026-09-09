@@ -348,6 +348,23 @@ export function ManageHubPage({
   const [showAutoGenerateModal, setShowAutoGenerateModal] = useState(false);
   const [selectedTripForAutoGenerate, setSelectedTripForAutoGenerate] = useState<number | null>(null);
 
+  // Set of trip IDs that have dedicated magazine sections created (excluding main default curation section)
+  const existingTripIds = useMemo(() => {
+    const ids = new Set<number>();
+    sectionsList.forEach(s => {
+      // Exclude main / default curation section
+      if (s.isDefault || s.id === 'main') return;
+      if (s.heroTripId !== undefined && s.heroTripId !== null) {
+        ids.add(Number(s.heroTripId));
+      } else if (s.id && s.id.startsWith('trip-section-')) {
+        const parts = s.id.split('-');
+        const tId = Number(parts[2]);
+        if (!isNaN(tId)) ids.add(tId);
+      }
+    });
+    return ids;
+  }, [sectionsList]);
+
   // Magazine Undo / Redo Snapshot Stack (History)
   const [magUndoStack, setMagUndoStack] = useState<MagazineSection[][]>([]);
   const [magRedoStack, setMagRedoStack] = useState<MagazineSection[][]>([]);
@@ -370,14 +387,6 @@ export function ManageHubPage({
         // Deep comparison to avoid unnecessary state updates & re-render loops
         if (JSON.stringify(prev) === JSON.stringify(magazineSections)) {
           return prev;
-        }
-        // If current local list has items not yet in incoming props (e.g. freshly created section), preserve them
-        const incomingIds = new Set(magazineSections.map(s => s.id));
-        const localNewSections = prev.filter(s => !incomingIds.has(s.id));
-        if (localNewSections.length > 0) {
-          const merged = [...magazineSections, ...localNewSections].map((s, idx) => ({ ...s, order: idx }));
-          if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
-          return merged;
         }
         return magazineSections;
       });
@@ -2214,6 +2223,9 @@ export function ManageHubPage({
         if (activeMagSectionId === sectionId && reordered.length > 0) {
           setActiveMagSectionId(reordered[0].id);
         }
+        try {
+          localStorage.setItem('cached_magazine_sections', JSON.stringify(reordered));
+        } catch (_) {}
         return reordered;
       });
     } catch (err) {
@@ -5562,9 +5574,6 @@ export function ManageHubPage({
                       type="button"
                       onClick={() => {
                         setShowAddSectionModal(false);
-                        const existingTripIds = new Set(
-                          sectionsList.map(s => s.heroTripId).filter((id): id is number => id !== undefined && id !== null)
-                        );
                         const firstUncreated = localJourneys.find(j => !existingTripIds.has(Number(j.id)));
                         setSelectedTripForAutoGenerate(firstUncreated ? firstUncreated.id : (localJourneys[0]?.id ?? null));
                         setShowAutoGenerateModal(true);
@@ -5624,7 +5633,7 @@ export function ManageHubPage({
                     <label className="text-xs font-mono font-bold uppercase tracking-wider text-black/80 dark:text-white/80 flex items-center justify-between">
                       <span>SELECT JOURNEY (생성할 여정 선택)</span>
                       <span className="text-[10px] text-black/50 dark:text-white/50 lowercase">
-                        총 {localJourneys.length}개 중 {sectionsList.filter(s => s.heroTripId).length}개 섹션 생성됨
+                        총 {localJourneys.length}개 중 {existingTripIds.size}개 섹션 생성됨
                       </span>
                     </label>
                     <select
@@ -5633,9 +5642,6 @@ export function ManageHubPage({
                       className="px-3 py-2.5 text-xs font-mono font-bold bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white cursor-pointer"
                     >
                       {(() => {
-                        const existingTripIds = new Set(
-                          sectionsList.map(s => s.heroTripId).filter((id): id is number => id !== undefined && id !== null)
-                        );
                         const uncreatedJourneys = localJourneys.filter(j => !existingTripIds.has(Number(j.id)));
                         const createdJourneys = localJourneys.filter(j => existingTripIds.has(Number(j.id)));
 
@@ -5666,9 +5672,6 @@ export function ManageHubPage({
                   </div>
 
                   {(() => {
-                    const existingTripIds = new Set(
-                      sectionsList.map(s => s.heroTripId).filter((id): id is number => id !== undefined && id !== null)
-                    );
                     const effectiveTripId = selectedTripForAutoGenerate ?? localJourneys[0]?.id;
                     const selected = localJourneys.find(j => Number(j.id) === Number(effectiveTripId));
                     if (!selected) return null;
@@ -5721,9 +5724,6 @@ export function ManageHubPage({
                       CANCEL
                     </button>
                     {(() => {
-                      const existingTripIds = new Set(
-                        sectionsList.map(s => s.heroTripId).filter((id): id is number => id !== undefined && id !== null)
-                      );
                       const targetId = selectedTripForAutoGenerate ?? localJourneys[0]?.id;
                       const isAlreadyCreated = targetId ? existingTripIds.has(Number(targetId)) : false;
 
