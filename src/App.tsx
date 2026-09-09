@@ -1763,7 +1763,8 @@ function App() {
 
         let newHeroImg = sec.heroImg;
         const tripCover = updatedTrip.heroImg || updatedTrip.img;
-        if (sec.heroTripId === tripId && tripCover && tripCover !== sec.heroImg) {
+        // Only set tripCover if sec.heroImg is completely empty, preserving user-selected or auto-generated hero moments
+        if (sec.heroTripId === tripId && !sec.heroImg && tripCover) {
           newHeroImg = tripCover;
           secChanged = true;
         }

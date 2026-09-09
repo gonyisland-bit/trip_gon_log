@@ -1208,6 +1208,8 @@ export function ManageHubPage({
     statusBadge: (j?.statusBadge || '').trim(),
   });
 
+  const [saveRevision, setSaveRevision] = useState(0);
+
   // Dirty tracking for HOME configuration
   const isHomeDirty = useMemo(() => {
     const snap = savedHomeSnapshotRef.current;
@@ -1239,12 +1241,13 @@ export function ManageHubPage({
       homeMagSectionId !== snap.homeMagSectionId ||
       homeMagLimit !== snap.homeMagLimit
     );
-  }, [title, subtitle, homeJourneyLimit, selectedHeroIds, autoSlide, slideDuration, mediaType, showMarquee, homeMarquee, homeSpeed, gradientEnabled, gradientFrom, gradientTo, homeMagSectionId, homeMagLimit]);
+  }, [title, subtitle, homeJourneyLimit, selectedHeroIds, autoSlide, slideDuration, mediaType, showMarquee, homeMarquee, homeSpeed, gradientEnabled, gradientFrom, gradientTo, homeMagSectionId, homeMagLimit, saveRevision]);
 
   // Dirty tracking for currently selected journey in ARCHIVE mode
   const isArchiveDirty = useMemo(() => {
     if (!selectedJourney) return false;
-    const snapStr = savedArchiveSnapshotRef.current[selectedJourney.id] || JSON.stringify(getNormalizedJourneyData(selectedJourney));
+    const snapStr = savedArchiveSnapshotRef.current[selectedJourney.id];
+    if (!snapStr) return false;
     const currentData = getNormalizedJourneyData({
       title: editTitle,
       date: editDate,
@@ -1258,12 +1261,12 @@ export function ManageHubPage({
       statusBadge: editStatusBadge,
     });
     return JSON.stringify(currentData) !== snapStr;
-  }, [selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge]);
+  }, [selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge, saveRevision]);
 
   // Dirty tracking for MAGAZINE sections & moments
   const isMagazineDirty = useMemo(() => {
     return (savedSectionsJsonRef.current || '[]') !== JSON.stringify(sectionsList);
-  }, [sectionsList]);
+  }, [sectionsList, saveRevision]);
 
   // Dirty tracking for Archive & Magazine Hub Headers
   const isArchiveHubHeaderDirty = useMemo(() => {
@@ -1274,7 +1277,7 @@ export function ManageHubPage({
       archiveHubBadgeText !== snap.badgeText ||
       archiveHubVolumeText !== snap.volumeText
     );
-  }, [archiveHubMainTitle, archiveHubSubtitle, archiveHubBadgeText, archiveHubVolumeText]);
+  }, [archiveHubMainTitle, archiveHubSubtitle, archiveHubBadgeText, archiveHubVolumeText, saveRevision]);
 
   const isMagazineHubHeaderDirty = useMemo(() => {
     const snap = savedMagazineHubHeaderRef.current;
@@ -1284,7 +1287,57 @@ export function ManageHubPage({
       hubBadgeText !== snap.badgeText ||
       hubVolumeText !== snap.volumeText
     );
-  }, [hubMainTitle, hubSubtitle, hubBadgeText, hubVolumeText]);
+  }, [hubMainTitle, hubSubtitle, hubBadgeText, hubVolumeText, saveRevision]);
+
+  // Synchronize all snapshot references to current state so isAnyDirty becomes immediately false
+  const syncAllSnapshotsToCurrent = () => {
+    savedSectionsJsonRef.current = JSON.stringify(sectionsList);
+    savedMagazineHubHeaderRef.current = {
+      mainTitle: hubMainTitle,
+      subtitle: hubSubtitle,
+      badgeText: hubBadgeText,
+      volumeText: hubVolumeText,
+    };
+    savedHomeSnapshotRef.current = {
+      title,
+      subtitle,
+      homeJourneyLimit,
+      selectedHeroIds: JSON.stringify(Array.isArray(selectedHeroIds) ? [...selectedHeroIds].sort() : []),
+      autoSlide,
+      slideDuration,
+      mediaType,
+      showMarquee,
+      homeMarquee,
+      homeSpeed,
+      gradientEnabled,
+      gradientFrom,
+      gradientTo,
+      homeMagSectionId,
+      homeMagLimit,
+    };
+    savedArchiveHubHeaderRef.current = {
+      mainTitle: archiveHubMainTitle,
+      subtitle: archiveHubSubtitle,
+      badgeText: archiveHubBadgeText,
+      volumeText: archiveHubVolumeText,
+    };
+    if (selectedJourney) {
+      savedArchiveSnapshotRef.current[selectedJourney.id] = JSON.stringify(getNormalizedJourneyData({
+        title: editTitle,
+        date: editDate,
+        locationStr: editLocation,
+        country: editCountry,
+        tags: editTags,
+        img: editImg,
+        videoUrl: editVideoUrl,
+        heroImg: editHeroImg,
+        heroVideoUrl: editHeroVideoUrl,
+        statusBadge: editStatusBadge,
+      }));
+    }
+    setSaveRevision(prev => prev + 1);
+    if (onDirtyChange) onDirtyChange(false);
+  };
 
   // Unified global dirty state across all management tabs & sub-settings
   const isAnyDirty = isHomeDirty || isArchiveDirty || isMagazineDirty || isArchiveHubHeaderDirty || isMagazineHubHeaderDirty;
@@ -1523,6 +1576,7 @@ export function ManageHubPage({
         statusBadge: editStatusBadge,
       }));
 
+      syncAllSnapshotsToCurrent();
       setTripSaveSuccess(true);
       if (onDirtyChange) onDirtyChange(false);
       if (showModal) {
@@ -1632,6 +1686,7 @@ export function ManageHubPage({
         homeMagSectionId,
         homeMagLimit,
       };
+      syncAllSnapshotsToCurrent();
       setHomeSaveSuccess(true);
       if (onDirtyChange) onDirtyChange(false);
       if (showModal) {
@@ -2010,6 +2065,33 @@ export function ManageHubPage({
 
     pushMagazineSnapshot();
 
+    // 날짜 문자열(예: "2024.03.15", "2024. 3. 15.", "2024-03-15")에서 정수 YYYYMMDD 추출
+    const parseDateToNumber = (dateStr: string): number => {
+      if (!dateStr) return 0;
+      const nums = dateStr.match(/\d+/g);
+      if (!nums || nums.length < 2) return 0;
+      let y = parseInt(nums[0], 10);
+      let m = parseInt(nums[1], 10);
+      let d = nums.length >= 3 ? parseInt(nums[2], 10) : 1;
+      if (y < 100) y += 2000;
+      return y * 10000 + m * 100 + d;
+    };
+
+    // 시간 문자열(예: "10:00 AM", "오후 1:30", "14:00")에서 0~1439 절대 분 추출
+    const parseTimeToMinutes = (timeStr: string): number => {
+      if (!timeStr) return 0;
+      const clean = timeStr.trim();
+      const isPM = /pm|오후/i.test(clean);
+      const isAM = /am|오전/i.test(clean);
+      const nums = clean.match(/\d+/g);
+      if (!nums || nums.length < 1) return 0;
+      let h = parseInt(nums[0], 10);
+      const min = nums.length >= 2 ? parseInt(nums[1], 10) : 0;
+      if (isPM && h < 12) h += 12;
+      if (isAM && h === 12) h = 0;
+      return h * 60 + min;
+    };
+
     const uniqueCandidates: {
       img: string;
       date: string;
@@ -2024,56 +2106,79 @@ export function ManageHubPage({
     }[] = [];
     const seenImages = new Set<string>();
 
-    // 1. Timeline items for this trip (Primary source of truth for timeline order)
-    // 일자 키(예: 2024.05.10, 2024.05.11 ...)를 사전순(시간순)으로 정렬하여 Day 1부터 Day N까지 순회
-    const dateKeys = Object.keys(timelineData || {}).sort();
-    dateKeys.forEach(dKey => {
-      const dayItems = timelineData[dKey];
+    // 1. 해당 여정에 속한 모든 타임라인 아이템 수집 (어떤 날짜 키에 있든 100% 전수 수집)
+    const tripTimelineItems: TimelineItem[] = [];
+    Object.values(timelineData || {}).forEach(dayItems => {
       if (Array.isArray(dayItems)) {
-        // 일자 내부 아이템 정렬: displayOrder -> time -> id
-        const sortedDayItems = [...dayItems].sort((a, b) => {
-          const orderA = typeof (a as any).displayOrder === 'number' ? (a as any).displayOrder : 999;
-          const orderB = typeof (b as any).displayOrder === 'number' ? (b as any).displayOrder : 999;
-          if (orderA !== orderB) return orderA - orderB;
-          const timeA = safeStr(a.time) || safeStr((a as any).startTime) || '';
-          const timeB = safeStr(b.time) || safeStr((b as any).startTime) || '';
-          if (timeA && timeB && timeA !== timeB) return timeA.localeCompare(timeB);
-          if (timeA && !timeB) return -1;
-          if (!timeA && timeB) return 1;
-          return (a.id || 0) - (b.id || 0);
-        });
-
-        sortedDayItems.forEach((tItem, tIdx) => {
-          if (Number(tItem.tripId) === Number(targetTrip.id) && tItem.img) {
-            const cleanUrl = tItem.img.trim();
-            if (cleanUrl && !seenImages.has(cleanUrl)) {
-              seenImages.add(cleanUrl);
-              const pName = safeStr(tItem.place);
-              const jTitle = targetTrip.title.replace(/\s*\(Plan\)$/i, '');
-              const displayTitle = pName || jTitle || 'MOMENT';
-              const itemDate = safeStr(tItem.date) || dKey || targetTrip.date || '';
-              const itemTime = safeStr(tItem.time) || safeStr((tItem as any).startTime) || '';
-              const orderNum = typeof (tItem as any).displayOrder === 'number' ? (tItem as any).displayOrder : tIdx;
-
-              uniqueCandidates.push({
-                img: cleanUrl,
-                date: itemDate,
-                time: itemTime,
-                displayOrder: orderNum,
-                title: displayTitle,
-                placeName: pName || targetTrip.locationStr || '',
-                location: targetTrip.locationStr || targetTrip.country || '',
-                caption: safeStr(tItem.memo),
-                timelineItemId: tItem.id,
-                sourcePriority: 0,
-              });
-            }
+        dayItems.forEach(tItem => {
+          if (Number(tItem.tripId) === Number(targetTrip.id) && tItem.img && tItem.img.trim()) {
+            tripTimelineItems.push(tItem);
           }
         });
       }
     });
 
-    // 2. Gallery photos (타임라인에 미포함된 갤러리 고유 사진만 보충)
+    // 2. 타임라인 엄격한 시간순 정렬: 날짜 수치(YYYYMMDD) -> displayOrder -> 시간 분(0~1439) -> id
+    tripTimelineItems.sort((a, b) => {
+      const dateA = safeStr(a.date) || targetTrip.date || '';
+      const dateB = safeStr(b.date) || targetTrip.date || '';
+      const numA = parseDateToNumber(dateA);
+      const numB = parseDateToNumber(dateB);
+      if (numA !== numB) {
+        if (numA > 0 && numB > 0) return numA - numB;
+        if (numA > 0) return -1;
+        if (numB > 0) return 1;
+      }
+
+      // 같은 날짜 내: displayOrder 우선 (사용자가 타임라인 상세에서 지정한 순서)
+      const hasOrderA = typeof (a as any).displayOrder === 'number';
+      const hasOrderB = typeof (b as any).displayOrder === 'number';
+      if (hasOrderA && hasOrderB && (a as any).displayOrder !== (b as any).displayOrder) {
+        return (a as any).displayOrder - (b as any).displayOrder;
+      }
+
+      // 시간(분) 수치 비교: 오전 10시가 오후 1시보다 먼저 오도록 완벽 보장
+      const timeA = safeStr(a.time) || safeStr((a as any).startTime) || '';
+      const timeB = safeStr(b.time) || safeStr((b as any).startTime) || '';
+      const minA = parseTimeToMinutes(timeA);
+      const minB = parseTimeToMinutes(timeB);
+      if (minA !== minB) {
+        if (minA > 0 && minB > 0) return minA - minB;
+        if (minA > 0) return -1;
+        if (minB > 0) return 1;
+      }
+
+      return (a.id || 0) - (b.id || 0);
+    });
+
+    // 3. 중복 사진 제거하며 1순위로 uniqueCandidates에 등록
+    tripTimelineItems.forEach((tItem, tIdx) => {
+      const cleanUrl = (tItem.img || '').trim();
+      if (cleanUrl && !seenImages.has(cleanUrl)) {
+        seenImages.add(cleanUrl);
+        const pName = safeStr(tItem.place);
+        const jTitle = targetTrip.title.replace(/\s*\(Plan\)$/i, '');
+        const displayTitle = pName || jTitle || 'MOMENT';
+        const itemDate = safeStr(tItem.date) || targetTrip.date || '';
+        const itemTime = safeStr(tItem.time) || safeStr((tItem as any).startTime) || '';
+        const orderNum = typeof (tItem as any).displayOrder === 'number' ? (tItem as any).displayOrder : tIdx;
+
+        uniqueCandidates.push({
+          img: cleanUrl,
+          date: itemDate,
+          time: itemTime,
+          displayOrder: orderNum,
+          title: displayTitle,
+          placeName: pName || targetTrip.locationStr || '',
+          location: targetTrip.locationStr || targetTrip.country || '',
+          caption: safeStr(tItem.memo),
+          timelineItemId: tItem.id,
+          sourcePriority: 0,
+        });
+      }
+    });
+
+    // 4. Gallery photos (타임라인에 미포함된 갤러리 고유 사진만 보충)
     if (targetTrip.gallery && Array.isArray(targetTrip.gallery)) {
       targetTrip.gallery.forEach((g: any, gIdx) => {
         const rawUrl = typeof g === 'string' ? g : g?.url;
@@ -2101,7 +2206,7 @@ export function ManageHubPage({
       });
     }
 
-    // 3. Cover photo (타임라인/갤러리에 전혀 없는 경우에만 보충)
+    // 5. Cover photo (타임라인/갤러리에 전혀 없는 경우에만 보충)
     const coverUrl = (targetTrip.img || '').trim();
     if (coverUrl && !seenImages.has(coverUrl)) {
       seenImages.add(coverUrl);
@@ -2120,7 +2225,7 @@ export function ManageHubPage({
 
     const totalCount = uniqueCandidates.length;
 
-    // 4. 에디토리얼 행(Row) 기반 레이아웃 배치 계산
+    // 6. 에디토리얼 행(Row) 기반 레이아웃 배치 계산
     const plannedRowTypes: ('PL' | 'PPP' | 'LP' | 'LL')[] = [];
     const rowCycle: ('PL' | 'PPP' | 'LP' | 'LL')[] = ['PL', 'PPP', 'LP', 'LL', 'PL', 'LL', 'LP', 'PPP'];
     let rem = totalCount;
@@ -2195,7 +2300,7 @@ export function ManageHubPage({
       assignedLayoutTypes.push('landscape');
     }
 
-    // 5. MagazineItem 목록 생성
+    // 7. MagazineItem 목록 생성
     const tripItems: MagazineItem[] = uniqueCandidates.map((cand, idx) => ({
       id: `auto-${targetTrip.id}-${cand.timelineItemId || idx}-${Date.now()}-${idx}`,
       tripId: Number(targetTrip.id),
@@ -2210,23 +2315,22 @@ export function ManageHubPage({
       order: idx,
     }));
 
-    // 6. 히어로 이미지 무작위(랜덤) 자동 선택 (섹션 내부 카드 사진 중 1장)
-    const validCardImages = tripItems.map(it => it.img).filter(Boolean);
-    const randomHeroImg = validCardImages.length > 0
-      ? validCardImages[Math.floor(Math.random() * validCardImages.length)]
-      : (targetTrip.img || '');
+    // 8. 히어로 카드 무작위(랜덤) 자동 선택 (섹션 내부 카드 사진 중 1장) 및 타임라인 메타데이터 완벽 일치
+    const randomHeroCard = tripItems.length > 0
+      ? tripItems[Math.floor(Math.random() * tripItems.length)]
+      : null;
 
     const newSectionId = `trip-section-${targetTrip.id}-${Date.now()}`;
 
-    // 7. 기존 매거진 섹션 100% 보존 - 기존 어떤 섹션도 임의 삭제/덮어쓰지 않고 맨 뒤에 순수 추가
+    // 9. 기존 매거진 섹션 100% 보존 - 기존 어떤 섹션도 임의 삭제/덮어쓰지 않고 맨 뒤에 순수 추가
     const newSection: MagazineSection = {
       id: newSectionId,
       title: targetTrip.title.replace(/\s*\(Plan\)$/i, '').toUpperCase(),
       subtitle: `${targetTrip.date} · ${targetTrip.locationStr || targetTrip.country || 'JOURNEY'}`,
-      heroImg: randomHeroImg,
+      heroImg: randomHeroCard?.img || targetTrip.img || '',
       heroTitle: targetTrip.title.replace(/\s*\(Plan\)$/i, ''),
-      heroDate: targetTrip.date,
-      heroLocation: targetTrip.locationStr || targetTrip.country,
+      heroDate: randomHeroCard?.date || targetTrip.date || '',
+      heroLocation: randomHeroCard?.placeName || randomHeroCard?.location || targetTrip.locationStr || targetTrip.country || '',
       heroTripId: Number(targetTrip.id),
       items: tripItems,
       order: sectionsList.length,
@@ -2629,6 +2733,7 @@ export function ManageHubPage({
         badgeText: hubBadgeText,
         volumeText: hubVolumeText,
       };
+      syncAllSnapshotsToCurrent();
       setMagazineSaveSuccess(true);
       if (onDirtyChange) onDirtyChange(false);
       if (showModal) {
@@ -2801,6 +2906,7 @@ export function ManageHubPage({
         volumeText: hubVolumeText,
       };
 
+      syncAllSnapshotsToCurrent();
       setSaveAllSuccess(true);
       setHomeSaveSuccess(true);
       setTripSaveSuccess(true);
@@ -6543,20 +6649,22 @@ export function ManageHubPage({
         {/* Floating Save Button */}
         <button
           type="button"
-          onClick={() => {
-            if (activeMode === 'HOME') handleSaveHome();
-            else if (activeMode === 'ARCHIVE') handleSaveJourney();
-            else if (activeMode === 'MAGAZINE') handleSaveMagazine();
+          onClick={async () => {
+            if (activeMode === 'HOME') await handleSaveHome();
+            else if (activeMode === 'ARCHIVE') await handleSaveJourney();
+            else if (activeMode === 'MAGAZINE') await handleSaveMagazine();
+            else await handleSaveAllChanges(true);
+            syncAllSnapshotsToCurrent();
           }}
-          disabled={activeMode === 'HOME' ? isSavingHome : (activeMode === 'ARCHIVE' ? isSavingTrip : (activeMode === 'MAGAZINE' ? isSavingMagazine : false))}
+          disabled={activeMode === 'HOME' ? isSavingHome : (activeMode === 'ARCHIVE' ? isSavingTrip : (activeMode === 'MAGAZINE' ? isSavingMagazine : isSavingAll))}
           className={`w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-all cursor-pointer border ${
-            (homeSaveSuccess || tripSaveSuccess || magazineSaveSuccess)
+            (homeSaveSuccess || tripSaveSuccess || magazineSaveSuccess || saveAllSuccess)
               ? 'bg-green-600 text-white border-green-600 scale-105'
               : 'bg-black text-white dark:bg-white dark:text-black border-white/20 dark:border-black/20 hover:scale-110 active:scale-95'
           }`}
           title="변경사항 저장 (단축키: Ctrl + S)"
         >
-          {(homeSaveSuccess || tripSaveSuccess || magazineSaveSuccess) ? (
+          {(homeSaveSuccess || tripSaveSuccess || magazineSaveSuccess || saveAllSuccess) ? (
             <Check className="w-5 h-5 animate-in zoom-in" />
           ) : (
             <Save className="w-5 h-5" />

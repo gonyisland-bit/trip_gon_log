@@ -450,11 +450,11 @@ export function MagazineHubPage({
     return raw.filter(it => !it.isTextOnly && Boolean(it.img)).slice(0, 3);
   }, [currentPreviewSection, timelineById, timelineByUrl, allTimelineList, trips]);
 
-  // Find linked trip for hero
+  // Find linked trip for hero (search trips first, then plans)
   const heroTrip = useMemo(() => {
     if (!currentSection?.heroTripId) return null;
-    return trips.find(t => t.id === currentSection.heroTripId) || null;
-  }, [currentSection, trips]);
+    return trips.find(t => t.id === currentSection.heroTripId) || plans.find(p => p.id === currentSection.heroTripId) || null;
+  }, [currentSection, trips, plans]);
 
   // Jump to Manage Hub for this section
   const handleEditThisSection = () => {
