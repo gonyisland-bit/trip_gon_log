@@ -5235,6 +5235,11 @@ export function ManageHubPage({
                               >
                                 {isLandscape ? '가로 ⟳' : '세로 ⟳'}
                               </button>
+                              {isTextCard && (
+                                <span className="px-1.5 py-0.5 text-[9px] font-mono font-bold uppercase bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60">
+                                  TEXT
+                                </span>
+                              )}
                               {isCardSelected && (
                                 <div className="relative flex items-center animate-in fade-in">
                                   <button
@@ -5340,42 +5345,26 @@ export function ManageHubPage({
                           {isTextCard ? (
                             <div
                               onClick={e => e.stopPropagation()}
-                              className={`w-full ${aspectClass} bg-transparent text-black dark:text-white p-4 sm:p-6 md:p-8 flex items-center justify-center border border-black/15 dark:border-white/15 relative group transition-all my-auto overflow-hidden`}
+                              className={`w-full ${aspectClass} bg-transparent text-black dark:text-white p-3 sm:p-5 flex items-center justify-center border border-black/15 dark:border-white/15 relative group transition-all my-auto overflow-hidden`}
                             >
-                              {/* Top Subtle Overlay Badge */}
-                              <div className="absolute top-2 left-3 right-3 flex items-center justify-between text-[9px] font-mono tracking-wider text-black/35 dark:text-white/35 uppercase pointer-events-none z-10">
-                                <span>EDITORIAL TEXT CARD</span>
-                                <span>1:1 SCALE · CENTER</span>
-                              </div>
-
-                              <div className="w-full flex items-center justify-center">
-                                <textarea
-                                  value={item.textContent || ''}
-                                  onChange={e => handleUpdateItemInCurrentSection(item.id, 'textContent', e.target.value)}
-                                  placeholder="매거진 본문 텍스트를 입력하세요..."
-                                  className="w-full bg-transparent text-black dark:text-white font-['Noto_Sans_KR',sans-serif] font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-tight leading-snug break-keep outline-none resize-none border-0 text-center whitespace-pre-line placeholder:text-black/25 dark:placeholder:text-white/25 overflow-y-auto"
-                                  style={{ height: 'auto' }}
-                                  ref={el => {
-                                    if (el) {
-                                      el.style.height = 'auto';
-                                      const maxH = (el.parentElement?.clientHeight || 400);
-                                      el.style.height = `${Math.min(el.scrollHeight, maxH)}px`;
-                                    }
-                                  }}
-                                  onInput={e => {
-                                    const target = e.currentTarget;
-                                    target.style.height = 'auto';
-                                    const maxH = (target.parentElement?.clientHeight || 400);
-                                    target.style.height = `${Math.min(target.scrollHeight, maxH)}px`;
-                                  }}
-                                />
-                              </div>
-
-                              {/* Bottom Subtle Overlay Badge */}
-                              <div className="absolute bottom-2 left-3 right-3 flex items-center justify-between text-[9px] font-mono tracking-wider text-black/30 dark:text-white/30 uppercase pointer-events-none z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <span>ENTER 줄바꿈 지원</span>
-                                <span>뷰모드 비율 동일</span>
-                              </div>
+                              <textarea
+                                value={item.textContent || ''}
+                                onChange={e => handleUpdateItemInCurrentSection(item.id, 'textContent', e.target.value)}
+                                placeholder="매거진 본문 텍스트를 입력하세요..."
+                                className="w-full max-h-full bg-transparent text-black dark:text-white font-['Noto_Sans_KR',sans-serif] font-bold text-base sm:text-lg md:text-xl tracking-tight leading-snug break-keep outline-none resize-none border-0 text-center whitespace-pre-line placeholder:text-black/25 dark:placeholder:text-white/25 overflow-hidden"
+                                style={{ height: 'auto' }}
+                                ref={el => {
+                                  if (el) {
+                                    el.style.height = 'auto';
+                                    el.style.height = `${el.scrollHeight}px`;
+                                  }
+                                }}
+                                onInput={e => {
+                                  const target = e.currentTarget;
+                                  target.style.height = 'auto';
+                                  target.style.height = `${target.scrollHeight}px`;
+                                }}
+                              />
                             </div>
                           ) : (
                             <div
