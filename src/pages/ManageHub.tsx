@@ -5340,22 +5340,42 @@ export function ManageHubPage({
                           {isTextCard ? (
                             <div
                               onClick={e => e.stopPropagation()}
-                              className={`w-full ${aspectClass} bg-transparent text-black dark:text-white p-4 sm:p-5 flex flex-col justify-between border border-black/15 dark:border-white/15 relative group transition-all my-auto`}
+                              className={`w-full ${aspectClass} bg-transparent text-black dark:text-white p-4 sm:p-5 flex flex-col justify-between border border-black/15 dark:border-white/15 relative group transition-all my-auto overflow-hidden`}
                             >
-                              <div className="flex items-center justify-between pb-1 border-b border-black/10 dark:border-white/10">
+                              <div className="flex items-center justify-between pb-1 border-b border-black/10 dark:border-white/10 shrink-0">
                                 <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
                                   EDITORIAL TEXT CARD
                                 </span>
                                 <span className="text-[9px] font-mono uppercase text-black/40 dark:text-white/40">
-                                  INTER BOLD
+                                  CENTER ALIGNED
                                 </span>
                               </div>
-                              <textarea
-                                value={item.textContent || ''}
-                                onChange={e => handleUpdateItemInCurrentSection(item.id, 'textContent', e.target.value)}
-                                placeholder="매거진 본문 텍스트를 입력하세요..."
-                                className="w-full h-full my-2 bg-transparent text-black dark:text-white font-['Inter',sans-serif] font-bold text-sm sm:text-base md:text-lg leading-snug tracking-tight outline-none resize-none border-0 placeholder:text-black/30 dark:placeholder:text-white/30"
-                              />
+                              <div className="flex-1 flex flex-col items-center justify-center w-full min-h-0 py-2">
+                                <textarea
+                                  value={item.textContent || ''}
+                                  onChange={e => handleUpdateItemInCurrentSection(item.id, 'textContent', e.target.value)}
+                                  placeholder="매거진 본문 텍스트를 입력하세요..."
+                                  className="w-full bg-transparent text-black dark:text-white font-['Noto_Sans_KR',sans-serif] font-bold text-sm sm:text-base md:text-lg leading-snug tracking-tight outline-none resize-none border-0 text-center whitespace-pre-line placeholder:text-black/30 dark:placeholder:text-white/30 overflow-y-auto"
+                                  style={{ height: 'auto' }}
+                                  ref={el => {
+                                    if (el) {
+                                      el.style.height = 'auto';
+                                      const maxH = (el.parentElement?.clientHeight || 260) - 8;
+                                      el.style.height = `${Math.min(el.scrollHeight, maxH)}px`;
+                                    }
+                                  }}
+                                  onInput={e => {
+                                    const target = e.currentTarget;
+                                    target.style.height = 'auto';
+                                    const maxH = (target.parentElement?.clientHeight || 260) - 8;
+                                    target.style.height = `${Math.min(target.scrollHeight, maxH)}px`;
+                                  }}
+                                />
+                              </div>
+                              <div className="pt-1 border-t border-black/10 dark:border-white/10 shrink-0 flex items-center justify-between text-[9px] font-mono text-black/40 dark:text-white/40">
+                                <span>ENTER 줄바꿈 지원</span>
+                                <span>가로/세로 중앙정렬</span>
+                              </div>
                             </div>
                           ) : (
                             <div
