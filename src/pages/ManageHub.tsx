@@ -5340,41 +5340,41 @@ export function ManageHubPage({
                           {isTextCard ? (
                             <div
                               onClick={e => e.stopPropagation()}
-                              className={`w-full ${aspectClass} bg-transparent text-black dark:text-white p-4 sm:p-5 flex flex-col justify-between border border-black/15 dark:border-white/15 relative group transition-all my-auto overflow-hidden`}
+                              className={`w-full ${aspectClass} bg-transparent text-black dark:text-white p-4 sm:p-6 md:p-8 flex items-center justify-center border border-black/15 dark:border-white/15 relative group transition-all my-auto overflow-hidden`}
                             >
-                              <div className="flex items-center justify-between pb-1 border-b border-black/10 dark:border-white/10 shrink-0">
-                                <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
-                                  EDITORIAL TEXT CARD
-                                </span>
-                                <span className="text-[9px] font-mono uppercase text-black/40 dark:text-white/40">
-                                  CENTER ALIGNED
-                                </span>
+                              {/* Top Subtle Overlay Badge */}
+                              <div className="absolute top-2 left-3 right-3 flex items-center justify-between text-[9px] font-mono tracking-wider text-black/35 dark:text-white/35 uppercase pointer-events-none z-10">
+                                <span>EDITORIAL TEXT CARD</span>
+                                <span>1:1 SCALE · CENTER</span>
                               </div>
-                              <div className="flex-1 flex flex-col items-center justify-center w-full min-h-0 py-2">
+
+                              <div className="w-full flex items-center justify-center">
                                 <textarea
                                   value={item.textContent || ''}
                                   onChange={e => handleUpdateItemInCurrentSection(item.id, 'textContent', e.target.value)}
                                   placeholder="매거진 본문 텍스트를 입력하세요..."
-                                  className="w-full bg-transparent text-black dark:text-white font-['Noto_Sans_KR',sans-serif] font-bold text-sm sm:text-base md:text-lg leading-snug tracking-tight outline-none resize-none border-0 text-center whitespace-pre-line placeholder:text-black/30 dark:placeholder:text-white/30 overflow-y-auto"
+                                  className="w-full bg-transparent text-black dark:text-white font-['Noto_Sans_KR',sans-serif] font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-tight leading-snug break-keep outline-none resize-none border-0 text-center whitespace-pre-line placeholder:text-black/25 dark:placeholder:text-white/25 overflow-y-auto"
                                   style={{ height: 'auto' }}
                                   ref={el => {
                                     if (el) {
                                       el.style.height = 'auto';
-                                      const maxH = (el.parentElement?.clientHeight || 260) - 8;
+                                      const maxH = (el.parentElement?.clientHeight || 400);
                                       el.style.height = `${Math.min(el.scrollHeight, maxH)}px`;
                                     }
                                   }}
                                   onInput={e => {
                                     const target = e.currentTarget;
                                     target.style.height = 'auto';
-                                    const maxH = (target.parentElement?.clientHeight || 260) - 8;
+                                    const maxH = (target.parentElement?.clientHeight || 400);
                                     target.style.height = `${Math.min(target.scrollHeight, maxH)}px`;
                                   }}
                                 />
                               </div>
-                              <div className="pt-1 border-t border-black/10 dark:border-white/10 shrink-0 flex items-center justify-between text-[9px] font-mono text-black/40 dark:text-white/40">
+
+                              {/* Bottom Subtle Overlay Badge */}
+                              <div className="absolute bottom-2 left-3 right-3 flex items-center justify-between text-[9px] font-mono tracking-wider text-black/30 dark:text-white/30 uppercase pointer-events-none z-10 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <span>ENTER 줄바꿈 지원</span>
-                                <span>가로/세로 중앙정렬</span>
+                                <span>뷰모드 비율 동일</span>
                               </div>
                             </div>
                           ) : (
