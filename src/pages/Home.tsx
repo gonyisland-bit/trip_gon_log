@@ -1993,10 +1993,82 @@ export function HomePage({
           onNavigate('calendar');
         };
 
+        // 이번 달(Month)에 해당하는 여정 및 커스텀 일정 수집 (중앙 1줄 일정 피드용)
+        const currentMonthStr = `${year}-${String(month + 1).padStart(2, '0')}`;
+        const monthSchedules: {
+          id: string | number;
+          title: string;
+          start: string;
+          end: string;
+          days: number;
+          type: 'trip' | 'event';
+        }[] = [];
+
+        // 여정 수집
+        allJourneys.forEach(j => {
+          if (!j.date) return;
+          let sStr = '';
+          let eStr = '';
+          if (j.date.includes('~')) {
+            const parts = j.date.split('~').map(s => s.trim());
+            const pStart = parseDateParts(parts[0]);
+            const pEnd = parseDateParts(parts[1]);
+            if (pStart && pEnd) {
+              sStr = `${pStart.getFullYear()}-${String(pStart.getMonth() + 1).padStart(2, '0')}-${String(pStart.getDate()).padStart(2, '0')}`;
+              eStr = `${pEnd.getFullYear()}-${String(pEnd.getMonth() + 1).padStart(2, '0')}-${String(pEnd.getDate()).padStart(2, '0')}`;
+            }
+          } else {
+            const p = parseDateParts(j.date);
+            if (p) {
+              sStr = `${p.getFullYear()}-${String(p.getMonth() + 1).padStart(2, '0')}-${String(p.getDate()).padStart(2, '0')}`;
+              eStr = sStr;
+            }
+          }
+          if (sStr && ((sStr.startsWith(currentMonthStr)) || (eStr && eStr.startsWith(currentMonthStr)) || (sStr < currentMonthStr && eStr > currentMonthStr))) {
+            const dCount = sStr && eStr ? Math.max(1, Math.round((new Date(eStr).getTime() - new Date(sStr).getTime()) / (1000 * 60 * 60 * 24)) + 1) : 1;
+            monthSchedules.push({
+              id: j.id,
+              title: j.title.replace(' (Plan)', ''),
+              start: sStr,
+              end: eStr,
+              days: dCount,
+              type: 'trip'
+            });
+          }
+        });
+
+        // 로컬 커스텀 이벤트 수집
+        try {
+          const rawEvents = localStorage.getItem('custom_calendar_events');
+          if (rawEvents) {
+            const parsedEvents = JSON.parse(rawEvents);
+            if (Array.isArray(parsedEvents)) {
+              parsedEvents.forEach(evt => {
+                const sStr = evt.startDate;
+                const eStr = evt.endDate || evt.startDate;
+                if (sStr && ((sStr.startsWith(currentMonthStr)) || (eStr && eStr.startsWith(currentMonthStr)) || (sStr < currentMonthStr && eStr > currentMonthStr))) {
+                  const dCount = sStr && eStr ? Math.max(1, Math.round((new Date(eStr).getTime() - new Date(sStr).getTime()) / (1000 * 60 * 60 * 24)) + 1) : 1;
+                  monthSchedules.push({
+                    id: evt.id,
+                    title: evt.title,
+                    start: sStr,
+                    end: eStr,
+                    days: dCount,
+                    type: 'event'
+                  });
+                }
+              });
+            }
+          }
+        } catch (_) {}
+
+        // 시작일 기준 정렬
+        monthSchedules.sort((a, b) => a.start.localeCompare(b.start));
+
         return (
           <section className="w-full max-w-[1920px] mx-auto border-t border-black/10 dark:border-white/10 mt-14 pt-12 pb-16 px-4 sm:px-8 md:px-12 select-none">
             {/* Minimal Section Sub-Header */}
-            <div className="flex items-center justify-between pb-6 border-b border-black/10 dark:border-white/10 mb-8">
+            <div className="flex items-center justify-between pb-5 border-b border-black/10 dark:border-white/10 mb-8">
               <div className="flex items-center gap-2.5">
                 <span className="bg-black text-white dark:bg-white dark:text-black font-mono font-black text-[10px] px-2 py-0.5 uppercase tracking-widest">
                   CALENDAR ARCHIVE
@@ -2015,51 +2087,80 @@ export function HomePage({
               </button>
             </div>
 
-            {/* Swiss Layout: Left Big Date & Month + Right Circular Dot Grid (2번 첨부 스타일) */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 items-center justify-between">
-              {/* Left Column: Giant Typography */}
-              <div className="md:col-span-5 lg:col-span-4 flex flex-col justify-center">
+            {/* Swiss 3-Column Layout: Left (Big Month + SEPTEMBER) - Middle (1-Line Schedules) - Right (Circular Dot Grid) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+              {/* Left Column: Giant Month Number + Horizontal Month Name & Year */}
+              <div className="lg:col-span-4 flex items-center gap-4 sm:gap-5">
                 <div 
                   onClick={() => onNavigate('calendar')}
-                  className="cursor-pointer group flex flex-col items-start"
+                  className="cursor-pointer group flex items-baseline gap-3.5"
                   title="달력 허브로 이동"
                 >
                   <span className="text-7xl sm:text-8xl lg:text-9xl font-black font-satoshi tracking-tighter leading-none text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
-                    {dateNum}
+                    {String(month + 1).padStart(2, '0')}
                   </span>
-                  <div className="mt-2 flex flex-col">
-                    <span className="text-xl sm:text-2xl font-black font-satoshi tracking-tight uppercase text-black dark:text-white leading-tight">
+                  <div className="flex flex-col justify-center">
+                    <span className="text-xl sm:text-2xl lg:text-3xl font-black font-satoshi tracking-tight uppercase text-black dark:text-white leading-tight">
                       {MONTH_NAMES_EN[month]}
                     </span>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-lg sm:text-xl font-medium font-satoshi text-black/40 dark:text-white/40">
+                      <span className="text-sm sm:text-base font-bold font-mono text-black/40 dark:text-white/40">
                         {year}
                       </span>
-                      <span className="text-sm sm:text-base font-bold font-mono text-red-600 dark:text-red-500 uppercase">
-                        · {dayOfWeekStr}
+                      <span className="text-xs sm:text-sm font-bold font-mono text-red-600 dark:text-red-500 uppercase">
+                        · {dateNum} {dayOfWeekStr}
                       </span>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Micro helper label */}
-                <div className="mt-4 pt-3 border-t border-black/10 dark:border-white/10 flex items-center gap-3 text-xs font-mono text-black/50 dark:text-white/50">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#FF6B35]" />
-                    <span className="text-[11px] font-bold">여정/오늘 강조</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-black dark:bg-white" />
-                    <span className="text-[11px] font-bold">일반 날짜</span>
-                  </div>
+              {/* Middle Column: 1-Line Simple Schedules Feed (빈 영역 채움) */}
+              <div className="lg:col-span-4 flex flex-col justify-center border-t lg:border-t-0 lg:border-l lg:border-r border-black/10 dark:border-white/10 pt-4 lg:pt-0 lg:px-6 min-h-[140px]">
+                <div className="text-[10px] font-mono font-black uppercase tracking-widest text-black/40 dark:text-white/40 mb-2.5">
+                  MONTHLY SCHEDULES ({monthSchedules.length})
                 </div>
+
+                {monthSchedules.length === 0 ? (
+                  <div className="text-xs font-mono text-black/40 dark:text-white/40 py-4">
+                    NO SCHEDULES RECORDED THIS MONTH
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2 max-h-[180px] overflow-y-auto pr-1 divide-y divide-black/5 dark:divide-white/5">
+                    {monthSchedules.map((item) => {
+                      const sFormatted = item.start ? `${parseInt(item.start.split('-')[1], 10)}/${parseInt(item.start.split('-')[2], 10)}` : '';
+                      const eFormatted = item.end && item.end !== item.start ? `${parseInt(item.end.split('-')[1], 10)}/${parseInt(item.end.split('-')[2], 10)}` : sFormatted;
+                      const dateRangeStr = sFormatted === eFormatted ? sFormatted : `${sFormatted} - ${eFormatted}`;
+
+                      return (
+                        <div
+                          key={`home-sched-${item.id}`}
+                          onClick={() => handleCellClick(item.start)}
+                          className="pt-1.5 flex items-center justify-between gap-2 text-xs font-mono cursor-pointer group hover:text-red-600 transition-colors"
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <span className="text-black/50 dark:text-white/50 font-bold shrink-0">
+                              {dateRangeStr}
+                            </span>
+                            <span className="font-sans font-bold text-black dark:text-white group-hover:text-red-600 truncate">
+                              {item.title}
+                            </span>
+                          </div>
+                          <span className="text-[10.5px] font-bold text-red-600 dark:text-red-400 shrink-0">
+                            {item.days}D
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Right Column: Circular Dot Grid (7 Columns: M T W T F S S) */}
-              <div className="md:col-span-7 lg:col-span-8 flex flex-col items-center md:items-end justify-center w-full">
+              <div className="lg:col-span-4 flex flex-col items-start lg:items-end justify-center w-full">
                 <div className="inline-block max-w-full">
                   {/* Weekday Headers: M T W T F S S */}
-                  <div className="grid grid-cols-7 gap-2 sm:gap-3.5 md:gap-4 mb-2 sm:mb-3 text-center text-xs sm:text-sm font-black font-mono select-none text-black/40 dark:text-white/40">
+                  <div className="grid grid-cols-7 gap-2 sm:gap-3 mb-2 text-center text-xs font-black font-mono select-none text-black/40 dark:text-white/40">
                     <div>M</div>
                     <div>T</div>
                     <div>W</div>
@@ -2070,19 +2171,17 @@ export function HomePage({
                   </div>
 
                   {/* Circular Dot Grid */}
-                  <div className="grid grid-cols-7 gap-2 sm:gap-3.5 md:gap-4">
+                  <div className="grid grid-cols-7 gap-2 sm:gap-3">
                     {cells.map((cell) => {
                       if (!cell.isCurrentMonth) {
-                        // Empty / Outline circle for padding days
                         return (
                           <div
                             key={cell.key}
-                            className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center pointer-events-none"
+                            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center pointer-events-none"
                           />
                         );
                       }
 
-                      // Is Highlighted (Journey or Today) -> Vibrant Orange / Red Accent
                       const isHighlighted = cell.hasTrip || cell.isToday;
 
                       return (
@@ -2091,18 +2190,17 @@ export function HomePage({
                           type="button"
                           onClick={() => handleCellClick(cell.dateStr)}
                           title={cell.holidayName ? `${cell.dateStr} (${cell.holidayName})` : cell.dateStr}
-                          className={`w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full flex flex-col items-center justify-center font-mono transition-all duration-200 cursor-pointer relative group ${
+                          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex flex-col items-center justify-center font-mono transition-all duration-200 cursor-pointer relative group ${
                             isHighlighted
                               ? 'bg-[#FF6B35] hover:bg-[#FF5510] text-white shadow-md scale-105 active:scale-95'
                               : 'bg-black text-white dark:bg-white dark:text-black hover:opacity-80 active:scale-95'
                           }`}
                         >
-                          <span className={`text-[11px] sm:text-xs md:text-sm font-black leading-none ${
+                          <span className={`text-[11px] sm:text-xs font-black leading-none ${
                             !isHighlighted && cell.isHoliday ? 'text-red-300 dark:text-red-600' : ''
                           }`}>
                             {cell.dayNum}
                           </span>
-                          {/* Sub-dot for holiday or special note */}
                           {cell.isHoliday && (
                             <span className="w-1 h-1 rounded-full bg-red-400 dark:bg-red-500 mt-0.5" />
                           )}

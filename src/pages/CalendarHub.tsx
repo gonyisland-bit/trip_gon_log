@@ -1198,16 +1198,14 @@ export function CalendarHubPage({
             </div>
           </div>
 
-          {/* Right: View Mode Toggle, Controls & Metrics */}
-          <div className="flex flex-col items-start md:items-end gap-3 w-full md:w-auto">
-            {/* View Mode Toggle + Navigation Buttons + Add Schedule Button - 1 Row Optimized */}
-            <div className="flex items-center justify-between md:justify-end gap-1.5 sm:gap-2 w-full flex-wrap sm:flex-nowrap">
+            {/* View Mode Toggle + DRAG Toggle + Navigation Buttons + ADD + Days Badge - Compact 1 Row Layout */}
+            <div className="flex items-center justify-between md:justify-end gap-1.5 sm:gap-2 w-full flex-wrap">
               {/* Left group: View Mode Switcher */}
               <div className="flex items-center p-0.5 bg-black/5 dark:bg-white/10 rounded-full border border-black/10 dark:border-white/10 font-mono text-[11px] sm:text-xs font-bold shrink-0">
                 <button
                   type="button"
                   onClick={() => toggleViewMode('month')}
-                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 ${
+                  className={`px-2 sm:px-2.5 py-1 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
                     viewMode === 'month'
                       ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
                       : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -1220,7 +1218,7 @@ export function CalendarHubPage({
                 <button
                   type="button"
                   onClick={() => toggleViewMode('year')}
-                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 ${
+                  className={`px-2 sm:px-2.5 py-1 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
                     viewMode === 'year'
                       ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
                       : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -1232,42 +1230,50 @@ export function CalendarHubPage({
                 </button>
               </div>
 
-              {/* Drag Select Mode Toggle Button (월별 보기에서만 유효) */}
+              {/* Drag Toggle Button (심플하게 DRAG 단일 표기, 끄면 선택 해제) */}
               {viewMode === 'month' && (
                 <button
                   type="button"
-                  onClick={() => setIsDragSelectMode(prev => !prev)}
-                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border text-[11px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 shadow-xs ${
+                  onClick={() => {
+                    setIsDragSelectMode(prev => {
+                      const next = !prev;
+                      if (!next) {
+                        setSelectedRange(null);
+                      }
+                      return next;
+                    });
+                  }}
+                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border text-[11px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1 shrink-0 shadow-xs ${
                     isDragSelectMode
                       ? 'bg-red-600 text-white border-red-600 ring-2 ring-red-600/30'
                       : 'bg-white/80 dark:bg-zinc-900/80 border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
                   }`}
-                  title={isDragSelectMode ? "드래그 선택 활성화 중 (화면 스크롤이 잠기고 날짜 드래그 선택 가능)" : "드래그 선택 켜기 (화면 스크롤 가능 상태)"}
+                  title={isDragSelectMode ? "드래그 모드 활성 (클릭 시 해제)" : "드래그 모드 켜기"}
                 >
-                  <MousePointerClick className="w-3.5 h-3.5" />
-                  <span>{isDragSelectMode ? 'DRAG: ON' : 'DRAG SELECT'}</span>
+                  <MousePointerClick className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span>{isDragSelectMode ? 'DRAG: ON' : 'DRAG'}</span>
                   {isDragSelectMode && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />}
                 </button>
               )}
 
-              {/* Right group: Prev, Today, Next & Add Schedule */}
+              {/* Right group: Prev, Today, Next, Add & Days Badge */}
               <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                 {/* Prev Button */}
                 <button
                   type="button"
                   onClick={viewMode === 'month' ? handlePrevMonth : () => setCurrentYear(prev => prev - 1)}
-                  className="p-1.5 sm:p-2 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center"
-                  title={viewMode === 'month' ? "이전 달 (← 화살표)" : "이전 연도"}
+                  className="p-1 sm:p-1.5 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center"
+                  title={viewMode === 'month' ? "이전 달" : "이전 연도"}
                 >
-                  <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
 
                 {/* Today Button */}
                 <button
                   type="button"
                   onClick={handleGoToday}
-                  className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black text-black dark:text-white hover:text-white dark:hover:bg-white dark:hover:text-black text-[11px] sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs"
-                  title="오늘 날짜로 이동 (T)"
+                  className="px-2 sm:px-2.5 py-1 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black text-black dark:text-white hover:text-white dark:hover:bg-white dark:hover:text-black text-[10.5px] sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs"
+                  title="오늘 날짜로 이동"
                 >
                   TODAY
                 </button>
@@ -1276,30 +1282,28 @@ export function CalendarHubPage({
                 <button
                   type="button"
                   onClick={viewMode === 'month' ? handleNextMonth : () => setCurrentYear(prev => prev + 1)}
-                  className="p-1.5 sm:p-2 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center"
-                  title={viewMode === 'month' ? "다음 달 (→ 화살표)" : "다음 연도"}
+                  className="p-1 sm:p-1.5 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center"
+                  title={viewMode === 'month' ? "다음 달" : "다음 연도"}
                 >
-                  <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
 
                 {/* Add Schedule Button */}
                 <button
                   type="button"
                   onClick={() => openNewEventModal()}
-                  className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-red-600 hover:bg-red-700 text-white text-[11px] sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center gap-1 shrink-0"
+                  className="px-2 sm:px-2.5 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white text-[10.5px] sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center gap-1 shrink-0"
                   title="새 일정 등록"
                 >
-                  <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
-                  <span className="hidden xs:inline">ADD</span>
+                  <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2.5]" />
+                  <span>ADD</span>
                 </button>
-              </div>
-            </div>
 
-            {/* Travel Days Metric Single Badge (스위스 미니멀 단일화) */}
-            <div className="flex items-center gap-1.5 font-mono text-xs sm:text-sm font-bold tracking-wider text-black/80 dark:text-white/80">
-              <span className="px-3 py-1 bg-black/5 dark:bg-white/10 rounded-full border border-black/10 dark:border-white/10">
-                ✈️ {viewMode === 'month' ? `${monthStats.travelDays} DAYS` : `${yearStats.travelDays} DAYS`}
-              </span>
+                {/* Days Metric Badge (우측에 나란히 배치하여 여백 낭비 제거, 이모지 제거) */}
+                <div className="ml-0.5 px-2 sm:px-2.5 py-1 bg-black/5 dark:bg-white/10 rounded-full border border-black/10 dark:border-white/10 text-[10.5px] sm:text-xs font-mono font-bold tracking-wider text-black/80 dark:text-white/80 shrink-0">
+                  <span>{viewMode === 'month' ? `${monthStats.travelDays} DAYS` : `${yearStats.travelDays} DAYS`}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1394,6 +1398,7 @@ export function CalendarHubPage({
                 const isRangeEnd = !!(selectedRange && cell.dateStr === selectedRange.end);
 
                 // Unified Box Border Calculation (상하좌우 인접 셀이 선택 영역에 포함되는지 확인하여 외곽선만 렌더링)
+                // 드래그 활성화 시: 빨간 테두리 + 빨간 틴트 / 일반 선택 시: 검정 테두리 + 검정 반투명 틴트
                 let borderClasses = '';
                 if (isInRange) {
                   const col = cellIdx % 7;
@@ -1404,15 +1409,27 @@ export function CalendarHubPage({
                   const hasLeftNeighbor = col > 0 && calendarGrid[cellIdx - 1]?.dateStr >= selectedRange!.start && calendarGrid[cellIdx - 1]?.dateStr <= selectedRange!.end;
                   const hasRightNeighbor = col < 6 && calendarGrid[cellIdx + 1]?.dateStr >= selectedRange!.start && calendarGrid[cellIdx + 1]?.dateStr <= selectedRange!.end;
 
-                  borderClasses = `bg-red-500/10 dark:bg-red-500/15 z-10 ${
-                    !hasTopNeighbor ? 'border-t-2 border-t-red-600 dark:border-t-red-500' : ''
-                  } ${
-                    !hasBottomNeighbor ? 'border-b-2 border-b-red-600 dark:border-b-red-500' : ''
-                  } ${
-                    !hasLeftNeighbor ? 'border-l-2 border-l-red-600 dark:border-l-red-500' : ''
-                  } ${
-                    !hasRightNeighbor ? 'border-r-2 border-r-red-600 dark:border-r-red-500' : ''
-                  }`;
+                  if (isDragSelectMode) {
+                    borderClasses = `bg-red-500/10 dark:bg-red-500/15 z-10 ${
+                      !hasTopNeighbor ? 'border-t-2 border-t-red-600 dark:border-t-red-500' : ''
+                    } ${
+                      !hasBottomNeighbor ? 'border-b-2 border-b-red-600 dark:border-b-red-500' : ''
+                    } ${
+                      !hasLeftNeighbor ? 'border-l-2 border-l-red-600 dark:border-l-red-500' : ''
+                    } ${
+                      !hasRightNeighbor ? 'border-r-2 border-r-red-600 dark:border-r-red-500' : ''
+                    }`;
+                  } else {
+                    borderClasses = `bg-black/10 dark:bg-white/15 z-10 ${
+                      !hasTopNeighbor ? 'border-t-2 border-t-black dark:border-t-white' : ''
+                    } ${
+                      !hasBottomNeighbor ? 'border-b-2 border-b-black dark:border-b-white' : ''
+                    } ${
+                      !hasLeftNeighbor ? 'border-l-2 border-l-black dark:border-l-white' : ''
+                    } ${
+                      !hasRightNeighbor ? 'border-r-2 border-r-black dark:border-r-white' : ''
+                    }`;
+                  }
                 }
 
                 // 트랙 슬롯 매핑: 월 전체의 globalMaxTracks를 기준으로 모든 셀이 일관된 슬롯 배열을 갖도록 보장
