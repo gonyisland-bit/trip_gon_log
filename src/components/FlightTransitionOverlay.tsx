@@ -28,34 +28,36 @@ export const FlightTransitionOverlay: React.FC<FlightTransitionOverlayProps> = (
     setAnimating(true);
     halfwayFiredRef.current = false;
 
-    // Halfway callback: When airplane covers center of the screen (at ~420ms in 880ms animation)
+    // Halfway callback: When airplane covers center of the screen (at 380ms in 850ms smooth flight)
     const halfwayTimer = setTimeout(() => {
-      if (isActive && !halfwayFiredRef.current) {
+      if (!halfwayFiredRef.current) {
         halfwayFiredRef.current = true;
         onHalfway();
       }
-    }, 420);
+    }, 380);
 
-    // Completion callback: When airplane smoothly exits to the left (at 880ms)
-    const completeTimer = setTimeout(() => {
+    // Fallback completion callback in case animationend does not fire
+    const fallbackTimer = setTimeout(() => {
       setAnimating(false);
       onComplete();
-    }, 880);
+    }, 870);
 
     return () => {
       clearTimeout(halfwayTimer);
-      clearTimeout(completeTimer);
+      clearTimeout(fallbackTimer);
     };
   }, [isActive, onHalfway, onComplete]);
 
-  // Tap to skip: Immediate entrance to detail page if user taps anywhere during the 0.88s flight
-  const handleTapToSkip = () => {
-    if (!halfwayFiredRef.current) {
-      halfwayFiredRef.current = true;
-      onHalfway();
+  const handleAnimationEnd = (e: React.AnimationEvent) => {
+    // Only respond to the main flight sweep animation
+    if (e.animationName === 'flightSweepAccelerate') {
+      if (!halfwayFiredRef.current) {
+        halfwayFiredRef.current = true;
+        onHalfway();
+      }
+      setAnimating(false);
+      onComplete();
     }
-    setAnimating(false);
-    onComplete();
   };
 
   if (!isActive && !animating) return null;
@@ -69,58 +71,50 @@ export const FlightTransitionOverlay: React.FC<FlightTransitionOverlayProps> = (
 
   return (
     <div 
-      onClick={handleTapToSkip}
-      className="fixed inset-0 z-[9999] overflow-hidden flex items-center justify-center select-none cursor-pointer"
+      className="fixed inset-0 z-[9999] pointer-events-none overflow-hidden flex items-center justify-center select-none"
       aria-hidden="true"
     >
       <style>{`
         @keyframes flightSweepAccelerate {
           0% {
-            transform: translate3d(120vw, 0, 0) scale(0.92) rotate(-1.5deg);
-            opacity: 0.88;
-          }
-          32% {
-            transform: translate3d(50vw, 0, 0) scale(0.97) rotate(-1.5deg);
-            opacity: 1;
-          }
-          62% {
-            transform: translate3d(-10vw, 0, 0) scale(1.02) rotate(-1.5deg);
-            opacity: 1;
+            transform: translate3d(120vw, 0, 0) scale(0.94) rotate(-1.5deg);
           }
           100% {
-            transform: translate3d(-140vw, 0, 0) scale(1.06) rotate(-1.5deg);
-            opacity: 0.9;
+            transform: translate3d(-140vw, 0, 0) scale(1.05) rotate(-1.5deg);
           }
         }
         @keyframes contrailStream {
           0% {
-            opacity: 0.3;
-            transform: scaleX(0.4);
+            opacity: 0.2;
+            transform: scaleX(0.3);
           }
-          45% {
+          40% {
             opacity: 0.8;
             transform: scaleX(1);
           }
           100% {
-            opacity: 0.5;
+            opacity: 0.3;
             transform: scaleX(1.3);
           }
         }
-        .animate-flight-sweep-accelerate {
-          animation: flightSweepAccelerate 0.88s cubic-bezier(0.38, 0, 0.15, 1) forwards;
+        .animate-flight-sweep-continuous {
+          animation: flightSweepAccelerate 0.85s cubic-bezier(0.5, 0, 0.2, 1) forwards;
           will-change: transform;
         }
-        .animate-contrail-stream {
-          animation: contrailStream 0.88s ease-out forwards;
+        .animate-contrail-continuous {
+          animation: contrailStream 0.85s ease-out forwards;
           transform-origin: right center;
         }
       `}</style>
 
-      {/* Flight Container moving continuously from Right to Left with gradual acceleration */}
-      <div className="relative w-[130vw] h-[130vh] max-w-none flex items-center justify-center animate-flight-sweep-accelerate shrink-0 pointer-events-none">
+      {/* Flight Container: Continuous, uninterrupted gradual acceleration without any intermediate pause */}
+      <div 
+        onAnimationEnd={handleAnimationEnd}
+        className="relative w-[130vw] h-[130vh] max-w-none flex items-center justify-center animate-flight-sweep-continuous shrink-0 pointer-events-none"
+      >
         
         {/* Trailing Jet Contrails behind the right tail */}
-        <div className="absolute right-[20%] top-1/2 -translate-y-1/2 flex flex-col gap-12 w-[75vw] pointer-events-none animate-contrail-stream">
+        <div className="absolute right-[20%] top-1/2 -translate-y-1/2 flex flex-col gap-12 w-[75vw] pointer-events-none animate-contrail-continuous">
           <div className="h-[1.5px] w-full" style={{ background: `linear-gradient(to left, transparent, ${contrailColor})` }} />
           <div className="flex items-center gap-2.5 justify-end pr-12">
             <span className="font-mono text-[9px] sm:text-[10px] font-bold tracking-[0.25em] uppercase" style={{ color: fuselageFill }}>

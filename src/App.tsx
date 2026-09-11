@@ -2248,8 +2248,8 @@ function App() {
 
   return (
     <div className={`${isDarkMode ? 'dark' : ''} overflow-x-hidden w-full`}>
-      {/* Seamless Top Progress Indicator during route transitions */}
-      <TopProgressBar isNavigating={isNavigating} />
+      {/* Seamless Top Progress Indicator during route transitions (hidden during flight sweep) */}
+      <TopProgressBar isNavigating={isNavigating && !flightTransition.isActive} />
 
       {/* Fullscreen Airplane Vector Transition Overlay */}
       <FlightTransitionOverlay
