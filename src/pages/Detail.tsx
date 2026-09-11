@@ -5,7 +5,7 @@ import {
   ExternalLink, MapPinOff, Maximize2, Star, ChevronLeft, ChevronRight, ArrowUp, ArrowDown,
   Sun, Cloud, Cloudy, CloudRain, Snowflake, CloudLightning, ArrowRight, Calculator, FileText, Share2, GripVertical,
   Play, Pause, SkipForward, SkipBack, X as CloseIcon, Check, Edit3, DollarSign,
-  Columns2, LayoutGrid, ArrowRightLeft, X, Coins, Undo2, Redo2
+  Columns2, LayoutGrid, ArrowRightLeft, X, Coins, Undo2, Redo2, Calendar
 } from 'lucide-react';
 import { MapArea } from '../components/MapArea';
 import { ImageEditOverlay } from '../components/ImageEditOverlay';
@@ -3245,6 +3245,17 @@ export function JourneyDetailPage({
     return formattedGroups.join(' · ');
   };
 
+  // Open current journey in Swiss Minimal Calendar Hub
+  const handleOpenInCalendar = () => {
+    if (trip.date) {
+      const firstDate = trip.date.split('-')[0].trim().replace(/\./g, '-');
+      try {
+        sessionStorage.setItem('calendar_target_date', firstDate);
+      } catch (_) {}
+    }
+    onNavigate('calendar');
+  };
+
   // Render Info Header ("여정배너"): Single-line compact top banner with collapsible accordion menu
   const renderInfoHeader = () => (
     <div className="w-full border-b border-black/15 dark:border-white/15 z-20 bg-white dark:bg-[#0A0A0A] transition-colors shrink-0 select-none">
@@ -3287,6 +3298,14 @@ export function JourneyDetailPage({
             <div className="flex items-center gap-1.5 text-xs sm:text-sm font-mono font-bold text-black/80 dark:text-white/80 min-w-0">
               <span className="hidden sm:inline text-black/35 dark:text-white/35">·</span>
               <span className="truncate sm:break-keep font-bold leading-tight">{generateJourneyMessage(trip.locationStr, trip.date, generatedDates.length)}</span>
+              <button
+                type="button"
+                onClick={handleOpenInCalendar}
+                className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded transition-colors text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white shrink-0 cursor-pointer"
+                title="스위스 달력에서 이 여정 확인하기"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
         </div>
@@ -3446,6 +3465,15 @@ export function JourneyDetailPage({
               >
                 <Share2 className="w-3 h-3" />
                 <span>Share</span>
+              </button>
+
+              <button
+                onClick={handleOpenInCalendar}
+                className="px-2.5 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 rounded text-[9px] font-bold uppercase tracking-wider text-black/70 dark:text-white/70 transition-colors flex items-center gap-1 cursor-pointer"
+                title="달력에서 보기"
+              >
+                <Calendar className="w-3 h-3" />
+                <span>Calendar</span>
               </button>
 
               {isEditing && (

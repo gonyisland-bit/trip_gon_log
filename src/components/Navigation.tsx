@@ -147,6 +147,16 @@ export function Navigation({
             >
               MAP
             </button>
+            <button 
+              onClick={() => navigateTo('calendar')} 
+              className={`text-xs md:text-sm font-black tracking-widest uppercase transition-colors cursor-pointer py-1 ${
+                currentView === 'calendar' 
+                  ? 'text-black dark:text-white border-b-2 border-black dark:border-white' 
+                  : 'text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+              }`}
+            >
+              CALENDAR
+            </button>
           </div>
         </div>
 
@@ -332,13 +342,29 @@ export function Navigation({
               </span>
             </button>
 
+            <button
+              onClick={() => handleMenuNavigate('calendar')}
+              className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-2"
+            >
+              <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-4 sm:mr-6 select-none">
+                05
+              </span>
+              <span className={`font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight transition-colors ${
+                currentView === 'calendar' 
+                  ? 'text-black dark:text-white underline decoration-2 underline-offset-8' 
+                  : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
+              }`}>
+                CALENDAR
+              </span>
+            </button>
+
             {isLoggedIn && isAdmin && (
               <button
                 onClick={() => handleMenuNavigate(currentView === 'manage' ? 'home' : 'manage')}
                 className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-2"
               >
                 <span className="font-mono text-xs sm:text-sm font-bold text-red-600 dark:text-red-400 mr-4 sm:mr-6 select-none">
-                  05
+                  06
                 </span>
                 <span className={`font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight transition-colors ${
                   currentView === 'manage' 
@@ -355,7 +381,7 @@ export function Navigation({
               className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-2"
             >
               <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-4 sm:mr-6 select-none">
-                {isLoggedIn && isAdmin ? '06' : '05'}
+                {isLoggedIn && isAdmin ? '07' : '06'}
               </span>
               <div className="flex items-center gap-3">
                 <span className="font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white transition-colors">

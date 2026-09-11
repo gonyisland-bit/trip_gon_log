@@ -39,6 +39,7 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
 const MapHubPage = lazyWithRetry(() => import('./pages/MapHub').then(m => ({ default: m.MapHubPage })));
 const ManageHubPage = lazyWithRetry(() => import('./pages/ManageHub').then(m => ({ default: m.ManageHubPage })));
 const JourneyDetailPage = lazyWithRetry(() => import('./pages/Detail').then(m => ({ default: m.JourneyDetailPage })));
+const CalendarHubPage = lazyWithRetry(() => import('./pages/CalendarHub').then(m => ({ default: m.CalendarHubPage })));
 
 const AuthModal = lazyWithRetry(() => import('./components/AuthModal').then(m => ({ default: m.AuthModal })));
 const CreateTripModal = lazyWithRetry(() => import('./components/CreateTripModal').then(m => ({ default: m.CreateTripModal })));
@@ -150,12 +151,15 @@ function getInitialNavigationState(): { view: string; tripId: number | null; isS
     if (path === '/magazine' || window.location.hash === '#magazine') {
       return { view: 'magazine', tripId: null, isShare: false };
     }
+    if (path === '/calendar' || window.location.hash === '#calendar') {
+      return { view: 'calendar', tripId: null, isShare: false };
+    }
     if (path === '/detail' || idParam) {
       return { view: 'detail', tripId: idParam ? Number(idParam) : null, isShare: false };
     }
 
     const lastView = sessionStorage.getItem('lastView') || localStorage.getItem('lastView');
-    if (lastView && ['home', 'archive', 'map', 'manage', 'magazine', 'detail'].includes(lastView)) {
+    if (lastView && ['home', 'archive', 'map', 'manage', 'magazine', 'calendar', 'detail'].includes(lastView)) {
       const lastTripId = sessionStorage.getItem('lastTripId') || localStorage.getItem('lastTripId');
       return {
         view: lastView,
@@ -1015,6 +1019,8 @@ function App() {
           setCurrentView('map');
         } else if (path === '/manage' || window.location.hash === '#manage') {
           setCurrentView('manage');
+        } else if (path === '/calendar' || window.location.hash === '#calendar') {
+          setCurrentView('calendar');
         } else {
           setCurrentView('home');
         }
@@ -1088,6 +1094,7 @@ function App() {
       else if (effectiveView === 'magazine') path = '/magazine';
       else if (effectiveView === 'map') path = '/map';
       else if (effectiveView === 'manage') path = '/manage';
+      else if (effectiveView === 'calendar') path = '/calendar';
       else if (effectiveView === 'detail') {
         const idToUse = tripId || activeTripId;
         const isShare = (effectiveView === 'detail' && (tripId === activeTripId || tripId === null || tripId === idToUse)) ? isShareMode : false;
@@ -2553,6 +2560,15 @@ function App() {
                   onNavigate={navigateTo}
                   isLoggedIn={isLoggedIn}
                   isAdmin={isAdmin}
+                  isDarkMode={isDarkMode}
+                />
+              )}
+              {currentView === 'calendar' && (
+                <CalendarHubPage
+                  trips={trips}
+                  plans={plans}
+                  timelineData={timelineData}
+                  onNavigate={navigateTo}
                   isDarkMode={isDarkMode}
                 />
               )}
