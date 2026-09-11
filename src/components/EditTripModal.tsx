@@ -806,9 +806,15 @@ export function EditTripModal({
                 members.map(m => (
                   <span 
                     key={m} 
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-xs font-bold rounded-sm"
+                    className="luggage-tag group/luggage cursor-default"
                   >
-                    {m}
+                    <span className="luggage-tag-hole" />
+                    <span>{m}</span>
+                    <span className="luggage-barcode-strip">
+                      <span className="luggage-barcode-bar w-[1px]" />
+                      <span className="luggage-barcode-bar w-[2px]" />
+                      <span className="luggage-barcode-bar w-[1px]" />
+                    </span>
                     <button
                       type="button"
                       onClick={() => {
@@ -816,7 +822,7 @@ export function EditTripModal({
                           setMembers(prev => prev.filter(x => x !== m));
                         }
                       }}
-                      className="text-red-500 hover:text-red-700 transition-colors"
+                      className="text-red-500 hover:text-red-700 transition-colors font-bold text-[10px] ml-0.5 leading-none"
                       title="인원 삭제"
                     >
                       ✕

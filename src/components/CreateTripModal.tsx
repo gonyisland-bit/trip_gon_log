@@ -444,13 +444,19 @@ export function CreateTripModal({
                 members.map(m => (
                   <span 
                     key={m} 
-                    className="flex items-center gap-1.5 bg-white dark:bg-[#151515] text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border border-black/15 dark:border-white/15 text-black dark:text-white shadow-xs"
+                    className="luggage-tag group/luggage cursor-default"
                   >
-                    {m}
+                    <span className="luggage-tag-hole" />
+                    <span>{m}</span>
+                    <span className="luggage-barcode-strip">
+                      <span className="luggage-barcode-bar w-[1px]" />
+                      <span className="luggage-barcode-bar w-[2px]" />
+                      <span className="luggage-barcode-bar w-[1px]" />
+                    </span>
                     <button
                       type="button"
                       onClick={() => setMembers(prev => prev.filter(x => x !== m))}
-                      className="text-black/45 dark:text-white/45 hover:text-red-500 transition-colors text-xs leading-none"
+                      className="text-black/45 dark:text-white/45 hover:text-red-500 transition-colors text-xs leading-none ml-0.5 font-bold"
                     >
                       &times;
                     </button>

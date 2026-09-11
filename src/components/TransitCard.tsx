@@ -189,7 +189,7 @@ export function TransitCard({
   return (
     <div 
       onClick={onClick}
-      className={`border-b font-sans text-black dark:text-white relative transition-all duration-300 w-full ${
+      className={`border-b font-sans text-black dark:text-white relative transition-all duration-300 w-full group/ticket ${
         !isEditMode ? 'cursor-pointer hover:bg-black/[0.01] dark:hover:bg-white/[0.01]' : ''
       } ${
         isActive 
@@ -323,8 +323,8 @@ export function TransitCard({
 
       {/* Card Body */}
       <div className="p-4 md:p-6">
-        <div className="flex flex-row items-center justify-between">
-          <div className="flex-grow min-w-0 pr-4">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between relative">
+          <div className="flex-grow min-w-0 pr-0 md:pr-4">
             {isEditMode ? (
               <input
                 type="text"
@@ -537,8 +537,22 @@ export function TransitCard({
             )}
           </div>
           
-          {/* Right Side: Seat (or Car Model/Plate) & Booking Ref Box */}
-          <div className="border border-black/10 dark:border-white/10 p-3 md:p-4 text-left w-28 md:w-40 shrink-0 bg-white/30 dark:bg-black/10">
+          {/* Desktop Ticket Tear-off Perforation with Top & Bottom Notches */}
+          <div className="hidden md:flex relative self-stretch items-center mx-3 my-1">
+            <div className="ticket-notch-top -left-[7px]" />
+            <div className="border-l border-dashed border-black/20 dark:border-white/20 h-20 ticket-tear-line" />
+            <div className="ticket-notch-bottom -left-[7px]" />
+          </div>
+
+          {/* Mobile Horizontal Perforation with Left & Right Notches */}
+          <div className="flex md:hidden relative w-full items-center my-3">
+            <div className="ticket-notch-top -top-[7px] left-0 -translate-x-1/2" />
+            <div className="border-t border-dashed border-black/15 dark:border-white/15 w-full ticket-tear-line" />
+            <div className="ticket-notch-bottom -bottom-[7px] right-0 translate-x-1/2" />
+          </div>
+
+          {/* Right Side: Seat (or Car Model/Plate) & Booking Ref Box (Ticket Stub) */}
+          <div className="border border-black/10 dark:border-white/10 p-3 md:p-4 text-left w-full md:w-40 shrink-0 bg-white/30 dark:bg-black/10 ticket-stub-interactive">
             {transit.transitType === 'car' ? (
               <>
                 <div className="mb-2.5">
@@ -634,6 +648,30 @@ export function TransitCard({
                 </div>
               </>
             )}
+
+            {/* Swiss Minimal Barcode Strip */}
+            <div className="w-full mt-2.5 pt-2 border-t border-dotted border-black/15 dark:border-white/15 flex flex-col items-center md:items-start select-none opacity-60 group-hover/ticket:opacity-90 transition-opacity">
+              <div className="flex items-center gap-[1.5px] h-3 w-full justify-center md:justify-start">
+                <span className="w-[1.5px] h-full bg-black dark:bg-white shrink-0" />
+                <span className="w-[1px] h-full bg-black dark:bg-white shrink-0" />
+                <span className="w-[2.5px] h-full bg-black dark:bg-white shrink-0" />
+                <span className="w-[1.5px] h-full bg-transparent shrink-0" />
+                <span className="w-[2px] h-full bg-black dark:bg-white shrink-0" />
+                <span className="w-[1px] h-full bg-black dark:bg-white shrink-0" />
+                <span className="w-[1.5px] h-full bg-transparent shrink-0" />
+                <span className="w-[3px] h-full bg-black dark:bg-white shrink-0" />
+                <span className="w-[1px] h-full bg-black dark:bg-white shrink-0" />
+                <span className="w-[1.5px] h-full bg-black dark:bg-white shrink-0" />
+                <span className="w-[1px] h-full bg-transparent shrink-0" />
+                <span className="w-[2px] h-full bg-black dark:bg-white shrink-0" />
+                <span className="w-[1px] h-full bg-black dark:bg-white shrink-0" />
+                <span className="w-[2.5px] h-full bg-black dark:bg-white shrink-0" />
+                <span className="w-[1.5px] h-full bg-black dark:bg-white shrink-0" />
+              </div>
+              <span className="text-[7px] font-mono tracking-widest text-black/40 dark:text-white/40 uppercase mt-0.5">
+                {transit.transitType === 'car' ? 'LOG-CAR-PASS' : 'LOG-TRN-PASS'}
+              </span>
+            </div>
           </div>
         </div>
         {/* Expanded details section (Shown if active) */}

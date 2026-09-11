@@ -294,7 +294,7 @@ export function FlightCard({
   return (
     <div 
       onClick={onClick}
-      className={`border-b font-sans text-black dark:text-white relative transition-all duration-300 cursor-pointer w-full ${
+      className={`border-b font-sans text-black dark:text-white relative transition-all duration-300 cursor-pointer w-full group/ticket ${
         isActive 
           ? 'border-b-red-600 dark:border-b-red-500 bg-neutral-100/50 dark:bg-white/[0.04]' 
           : 'border-b-black/15 dark:border-b-white/15 bg-white dark:bg-[#0A0A0A]'
@@ -656,14 +656,24 @@ export function FlightCard({
           </div>
         </div>
         
-        {/* Dividers: vertical on desktop, horizontal on mobile */}
-        <div className="hidden md:block border-l border-dashed border-black/20 dark:border-white/20 h-16 self-stretch mx-3"></div>
-        <div className="block md:hidden border-t border-dashed border-black/15 dark:border-white/15 w-full my-1"></div>
+        {/* Desktop Ticket Tear-off Perforation with Top & Bottom Notches */}
+        <div className="hidden md:flex relative self-stretch items-center mx-3 my-1">
+          <div className="ticket-notch-top -left-[7px]" />
+          <div className="border-l border-dashed border-black/20 dark:border-white/20 h-16 ticket-tear-line" />
+          <div className="ticket-notch-bottom -left-[7px]" />
+        </div>
+
+        {/* Mobile Horizontal Perforation with Left & Right Notches */}
+        <div className="flex md:hidden relative w-full items-center my-2">
+          <div className="ticket-notch-top -top-[7px] left-0 -translate-x-1/2" />
+          <div className="border-t border-dashed border-black/15 dark:border-white/15 w-full ticket-tear-line" />
+          <div className="ticket-notch-bottom -bottom-[7px] right-0 translate-x-1/2" />
+        </div>
         
-        {/* Right Side: Seat & PNR (Balanced 2-column on mobile, vertical stack on desktop) */}
-        <div className="w-full md:w-28 md:pl-2 grid grid-cols-2 md:flex md:flex-col items-center justify-between md:justify-center gap-2 md:gap-0 shrink-0">
-          <div className="w-full text-center md:text-left md:mb-2">
-            <span className="text-[9.5px] sm:text-[10px] text-black/50 dark:text-white/50 uppercase font-bold tracking-widest block mb-0.5">SEAT</span>
+        {/* Right Side: Seat, PNR & Minimal Barcode (Boarding Pass Stub) */}
+        <div className="w-full md:w-28 md:pl-2 grid grid-cols-2 md:flex md:flex-col items-center justify-between md:justify-center gap-2 md:gap-0 shrink-0 ticket-stub-interactive">
+          <div className="w-full text-center md:text-left md:mb-1.5">
+            <span className="text-[9px] sm:text-[9.5px] text-black/50 dark:text-white/50 uppercase font-bold tracking-widest block mb-0.5">SEAT</span>
             {isEditMode ? (
               <input
                 type="text"
@@ -679,13 +689,13 @@ export function FlightCard({
                 placeholder="00A"
               />
             ) : (
-              <span className="text-xs sm:text-sm font-bold text-black/80 dark:text-white/80 block uppercase font-mono">
+              <span className="text-xs sm:text-sm font-black text-black/85 dark:text-white/85 block uppercase font-mono tracking-tight">
                 {flight.seat || 'N/A'}
               </span>
             )}
           </div>
           <div className="w-full text-center md:text-left">
-            <span className="text-[9.5px] sm:text-[10px] text-black/50 dark:text-white/50 uppercase font-bold tracking-widest block mb-0.5">PNR</span>
+            <span className="text-[9px] sm:text-[9.5px] text-black/50 dark:text-white/50 uppercase font-bold tracking-widest block mb-0.5">PNR</span>
             {isEditMode ? (
               <input
                 type="text"
@@ -701,10 +711,36 @@ export function FlightCard({
                 placeholder="XXXXXX"
               />
             ) : (
-              <span className="text-xs sm:text-sm font-bold text-black/80 dark:text-white/80 tracking-wide block uppercase font-mono">
+              <span className="text-xs sm:text-sm font-bold text-black/85 dark:text-white/85 tracking-wider block uppercase font-mono">
                 {flight.pnr || 'N/A'}
               </span>
             )}
+          </div>
+
+          {/* Swiss Minimal Barcode Strip */}
+          <div className="col-span-2 w-full mt-2 pt-1.5 border-t border-dotted border-black/15 dark:border-white/15 flex flex-col items-center md:items-start select-none opacity-60 group-hover/ticket:opacity-90 transition-opacity">
+            <div className="flex items-center gap-[1.5px] h-3.5 w-full justify-center md:justify-start">
+              <span className="w-[1.5px] h-full bg-black dark:bg-white shrink-0" />
+              <span className="w-[1px] h-full bg-black dark:bg-white shrink-0" />
+              <span className="w-[3px] h-full bg-black dark:bg-white shrink-0" />
+              <span className="w-[1.5px] h-full bg-transparent shrink-0" />
+              <span className="w-[2px] h-full bg-black dark:bg-white shrink-0" />
+              <span className="w-[1px] h-full bg-black dark:bg-white shrink-0" />
+              <span className="w-[1.5px] h-full bg-transparent shrink-0" />
+              <span className="w-[3px] h-full bg-black dark:bg-white shrink-0" />
+              <span className="w-[1px] h-full bg-black dark:bg-white shrink-0" />
+              <span className="w-[2px] h-full bg-black dark:bg-white shrink-0" />
+              <span className="w-[1px] h-full bg-transparent shrink-0" />
+              <span className="w-[1.5px] h-full bg-black dark:bg-white shrink-0" />
+              <span className="w-[2.5px] h-full bg-black dark:bg-white shrink-0" />
+              <span className="w-[1px] h-full bg-transparent shrink-0" />
+              <span className="w-[1px] h-full bg-black dark:bg-white shrink-0" />
+              <span className="w-[3px] h-full bg-black dark:bg-white shrink-0" />
+              <span className="w-[1.5px] h-full bg-black dark:bg-white shrink-0" />
+            </div>
+            <span className="text-[7.5px] font-mono tracking-widest text-black/50 dark:text-white/50 uppercase mt-0.5 font-bold">
+              {flight.fromCode || 'DEP'}·{flight.toCode || 'ARR'}
+            </span>
           </div>
         </div>
       </div>

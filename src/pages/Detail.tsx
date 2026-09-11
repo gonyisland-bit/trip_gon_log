@@ -3445,17 +3445,24 @@ export function JourneyDetailPage({
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-[10px] uppercase tracking-widest text-black/50 dark:text-white/50 font-bold shrink-0">👥 Members:</span>
               {isEditing && draftTrip ? (
-                <div className="flex flex-wrap gap-1 items-center">
+                <div className="flex flex-wrap gap-2 items-center">
                   {(draftTrip.members || []).map(m => (
-                    <span key={m} className="px-1.5 py-0.5 bg-black/5 dark:bg-white/5 border border-red-500/30 rounded text-black/75 dark:text-white/75 font-bold flex items-center gap-1 text-[10.5px]">
-                      {m}
+                    <span key={m} className="luggage-tag group/luggage cursor-default">
+                      <span className="luggage-tag-hole" />
+                      <span className="font-mono font-bold tracking-tight">{m}</span>
+                      <span className="luggage-barcode-strip ml-0.5">
+                        <span className="luggage-barcode-bar w-[1px]" />
+                        <span className="luggage-barcode-bar w-[2px]" />
+                        <span className="luggage-barcode-bar w-[1px]" />
+                      </span>
                       <button
                         type="button"
                         onClick={() => {
                           const newMembers = (draftTrip.members || []).filter(x => x !== m);
                           setDraftTrip({ ...draftTrip, members: newMembers });
                         }}
-                        className="hover:text-red-500 text-red-600 font-bold text-[10px]"
+                        className="hover:text-red-500 text-red-600 font-bold text-[10px] ml-1 leading-none"
+                        title="삭제"
                       >
                         ✕
                       </button>
@@ -3475,19 +3482,34 @@ export function JourneyDetailPage({
                         }
                       }
                     }}
-                    className="text-[10px] font-bold border border-black/15 px-2 py-0.5 rounded-full bg-transparent outline-none w-20 focus:w-28 text-black dark:text-white"
+                    className="text-[10px] font-bold font-mono border border-black/20 dark:border-white/20 px-2 py-0.5 rounded-sm bg-transparent outline-none w-20 focus:w-28 text-black dark:text-white"
                   />
                 </div>
               ) : (
-                <div className="flex items-center gap-1 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
                   {tripToUse?.members && tripToUse.members.length > 0 ? (
-                    tripToUse.members.map(m => (
-                      <span key={m} className="px-1.5 py-0.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded text-black/75 dark:text-white/75 font-bold text-[10.5px]">
-                        {m}
+                    tripToUse.members.map((m, idx) => (
+                      <span key={m} className="luggage-tag cursor-default" title={`Passenger ${idx + 1}: ${m}`}>
+                        <span className="luggage-tag-hole" />
+                        <span className="font-mono font-bold tracking-tight">{m}</span>
+                        <span className="luggage-barcode-strip ml-0.5">
+                          <span className="luggage-barcode-bar w-[1px]" />
+                          <span className="luggage-barcode-bar w-[2px]" />
+                          <span className="luggage-barcode-bar w-[1px]" />
+                          <span className="luggage-barcode-bar w-[1.5px]" />
+                        </span>
                       </span>
                     ))
                   ) : (
-                    <span className="text-[10.5px] font-medium text-black/50 dark:text-white/50 font-sans">나</span>
+                    <span className="luggage-tag cursor-default" title="Solo Traveler">
+                      <span className="luggage-tag-hole" />
+                      <span className="font-mono font-bold tracking-tight">SOLO (나)</span>
+                      <span className="luggage-barcode-strip ml-0.5">
+                        <span className="luggage-barcode-bar w-[1px]" />
+                        <span className="luggage-barcode-bar w-[2px]" />
+                        <span className="luggage-barcode-bar w-[1px]" />
+                      </span>
+                    </span>
                   )}
                 </div>
               )}
