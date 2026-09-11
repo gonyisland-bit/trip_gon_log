@@ -2558,28 +2558,30 @@ function App() {
 
                   return (
                     <ErrorBoundary>
-                      <JourneyDetailPage 
-                        isLoggedIn={isLoggedIn} 
-                        trip={activeTrip}
-                        timelineData={activeTimelineData}
-                        flights={activeFlights}
-                        stays={activeStays}
-                        transits={activeTransits}
-                        onSave={handleSaveJourneyDetails}
-                        onDelete={handleDeleteJourney}
-                        isDarkMode={isDarkMode}
-                        onNavigate={navigateTo}
-                        searchFocusItemId={searchFocusItemId}
-                        searchFocusTab={searchFocusTab}
-                        onClearSearchFocus={() => {
-                          setSearchFocusItemId(null);
-                          setSearchFocusTab(null);
-                        }}
-                        onEditModeChange={setIsDetailEditing}
-                        saveRef={detailSaveRef}
-                        allTrips={trips}
-                        allPlans={plans}
-                      />
+                      <div className="w-full h-full animate-in fade-in duration-300">
+                        <JourneyDetailPage 
+                          isLoggedIn={isLoggedIn} 
+                          trip={activeTrip}
+                          timelineData={activeTimelineData}
+                          flights={activeFlights}
+                          stays={activeStays}
+                          transits={activeTransits}
+                          onSave={handleSaveJourneyDetails}
+                          onDelete={handleDeleteJourney}
+                          isDarkMode={isDarkMode}
+                          onNavigate={navigateTo}
+                          searchFocusItemId={searchFocusItemId}
+                          searchFocusTab={searchFocusTab}
+                          onClearSearchFocus={() => {
+                            setSearchFocusItemId(null);
+                            setSearchFocusTab(null);
+                          }}
+                          onEditModeChange={setIsDetailEditing}
+                          saveRef={detailSaveRef}
+                          allTrips={trips}
+                          allPlans={plans}
+                        />
+                      </div>
                     </ErrorBoundary>
                   );
                 })() : (
