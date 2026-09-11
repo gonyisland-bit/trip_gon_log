@@ -172,7 +172,7 @@ export function Navigation({
             <Search className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
           </button>
 
-          {/* Edit (Management Hub) Symbol Button - Admin Only */}
+          {/* Edit (Management Hub) Symbol Button - Desktop Admin Only */}
           {isLoggedIn && isAdmin && (
             <button
               type="button"
@@ -186,7 +186,7 @@ export function Navigation({
                   navigateTo('manage');
                 }
               }}
-              className={`p-2 sm:p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center ${
+              className={`hidden md:flex p-2 sm:p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer items-center justify-center ${
                 currentView === 'manage'
                   ? 'text-red-600 dark:text-red-500 bg-black/5 dark:bg-white/5'
                   : 'text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white'
@@ -234,18 +234,20 @@ export function Navigation({
             </button>
           )}
 
-          {/* Mobile Hamburger Menu Toggle Button */}
+          {/* Mobile Main Menu Pill Button - Highly legible & Swiss minimal primary action */}
           <button 
             type="button"
             onClick={() => setShowSettings(!showSettings)}
-            className={`md:hidden p-2 sm:p-2.5 rounded-full transition-colors cursor-pointer ${
+            className={`md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full font-mono text-xs font-black tracking-wider transition-all duration-200 cursor-pointer shadow-xs active:scale-95 ${
               showSettings 
-                ? 'bg-black text-white dark:bg-white dark:text-black' 
-                : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white'
+                ? 'bg-red-600 text-white dark:bg-red-600 dark:text-white' 
+                : 'bg-black text-white dark:bg-white dark:text-black hover:opacity-90'
             }`}
             title="메뉴 열기"
+            aria-label="Toggle navigation menu"
           >
-            <Menu className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+            <Menu className="w-3.5 h-3.5" />
+            <span>MENU</span>
           </button>
         </div>
       </div>

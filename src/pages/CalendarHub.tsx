@@ -89,6 +89,11 @@ function getDaysDifference(startStr: string, endStr: string): number {
   return Math.max(1, diff + 1);
 }
 
+// 두 날짜 문자열 정규화 ({ start: min, end: max })
+function normalizeRange(d1: string, d2: string): { start: string; end: string } {
+  return d1 <= d2 ? { start: d1, end: d2 } : { start: d2, end: d1 };
+}
+
 export function CalendarHubPage({
   trips,
   plans,
@@ -117,7 +122,16 @@ export function CalendarHubPage({
   const [currentMonth, setCurrentMonth] = useState<number>(initialFocus.month); // 0 ~ 11
   const [isEditingYear, setIsEditingYear] = useState<boolean>(false);
   const [yearInputVal, setYearInputVal] = useState<string>(String(initialFocus.year));
-  const [selectedDateStr, setSelectedDateStr] = useState<string | null>(initialFocus.dateStr);
+
+  // 복수 날짜 선택 범위 상태 (단일 날짜 선택 시 start === end)
+  const [selectedRange, setSelectedRange] = useState<{ start: string; end: string } | null>(() => {
+    if (initialFocus.dateStr) {
+      return { start: initialFocus.dateStr, end: initialFocus.dateStr };
+    }
+    return null;
+  });
+  const [dragAnchorDate, setDragAnchorDate] = useState<string | null>(initialFocus.dateStr);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
 
   // 커스텀 사용자 등록 일정 상태
   const [customEvents, setCustomEvents] = useState<CalendarCustomEvent[]>(() => {
@@ -137,7 +151,6 @@ export function CalendarHubPage({
   const [eventFormIsRange, setEventFormIsRange] = useState<boolean>(false);
   const [eventFormCategory, setEventFormCategory] = useState<'work' | 'family' | 'personal' | 'blocked'>('work');
   const [eventFormMemo, setEventFormMemo] = useState<string>('');
-  const [isDeletingEventId, setIsDeletingEventId] = useState<string | null>(null);
 
   const yearInputRef = useRef<HTMLInputElement>(null);
 
@@ -193,7 +206,8 @@ export function CalendarHubPage({
     setCurrentYear(today.getFullYear());
     setCurrentMonth(today.getMonth());
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    setSelectedDateStr(todayStr);
+    setSelectedRange({ start: todayStr, end: todayStr });
+    setDragAnchorDate(todayStr);
   };
 
   // 직접 연도 입력 커밋
@@ -239,6 +253,17 @@ export function CalendarHubPage({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentMonth, currentYear, isEditingYear, isEventModalOpen]);
+
+  // 전역 마우스업 리스너 (드래그 종료)
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isDragging) {
+        setIsDragging(false);
+      }
+    };
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, [isDragging]);
 
   // 모든 여정(Archive)과 계획(Plan) 파싱
   const parsedJourneys = useMemo(() => {
@@ -395,9 +420,54 @@ export function CalendarHubPage({
     };
   }, [calendarGrid]);
 
-  // 날짜 클릭 시 해당 날짜 선택
-  const handleDateClick = (cell: DayCellData) => {
-    setSelectedDateStr(cell.dateStr);
+  // 날짜 셀 클릭 핸들러 (단일 클릭 및 Shift + 클릭 복수 선택 지원)
+  const handleCellClick = (cell: DayCellData, e: React.MouseEvent) => {
+    if (e.shiftKey && dragAnchorDate) {
+      const newRange = normalizeRange(dragAnchorDate, cell.dateStr);
+      setSelectedRange(newRange);
+    } else {
+      setSelectedRange({ start: cell.dateStr, end: cell.dateStr });
+      setDragAnchorDate(cell.dateStr);
+    }
+  };
+
+  // 마우스 드래그 시작
+  const handleCellMouseDown = (dateStr: string, e: React.MouseEvent) => {
+    if (e.button !== 0 || e.shiftKey) return;
+    setIsDragging(true);
+    setDragAnchorDate(dateStr);
+    setSelectedRange({ start: dateStr, end: dateStr });
+  };
+
+  // 마우스 호버 시 드래그 범위 확장
+  const handleCellMouseEnter = (dateStr: string) => {
+    if (!isDragging || !dragAnchorDate) return;
+    setSelectedRange(normalizeRange(dragAnchorDate, dateStr));
+  };
+
+  // 모바일 터치 드래그 시작
+  const handleCellTouchStart = (dateStr: string) => {
+    setIsDragging(true);
+    setDragAnchorDate(dateStr);
+    setSelectedRange({ start: dateStr, end: dateStr });
+  };
+
+  // 모바일 터치 이동 (화면 좌표 기반 셀 탐색)
+  const handleGridTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || !dragAnchorDate) return;
+    const touch = e.touches[0];
+    const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+    const cellEl = targetEl?.closest('[data-calendar-date]') as HTMLElement | null;
+    if (cellEl && cellEl.dataset.calendarDate) {
+      const targetDate = cellEl.dataset.calendarDate;
+      setSelectedRange(normalizeRange(dragAnchorDate, targetDate));
+    }
+  };
+
+  const handleGridTouchEnd = () => {
+    if (isDragging) {
+      setIsDragging(false);
+    }
   };
 
   // 특정 여정 클릭 시 상세 페이지로 이동
@@ -419,14 +489,17 @@ export function CalendarHubPage({
     openEditEventModal(evt);
   };
 
-  // 새 일정 등록 모달 열기
-  const openNewEventModal = (defaultDate?: string) => {
-    const target = defaultDate || selectedDateStr || `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
+  // 새 일정 등록 모달 열기 (시작일~종료일 자동 반영)
+  const openNewEventModal = (startDate?: string, endDate?: string) => {
+    const s = startDate || selectedRange?.start || `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
+    const e = endDate || selectedRange?.end || s;
+    const isRange = s !== e;
+
     setEditingEvent(null);
     setEventFormTitle('');
-    setEventFormStartDate(target);
-    setEventFormEndDate(target);
-    setEventFormIsRange(false);
+    setEventFormStartDate(s);
+    setEventFormEndDate(e);
+    setEventFormIsRange(isRange);
     setEventFormCategory('work');
     setEventFormMemo('');
     setIsEventModalOpen(true);
@@ -514,11 +587,14 @@ export function CalendarHubPage({
     }
   };
 
-  // 선택된 날짜의 데이터 (모바일 바텀 시트 또는 상세 프리뷰용)
-  const selectedCell = useMemo(() => {
-    if (!selectedDateStr) return null;
-    return calendarGrid.find(c => c.dateStr === selectedDateStr) || null;
-  }, [selectedDateStr, calendarGrid]);
+  // 선택된 범위에 포함된 날짜들의 데이터
+  const selectedCells = useMemo(() => {
+    if (!selectedRange) return [];
+    return calendarGrid.filter(c => c.dateStr >= selectedRange.start && c.dateStr <= selectedRange.end);
+  }, [selectedRange, calendarGrid]);
+
+  const isMultiDaySelected = selectedRange && selectedRange.start !== selectedRange.end;
+  const selectedDaysCount = selectedRange ? getDaysDifference(selectedRange.start, selectedRange.end) : 0;
 
   return (
     <div className="w-full min-h-screen bg-[#FAF9F5] dark:bg-[#0A0A0A] text-black dark:text-white transition-colors duration-300 select-none pb-24">
@@ -662,6 +738,18 @@ export function CalendarHubPage({
       {/* 7-Column Calendar Grid                                        */}
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+        {/* Selection Helper Info Bar */}
+        <div className="flex items-center justify-between pb-2 text-[11px] font-mono text-black/50 dark:text-white/50">
+          <span>
+            💡 <strong className="text-black dark:text-white">팁:</strong> 날짜를 드래그하거나 <kbd className="px-1 py-0.5 rounded bg-black/5 dark:bg-white/10 font-bold">Shift</kbd>를 누른 채 클릭하면 기간을 한 번에 선택할 수 있습니다.
+          </span>
+          {isMultiDaySelected && (
+            <span className="text-red-600 dark:text-red-400 font-bold animate-in fade-in">
+              {selectedRange?.start} ~ {selectedRange?.end} ({selectedDaysCount}일 선택됨)
+            </span>
+          )}
+        </div>
+
         {/* Weekday Header Row */}
         <div className="grid grid-cols-7 border-b border-black/20 dark:border-white/20 pb-2 text-center text-xs sm:text-sm font-black tracking-widest font-mono select-none">
           {WEEKDAYS.map((day, idx) => {
@@ -684,26 +772,55 @@ export function CalendarHubPage({
           })}
         </div>
 
-        {/* Day Grid Cells */}
-        <div className="grid grid-cols-7 border-l border-t border-black/10 dark:border-white/10 bg-white dark:bg-[#111111] shadow-sm rounded-b-sm overflow-hidden">
+        {/* Day Grid Cells with Drag & Multi-Select Support */}
+        <div 
+          onTouchMove={handleGridTouchMove}
+          onTouchEnd={handleGridTouchEnd}
+          className="grid grid-cols-7 border-l border-t border-black/10 dark:border-white/10 bg-white dark:bg-[#111111] shadow-sm rounded-b-sm overflow-hidden select-none"
+        >
           {calendarGrid.map((cell) => {
             const isSunday = cell.dayOfWeek === 6;
             const isSaturday = cell.dayOfWeek === 5;
             const isHoliday = !!cell.holiday;
-            const isSelected = selectedDateStr === cell.dateStr;
+
+            const isInRange = selectedRange && cell.dateStr >= selectedRange.start && cell.dateStr <= selectedRange.end;
+            const isRangeStart = selectedRange && cell.dateStr === selectedRange.start;
+            const isRangeEnd = selectedRange && cell.dateStr === selectedRange.end;
 
             return (
               <div
                 key={cell.dateStr}
-                onClick={() => handleDateClick(cell)}
-                className={`min-h-[110px] sm:min-h-[130px] md:min-h-[145px] p-1.5 sm:p-2 border-r border-b border-black/10 dark:border-white/10 flex flex-col justify-between transition-colors relative cursor-pointer group ${
+                data-calendar-date={cell.dateStr}
+                onClick={(e) => handleCellClick(cell, e)}
+                onMouseDown={(e) => handleCellMouseDown(cell.dateStr, e)}
+                onMouseEnter={() => handleCellMouseEnter(cell.dateStr)}
+                onTouchStart={() => handleCellTouchStart(cell.dateStr)}
+                className={`min-h-[115px] sm:min-h-[135px] md:min-h-[150px] p-1.5 sm:p-2 border-r border-b border-black/10 dark:border-white/10 flex flex-col justify-between transition-colors relative cursor-pointer group ${
                   !cell.isCurrentMonth
                     ? 'bg-black/[0.02] dark:bg-white/[0.02] opacity-40'
                     : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.03]'
                 } ${
-                  isSelected ? 'ring-2 ring-inset ring-red-600 dark:ring-red-500' : ''
+                  isInRange 
+                    ? 'bg-red-500/10 dark:bg-red-500/15 ring-2 ring-inset ring-red-600 dark:ring-red-500' 
+                    : ''
                 }`}
               >
+                {/* Floating "+ ADD" Quick Action Badge on Selected End Date Cell */}
+                {isRangeEnd && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openNewEventModal(selectedRange.start, selectedRange.end);
+                    }}
+                    className="absolute -top-2.5 right-1.5 z-30 px-2 py-0.5 rounded-full bg-red-600 hover:bg-red-700 text-white font-mono text-[9px] sm:text-[10px] font-black tracking-wider shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-1 cursor-pointer animate-in fade-in zoom-in-95 duration-150"
+                    title="선택한 기간으로 새 일정 등록"
+                  >
+                    <Plus className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" />
+                    <span>{isMultiDaySelected ? `ADD (${selectedDaysCount}D)` : 'ADD'}</span>
+                  </button>
+                )}
+
                 {/* Top: Day Number & Holiday Tag */}
                 <div className="flex items-start justify-between gap-1 w-full">
                   {/* Day Number */}
@@ -828,23 +945,30 @@ export function CalendarHubPage({
       </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* Selected Date Detail Drawer (Agenda Preview & Actions)        */}
+      {/* Selected Range Detail Drawer (Agenda Preview & Actions)       */}
       {/* ───────────────────────────────────────────────────────────── */}
-      {selectedCell && (
+      {selectedRange && selectedCells.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 animate-in slide-in-from-bottom-3 duration-200">
           <div className="p-4 sm:p-5 rounded-md border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] shadow-md flex flex-col gap-4">
             {/* Top row: Date header & Add button */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-black/10 dark:border-white/10 pb-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xl sm:text-2xl font-black font-mono">
-                  {selectedCell.dateStr.replace(/-/g, '.')}
+                  {selectedRange.start === selectedRange.end
+                    ? selectedRange.start.replace(/-/g, '.')
+                    : `${selectedRange.start.replace(/-/g, '.')} ~ ${selectedRange.end.replace(/-/g, '.')}`}
                 </span>
-                {selectedCell.holiday && (
-                  <span className="px-2 py-0.5 text-xs font-bold bg-red-600 text-white rounded-full">
-                    {selectedCell.holiday.name}
+                {isMultiDaySelected && (
+                  <span className="px-2 py-0.5 text-xs font-mono font-bold bg-red-600 text-white rounded-full">
+                    {selectedDaysCount} DAYS SELECTED
                   </span>
                 )}
-                {selectedCell.isToday && (
+                {selectedCells.length === 1 && selectedCells[0].holiday && (
+                  <span className="px-2 py-0.5 text-xs font-bold bg-red-600 text-white rounded-full">
+                    {selectedCells[0].holiday.name}
+                  </span>
+                )}
+                {selectedCells.length === 1 && selectedCells[0].isToday && (
                   <span className="px-2 py-0.5 text-xs font-mono font-bold bg-black text-white dark:bg-white dark:text-black rounded-full">
                     TODAY
                   </span>
@@ -854,134 +978,164 @@ export function CalendarHubPage({
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => openNewEventModal(selectedCell.dateStr)}
-                  className="px-3 py-1.5 rounded-sm border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/10 text-xs font-bold font-mono tracking-wider flex items-center gap-1.5 cursor-pointer transition-colors"
+                  onClick={() => openNewEventModal(selectedRange.start, selectedRange.end)}
+                  className="px-3.5 py-1.5 rounded-sm bg-red-600 hover:bg-red-700 text-white text-xs font-bold font-mono tracking-wider flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
                 >
-                  <Plus className="w-3.5 h-3.5 text-red-600" />
-                  <span>이 날짜에 일정 등록</span>
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{isMultiDaySelected ? '선택 기간에 일정 등록' : '이 날짜에 일정 등록'}</span>
                 </button>
               </div>
             </div>
 
             {/* Bottom Content: 2-Column Split (Travel Journeys & Personal Schedules) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Left Column: Travel Journeys */}
+              {/* Left Column: Travel Journeys in Range */}
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-black/50 dark:text-white/50">
-                  <Plane className="w-3.5 h-3.5" />
-                  <span>여행 여정 ({selectedCell.overlappingTrips.length})</span>
-                </div>
+                {(() => {
+                  const uniqueTripsMap = new Map<number, { trip: Trip | Plan; isPlan: boolean }>();
+                  selectedCells.forEach(cell => {
+                    cell.overlappingTrips.forEach(t => {
+                      if (!uniqueTripsMap.has(t.trip.id)) {
+                        uniqueTripsMap.set(t.trip.id, { trip: t.trip, isPlan: t.isPlan });
+                      }
+                    });
+                  });
+                  const tripsList = Array.from(uniqueTripsMap.values());
 
-                {selectedCell.overlappingTrips.length === 0 ? (
-                  <p className="text-xs text-black/40 dark:text-white/40 italic py-2">
-                    이 날짜에 계획된 여행이 없습니다.
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {selectedCell.overlappingTrips.map(({ trip, isPlan, dayIndex, totalDays }) => (
-                      <div
-                        key={`agenda-trip-${trip.id}`}
-                        className="p-3 rounded-sm border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] flex items-center justify-between gap-3"
-                      >
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs font-black text-red-600 dark:text-red-400">
-                              DAY {dayIndex}/{totalDays}
-                            </span>
-                            {isPlan && (
-                              <span className="text-[10px] font-bold px-1.5 py-0.2 bg-amber-500/20 text-amber-800 dark:text-amber-200 rounded">
-                                PLAN
-                              </span>
-                            )}
-                          </div>
-                          <h4 className="text-sm font-bold text-black dark:text-white truncate mt-0.5">
-                            {trip.title}
-                          </h4>
-                          {trip.locationStr && (
-                            <p className="text-xs text-black/50 dark:text-white/50 truncate flex items-center gap-1 mt-0.5">
-                              <MapPin className="w-3 h-3" />
-                              <span>{trip.locationStr}</span>
-                            </p>
-                          )}
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={(e) => handleTripBandClick(e, trip, selectedCell.dateStr)}
-                          className="px-3 py-1.5 rounded-sm bg-black text-white dark:bg-white dark:text-black hover:opacity-90 text-xs font-bold tracking-wider shrink-0 cursor-pointer flex items-center gap-1 group"
-                        >
-                          <span>여정 보기</span>
-                          <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                        </button>
+                  return (
+                    <>
+                      <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-black/50 dark:text-white/50">
+                        <Plane className="w-3.5 h-3.5" />
+                        <span>여행 여정 ({tripsList.length})</span>
                       </div>
-                    ))}
-                  </div>
-                )}
+
+                      {tripsList.length === 0 ? (
+                        <p className="text-xs text-black/40 dark:text-white/40 italic py-2">
+                          선택한 기간에 진행되는 여행이 없습니다.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {tripsList.map(({ trip, isPlan }) => (
+                            <div
+                              key={`agenda-trip-${trip.id}`}
+                              className="p-3 rounded-sm border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] flex items-center justify-between gap-3"
+                            >
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono text-xs font-black text-red-600 dark:text-red-400">
+                                    {trip.date}
+                                  </span>
+                                  {isPlan && (
+                                    <span className="text-[10px] font-bold px-1.5 py-0.2 bg-amber-500/20 text-amber-800 dark:text-amber-200 rounded">
+                                      PLAN
+                                    </span>
+                                  )}
+                                </div>
+                                <h4 className="text-sm font-bold text-black dark:text-white truncate mt-0.5">
+                                  {trip.title}
+                                </h4>
+                                {trip.locationStr && (
+                                  <p className="text-xs text-black/50 dark:text-white/50 truncate flex items-center gap-1 mt-0.5">
+                                    <MapPin className="w-3 h-3" />
+                                    <span>{trip.locationStr}</span>
+                                  </p>
+                                )}
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={(e) => handleTripBandClick(e, trip, selectedRange.start)}
+                                className="px-3 py-1.5 rounded-sm bg-black text-white dark:bg-white dark:text-black hover:opacity-90 text-xs font-bold tracking-wider shrink-0 cursor-pointer flex items-center gap-1 group"
+                              >
+                                <span>여정 보기</span>
+                                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
 
-              {/* Right Column: Personal / Blocked Events */}
+              {/* Right Column: Personal / Blocked Events in Range */}
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-black/50 dark:text-white/50">
-                  <Briefcase className="w-3.5 h-3.5" />
-                  <span>개인 / 참조 일정 ({selectedCell.overlappingEvents.length})</span>
-                </div>
+                {(() => {
+                  const uniqueEventsMap = new Map<string, CalendarCustomEvent>();
+                  selectedCells.forEach(cell => {
+                    cell.overlappingEvents.forEach(e => {
+                      uniqueEventsMap.set(e.event.id, e.event);
+                    });
+                  });
+                  const eventsList = Array.from(uniqueEventsMap.values());
 
-                {selectedCell.overlappingEvents.length === 0 ? (
-                  <p className="text-xs text-black/40 dark:text-white/40 italic py-2">
-                    등록된 출장이나 개인 일정이 없습니다.
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {selectedCell.overlappingEvents.map(({ event, isStart, isEnd, dayIndex, totalDays }) => {
-                      const cat = EVENT_CATEGORIES.find(c => c.id === event.category) || EVENT_CATEGORIES[0];
+                  return (
+                    <>
+                      <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-black/50 dark:text-white/50">
+                        <Briefcase className="w-3.5 h-3.5" />
+                        <span>개인 / 참조 일정 ({eventsList.length})</span>
+                      </div>
 
-                      return (
-                        <div
-                          key={`agenda-event-${event.id}`}
-                          className="p-3 rounded-sm border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] flex items-center justify-between gap-3"
-                        >
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono ${cat.badgeClass}`}>
-                                {cat.label}
-                              </span>
-                              <span className="font-mono text-xs text-black/50 dark:text-white/50 font-bold">
-                                {event.startDate === event.endDate ? event.startDate : `${event.startDate} ~ ${event.endDate}`}
-                              </span>
-                            </div>
-                            <h4 className="text-sm font-bold text-black dark:text-white truncate mt-1">
-                              {event.title}
-                            </h4>
-                            {event.memo && (
-                              <p className="text-xs text-black/60 dark:text-white/60 truncate mt-0.5">
-                                {event.memo}
-                              </p>
-                            )}
-                          </div>
+                      {eventsList.length === 0 ? (
+                        <p className="text-xs text-black/40 dark:text-white/40 italic py-2">
+                          선택한 기간에 등록된 출장이나 개인 일정이 없습니다.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {eventsList.map((event) => {
+                            const cat = EVENT_CATEGORIES.find(c => c.id === event.category) || EVENT_CATEGORIES[0];
 
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => openEditEventModal(event)}
-                              className="p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
-                              title="일정 수정"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteEvent(event.id)}
-                              className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600/70 hover:text-red-600 transition-colors cursor-pointer"
-                              title="일정 삭제"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                            return (
+                              <div
+                                key={`agenda-event-${event.id}`}
+                                className="p-3 rounded-sm border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] flex items-center justify-between gap-3"
+                              >
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono ${cat.badgeClass}`}>
+                                      {cat.label}
+                                    </span>
+                                    <span className="font-mono text-xs text-black/50 dark:text-white/50 font-bold">
+                                      {event.startDate === event.endDate ? event.startDate : `${event.startDate} ~ ${event.endDate}`}
+                                    </span>
+                                  </div>
+                                  <h4 className="text-sm font-bold text-black dark:text-white truncate mt-1">
+                                    {event.title}
+                                  </h4>
+                                  {event.memo && (
+                                    <p className="text-xs text-black/60 dark:text-white/60 truncate mt-0.5">
+                                      {event.memo}
+                                    </p>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => openEditEventModal(event)}
+                                    className="p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                                    title="일정 수정"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteEvent(event.id)}
+                                    className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600/70 hover:text-red-600 transition-colors cursor-pointer"
+                                    title="일정 삭제"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </div>

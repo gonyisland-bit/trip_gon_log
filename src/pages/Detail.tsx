@@ -3281,23 +3281,23 @@ export function JourneyDetailPage({
             #{String((trip.displayOrder ?? (trip.id % 99)) + 1).padStart(2, '0')}
           </span>
 
-          {/* Title & Date: 2-tier stacked on mobile, inline unclipped on web */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 min-w-0 flex-1">
+          {/* Title & Date: 2-tier stacked on mobile, expansive unclipped layout on web */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2.5 min-w-0 flex-1 justify-center sm:justify-start">
             <h1 
               onClick={() => {
                 setActiveTab(prev => prev === 'summary' ? 'timeline' : 'summary');
                 setExpandedItemId(null);
               }}
-              className="text-xs sm:text-sm font-black uppercase tracking-tight text-black dark:text-white truncate font-satoshi cursor-pointer hover:opacity-75 transition-opacity"
+              className="text-xs sm:text-sm md:text-[15px] font-black uppercase tracking-tight text-black dark:text-white truncate sm:whitespace-nowrap sm:shrink-0 font-satoshi cursor-pointer hover:opacity-75 transition-opacity leading-tight"
               title="클릭하여 여정 요약(Summary) 보기"
             >
               {(trip.title || '').replace(' (Plan)', '')}
             </h1>
 
-            {/* Date & Destination summary - visible on mobile & web with high legibility */}
-            <div className="flex items-center gap-1.5 text-xs sm:text-sm font-mono font-bold text-black/80 dark:text-white/80 min-w-0">
-              <span className="hidden sm:inline text-black/35 dark:text-white/35">·</span>
-              <span className="truncate sm:break-keep font-bold leading-tight">{generateJourneyMessage(trip.locationStr, trip.date, generatedDates.length)}</span>
+            {/* Date & Destination summary - expansive and unclipped on web, 2nd line on mobile */}
+            <div className="flex items-center gap-1.5 text-[10.5px] sm:text-xs md:text-sm font-mono font-bold text-black/75 dark:text-white/75 min-w-0 leading-tight mt-0.5 sm:mt-0">
+              <span className="hidden sm:inline text-black/35 dark:text-white/35 font-bold">·</span>
+              <span className="truncate sm:overflow-visible sm:whitespace-normal font-medium">{generateJourneyMessage(trip.locationStr, trip.date, generatedDates.length)}</span>
               <button
                 type="button"
                 onClick={handleOpenInCalendar}
