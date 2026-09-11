@@ -1571,6 +1571,9 @@ export function CalendarHubPage({
                         setCurrentMonth(m.monthIdx);
                         toggleViewMode('month');
                       }}
+                      className="text-left cursor-pointer group"
+                      title={`${m.monthTab.full} 월별 보기로 확대 이동`}
+                    >
                       <div className="flex items-baseline gap-1.5 text-black dark:text-white group-hover:text-red-600 transition-colors">
                         <span className="text-base sm:text-lg font-black font-mono tracking-tight">
                           {m.monthTab.num < 10 ? `0${m.monthTab.num}` : m.monthTab.num}
