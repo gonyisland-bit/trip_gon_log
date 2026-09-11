@@ -4,7 +4,7 @@ import {
   MapPin, Clock, ArrowRight, Plane, Sparkles, Compass, 
   CheckCircle2, ArrowUpRight, Plus, Eye, Briefcase, Heart, 
   User, AlertCircle, Trash2, Edit3, X, Tag, FileText, Check,
-  LayoutGrid, CalendarDays, Share2, Copy
+  LayoutGrid, CalendarDays, Share2, Copy, MousePointerClick
 } from 'lucide-react';
 import { Trip, Plan, TimelineData, TimelineItem, CalendarCustomEvent } from '../types';
 import { getKoreanHolidays, getHolidayInfo, KoreanHoliday } from '../utils/koreanHolidays';
@@ -157,6 +157,14 @@ export function CalendarHubPage({
     }, 180);
   };
 
+  // 드래그 선택 모드 토글 (기본값 false: 스크롤 원활, true: 날짜 범위 드래그 선택)
+  const [isDragSelectMode, setIsDragSelectMode] = useState<boolean>(false);
+  const isDragSelectModeRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    isDragSelectModeRef.current = isDragSelectMode;
+  }, [isDragSelectMode]);
+
   // 복수 날짜 선택 범위 상태 (단일 날짜 선택 시 start === end)
   const [selectedRange, setSelectedRange] = useState<{ start: string; end: string } | null>(() => {
     if (initialFocus.dateStr) {
@@ -179,12 +187,13 @@ export function CalendarHubPage({
     dragAnchorDateRef.current = dragAnchorDate;
   }, [dragAnchorDate]);
 
-  // Non-passive touch listener to prevent vertical scrolling during mobile drag
+  // Non-passive touch listener to prevent vertical scrolling during mobile drag (드래그 모드 켜졌을 때만 동작)
   useEffect(() => {
     const el = gridContainerRef.current;
     if (!el) return;
 
     const handleTouchMoveNative = (e: TouchEvent) => {
+      if (!isDragSelectModeRef.current) return;
       if (!isDraggingRef.current || !dragAnchorDateRef.current) return;
       if (e.cancelable) {
         e.preventDefault();
@@ -214,7 +223,7 @@ export function CalendarHubPage({
       window.removeEventListener('touchend', handleTouchEndNative);
       window.removeEventListener('touchcancel', handleTouchEndNative);
     };
-  }, [viewMode]);
+  }, [viewMode, isDragSelectMode]);
 
   // 커스텀 사용자 등록 일정 상태
   const [customEvents, setCustomEvents] = useState<CalendarCustomEvent[]>(() => {
@@ -295,6 +304,9 @@ export function CalendarHubPage({
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     setSelectedRange({ start: todayStr, end: todayStr });
     setDragAnchorDate(todayStr);
+    if (viewMode !== 'month') {
+      toggleViewMode('month');
+    }
   };
 
   // 직접 연도 입력 커밋
@@ -389,7 +401,7 @@ export function CalendarHubPage({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isEditingYear, isEditingMonth, isEventModalOpen, viewingEvent, currentYear, currentMonth, selectedRange]);
 
-  // 전역 마우스업 및 외부 클릭 리스너 (드래그 종료 및 바깥 클릭 시 선택 해제)
+  // 전역 마우스업 리스너 (드래그 종료)
   useEffect(() => {
     const handleGlobalMouseUp = () => {
       if (isDragging) {
@@ -397,35 +409,11 @@ export function CalendarHubPage({
       }
     };
 
-    const handleGlobalClick = (e: MouseEvent) => {
-      if (!selectedRange) return;
-      if (isEventModalOpen || viewingEvent) return;
-
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
-
-      // 셀 내부, 서랍 내부, 상단 ADD 버튼, 모달 내부 클릭 시에는 해제하지 않음
-      if (
-        target.closest('[data-calendar-date]') ||
-        target.closest('[data-selected-drawer]') ||
-        target.closest('[data-modal-container]') ||
-        target.closest('button') ||
-        target.closest('input')
-      ) {
-        return;
-      }
-
-      setSelectedRange(null);
-      setDragAnchorDate(null);
-    };
-
     window.addEventListener('mouseup', handleGlobalMouseUp);
-    window.addEventListener('click', handleGlobalClick);
     return () => {
       window.removeEventListener('mouseup', handleGlobalMouseUp);
-      window.removeEventListener('click', handleGlobalClick);
     };
-  }, [isDragging, selectedRange, isEventModalOpen, viewingEvent]);
+  }, [isDragging]);
 
   // 모든 여정(Archive)과 계획(Plan) 파싱
   const parsedJourneys = useMemo(() => {
@@ -808,6 +796,7 @@ export function CalendarHubPage({
 
   // 날짜 셀 클릭 핸들러 (단일 클릭 및 Shift + 클릭 복수 선택 지원)
   const handleCellClick = (cell: DayCellData, e: React.MouseEvent) => {
+    e.stopPropagation();
     if (e.shiftKey && dragAnchorDate) {
       const newRange = normalizeRange(dragAnchorDate, cell.dateStr);
       setSelectedRange(newRange);
@@ -817,9 +806,14 @@ export function CalendarHubPage({
     }
   };
 
-  // 마우스 드래그 시작
+  // 마우스 드래그 시작 (드래그 모드 활성화 시에만 동작)
   const handleCellMouseDown = (dateStr: string, e: React.MouseEvent) => {
     if (e.button !== 0 || e.shiftKey) return;
+    if (!isDragSelectMode) {
+      // 드래그 모드가 꺼져있으면 단일 클릭만 처리
+      return;
+    }
+    e.stopPropagation();
     setIsDragging(true);
     setDragAnchorDate(dateStr);
     setSelectedRange({ start: dateStr, end: dateStr });
@@ -827,12 +821,13 @@ export function CalendarHubPage({
 
   // 마우스 호버 시 드래그 범위 확장
   const handleCellMouseEnter = (dateStr: string) => {
-    if (!isDragging || !dragAnchorDate) return;
+    if (!isDragSelectMode || !isDragging || !dragAnchorDate) return;
     setSelectedRange(normalizeRange(dragAnchorDate, dateStr));
   };
 
-  // 모바일 터치 드래그 시작
+  // 모바일 터치 드래그 시작 (드래그 모드 활성화 시에만 동작)
   const handleCellTouchStart = (dateStr: string) => {
+    if (!isDragSelectMode) return;
     setIsDragging(true);
     isDraggingRef.current = true;
     setDragAnchorDate(dateStr);
@@ -1011,11 +1006,19 @@ export function CalendarHubPage({
     return calendarGrid.filter(c => c.dateStr >= selectedRange.start && c.dateStr <= selectedRange.end);
   }, [selectedRange, calendarGrid]);
 
+  // 하단 아젠다 표시용 날짜 데이터 (선택 날짜가 있으면 선택 날짜들, 없으면 이번 달 전체 날짜)
+  const displayedAgendaCells = useMemo(() => {
+    if (selectedRange && selectedCells.length > 0) {
+      return selectedCells;
+    }
+    return calendarGrid.filter(c => c.isCurrentMonth);
+  }, [selectedRange, selectedCells, calendarGrid]);
+
   const isMultiDaySelected = selectedRange && selectedRange.start !== selectedRange.end;
   const selectedDaysCount = selectedRange ? getDaysDifference(selectedRange.start, selectedRange.end) : 0;
 
   return (
-    <div className="w-full min-h-screen bg-[#FAF9F5] dark:bg-[#0A0A0A] text-black dark:text-white transition-colors duration-300 select-none pb-24">
+    <div className="w-full min-h-screen bg-transparent text-black dark:text-white transition-colors duration-300 select-none pb-24">
       {/* ───────────────────────────────────────────────────────────── */}
       {/* Top Banner & Swiss Minimal Typography Header                  */}
       {/* ───────────────────────────────────────────────────────────── */}
@@ -1229,6 +1232,24 @@ export function CalendarHubPage({
                 </button>
               </div>
 
+              {/* Drag Select Mode Toggle Button (월별 보기에서만 유효) */}
+              {viewMode === 'month' && (
+                <button
+                  type="button"
+                  onClick={() => setIsDragSelectMode(prev => !prev)}
+                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border text-[11px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 shadow-xs ${
+                    isDragSelectMode
+                      ? 'bg-red-600 text-white border-red-600 ring-2 ring-red-600/30'
+                      : 'bg-white/80 dark:bg-zinc-900/80 border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
+                  }`}
+                  title={isDragSelectMode ? "드래그 선택 활성화 중 (화면 스크롤이 잠기고 날짜 드래그 선택 가능)" : "드래그 선택 켜기 (화면 스크롤 가능 상태)"}
+                >
+                  <MousePointerClick className="w-3.5 h-3.5" />
+                  <span>{isDragSelectMode ? 'DRAG: ON' : 'DRAG SELECT'}</span>
+                  {isDragSelectMode && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />}
+                </button>
+              )}
+
               {/* Right group: Prev, Today, Next & Add Schedule */}
               <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                 {/* Prev Button */}
@@ -1376,7 +1397,9 @@ export function CalendarHubPage({
               ref={gridContainerRef}
               onTouchMove={handleGridTouchMove}
               onTouchEnd={handleGridTouchEnd}
-              className="grid grid-cols-7 border-l border-t border-black/10 dark:border-white/10 bg-white dark:bg-[#111111] shadow-sm rounded-b-sm overflow-hidden select-none touch-none"
+              className={`grid grid-cols-7 border-l border-t border-black/10 dark:border-white/10 bg-transparent rounded-b-sm overflow-hidden select-none ${
+                isDragSelectMode ? 'touch-none' : 'touch-auto'
+              }`}
             >
               {calendarGrid.map((cell, cellIdx) => {
                 const isSunday = cell.dayOfWeek === 6;
@@ -1595,7 +1618,7 @@ export function CalendarHubPage({
               {yearMonthsData.map((m) => (
                 <div
                   key={m.monthIdx}
-                  className="bg-white dark:bg-[#111111] border border-black/10 dark:border-white/10 rounded-sm shadow-xs p-4 flex flex-col justify-between hover:border-black/30 dark:hover:border-white/30 transition-all group"
+                  className="bg-transparent border border-black/10 dark:border-white/10 rounded-sm p-4 flex flex-col justify-between hover:border-black/30 dark:hover:border-white/30 transition-all group"
                 >
                   {/* Month Card Header */}
                   <div className="flex items-center justify-between pb-2 mb-2 border-b border-black/10 dark:border-white/10">
@@ -1721,53 +1744,68 @@ export function CalendarHubPage({
       </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* Selected Range Detail Drawer (Swiss Minimal Typography & Lines) */}
+      {/* Monthly / Selected Range Detail Drawer (Swiss Minimal Typography & Lines) */}
       {/* ───────────────────────────────────────────────────────────── */}
-      {selectedRange && selectedCells.length > 0 && (
+      {displayedAgendaCells.length > 0 && (
         <div data-selected-drawer="true" className="w-full max-w-7xl mx-auto px-1 sm:px-6 lg:px-8 mt-6 animate-in slide-in-from-bottom-3 duration-200">
           <div className="p-4 sm:p-6 rounded-none border-t-2 border-b border-black dark:border-white bg-transparent flex flex-col gap-5">
             {/* Top row: Date header & Add button */}
             <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 border-b border-black/10 dark:border-white/10 pb-3">
               <div className="flex items-baseline gap-3 flex-wrap">
-                <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-black dark:text-white">
-                  {selectedRange.start === selectedRange.end
-                    ? selectedRange.start.replace(/-/g, '.')
-                    : `${selectedRange.start.replace(/-/g, '.')} — ${selectedRange.end.replace(/-/g, '.')}`}
-                </span>
-                {isMultiDaySelected && (
-                  <span className="text-xs font-mono font-bold tracking-widest text-red-600 dark:text-red-400 uppercase">
-                    [{selectedDaysCount} DAYS]
-                  </span>
-                )}
-                {selectedCells.length === 1 && selectedCells[0].holiday && (
-                  <span className="text-xs font-bold text-red-600 dark:text-red-400 font-sans">
-                    · {selectedCells[0].holiday.name}
-                  </span>
-                )}
-                {selectedCells.length === 1 && selectedCells[0].isToday && (
-                  <span className="text-xs font-mono font-bold text-black/50 dark:text-white/50 uppercase">
-                    · TODAY
-                  </span>
+                {selectedRange ? (
+                  <>
+                    <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-black dark:text-white">
+                      {selectedRange.start === selectedRange.end
+                        ? selectedRange.start.replace(/-/g, '.')
+                        : `${selectedRange.start.replace(/-/g, '.')} — ${selectedRange.end.replace(/-/g, '.')}`}
+                    </span>
+                    {isMultiDaySelected && (
+                      <span className="text-xs font-mono font-bold tracking-widest text-red-600 dark:text-red-400 uppercase">
+                        [{selectedDaysCount} DAYS]
+                      </span>
+                    )}
+                    {selectedCells.length === 1 && selectedCells[0].holiday && (
+                      <span className="text-xs font-bold text-red-600 dark:text-red-400 font-sans">
+                        · {selectedCells[0].holiday.name}
+                      </span>
+                    )}
+                    {selectedCells.length === 1 && selectedCells[0].isToday && (
+                      <span className="text-xs font-mono font-bold text-black/50 dark:text-white/50 uppercase">
+                        · TODAY
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <span className="text-2xl sm:text-3xl font-black font-satoshi tracking-tight text-black dark:text-white uppercase">
+                      MONTH AGENDA
+                    </span>
+                    <span className="text-xs sm:text-sm font-mono font-bold text-red-600 dark:text-red-400 uppercase tracking-wider">
+                      {MONTH_NAMES[currentMonth]} {currentYear}
+                    </span>
+                  </>
                 )}
               </div>
 
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => openNewEventModal(selectedRange.start, selectedRange.end)}
+                  onClick={() => openNewEventModal(selectedRange?.start, selectedRange?.end)}
                   className="px-3.5 py-1.5 rounded-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold font-mono tracking-wider flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>{isMultiDaySelected ? '선택 기간에 일정 등록' : '이 날짜에 일정 등록'}</span>
+                  <span>{selectedRange && isMultiDaySelected ? '선택 기간에 일정 등록' : '새 일정 등록'}</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedRange(null)}
-                  className="p-1.5 rounded-full border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
-                  title="선택 해제 (ESC)"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                {selectedRange && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRange(null)}
+                    className="p-1.5 rounded-full border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                    title="선택 해제 후 월간 전체 일정 보기 (ESC)"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1777,7 +1815,7 @@ export function CalendarHubPage({
               <div className="space-y-3">
                 {(() => {
                   const uniqueTripsMap = new Map<number, { trip: Trip | Plan; isPlan: boolean }>();
-                  selectedCells.forEach(cell => {
+                  displayedAgendaCells.forEach(cell => {
                     cell.overlappingTrips.forEach(t => {
                       if (!uniqueTripsMap.has(t.trip.id)) {
                         uniqueTripsMap.set(t.trip.id, { trip: t.trip, isPlan: t.isPlan });
@@ -1795,7 +1833,7 @@ export function CalendarHubPage({
 
                       {tripsList.length === 0 ? (
                         <p className="text-xs font-mono text-black/40 dark:text-white/40 py-2">
-                          선택한 기간에 진행되는 여행 여정이 없습니다.
+                          {selectedRange ? '선택한 기간에 진행되는 여행 여정이 없습니다.' : '이번 달에 등록된 여행 여정이 없습니다.'}
                         </p>
                       ) : (
                         <div className="divide-y divide-black/10 dark:divide-white/10">
@@ -1803,7 +1841,7 @@ export function CalendarHubPage({
                             <div
                               key={`agenda-trip-${trip.id}`}
                               className="py-3 flex items-start justify-between gap-4 group cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] px-1 transition-colors"
-                              onClick={(e) => handleTripBandClick(e, trip, selectedRange.start)}
+                              onClick={(e) => handleTripBandClick(e, trip, selectedRange?.start || `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`)}
                             >
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
@@ -1844,7 +1882,7 @@ export function CalendarHubPage({
               <div className="space-y-3">
                 {(() => {
                   const uniqueEventsMap = new Map<string, CalendarCustomEvent>();
-                  selectedCells.forEach(cell => {
+                  displayedAgendaCells.forEach(cell => {
                     cell.overlappingEvents.forEach(e => {
                       uniqueEventsMap.set(e.event.id, e.event);
                     });
@@ -1860,7 +1898,7 @@ export function CalendarHubPage({
 
                       {eventsList.length === 0 ? (
                         <p className="text-xs font-mono text-black/40 dark:text-white/40 py-2">
-                          선택한 기간에 등록된 개인 일정이 없습니다.
+                          {selectedRange ? '선택한 기간에 등록된 개인 일정이 없습니다.' : '이번 달에 등록된 개인 일정이 없습니다.'}
                         </p>
                       ) : (
                         <div className="divide-y divide-black/10 dark:divide-white/10">
