@@ -2257,7 +2257,7 @@ function App() {
     new Set([...trips, ...plans].flatMap(t => t.tags || []))
   ).filter(t => t !== 'Plan' && t !== 'Personal');
 
-  const isGlobalGradientActive = (currentView === 'home' || currentView === 'archive' || currentView === 'magazine') && homeGradientEnabled && !isDarkMode;
+  const isGlobalGradientActive = (currentView === 'home' || currentView === 'archive' || currentView === 'magazine' || currentView === 'calendar') && homeGradientEnabled && !isDarkMode;
   const isHomeGradientActive = isGlobalGradientActive;
   const appGradientStyle = isGlobalGradientActive
     ? { background: `linear-gradient(135deg, ${homeGradientFrom} 0%, ${homeGradientTo} 100%)` }

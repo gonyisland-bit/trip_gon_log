@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, X, ArrowRight, Calendar, Star, Plus, Tag, MapPin, Bookmark, Home as HomeIcon, List } from 'lucide-react';
+import { Search, X, ArrowRight, Calendar, Star, Plus, Tag, MapPin, Bookmark, Home as HomeIcon, List, Clock } from 'lucide-react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Trip, Plan } from '../types';
@@ -1293,6 +1293,107 @@ export function findCountryForGroup(countryStr?: string, cityStr?: string): Coun
   return found;
 }
 
+// Country Code to IANA Timezone mapping
+export const COUNTRY_TIMEZONE_MAP: Record<string, string> = {
+  JP: 'Asia/Tokyo',
+  KR: 'Asia/Seoul',
+  TW: 'Asia/Taipei',
+  HK: 'Asia/Hong_Kong',
+  MO: 'Asia/Macau',
+  CN: 'Asia/Shanghai',
+  MN: 'Asia/Ulaanbaatar',
+  VN: 'Asia/Ho_Chi_Minh',
+  TH: 'Asia/Bangkok',
+  PH: 'Asia/Manila',
+  SG: 'Asia/Singapore',
+  MY: 'Asia/Kuala_Lumpur',
+  ID: 'Asia/Jakarta',
+  LA: 'Asia/Vientiane',
+  KH: 'Asia/Phnom_Penh',
+  MV: 'Indian/Maldives',
+  IN: 'Asia/Kolkata',
+  NP: 'Asia/Kathmandu',
+  GB: 'Europe/London',
+  FR: 'Europe/Paris',
+  IT: 'Europe/Rome',
+  ES: 'Europe/Madrid',
+  DE: 'Europe/Berlin',
+  CH: 'Europe/Zurich',
+  AT: 'Europe/Vienna',
+  CZ: 'Europe/Prague',
+  HU: 'Europe/Budapest',
+  NL: 'Europe/Amsterdam',
+  BE: 'Europe/Brussels',
+  PT: 'Europe/Lisbon',
+  GR: 'Europe/Athens',
+  TR: 'Europe/Istanbul',
+  IS: 'Atlantic/Reykjavik',
+  NO: 'Europe/Oslo',
+  SE: 'Europe/Stockholm',
+  FI: 'Europe/Helsinki',
+  DK: 'Europe/Copenhagen',
+  PL: 'Europe/Warsaw',
+  IE: 'Europe/Dublin',
+  HR: 'Europe/Zagreb',
+  US: 'America/New_York',
+  CA: 'America/Toronto',
+  MX: 'America/Mexico_City',
+  CU: 'America/Havana',
+  BR: 'America/Sao_Paulo',
+  AR: 'America/Argentina/Buenos_Aires',
+  CL: 'America/Santiago',
+  PE: 'America/Lima',
+  AU: 'Australia/Sydney',
+  NZ: 'Pacific/Auckland',
+  GU: 'Pacific/Guam',
+  MP: 'Pacific/Saipan',
+  FJ: 'Pacific/Fiji',
+  AE: 'Asia/Dubai',
+  QA: 'Asia/Qatar',
+  EG: 'Africa/Cairo',
+  ZA: 'Africa/Johannesburg',
+};
+
+// Calculate real-time info: formatted local time, date, and diff from KST (UTC+9)
+export function getCountryLiveTime(countryCode: string, now: Date) {
+  const timeZone = COUNTRY_TIMEZONE_MAP[countryCode] || 'UTC';
+
+  // Format time in target timezone
+  const timeStr = new Intl.DateTimeFormat('ko-KR', {
+    timeZone,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }).format(now);
+
+  const dateStr = new Intl.DateTimeFormat('ko-KR', {
+    timeZone,
+    month: 'long',
+    day: 'numeric',
+    weekday: 'short'
+  }).format(now);
+
+  // Time difference in hours compared to Korea (KST, UTC+9)
+  try {
+    const kstDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+    const targetDate = new Date(now.toLocaleString('en-US', { timeZone }));
+    const diffMs = targetDate.getTime() - kstDate.getTime();
+    const diffHours = Math.round(diffMs / (1000 * 60 * 60));
+
+    let diffText = '한국과 동일 (±0h)';
+    if (diffHours > 0) {
+      diffText = `한국보다 ${diffHours}시간 빠름 (+${diffHours}h)`;
+    } else if (diffHours < 0) {
+      diffText = `한국보다 ${Math.abs(diffHours)}시간 느림 (${diffHours}h)`;
+    }
+
+    return { timeStr, dateStr, diffText, diffHours, timeZone };
+  } catch (_) {
+    return { timeStr, dateStr, diffText: '시차 계산 불가', diffHours: 0, timeZone };
+  }
+}
+
 interface MapPinGroup {
   city: string;
   country: string;
@@ -1327,6 +1428,17 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
   const [wishlistTab, setWishlistTab] = useState<'countries' | 'cities'>('countries');
   const [isPlaceListModalOpen, setIsPlaceListModalOpen] = useState(false);
   const [placeSearchQuery, setPlaceSearchQuery] = useState('');
+
+  // Live clock ticker for selected country
+  const [liveClockNow, setLiveClockNow] = useState<Date>(() => new Date());
+  useEffect(() => {
+    if (!selectedCountry) return;
+    setLiveClockNow(new Date());
+    const timer = setInterval(() => {
+      setLiveClockNow(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [selectedCountry]);
 
   // Map tile style state (esri or google)
   const [mapTileStyle, setMapTileStyle] = useState<'esri' | 'google'>(() => {
@@ -2453,6 +2565,34 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                         </span>
                       </button>
                     ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Live Local Time & Time Difference from KST (실시간 현지 시각 & 시차) */}
+            {(() => {
+              const liveInfo = getCountryLiveTime(selectedCountry.code, liveClockNow);
+              return (
+                <div className="p-3 bg-black/[0.03] dark:bg-white/[0.03] border border-black/10 dark:border-white/10 flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10px] font-['Inter',sans-serif] font-black uppercase tracking-widest text-black/50 dark:text-white/50 flex items-center gap-1.5">
+                      <Clock className="w-3 h-3 text-red-600 dark:text-red-400 animate-pulse" />
+                      <span>LOCAL TIME</span>
+                      <span className="font-['Noto_Sans_KR',sans-serif] font-normal text-[9.5px]">(현지 시각)</span>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold text-red-600 dark:text-red-400 bg-red-600/10 dark:bg-red-400/10 px-1.5 py-0.5 rounded-2xs">
+                      {liveInfo.diffText}
+                    </span>
+                  </div>
+
+                  <div className="flex items-baseline justify-between font-['Inter',sans-serif] pt-0.5">
+                    <span className="text-xl sm:text-2xl font-black font-mono tracking-tight text-black dark:text-white leading-none">
+                      {liveInfo.timeStr}
+                    </span>
+                    <span className="text-[11px] font-mono font-bold text-black/60 dark:text-white/60">
+                      {liveInfo.dateStr}
+                    </span>
                   </div>
                 </div>
               );

@@ -1295,19 +1295,11 @@ export function CalendarHubPage({
               </div>
             </div>
 
-            {/* Travel & Blocked Metrics Badge */}
-            <div className="flex items-center gap-1.5 sm:gap-2 font-mono text-[10.5px] sm:text-xs font-bold tracking-wider text-black/60 dark:text-white/60 flex-wrap">
-              <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 bg-black/5 dark:bg-white/10 rounded-sm border border-black/10 dark:border-white/10">
-                ✈️ {viewMode === 'month' ? `${monthStats.travelDays} DAYS OF TRAVEL` : `${yearStats.travelDays} DAYS IN ${currentYear}`}
+            {/* Travel Days Metric Single Badge (스위스 미니멀 단일화) */}
+            <div className="flex items-center gap-1.5 font-mono text-xs sm:text-sm font-bold tracking-wider text-black/80 dark:text-white/80">
+              <span className="px-3 py-1 bg-black/5 dark:bg-white/10 rounded-full border border-black/10 dark:border-white/10">
+                ✈️ {viewMode === 'month' ? `${monthStats.travelDays} DAYS` : `${yearStats.travelDays} DAYS`}
               </span>
-              <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 bg-black/5 dark:bg-white/10 rounded-sm border border-black/10 dark:border-white/10">
-                📌 {viewMode === 'month' ? `${monthStats.tripCount} JOURNEYS` : `${yearStats.tripCount} JOURNEYS`}
-              </span>
-              {((viewMode === 'month' ? monthStats.blockedDays : yearStats.blockedDays) > 0) && (
-                <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 bg-blue-500/10 text-blue-700 dark:text-blue-300 rounded-sm border border-blue-500/20">
-                  💼 {viewMode === 'month' ? monthStats.blockedDays : yearStats.blockedDays} BLOCKED DAYS
-                </span>
-              )}
             </div>
           </div>
         </div>
@@ -1355,20 +1347,12 @@ export function CalendarHubPage({
         {viewMode === 'month' ? (
           /* ──────────────── MONTH VIEW ──────────────── */
           <div className="w-full max-w-7xl mx-auto px-1 sm:px-6 lg:px-8 mt-4 sm:mt-6">
-            {/* Selection Helper Info Bar */}
-            <div className="flex items-center justify-between pb-2 px-1 text-xs sm:text-sm font-mono text-black/60 dark:text-white/60">
-              <span className="hidden sm:inline">
-                💡 <strong className="text-black dark:text-white">팁:</strong> 날짜를 드래그하거나 <kbd className="px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/15 font-bold">Shift</kbd>를 누른 채 클릭하면 기간을 한 번에 선택할 수 있습니다.
-              </span>
-              <span className="sm:hidden text-[11px]">
-                💡 날짜 드래그로 기간 선택 가능
-              </span>
-              {isMultiDaySelected && (
-                <span className="text-red-600 dark:text-red-400 font-bold animate-in fade-in text-xs sm:text-sm">
-                  {selectedRange?.start} ~ {selectedRange?.end} ({selectedDaysCount}일 선택됨)
-                </span>
-              )}
-            </div>
+            {/* Multi-Select Range Indicator (불필요한 안내 문구 제거, 순수 상태만 간결하게 표시) */}
+            {isMultiDaySelected && (
+              <div className="flex items-center justify-end pb-2 px-1 text-xs sm:text-sm font-mono text-red-600 dark:text-red-400 font-bold animate-in fade-in">
+                <span>{selectedRange?.start} ~ {selectedRange?.end} ({selectedDaysCount}일 선택됨)</span>
+              </div>
+            )}
 
             {/* Weekday Header Row */}
             <div className="grid grid-cols-7 border-b border-black/20 dark:border-white/20 pb-1.5 sm:pb-2 text-center text-xs sm:text-sm md:text-base font-black tracking-widest font-mono select-none">
@@ -1392,12 +1376,12 @@ export function CalendarHubPage({
               })}
             </div>
 
-            {/* Day Grid Cells with Drag & Multi-Select Support */}
+            {/* Day Grid Cells with Drag & Multi-Select Support (외곽 테두리 없는 스위스 미니멀 그리드) */}
             <div 
               ref={gridContainerRef}
               onTouchMove={handleGridTouchMove}
               onTouchEnd={handleGridTouchEnd}
-              className={`grid grid-cols-7 border-l border-t border-black/10 dark:border-white/10 bg-transparent rounded-b-sm overflow-hidden select-none ${
+              className={`grid grid-cols-7 bg-transparent rounded-none overflow-hidden select-none ${
                 isDragSelectMode ? 'touch-none' : 'touch-auto'
               }`}
             >
@@ -1446,6 +1430,13 @@ export function CalendarHubPage({
                   return allItemsInCell.find(item => item.trackIndex === trackIdx) || null;
                 });
 
+                // 외곽 테두리 없이 내부 구분선만 유지: 맨 우측 열(col === 6)은 border-r 제거, 맨 아래 행은 border-b 제거
+                const col = cellIdx % 7;
+                const row = Math.floor(cellIdx / 7);
+                const totalRows = Math.ceil(calendarGrid.length / 7);
+                const isLastCol = col === 6;
+                const isLastRow = row === totalRows - 1;
+
                 return (
                   <div
                     key={cell.dateStr}
@@ -1454,7 +1445,11 @@ export function CalendarHubPage({
                     onMouseDown={(e) => handleCellMouseDown(cell.dateStr, e)}
                     onMouseEnter={() => handleCellMouseEnter(cell.dateStr)}
                     onTouchStart={() => handleCellTouchStart(cell.dateStr)}
-                    className={`min-h-[86px] sm:min-h-[124px] md:min-h-[144px] p-1 sm:p-2 border-r border-b border-black/10 dark:border-white/10 flex flex-col justify-between transition-colors relative cursor-pointer group overflow-visible ${
+                    className={`min-h-[86px] sm:min-h-[124px] md:min-h-[144px] p-1 sm:p-2 ${
+                      !isLastCol ? 'border-r border-black/10 dark:border-white/10' : ''
+                    } ${
+                      !isLastRow ? 'border-b border-black/10 dark:border-white/10' : ''
+                    } flex flex-col justify-between transition-colors relative cursor-pointer group overflow-visible ${
                       !cell.isCurrentMonth
                         ? 'bg-black/[0.02] dark:bg-white/[0.02] opacity-40'
                         : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.03]'
@@ -1603,22 +1598,22 @@ export function CalendarHubPage({
         ) : (
           /* ──────────────── YEAR VIEW (3-Column, 4-Row Grid) ──────────────── */
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-            {/* Year View Guide Bar */}
+            {/* Year View Minimal Header (불필요한 설명 제거) */}
             <div className="flex items-center justify-between pb-3 text-xs font-mono text-black/60 dark:text-white/60 border-b border-black/10 dark:border-white/10 mb-6">
-              <span>
-                💡 <strong className="text-black dark:text-white">연간 보기:</strong> 원하는 월이나 날짜를 클릭하면 해당 달로 부드럽게 확대 전환됩니다.
+              <span className="font-bold text-black/40 dark:text-white/40 tracking-wider uppercase">
+                ANNUAL CALENDAR
               </span>
-              <span className="font-bold text-red-600 dark:text-red-400">
-                {currentYear} ANNUAL OVERVIEW (12 MONTHS)
+              <span className="font-bold text-red-600 dark:text-red-400 tracking-wider">
+                {currentYear} OVERVIEW (12M)
               </span>
             </div>
 
-            {/* 3-Column Year Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-7">
+            {/* 3-Column Year Grid (외곽 테두리 없이 플랫한 스위스 레이아웃) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 sm:gap-10">
               {yearMonthsData.map((m) => (
                 <div
                   key={m.monthIdx}
-                  className="bg-transparent border border-black/10 dark:border-white/10 rounded-sm p-4 flex flex-col justify-between hover:border-black/30 dark:hover:border-white/30 transition-all group"
+                  className="bg-transparent p-2 sm:p-3 flex flex-col justify-between transition-all group"
                 >
                   {/* Month Card Header */}
                   <div className="flex items-center justify-between pb-2 mb-2 border-b border-black/10 dark:border-white/10">
