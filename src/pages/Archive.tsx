@@ -334,12 +334,62 @@ export function getTripCardDisplayData(trip: Trip, index: number) {
   // 사진 아래 3번줄: 나라명, 도시 (나라명 영문 대문자 통일)
   const line3CountryCity = formatCountryAndCity(trip);
 
+  // 감성 에디토리얼 서브 카피 (예: "제주에서 여름 3일동안의 여정")
+  const editorialSubtitle = getEditorialSubtitle(trip, days, monthNum);
+
   return {
     issueNumber,
     topYearMonth,
     line2DateDays,
     line3CountryCity,
+    editorialSubtitle,
   };
+}
+
+// Helper to generate poetic editorial subtitle like "제주에서 여름 3일동안의 여정"
+export function getEditorialSubtitle(trip: Trip, days: number, monthNum: number): string {
+  const customText = trip.subtitle?.trim() || trip.description?.trim() || (trip as any).desc?.trim();
+  if (customText && customText.length > 0 && customText.length <= 60) {
+    return customText;
+  }
+
+  let region = '';
+  if (trip.locationStr) {
+    const cleaned = cleanAdministrativeDistricts(trip.locationStr);
+    region = cleaned.split(/[,·]/)[0].trim();
+  }
+  if (!region && trip.country) {
+    region = trip.country.trim();
+  }
+  if (!region) {
+    region = '여행지';
+  }
+
+  let season = '';
+  if (monthNum >= 2 && monthNum <= 4) {
+    season = '봄';
+  } else if (monthNum >= 5 && monthNum <= 7) {
+    season = '여름';
+  } else if (monthNum >= 8 && monthNum <= 10) {
+    season = '가을';
+  } else if (monthNum === 11 || monthNum === 0 || monthNum === 1) {
+    season = '겨울';
+  }
+
+  let durationStr = '의 여정';
+  if (days > 1) {
+    durationStr = `${days}일동안의 여정`;
+  } else if (days === 1) {
+    durationStr = '하루 동안의 여정';
+  } else {
+    durationStr = '떠난 여정';
+  }
+
+  if (season) {
+    return `${region}에서 ${season} ${durationStr}`;
+  } else {
+    return `${region}에서 보낸 ${durationStr}`;
+  }
 }
 
 export function ArchiveHubPage({
@@ -1019,8 +1069,8 @@ export function ArchiveHubPage({
                                 : 'border-l-[3px] border-l-transparent hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
                             }`}
                           >
-                            {/* Monospace Index Column */}
-                            <div className="w-11 sm:w-14 md:w-16 flex items-center justify-center font-mono font-black text-sm sm:text-lg text-black/30 dark:text-white/30 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors shrink-0 border-r border-black/10 dark:border-white/10 select-none">
+                            {/* Monospace Index Column: Compact & Slim */}
+                            <div className="w-7 sm:w-8 md:w-9 flex items-center justify-center font-mono font-bold text-[10px] sm:text-xs text-black/30 dark:text-white/30 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors shrink-0 border-r border-black/10 dark:border-white/10 select-none">
                               {issueNumber}
                             </div>
 
@@ -1089,7 +1139,7 @@ export function ArchiveHubPage({
                     : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-10 sm:gap-y-14 md:gap-y-16 p-3 sm:p-6 md:p-12 w-full max-w-[1920px] mx-auto"
                   }>
                     {group.items.map((trip, index) => {
-                      const { issueNumber, topYearMonth, line2DateDays, line3CountryCity } = getTripCardDisplayData(trip, index);
+                      const { issueNumber, topYearMonth, line2DateDays, line3CountryCity, editorialSubtitle } = getTripCardDisplayData(trip, index);
                       const isCardActive = activeCardId === trip.id;
                       const isPlan = Boolean(
                         (trip as any).isPlan ||
@@ -1118,27 +1168,8 @@ export function ArchiveHubPage({
                           onDrop={handleTripDrop}
                           onDragEnd={() => setDraggedTripId(null)}
                         >
-                          {/* 1. Swiss Archive Index: Top Micro Header (Date/Month Badge + Country/City + Plan Tag) */}
-                          <div className="mb-2 flex items-center justify-between min-w-0 font-mono text-black dark:text-white gap-2">
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <span className={`font-black tracking-tight ${isWide ? 'text-base sm:text-lg md:text-xl' : 'text-xs sm:text-sm md:text-base'} leading-none text-black dark:text-white`}>
-                                {topYearMonth}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1.5 min-w-0 shrink justify-end">
-                              <span className="text-[10px] sm:text-[11px] font-bold tracking-wider text-black/50 dark:text-white/50 uppercase truncate">
-                                {line3CountryCity}
-                              </span>
-                              {isPlan && (
-                                <span className="text-[9px] font-mono font-black text-red-600 dark:text-red-400 border border-red-600/40 dark:border-red-400/40 px-1.5 py-0.2 tracking-wider shrink-0 leading-none">
-                                  PLAN
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* 2. Photo Frame: 1:1 Square (Grid) or 4:3 (Wide) with Subtle Border & Duration Badge */}
-                          <div className={`relative ${isWide ? 'aspect-[4/3]' : 'aspect-square'} w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15 rounded-xs shadow-xs group-hover:shadow-md transition-all duration-300`}>
+                          {/* 1. Photo Frame: 3:4 Vertical Editorial Aspect (or 4:3 Wide) */}
+                          <div className={`relative ${isWide ? 'aspect-[4/3]' : 'aspect-[3/4]'} w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15 rounded-xs shadow-xs group-hover:shadow-lg transition-all duration-300`}>
                             <CardMedia
                               img={trip.img}
                               title={trip.title}
@@ -1146,21 +1177,45 @@ export function ArchiveHubPage({
                               isActive={isCardActive}
                             />
                             {durationBadge && (
-                              <div className="absolute bottom-2 right-2 bg-black/70 dark:bg-white/80 backdrop-blur-xs text-white dark:text-black font-mono text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 tracking-wider uppercase">
+                              <div className="absolute bottom-2.5 right-2.5 bg-black/75 dark:bg-white/85 backdrop-blur-xs text-white dark:text-black font-mono text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 tracking-wider uppercase shadow-xs">
                                 {durationBadge}
                               </div>
                             )}
                           </div>
 
-                          {/* 3. Swiss Archive Meta beneath Photo */}
-                          <div className="mt-2.5 flex flex-col text-black dark:text-white">
-                            {/* Main Title (Snug, bold, line-clamp-2 with consistent min-height) */}
-                            <h3 className={`font-satoshi font-black ${isWide ? 'text-lg sm:text-xl md:text-2xl min-h-[3.25rem]' : 'text-sm sm:text-base md:text-[17px] min-h-[2.5rem] sm:min-h-[2.75rem]'} leading-snug tracking-tight text-black dark:text-white line-clamp-2 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors break-keep`}>
+                          {/* 2. Editorial Text Block beneath Photo */}
+                          <div className="mt-3 flex flex-col text-black dark:text-white">
+                            {/* Category & Location Micro Header */}
+                            <div className="flex items-center justify-between min-w-0 font-mono text-black dark:text-white gap-2">
+                              <span className="font-bold text-[10.5px] sm:text-xs text-red-600 dark:text-red-400 tracking-wider truncate uppercase">
+                                {topYearMonth}
+                              </span>
+                              <div className="flex items-center gap-1.5 min-w-0 shrink justify-end">
+                                <span className="text-[10px] sm:text-[11px] font-bold tracking-wider text-black/50 dark:text-white/50 uppercase truncate">
+                                  {line3CountryCity}
+                                </span>
+                                {isPlan && (
+                                  <span className="text-[9px] font-mono font-black text-red-600 dark:text-red-400 border border-red-600/40 dark:border-red-400/40 px-1.5 py-0.2 tracking-wider shrink-0 leading-none">
+                                    PLAN
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Main Title (Bold & Snug, line-clamp-2) */}
+                            <h3 className={`font-satoshi font-black ${isWide ? 'text-lg sm:text-xl md:text-2xl min-h-[3.25rem]' : 'text-base sm:text-lg md:text-[19px] min-h-[2.5rem] sm:min-h-[2.75rem]'} leading-snug tracking-tight text-black dark:text-white line-clamp-2 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors break-keep mt-1`}>
                               {trip.title}
                             </h3>
 
-                            {/* Dual Column Rule: Date on Left, LOG -> on Right */}
-                            <div className="pt-2 mt-1.5 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-[10.5px] sm:text-xs font-mono text-black/60 dark:text-white/60 tracking-wider">
+                            {/* Poetic Korean Editorial Subtitle (예: "제주에서 여름 3일동안의 여정") */}
+                            {editorialSubtitle && (
+                              <p className="text-xs sm:text-[13px] font-medium text-black/65 dark:text-white/65 line-clamp-1 break-keep font-['Noto_Sans_KR',sans-serif] tracking-tight mt-0.5">
+                                {editorialSubtitle}
+                              </p>
+                            )}
+
+                            {/* Bottom Metadata Bar: Specific Date + LOG Action */}
+                            <div className="pt-2 mt-2 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-[10.5px] sm:text-xs font-mono text-black/60 dark:text-white/60 tracking-wider">
                               <span className="truncate mr-2">{dateRangeOnly || trip.date}</span>
                               <span className="font-bold text-black dark:text-white uppercase group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors flex items-center gap-1 shrink-0 group-hover:translate-x-0.5">
                                 <span>LOG</span>

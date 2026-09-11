@@ -38,6 +38,8 @@ export interface Trip {
   videoUrl?: string;
   heroImg?: string;
   heroVideoUrl?: string;
+  description?: string;
+  subtitle?: string;
   gallery?: (string | GalleryImageMeta)[];
   deletedAt?: number | null; // Soft-delete timestamp (null = active)
   displayOrder?: number;

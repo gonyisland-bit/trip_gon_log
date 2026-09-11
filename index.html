@@ -68,32 +68,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/exif-js"></script>
   </head>
   <body>
-    <div id="root">
-      <!-- Critical Inline App Skeleton: Renders in 10ms before JS bundles load -->
-      <div id="app-skeleton" style="min-height: 100vh; display: flex; flex-direction: column; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-        <!-- Header Skeleton -->
-        <div style="height: 56px; border-bottom: 1px solid rgba(120,120,120,0.15); display: flex; align-items: center; justify-content: space-between; padding: 0 24px;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <div style="width: 18px; height: 18px; background: #dc2626; border-radius: 2px;"></div>
-            <span style="font-weight: 900; font-size: 14px; letter-spacing: 0.1em; color: inherit;">TRIPGON LOG</span>
-          </div>
-          <div style="display: flex; gap: 16px; opacity: 0.4;">
-            <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.05em;">JOURNAL</span>
-            <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.05em;">ARCHIVE</span>
-            <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.05em;">MAGAZINE</span>
-            <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.05em;">MAP</span>
-          </div>
-        </div>
-        <!-- Hero Body Minimal Indicator -->
-        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px;">
-          <div style="width: 26px; height: 26px; border: 2px solid rgba(150,150,150,0.25); border-top-color: currentColor; border-radius: 50%; animation: initialSpin 0.8s linear infinite;"></div>
-        </div>
-      </div>
-      <style>
-        @keyframes initialSpin { to { transform: rotate(360deg); } }
-        html.dark #app-skeleton div { border-color: rgba(255,255,255,0.12) !important; }
-      </style>
-    </div>
+    <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
