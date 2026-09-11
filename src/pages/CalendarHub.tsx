@@ -314,7 +314,7 @@ export function CalendarHubPage({
     if (!isNaN(parsed) && parsed >= 1 && parsed <= 12) {
       setCurrentMonth(parsed - 1);
     } else {
-      setMonthInputVal(String(currentMonth + 1));
+      setMonthInputVal(String(currentMonth + 1).padStart(2, '0'));
     }
     setIsEditingMonth(false);
   };
@@ -324,7 +324,7 @@ export function CalendarHubPage({
   }, [currentYear]);
 
   useEffect(() => {
-    setMonthInputVal(String(currentMonth + 1));
+    setMonthInputVal(String(currentMonth + 1).padStart(2, '0'));
   }, [currentMonth]);
 
   useEffect(() => {
@@ -341,7 +341,7 @@ export function CalendarHubPage({
     }
   }, [isEditingMonth]);
 
-  // 키보드 이벤트 (좌우 화살표로 달 전환, ESC로 모달 닫기)
+  // 키보드 이벤트 (좌우 화살표로 달 전환, ESC로 모달 닫기 및 선택 해제)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -353,9 +353,24 @@ export function CalendarHubPage({
           closeEventModal();
           return;
         }
+        if (selectedRange) {
+          setSelectedRange(null);
+          setDragAnchorDate(null);
+          return;
+        }
+        if (isEditingYear) {
+          setIsEditingYear(false);
+          setYearInputVal(String(currentYear));
+          return;
+        }
+        if (isEditingMonth) {
+          setIsEditingMonth(false);
+          setMonthInputVal(String(currentMonth + 1).padStart(2, '0'));
+          return;
+        }
       }
 
-      if (isEditingYear || isEventModalOpen || viewingEvent) return;
+      if (isEditingYear || isEditingMonth || isEventModalOpen || viewingEvent) return;
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
       if (e.key === 'ArrowLeft') {
@@ -372,18 +387,45 @@ export function CalendarHubPage({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentMonth, currentYear, isEditingYear, isEventModalOpen, viewingEvent]);
+  }, [isEditingYear, isEditingMonth, isEventModalOpen, viewingEvent, currentYear, currentMonth, selectedRange]);
 
-  // 전역 마우스업 리스너 (드래그 종료)
+  // 전역 마우스업 및 외부 클릭 리스너 (드래그 종료 및 바깥 클릭 시 선택 해제)
   useEffect(() => {
     const handleGlobalMouseUp = () => {
       if (isDragging) {
         setIsDragging(false);
       }
     };
+
+    const handleGlobalClick = (e: MouseEvent) => {
+      if (!selectedRange) return;
+      if (isEventModalOpen || viewingEvent) return;
+
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      // 셀 내부, 서랍 내부, 상단 ADD 버튼, 모달 내부 클릭 시에는 해제하지 않음
+      if (
+        target.closest('[data-calendar-date]') ||
+        target.closest('[data-selected-drawer]') ||
+        target.closest('[data-modal-container]') ||
+        target.closest('button') ||
+        target.closest('input')
+      ) {
+        return;
+      }
+
+      setSelectedRange(null);
+      setDragAnchorDate(null);
+    };
+
     window.addEventListener('mouseup', handleGlobalMouseUp);
-    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
-  }, [isDragging]);
+    window.addEventListener('click', handleGlobalClick);
+    return () => {
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+      window.removeEventListener('click', handleGlobalClick);
+    };
+  }, [isDragging, selectedRange, isEventModalOpen, viewingEvent]);
 
   // 모든 여정(Archive)과 계획(Plan) 파싱
   const parsedJourneys = useMemo(() => {
@@ -989,20 +1031,22 @@ export function CalendarHubPage({
             </div>
 
             <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
-              {/* 1. Year Display & Direct Edit + Navigation (화살표는 클릭/활성화 시에만 노출, 텍스트 크기 유지) */}
+              {/* 1. Year Display & Direct Edit + Navigation */}
               <div className="flex items-center gap-1.5">
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 leading-tight">
                     YEAR
                   </span>
                   {isEditingYear ? (
                     <form
                       onSubmit={(e) => { e.preventDefault(); handleYearSubmit(); }}
-                      className="inline-flex items-center"
+                      className="inline-flex items-center h-9 sm:h-14 lg:h-16"
                     >
                       <input
                         ref={yearInputRef}
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         value={yearInputVal}
                         onChange={(e) => setYearInputVal(e.target.value)}
                         onBlur={handleYearSubmit}
@@ -1015,16 +1059,14 @@ export function CalendarHubPage({
                             setCurrentYear(prev => prev - 1);
                           }
                         }}
-                        min="1990"
-                        max="2100"
-                        className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter bg-transparent border-b-2 border-red-600 outline-none w-[4.5ch] sm:w-[4.5ch] leading-none text-black dark:text-white p-0 m-0"
+                        className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter bg-transparent border-b-2 border-red-600 outline-none w-[4.5ch] h-full leading-none text-black dark:text-white p-0 m-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                     </form>
                   ) : (
                     <h1
                       onClick={() => setIsEditingYear(true)}
-                      className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter cursor-pointer hover:opacity-80 transition-opacity flex items-baseline group leading-none"
-                      title="클릭하여 연도 변경 및 직접 입력"
+                      className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter cursor-pointer hover:opacity-80 transition-opacity flex items-baseline group leading-none h-9 sm:h-14 lg:h-16"
+                      title="클릭하여 연도 변경"
                     >
                       <span className="group-hover:underline decoration-red-600 decoration-2 underline-offset-4">{currentYear}</span>
                     </h1>
@@ -1056,25 +1098,27 @@ export function CalendarHubPage({
                 )}
               </div>
 
-              {/* Slash Divider */}
+              {/* Swiss Minimal Divider */}
               <span className="text-3xl sm:text-5xl font-light text-black/20 dark:text-white/20 select-none">/</span>
 
-              {/* 2. Month Big Number & Direct Edit + Navigation + Enlarged Subtext (화살표는 클릭/활성화 시에만 노출) */}
+              {/* 2. Month Big Number & Direct Edit + Subtext */}
               {viewMode === 'month' ? (
                 <div className="flex items-center gap-1.5">
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 leading-tight">
                       MONTH
                     </span>
                     {isEditingMonth ? (
-                      <div className="flex items-baseline gap-2">
+                      <div className="flex items-baseline gap-2.5 h-9 sm:h-14 lg:h-16">
                         <form
                           onSubmit={(e) => { e.preventDefault(); handleMonthSubmit(); }}
-                          className="inline-flex items-center"
+                          className="inline-flex items-center h-full"
                         >
                           <input
                             ref={monthInputRef}
-                            type="number"
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             value={monthInputVal}
                             onChange={(e) => setMonthInputVal(e.target.value)}
                             onBlur={handleMonthSubmit}
@@ -1087,13 +1131,11 @@ export function CalendarHubPage({
                                 handlePrevMonth();
                               }
                             }}
-                            min="1"
-                            max="12"
-                            className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter bg-transparent border-b-2 border-red-600 outline-none w-[2.5ch] sm:w-[2.5ch] leading-none text-black dark:text-white p-0 m-0"
+                            className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter bg-transparent border-b-2 border-red-600 outline-none w-[2.2ch] h-full leading-none text-black dark:text-white p-0 m-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                         </form>
-                        <div className="flex flex-col justify-end">
-                          <span className="text-sm sm:text-base md:text-lg font-black font-['Inter',sans-serif] tracking-wider uppercase text-red-600 dark:text-red-500 leading-none">
+                        <div className="flex flex-col justify-end pb-0.5 sm:pb-1">
+                          <span className="text-base sm:text-lg md:text-xl font-black font-['Inter',sans-serif] tracking-wider uppercase text-red-600 dark:text-red-500 leading-none">
                             {MONTH_NAMES[currentMonth]}
                           </span>
                         </div>
@@ -1101,14 +1143,14 @@ export function CalendarHubPage({
                     ) : (
                       <div
                         onClick={() => setIsEditingMonth(true)}
-                        className="flex items-baseline gap-2 cursor-pointer hover:opacity-80 transition-opacity group"
-                        title="클릭하여 월 변경 및 직접 입력"
+                        className="flex items-baseline gap-2.5 cursor-pointer hover:opacity-80 transition-opacity group h-9 sm:h-14 lg:h-16"
+                        title="클릭하여 월 변경"
                       >
                         <span className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter leading-none text-black dark:text-white group-hover:underline decoration-red-600 decoration-2 underline-offset-4">
-                          {currentMonth + 1 < 10 ? `0${currentMonth + 1}` : currentMonth + 1}
+                          {String(currentMonth + 1).padStart(2, '0')}
                         </span>
-                        <div className="flex flex-col justify-end">
-                          <span className="text-sm sm:text-base md:text-lg font-black font-['Inter',sans-serif] tracking-wider uppercase text-red-600 dark:text-red-500 leading-none">
+                        <div className="flex flex-col justify-end pb-0.5 sm:pb-1">
+                          <span className="text-base sm:text-lg md:text-xl font-black font-['Inter',sans-serif] tracking-wider uppercase text-red-600 dark:text-red-500 leading-none">
                             {MONTH_NAMES[currentMonth]}
                           </span>
                         </div>
@@ -1141,8 +1183,8 @@ export function CalendarHubPage({
                   )}
                 </div>
               ) : (
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
+                <div className="flex flex-col justify-end h-9 sm:h-14 lg:h-16">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 leading-tight">
                     VIEW
                   </span>
                   <span className="text-2xl sm:text-4xl font-black font-satoshi tracking-tight leading-none uppercase text-black/80 dark:text-white/80">
@@ -1460,31 +1502,32 @@ export function CalendarHubPage({
 
                         if (slotItem.type === 'trip') {
                           const { trip, isPlan, isStart, isEnd, dayIndex, totalDays } = slotItem.data;
+                          const isSingleDay = isStart && isEnd;
                           return (
                             <button
                               key={`trip-${trip.id}`}
                               type="button"
                               onClick={(e) => handleTripBandClick(e, trip, cell.dateStr)}
-                              className={`w-[calc(100%+0.5rem)] sm:w-[calc(100%+1rem)] h-[20px] sm:h-[23px] text-left text-[9px] sm:text-[10.5px] md:text-[11px] transition-all flex items-center select-none group/band cursor-pointer ${
-                                isStart && isEnd
-                                  ? 'rounded-xs px-1 sm:px-1.5 mx-0 w-full'
+                              className={`h-[20px] sm:h-[23px] text-left text-[9px] sm:text-[10.5px] md:text-[11px] transition-all flex items-center select-none group/band cursor-pointer z-10 ${
+                                isSingleDay
+                                  ? 'w-full mx-0 rounded-xs px-1 sm:px-1.5'
                                   : isStart
-                                    ? 'rounded-l-xs pl-1 sm:pl-1.5 pr-0 -mr-1 sm:-mr-2'
+                                    ? 'w-[calc(100%+0.25rem)] sm:w-[calc(100%+0.5rem)] -mr-1 sm:-mr-2 ml-0 rounded-l-xs pl-1 sm:pl-1.5 pr-0'
                                     : isEnd
-                                      ? 'rounded-r-xs pr-1 sm:pr-1.5 pl-0 -ml-1 sm:-ml-2'
-                                      : 'rounded-none px-0.5 -mx-1 sm:-mx-2'
+                                      ? 'w-[calc(100%+0.25rem)] sm:w-[calc(100%+0.5rem)] -ml-1 sm:-ml-2 mr-0 rounded-r-xs pr-1 sm:pr-1.5 pl-0'
+                                      : 'w-[calc(100%+0.5rem)] sm:w-[calc(100%+1rem)] -mx-1 sm:-mx-2 rounded-none px-0.5'
                               } ${
                                 isPlan
                                   ? 'bg-amber-500/25 dark:bg-amber-500/35 text-amber-950 dark:text-amber-100 border-y border-dashed border-amber-500/50 hover:bg-amber-500/40'
-                                  : 'bg-[#18181B] dark:bg-white text-white dark:text-black hover:opacity-90 font-bold'
+                                  : 'bg-red-600 hover:bg-red-700 text-white font-black shadow-2xs'
                               }`}
                               title={`${trip.title} (DAY ${dayIndex}/${totalDays})`}
                             >
                               <div className="flex items-center gap-1 w-full min-w-0 px-0.5">
                                 {isStart && (
-                                  <Plane className="w-2.5 h-2.5 shrink-0 rotate-45 opacity-80" />
+                                  <Plane className="w-2.5 h-2.5 shrink-0 rotate-45 text-white/90" />
                                 )}
-                                <span className="font-bold truncate tracking-tight font-sans leading-tight">
+                                <span className="font-bold truncate tracking-tight font-sans leading-tight text-white">
                                   {isStart ? trip.title : `DAY ${dayIndex}`}
                                 </span>
                               </div>
@@ -1502,33 +1545,24 @@ export function CalendarHubPage({
                             key={`event-${event.id}`}
                             type="button"
                             onClick={(e) => handleCustomEventClick(e, event)}
-                            className={`w-[calc(100%+0.5rem)] sm:w-[calc(100%+1rem)] h-[20px] sm:h-[23px] text-left text-[8.5px] sm:text-[10px] transition-all flex items-center select-none cursor-pointer border-y border-black/10 dark:border-white/10 ${
+                            className={`h-[20px] sm:h-[23px] text-left text-[8.5px] sm:text-[10px] transition-all flex items-center select-none cursor-pointer z-10 ${
                               isSingleDay
-                                ? 'rounded-xs px-1 sm:px-1.5 border-x mx-0 w-full'
+                                ? 'w-full mx-0 rounded-xs px-1 sm:px-1.5'
                                 : isStart
-                                  ? 'rounded-l-xs pl-1 sm:pl-1.5 pr-0 border-l -mr-1 sm:-mr-2'
+                                  ? 'w-[calc(100%+0.25rem)] sm:w-[calc(100%+0.5rem)] -mr-1 sm:-mr-2 ml-0 rounded-l-xs pl-1 sm:pl-1.5 pr-0'
                                   : isEnd
-                                    ? 'rounded-r-xs pr-1 sm:pr-1.5 pl-0 border-r -ml-1 sm:-ml-2'
-                                    : 'rounded-none px-0.5 -mx-1 sm:-mx-2'
-                            } ${
-                              event.category === 'work'
-                                ? 'bg-blue-100/90 text-blue-950 dark:bg-blue-900/60 dark:text-blue-100'
-                                : event.category === 'family'
-                                  ? 'bg-rose-100/90 text-rose-950 dark:bg-rose-900/60 dark:text-rose-100'
-                                  : event.category === 'personal'
-                                    ? 'bg-emerald-100/90 text-emerald-950 dark:bg-emerald-900/60 dark:text-emerald-100'
-                                    : 'bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100'
-                            }`}
-                            style={{
-                              backgroundImage: isDarkMode
-                                ? 'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.05) 4px, rgba(255,255,255,0.05) 8px)'
-                                : 'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0,0,0,0.04) 4px, rgba(0,0,0,0.04) 8px)'
-                            }}
+                                    ? 'w-[calc(100%+0.25rem)] sm:w-[calc(100%+0.5rem)] -ml-1 sm:-ml-2 mr-0 rounded-r-xs pr-1 sm:pr-1.5 pl-0'
+                                    : 'w-[calc(100%+0.5rem)] sm:w-[calc(100%+1rem)] -mx-1 sm:-mx-2 rounded-none px-0.5'
+                            } bg-zinc-900 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 border-y border-zinc-800 dark:border-zinc-300 font-medium`}
                             title={`[${categoryInfo.label}] ${event.title} (클릭하여 보기/공유)`}
                           >
-                            <div className="flex items-center gap-1 w-full min-w-0 px-0.5">
+                            <div className="flex items-center gap-1.5 w-full min-w-0 px-0.5">
                               {isStart && (
-                                <categoryInfo.icon className="w-2.5 h-2.5 shrink-0 opacity-80" />
+                                <span 
+                                  className="w-1.5 h-1.5 rounded-full shrink-0" 
+                                  style={{ backgroundColor: categoryInfo.color }} 
+                                  title={categoryInfo.label}
+                                />
                               )}
                               <span className="font-semibold truncate tracking-tight font-sans leading-tight">
                                 {isStart ? event.title : `${event.title} (${dayIndex}/${totalDays})`}
@@ -1574,11 +1608,11 @@ export function CalendarHubPage({
                       className="text-left cursor-pointer group"
                       title={`${m.monthTab.full} 월별 보기로 확대 이동`}
                     >
-                      <div className="flex items-baseline gap-1.5 text-black dark:text-white group-hover:text-red-600 transition-colors">
-                        <span className="text-base sm:text-lg font-black font-mono tracking-tight">
+                      <div className="flex items-baseline gap-2 text-black dark:text-white group-hover:text-red-600 transition-colors">
+                        <span className="text-lg sm:text-xl font-black font-mono tracking-tight">
                           {m.monthTab.num < 10 ? `0${m.monthTab.num}` : m.monthTab.num}
                         </span>
-                        <span className="text-sm sm:text-base font-black font-['Inter',sans-serif] tracking-tight uppercase">
+                        <span className="text-xs sm:text-sm font-semibold font-['Inter',sans-serif] tracking-wider uppercase opacity-75">
                           {m.monthTab.full}
                         </span>
                       </div>
@@ -1611,7 +1645,6 @@ export function CalendarHubPage({
 
                       const isSun = day.dayOfWeek === 6;
                       const isSat = day.dayOfWeek === 5;
-                      const isSelected = selectedRange && day.dateStr >= selectedRange.start && day.dateStr <= selectedRange.end;
 
                       // Continuous Region Classes for Trips
                       const isTripSingle = day.hasTrip && day.isTripStart && day.isTripEnd;
@@ -1625,6 +1658,7 @@ export function CalendarHubPage({
                       const isEventEnd = day.hasEvent && day.isEventEnd && !day.isEventStart;
                       const isEventMid = day.hasEvent && !day.isEventStart && !day.isEventEnd;
 
+                      // Mini calendar styling: 연간 보기에서는 임의의 선택 영역(레드 하이라이트)을 표기하지 않고 전체 일정 분포를 명확히 보여줌
                       return (
                         <button
                           key={day.dateStr}
@@ -1636,47 +1670,37 @@ export function CalendarHubPage({
                             toggleViewMode('month');
                           }}
                           className={`h-7 sm:h-8 text-xs font-bold flex flex-col items-center justify-center relative transition-all cursor-pointer hover:opacity-80 ${
-                            isSelected
-                              ? 'bg-red-600 text-white font-black scale-110 shadow-xs z-20 rounded-sm'
-                              : day.isToday
-                                ? 'bg-black text-white dark:bg-white dark:text-black font-black rounded-sm'
-                                : day.hasTrip
+                            day.isToday
+                              ? 'bg-black text-white dark:bg-white dark:text-black font-black rounded-sm'
+                              : day.hasTrip
+                                ? `${
+                                    isTripSingle
+                                      ? 'rounded-full'
+                                      : isTripStart
+                                        ? 'rounded-l-full'
+                                        : isTripEnd
+                                          ? 'rounded-r-full'
+                                          : 'rounded-none'
+                                  } ${
+                                    day.isPlan
+                                      ? 'bg-amber-500/30 text-amber-950 dark:text-amber-200 font-bold'
+                                      : 'bg-red-600 text-white font-bold'
+                                  }`
+                                : day.hasEvent
                                   ? `${
-                                      isTripSingle
+                                      isEventSingle
                                         ? 'rounded-full'
-                                        : isTripStart
+                                        : isEventStart
                                           ? 'rounded-l-full'
-                                          : isTripEnd
+                                          : isEventEnd
                                             ? 'rounded-r-full'
                                             : 'rounded-none'
-                                    } ${
-                                      day.isPlan
-                                        ? 'bg-amber-500/25 text-amber-900 dark:text-amber-200 font-bold'
-                                        : 'bg-black/10 dark:bg-white/15 text-black dark:text-white font-black'
-                                    }`
-                                  : day.hasEvent
-                                    ? `${
-                                        isEventSingle
-                                          ? 'rounded-full'
-                                          : isEventStart
-                                            ? 'rounded-l-full'
-                                            : isEventEnd
-                                              ? 'rounded-r-full'
-                                              : 'rounded-none'
-                                      } ${
-                                        day.eventCategory === 'work'
-                                          ? 'bg-blue-500/20 text-blue-900 dark:text-blue-200 font-bold'
-                                          : day.eventCategory === 'family'
-                                            ? 'bg-rose-500/20 text-rose-900 dark:text-rose-200 font-bold'
-                                            : day.eventCategory === 'personal'
-                                              ? 'bg-emerald-500/20 text-emerald-900 dark:text-emerald-200 font-bold'
-                                              : 'bg-zinc-500/20 text-zinc-900 dark:text-zinc-200 font-bold'
-                                      }`
-                                    : day.isHoliday || isSun
-                                      ? 'text-red-600 dark:text-red-400 font-bold rounded-sm'
-                                      : isSat
-                                        ? 'text-blue-600 dark:text-blue-400 font-bold rounded-sm'
-                                        : 'text-black/80 dark:text-white/80 rounded-sm'
+                                    } bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900 font-medium`
+                                  : day.isHoliday || isSun
+                                    ? 'text-red-600 dark:text-red-400 font-bold rounded-sm'
+                                    : isSat
+                                      ? 'text-blue-600 dark:text-blue-400 font-bold rounded-sm'
+                                      : 'text-black/80 dark:text-white/80 rounded-sm'
                           }`}
                           title={day.holidayName ? `${day.dateStr} (${day.holidayName})` : day.tripTitles.length > 0 ? `${day.dateStr} · ${day.tripTitles.join(', ')}` : day.dateStr}
                         >
@@ -1700,7 +1724,7 @@ export function CalendarHubPage({
       {/* Selected Range Detail Drawer (Swiss Minimal Typography & Lines) */}
       {/* ───────────────────────────────────────────────────────────── */}
       {selectedRange && selectedCells.length > 0 && (
-        <div className="w-full max-w-7xl mx-auto px-1 sm:px-6 lg:px-8 mt-6 animate-in slide-in-from-bottom-3 duration-200">
+        <div data-selected-drawer="true" className="w-full max-w-7xl mx-auto px-1 sm:px-6 lg:px-8 mt-6 animate-in slide-in-from-bottom-3 duration-200">
           <div className="p-4 sm:p-6 rounded-none border-t-2 border-b border-black dark:border-white bg-transparent flex flex-col gap-5">
             {/* Top row: Date header & Add button */}
             <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 border-b border-black/10 dark:border-white/10 pb-3">
@@ -1735,6 +1759,14 @@ export function CalendarHubPage({
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>{isMultiDaySelected ? '선택 기간에 일정 등록' : '이 날짜에 일정 등록'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedRange(null)}
+                  className="p-1.5 rounded-full border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                  title="선택 해제 (ESC)"
+                >
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
