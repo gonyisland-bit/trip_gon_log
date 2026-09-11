@@ -981,6 +981,9 @@ function App() {
   // Listen to popstate events for browser back/forward navigation
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
+      // 뒤로가기 시 진행 중인 비행기 전환 즉시 강제 취소 (원복 및 지연 방지)
+      setFlightTransition({ isActive: false, targetTripId: null });
+
       const state = event.state;
       if (isDetailEditing || isManageDirty) {
         // Lock page transition and show unsaved changes modal
@@ -1027,6 +1030,11 @@ function App() {
       setPendingNavigation({ view, tripId });
       setShowUnsavedModal(true);
       return;
+    }
+
+    // 트립허브나 다른 화면으로 이동 시 잔여 비행기 전환 즉시 강제 취소 (원복 증상 원천 차단)
+    if (view !== 'detail' || (tripId !== null && tripId !== flightTransition.targetTripId)) {
+      setFlightTransition({ isActive: false, targetTripId: null });
     }
 
     // 트립카드 클릭으로 여정 상세 페이지로 진입 시 비행기 활공 전환 애니메이션 실행
@@ -1094,7 +1102,7 @@ function App() {
   };
 
   const handleFlightHalfway = () => {
-    if (flightTransition.targetTripId) {
+    if (flightTransition.isActive && flightTransition.targetTripId) {
       navigateTo('detail', flightTransition.targetTripId, true, null, true);
     }
   };

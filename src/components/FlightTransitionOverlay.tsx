@@ -18,30 +18,40 @@ export const FlightTransitionOverlay: React.FC<FlightTransitionOverlayProps> = (
   const [animating, setAnimating] = useState(false);
 
   useEffect(() => {
-    if (isActive) {
-      setAnimating(true);
-
-      // Halfway callback: When airplane covers center of the screen
-      const halfwayTimer = setTimeout(() => {
-        onHalfway();
-      }, 260);
-
-      // Completion callback: When airplane exits to the left
-      const completeTimer = setTimeout(() => {
-        setAnimating(false);
-        onComplete();
-      }, 580);
-
-      return () => {
-        clearTimeout(halfwayTimer);
-        clearTimeout(completeTimer);
-      };
-    } else {
+    if (!isActive) {
       setAnimating(false);
+      return;
     }
+
+    setAnimating(true);
+
+    // Halfway callback: When airplane covers center of the screen
+    const halfwayTimer = setTimeout(() => {
+      if (isActive) {
+        onHalfway();
+      }
+    }, 240);
+
+    // Completion callback: When airplane fully exits to the left
+    const completeTimer = setTimeout(() => {
+      setAnimating(false);
+      onComplete();
+    }, 550);
+
+    return () => {
+      clearTimeout(halfwayTimer);
+      clearTimeout(completeTimer);
+    };
   }, [isActive, onHalfway, onComplete]);
 
   if (!isActive && !animating) return null;
+
+  // Sophisticated Airline Gray Palette (No black, elegant neutral grays)
+  const fuselageFill = isDarkMode ? '#94A3B8' : '#64748B'; // Slate 400 / 500
+  const wingsFill = isDarkMode ? '#8091A5' : '#52627A';    // Slightly darker slate
+  const detailsFill = isDarkMode ? '#CBD5E1' : '#475569';  // Subtle slate detail
+  const cockpitFill = isDarkMode ? '#1E293B' : '#334155';  // Dark slate slit
+  const contrailColor = isDarkMode ? 'rgba(203, 213, 225, 0.4)' : 'rgba(100, 116, 139, 0.35)';
 
   return (
     <div 
@@ -49,133 +59,102 @@ export const FlightTransitionOverlay: React.FC<FlightTransitionOverlayProps> = (
       aria-hidden="true"
     >
       <style>{`
-        @keyframes flightSweep {
+        @keyframes flightSweepOnePass {
           0% {
-            transform: translate3d(120vw, 0, 0) scale(0.95);
-            opacity: 0.9;
-          }
-          45% {
-            transform: translate3d(0vw, 0, 0) scale(1.02);
-            opacity: 1;
+            transform: translate3d(125vw, 0, 0);
           }
           100% {
-            transform: translate3d(-130vw, 0, 0) scale(1.08);
-            opacity: 0.95;
+            transform: translate3d(-135vw, 0, 0);
           }
         }
-        @keyframes contrailExpand {
-          0% {
-            transform: scaleX(0);
-            opacity: 0;
-          }
-          50% {
-            transform: scaleX(1);
-            opacity: 0.7;
-          }
-          100% {
-            transform: scaleX(1.4);
-            opacity: 0;
-          }
-        }
-        .animate-flight-sweep {
-          animation: flightSweep 0.58s cubic-bezier(0.35, 0, 0.15, 1) forwards;
+        .animate-flight-sweep-smooth {
+          animation: flightSweepOnePass 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
           will-change: transform;
-        }
-        .animate-contrail {
-          animation: contrailExpand 0.58s ease-out forwards;
-          transform-origin: right center;
         }
       `}</style>
 
-      {/* Flight Container moving from Right to Left */}
-      <div className="relative w-[130vw] h-[130vh] max-w-none flex items-center justify-center animate-flight-sweep shrink-0">
+      {/* Flight Container moving continuously from Right to Left without stopping */}
+      <div className="relative w-[130vw] h-[130vh] max-w-none flex items-center justify-center animate-flight-sweep-smooth shrink-0 pointer-events-none">
         
-        {/* Trailing Jet Contrails */}
-        <div className="absolute right-[30%] top-1/2 -translate-y-1/2 flex flex-col gap-10 w-[80vw] pointer-events-none animate-contrail">
-          {/* Top Engine Contrail */}
-          <div className="h-[2px] w-full bg-gradient-to-l from-transparent via-red-600/30 to-red-600/60 dark:via-red-500/30 dark:to-red-500/60" />
-          {/* Center Fuselage Slipstream */}
-          <div className="flex items-center gap-3 justify-end pr-8">
-            <span className="font-mono text-[9px] sm:text-[10px] font-black tracking-[0.25em] uppercase text-black/40 dark:text-white/40">
-              TRIPGON LOG AIRWAYS · EN ROUTE
+        {/* Trailing Jet Contrails behind the right tail */}
+        <div className="absolute right-[22%] top-1/2 -translate-y-1/2 flex flex-col gap-12 w-[70vw] pointer-events-none opacity-70">
+          <div className="h-[1.5px] w-full" style={{ background: `linear-gradient(to left, transparent, ${contrailColor})` }} />
+          <div className="flex items-center gap-2.5 justify-end pr-10">
+            <span className="font-mono text-[9px] sm:text-[10px] font-bold tracking-[0.25em] uppercase" style={{ color: fuselageFill }}>
+              TRIPGON AIRWAYS · FLIGHT LOG
             </span>
             {destinationTitle && (
-              <span className="font-mono text-[9px] sm:text-[10px] font-bold tracking-wider uppercase text-red-600 dark:text-red-400">
+              <span className="font-mono text-[9px] sm:text-[10px] font-bold tracking-wider uppercase opacity-80" style={{ color: fuselageFill }}>
                 → {destinationTitle}
               </span>
             )}
           </div>
-          {/* Bottom Engine Contrail */}
-          <div className="h-[2px] w-full bg-gradient-to-l from-transparent via-red-600/30 to-red-600/60 dark:via-red-500/30 dark:to-red-500/60" />
+          <div className="h-[1.5px] w-full" style={{ background: `linear-gradient(to left, transparent, ${contrailColor})` }} />
         </div>
 
-        {/* Minimal Fullscreen Airplane Vector (Top-down view, nose pointing Left) */}
+        {/* Minimal Fullscreen Airplane Vector (Nose strictly pointing Left, Rotate -90deg) */}
         <svg 
           viewBox="0 0 1000 800" 
-          className={`w-full h-full drop-shadow-2xl ${
-            isDarkMode 
-              ? 'fill-white text-white' 
-              : 'fill-black text-black'
-          }`}
+          className="w-full h-full pointer-events-none"
           style={{
             filter: isDarkMode 
-              ? 'drop-shadow(0 20px 40px rgba(0,0,0,0.8))' 
-              : 'drop-shadow(0 25px 50px rgba(0,0,0,0.35))'
+              ? 'drop-shadow(0 20px 35px rgba(0,0,0,0.65))' 
+              : 'drop-shadow(0 20px 35px rgba(0,0,0,0.22))'
           }}
         >
-          {/* Airplane Silhouette (Pointing Leftwards) */}
-          <g transform="translate(500, 400) rotate(180) translate(-500, -400)">
-            {/* Main Wings (Wide swept-back high-aspect ratio wings that span top to bottom) */}
+          {/* Rotate -90deg: Moves original 12 o'clock Nose to exact 9 o'clock (Leftward) flight direction */}
+          <g transform="translate(500, 400) rotate(-90) translate(-500, -400)">
+            {/* Main Wings (Wide swept-back high-aspect ratio wings) */}
             <path
               d="
                 M 500, 360
-                L 150, 480
-                C 120, 490 100, 475 110, 455
+                L 140, 490
+                C 110, 500 90, 485 100, 465
                 L 440, 260
                 L 480, 240
                 Z
               "
-              className={isDarkMode ? 'fill-neutral-100' : 'fill-neutral-900'}
+              fill={wingsFill}
             />
             <path
               d="
                 M 500, 360
-                L 850, 480
-                C 880, 490 900, 475 890, 455
+                L 860, 490
+                C 890, 500 910, 485 900, 465
                 L 560, 260
                 L 520, 240
                 Z
               "
-              className={isDarkMode ? 'fill-neutral-100' : 'fill-neutral-900'}
+              fill={wingsFill}
             />
 
             {/* Jet Engines beneath wings */}
-            <rect x="310" y="380" width="22" height="70" rx="11" className={isDarkMode ? 'fill-neutral-300' : 'fill-neutral-800'} />
-            <rect x="668" y="380" width="22" height="70" rx="11" className={isDarkMode ? 'fill-neutral-300' : 'fill-neutral-800'} />
+            <rect x="310" y="380" width="22" height="70" rx="11" fill={detailsFill} />
+            <rect x="668" y="380" width="22" height="70" rx="11" fill={detailsFill} />
 
             {/* Horizontal Stabilizers / Tail Wings */}
             <path
               d="
                 M 500, 710
-                L 360, 770
-                C 345, 777 340, 768 348, 755
+                L 350, 775
+                C 335, 782 330, 773 338, 760
                 L 475, 680
                 Z
               "
-              className={isDarkMode ? 'fill-neutral-200' : 'fill-neutral-800'}
+              fill={wingsFill}
             />
             <path
               d="
                 M 500, 710
-                L 640, 770
-                C 655, 777 660, 768 652, 755
+                L 650, 775
+                C 665, 782 670, 773 662, 760
                 L 525, 680
                 Z
               "
-              className={isDarkMode ? 'fill-neutral-200' : 'fill-neutral-800'}
+              fill={wingsFill}
             />
 
-            {/* Sleek Aerodynamic Fuselage (Body) */}
+            {/* Sleek Aerodynamic Fuselage (Body in elegant Gray) */}
             <path
               d="
                 M 500, 80
@@ -186,10 +165,10 @@ export const FlightTransitionOverlay: React.FC<FlightTransitionOverlayProps> = (
                 C 532, 220 525, 120 500, 80
                 Z
               "
-              className={isDarkMode ? 'fill-white' : 'fill-black'}
+              fill={fuselageFill}
             />
 
-            {/* Nose Cockpit Glass Accent */}
+            {/* Minimalist Cockpit Slit */}
             <path
               d="
                 M 490, 160
@@ -198,20 +177,16 @@ export const FlightTransitionOverlay: React.FC<FlightTransitionOverlayProps> = (
                 C 505, 169 495, 169 488, 172
                 Z
               "
-              className={isDarkMode ? 'fill-black/60' : 'fill-white/70'}
+              fill={cockpitFill}
             />
 
-            {/* Fuselage Minimal Center Spine Line */}
+            {/* Fuselage Spine Accent Line */}
             <line 
               x1="500" y1="190" x2="500" y2="720" 
-              stroke={isDarkMode ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.2)'} 
+              stroke={detailsFill} 
               strokeWidth="2" 
+              opacity="0.4"
             />
-
-            {/* Red Accent Marker on Left Wingtip */}
-            <circle cx="110" cy="458" r="7" className="fill-red-600" />
-            {/* Green Accent Marker on Right Wingtip */}
-            <circle cx="890" cy="458" r="7" className="fill-emerald-500" />
           </g>
         </svg>
       </div>
