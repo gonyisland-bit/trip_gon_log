@@ -6,6 +6,7 @@ import { ArchiveHubPage } from './pages/Archive';
 import { MagazineHubPage } from './pages/MagazineHub';
 import { ScrollToTop } from './components/ScrollToTop';
 import { DetailSkeleton, TopProgressBar } from './components/EditorialSkeleton';
+import { FlightTransitionOverlay } from './components/FlightTransitionOverlay';
 import { preloadDetailPage, preloadMapPage, preloadManagePage, scheduleIdlePrefetch } from './utils/prefetchHelper';
 
 // Resilient lazy import with automatic retry on chunk loading failure (e.g. browser reconnect or new deploy)
@@ -318,6 +319,11 @@ function App() {
   const postSaveNavTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const postSaveNavTargetRef = useRef<{ view: string; tripId: number | null } | null>(null);
   const [isNavigating, setIsNavigating] = useState<boolean>(false);
+  const [flightTransition, setFlightTransition] = useState<{
+    isActive: boolean;
+    targetTripId: number | null;
+    destinationTitle?: string;
+  }>({ isActive: false, targetTripId: null });
   // settingsLoaded: true once Firestore settings/home listener fires (prevents premature hydration)
   const [settingsLoaded, setSettingsLoaded] = useState<boolean>(false);
 
@@ -1023,6 +1029,18 @@ function App() {
       return;
     }
 
+    // 트립카드 클릭으로 여정 상세 페이지로 진입 시 비행기 활공 전환 애니메이션 실행
+    if (!force && currentView !== 'detail' && view === 'detail' && tripId !== null) {
+      const targetTrip = trips.find(t => t.id === tripId) || plans.find(p => p.id === tripId);
+      const destTitle = targetTrip?.title || '';
+      setFlightTransition({
+        isActive: true,
+        targetTripId: tripId,
+        destinationTitle: destTitle,
+      });
+      return;
+    }
+
     if (view !== 'detail') {
       setIsShareMode(false);
     }
@@ -1073,6 +1091,16 @@ function App() {
         tripId: tripId || activeTripId 
       }, '', path);
     }
+  };
+
+  const handleFlightHalfway = () => {
+    if (flightTransition.targetTripId) {
+      navigateTo('detail', flightTransition.targetTripId, true, null, true);
+    }
+  };
+
+  const handleFlightComplete = () => {
+    setFlightTransition({ isActive: false, targetTripId: null });
   };
 
   const handleSearchResultClick = (tripId: number, tabId: string, itemId: number | null) => {
@@ -2214,6 +2242,15 @@ function App() {
     <div className={`${isDarkMode ? 'dark' : ''} overflow-x-hidden w-full`}>
       {/* Seamless Top Progress Indicator during route transitions */}
       <TopProgressBar isNavigating={isNavigating} />
+
+      {/* Fullscreen Airplane Vector Transition Overlay */}
+      <FlightTransitionOverlay
+        isActive={flightTransition.isActive}
+        onHalfway={handleFlightHalfway}
+        onComplete={handleFlightComplete}
+        isDarkMode={isDarkMode}
+        destinationTitle={flightTransition.destinationTitle}
+      />
 
       <div 
         style={appGradientStyle}
