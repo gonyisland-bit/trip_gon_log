@@ -316,8 +316,8 @@ export function getTripCardDisplayData(trip: Trip, index: number) {
   const monthNum = p1 ? p1.dateObj.getMonth() : (p2 ? p2.dateObj.getMonth() : -1);
   const month = monthNum >= 0 ? months[monthNum] : '';
 
-  // 사진 위 1번줄: 년도, 월 (2026, JUN)
-  const topYearMonth = month ? `${year}, ${month}` : year;
+  // 사진 위 1번줄: 년도, 월 (2026 · JUN)
+  const topYearMonth = month ? `${year} · ${month}` : year;
 
   // 사진 아래 2번줄: 날짜, 기간 (08.13-08.15, 4 DAYS)
   let dateRange = '';
@@ -1119,18 +1119,18 @@ export function ArchiveHubPage({
                           onDragEnd={() => setDraggedTripId(null)}
                         >
                           {/* 1. Swiss Archive Index: Top Micro Header (Date/Month Badge + Country/City + Plan Tag) */}
-                          <div className="mb-2 flex items-baseline justify-between min-w-0 font-mono text-black dark:text-white">
-                            <div className="flex items-center gap-1.5">
-                              <span className={`font-black tracking-tight ${isWide ? 'text-lg sm:text-xl md:text-2xl' : 'text-sm sm:text-base md:text-lg'} leading-none text-black dark:text-white`}>
-                                [ {topYearMonth} ]
+                          <div className="mb-2 flex items-center justify-between min-w-0 font-mono text-black dark:text-white gap-2">
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className={`font-black tracking-tight ${isWide ? 'text-base sm:text-lg md:text-xl' : 'text-xs sm:text-sm md:text-base'} leading-none text-black dark:text-white`}>
+                                {topYearMonth}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className="text-[10px] sm:text-[11px] font-bold tracking-wider text-black/50 dark:text-white/50 uppercase truncate max-w-[120px] sm:max-w-[180px]">
+                            <div className="flex items-center gap-1.5 min-w-0 shrink justify-end">
+                              <span className="text-[10px] sm:text-[11px] font-bold tracking-wider text-black/50 dark:text-white/50 uppercase truncate">
                                 {line3CountryCity}
                               </span>
                               {isPlan && (
-                                <span className="text-[9px] font-mono font-black text-red-600 dark:text-red-400 border border-red-600/40 dark:border-red-400/40 px-1 py-0.2 tracking-wider shrink-0">
+                                <span className="text-[9px] font-mono font-black text-red-600 dark:text-red-400 border border-red-600/40 dark:border-red-400/40 px-1.5 py-0.2 tracking-wider shrink-0 leading-none">
                                   PLAN
                                 </span>
                               )}
@@ -1154,15 +1154,15 @@ export function ArchiveHubPage({
 
                           {/* 3. Swiss Archive Meta beneath Photo */}
                           <div className="mt-2.5 flex flex-col text-black dark:text-white">
-                            {/* Main Title (Snug, bold, line-clamp-1) */}
-                            <h3 className={`font-satoshi font-black ${isWide ? 'text-lg sm:text-xl md:text-2xl' : 'text-base sm:text-lg md:text-[19px]'} leading-snug tracking-tight text-black dark:text-white line-clamp-1 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors`}>
+                            {/* Main Title (Snug, bold, line-clamp-2 with consistent min-height) */}
+                            <h3 className={`font-satoshi font-black ${isWide ? 'text-lg sm:text-xl md:text-2xl min-h-[3.25rem]' : 'text-sm sm:text-base md:text-[17px] min-h-[2.5rem] sm:min-h-[2.75rem]'} leading-snug tracking-tight text-black dark:text-white line-clamp-2 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors break-keep`}>
                               {trip.title}
                             </h3>
 
                             {/* Dual Column Rule: Date on Left, LOG -> on Right */}
-                            <div className="pt-1.5 mt-1 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-[11px] sm:text-xs font-mono text-black/60 dark:text-white/60 tracking-wider">
-                              <span>{dateRangeOnly || trip.date}</span>
-                              <span className="font-bold text-black dark:text-white uppercase group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors flex items-center gap-1 group-hover:translate-x-0.5">
+                            <div className="pt-2 mt-1.5 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-[10.5px] sm:text-xs font-mono text-black/60 dark:text-white/60 tracking-wider">
+                              <span className="truncate mr-2">{dateRangeOnly || trip.date}</span>
+                              <span className="font-bold text-black dark:text-white uppercase group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors flex items-center gap-1 shrink-0 group-hover:translate-x-0.5">
                                 <span>LOG</span>
                                 <span className="text-[10px]">→</span>
                               </span>
