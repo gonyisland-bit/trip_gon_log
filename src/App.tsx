@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, lazy, Suspense, startTransition } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense, startTransition } from 'react';
 import { Navigation } from './components/Navigation';
 import { Footer } from './components/Footer';
 import { HomePage } from './pages/Home';
@@ -1093,23 +1093,33 @@ function App() {
         const isShare = (effectiveView === 'detail' && (tripId === activeTripId || tripId === null || tripId === idToUse)) ? isShareMode : false;
         path = idToUse ? `/detail?id=${idToUse}${isShare ? '&share=true' : ''}` : '/detail';
       }
-      window.history.pushState({ 
-        view: effectiveView, 
-        mode: effectiveView === 'magazine' ? 'hub' : undefined, 
-        tripId: tripId || activeTripId 
-      }, '', path);
+
+      const currentPath = window.location.pathname + window.location.search;
+      if (currentPath === path) {
+        window.history.replaceState({ 
+          view: effectiveView, 
+          mode: effectiveView === 'magazine' ? 'hub' : undefined, 
+          tripId: tripId || activeTripId 
+        }, '', path);
+      } else {
+        window.history.pushState({ 
+          view: effectiveView, 
+          mode: effectiveView === 'magazine' ? 'hub' : undefined, 
+          tripId: tripId || activeTripId 
+        }, '', path);
+      }
     }
   };
 
-  const handleFlightHalfway = () => {
+  const handleFlightHalfway = useCallback(() => {
     if (flightTransition.isActive && flightTransition.targetTripId) {
       navigateTo('detail', flightTransition.targetTripId, true, null, true);
     }
-  };
+  }, [flightTransition.isActive, flightTransition.targetTripId]);
 
-  const handleFlightComplete = () => {
+  const handleFlightComplete = useCallback(() => {
     setFlightTransition({ isActive: false, targetTripId: null });
-  };
+  }, []);
 
   const handleSearchResultClick = (tripId: number, tabId: string, itemId: number | null) => {
     setActiveTripId(tripId);

@@ -296,52 +296,92 @@
 
 /* Dark mode Leaflet tile styling - CartoDB Dark Matter handles dark theme natively */
 
-/* POI Pin Marker & Label Styles */
+/* POI Pin Marker & Label Styles - Swiss Minimal Editorial Design */
 .custom-poi-pin-icon {
   background: transparent !important;
   border: none !important;
 }
 
 .poi-pin-wrapper {
-  display: flex;
+  display: inline-flex;
   flex-direction: column;
   align-items: center;
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.22));
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
 }
 
-.poi-pin {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 1px solid white;
-  box-shadow: 0 1.5px 3px rgba(0,0,0,0.3);
+.poi-pin-wrapper:hover {
+  transform: translateY(-2px) scale(1.05);
+  z-index: 1000 !important;
+}
+
+.poi-card {
+  display: flex;
+  flex-direction: column;
+  background: #FFFFFF;
+  border: 1.5px solid #111111;
+  padding: 3px 6px;
+  gap: 2px;
+  border-radius: 2px;
+  max-width: 140px;
+  white-space: nowrap;
+}
+
+.dark .poi-card {
+  background: #18181B;
+  border-color: #E4E4E7;
+}
+
+.poi-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 9px;
+  gap: 4px;
 }
 
-.poi-label {
-  background: rgba(249,248,246,0.95);
-  border: 1px solid #111111;
-  color: #111111;
-  font-size: 7.5px;
+.poi-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  font-size: 8.5px;
   font-weight: 900;
-  padding: 1px 3.5px;
-  border-radius: 0px;
-  margin-top: 2px;
-  white-space: nowrap;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-  font-family: inherit;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  padding: 1.5px 4px;
+  border-radius: 1px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  transform: scale(0.9);
 }
 
-.dark .poi-label {
-  background: rgba(22,22,22,0.95);
-  border: 1px solid #ffffff;
-  color: #ffffff;
+.poi-name {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #111111;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 128px;
+  line-height: 1.25;
+}
+
+.dark .poi-name {
+  color: #F4F4F5;
+}
+
+.poi-anchor-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1.5px solid #FFFFFF;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  margin-top: 2px;
+}
+
+.dark .poi-anchor-dot {
+  border-color: #18181B;
 }
 
 /* Premium Leaflet Scale Control styling */

@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 interface FlightTransitionOverlayProps {
   isActive: boolean;
@@ -17,6 +17,16 @@ export const FlightTransitionOverlay: React.FC<FlightTransitionOverlayProps> = (
 }) => {
   const [animating, setAnimating] = useState(false);
   const halfwayFiredRef = useRef(false);
+  const onHalfwayRef = useRef(onHalfway);
+  const onCompleteRef = useRef(onComplete);
+
+  useEffect(() => {
+    onHalfwayRef.current = onHalfway;
+  }, [onHalfway]);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     if (!isActive) {
@@ -28,35 +38,35 @@ export const FlightTransitionOverlay: React.FC<FlightTransitionOverlayProps> = (
     setAnimating(true);
     halfwayFiredRef.current = false;
 
-    // Halfway callback: When airplane covers center of the screen (at 380ms in 850ms smooth flight)
+    // Halfway callback: When airplane covers center of the screen (at 500ms in 1.15s smooth flight)
     const halfwayTimer = setTimeout(() => {
       if (!halfwayFiredRef.current) {
         halfwayFiredRef.current = true;
-        onHalfway();
+        onHalfwayRef.current();
       }
-    }, 380);
+    }, 500);
 
     // Fallback completion callback in case animationend does not fire
     const fallbackTimer = setTimeout(() => {
       setAnimating(false);
-      onComplete();
-    }, 870);
+      onCompleteRef.current();
+    }, 1200);
 
     return () => {
       clearTimeout(halfwayTimer);
       clearTimeout(fallbackTimer);
     };
-  }, [isActive, onHalfway, onComplete]);
+  }, [isActive]);
 
   const handleAnimationEnd = (e: React.AnimationEvent) => {
     // Only respond to the main flight sweep animation
     if (e.animationName === 'flightSweepAccelerate') {
       if (!halfwayFiredRef.current) {
         halfwayFiredRef.current = true;
-        onHalfway();
+        onHalfwayRef.current();
       }
       setAnimating(false);
-      onComplete();
+      onCompleteRef.current();
     }
   };
 
@@ -98,11 +108,11 @@ export const FlightTransitionOverlay: React.FC<FlightTransitionOverlayProps> = (
           }
         }
         .animate-flight-sweep-continuous {
-          animation: flightSweepAccelerate 0.85s cubic-bezier(0.5, 0, 0.2, 1) forwards;
+          animation: flightSweepAccelerate 1.15s cubic-bezier(0.42, 0, 0.25, 1) forwards;
           will-change: transform;
         }
         .animate-contrail-continuous {
-          animation: contrailStream 0.85s ease-out forwards;
+          animation: contrailStream 1.15s ease-out forwards;
           transform-origin: right center;
         }
       `}</style>

@@ -48,7 +48,7 @@ export function MapArea({
   const hasFitRef = useRef(false);
   const summaryCircleRef = useRef<any>(null);
   const [mapReady, setMapReady] = useState(false);
-  const [isInteractive, setIsInteractive] = useState(false);
+  const [isInteractive, setIsInteractive] = useState(true);
   const [isMapMenuOpen, setIsMapMenuOpen] = useState(false);
 
   const lastTabRef = useRef<string | undefined>(undefined);
@@ -143,10 +143,10 @@ export function MapArea({
     const map = L.map(containerRef.current, {
       zoomControl: false,       // we render custom controls
       attributionControl: false,
-      scrollWheelZoom: false,   // disabled by default to prevent page scroll interference
-      dragging: false,          // disabled by default
-      touchZoom: false,         // disabled by default
-      doubleClickZoom: false,   // disabled by default
+      scrollWheelZoom: true,    // enabled by default (unlocked)
+      dragging: true,           // enabled by default (unlocked)
+      touchZoom: true,          // enabled by default (unlocked)
+      doubleClickZoom: true,    // enabled by default (unlocked)
     }).setView([defaultLat, defaultLng], 13);
 
     mapRef.current = map;
@@ -825,28 +825,40 @@ export function MapArea({
 
       if (!isVisible) return;
 
-      let color = '#a855f7'; // station (purple)
-      let emoji = '🚉';
+      let accentColor = '#DC2626'; // station (Swiss Red)
+      let typeLabel = 'METRO';
+      let svgIcon = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="3" rx="2"/><path d="M4 11h16"/><path d="M12 3v8"/><path d="m8 19-2 3"/><path d="m18 22-2-3"/></svg>';
+
       if (poi.type === 'convenience') {
-        color = '#3b82f6'; // convenience (blue)
-        emoji = '🏪';
+        accentColor = '#2563EB'; // convenience (Royal Blue)
+        typeLabel = 'CONV';
+        svgIcon = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/></svg>';
       } else if (poi.type === 'supermarket') {
-        color = '#10b981'; // supermarket (green)
-        emoji = '🛒';
+        accentColor = '#059669'; // supermarket (Emerald Green)
+        typeLabel = 'MART';
+        svgIcon = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>';
       }
 
       const htmlContent = `
         <div class="poi-pin-wrapper">
-          <div class="poi-pin" style="background-color: ${color};">${emoji}</div>
-          <div class="poi-label">${poi.name}</div>
+          <div class="poi-card" style="border-left: 3.5px solid ${accentColor};">
+            <div class="poi-header">
+              <span class="poi-type-badge" style="background-color: ${accentColor}; color: #ffffff;">
+                ${svgIcon}
+                <span>${typeLabel}</span>
+              </span>
+            </div>
+            <div class="poi-name" title="${poi.name || ''}">${poi.name || ''}</div>
+          </div>
+          <div class="poi-anchor-dot" style="background-color: ${accentColor};"></div>
         </div>
       `;
 
       const icon = L.divIcon({
         className: 'custom-poi-pin-icon',
         html: htmlContent,
-        iconSize: [100, 45],
-        iconAnchor: [50, 10],
+        iconSize: [140, 52],
+        iconAnchor: [70, 52],
       });
 
       const marker = L.marker([poi.lat, poi.lng], { icon, zIndexOffset: 500 }).addTo(map);
