@@ -4,6 +4,7 @@ import { Trip, Plan, MagazineMoment, MagazineSection, TimelineData } from '../ty
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { cleanAdministrativeDistricts, generateJourneyMessage } from '../components/SummaryView';
+import { preloadDetailPage } from '../utils/prefetchHelper';
 
 interface HomePageProps {
   onNavigate: (view: string, tripId?: number | null) => void;
@@ -1067,6 +1068,8 @@ export function HomePage({
                     {/* Massive Bold Magazine Title in Inter (Overlaps onto center frame) */}
                     <h2
                       onClick={() => onNavigate('detail', currentHero.id)}
+                      onMouseEnter={preloadDetailPage}
+                      onTouchStart={preloadDetailPage}
                       className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-black font-['Inter',sans-serif] uppercase tracking-tighter leading-[0.9] text-black dark:text-white cursor-pointer hover:opacity-85 transition-opacity select-none drop-shadow-sm pointer-events-auto"
                       style={{ wordBreak: 'keep-all' }}
                     >
@@ -1090,6 +1093,8 @@ export function HomePage({
                 <div className="md:col-span-6 lg:col-span-6 flex items-center justify-center order-1 md:order-2 relative z-10 w-full px-0">
                   <div 
                     onClick={() => onNavigate('detail', currentHero.id)}
+                    onMouseEnter={preloadDetailPage}
+                    onTouchStart={preloadDetailPage}
                     className="relative w-full aspect-[3/4] max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl max-h-[85vh] overflow-hidden bg-neutral-900 group cursor-pointer select-none mx-auto shadow-2xl"
                   >
                     {heroJourneys.map((journey, index) => (
@@ -1356,6 +1361,8 @@ export function HomePage({
                   <div
                     key={trip.id}
                     onClick={() => onNavigate('detail', trip.id)}
+                    onMouseEnter={preloadDetailPage}
+                    onTouchStart={preloadDetailPage}
                     className={`group flex flex-row items-stretch border-b border-black/15 dark:border-white/15 transition-colors cursor-pointer w-full select-none rounded-none ${
                       isCardActive 
                         ? 'bg-neutral-100 dark:bg-white/[0.08] border-l-[3px] border-l-red-600 dark:border-l-red-500' 
@@ -1450,6 +1457,8 @@ export function HomePage({
                 <article
                   key={trip.id}
                   onClick={() => onNavigate('detail', trip.id)}
+                  onMouseEnter={preloadDetailPage}
+                  onTouchStart={preloadDetailPage}
                   className={`group flex flex-col cursor-pointer select-none rounded-none transition-all duration-300 ${
                     isCardActive ? 'ring-2 ring-red-600/40 dark:ring-red-500/40 p-1 bg-black/5 dark:bg-white/5' : ''
                   }`}

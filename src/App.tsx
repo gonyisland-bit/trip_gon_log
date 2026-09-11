@@ -1,10 +1,12 @@
-import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, useMemo, lazy, Suspense, startTransition } from 'react';
 import { Navigation } from './components/Navigation';
 import { Footer } from './components/Footer';
 import { HomePage } from './pages/Home';
 import { ArchiveHubPage } from './pages/Archive';
 import { MagazineHubPage } from './pages/MagazineHub';
 import { ScrollToTop } from './components/ScrollToTop';
+import { DetailSkeleton, TopProgressBar } from './components/EditorialSkeleton';
+import { preloadDetailPage, preloadMapPage, preloadManagePage, scheduleIdlePrefetch } from './utils/prefetchHelper';
 
 // Resilient lazy import with automatic retry on chunk loading failure (e.g. browser reconnect or new deploy)
 function lazyWithRetry<T extends React.ComponentType<any>>(
@@ -315,8 +317,15 @@ function App() {
   const manageSaveRef = useRef<((showModal?: boolean) => Promise<void>) | null>(null);
   const postSaveNavTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const postSaveNavTargetRef = useRef<{ view: string; tripId: number | null } | null>(null);
+  const [isNavigating, setIsNavigating] = useState<boolean>(false);
   // settingsLoaded: true once Firestore settings/home listener fires (prevents premature hydration)
   const [settingsLoaded, setSettingsLoaded] = useState<boolean>(false);
+
+  // Background idle prefetch: Preloads heavy routes only when browser is completely idle & connected
+  useEffect(() => {
+    const cancelPrefetch = scheduleIdlePrefetch(2500);
+    return () => cancelPrefetch();
+  }, []);
 
   const handleCloseSaveCompleteModal = () => {
     setShowSaveCompleteModal(false);
@@ -1025,8 +1034,15 @@ function App() {
         sessionStorage.setItem('magazineViewMode', 'hub');
       } catch (_) {}
     }
-    setCurrentView(effectiveView);
-    setSelectedTagFilter(tagFilter);
+
+    setIsNavigating(true);
+    startTransition(() => {
+      setCurrentView(effectiveView);
+      setSelectedTagFilter(tagFilter);
+    });
+    setTimeout(() => {
+      setIsNavigating(false);
+    }, 280);
 
     // Always scroll to top when changing views
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -2196,6 +2212,9 @@ function App() {
 
   return (
     <div className={`${isDarkMode ? 'dark' : ''} overflow-x-hidden w-full`}>
+      {/* Seamless Top Progress Indicator during route transitions */}
+      <TopProgressBar isNavigating={isNavigating} />
+
       <div 
         style={appGradientStyle}
         className={`min-h-screen ${appGradientStyle ? 'bg-transparent' : 'bg-white dark:bg-[#141414]'} text-black dark:text-white font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 w-full overflow-x-hidden flex flex-col ${(currentView === 'detail' || currentView === 'map') ? 'h-screen overflow-hidden' : ''}`}
@@ -2310,9 +2329,14 @@ function App() {
             </div>
           ) : (
             <Suspense fallback={
-              <div className="min-h-[60vh] flex items-center justify-center p-8">
-                <div className="w-7 h-7 border-2 border-black/20 dark:border-white/20 border-t-black dark:border-t-white rounded-full animate-spin" />
-              </div>
+              currentView === 'detail' ? (
+                <DetailSkeleton />
+              ) : (
+                <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 bg-transparent text-center w-full">
+                  <div className="w-7 h-7 border-2 border-black/20 dark:border-white/20 border-t-black dark:border-t-white rounded-full animate-spin mb-3" />
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-black/40 dark:text-white/40">Loading Archive View...</span>
+                </div>
+              )
             }>
               {currentView === 'home' && (
                 <HomePage 
@@ -2514,10 +2538,7 @@ function App() {
                     </ErrorBoundary>
                   );
                 })() : (
-                  <div className="min-h-[60vh] flex flex-col items-center justify-center bg-[#F9F8F6] dark:bg-[#111111] transition-colors w-full">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black dark:border-white mb-2"></div>
-                    <span className="text-[10px] uppercase tracking-widest font-bold text-black/40 dark:text-white/40">Loading Journey Data...</span>
-                  </div>
+                  <DetailSkeleton />
                 )
               )}
             </Suspense>

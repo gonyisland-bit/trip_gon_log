@@ -4,6 +4,7 @@ import { Trip, Plan, ArchiveHubConfig } from '../types';
 import { JourneyCardMenu, getEnglishCityName } from './Home';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
+import { preloadDetailPage } from '../utils/prefetchHelper';
 
 interface CardMediaProps {
   img: string;
@@ -1010,6 +1011,8 @@ export function ArchiveHubPage({
                           <div
                             key={trip.id}
                             onClick={() => onNavigate('detail', trip.id)}
+                            onMouseEnter={preloadDetailPage}
+                            onTouchStart={preloadDetailPage}
                             className={`group flex flex-row items-stretch border-b border-black/15 dark:border-white/15 last:border-b-0 transition-colors cursor-pointer w-full select-none rounded-none ${
                               isCardActive 
                                 ? 'bg-neutral-100 dark:bg-white/[0.08] border-l-[3px] border-l-red-600 dark:border-l-red-500' 
@@ -1104,6 +1107,8 @@ export function ArchiveHubPage({
                         <article
                           key={trip.id}
                           onClick={() => onNavigate('detail', trip.id)}
+                          onMouseEnter={preloadDetailPage}
+                          onTouchStart={preloadDetailPage}
                           className={`group flex flex-col cursor-pointer select-none rounded-none transition-all duration-300 ${
                             isCardActive ? 'ring-2 ring-red-600/40 dark:ring-red-500/40 p-1 bg-black/5 dark:bg-white/5' : ''
                           }`}
