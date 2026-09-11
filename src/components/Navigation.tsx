@@ -234,20 +234,23 @@ export function Navigation({
             </button>
           )}
 
-          {/* Mobile Main Menu Pill Button - Highly legible & Swiss minimal primary action */}
+          {/* Mobile Hamburger Menu Toggle Button - Simple modern circular icon */}
           <button 
             type="button"
             onClick={() => setShowSettings(!showSettings)}
-            className={`md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full font-mono text-xs font-black tracking-wider transition-all duration-200 cursor-pointer shadow-xs active:scale-95 ${
+            className={`md:hidden p-2 sm:p-2.5 rounded-full transition-colors cursor-pointer flex items-center justify-center ${
               showSettings 
-                ? 'bg-red-600 text-white dark:bg-red-600 dark:text-white' 
-                : 'bg-black text-white dark:bg-white dark:text-black hover:opacity-90'
+                ? 'bg-black text-white dark:bg-white dark:text-black' 
+                : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white'
             }`}
-            title="메뉴 열기"
+            title={showSettings ? "메뉴 닫기" : "메뉴 열기"}
             aria-label="Toggle navigation menu"
           >
-            <Menu className="w-3.5 h-3.5" />
-            <span>MENU</span>
+            {showSettings ? (
+              <X className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+            ) : (
+              <Menu className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+            )}
           </button>
         </div>
       </div>

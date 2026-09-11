@@ -3,7 +3,8 @@ import {
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
   MapPin, Clock, ArrowRight, Plane, Sparkles, Compass, 
   CheckCircle2, ArrowUpRight, Plus, Eye, Briefcase, Heart, 
-  User, AlertCircle, Trash2, Edit3, X, Tag, FileText, Check
+  User, AlertCircle, Trash2, Edit3, X, Tag, FileText, Check,
+  LayoutGrid, CalendarDays
 } from 'lucide-react';
 import { Trip, Plan, TimelineData, TimelineItem, CalendarCustomEvent } from '../types';
 import { getKoreanHolidays, getHolidayInfo, KoreanHoliday } from '../utils/koreanHolidays';
@@ -27,6 +28,21 @@ const MONTH_NAMES = [
 const MONTH_SHORT = [
   'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
   'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'
+];
+
+const MONTH_TABS = [
+  { num: '01', label: '01 JAN', short: 'JAN', full: 'JANUARY' },
+  { num: '02', label: '02 FEB', short: 'FEB', full: 'FEBRUARY' },
+  { num: '03', label: '03 MAR', short: 'MAR', full: 'MARCH' },
+  { num: '04', label: '04 APR', short: 'APR', full: 'APRIL' },
+  { num: '05', label: '05 MAY', short: 'MAY', full: 'MAY' },
+  { num: '06', label: '06 JUN', short: 'JUN', full: 'JUNE' },
+  { num: '07', label: '07 JUL', short: 'JUL', full: 'JULY' },
+  { num: '08', label: '08 AUG', short: 'AUG', full: 'AUGUST' },
+  { num: '09', label: '09 SEP', short: 'SEP', full: 'SEPTEMBER' },
+  { num: '10', label: '10 OCT', short: 'OCT', full: 'OCTOBER' },
+  { num: '11', label: '11 NOV', short: 'NOV', full: 'NOVEMBER' },
+  { num: '12', label: '12 DEC', short: 'DEC', full: 'DECEMBER' }
 ];
 
 const WEEKDAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
@@ -123,6 +139,19 @@ export function CalendarHubPage({
   const [isEditingYear, setIsEditingYear] = useState<boolean>(false);
   const [yearInputVal, setYearInputVal] = useState<string>(String(initialFocus.year));
 
+  // 뷰 모드: 월별 보기 ('month') vs 연간 보기 ('year')
+  const [viewMode, setViewMode] = useState<'month' | 'year'>('month');
+  const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
+
+  const toggleViewMode = (mode: 'month' | 'year') => {
+    if (viewMode === mode) return;
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setViewMode(mode);
+      setIsTransitioning(false);
+    }, 180);
+  };
+
   // 복수 날짜 선택 범위 상태 (단일 날짜 선택 시 start === end)
   const [selectedRange, setSelectedRange] = useState<{ start: string; end: string } | null>(() => {
     if (initialFocus.dateStr) {
@@ -132,6 +161,55 @@ export function CalendarHubPage({
   });
   const [dragAnchorDate, setDragAnchorDate] = useState<string | null>(initialFocus.dateStr);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+
+  const isDraggingRef = useRef<boolean>(false);
+  const dragAnchorDateRef = useRef<string | null>(initialFocus.dateStr);
+  const gridContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    isDraggingRef.current = isDragging;
+  }, [isDragging]);
+
+  useEffect(() => {
+    dragAnchorDateRef.current = dragAnchorDate;
+  }, [dragAnchorDate]);
+
+  // Non-passive touch listener to prevent vertical scrolling during mobile drag
+  useEffect(() => {
+    const el = gridContainerRef.current;
+    if (!el) return;
+
+    const handleTouchMoveNative = (e: TouchEvent) => {
+      if (!isDraggingRef.current || !dragAnchorDateRef.current) return;
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+      const touch = e.touches[0];
+      const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+      const cellEl = targetEl?.closest('[data-calendar-date]') as HTMLElement | null;
+      if (cellEl && cellEl.dataset.calendarDate) {
+        const targetDate = cellEl.dataset.calendarDate;
+        setSelectedRange(normalizeRange(dragAnchorDateRef.current, targetDate));
+      }
+    };
+
+    const handleTouchEndNative = () => {
+      if (isDraggingRef.current) {
+        setIsDragging(false);
+        isDraggingRef.current = false;
+      }
+    };
+
+    el.addEventListener('touchmove', handleTouchMoveNative, { passive: false });
+    window.addEventListener('touchend', handleTouchEndNative);
+    window.addEventListener('touchcancel', handleTouchEndNative);
+
+    return () => {
+      el.removeEventListener('touchmove', handleTouchMoveNative);
+      window.removeEventListener('touchend', handleTouchEndNative);
+      window.removeEventListener('touchcancel', handleTouchEndNative);
+    };
+  }, [viewMode]);
 
   // 커스텀 사용자 등록 일정 상태
   const [customEvents, setCustomEvents] = useState<CalendarCustomEvent[]>(() => {
@@ -420,6 +498,104 @@ export function CalendarHubPage({
     };
   }, [calendarGrid]);
 
+  // 연간 12개월 전체 데이터 생성 (3열 x 4행 미니 달력용)
+  const yearMonthsData = useMemo(() => {
+    return Array.from({ length: 12 }, (_, monthIdx) => {
+      const firstDay = new Date(currentYear, monthIdx, 1);
+      const lastDay = new Date(currentYear, monthIdx + 1, 0);
+      const startDayOfWeek = (firstDay.getDay() + 6) % 7; // 0: Mon, ..., 6: Sun
+      const totalDays = lastDay.getDate();
+
+      const days: {
+        dateStr: string;
+        dayNum: number;
+        isCurrentMonth: boolean;
+        isToday: boolean;
+        isHoliday: boolean;
+        holidayName?: string;
+        dayOfWeek: number;
+        hasTrip: boolean;
+        tripTitles: string[];
+        isPlan: boolean;
+        hasEvent: boolean;
+      }[] = [];
+
+      // 이전 달 패딩
+      for (let p = 0; p < startDayOfWeek; p++) {
+        days.push({
+          dateStr: '',
+          dayNum: 0,
+          isCurrentMonth: false,
+          isToday: false,
+          isHoliday: false,
+          dayOfWeek: p,
+          hasTrip: false,
+          tripTitles: [],
+          isPlan: false,
+          hasEvent: false
+        });
+      }
+
+      // 이번 달 날짜들
+      for (let d = 1; d <= totalDays; d++) {
+        const dateStr = `${currentYear}-${String(monthIdx + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const dayOfWeek = (startDayOfWeek + d - 1) % 7;
+        const isToday = today.getFullYear() === currentYear && today.getMonth() === monthIdx && today.getDate() === d;
+        const holiday = currentHolidays.get(dateStr) || null;
+
+        // 여행 확인
+        const matchedTrips = parsedJourneys.filter(pj => dateStr >= pj.range.start && dateStr <= pj.range.end);
+        const hasTrip = matchedTrips.length > 0;
+        const isPlan = matchedTrips.some(mt => mt.isPlan);
+        const tripTitles = matchedTrips.map(mt => mt.journey.title);
+
+        // 커스텀 일정 확인
+        const hasEvent = customEvents.some(evt => dateStr >= evt.startDate && dateStr <= (evt.endDate || evt.startDate));
+
+        days.push({
+          dateStr,
+          dayNum: d,
+          isCurrentMonth: true,
+          isToday,
+          isHoliday: Boolean(holiday),
+          holidayName: holiday?.name,
+          dayOfWeek,
+          hasTrip,
+          tripTitles,
+          isPlan,
+          hasEvent
+        });
+      }
+
+      const totalTripDays = days.filter(d => d.hasTrip).length;
+
+      return {
+        monthIdx,
+        monthTab: MONTH_TABS[monthIdx],
+        days,
+        totalTripDays
+      };
+    });
+  }, [currentYear, currentHolidays, parsedJourneys, customEvents, today]);
+
+  // 연간 전체 여행 통계
+  const yearStats = useMemo(() => {
+    const allDays = yearMonthsData.flatMap(m => m.days.filter(d => d.isCurrentMonth));
+    const travelDays = allDays.filter(d => d.hasTrip).length;
+    const allTripsThisYear = new Set(
+      parsedJourneys
+        .filter(pj => pj.range.start.startsWith(String(currentYear)) || pj.range.end.startsWith(String(currentYear)))
+        .map(pj => pj.journey.id)
+    );
+    const blockedDays = allDays.filter(d => d.hasEvent).length;
+
+    return {
+      travelDays,
+      tripCount: allTripsThisYear.size,
+      blockedDays
+    };
+  }, [yearMonthsData, parsedJourneys, currentYear]);
+
   // 날짜 셀 클릭 핸들러 (단일 클릭 및 Shift + 클릭 복수 선택 지원)
   const handleCellClick = (cell: DayCellData, e: React.MouseEvent) => {
     if (e.shiftKey && dragAnchorDate) {
@@ -448,7 +624,9 @@ export function CalendarHubPage({
   // 모바일 터치 드래그 시작
   const handleCellTouchStart = (dateStr: string) => {
     setIsDragging(true);
+    isDraggingRef.current = true;
     setDragAnchorDate(dateStr);
+    dragAnchorDateRef.current = dateStr;
     setSelectedRange({ start: dateStr, end: dateStr });
   };
 
@@ -607,7 +785,9 @@ export function CalendarHubPage({
           <div>
             <div className="flex items-center gap-3 mb-1 text-red-600 dark:text-red-500 font-bold text-xs sm:text-sm tracking-[0.25em] uppercase font-mono">
               <CalendarIcon className="w-4 h-4" />
-              <span>CALENDAR ARCHIVE · {MONTH_SHORT[currentMonth]}</span>
+              <span>
+                CALENDAR ARCHIVE · {viewMode === 'year' ? `${currentYear} ANNUAL` : `${MONTH_TABS[currentMonth].num} ${MONTH_TABS[currentMonth].short}`}
+              </span>
             </div>
 
             <div className="flex items-baseline gap-4 sm:gap-6 flex-wrap">
@@ -641,31 +821,63 @@ export function CalendarHubPage({
                 </h1>
               )}
 
-              {/* Month Display */}
+              {/* Month Display or Full Year Label */}
               <div className="flex flex-col">
                 <span className="text-2xl sm:text-4xl lg:text-5xl font-black font-satoshi tracking-tight leading-none uppercase text-black/80 dark:text-white/80">
-                  {MONTH_NAMES[currentMonth]}
+                  {viewMode === 'year' ? 'ANNUAL VIEW' : MONTH_NAMES[currentMonth]}
                 </span>
                 <span className="text-xs sm:text-sm font-mono font-bold text-black/40 dark:text-white/40 tracking-widest mt-1">
-                  MONTH {String(currentMonth + 1).padStart(2, '0')}
+                  {viewMode === 'year' ? '12 MONTHS OVERVIEW' : `MONTH ${String(currentMonth + 1).padStart(2, '0')}`}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Right: Month Controls, Add Event & Summary Metrics */}
+          {/* Right: View Mode Toggle, Controls & Metrics */}
           <div className="flex flex-col items-start md:items-end gap-3.5">
-            {/* Quick Month Navigation Buttons + Add Schedule Button */}
+            {/* View Mode Toggle + Navigation Buttons + Add Schedule Button */}
             <div className="flex items-center gap-2 flex-wrap">
+              {/* View Mode Switcher (MONTH / YEAR) with Swiss minimal styling */}
+              <div className="flex items-center p-0.5 bg-black/5 dark:bg-white/10 rounded-full border border-black/10 dark:border-white/10 font-mono text-xs font-bold mr-1">
+                <button
+                  type="button"
+                  onClick={() => toggleViewMode('month')}
+                  className={`px-3 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 ${
+                    viewMode === 'month'
+                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                      : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                  }`}
+                  title="월별 보기로 전환"
+                >
+                  <CalendarDays className="w-3.5 h-3.5" />
+                  <span>MONTH</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleViewMode('year')}
+                  className={`px-3 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 ${
+                    viewMode === 'year'
+                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                      : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                  }`}
+                  title="연간 보기로 전환 (3열 12개월)"
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  <span>YEAR</span>
+                </button>
+              </div>
+
+              {/* Prev Button */}
               <button
                 type="button"
-                onClick={handlePrevMonth}
+                onClick={viewMode === 'month' ? handlePrevMonth : () => setCurrentYear(prev => prev - 1)}
                 className="p-2 sm:p-2.5 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center"
-                title="이전 달 (← 화살표)"
+                title={viewMode === 'month' ? "이전 달 (← 화살표)" : "이전 연도"}
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
 
+              {/* Today Button */}
               <button
                 type="button"
                 onClick={handleGoToday}
@@ -675,15 +887,17 @@ export function CalendarHubPage({
                 TODAY
               </button>
 
+              {/* Next Button */}
               <button
                 type="button"
-                onClick={handleNextMonth}
+                onClick={viewMode === 'month' ? handleNextMonth : () => setCurrentYear(prev => prev + 1)}
                 className="p-2 sm:p-2.5 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center"
-                title="다음 달 (→ 화살표)"
+                title={viewMode === 'month' ? "다음 달 (→ 화살표)" : "다음 연도"}
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
 
+              {/* Add Schedule Button */}
               <button
                 type="button"
                 onClick={() => openNewEventModal()}
@@ -695,253 +909,371 @@ export function CalendarHubPage({
               </button>
             </div>
 
-            {/* Monthly Travel & Blocked Metrics Badge */}
+            {/* Travel & Blocked Metrics Badge */}
             <div className="flex items-center gap-2 font-mono text-[11px] sm:text-xs font-bold tracking-wider text-black/60 dark:text-white/60 flex-wrap">
               <span className="px-2.5 py-1 bg-black/5 dark:bg-white/10 rounded-sm border border-black/10 dark:border-white/10">
-                ✈️ {monthStats.travelDays} DAYS OF TRAVEL
+                ✈️ {viewMode === 'month' ? `${monthStats.travelDays} DAYS OF TRAVEL` : `${yearStats.travelDays} DAYS IN ${currentYear}`}
               </span>
               <span className="px-2.5 py-1 bg-black/5 dark:bg-white/10 rounded-sm border border-black/10 dark:border-white/10">
-                📌 {monthStats.tripCount} JOURNEYS
+                📌 {viewMode === 'month' ? `${monthStats.tripCount} JOURNEYS` : `${yearStats.tripCount} JOURNEYS`}
               </span>
-              {monthStats.blockedDays > 0 && (
+              {((viewMode === 'month' ? monthStats.blockedDays : yearStats.blockedDays) > 0) && (
                 <span className="px-2.5 py-1 bg-blue-500/10 text-blue-700 dark:text-blue-300 rounded-sm border border-blue-500/20">
-                  💼 {monthStats.blockedDays} BLOCKED DAYS
+                  💼 {viewMode === 'month' ? monthStats.blockedDays : yearStats.blockedDays} BLOCKED DAYS
                 </span>
               )}
             </div>
           </div>
         </div>
 
-        {/* 12-Month Quick Selector Pills */}
-        <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto hide-scrollbar mt-6 pt-4 border-t border-black/5 dark:border-white/5 select-none">
-          {MONTH_SHORT.map((mShort, idx) => {
-            const isActive = currentMonth === idx;
-            return (
-              <button
-                key={mShort}
-                type="button"
-                onClick={() => setCurrentMonth(idx)}
-                className={`flex-1 min-w-[50px] sm:min-w-[62px] py-1.5 rounded-xs text-[10.5px] sm:text-xs font-black font-mono tracking-wider transition-all cursor-pointer text-center ${
-                  isActive
-                    ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs scale-105'
-                    : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5 hover:text-black dark:hover:text-white'
-                }`}
-              >
-                {mShort}
-              </button>
-            );
-          })}
-        </div>
+        {/* 12-Month Quick Selector Tabs with bold Inter font & 01 JAN ~ 12 DEC formatting */}
+        {viewMode === 'month' && (
+          <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto hide-scrollbar mt-6 pt-4 border-t border-black/5 dark:border-white/5 select-none">
+            {MONTH_TABS.map((mTab, idx) => {
+              const isActive = currentMonth === idx;
+              return (
+                <button
+                  key={mTab.num}
+                  type="button"
+                  onClick={() => setCurrentMonth(idx)}
+                  className={`flex-1 min-w-[62px] sm:min-w-[78px] py-2 px-1 rounded-xs text-xs sm:text-sm font-black font-['Inter',sans-serif] tracking-wider transition-all cursor-pointer text-center ${
+                    isActive
+                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs scale-105'
+                      : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5 hover:text-black dark:hover:text-white'
+                  }`}
+                >
+                  <span>{mTab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* 7-Column Calendar Grid                                        */}
+      {/* Content Area: Month View vs Year View with Zoom Transition    */}
       {/* ───────────────────────────────────────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-        {/* Selection Helper Info Bar */}
-        <div className="flex items-center justify-between pb-2 text-[11px] font-mono text-black/50 dark:text-white/50">
-          <span>
-            💡 <strong className="text-black dark:text-white">팁:</strong> 날짜를 드래그하거나 <kbd className="px-1 py-0.5 rounded bg-black/5 dark:bg-white/10 font-bold">Shift</kbd>를 누른 채 클릭하면 기간을 한 번에 선택할 수 있습니다.
-          </span>
-          {isMultiDaySelected && (
-            <span className="text-red-600 dark:text-red-400 font-bold animate-in fade-in">
-              {selectedRange?.start} ~ {selectedRange?.end} ({selectedDaysCount}일 선택됨)
-            </span>
-          )}
-        </div>
+      <div className={`transition-all duration-300 ease-out transform ${
+        isTransitioning
+          ? (viewMode === 'month' ? 'scale-105 opacity-0' : 'scale-95 opacity-0')
+          : 'scale-100 opacity-100'
+      }`}>
+        {viewMode === 'month' ? (
+          /* ──────────────── MONTH VIEW ──────────────── */
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+            {/* Selection Helper Info Bar */}
+            <div className="flex items-center justify-between pb-2 text-xs sm:text-sm font-mono text-black/60 dark:text-white/60">
+              <span>
+                💡 <strong className="text-black dark:text-white">팁:</strong> 날짜를 드래그하거나 <kbd className="px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/15 font-bold">Shift</kbd>를 누른 채 클릭하면 기간을 한 번에 선택할 수 있습니다.
+              </span>
+              {isMultiDaySelected && (
+                <span className="text-red-600 dark:text-red-400 font-bold animate-in fade-in">
+                  {selectedRange?.start} ~ {selectedRange?.end} ({selectedDaysCount}일 선택됨)
+                </span>
+              )}
+            </div>
 
-        {/* Weekday Header Row */}
-        <div className="grid grid-cols-7 border-b border-black/20 dark:border-white/20 pb-2 text-center text-xs sm:text-sm font-black tracking-widest font-mono select-none">
-          {WEEKDAYS.map((day, idx) => {
-            const isSunday = idx === 6;
-            const isSaturday = idx === 5;
-            return (
-              <div 
-                key={day} 
-                className={`py-1 ${
-                  isSunday 
-                    ? 'text-red-600 dark:text-red-500 font-black' 
-                    : isSaturday 
-                      ? 'text-blue-600 dark:text-blue-400' 
-                      : 'text-black/60 dark:text-white/60'
-                }`}
-              >
-                {day}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Day Grid Cells with Drag & Multi-Select Support */}
-        <div 
-          onTouchMove={handleGridTouchMove}
-          onTouchEnd={handleGridTouchEnd}
-          className="grid grid-cols-7 border-l border-t border-black/10 dark:border-white/10 bg-white dark:bg-[#111111] shadow-sm rounded-b-sm overflow-hidden select-none"
-        >
-          {calendarGrid.map((cell) => {
-            const isSunday = cell.dayOfWeek === 6;
-            const isSaturday = cell.dayOfWeek === 5;
-            const isHoliday = !!cell.holiday;
-
-            const isInRange = selectedRange && cell.dateStr >= selectedRange.start && cell.dateStr <= selectedRange.end;
-            const isRangeStart = selectedRange && cell.dateStr === selectedRange.start;
-            const isRangeEnd = selectedRange && cell.dateStr === selectedRange.end;
-
-            return (
-              <div
-                key={cell.dateStr}
-                data-calendar-date={cell.dateStr}
-                onClick={(e) => handleCellClick(cell, e)}
-                onMouseDown={(e) => handleCellMouseDown(cell.dateStr, e)}
-                onMouseEnter={() => handleCellMouseEnter(cell.dateStr)}
-                onTouchStart={() => handleCellTouchStart(cell.dateStr)}
-                className={`min-h-[115px] sm:min-h-[135px] md:min-h-[150px] p-1.5 sm:p-2 border-r border-b border-black/10 dark:border-white/10 flex flex-col justify-between transition-colors relative cursor-pointer group ${
-                  !cell.isCurrentMonth
-                    ? 'bg-black/[0.02] dark:bg-white/[0.02] opacity-40'
-                    : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.03]'
-                } ${
-                  isInRange 
-                    ? 'bg-red-500/10 dark:bg-red-500/15 ring-2 ring-inset ring-red-600 dark:ring-red-500' 
-                    : ''
-                }`}
-              >
-                {/* Floating "+ ADD" Quick Action Badge on Selected End Date Cell */}
-                {isRangeEnd && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openNewEventModal(selectedRange.start, selectedRange.end);
-                    }}
-                    className="absolute -top-2.5 right-1.5 z-30 px-2 py-0.5 rounded-full bg-red-600 hover:bg-red-700 text-white font-mono text-[9px] sm:text-[10px] font-black tracking-wider shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-1 cursor-pointer animate-in fade-in zoom-in-95 duration-150"
-                    title="선택한 기간으로 새 일정 등록"
+            {/* Weekday Header Row */}
+            <div className="grid grid-cols-7 border-b border-black/20 dark:border-white/20 pb-2 text-center text-xs sm:text-sm md:text-base font-black tracking-widest font-mono select-none">
+              {WEEKDAYS.map((day, idx) => {
+                const isSunday = idx === 6;
+                const isSaturday = idx === 5;
+                return (
+                  <div 
+                    key={day} 
+                    className={`py-1 ${
+                      isSunday 
+                        ? 'text-red-600 dark:text-red-500 font-black' 
+                        : isSaturday 
+                          ? 'text-blue-600 dark:text-blue-400' 
+                          : 'text-black/70 dark:text-white/70'
+                    }`}
                   >
-                    <Plus className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" />
-                    <span>{isMultiDaySelected ? `ADD (${selectedDaysCount}D)` : 'ADD'}</span>
-                  </button>
-                )}
+                    {day}
+                  </div>
+                );
+              })}
+            </div>
 
-                {/* Top: Day Number & Holiday Tag */}
-                <div className="flex items-start justify-between gap-1 w-full">
-                  {/* Day Number */}
-                  <div className="flex items-center gap-1">
-                    <span
-                      className={`text-xs sm:text-sm md:text-base font-black font-mono leading-none tracking-tighter ${
-                        cell.isToday
-                          ? 'w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center shadow-xs'
-                          : isSunday || isHoliday
-                            ? 'text-red-600 dark:text-red-500'
-                            : isSaturday
-                              ? 'text-blue-600 dark:text-blue-400'
-                              : 'text-black/80 dark:text-white/80'
-                      }`}
+            {/* Day Grid Cells with Drag & Multi-Select Support */}
+            <div 
+              ref={gridContainerRef}
+              onTouchMove={handleGridTouchMove}
+              onTouchEnd={handleGridTouchEnd}
+              className="grid grid-cols-7 border-l border-t border-black/10 dark:border-white/10 bg-white dark:bg-[#111111] shadow-sm rounded-b-sm overflow-hidden select-none touch-none"
+            >
+              {calendarGrid.map((cell) => {
+                const isSunday = cell.dayOfWeek === 6;
+                const isSaturday = cell.dayOfWeek === 5;
+                const isHoliday = !!cell.holiday;
+
+                const isInRange = selectedRange && cell.dateStr >= selectedRange.start && cell.dateStr <= selectedRange.end;
+                const isRangeStart = selectedRange && cell.dateStr === selectedRange.start;
+                const isRangeEnd = selectedRange && cell.dateStr === selectedRange.end;
+
+                return (
+                  <div
+                    key={cell.dateStr}
+                    data-calendar-date={cell.dateStr}
+                    onClick={(e) => handleCellClick(cell, e)}
+                    onMouseDown={(e) => handleCellMouseDown(cell.dateStr, e)}
+                    onMouseEnter={() => handleCellMouseEnter(cell.dateStr)}
+                    onTouchStart={() => handleCellTouchStart(cell.dateStr)}
+                    className={`min-h-[115px] sm:min-h-[135px] md:min-h-[155px] p-1.5 sm:p-2.5 border-r border-b border-black/10 dark:border-white/10 flex flex-col justify-between transition-colors relative cursor-pointer group ${
+                      !cell.isCurrentMonth
+                        ? 'bg-black/[0.02] dark:bg-white/[0.02] opacity-40'
+                        : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.03]'
+                    } ${
+                      isInRange 
+                        ? 'bg-red-500/10 dark:bg-red-500/15 ring-2 ring-inset ring-red-600 dark:ring-red-500' 
+                        : ''
+                    }`}
+                  >
+                    {/* Floating "+ ADD" Quick Action Badge on Selected End Date Cell */}
+                    {isRangeEnd && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openNewEventModal(selectedRange.start, selectedRange.end);
+                        }}
+                        className="absolute -top-3 right-1.5 z-30 px-2.5 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white font-mono text-[10px] sm:text-[11px] font-black tracking-wider shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-1 cursor-pointer animate-in fade-in zoom-in-95 duration-150"
+                        title="선택한 기간으로 새 일정 등록"
+                      >
+                        <Plus className="w-3 h-3 stroke-[3]" />
+                        <span>{isMultiDaySelected ? `ADD (${selectedDaysCount}D)` : 'ADD'}</span>
+                      </button>
+                    )}
+
+                    {/* Top: Day Number & Holiday Tag (Enlarged & Prominent) */}
+                    <div className="flex items-start justify-between gap-1 w-full">
+                      {/* Day Number */}
+                      <div className="flex items-center gap-1">
+                        <span
+                          className={`text-sm sm:text-base md:text-lg font-black font-mono leading-none tracking-tighter ${
+                            cell.isToday
+                              ? 'w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center shadow-xs'
+                              : isSunday || isHoliday
+                                ? 'text-red-600 dark:text-red-500'
+                                : isSaturday
+                                  ? 'text-blue-600 dark:text-blue-400'
+                                  : 'text-black/90 dark:text-white/90'
+                          }`}
+                        >
+                          {cell.dayNum < 10 ? `0${cell.dayNum}` : cell.dayNum}
+                        </span>
+                        {cell.isToday && (
+                          <span className="hidden sm:inline-block text-[8.5px] font-black uppercase text-red-600 font-mono tracking-tighter">
+                            TODAY
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Public Holiday Tag - Enlarged for high legibility */}
+                      {cell.holiday && (
+                        <span
+                          className="text-[10px] sm:text-[11.5px] md:text-xs font-bold text-red-600 dark:text-red-400 font-sans tracking-tight truncate max-w-[90px] sm:max-w-[120px] text-right"
+                          title={cell.holiday.name}
+                        >
+                          {cell.holiday.name}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Middle / Bottom: Overlapping Bands (Trips & Custom Events) */}
+                    <div className="mt-2 space-y-1 w-full flex-grow flex flex-col justify-end">
+                      {/* 1. Travel Journeys (Solid / Plan Ribbon) */}
+                      {cell.overlappingTrips.map(({ trip, isPlan, isStart, isEnd, dayIndex, totalDays }) => {
+                        return (
+                          <button
+                            key={`trip-${trip.id}`}
+                            type="button"
+                            onClick={(e) => handleTripBandClick(e, trip, cell.dateStr)}
+                            className={`w-full text-left text-[9.5px] sm:text-[10.5px] md:text-[11px] py-1 px-1.5 transition-all truncate block select-none group/band shadow-2xs cursor-pointer ${
+                              isStart && isEnd
+                                ? 'rounded-md'
+                                : isStart
+                                  ? 'rounded-l-md mr-0'
+                                  : isEnd
+                                    ? 'rounded-r-md ml-0'
+                                    : 'rounded-none'
+                            } ${
+                              isPlan
+                                ? 'bg-amber-500/15 dark:bg-amber-500/25 text-amber-900 dark:text-amber-200 border border-dashed border-amber-500/40 hover:bg-amber-500/30'
+                                : 'bg-[#18181B] dark:bg-white text-white dark:text-black hover:opacity-90 font-bold'
+                            }`}
+                            title={`${trip.title} (DAY ${dayIndex}/${totalDays})`}
+                          >
+                            <div className="flex items-center gap-1 w-full min-w-0">
+                              {isStart && (
+                                <Plane className="w-2.5 h-2.5 shrink-0 rotate-45 opacity-80" />
+                              )}
+                              <span className="font-bold truncate tracking-tight font-sans">
+                                {isStart ? trip.title : `DAY ${dayIndex}`}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+
+                      {/* 2. Custom Blocked / Reference Events (Diagonal Striped Swiss Bands) */}
+                      {cell.overlappingEvents.map(({ event, isStart, isEnd, dayIndex, totalDays }) => {
+                        const categoryInfo = EVENT_CATEGORIES.find(c => c.id === event.category) || EVENT_CATEGORIES[0];
+                        const isSingleDay = isStart && isEnd;
+
+                        return (
+                          <button
+                            key={`event-${event.id}`}
+                            type="button"
+                            onClick={(e) => handleCustomEventClick(e, event)}
+                            className={`w-full text-left text-[9px] sm:text-[10px] py-1 px-1.5 transition-all truncate block select-none shadow-2xs cursor-pointer border border-black/10 dark:border-white/10 ${
+                              isSingleDay
+                                ? 'rounded-md'
+                                : isStart
+                                  ? 'rounded-l-md mr-0'
+                                  : isEnd
+                                    ? 'rounded-r-md ml-0'
+                                    : 'rounded-none'
+                            } ${
+                              event.category === 'work'
+                                ? 'bg-blue-50 text-blue-900 dark:bg-blue-950/40 dark:text-blue-200'
+                                : event.category === 'family'
+                                  ? 'bg-rose-50 text-rose-900 dark:bg-rose-950/40 dark:text-rose-200'
+                                  : event.category === 'personal'
+                                    ? 'bg-emerald-50 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200'
+                                    : 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-200'
+                            }`}
+                            style={{
+                              backgroundImage: isDarkMode
+                                ? 'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.04) 4px, rgba(255,255,255,0.04) 8px)'
+                                : 'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0,0,0,0.04) 4px, rgba(0,0,0,0.04) 8px)'
+                            }}
+                            title={`[${categoryInfo.label}] ${event.title} (클릭하여 수정/삭제)`}
+                          >
+                            <div className="flex items-center gap-1 w-full min-w-0">
+                              {isStart && (
+                                <categoryInfo.icon className="w-2.5 h-2.5 shrink-0 opacity-70" />
+                              )}
+                              <span className="font-semibold truncate tracking-tight font-sans">
+                                {isStart ? event.title : `${event.title} (${dayIndex}/${totalDays})`}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          /* ──────────────── YEAR VIEW (3-Column, 4-Row Grid) ──────────────── */
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+            {/* Year View Guide Bar */}
+            <div className="flex items-center justify-between pb-3 text-xs font-mono text-black/60 dark:text-white/60 border-b border-black/10 dark:border-white/10 mb-6">
+              <span>
+                💡 <strong className="text-black dark:text-white">연간 보기:</strong> 원하는 월이나 날짜를 클릭하면 해당 달로 부드럽게 확대 전환됩니다.
+              </span>
+              <span className="font-bold text-red-600 dark:text-red-400">
+                {currentYear} ANNUAL OVERVIEW (12 MONTHS)
+              </span>
+            </div>
+
+            {/* 3-Column Year Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-7">
+              {yearMonthsData.map((m) => (
+                <div
+                  key={m.monthIdx}
+                  className="bg-white dark:bg-[#111111] border border-black/10 dark:border-white/10 rounded-sm shadow-xs p-4 flex flex-col justify-between hover:border-black/30 dark:hover:border-white/30 transition-all group"
+                >
+                  {/* Month Card Header */}
+                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-black/10 dark:border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCurrentMonth(m.monthIdx);
+                        toggleViewMode('month');
+                      }}
+                      className="text-left group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors cursor-pointer flex items-baseline gap-2"
+                      title={`${m.monthTab.full} 월별 보기로 확대 이동`}
                     >
-                      {cell.dayNum < 10 ? `0${cell.dayNum}` : cell.dayNum}
-                    </span>
-                    {cell.isToday && (
-                      <span className="hidden sm:inline-block text-[8px] font-black uppercase text-red-600 font-mono tracking-tighter">
-                        TODAY
+                      <span className="text-base sm:text-lg font-black font-['Inter',sans-serif] tracking-tight text-black dark:text-white group-hover:text-red-600 transition-colors">
+                        {m.monthTab.num} {m.monthTab.full}
+                      </span>
+                    </button>
+                    {m.totalTripDays > 0 && (
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-black/75 dark:text-white/75">
+                        ✈️ {m.totalTripDays}D
                       </span>
                     )}
                   </div>
 
-                  {/* Public Holiday Tag */}
-                  {cell.holiday && (
-                    <span
-                      className="text-[8.5px] sm:text-[9.5px] font-bold text-red-600 dark:text-red-400 font-sans tracking-tight truncate max-w-[85px] sm:max-w-[110px] text-right"
-                      title={cell.holiday.name}
-                    >
-                      {cell.holiday.name}
-                    </span>
-                  )}
-                </div>
-
-                {/* Middle / Bottom: Overlapping Bands (Trips & Custom Events) */}
-                <div className="mt-1.5 space-y-1 w-full flex-grow flex flex-col justify-end">
-                  {/* 1. Travel Journeys (Solid / Plan Ribbon) */}
-                  {cell.overlappingTrips.map(({ trip, isPlan, isStart, isEnd, dayIndex, totalDays }) => {
-                    return (
-                      <button
-                        key={`trip-${trip.id}`}
-                        type="button"
-                        onClick={(e) => handleTripBandClick(e, trip, cell.dateStr)}
-                        className={`w-full text-left text-[9px] sm:text-[10px] py-0.5 sm:py-1 px-1.5 transition-all truncate block select-none group/band shadow-2xs cursor-pointer ${
-                          isStart && isEnd
-                            ? 'rounded-md'
-                            : isStart
-                              ? 'rounded-l-md mr-0'
-                              : isEnd
-                                ? 'rounded-r-md ml-0'
-                                : 'rounded-none'
-                        } ${
-                          isPlan
-                            ? 'bg-amber-500/15 dark:bg-amber-500/25 text-amber-900 dark:text-amber-200 border border-dashed border-amber-500/40 hover:bg-amber-500/30'
-                            : 'bg-[#18181B] dark:bg-white text-white dark:text-black hover:opacity-90 font-bold'
-                        }`}
-                        title={`${trip.title} (DAY ${dayIndex}/${totalDays})`}
+                  {/* Mini Weekday Headers (M T W T F S S) */}
+                  <div className="grid grid-cols-7 text-center text-[10.5px] font-mono font-bold mb-1 select-none">
+                    {WEEKDAYS.map((wd, wIdx) => (
+                      <div
+                        key={wd}
+                        className={wIdx === 6 ? 'text-red-500' : wIdx === 5 ? 'text-blue-500' : 'text-black/40 dark:text-white/40'}
                       >
-                        <div className="flex items-center gap-1 w-full min-w-0">
-                          {isStart && (
-                            <Plane className="w-2.5 h-2.5 shrink-0 rotate-45 opacity-80" />
-                          )}
-                          <span className="font-bold truncate tracking-tight font-sans">
-                            {isStart ? trip.title : `DAY ${dayIndex}`}
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
+                        {wd[0]}
+                      </div>
+                    ))}
+                  </div>
 
-                  {/* 2. Custom Blocked / Reference Events (Diagonal Striped Swiss Bands) */}
-                  {cell.overlappingEvents.map(({ event, isStart, isEnd, dayIndex, totalDays }) => {
-                    const categoryInfo = EVENT_CATEGORIES.find(c => c.id === event.category) || EVENT_CATEGORIES[0];
-                    const isSingleDay = isStart && isEnd;
+                  {/* Mini Days Grid */}
+                  <div className="grid grid-cols-7 gap-y-1 text-center font-mono select-none">
+                    {m.days.map((day, dIdx) => {
+                      if (!day.isCurrentMonth) {
+                        return <div key={`empty-${m.monthIdx}-${dIdx}`} className="h-7 sm:h-8" />;
+                      }
 
-                    return (
-                      <button
-                        key={`event-${event.id}`}
-                        type="button"
-                        onClick={(e) => handleCustomEventClick(e, event)}
-                        className={`w-full text-left text-[8.5px] sm:text-[9.5px] py-0.5 px-1.5 transition-all truncate block select-none shadow-2xs cursor-pointer border border-black/10 dark:border-white/10 ${
-                          isSingleDay
-                            ? 'rounded-md'
-                            : isStart
-                              ? 'rounded-l-md mr-0'
-                              : isEnd
-                                ? 'rounded-r-md ml-0'
-                                : 'rounded-none'
-                        } ${
-                          event.category === 'work'
-                            ? 'bg-blue-50 text-blue-900 dark:bg-blue-950/40 dark:text-blue-200'
-                            : event.category === 'family'
-                              ? 'bg-rose-50 text-rose-900 dark:bg-rose-950/40 dark:text-rose-200'
-                              : event.category === 'personal'
-                                ? 'bg-emerald-50 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200'
-                                : 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-200'
-                        }`}
-                        style={{
-                          backgroundImage: isDarkMode
-                            ? 'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.04) 4px, rgba(255,255,255,0.04) 8px)'
-                            : 'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0,0,0,0.04) 4px, rgba(0,0,0,0.04) 8px)'
-                        }}
-                        title={`[${categoryInfo.label}] ${event.title} (클릭하여 수정/삭제)`}
-                      >
-                        <div className="flex items-center gap-1 w-full min-w-0">
-                          {isStart && (
-                            <categoryInfo.icon className="w-2.5 h-2.5 shrink-0 opacity-70" />
+                      const isSun = day.dayOfWeek === 6;
+                      const isSat = day.dayOfWeek === 5;
+                      const isSelected = selectedRange && day.dateStr >= selectedRange.start && day.dateStr <= selectedRange.end;
+
+                      return (
+                        <button
+                          key={day.dateStr}
+                          type="button"
+                          onClick={() => {
+                            setCurrentMonth(m.monthIdx);
+                            setSelectedRange({ start: day.dateStr, end: day.dateStr });
+                            setDragAnchorDate(day.dateStr);
+                            toggleViewMode('month');
+                          }}
+                          className={`h-7 sm:h-8 text-xs font-bold rounded-xs flex flex-col items-center justify-center relative transition-all cursor-pointer hover:bg-black/10 dark:hover:bg-white/15 ${
+                            isSelected
+                              ? 'bg-red-600 text-white font-black scale-110 shadow-xs z-10'
+                              : day.isToday
+                                ? 'bg-black text-white dark:bg-white dark:text-black font-black'
+                                : day.isHoliday || isSun
+                                  ? 'text-red-600 dark:text-red-400 font-bold'
+                                  : isSat
+                                    ? 'text-blue-600 dark:text-blue-400 font-bold'
+                                    : 'text-black/80 dark:text-white/80'
+                          }`}
+                          title={day.holidayName ? `${day.dateStr} (${day.holidayName})` : day.tripTitles.length > 0 ? `${day.dateStr} · ${day.tripTitles.join(', ')}` : day.dateStr}
+                        >
+                          <span className="leading-none text-[11px] sm:text-xs">{day.dayNum}</span>
+                          {/* Dot Indicator */}
+                          {day.hasTrip && (
+                            <span className={`w-1 h-1 rounded-full mt-0.5 ${
+                              isSelected ? 'bg-white' : day.isPlan ? 'bg-amber-500' : 'bg-red-600 dark:bg-red-400'
+                            }`} />
                           )}
-                          <span className="font-semibold truncate tracking-tight font-sans">
-                            {isStart ? event.title : `${event.title} (${dayIndex}/${totalDays})`}
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
+                          {!day.hasTrip && day.hasEvent && (
+                            <span className={`w-1 h-1 rounded-full mt-0.5 ${isSelected ? 'bg-white' : 'bg-blue-600 dark:bg-blue-400'}`} />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
@@ -1181,7 +1513,7 @@ export function CalendarHubPage({
                   placeholder="예: 도쿄 출장, 어머니 생신, 프로젝트 마감"
                   value={eventFormTitle}
                   onChange={(e) => setEventFormTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-sm border border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.05] text-sm font-bold text-black dark:text-white outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all"
+                  className="w-full px-3 py-2 rounded-sm border border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.05] text-base sm:text-sm font-bold text-black dark:text-white outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all"
                   autoFocus
                 />
               </div>
@@ -1230,7 +1562,7 @@ export function CalendarHubPage({
                       setEventFormStartDate(e.target.value);
                       setEventFormEndDate(e.target.value);
                     }}
-                    className="w-full px-3 py-2 rounded-sm border border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.05] text-sm font-mono font-bold text-black dark:text-white outline-none focus:border-red-600"
+                    className="w-full px-3 py-2 rounded-sm border border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.05] text-base sm:text-sm font-mono font-bold text-black dark:text-white outline-none focus:border-red-600"
                   />
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
@@ -1246,7 +1578,7 @@ export function CalendarHubPage({
                             setEventFormEndDate(e.target.value);
                           }
                         }}
-                        className="w-full px-3 py-2 rounded-sm border border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.05] text-xs sm:text-sm font-mono font-bold text-black dark:text-white outline-none focus:border-red-600"
+                        className="w-full px-3 py-2 rounded-sm border border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.05] text-base sm:text-sm font-mono font-bold text-black dark:text-white outline-none focus:border-red-600"
                       />
                     </div>
                     <div>
@@ -1257,7 +1589,7 @@ export function CalendarHubPage({
                         min={eventFormStartDate}
                         value={eventFormEndDate}
                         onChange={(e) => setEventFormEndDate(e.target.value)}
-                        className="w-full px-3 py-2 rounded-sm border border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.05] text-xs sm:text-sm font-mono font-bold text-black dark:text-white outline-none focus:border-red-600"
+                        className="w-full px-3 py-2 rounded-sm border border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.05] text-base sm:text-sm font-mono font-bold text-black dark:text-white outline-none focus:border-red-600"
                       />
                     </div>
                   </div>
@@ -1302,7 +1634,7 @@ export function CalendarHubPage({
                   placeholder="참고 사항, 항공편, 숙소 예약 번호 등 간단한 메모"
                   value={eventFormMemo}
                   onChange={(e) => setEventFormMemo(e.target.value)}
-                  className="w-full px-3 py-2 rounded-sm border border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.05] text-sm text-black dark:text-white outline-none focus:border-red-600 resize-none"
+                  className="w-full px-3 py-2 rounded-sm border border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.05] text-base sm:text-sm text-black dark:text-white outline-none focus:border-red-600 resize-none"
                 />
               </div>
 

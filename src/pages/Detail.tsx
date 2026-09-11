@@ -3259,8 +3259,8 @@ export function JourneyDetailPage({
   // Render Info Header ("여정배너"): Single-line compact top banner with collapsible accordion menu
   const renderInfoHeader = () => (
     <div className="w-full border-b border-black/15 dark:border-white/15 z-20 bg-white dark:bg-[#0A0A0A] transition-colors shrink-0 select-none">
-      {/* 1. Single-line Compact Banner (h-12 sm:h-13) */}
-      <div className="flex items-center justify-between px-3 md:px-5 h-12 sm:h-13 gap-2">
+      {/* 1. Compact Banner with Flexible Height (min-h-[52px] sm:min-h-[58px] py-1.5 sm:py-2) */}
+      <div className="flex items-center justify-between px-3 md:px-5 min-h-[52px] sm:min-h-[58px] py-1.5 sm:py-2 gap-2">
         {/* Left: Back button + Divider + Issue badge + Title & Date */}
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <button
@@ -3281,27 +3281,26 @@ export function JourneyDetailPage({
             #{String((trip.displayOrder ?? (trip.id % 99)) + 1).padStart(2, '0')}
           </span>
 
-          {/* Title & Date: 2-tier stacked on mobile, expansive unclipped layout on web */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2.5 min-w-0 flex-1 justify-center sm:justify-start">
+          {/* Title & Date: 2-tier stacked on both mobile and web for maximal legibility without clipping */}
+          <div className="flex flex-col min-w-0 flex-1 justify-center">
             <h1 
               onClick={() => {
                 setActiveTab(prev => prev === 'summary' ? 'timeline' : 'summary');
                 setExpandedItemId(null);
               }}
-              className="text-xs sm:text-sm md:text-[15px] font-black uppercase tracking-tight text-black dark:text-white truncate sm:whitespace-nowrap sm:shrink-0 font-satoshi cursor-pointer hover:opacity-75 transition-opacity leading-tight"
+              className="text-xs sm:text-sm md:text-[15px] font-black uppercase tracking-tight text-black dark:text-white truncate font-satoshi cursor-pointer hover:opacity-75 transition-opacity leading-tight"
               title="클릭하여 여정 요약(Summary) 보기"
             >
               {(trip.title || '').replace(' (Plan)', '')}
             </h1>
 
-            {/* Date & Destination summary - expansive and unclipped on web, 2nd line on mobile */}
-            <div className="flex items-center gap-1.5 text-[10.5px] sm:text-xs md:text-sm font-mono font-bold text-black/75 dark:text-white/75 min-w-0 leading-tight mt-0.5 sm:mt-0">
-              <span className="hidden sm:inline text-black/35 dark:text-white/35 font-bold">·</span>
-              <span className="truncate sm:overflow-visible sm:whitespace-normal font-medium">{generateJourneyMessage(trip.locationStr, trip.date, generatedDates.length)}</span>
+            {/* Date & Destination summary - placed beneath title with clean typography & full visibility */}
+            <div className="flex items-center gap-1.5 text-[10.5px] sm:text-xs font-mono font-medium text-black/75 dark:text-white/75 min-w-0 leading-tight mt-0.5">
+              <span className="truncate break-keep font-medium">{generateJourneyMessage(trip.locationStr, trip.date, generatedDates.length)}</span>
               <button
                 type="button"
                 onClick={handleOpenInCalendar}
-                className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded transition-colors text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white shrink-0 cursor-pointer"
+                className="p-0.5 hover:bg-black/5 dark:hover:bg-white/10 rounded transition-colors text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white shrink-0 cursor-pointer"
                 title="스위스 달력에서 이 여정 확인하기"
               >
                 <Calendar className="w-3.5 h-3.5" />
