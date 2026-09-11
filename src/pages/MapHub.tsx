@@ -2503,38 +2503,41 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
         className="w-full h-full z-0" 
       />
 
-      {/* 3. Selected Country Card (Swiss Minimal Editorial Style - Mobile Bottom Sheet & Desktop Panel) */}
+      {/* 3. Selected Country Card (Swiss Minimal Editorial Style - Slim Lines, Compact Height, No Box Overload) */}
       {selectedCountry && (
-        <div className="fixed sm:absolute bottom-0 sm:bottom-auto sm:top-20 left-0 right-0 sm:left-auto sm:right-6 w-full sm:w-96 max-h-[82vh] sm:max-h-[85vh] bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border-t sm:border border-black/15 dark:border-white/15 shadow-2xl z-[500] p-5 sm:p-6 overflow-y-auto animate-in fade-in slide-in-from-bottom sm:slide-in-from-right duration-200">
+        <div className="fixed sm:absolute bottom-0 sm:bottom-auto sm:top-20 left-0 right-0 sm:left-auto sm:right-6 w-full sm:w-[380px] max-h-[78vh] sm:max-h-[82vh] bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border-t sm:border border-black/15 dark:border-white/15 shadow-2xl z-[500] p-4 sm:p-5 overflow-y-auto animate-in fade-in slide-in-from-bottom sm:slide-in-from-right duration-200">
           
-          <div className="flex items-start justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-4">
+          {/* Header: Code + Continent & Country Name */}
+          <div className="flex items-start justify-between pb-2.5 border-b border-black/10 dark:border-white/10 mb-3">
             <div>
               <div className="flex items-center gap-2 mb-0.5 font-['Inter',sans-serif]">
                 <span className="text-[10px] font-black uppercase tracking-widest text-red-600 dark:text-red-500">
                   {selectedCountry.code}
                 </span>
-                <span className="text-[10px] font-bold text-black/40 dark:text-white/40 font-['Noto_Sans_KR',sans-serif]">
+                <span className="text-[10px] font-bold text-black/40 dark:text-white/40">
                   · {selectedCountry.continentKo}
                 </span>
               </div>
-              <h3 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-black dark:text-white font-['Inter',sans-serif]">
-                {selectedCountry.name}
-              </h3>
-              <span className="text-xs font-medium text-black/60 dark:text-white/60 font-['Noto_Sans_KR',sans-serif]">
-                {selectedCountry.nameKo}
-              </span>
+              <div className="flex items-baseline gap-2">
+                <h3 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-black dark:text-white font-['Inter',sans-serif] leading-tight">
+                  {selectedCountry.name}
+                </h3>
+                <span className="text-xs font-semibold text-black/50 dark:text-white/50">
+                  {selectedCountry.nameKo}
+                </span>
+              </div>
             </div>
             <button
               onClick={handleCloseCountry}
-              className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+              className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors cursor-pointer -mr-1"
               title="닫기 (ESC)"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="flex flex-col gap-4">
-            {/* 1. Recorded Journey Cities in this Country (Tabs with counts) */}
+          <div className="flex flex-col gap-3">
+            {/* 1. Recorded Journey Cities in this Country (Slim Line Pills) */}
             {(() => {
               const countryPinGroups = pinGroups.filter(g => {
                 const matched = findCountryForGroup(g.country, g.city);
@@ -2543,12 +2546,14 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
 
               if (countryPinGroups.length === 0) return null;
 
+              const totalJourneys = countryPinGroups.reduce((acc, g) => acc + g.journeys.length, 0);
+
               return (
-                <div className="p-3 bg-red-600/5 dark:bg-red-500/10 border border-red-600/20 dark:border-red-500/20">
-                  <div className="text-[10px] font-['Inter',sans-serif] font-black uppercase tracking-widest text-red-600 dark:text-red-400 mb-2 flex items-center justify-between">
+                <div className="pb-3 border-b border-black/10 dark:border-white/10">
+                  <div className="text-[10px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 mb-1.5 flex items-center justify-between">
                     <span>RECORDED JOURNEYS</span>
-                    <span className="text-[9px] font-['Noto_Sans_KR',sans-serif] font-bold text-black/50 dark:text-white/50">
-                      여정 지역 선택
+                    <span className="text-[10px] font-mono font-bold text-black/40 dark:text-white/40">
+                      {totalJourneys} TOTAL
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-1.5 font-['Inter',sans-serif]">
@@ -2557,10 +2562,10 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                         key={group.city}
                         type="button"
                         onClick={() => setSelectedPinGroup(group)}
-                        className="px-2.5 py-1 text-xs font-black uppercase tracking-wider bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-black dark:text-white transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+                        className="px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider bg-black/5 dark:bg-white/10 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-black dark:text-white border border-black/10 dark:border-white/10 transition-all cursor-pointer flex items-center gap-1.5"
                       >
                         <span>{group.city}</span>
-                        <span className="text-[10px] px-1 py-0.2 bg-black/10 dark:bg-white/20 rounded-xs">
+                        <span className="text-[9.5px] px-1 py-0.2 bg-black/10 dark:bg-white/20 font-mono font-bold">
                           {group.journeys.length}
                         </span>
                       </button>
@@ -2570,60 +2575,54 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
               );
             })()}
 
-            {/* Live Local Time & Time Difference from KST (실시간 현지 시각 & 시차) */}
-            {(() => {
-              const liveInfo = getCountryLiveTime(selectedCountry.code, liveClockNow);
-              return (
-                <div className="p-3 bg-black/[0.03] dark:bg-white/[0.03] border border-black/10 dark:border-white/10 flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between">
-                    <div className="text-[10px] font-['Inter',sans-serif] font-black uppercase tracking-widest text-black/50 dark:text-white/50 flex items-center gap-1.5">
-                      <Clock className="w-3 h-3 text-red-600 dark:text-red-400 animate-pulse" />
-                      <span>LOCAL TIME</span>
-                      <span className="font-['Noto_Sans_KR',sans-serif] font-normal text-[9.5px]">(현지 시각)</span>
+            {/* 2. Compact 2-Column Grid: Live Local Time & Currency Exchange (Slim Line Layout) */}
+            <div className="grid grid-cols-2 gap-3 pb-3 border-b border-black/10 dark:border-white/10">
+              {/* Col 1: Live Local Time */}
+              <div>
+                {(() => {
+                  const liveInfo = getCountryLiveTime(selectedCountry.code, liveClockNow);
+                  return (
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-1 text-[10px] font-mono font-black uppercase tracking-widest text-black/40 dark:text-white/40 mb-1">
+                        <Clock className="w-2.5 h-2.5 text-red-600 dark:text-red-400" />
+                        <span>LOCAL TIME</span>
+                        <span className="ml-auto text-[9.5px] font-mono font-bold text-red-600 dark:text-red-400">
+                          {liveInfo.diffText}
+                        </span>
+                      </div>
+                      <span className="text-xl sm:text-2xl font-black font-mono tracking-tight text-black dark:text-white leading-none">
+                        {liveInfo.timeStr}
+                      </span>
+                      <span className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50 mt-1">
+                        {liveInfo.dateStr}
+                      </span>
                     </div>
-                    <span className="text-[10px] font-mono font-bold text-red-600 dark:text-red-400 bg-red-600/10 dark:bg-red-400/10 px-1.5 py-0.5 rounded-2xs">
-                      {liveInfo.diffText}
-                    </span>
-                  </div>
+                  );
+                })()}
+              </div>
 
-                  <div className="flex items-baseline justify-between font-['Inter',sans-serif] pt-0.5">
-                    <span className="text-xl sm:text-2xl font-black font-mono tracking-tight text-black dark:text-white leading-none">
-                      {liveInfo.timeStr}
-                    </span>
-                    <span className="text-[11px] font-mono font-bold text-black/60 dark:text-white/60">
-                      {liveInfo.dateStr}
-                    </span>
+              {/* Col 2: Currency & Exchange Rate */}
+              <div className="border-l border-black/10 dark:border-white/10 pl-3 flex flex-col justify-between">
+                <div>
+                  <div className="text-[10px] font-mono font-black uppercase tracking-widest text-black/40 dark:text-white/40 mb-1">
+                    CURRENCY
+                  </div>
+                  <div className="text-base sm:text-lg font-black font-mono tracking-tight text-black dark:text-white leading-none">
+                    {selectedCountry.currencySymbol} {selectedCountry.currency}
                   </div>
                 </div>
-              );
-            })()}
-
-            {/* Currency & Exchange Info */}
-            <div className="p-3 bg-black/[0.03] dark:bg-white/[0.03] border border-black/10 dark:border-white/10">
-              <div className="text-[10px] font-['Inter',sans-serif] font-black uppercase tracking-widest text-black/50 dark:text-white/50 mb-1">
-                CURRENCY & RATE <span className="font-['Noto_Sans_KR',sans-serif] font-normal text-[9.5px]">(현지 통화)</span>
-              </div>
-              <div className="flex items-baseline justify-between font-['Inter',sans-serif]">
-                <span className="text-base font-black">
-                  {selectedCountry.currencySymbol} {selectedCountry.currency}
-                </span>
-                <span className="text-xs font-bold text-black/70 dark:text-white/70">
+                <div className="text-[10px] font-mono font-bold text-black/60 dark:text-white/60 mt-1">
                   1 {selectedCountry.currency} ≈ ₩{selectedCountry.rateToKRW.toLocaleString()}
-                </span>
+                </div>
               </div>
             </div>
 
-            {/* Main Cities Guide (With Wishlist Checkbox/Star Toggle) */}
-            <div>
-              <div className="text-[10px] font-['Inter',sans-serif] font-black uppercase tracking-widest text-black/50 dark:text-white/50 mb-2 flex items-center justify-between">
-                <div>
-                  MAJOR DESTINATIONS <span className="font-['Noto_Sans_KR',sans-serif] font-normal text-[9.5px]">(주요 여행 도시)</span>
-                </div>
-                <span className="text-[9px] font-['Noto_Sans_KR',sans-serif] font-bold text-amber-600 dark:text-amber-400">
-                  ★ 클릭하여 위시리스트 추가
-                </span>
+            {/* 3. Major Destinations (Clean Pill Buttons, No Redundant Help Text) */}
+            <div className="pb-3 border-b border-black/10 dark:border-white/10">
+              <div className="text-[10px] font-mono font-black uppercase tracking-widest text-black/40 dark:text-white/40 mb-2">
+                DESTINATIONS ({selectedCountry.cities.length})
               </div>
-              <div className="flex flex-wrap gap-1.5 font-['Inter',sans-serif]">
+              <div className="flex flex-wrap gap-1 font-['Inter',sans-serif]">
                 {selectedCountry.cities.map(city => {
                   const isCityFavorite = favoriteCities.includes(city.toUpperCase());
                   return (
@@ -2631,14 +2630,14 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                       key={city}
                       type="button"
                       onClick={() => toggleFavoriteCity(city)}
-                      className={`px-2 py-1 text-[10px] font-bold uppercase transition-all cursor-pointer flex items-center gap-1 border ${
+                      className={`px-2 py-0.5 text-[10.5px] font-bold uppercase transition-all cursor-pointer flex items-center gap-1 border ${
                         isCityFavorite
                           ? 'bg-amber-500 text-black border-amber-500 shadow-xs'
                           : 'bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white'
                       }`}
                       title={`${city} 위시리스트 토글`}
                     >
-                      <Star className={`w-3 h-3 ${isCityFavorite ? 'fill-black text-black' : 'text-black/40 dark:text-white/40'}`} />
+                      <Star className={`w-2.5 h-2.5 ${isCityFavorite ? 'fill-black text-black' : 'text-black/30 dark:text-white/30'}`} />
                       <span>{city}</span>
                     </button>
                   );
@@ -2646,14 +2645,14 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
               </div>
             </div>
 
-            {/* Actions: Wishlist Toggle & Create Journey Button (Clean Swiss Minimal Grid) */}
-            <div className="pt-2 border-t border-black/10 dark:border-white/10 grid grid-cols-2 gap-2">
+            {/* 4. Actions: Wishlist & Create Trip (Slim Swiss Minimal Buttons) */}
+            <div className="grid grid-cols-2 gap-2 pt-0.5">
               <button
                 type="button"
                 onClick={() => toggleFavoriteCountry(selectedCountry.code)}
-                className={`w-full py-2.5 px-3 text-xs font-black uppercase tracking-widest font-sans flex items-center justify-center gap-1.5 transition-colors cursor-pointer border ${
+                className={`w-full py-2 px-3 text-xs font-black uppercase tracking-widest font-mono flex items-center justify-center gap-1.5 transition-colors cursor-pointer border ${
                   isCurrentCountryFavorite
-                    ? 'bg-amber-500 text-black border-amber-500 shadow-sm'
+                    ? 'bg-amber-500 text-black border-amber-500 shadow-xs'
                     : 'bg-white dark:bg-[#161616] text-black dark:text-white border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white'
                 }`}
               >
@@ -2668,7 +2667,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                     onCreateTripForCountry(selectedCountry.name);
                     handleCloseCountry();
                   }}
-                  className="w-full py-2.5 px-3 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-widest font-sans flex items-center justify-center gap-1.5 hover:opacity-85 transition-opacity cursor-pointer shadow-sm"
+                  className="w-full py-2 px-3 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-widest font-mono flex items-center justify-center gap-1.5 hover:opacity-85 transition-opacity cursor-pointer shadow-xs"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>TRIP</span>
