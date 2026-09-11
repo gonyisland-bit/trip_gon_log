@@ -68,6 +68,7 @@ interface DayCellData {
     isEnd: boolean;
     dayIndex: number;
     totalDays: number;
+    trackIndex?: number;
   }[];
   overlappingEvents: {
     event: CalendarCustomEvent;
@@ -75,6 +76,7 @@ interface DayCellData {
     isEnd: boolean;
     dayIndex: number;
     totalDays: number;
+    trackIndex?: number;
   }[];
 }
 
@@ -138,6 +140,9 @@ export function CalendarHubPage({
   const [currentMonth, setCurrentMonth] = useState<number>(initialFocus.month); // 0 ~ 11
   const [isEditingYear, setIsEditingYear] = useState<boolean>(false);
   const [yearInputVal, setYearInputVal] = useState<string>(String(initialFocus.year));
+
+  const [isEditingMonth, setIsEditingMonth] = useState<boolean>(false);
+  const [monthInputVal, setMonthInputVal] = useState<string>(String(initialFocus.month + 1));
 
   // 뷰 모드: 월별 보기 ('month') vs 연간 보기 ('year')
   const [viewMode, setViewMode] = useState<'month' | 'year'>('month');
@@ -234,6 +239,7 @@ export function CalendarHubPage({
   const [eventFormMemo, setEventFormMemo] = useState<string>('');
 
   const yearInputRef = useRef<HTMLInputElement>(null);
+  const monthInputRef = useRef<HTMLInputElement>(null);
 
   // Firestore 동기화 (users/public/calendar_events)
   useEffect(() => {
@@ -302,9 +308,24 @@ export function CalendarHubPage({
     setIsEditingYear(false);
   };
 
+  // 직접 월 입력 커밋
+  const handleMonthSubmit = () => {
+    const parsed = parseInt(monthInputVal, 10);
+    if (!isNaN(parsed) && parsed >= 1 && parsed <= 12) {
+      setCurrentMonth(parsed - 1);
+    } else {
+      setMonthInputVal(String(currentMonth + 1));
+    }
+    setIsEditingMonth(false);
+  };
+
   useEffect(() => {
     setYearInputVal(String(currentYear));
   }, [currentYear]);
+
+  useEffect(() => {
+    setMonthInputVal(String(currentMonth + 1));
+  }, [currentMonth]);
 
   useEffect(() => {
     if (isEditingYear && yearInputRef.current) {
@@ -312,6 +333,13 @@ export function CalendarHubPage({
       yearInputRef.current.select();
     }
   }, [isEditingYear]);
+
+  useEffect(() => {
+    if (isEditingMonth && monthInputRef.current) {
+      monthInputRef.current.focus();
+      monthInputRef.current.select();
+    }
+  }, [isEditingMonth]);
 
   // 키보드 이벤트 (좌우 화살표로 달 전환, ESC로 모달 닫기)
   useEffect(() => {
@@ -454,6 +482,56 @@ export function CalendarHubPage({
       });
     }
 
+    // 전체 일정들을 시작일 및 기간 순서대로 정렬하여 고정 슬롯(Track) 부여
+    // 겹치지 않는 일정들은 같은 트랙 슬롯을 재사용할 수 있도록 계산
+    const allIntervals: { id: string; start: string; end: string; type: 'trip' | 'event'; data: any }[] = [];
+    
+    parsedJourneys.forEach(({ journey, isPlan, range }) => {
+      allIntervals.push({
+        id: `trip_${journey.id}`,
+        start: range.start,
+        end: range.end,
+        type: 'trip',
+        data: { journey, isPlan, range }
+      });
+    });
+
+    customEvents.forEach((evt) => {
+      allIntervals.push({
+        id: `evt_${evt.id}`,
+        start: evt.startDate,
+        end: evt.endDate || evt.startDate,
+        type: 'event',
+        data: evt
+      });
+    });
+
+    // 시작일 오름차순, 기간 내림차순 정렬
+    allIntervals.sort((a, b) => {
+      if (a.start !== b.start) return a.start.localeCompare(b.start);
+      return b.end.localeCompare(a.end);
+    });
+
+    // 트랙 슬롯 할당 (각 트랙별 마지막 종료일 기록)
+    const trackEndDates: string[] = [];
+    const itemTrackMap = new Map<string, number>();
+
+    allIntervals.forEach(item => {
+      let assignedTrack = -1;
+      for (let i = 0; i < trackEndDates.length; i++) {
+        if (trackEndDates[i] < item.start) {
+          assignedTrack = i;
+          trackEndDates[i] = item.end;
+          break;
+        }
+      }
+      if (assignedTrack === -1) {
+        assignedTrack = trackEndDates.length;
+        trackEndDates.push(item.end);
+      }
+      itemTrackMap.set(item.id, assignedTrack);
+    });
+
     // 각 셀에 겹치는 여행 리본 밴드 계산
     cells.forEach(cell => {
       parsedJourneys.forEach(({ journey, isPlan, range }) => {
@@ -462,6 +540,7 @@ export function CalendarHubPage({
           const isEnd = cell.dateStr === range.end;
           const totalDays = getDaysDifference(range.start, range.end);
           const dayIndex = getDaysDifference(range.start, cell.dateStr);
+          const trackIndex = itemTrackMap.get(`trip_${journey.id}`) ?? 0;
 
           cell.overlappingTrips.push({
             trip: journey,
@@ -469,7 +548,8 @@ export function CalendarHubPage({
             isStart,
             isEnd,
             dayIndex,
-            totalDays
+            totalDays,
+            trackIndex
           });
         }
       });
@@ -483,13 +563,15 @@ export function CalendarHubPage({
           const isEnd = cell.dateStr === end;
           const totalDays = getDaysDifference(start, end);
           const dayIndex = getDaysDifference(start, cell.dateStr);
+          const trackIndex = itemTrackMap.get(`evt_${evt.id}`) ?? 0;
 
           cell.overlappingEvents.push({
             event: evt,
             isStart,
             isEnd,
             dayIndex,
-            totalDays
+            totalDays,
+            trackIndex
           });
         }
       });
@@ -535,6 +617,10 @@ export function CalendarHubPage({
         tripTitles: string[];
         isPlan: boolean;
         hasEvent: boolean;
+        isEventStart?: boolean;
+        isEventEnd?: boolean;
+        isEventMiddle?: boolean;
+        eventCategory?: string;
       }[] = [];
 
       // 이전 달 패딩
@@ -569,8 +655,13 @@ export function CalendarHubPage({
         const isTripEnd = matchedTrips.some(mt => mt.range.end === dateStr);
         const isTripMiddle = hasTrip && !isTripStart && !isTripEnd;
 
-        // 커스텀 일정 확인
-        const hasEvent = customEvents.some(evt => dateStr >= evt.startDate && dateStr <= (evt.endDate || evt.startDate));
+        // 커스텀 일정 확인 (동일한 캡슐 연속 영역 적용을 위한 메타데이터)
+        const matchedEvents = customEvents.filter(evt => dateStr >= evt.startDate && dateStr <= (evt.endDate || evt.startDate));
+        const hasEvent = matchedEvents.length > 0;
+        const isEventStart = matchedEvents.some(evt => evt.startDate === dateStr);
+        const isEventEnd = matchedEvents.some(evt => (evt.endDate || evt.startDate) === dateStr);
+        const isEventMiddle = hasEvent && !isEventStart && !isEventEnd;
+        const eventCategory = hasEvent ? matchedEvents[0].category : undefined;
 
         days.push({
           dateStr,
@@ -586,7 +677,11 @@ export function CalendarHubPage({
           isTripMiddle,
           tripTitles,
           isPlan,
-          hasEvent
+          hasEvent,
+          isEventStart,
+          isEventEnd,
+          isEventMiddle,
+          eventCategory
         });
       }
 
@@ -843,46 +938,135 @@ export function CalendarHubPage({
               </span>
             </div>
 
-            <div className="flex items-baseline gap-4 sm:gap-6 flex-wrap">
-              {/* Year Selector / Inline Editable */}
-              {isEditingYear ? (
-                <form
-                  onSubmit={(e) => { e.preventDefault(); handleYearSubmit(); }}
-                  className="inline-flex items-center"
-                >
-                  <input
-                    ref={yearInputRef}
-                    type="number"
-                    value={yearInputVal}
-                    onChange={(e) => setYearInputVal(e.target.value)}
-                    onBlur={handleYearSubmit}
-                    min="1990"
-                    max="2100"
-                    className="text-5xl sm:text-7xl lg:text-8xl font-black font-satoshi tracking-tighter bg-black/5 dark:bg-white/10 px-2 rounded-sm border-2 border-red-600 outline-none w-44 sm:w-60"
-                  />
-                </form>
-              ) : (
-                <h1
-                  onClick={() => setIsEditingYear(true)}
-                  className="text-5xl sm:text-7xl lg:text-8xl font-black font-satoshi tracking-tighter cursor-pointer hover:opacity-80 transition-opacity flex items-center group leading-none"
-                  title="클릭하여 연도 직접 입력"
-                >
-                  <span>{currentYear}</span>
-                  <span className="text-xs font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    (EDIT)
+            <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
+              {/* 1. Year Display & Direct Edit + Navigation */}
+              <div className="flex items-center gap-1.5">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
+                    YEAR
                   </span>
-                </h1>
-              )}
+                  {isEditingYear ? (
+                    <form
+                      onSubmit={(e) => { e.preventDefault(); handleYearSubmit(); }}
+                      className="inline-flex items-center"
+                    >
+                      <input
+                        ref={yearInputRef}
+                        type="number"
+                        value={yearInputVal}
+                        onChange={(e) => setYearInputVal(e.target.value)}
+                        onBlur={handleYearSubmit}
+                        min="1990"
+                        max="2100"
+                        className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter bg-black/5 dark:bg-white/10 px-2 rounded-sm border-2 border-red-600 outline-none w-32 sm:w-48 leading-none"
+                      />
+                    </form>
+                  ) : (
+                    <h1
+                      onClick={() => setIsEditingYear(true)}
+                      className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter cursor-pointer hover:opacity-80 transition-opacity flex items-baseline group leading-none"
+                      title="클릭하여 연도 직접 입력"
+                    >
+                      <span>{currentYear}</span>
+                    </h1>
+                  )}
+                </div>
 
-              {/* Month Display or Full Year Label */}
-              <div className="flex flex-col">
-                <span className="text-2xl sm:text-4xl lg:text-5xl font-black font-satoshi tracking-tight leading-none uppercase text-black/80 dark:text-white/80">
-                  {viewMode === 'year' ? 'ANNUAL VIEW' : MONTH_NAMES[currentMonth]}
-                </span>
-                <span className="text-xs sm:text-sm font-mono font-bold text-black/40 dark:text-white/40 tracking-widest mt-1">
-                  {viewMode === 'year' ? '12 MONTHS OVERVIEW' : `MONTH ${String(currentMonth + 1).padStart(2, '0')}`}
-                </span>
+                {/* Year Prev/Next Buttons */}
+                <div className="flex flex-col gap-0.5 ml-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentYear(prev => prev + 1)}
+                    className="p-1 hover:bg-black/10 dark:hover:bg-white/15 rounded text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white transition-colors cursor-pointer"
+                    title="다음 연도 (+1)"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5 -rotate-90" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentYear(prev => prev - 1)}
+                    className="p-1 hover:bg-black/10 dark:hover:bg-white/15 rounded text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white transition-colors cursor-pointer"
+                    title="이전 연도 (-1)"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5 -rotate-90" />
+                  </button>
+                </div>
               </div>
+
+              {/* Slash Divider */}
+              <span className="text-3xl sm:text-5xl font-light text-black/20 dark:text-white/20 select-none">/</span>
+
+              {/* 2. Month Big Number & Direct Edit + Navigation + Subtext */}
+              {viewMode === 'month' ? (
+                <div className="flex items-center gap-1.5">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
+                      MONTH
+                    </span>
+                    {isEditingMonth ? (
+                      <form
+                        onSubmit={(e) => { e.preventDefault(); handleMonthSubmit(); }}
+                        className="inline-flex items-center"
+                      >
+                        <input
+                          ref={monthInputRef}
+                          type="number"
+                          value={monthInputVal}
+                          onChange={(e) => setMonthInputVal(e.target.value)}
+                          onBlur={handleMonthSubmit}
+                          min="1"
+                          max="12"
+                          className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter bg-black/5 dark:bg-white/10 px-2 rounded-sm border-2 border-red-600 outline-none w-24 sm:w-36 leading-none"
+                        />
+                      </form>
+                    ) : (
+                      <div
+                        onClick={() => setIsEditingMonth(true)}
+                        className="flex items-baseline gap-2 cursor-pointer hover:opacity-80 transition-opacity group"
+                        title="클릭하여 월(1~12) 직접 입력"
+                      >
+                        <span className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter leading-none text-black dark:text-white">
+                          {currentMonth + 1 < 10 ? `0${currentMonth + 1}` : currentMonth + 1}
+                        </span>
+                        <div className="flex flex-col justify-end">
+                          <span className="text-xs sm:text-sm font-black font-['Inter',sans-serif] tracking-wider uppercase text-red-600 dark:text-red-500 leading-none">
+                            {MONTH_NAMES[currentMonth]}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Month Prev/Next Buttons */}
+                  <div className="flex flex-col gap-0.5 ml-0.5">
+                    <button
+                      type="button"
+                      onClick={handleNextMonth}
+                      className="p-1 hover:bg-black/10 dark:hover:bg-white/15 rounded text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white transition-colors cursor-pointer"
+                      title="다음 달 (→)"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5 -rotate-90" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handlePrevMonth}
+                      className="p-1 hover:bg-black/10 dark:hover:bg-white/15 rounded text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white transition-colors cursor-pointer"
+                      title="이전 달 (←)"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5 -rotate-90" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
+                    VIEW
+                  </span>
+                  <span className="text-2xl sm:text-4xl font-black font-satoshi tracking-tight leading-none uppercase text-black/80 dark:text-white/80">
+                    ANNUAL 12M
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1074,10 +1258,46 @@ export function CalendarHubPage({
                 const isSaturday = cell.dayOfWeek === 5;
                 const isHoliday = !!cell.holiday;
 
-                const isInRange = selectedRange && cell.dateStr >= selectedRange.start && cell.dateStr <= selectedRange.end;
-                const isRangeStart = selectedRange && cell.dateStr === selectedRange.start;
-                const isRangeEnd = selectedRange && cell.dateStr === selectedRange.end;
-                const isFirstRow = cellIdx < 7;
+                const isInRange = !!(selectedRange && cell.dateStr >= selectedRange.start && cell.dateStr <= selectedRange.end);
+                const isRangeEnd = !!(selectedRange && cell.dateStr === selectedRange.end);
+
+                // Unified Box Border Calculation (상하좌우 인접 셀이 선택 영역에 포함되는지 확인하여 외곽선만 렌더링)
+                let borderClasses = '';
+                if (isInRange) {
+                  const col = cellIdx % 7;
+                  const row = Math.floor(cellIdx / 7);
+
+                  const hasTopNeighbor = row > 0 && calendarGrid[cellIdx - 7]?.dateStr >= selectedRange!.start && calendarGrid[cellIdx - 7]?.dateStr <= selectedRange!.end;
+                  const hasBottomNeighbor = cellIdx + 7 < calendarGrid.length && calendarGrid[cellIdx + 7]?.dateStr >= selectedRange!.start && calendarGrid[cellIdx + 7]?.dateStr <= selectedRange!.end;
+                  const hasLeftNeighbor = col > 0 && calendarGrid[cellIdx - 1]?.dateStr >= selectedRange!.start && calendarGrid[cellIdx - 1]?.dateStr <= selectedRange!.end;
+                  const hasRightNeighbor = col < 6 && calendarGrid[cellIdx + 1]?.dateStr >= selectedRange!.start && calendarGrid[cellIdx + 1]?.dateStr <= selectedRange!.end;
+
+                  borderClasses = `bg-red-500/10 dark:bg-red-500/15 z-10 ${
+                    !hasTopNeighbor ? 'border-t-2 border-t-red-600 dark:border-t-red-500' : ''
+                  } ${
+                    !hasBottomNeighbor ? 'border-b-2 border-b-red-600 dark:border-b-red-500' : ''
+                  } ${
+                    !hasLeftNeighbor ? 'border-l-2 border-l-red-600 dark:border-l-red-500' : ''
+                  } ${
+                    !hasRightNeighbor ? 'border-r-2 border-r-red-600 dark:border-r-red-500' : ''
+                  }`;
+                }
+
+                // 트랙 슬롯 매핑: 각 트랙(0, 1, 2...)에 속한 일정을 slot 배열에 배치
+                // 최대 트랙 인덱스를 구하여 빈 슬롯은 spacer div로 채움으로써 가로 수평 연속성을 유지
+                const allItemsInCell: {
+                  type: 'trip' | 'event';
+                  trackIndex: number;
+                  data: any;
+                }[] = [
+                  ...cell.overlappingTrips.map(t => ({ type: 'trip' as const, trackIndex: t.trackIndex ?? 0, data: t })),
+                  ...cell.overlappingEvents.map(e => ({ type: 'event' as const, trackIndex: e.trackIndex ?? 0, data: e }))
+                ];
+
+                const maxTrack = allItemsInCell.reduce((acc, curr) => Math.max(acc, curr.trackIndex), -1);
+                const trackSlots = Array.from({ length: maxTrack + 1 }, (_, trackIdx) => {
+                  return allItemsInCell.find(item => item.trackIndex === trackIdx) || null;
+                });
 
                 return (
                   <div
@@ -1087,29 +1307,25 @@ export function CalendarHubPage({
                     onMouseDown={(e) => handleCellMouseDown(cell.dateStr, e)}
                     onMouseEnter={() => handleCellMouseEnter(cell.dateStr)}
                     onTouchStart={() => handleCellTouchStart(cell.dateStr)}
-                    className={`min-h-[82px] sm:min-h-[120px] md:min-h-[140px] p-1 sm:p-2 border-r border-b border-black/10 dark:border-white/10 flex flex-col justify-between transition-colors relative cursor-pointer group overflow-visible ${
+                    className={`min-h-[86px] sm:min-h-[124px] md:min-h-[144px] p-1 sm:p-2 border-r border-b border-black/10 dark:border-white/10 flex flex-col justify-between transition-colors relative cursor-pointer group overflow-visible ${
                       !cell.isCurrentMonth
                         ? 'bg-black/[0.02] dark:bg-white/[0.02] opacity-40'
                         : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.03]'
-                    } ${
-                      isInRange 
-                        ? 'bg-red-500/10 dark:bg-red-500/15 ring-2 ring-inset ring-red-600 dark:ring-red-500 z-10' 
-                        : ''
-                    }`}
+                    } ${borderClasses}`}
                   >
-                    {/* Floating "+ ADD" Quick Action Badge on Selected End Date Cell (Smart positioned to avoid clipping on row 1) */}
+                    {/* Floating "+ ADD" Quick Action Badge (그리드 내부 우측 상단 고정, 이벤트 전파 차단) */}
                     {isRangeEnd && (
                       <button
                         type="button"
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
                         onClick={(e) => {
                           e.stopPropagation();
                           if (selectedRange) {
                             openNewEventModal(selectedRange.start, selectedRange.end);
                           }
                         }}
-                        className={`absolute right-1 z-40 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-red-600 hover:bg-red-700 text-white font-mono text-[9.5px] sm:text-[11px] font-black tracking-wider shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-1 cursor-pointer animate-in fade-in zoom-in-95 duration-150 ${
-                          isFirstRow ? 'top-1 sm:top-1.5' : '-top-3 sm:-top-3.5'
-                        }`}
+                        className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 z-40 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-red-600 hover:bg-red-700 text-white font-mono text-[9px] sm:text-[10.5px] font-black tracking-wider shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-1 cursor-pointer animate-in fade-in zoom-in-95 duration-150"
                         title="선택한 기간으로 새 일정 등록"
                       >
                         <Plus className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" />
@@ -1142,9 +1358,9 @@ export function CalendarHubPage({
                       </div>
 
                       {/* Public Holiday Tag - Enlarged for high legibility */}
-                      {cell.holiday && (
+                      {cell.holiday && !isRangeEnd && (
                         <span
-                          className="text-[9px] sm:text-[11px] md:text-xs font-bold text-red-600 dark:text-red-400 font-sans tracking-tight truncate max-w-[55px] sm:max-w-[120px] text-right"
+                          className="text-[9px] sm:text-[11px] md:text-xs font-bold text-red-600 dark:text-red-400 font-sans tracking-tight truncate max-w-[55px] sm:max-w-[110px] text-right"
                           title={cell.holiday.name}
                         >
                           {cell.holiday.name}
@@ -1152,44 +1368,50 @@ export function CalendarHubPage({
                       )}
                     </div>
 
-                    {/* Middle / Bottom: Overlapping Bands (Trips & Custom Events) with Continuous Edge-to-Edge Ribbon Styling */}
-                    <div className="mt-1 sm:mt-2 space-y-0.5 sm:space-y-1 w-full flex-grow flex flex-col justify-end">
-                      {/* 1. Travel Journeys (Continuous Ribbon Band) */}
-                      {cell.overlappingTrips.map(({ trip, isPlan, isStart, isEnd, dayIndex, totalDays }) => {
-                        return (
-                          <button
-                            key={`trip-${trip.id}`}
-                            type="button"
-                            onClick={(e) => handleTripBandClick(e, trip, cell.dateStr)}
-                            className={`w-full text-left text-[9px] sm:text-[10.5px] md:text-[11px] py-0.5 sm:py-1 transition-all block select-none group/band shadow-2xs cursor-pointer ${
-                              isStart && isEnd
-                                ? 'rounded-sm px-1 sm:px-1.5'
-                                : isStart
-                                  ? '-mr-1 sm:-mr-2 rounded-l-sm pl-1 sm:pl-1.5 pr-0'
-                                  : isEnd
-                                    ? '-ml-1 sm:-ml-2 rounded-r-sm pr-1 sm:pr-1.5 pl-0'
-                                    : '-mx-1 sm:-mx-2 rounded-none px-0.5'
-                            } ${
-                              isPlan
-                                ? 'bg-amber-500/20 dark:bg-amber-500/30 text-amber-950 dark:text-amber-200 border-y border-dashed border-amber-500/40 hover:bg-amber-500/35'
-                                : 'bg-[#18181B] dark:bg-white text-white dark:text-black hover:opacity-90 font-bold'
-                            }`}
-                            title={`${trip.title} (DAY ${dayIndex}/${totalDays})`}
-                          >
-                            <div className="flex items-center gap-1 w-full min-w-0 px-0.5">
-                              {isStart && (
-                                <Plane className="w-2.5 h-2.5 shrink-0 rotate-45 opacity-80" />
-                              )}
-                              <span className="font-bold truncate tracking-tight font-sans leading-tight">
-                                {isStart ? trip.title : `DAY ${dayIndex}`}
-                              </span>
-                            </div>
-                          </button>
-                        );
-                      })}
+                    {/* Middle / Bottom: Track Slot Aligned Ribbons (No height jumping, seamless continuous horizontal ribbons) */}
+                    <div className="mt-1 sm:mt-2 space-y-1 w-full flex-grow flex flex-col justify-end">
+                      {trackSlots.map((slotItem, sIdx) => {
+                        if (!slotItem) {
+                          // 빈 슬롯은 높이만 유지하여 다른 날짜의 같은 트랙 일정과 높이를 일치시킴
+                          return <div key={`spacer-${sIdx}`} className="h-[20px] sm:h-[23px] w-full" />;
+                        }
 
-                      {/* 2. Custom Blocked / Reference Events (Continuous Ribbon Band) */}
-                      {cell.overlappingEvents.map(({ event, isStart, isEnd, dayIndex, totalDays }) => {
+                        if (slotItem.type === 'trip') {
+                          const { trip, isPlan, isStart, isEnd, dayIndex, totalDays } = slotItem.data;
+                          return (
+                            <button
+                              key={`trip-${trip.id}`}
+                              type="button"
+                              onClick={(e) => handleTripBandClick(e, trip, cell.dateStr)}
+                              className={`w-[calc(100%+0.5rem)] sm:w-[calc(100%+1rem)] h-[20px] sm:h-[23px] text-left text-[9px] sm:text-[10.5px] md:text-[11px] transition-all flex items-center select-none group/band cursor-pointer ${
+                                isStart && isEnd
+                                  ? 'rounded-xs px-1 sm:px-1.5 mx-0 w-full'
+                                  : isStart
+                                    ? 'rounded-l-xs pl-1 sm:pl-1.5 pr-0 -mr-1 sm:-mr-2'
+                                    : isEnd
+                                      ? 'rounded-r-xs pr-1 sm:pr-1.5 pl-0 -ml-1 sm:-ml-2'
+                                      : 'rounded-none px-0.5 -mx-1 sm:-mx-2'
+                              } ${
+                                isPlan
+                                  ? 'bg-amber-500/25 dark:bg-amber-500/35 text-amber-950 dark:text-amber-100 border-y border-dashed border-amber-500/50 hover:bg-amber-500/40'
+                                  : 'bg-[#18181B] dark:bg-white text-white dark:text-black hover:opacity-90 font-bold'
+                              }`}
+                              title={`${trip.title} (DAY ${dayIndex}/${totalDays})`}
+                            >
+                              <div className="flex items-center gap-1 w-full min-w-0 px-0.5">
+                                {isStart && (
+                                  <Plane className="w-2.5 h-2.5 shrink-0 rotate-45 opacity-80" />
+                                )}
+                                <span className="font-bold truncate tracking-tight font-sans leading-tight">
+                                  {isStart ? trip.title : `DAY ${dayIndex}`}
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        }
+
+                        // slotItem.type === 'event'
+                        const { event, isStart, isEnd, dayIndex, totalDays } = slotItem.data;
                         const categoryInfo = EVENT_CATEGORIES.find(c => c.id === event.category) || EVENT_CATEGORIES[0];
                         const isSingleDay = isStart && isEnd;
 
@@ -1198,14 +1420,14 @@ export function CalendarHubPage({
                             key={`event-${event.id}`}
                             type="button"
                             onClick={(e) => handleCustomEventClick(e, event)}
-                            className={`w-full text-left text-[8.5px] sm:text-[10px] py-0.5 sm:py-1 transition-all block select-none shadow-2xs cursor-pointer border-y border-black/10 dark:border-white/10 ${
+                            className={`w-[calc(100%+0.5rem)] sm:w-[calc(100%+1rem)] h-[20px] sm:h-[23px] text-left text-[8.5px] sm:text-[10px] transition-all flex items-center select-none cursor-pointer border-y border-black/10 dark:border-white/10 ${
                               isSingleDay
-                                ? 'rounded-sm px-1 sm:px-1.5 border-x'
+                                ? 'rounded-xs px-1 sm:px-1.5 border-x mx-0 w-full'
                                 : isStart
-                                  ? '-mr-1 sm:-mr-2 rounded-l-sm pl-1 sm:pl-1.5 pr-0 border-l'
+                                  ? 'rounded-l-xs pl-1 sm:pl-1.5 pr-0 border-l -mr-1 sm:-mr-2'
                                   : isEnd
-                                    ? '-ml-1 sm:-ml-2 rounded-r-sm pr-1 sm:pr-1.5 pl-0 border-r'
-                                    : '-mx-1 sm:-mx-2 rounded-none px-0.5'
+                                    ? 'rounded-r-xs pr-1 sm:pr-1.5 pl-0 border-r -ml-1 sm:-ml-2'
+                                    : 'rounded-none px-0.5 -mx-1 sm:-mx-2'
                             } ${
                               event.category === 'work'
                                 ? 'bg-blue-100/90 text-blue-950 dark:bg-blue-900/60 dark:text-blue-100'
@@ -1304,11 +1526,17 @@ export function CalendarHubPage({
                       const isSat = day.dayOfWeek === 5;
                       const isSelected = selectedRange && day.dateStr >= selectedRange.start && day.dateStr <= selectedRange.end;
 
-                      // Continuous Journey Region Classes
+                      // Continuous Region Classes for Trips
                       const isTripSingle = day.hasTrip && day.isTripStart && day.isTripEnd;
                       const isTripStart = day.hasTrip && day.isTripStart && !day.isTripEnd;
                       const isTripEnd = day.hasTrip && day.isTripEnd && !day.isTripStart;
                       const isTripMid = day.hasTrip && !day.isTripStart && !day.isTripEnd;
+
+                      // Continuous Region Classes for Events
+                      const isEventSingle = day.hasEvent && day.isEventStart && day.isEventEnd;
+                      const isEventStart = day.hasEvent && day.isEventStart && !day.isEventEnd;
+                      const isEventEnd = day.hasEvent && day.isEventEnd && !day.isEventStart;
+                      const isEventMid = day.hasEvent && !day.isEventStart && !day.isEventEnd;
 
                       return (
                         <button
@@ -1336,11 +1564,27 @@ export function CalendarHubPage({
                                             : 'rounded-none'
                                     } ${
                                       day.isPlan
-                                        ? 'bg-amber-500/25 text-amber-900 dark:text-amber-200'
+                                        ? 'bg-amber-500/25 text-amber-900 dark:text-amber-200 font-bold'
                                         : 'bg-black/10 dark:bg-white/15 text-black dark:text-white font-black'
                                     }`
                                   : day.hasEvent
-                                    ? 'bg-blue-500/15 text-blue-900 dark:text-blue-200 rounded-sm'
+                                    ? `${
+                                        isEventSingle
+                                          ? 'rounded-full'
+                                          : isEventStart
+                                            ? 'rounded-l-full'
+                                            : isEventEnd
+                                              ? 'rounded-r-full'
+                                              : 'rounded-none'
+                                      } ${
+                                        day.eventCategory === 'work'
+                                          ? 'bg-blue-500/20 text-blue-900 dark:text-blue-200 font-bold'
+                                          : day.eventCategory === 'family'
+                                            ? 'bg-rose-500/20 text-rose-900 dark:text-rose-200 font-bold'
+                                            : day.eventCategory === 'personal'
+                                              ? 'bg-emerald-500/20 text-emerald-900 dark:text-emerald-200 font-bold'
+                                              : 'bg-zinc-500/20 text-zinc-900 dark:text-zinc-200 font-bold'
+                                      }`
                                     : day.isHoliday || isSun
                                       ? 'text-red-600 dark:text-red-400 font-bold rounded-sm'
                                       : isSat
