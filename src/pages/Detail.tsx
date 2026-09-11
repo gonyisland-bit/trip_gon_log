@@ -757,8 +757,11 @@ export function JourneyDetailPage({
   const [hoveredItemId, setHoveredItemId] = useState<number | null>(null);
   const [flashedItemId, setFlashedItemId] = useState<number | null>(null);
 
-
-
+  // Floating Day Quick Jump state
+  const [showQuickJump, setShowQuickJump] = useState(false);
+  const [activeSpyDate, setActiveSpyDate] = useState<string>('ALL');
+  const [highlightedDateSection, setHighlightedDateSection] = useState<string | null>(null);
+  const quickJumpChipsRef = useRef<HTMLDivElement | null>(null);
   // Quick Switcher & Delete Confirm States
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
   const [switcherSearch, setSwitcherSearch] = useState('');
@@ -1834,6 +1837,116 @@ export function JourneyDetailPage({
     });
     return map;
   }, [baseTimeline]);
+
+  // Auto-clear day section flash highlight
+  useEffect(() => {
+    if (highlightedDateSection) {
+      const timer = setTimeout(() => {
+        setHighlightedDateSection(null);
+      }, 1600);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedDateSection]);
+
+  // Center active day chip inside Quick Jump bar
+  useEffect(() => {
+    if (activeSpyDate && quickJumpChipsRef.current) {
+      const activeEl = quickJumpChipsRef.current.querySelector(`[data-quick-date="${activeSpyDate}"]`) as HTMLElement;
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+  }, [activeSpyDate]);
+
+  // Scroll Spy for Floating Day Quick Jump
+  useEffect(() => {
+    const container = tabContentRef.current;
+    if (!container || activeTab !== 'timeline') {
+      setShowQuickJump(false);
+      return;
+    }
+
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrollTop = container.scrollTop;
+          setShowQuickJump(scrollTop > 120);
+
+          if (selectedDate !== 'ALL') {
+            setActiveSpyDate(selectedDate);
+          } else {
+            const containerRect = container.getBoundingClientRect();
+            let currentActiveDate = 'ALL';
+
+            if (scrollTop < 80) {
+              currentActiveDate = 'ALL';
+            } else {
+              for (let i = allTripDates.length - 1; i >= 0; i--) {
+                const d = allTripDates[i];
+                const el = document.getElementById(`date-section-${d}`);
+                if (el) {
+                  const elRect = el.getBoundingClientRect();
+                  if (elRect.top <= containerRect.top + 140) {
+                    currentActiveDate = d;
+                    break;
+                  }
+                }
+              }
+            }
+            setActiveSpyDate(currentActiveDate);
+          }
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+    };
+  }, [activeTab, selectedDate, allTripDates]);
+
+  const handleQuickJumpToDate = (targetDate: string) => {
+    if (targetDate === 'ALL') {
+      setSelectedDate('ALL');
+      if (tabContentRef.current) {
+        tabContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      return;
+    }
+
+    // Auto uncollapse if collapsed
+    if (collapsedDays.includes(targetDate)) {
+      setCollapsedDays(prev => prev.filter(d => d !== targetDate));
+    }
+
+    if (selectedDate !== 'ALL') {
+      setSelectedDate('ALL');
+      setTimeout(() => {
+        const el = document.getElementById(`date-section-${targetDate}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          setHighlightedDateSection(targetDate);
+        }
+      }, 120);
+    } else {
+      const el = document.getElementById(`date-section-${targetDate}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setHighlightedDateSection(targetDate);
+      }
+    }
+  };
+
+  const handleScrollToTop = () => {
+    if (tabContentRef.current) {
+      tabContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   // Separate gallery: metadata gallery (from trip.gallery) and timeline images (from timeline items)
   // Normalize gallery entries: string → { url } object
@@ -3747,7 +3860,7 @@ export function JourneyDetailPage({
       
       {/* Right: Record / Tabs Section (Responsive Bottom Sheet on Mobile) */}
       <section 
-        className={`w-full md:w-1/2 flex flex-col bg-white dark:bg-[#0A0A0A] transition-all duration-300 flex-grow md:h-full overflow-hidden ${
+        className={`w-full md:w-1/2 flex flex-col bg-white dark:bg-[#0A0A0A] transition-all duration-300 flex-grow md:h-full overflow-hidden relative ${
           mobileSheetSnap === 'expanded' ? 'max-md:h-full max-md:flex-1' : 'max-md:h-[64dvh]'
         }`}
       >
@@ -3995,7 +4108,9 @@ export function JourneyDetailPage({
                                 setCollapsedDays(prev => [...prev, dVal]);
                               }
                             }}
-                            className="bg-white dark:bg-[#0A0A0A] py-3.5 px-4 md:px-6 border-b border-t border-black/15 dark:border-white/15 flex items-center justify-between cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors select-none"
+                            className={`bg-white dark:bg-[#0A0A0A] py-3.5 px-4 md:px-6 border-b border-t border-black/15 dark:border-white/15 flex items-center justify-between cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors select-none ${
+                              highlightedDateSection === item.date ? 'day-section-highlight' : ''
+                            }`}
                           >
                             <div className="flex items-baseline gap-2.5 sm:gap-3.5">
                               <span className="text-3xl sm:text-4xl font-black font-satoshi tracking-tighter text-black dark:text-white leading-none">
@@ -5360,6 +5475,70 @@ export function JourneyDetailPage({
             </div>
           )}
         </div>
+
+        {/* Floating Smart Day Quick Jump Bar */}
+        {activeTab === 'timeline' && allTripDates.length >= 2 && (
+          <div 
+            className={`absolute bottom-4 sm:bottom-6 right-3 sm:right-6 z-40 transition-all duration-300 transform pointer-events-none ${
+              showQuickJump ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
+            }`}
+          >
+            <div className="bg-[#18181B]/95 dark:bg-[#18181B]/95 text-white backdrop-blur-md border border-white/20 dark:border-white/15 shadow-2xl rounded-full p-1 sm:p-1.5 flex items-center gap-1 pointer-events-auto select-none">
+              {/* Scroll to Top Button */}
+              <button
+                type="button"
+                onClick={handleScrollToTop}
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all text-white/80 hover:text-white cursor-pointer shrink-0"
+                title="맨 위로 스크롤 (Scroll to top)"
+              >
+                <ChevronUp className="w-4 h-4" />
+              </button>
+
+              <div className="w-px h-3.5 bg-white/20 mx-0.5 shrink-0" />
+
+              {/* Scrollable Day Chips Container */}
+              <div 
+                ref={quickJumpChipsRef}
+                className="flex items-center gap-1 max-w-[190px] sm:max-w-[320px] overflow-x-auto hide-scrollbar px-0.5"
+              >
+                {/* ALL Chip */}
+                <button
+                  type="button"
+                  data-quick-date="ALL"
+                  onClick={() => handleQuickJumpToDate('ALL')}
+                  className={`px-2 py-1 rounded-full text-[10px] sm:text-[10.5px] font-black tracking-wider transition-all cursor-pointer shrink-0 ${
+                    activeSpyDate === 'ALL'
+                      ? 'bg-red-600 text-white shadow-sm scale-105'
+                      : 'text-white/70 hover:text-white hover:bg-white/15'
+                  }`}
+                >
+                  ALL
+                </button>
+
+                {allTripDates.map((d, idx) => {
+                  const dayNum = idx + 1;
+                  const isActive = activeSpyDate === d;
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      data-quick-date={d}
+                      onClick={() => handleQuickJumpToDate(d)}
+                      className={`min-w-[26px] h-6 sm:min-w-[28px] sm:h-7 px-1.5 rounded-full flex items-center justify-center text-[10.5px] font-mono font-black transition-all cursor-pointer shrink-0 ${
+                        isActive
+                          ? 'bg-red-600 text-white shadow-md scale-105'
+                          : 'text-white/70 hover:text-white hover:bg-white/15'
+                      }`}
+                      title={`Day ${dayNum} (${d})`}
+                    >
+                      D{dayNum}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Fullscreen Lightbox component */}
