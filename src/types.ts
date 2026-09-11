@@ -225,3 +225,14 @@ export interface ArchiveHubConfig {
 }
 
 export type TrashedItem = (Trip & { deletedType?: 'journey' }) | TrashedMagazineSection;
+
+export interface CalendarCustomEvent {
+  id: string;
+  title: string;
+  startDate: string; // YYYY-MM-DD
+  endDate: string;   // YYYY-MM-DD
+  category: 'work' | 'family' | 'personal' | 'blocked';
+  color?: string;
+  memo?: string;
+  createdAt: number;
+}

@@ -377,7 +377,7 @@ export function MapArea({
       
       // Jitter prevention check for tab change metadata
       const tabChanged = lastTabRef.current !== activeTab;
-      if (tabChanged && lastTabRef.current === 'summary') {
+      if (tabChanged) {
         hasFitRef.current = false;
       }
       lastTabRef.current = activeTab;
@@ -491,7 +491,7 @@ export function MapArea({
 
     // Jitter prevention check
     const tabChanged = lastTabRef.current !== activeTab;
-    if (tabChanged && lastTabRef.current === 'summary') {
+    if (tabChanged) {
       hasFitRef.current = false;
     }
     const itemIdChanged = lastExpandedItemIdRef.current !== expandedItemId;
@@ -558,10 +558,14 @@ export function MapArea({
         }
       }
 
-      if (activeTab !== 'summary' && expandedItemId === null && coords.length > 0 && (!isInteractive || !hasFitRef.current || isGalleryTab)) {
+      if (activeTab !== 'summary' && expandedItemId === null && coords.length > 0 && (tabChanged || !isInteractive || !hasFitRef.current || isGalleryTab)) {
         const bounds = L.latLngBounds(coords);
-        map.fitBounds(bounds, { padding: isMobile ? [15, 15] : [48, 48], maxZoom: isMobile ? 15 : 15 });
+        map.fitBounds(bounds, { padding: isMobile ? [15, 15] : [48, 48], maxZoom: isMobile ? 15 : 15, animate: true });
         hasFitRef.current = true;
+      } else if (activeTab !== 'summary' && expandedItemId === null && coords.length === 0 && tabChanged) {
+        const lat = typeof trip.lat === 'number' && !isNaN(trip.lat) ? trip.lat : 35.0116;
+        const lng = typeof trip.lng === 'number' && !isNaN(trip.lng) ? trip.lng : 135.7681;
+        map.setView([lat, lng], 12, { animate: true });
       }
 
       if (expandedItemId !== null) {
