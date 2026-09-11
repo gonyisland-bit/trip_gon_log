@@ -580,6 +580,20 @@ export function CalendarHubPage({
     return cells;
   }, [currentYear, currentMonth, currentHolidays, parsedJourneys, customEvents, today]);
 
+  // 이번 달 그리드 내 전체 최대 트랙 인덱스 (모든 셀이 동일한 트랙 높이 레벨을 공유하도록 보장)
+  const globalMaxTracks = useMemo(() => {
+    let max = 0;
+    calendarGrid.forEach(cell => {
+      cell.overlappingTrips.forEach(t => {
+        if ((t.trackIndex ?? 0) > max) max = t.trackIndex ?? 0;
+      });
+      cell.overlappingEvents.forEach(e => {
+        if ((e.trackIndex ?? 0) > max) max = e.trackIndex ?? 0;
+      });
+    });
+    return max;
+  }, [calendarGrid]);
+
   // 이번 달 여행 및 일정 통계
   const monthStats = useMemo(() => {
     const currentMonthCells = calendarGrid.filter(c => c.isCurrentMonth);
@@ -621,6 +635,7 @@ export function CalendarHubPage({
         isEventEnd?: boolean;
         isEventMiddle?: boolean;
         eventCategory?: string;
+        hasMultiEvents?: boolean;
       }[] = [];
 
       // 이전 달 패딩
@@ -646,22 +661,56 @@ export function CalendarHubPage({
         const isToday = today.getFullYear() === currentYear && today.getMonth() === monthIdx && today.getDate() === d;
         const holiday = currentHolidays.get(dateStr) || null;
 
-        // 여행 확인
+        // 여행 확인 (다중 여행 겹침 시 가장 긴 연속 일정을 우선하여 캡슐로 렌더링)
         const matchedTrips = parsedJourneys.filter(pj => dateStr >= pj.range.start && dateStr <= pj.range.end);
         const hasTrip = matchedTrips.length > 0;
         const isPlan = matchedTrips.some(mt => mt.isPlan);
         const tripTitles = matchedTrips.map(mt => mt.journey.title);
-        const isTripStart = matchedTrips.some(mt => mt.range.start === dateStr);
-        const isTripEnd = matchedTrips.some(mt => mt.range.end === dateStr);
-        const isTripMiddle = hasTrip && !isTripStart && !isTripEnd;
 
-        // 커스텀 일정 확인 (동일한 캡슐 연속 영역 적용을 위한 메타데이터)
+        let isTripStart = false;
+        let isTripEnd = false;
+        let isTripMiddle = false;
+
+        if (hasTrip) {
+          // 기간이 가장 긴 여행 우선 선택
+          const primaryTrip = [...matchedTrips].sort((a, b) => {
+            const lenA = getDaysDifference(a.range.start, a.range.end);
+            const lenB = getDaysDifference(b.range.start, b.range.end);
+            return lenB - lenA;
+          })[0];
+
+          isTripStart = primaryTrip.range.start === dateStr;
+          isTripEnd = primaryTrip.range.end === dateStr;
+          isTripMiddle = !isTripStart && !isTripEnd;
+        }
+
+        // 커스텀 일정 확인 (1일 일정과 연속 일정이 겹쳤을 때, 연속 캡슐의 연속성이 깨지지 않도록 가장 긴 연속 일정 우선 판정)
         const matchedEvents = customEvents.filter(evt => dateStr >= evt.startDate && dateStr <= (evt.endDate || evt.startDate));
         const hasEvent = matchedEvents.length > 0;
-        const isEventStart = matchedEvents.some(evt => evt.startDate === dateStr);
-        const isEventEnd = matchedEvents.some(evt => (evt.endDate || evt.startDate) === dateStr);
-        const isEventMiddle = hasEvent && !isEventStart && !isEventEnd;
-        const eventCategory = hasEvent ? matchedEvents[0].category : undefined;
+
+        let isEventStart = false;
+        let isEventEnd = false;
+        let isEventMiddle = false;
+        let eventCategory: string | undefined = undefined;
+
+        if (hasEvent) {
+          // 기간이 가장 긴 일정 우선 선택 (동일하면 시작일 기준)
+          const primaryEvent = [...matchedEvents].sort((a, b) => {
+            const endA = a.endDate || a.startDate;
+            const endB = b.endDate || b.startDate;
+            const lenA = getDaysDifference(a.startDate, endA);
+            const lenB = getDaysDifference(b.startDate, endB);
+            return lenB - lenA;
+          })[0];
+
+          const pEnd = primaryEvent.endDate || primaryEvent.startDate;
+          isEventStart = primaryEvent.startDate === dateStr;
+          isEventEnd = pEnd === dateStr;
+          isEventMiddle = !isEventStart && !isEventEnd;
+          eventCategory = primaryEvent.category;
+        }
+
+        const hasMultiEvents = matchedEvents.length > 1 || (hasTrip && hasEvent);
 
         days.push({
           dateStr,
@@ -681,7 +730,8 @@ export function CalendarHubPage({
           isEventStart,
           isEventEnd,
           isEventMiddle,
-          eventCategory
+          eventCategory,
+          hasMultiEvents
         });
       }
 
@@ -939,7 +989,7 @@ export function CalendarHubPage({
             </div>
 
             <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
-              {/* 1. Year Display & Direct Edit + Navigation */}
+              {/* 1. Year Display & Direct Edit + Navigation (화살표는 클릭/활성화 시에만 노출, 텍스트 크기 유지) */}
               <div className="flex items-center gap-1.5">
                 <div className="flex flex-col">
                   <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
@@ -956,47 +1006,60 @@ export function CalendarHubPage({
                         value={yearInputVal}
                         onChange={(e) => setYearInputVal(e.target.value)}
                         onBlur={handleYearSubmit}
+                        onKeyDown={(e) => {
+                          if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            setCurrentYear(prev => prev + 1);
+                          } else if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            setCurrentYear(prev => prev - 1);
+                          }
+                        }}
                         min="1990"
                         max="2100"
-                        className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter bg-black/5 dark:bg-white/10 px-2 rounded-sm border-2 border-red-600 outline-none w-32 sm:w-48 leading-none"
+                        className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter bg-transparent border-b-2 border-red-600 outline-none w-[4.5ch] sm:w-[4.5ch] leading-none text-black dark:text-white p-0 m-0"
                       />
                     </form>
                   ) : (
                     <h1
                       onClick={() => setIsEditingYear(true)}
                       className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter cursor-pointer hover:opacity-80 transition-opacity flex items-baseline group leading-none"
-                      title="클릭하여 연도 직접 입력"
+                      title="클릭하여 연도 변경 및 직접 입력"
                     >
-                      <span>{currentYear}</span>
+                      <span className="group-hover:underline decoration-red-600 decoration-2 underline-offset-4">{currentYear}</span>
                     </h1>
                   )}
                 </div>
 
-                {/* Year Prev/Next Buttons */}
-                <div className="flex flex-col gap-0.5 ml-0.5">
-                  <button
-                    type="button"
-                    onClick={() => setCurrentYear(prev => prev + 1)}
-                    className="p-1 hover:bg-black/10 dark:hover:bg-white/15 rounded text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white transition-colors cursor-pointer"
-                    title="다음 연도 (+1)"
-                  >
-                    <ChevronRight className="w-3.5 h-3.5 -rotate-90" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentYear(prev => prev - 1)}
-                    className="p-1 hover:bg-black/10 dark:hover:bg-white/15 rounded text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white transition-colors cursor-pointer"
-                    title="이전 연도 (-1)"
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5 -rotate-90" />
-                  </button>
-                </div>
+                {/* Year Prev/Next Buttons (클릭하여 연도 활성화 상태일 때만 표시) */}
+                {isEditingYear && (
+                  <div className="flex flex-col gap-0.5 ml-0.5 animate-in fade-in zoom-in-95 duration-150">
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => setCurrentYear(prev => prev + 1)}
+                      className="p-1 hover:bg-black/10 dark:hover:bg-white/15 rounded text-black/70 hover:text-black dark:text-white/70 dark:hover:text-white transition-colors cursor-pointer"
+                      title="다음 연도 (+1)"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5 -rotate-90" />
+                    </button>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => setCurrentYear(prev => prev - 1)}
+                      className="p-1 hover:bg-black/10 dark:hover:bg-white/15 rounded text-black/70 hover:text-black dark:text-white/70 dark:hover:text-white transition-colors cursor-pointer"
+                      title="이전 연도 (-1)"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5 -rotate-90" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Slash Divider */}
               <span className="text-3xl sm:text-5xl font-light text-black/20 dark:text-white/20 select-none">/</span>
 
-              {/* 2. Month Big Number & Direct Edit + Navigation + Subtext */}
+              {/* 2. Month Big Number & Direct Edit + Navigation + Enlarged Subtext (화살표는 클릭/활성화 시에만 노출) */}
               {viewMode === 'month' ? (
                 <div className="flex items-center gap-1.5">
                   <div className="flex flex-col">
@@ -1004,32 +1067,48 @@ export function CalendarHubPage({
                       MONTH
                     </span>
                     {isEditingMonth ? (
-                      <form
-                        onSubmit={(e) => { e.preventDefault(); handleMonthSubmit(); }}
-                        className="inline-flex items-center"
-                      >
-                        <input
-                          ref={monthInputRef}
-                          type="number"
-                          value={monthInputVal}
-                          onChange={(e) => setMonthInputVal(e.target.value)}
-                          onBlur={handleMonthSubmit}
-                          min="1"
-                          max="12"
-                          className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter bg-black/5 dark:bg-white/10 px-2 rounded-sm border-2 border-red-600 outline-none w-24 sm:w-36 leading-none"
-                        />
-                      </form>
+                      <div className="flex items-baseline gap-2">
+                        <form
+                          onSubmit={(e) => { e.preventDefault(); handleMonthSubmit(); }}
+                          className="inline-flex items-center"
+                        >
+                          <input
+                            ref={monthInputRef}
+                            type="number"
+                            value={monthInputVal}
+                            onChange={(e) => setMonthInputVal(e.target.value)}
+                            onBlur={handleMonthSubmit}
+                            onKeyDown={(e) => {
+                              if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                handleNextMonth();
+                              } else if (e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                handlePrevMonth();
+                              }
+                            }}
+                            min="1"
+                            max="12"
+                            className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter bg-transparent border-b-2 border-red-600 outline-none w-[2.5ch] sm:w-[2.5ch] leading-none text-black dark:text-white p-0 m-0"
+                          />
+                        </form>
+                        <div className="flex flex-col justify-end">
+                          <span className="text-sm sm:text-base md:text-lg font-black font-['Inter',sans-serif] tracking-wider uppercase text-red-600 dark:text-red-500 leading-none">
+                            {MONTH_NAMES[currentMonth]}
+                          </span>
+                        </div>
+                      </div>
                     ) : (
                       <div
                         onClick={() => setIsEditingMonth(true)}
                         className="flex items-baseline gap-2 cursor-pointer hover:opacity-80 transition-opacity group"
-                        title="클릭하여 월(1~12) 직접 입력"
+                        title="클릭하여 월 변경 및 직접 입력"
                       >
-                        <span className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter leading-none text-black dark:text-white">
+                        <span className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter leading-none text-black dark:text-white group-hover:underline decoration-red-600 decoration-2 underline-offset-4">
                           {currentMonth + 1 < 10 ? `0${currentMonth + 1}` : currentMonth + 1}
                         </span>
                         <div className="flex flex-col justify-end">
-                          <span className="text-xs sm:text-sm font-black font-['Inter',sans-serif] tracking-wider uppercase text-red-600 dark:text-red-500 leading-none">
+                          <span className="text-sm sm:text-base md:text-lg font-black font-['Inter',sans-serif] tracking-wider uppercase text-red-600 dark:text-red-500 leading-none">
                             {MONTH_NAMES[currentMonth]}
                           </span>
                         </div>
@@ -1037,25 +1116,29 @@ export function CalendarHubPage({
                     )}
                   </div>
 
-                  {/* Month Prev/Next Buttons */}
-                  <div className="flex flex-col gap-0.5 ml-0.5">
-                    <button
-                      type="button"
-                      onClick={handleNextMonth}
-                      className="p-1 hover:bg-black/10 dark:hover:bg-white/15 rounded text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white transition-colors cursor-pointer"
-                      title="다음 달 (→)"
-                    >
-                      <ChevronRight className="w-3.5 h-3.5 -rotate-90" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handlePrevMonth}
-                      className="p-1 hover:bg-black/10 dark:hover:bg-white/15 rounded text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white transition-colors cursor-pointer"
-                      title="이전 달 (←)"
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5 -rotate-90" />
-                    </button>
-                  </div>
+                  {/* Month Prev/Next Buttons (클릭하여 월 활성화 상태일 때만 표시) */}
+                  {isEditingMonth && (
+                    <div className="flex flex-col gap-0.5 ml-0.5 animate-in fade-in zoom-in-95 duration-150">
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={handleNextMonth}
+                        className="p-1 hover:bg-black/10 dark:hover:bg-white/15 rounded text-black/70 hover:text-black dark:text-white/70 dark:hover:text-white transition-colors cursor-pointer"
+                        title="다음 달 (→)"
+                      >
+                        <ChevronRight className="w-3.5 h-3.5 -rotate-90" />
+                      </button>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={handlePrevMonth}
+                        className="p-1 hover:bg-black/10 dark:hover:bg-white/15 rounded text-black/70 hover:text-black dark:text-white/70 dark:hover:text-white transition-colors cursor-pointer"
+                        title="이전 달 (←)"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5 -rotate-90" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col">
@@ -1283,8 +1366,8 @@ export function CalendarHubPage({
                   }`;
                 }
 
-                // 트랙 슬롯 매핑: 각 트랙(0, 1, 2...)에 속한 일정을 slot 배열에 배치
-                // 최대 트랙 인덱스를 구하여 빈 슬롯은 spacer div로 채움으로써 가로 수평 연속성을 유지
+                // 트랙 슬롯 매핑: 월 전체의 globalMaxTracks를 기준으로 모든 셀이 일관된 슬롯 배열을 갖도록 보장
+                // 이를 통해 날짜별 일정 개수가 달라도 같은 트랙(0, 1, 2...)의 일정들이 정확히 같은 수평 높이에 위치하게 됨
                 const allItemsInCell: {
                   type: 'trip' | 'event';
                   trackIndex: number;
@@ -1294,8 +1377,7 @@ export function CalendarHubPage({
                   ...cell.overlappingEvents.map(e => ({ type: 'event' as const, trackIndex: e.trackIndex ?? 0, data: e }))
                 ];
 
-                const maxTrack = allItemsInCell.reduce((acc, curr) => Math.max(acc, curr.trackIndex), -1);
-                const trackSlots = Array.from({ length: maxTrack + 1 }, (_, trackIdx) => {
+                const trackSlots = Array.from({ length: globalMaxTracks + 1 }, (_, trackIdx) => {
                   return allItemsInCell.find(item => item.trackIndex === trackIdx) || null;
                 });
 
@@ -1368,7 +1450,7 @@ export function CalendarHubPage({
                       )}
                     </div>
 
-                    {/* Middle / Bottom: Track Slot Aligned Ribbons (No height jumping, seamless continuous horizontal ribbons) */}
+                    {/* Middle / Bottom: Track Slot Aligned Ribbons (전체 셀의 트랙 레벨이 동일하여 밀림 없이 완벽한 수평선 유지) */}
                     <div className="mt-1 sm:mt-2 space-y-1 w-full flex-grow flex flex-col justify-end">
                       {trackSlots.map((slotItem, sIdx) => {
                         if (!slotItem) {
@@ -1489,12 +1571,14 @@ export function CalendarHubPage({
                         setCurrentMonth(m.monthIdx);
                         toggleViewMode('month');
                       }}
-                      className="text-left group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors cursor-pointer flex items-baseline gap-2"
-                      title={`${m.monthTab.full} 월별 보기로 확대 이동`}
-                    >
-                      <span className="text-base sm:text-lg font-black font-['Inter',sans-serif] tracking-tight text-black dark:text-white group-hover:text-red-600 transition-colors">
-                        {m.monthTab.num} {m.monthTab.full}
-                      </span>
+                      <div className="flex items-baseline gap-1.5 text-black dark:text-white group-hover:text-red-600 transition-colors">
+                        <span className="text-base sm:text-lg font-black font-mono tracking-tight">
+                          {m.monthTab.num < 10 ? `0${m.monthTab.num}` : m.monthTab.num}
+                        </span>
+                        <span className="text-sm sm:text-base font-black font-['Inter',sans-serif] tracking-tight uppercase">
+                          {m.monthTab.full}
+                        </span>
+                      </div>
                     </button>
                     {m.totalTripDays > 0 && (
                       <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-black/75 dark:text-white/75">
@@ -1594,9 +1678,9 @@ export function CalendarHubPage({
                           title={day.holidayName ? `${day.dateStr} (${day.holidayName})` : day.tripTitles.length > 0 ? `${day.dateStr} · ${day.tripTitles.join(', ')}` : day.dateStr}
                         >
                           <span className="leading-none text-[11px] sm:text-xs z-10">{day.dayNum}</span>
-                          {/* Dot Indicator for Events if already in trip region */}
-                          {day.hasTrip && day.hasEvent && (
-                            <span className="w-1 h-1 rounded-full bg-blue-500 mt-0.5 z-10" />
+                          {/* Dot Indicator if multiple events/trips overlap on the same date */}
+                          {day.hasMultiEvents && (
+                            <span className="w-1 h-1 rounded-full bg-red-600 dark:bg-red-400 mt-0.5 z-10 animate-in fade-in" />
                           )}
                         </button>
                       );
