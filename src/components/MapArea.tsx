@@ -25,6 +25,8 @@ interface MapAreaProps {
   transitFocusType?: 'depart' | 'arrive' | 'boarding' | null;
   transits?: TransitItem[];
   isCinematicMode?: boolean;
+  hoveredItemId?: number | null;
+  onItemHover?: (id: number | null) => void;
 }
 
 export function MapArea({
@@ -39,6 +41,8 @@ export function MapArea({
   transitFocusType,
   transits = [],
   isCinematicMode = false,
+  hoveredItemId = null,
+  onItemHover,
 }: MapAreaProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -404,6 +408,8 @@ export function MapArea({
       
       const isTransitActive = activeTab === 'transit' ? (item.transitId === expandedItemId) : (expandedItemId === item.id);
       const isActive = !!isTransitActive;
+      const isTransitHovered = activeTab === 'transit' ? (item.transitId === hoveredItemId) : (hoveredItemId === item.id);
+      const isHovered = !!isTransitHovered;
       const isTransitFaded = activeTab === 'transit' && expandedItemId !== null && !isTransitActive;
       
       let pinColor = '#dc2626';
@@ -447,10 +453,17 @@ export function MapArea({
           </div>
         `;
       } else {
+        const showPulse = isActive || isHovered;
         htmlContent = `
           <div class="pin-wrapper" style="opacity: ${isTransitFaded ? '0.25' : '1'}; transition: opacity 0.3s;">
-            <div class="leaflet-pin${isActive ? ' active-pin' : ''}" style="background-color: ${pinColor}; ${isActive ? `box-shadow: 0 0 0 5px ${pinColor}40, 0 3px 10px rgba(0,0,0,0.4);` : ''}">${isActive ? '<div class="pin-inner-dot"></div>' : ''}</div>
-            <div class="pin-label${isActive ? ' pin-label-active' : ''}">${pinTextPrefix}${item.place}</div>
+            <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+              ${showPulse ? `
+                <div class="pin-radar-ring" style="background-color: ${pinColor}25; border: 1.5px solid ${pinColor}80;"></div>
+                <div class="pin-radar-ring-2" style="background-color: ${pinColor}15; border: 1.5px solid ${pinColor}60;"></div>
+              ` : ''}
+              <div class="leaflet-pin${isActive ? ' active-pin' : ''}${isHovered && !isActive ? ' hovered-pin' : ''}" style="background-color: ${pinColor}; ${isActive ? `box-shadow: 0 0 0 5px ${pinColor}40, 0 3px 10px rgba(0,0,0,0.4);` : ''}">${isActive ? '<div class="pin-inner-dot"></div>' : ''}</div>
+            </div>
+            <div class="pin-label${isActive ? ' pin-label-active' : ''}${isHovered && !isActive ? ' pin-label-hovered' : ''}">${pinTextPrefix}${item.place}</div>
           </div>
         `;
       }
@@ -462,10 +475,16 @@ export function MapArea({
         iconAnchor: isSummaryMode ? [60, 17] : [70, isActive ? 12 : 9],
       });
 
-      const marker = L.marker([lat, lng], { icon, zIndexOffset: isActive ? 100000 : 1000 }).addTo(map);
+      const marker = L.marker([lat, lng], { icon, zIndexOffset: (isActive || isHovered) ? 100000 : 1000 }).addTo(map);
       marker.on('click', (e: any) => { 
         L.DomEvent.stopPropagation(e); 
         handleItemToggle(activeTab === 'transit' ? item.transitId : item.id); 
+      });
+      marker.on('mouseover', () => {
+        onItemHover?.(activeTab === 'transit' ? item.transitId : item.id);
+      });
+      marker.on('mouseout', () => {
+        onItemHover?.(null);
       });
       markersRef.current[item.id] = marker;
     });
@@ -652,7 +671,7 @@ export function MapArea({
       }
     }
 
-  }, [mapPoints, expandedItemId, isDarkMode, mapReady, isInteractive, activeTab, transitFocusType, transits, selectedDate, isCinematicMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mapPoints, expandedItemId, isDarkMode, mapReady, isInteractive, activeTab, transitFocusType, transits, selectedDate, isCinematicMode, hoveredItemId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Effect 3b: Google Places POIs Fetcher ──────────────────────────────────
   useEffect(() => {

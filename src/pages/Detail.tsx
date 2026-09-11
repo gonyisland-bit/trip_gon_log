@@ -754,6 +754,10 @@ export function JourneyDetailPage({
   const [selectedDate, setSelectedDate] = useState<string>('ALL');
   const [collapsedDays, setCollapsedDays] = useState<string[]>([]);
   const [expandedItemId, setExpandedItemId] = useState<number | null>(null);
+  const [hoveredItemId, setHoveredItemId] = useState<number | null>(null);
+  const [flashedItemId, setFlashedItemId] = useState<number | null>(null);
+
+
 
   // Quick Switcher & Delete Confirm States
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
@@ -1109,6 +1113,27 @@ export function JourneyDetailPage({
       setIsCinematicMode(false);
     }
   }, [activeTab, isCinematicMode]);
+
+  // Auto-clear flash highlight after 1.6s
+  useEffect(() => {
+    if (flashedItemId !== null) {
+      const timer = setTimeout(() => {
+        setFlashedItemId(null);
+      }, 1600);
+      return () => clearTimeout(timer);
+    }
+  }, [flashedItemId]);
+
+  // Smooth scroll and flash highlight when expandedItemId changes
+  useEffect(() => {
+    if (expandedItemId !== null && activeTab === 'timeline' && !isCinematicMode) {
+      const el = itemRefs.current[expandedItemId] || document.getElementById(`timeline-item-${expandedItemId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setFlashedItemId(expandedItemId);
+      }
+    }
+  }, [expandedItemId, activeTab, isCinematicMode]);
 
   const handlePlayFromItem = (itemId: number) => {
     setActiveTab('timeline');
@@ -3558,6 +3583,8 @@ export function JourneyDetailPage({
               transitFocusType={transitFocusType}
               transits={isEditing ? draftTransits : transits}
               isCinematicMode={isCinematicMode}
+              hoveredItemId={hoveredItemId}
+              onItemHover={setHoveredItemId}
             />
           </ErrorBoundary>
 
@@ -4096,7 +4123,15 @@ export function JourneyDetailPage({
                         <div 
                           id={`timeline-item-${item.id}`}
                           ref={el => { itemRefs.current[item.id] = el; }} 
-                          className={`flex flex-col border-b border-black/15 dark:border-white/15 transition-all w-full ${isActive ? 'bg-neutral-100 dark:bg-white/[0.08] border-l-[5px] border-l-red-600 dark:border-l-red-500' : 'border-l-[5px] border-l-transparent'} ${collapsedDays.includes(item.date || '') && selectedDate === 'ALL' ? 'hidden' : ''}`}
+                          onMouseEnter={() => setHoveredItemId(item.id)}
+                          onMouseLeave={() => setHoveredItemId(null)}
+                          className={`flex flex-col border-b border-black/15 dark:border-white/15 transition-all w-full ${
+                            flashedItemId === item.id ? 'timeline-flash-highlight' : ''
+                          } ${
+                            isActive 
+                              ? 'bg-neutral-100 dark:bg-white/[0.08] border-l-[5px] border-l-red-600 dark:border-l-red-500' 
+                              : (hoveredItemId === item.id ? 'bg-black/[0.03] dark:bg-white/[0.04] border-l-[5px] border-l-red-600/40 dark:border-l-red-500/40' : 'border-l-[5px] border-l-transparent')
+                          } ${collapsedDays.includes(item.date || '') && selectedDate === 'ALL' ? 'hidden' : ''}`}
                           draggable={isEditing}
                           onDragStart={(e) => {
                             const target = e.target as HTMLElement;
