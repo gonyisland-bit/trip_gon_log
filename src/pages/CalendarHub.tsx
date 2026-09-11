@@ -1306,7 +1306,6 @@ export function CalendarHubPage({
               </div>
             </div>
           </div>
-        </div>
 
         {/* 12-Month Quick Selector Tabs: 2-Tier Stack (Big Bold Number + Small Month Code) in 12-Column Grid (No Horizontal Scroll) */}
         {viewMode === 'month' && (
