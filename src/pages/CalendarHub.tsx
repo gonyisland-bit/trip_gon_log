@@ -1369,7 +1369,7 @@ export function CalendarHubPage({
       }`}>
         {viewMode === 'month' ? (
           /* ──────────────── MONTH VIEW (Pure Circular Swiss Minimal) ──────────────── */
-          <div className="w-full max-w-3xl mx-auto px-2 sm:px-6 mt-3 sm:mt-5">
+          <div className="w-full max-w-4xl lg:max-w-5xl mx-auto px-2 sm:px-6 mt-3 sm:mt-5">
             {/* Multi-Select Range Indicator & Quick Add button in Edit Mode */}
             {isEditMode && selectedRange && (
               <div className="flex items-center justify-between pb-2.5 px-1 text-xs sm:text-sm font-mono text-red-600 dark:text-red-400 font-bold animate-in fade-in">
@@ -1386,7 +1386,7 @@ export function CalendarHubPage({
             )}
 
             {/* Weekday Header Row: MON TUE WED THU FRI SAT SUN */}
-            <div className="grid grid-cols-7 border-b border-black/15 dark:border-white/15 pb-2 text-center text-xs sm:text-sm font-black tracking-widest font-mono select-none">
+            <div className="grid grid-cols-7 border-b border-black/15 dark:border-white/15 pb-2.5 sm:pb-3 text-center text-xs sm:text-sm font-black tracking-widest font-mono select-none">
               {WEEKDAYS.map((day, idx) => {
                 const isSunday = idx === 6;
                 const isSaturday = idx === 5;
@@ -1412,7 +1412,7 @@ export function CalendarHubPage({
               ref={gridContainerRef}
               onTouchMove={handleGridTouchMove}
               onTouchEnd={handleGridTouchEnd}
-              className={`grid grid-cols-7 select-none justify-items-center w-full py-2 sm:py-3 ${
+              className={`grid grid-cols-7 select-none justify-items-center w-full py-2.5 sm:py-4 ${
                 isEditMode ? 'touch-none' : 'touch-auto'
               }`}
             >
@@ -1436,18 +1436,18 @@ export function CalendarHubPage({
                 const eventItem = hasEvent ? cell.overlappingEvents[0].event : null;
                 const eventCat = eventItem ? EVENT_CATEGORIES.find(c => c.id === eventItem.category) : null;
 
-                // Circular badge styling based on Concept B & Swiss Minimal
-                let circleClasses = 'w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full aspect-square shrink-0 flex flex-col items-center justify-center font-mono transition-all duration-150 relative z-10 cursor-pointer';
-                let textClasses = 'text-xs sm:text-sm font-bold leading-none';
+                // Circular badge styling based on Concept B & Swiss Minimal (크기 및 비례감 확대)
+                let circleClasses = 'w-9 h-9 sm:w-11 sm:h-11 md:w-12 md:h-12 lg:w-13 lg:h-13 rounded-full aspect-square shrink-0 flex flex-col items-center justify-center font-mono transition-all duration-150 relative z-10 cursor-pointer';
+                let textClasses = 'text-xs sm:text-sm md:text-base font-bold leading-none';
 
                 if (!cell.isCurrentMonth) {
                   circleClasses += ' opacity-20 text-black/40 dark:text-white/40 hover:opacity-40';
                 } else if (cell.isToday) {
                   circleClasses += ' bg-black text-white dark:bg-white dark:text-black font-black shadow-xs scale-105';
-                  textClasses = 'text-xs sm:text-sm font-black leading-none';
+                  textClasses = 'text-xs sm:text-sm md:text-base font-black leading-none';
                 } else if (hasTrip) {
                   circleClasses += ' text-white font-black hover:opacity-95';
-                  textClasses = 'text-xs sm:text-sm font-black leading-none text-white';
+                  textClasses = 'text-xs sm:text-sm md:text-base font-black leading-none text-white';
                 } else if (isInRange) {
                   circleClasses += ' bg-red-600/20 ring-2 ring-red-600 text-red-600 dark:text-red-400 font-black';
                 } else if (hasEvent) {
@@ -1467,18 +1467,18 @@ export function CalendarHubPage({
                   <div
                     key={cell.dateStr}
                     data-calendar-date={cell.dateStr}
-                    className="relative flex items-center justify-center h-10 sm:h-12 md:h-13 w-full"
+                    className="relative flex items-center justify-center h-12 sm:h-14 md:h-16 lg:h-18 w-full"
                   >
-                    {/* Multi-day Trip Capsule Ribbon spanning across columns in row */}
+                    {/* Multi-day Trip Capsule Ribbon spanning across columns in row (상하/좌우 여백 균형 최적화) */}
                     {hasTrip && cell.isCurrentMonth && (
                       <div
-                        className={`absolute top-1 bottom-1 sm:top-1.5 sm:bottom-1.5 z-0 ${
+                        className={`absolute top-1.5 bottom-1.5 sm:top-2 sm:bottom-2 md:top-2.5 md:bottom-2.5 lg:top-3 lg:bottom-3 z-0 ${
                           !prevInRowHasSameTrip && !nextInRowHasSameTrip
-                            ? 'inset-x-1 sm:inset-x-1.5 rounded-full'
+                            ? 'inset-x-1.5 sm:inset-x-2 md:inset-x-2.5 rounded-full'
                             : !prevInRowHasSameTrip && nextInRowHasSameTrip
-                              ? 'left-1 sm:left-1.5 right-0 rounded-l-full'
+                              ? 'left-1.5 sm:left-2 md:left-2.5 right-0 rounded-l-full'
                               : prevInRowHasSameTrip && !nextInRowHasSameTrip
-                                ? 'left-0 right-1 sm:right-1.5 rounded-r-full'
+                                ? 'left-0 right-1.5 sm:right-2 md:right-2.5 rounded-r-full'
                                 : 'left-0 right-0 rounded-none'
                         } ${isPlan ? 'bg-amber-500' : 'bg-[#FF4500] dark:bg-[#FF4500]'}`}
                       />
@@ -1752,10 +1752,10 @@ export function CalendarHubPage({
             </div>
           </div>
         ) : (
-          /* ──────────────── YEAR VIEW (3-Column, 4-Row Grid) ──────────────── */
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+          /* ──────────────── YEAR VIEW (4-Column Desktop / 2-Column Mobile Swiss Poster Grid) ──────────────── */
+          <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 mt-5 sm:mt-6">
             {/* Year View Minimal Header (불필요한 설명 제거) */}
-            <div className="flex items-center justify-between pb-3 text-xs font-mono text-black/60 dark:text-white/60 border-b border-black/10 dark:border-white/10 mb-6">
+            <div className="flex items-center justify-between pb-2.5 sm:pb-3 text-xs font-mono text-black/60 dark:text-white/60 border-b border-black/10 dark:border-white/10 mb-4 sm:mb-6">
               <span className="font-bold text-black/40 dark:text-white/40 tracking-wider uppercase">
                 ANNUAL CALENDAR
               </span>
@@ -1764,13 +1764,13 @@ export function CalendarHubPage({
               </span>
             </div>
 
-            {/* Year Grid: Mobile 2-Column (grid-cols-2), Desktop 3-Column (md:grid-cols-3) */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-4 md:gap-6">
+            {/* Harmonized Responsive Grid: Mobile 2-Col, Tablet 3-Col, Desktop 4-Col (3x4 = 12M) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
               {yearMonthsData.map((m) => (
                 <div
                   key={m.monthIdx}
                   id={`year-month-${m.monthIdx}`}
-                  className="bg-transparent p-1.5 sm:p-2.5 flex flex-col transition-all group"
+                  className="bg-transparent p-2 sm:p-2.5 flex flex-col transition-all group"
                 >
                   {/* Month Card Header */}
                   <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-black/10 dark:border-white/10">
@@ -1783,11 +1783,11 @@ export function CalendarHubPage({
                       className="text-left cursor-pointer group"
                       title={`${m.monthTab.full} 월별 보기로 확대 이동`}
                     >
-                      <div className="flex items-baseline gap-1 sm:gap-2 text-black dark:text-white group-hover:text-red-600 transition-colors">
-                        <span className="text-sm sm:text-base md:text-xl font-black font-mono tracking-tight">
+                      <div className="flex items-baseline gap-1 sm:gap-1.5 text-black dark:text-white group-hover:text-red-600 transition-colors">
+                        <span className="text-sm sm:text-base md:text-lg font-black font-mono tracking-tight">
                           {m.monthTab.num < 10 ? `0${m.monthTab.num}` : m.monthTab.num}
                         </span>
-                        <span className="text-[10px] sm:text-xs md:text-sm font-semibold font-['Inter',sans-serif] tracking-wider uppercase opacity-75">
+                        <span className="text-[10px] sm:text-xs font-semibold font-['Inter',sans-serif] tracking-wider uppercase opacity-75">
                           {m.monthTab.short}
                         </span>
                       </div>
@@ -1795,12 +1795,12 @@ export function CalendarHubPage({
                     {/* Separated & High-Contrast Trip/Event Badges with Hyphen (3-D, 1-D 가독성 개선) */}
                     <div className="flex items-center gap-1 sm:gap-1.5">
                       {m.totalTripDays > 0 && (
-                        <span className="text-[8.5px] sm:text-[9.5px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-red-600 text-white tracking-tight shadow-2xs">
+                        <span className="text-[8px] sm:text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-red-600 text-white tracking-tight shadow-2xs">
                           TRIP {m.totalTripDays}-D
                         </span>
                       )}
                       {m.totalEventDays > 0 && (
-                        <span className="text-[8.5px] sm:text-[9.5px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70 border border-black/10 dark:border-white/15 tracking-tight">
+                        <span className="text-[8px] sm:text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70 border border-black/10 dark:border-white/15 tracking-tight">
                           EVENT {m.totalEventDays}-D
                         </span>
                       )}
@@ -1808,7 +1808,7 @@ export function CalendarHubPage({
                   </div>
 
                   {/* Mini Weekday Headers (M T W T F S S) */}
-                  <div className="grid grid-cols-7 text-center text-[9.5px] sm:text-[10.5px] font-mono font-bold mb-1 select-none">
+                  <div className="grid grid-cols-7 text-center text-[9px] sm:text-[10px] font-mono font-bold mb-1 select-none">
                     {WEEKDAYS.map((wd, wIdx) => (
                       <div
                         key={wd}
@@ -1819,18 +1819,18 @@ export function CalendarHubPage({
                     ))}
                   </div>
 
-                  {/* Mini Days Grid - Concept B Circular Button Layout */}
-                  <div className="grid grid-cols-7 gap-y-0.5 sm:gap-y-1 text-center font-mono select-none">
+                  {/* Mini Days Grid - Concept B Circular Button Layout with Balanced Sizing */}
+                  <div className="grid grid-cols-7 gap-y-0.5 text-center font-mono select-none">
                     {m.days.map((day, dIdx) => {
                       if (!day.isCurrentMonth) {
-                        return <div key={`empty-${m.monthIdx}-${dIdx}`} className="w-full aspect-square max-w-[28px] max-h-[28px] sm:max-w-[32px] sm:max-h-[32px] mx-auto" />;
+                        return <div key={`empty-${m.monthIdx}-${dIdx}`} className="w-full aspect-square max-w-[26px] max-h-[26px] sm:max-w-[28px] sm:max-h-[28px] mx-auto" />;
                       }
 
                       const isSun = day.dayOfWeek === 6;
                       const isSat = day.dayOfWeek === 5;
 
                       // Circular badge styling based on Concept B
-                      let circleClasses = 'w-6 h-6 sm:w-7 sm:h-7 rounded-full aspect-square flex items-center justify-center shrink-0 text-[10px] sm:text-xs font-bold transition-all';
+                      let circleClasses = 'w-6 h-6 sm:w-6.5 sm:h-6.5 rounded-full aspect-square flex items-center justify-center shrink-0 text-[10px] sm:text-[11px] font-bold transition-all';
                       let textClasses = '';
 
                       if (day.isToday) {
@@ -1860,7 +1860,7 @@ export function CalendarHubPage({
                       return (
                         <div
                           key={day.dateStr}
-                          className="w-full aspect-square max-w-[28px] max-h-[28px] sm:max-w-[32px] sm:max-h-[32px] mx-auto flex items-center justify-center relative"
+                          className="w-full aspect-square max-w-[26px] max-h-[26px] sm:max-w-[28px] sm:max-h-[28px] mx-auto flex items-center justify-center relative"
                         >
                           <button
                             type="button"

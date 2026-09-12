@@ -337,6 +337,50 @@ function App() {
     return () => cancelPrefetch();
   }, []);
 
+  // Background Tab Recovery Guard: Eliminates blank/white screen when returning to an idle browser tab
+  useEffect(() => {
+    const handleTabReentry = () => {
+      if (document.visibilityState === 'visible') {
+        // 1. Clear any pending animation or navigation locks
+        setIsNavigating(false);
+        setFlightTransition({ isActive: false, targetTripId: null });
+
+        // 2. Ensure currentView is valid; fallback to home if corrupted or empty
+        setCurrentView(prev => {
+          const validViews = ['home', 'archive', 'magazine', 'calendar', 'map', 'manage', 'detail'];
+          return validViews.includes(prev) ? prev : 'home';
+        });
+
+        // 3. Resync Auth state if needed
+        if (auth.currentUser) {
+          setIsLoggedIn(true);
+        }
+
+        // 4. Fallback hydration from localStorage if memory was trimmed during sleep
+        try {
+          const cachedTrips = localStorage.getItem('cached_trips');
+          if (cachedTrips) {
+            setTrips(prev => (prev.length === 0 ? applyJourneyOrder(JSON.parse(cachedTrips)) : prev));
+          }
+          const cachedPlans = localStorage.getItem('cached_plans');
+          if (cachedPlans) {
+            setPlans(prev => (prev.length === 0 ? applyJourneyOrder(JSON.parse(cachedPlans)) : prev));
+          }
+        } catch (_) {}
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleTabReentry);
+    window.addEventListener('pageshow', handleTabReentry);
+    window.addEventListener('focus', handleTabReentry);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleTabReentry);
+      window.removeEventListener('pageshow', handleTabReentry);
+      window.removeEventListener('focus', handleTabReentry);
+    };
+  }, []);
+
   const handleCloseSaveCompleteModal = () => {
     setShowSaveCompleteModal(false);
     if (postSaveNavTimerRef.current) {
