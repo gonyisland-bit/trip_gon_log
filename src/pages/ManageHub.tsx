@@ -2943,9 +2943,9 @@ export function ManageHubPage({
   return (
     <main className="min-h-screen w-full bg-[#FAF9F6] dark:bg-[#141414] text-black dark:text-white flex flex-col font-sans select-none animate-in fade-in duration-300">
       
-      {/* 1. Header Toolbar with Swiss Minimal Mode Switcher & Unified SAVE ALL CHANGES Action */}
-      <div className="border-b border-black/15 dark:border-white/15 px-4 sm:px-8 py-2.5 bg-white dark:bg-[#111111] flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30">
-        <div className="flex items-center gap-3">
+      {/* 1. Header Toolbar with Swiss Minimal Mode Switcher */}
+      <div className="border-b border-black/15 dark:border-white/15 px-3 sm:px-8 py-2.5 bg-white dark:bg-[#111111] flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-4 sticky top-0 z-30">
+        <div className="flex items-center gap-2.5 shrink-0">
           <button
             onClick={() => {
               executeWithGuard(() => navigateSafely(getReturnView()));
@@ -2965,66 +2965,41 @@ export function ManageHubPage({
           </div>
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* Mode Switcher: HOME / TRIP / MAGAZINE / MAP / TRASH / CLEANUP */}
-          <div className="flex items-center border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 p-0.5 rounded-none overflow-x-auto">
-            {(['HOME', 'ARCHIVE', 'MAGAZINE', 'MAP', 'TRASH', 'CLEANUP'] as const).map(mode => (
-              <button
-                key={mode}
-                onClick={() => {
-                  if (activeMode === mode) return;
-                  executeWithGuard(() => {
-                    setActiveMode(mode);
-                    if (mode === 'CLEANUP' && !diagReport && !isScanning) {
-                      handleScanCleanup();
-                    }
-                  });
-                }}
-                className={`px-3 sm:px-4 py-1.5 text-xs font-black uppercase tracking-wider font-sans transition-colors cursor-pointer whitespace-nowrap ${
-                  activeMode === mode
-                    ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
-                    : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-                }`}
-              >
-                {mode === 'ARCHIVE' ? 'TRIP' : (mode === 'CLEANUP' ? 'OPTIMIZE' : mode)}
-                {mode === 'TRASH' && (trashedJourneys.length + trashedSections.length) > 0 && (
-                  <span className="ml-1 text-[9px] font-mono px-1 bg-red-600 text-white font-bold">
-                    {trashedJourneys.length + trashedSections.length}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-
-          {/* Top Permanent Unified SAVE ALL Button */}
-          <button
-            type="button"
-            onClick={() => handleSaveAllChanges(true)}
-            disabled={isSavingAll}
-            className={`px-4 py-1.5 text-xs font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-colors border ${
-              saveAllSuccess
-                ? '!bg-emerald-600 !text-white !border-emerald-600'
-                : isAnyDirty
-                  ? 'bg-red-600 text-white border-red-600 hover:bg-red-700'
-                  : 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white hover:opacity-85'
-            }`}
-            title="모든 탭과 섹션의 변경사항을 즉시 통합 저장합니다."
-          >
-            {isSavingAll ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
-            ) : saveAllSuccess ? (
-              <Check className="w-3.5 h-3.5 shrink-0" />
-            ) : (
-              <Save className="w-3.5 h-3.5 shrink-0" />
-            )}
-            <span className="whitespace-nowrap">
-              {saveAllSuccess
-                ? 'ALL SAVED!'
-                : isSavingAll
-                  ? 'SAVING...'
-                  : 'SAVE ALL'}
-            </span>
-          </button>
+        {/* Mode Switcher: home / trip / magazine / map / trash / opt */}
+        <div className="w-full md:w-auto max-w-full overflow-x-auto scrollbar-none flex items-center border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 p-0.5 rounded-none shrink-0">
+          {([
+            { id: 'HOME', label: 'home' },
+            { id: 'ARCHIVE', label: 'trip' },
+            { id: 'MAGAZINE', label: 'magazine' },
+            { id: 'MAP', label: 'map' },
+            { id: 'TRASH', label: 'trash' },
+            { id: 'CLEANUP', label: 'opt' },
+          ] as const).map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                if (activeMode === tab.id) return;
+                executeWithGuard(() => {
+                  setActiveMode(tab.id);
+                  if (tab.id === 'CLEANUP' && !diagReport && !isScanning) {
+                    handleScanCleanup();
+                  }
+                });
+              }}
+              className={`flex-1 md:flex-none px-2.5 sm:px-3.5 py-1.5 text-xs font-mono font-bold lowercase tracking-tight transition-colors cursor-pointer whitespace-nowrap text-center ${
+                activeMode === tab.id
+                  ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                  : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+              }`}
+            >
+              {tab.label}
+              {tab.id === 'TRASH' && (trashedJourneys.length + trashedSections.length) > 0 && (
+                <span className="ml-1 text-[9px] font-mono px-1 bg-red-600 text-white font-bold">
+                  {trashedJourneys.length + trashedSections.length}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -3598,44 +3573,18 @@ export function ManageHubPage({
                     </div>
                   </div>
 
-                  {/* 2. Display Limit */}
-                  <div className="flex items-center justify-between py-2 border-t border-black/10 dark:border-white/10">
-                    <div className="flex flex-col">
-                      <span className="text-xs font-mono font-bold uppercase text-black/80 dark:text-white/80">
-                        DISPLAY ITEMS LIMIT (노출 카드 수)
-                      </span>
-                      <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
-                        3장 단위로 슬라이드 스프레드가 구성됩니다.
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {[3, 6, 9, 12].map(limit => (
-                        <button
-                          key={limit}
-                          type="button"
-                          onClick={() => setHomeMagLimit(limit)}
-                          className={`px-3 py-1 text-xs font-mono font-bold border transition-colors cursor-pointer ${
-                            homeMagLimit === limit
-                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                              : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-black'
-                          }`}
-                        >
-                          {limit} ITEMS
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 3. Preview of Featured Section Cards */}
+                  {/* 2. Preview of Featured Section Cards (이미지 보유 카드 최대 3개 중심 미리보기) */}
                   {(() => {
                     const activeSec = sectionsList.find(s => s.id === homeMagSectionId) || sectionsList[0];
-                    const itemsToPreview = (activeSec?.items || []).slice(0, homeMagLimit);
+                    // 이미지가 있는 카드만 필터링하여 최대 3개 미리보기 노출 (에디토리얼 텍스트 노트 등 섬네일 깨짐 배제)
+                    const imageItems = (activeSec?.items || []).filter(item => Boolean(item.img && item.img.trim() !== ''));
+                    const itemsToPreview = imageItems.slice(0, 3);
 
                     return (
-                      <div className="flex flex-col gap-2 pt-2 border-t border-black/10 dark:border-white/10">
+                      <div className="flex flex-col gap-2 pt-3 border-t border-black/10 dark:border-white/10">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
-                            HOME PREVIEW ({itemsToPreview.length} / {activeSec?.items?.length || 0})
+                            HOME PREVIEW ({itemsToPreview.length} / {imageItems.length})
                           </span>
                           <button
                             type="button"
@@ -3654,7 +3603,7 @@ export function ManageHubPage({
                             선택된 매거진 섹션에 등록된 사진이 없습니다. 매거진 허브 편집기에서 사진을 추가해주세요.
                           </div>
                         ) : (
-                          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 p-2 border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616]">
+                          <div className="grid grid-cols-3 max-w-xl gap-2.5 p-2.5 border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616]">
                             {itemsToPreview.map((item, idx) => (
                               <div
                                 key={item.id || idx}

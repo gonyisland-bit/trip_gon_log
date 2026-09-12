@@ -760,6 +760,7 @@ export function CalendarHubPage({
         holidayName?: string;
         dayOfWeek: number;
         hasTrip: boolean;
+        tripId?: string;
         isTripStart?: boolean;
         isTripEnd?: boolean;
         isTripMiddle?: boolean;
@@ -805,6 +806,7 @@ export function CalendarHubPage({
         let isTripStart = false;
         let isTripEnd = false;
         let isTripMiddle = false;
+        let primaryTripId: string | undefined = undefined;
 
         if (hasTrip) {
           // 기간이 가장 긴 여행 우선 선택
@@ -814,6 +816,7 @@ export function CalendarHubPage({
             return lenB - lenA;
           })[0];
 
+          primaryTripId = String(primaryTrip.journey.id);
           isTripStart = primaryTrip.range.start === dateStr;
           isTripEnd = primaryTrip.range.end === dateStr;
           isTripMiddle = !isTripStart && !isTripEnd;
@@ -856,6 +859,7 @@ export function CalendarHubPage({
           holidayName: holiday?.name,
           dayOfWeek,
           hasTrip,
+          tripId: primaryTripId,
           isTripStart,
           isTripEnd,
           isTripMiddle,
@@ -1991,7 +1995,7 @@ export function CalendarHubPage({
                   <div className="grid grid-cols-7 gap-y-0.5 sm:gap-y-1 text-center font-mono select-none">
                     {m.days.map((day, dIdx) => {
                       if (!day.isCurrentMonth) {
-                        return <div key={`empty-${m.monthIdx}-${dIdx}`} className="w-full aspect-square max-w-[28px] max-h-[28px] sm:max-w-[34px] sm:max-h-[34px] mx-auto" />;
+                        return <div key={`empty-${m.monthIdx}-${dIdx}`} className="w-full h-7 sm:h-8 md:h-9" />;
                       }
 
                       const col = dIdx % 7;
@@ -1999,8 +2003,8 @@ export function CalendarHubPage({
                       const isSat = day.dayOfWeek === 5;
 
                       // 이전/다음 날짜와 동일한 여정 연속성 판별 (주 단위 가로 알약 리본 생성)
-                      const prevInRowHasTrip = day.hasTrip && col > 0 && m.days[dIdx - 1]?.hasTrip;
-                      const nextInRowHasTrip = day.hasTrip && col < 6 && m.days[dIdx + 1]?.hasTrip;
+                      const prevInRowHasTrip = day.hasTrip && col > 0 && m.days[dIdx - 1]?.hasTrip && (!day.tripId || !m.days[dIdx - 1]?.tripId || day.tripId === m.days[dIdx - 1]?.tripId);
+                      const nextInRowHasTrip = day.hasTrip && col < 6 && m.days[dIdx + 1]?.hasTrip && (!day.tripId || !m.days[dIdx + 1]?.tripId || day.tripId === m.days[dIdx + 1]?.tripId);
 
                       // 모바일 2열에서도 절대 겹치지 않는 스케일 (w-6 h-6 sm:w-7 sm:h-7)
                       let circleClasses = 'w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full aspect-square flex items-center justify-center shrink-0 text-[10px] sm:text-xs md:text-sm font-bold transition-all relative z-10';
@@ -2025,12 +2029,12 @@ export function CalendarHubPage({
                       return (
                         <div
                           key={day.dateStr}
-                          className="w-full aspect-square max-w-[28px] max-h-[28px] sm:max-w-[34px] sm:max-h-[34px] mx-auto flex items-center justify-center relative"
+                          className="relative flex items-center justify-center h-7 sm:h-8 md:h-9 w-full"
                         >
-                          {/* Continuous Trip Pill Ribbon (월달력과 동일한 이어진 알약 느낌) */}
+                          {/* Continuous Trip Pill Ribbon (인접 셀 간 틈새 없이 완벽 결합) */}
                           {day.hasTrip && (
                             <div
-                              className={`absolute top-0.5 bottom-0.5 sm:top-1 sm:bottom-1 z-0 ${
+                              className={`absolute top-0.5 bottom-0.5 sm:top-1 sm:bottom-1 md:top-1 md:bottom-1 z-0 ${
                                 !prevInRowHasTrip && !nextInRowHasTrip
                                   ? 'inset-x-0.5 sm:inset-x-1 rounded-full'
                                   : !prevInRowHasTrip && nextInRowHasTrip
