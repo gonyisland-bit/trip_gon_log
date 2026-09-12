@@ -149,29 +149,16 @@ export function CalendarHubPage({
   const [isMonthDropdownOpen, setIsMonthDropdownOpen] = useState<boolean>(false);
   const yearDropdownRef = useRef<HTMLDivElement>(null);
   const monthDropdownRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
 
-  // 드롭다운 외부 클릭 감지하여 닫기
-  useEffect(() => {
-    const handleOutsideClick = (e: MouseEvent) => {
-      if (yearDropdownRef.current && !yearDropdownRef.current.contains(e.target as Node)) {
-        setIsYearDropdownOpen(false);
-      }
-      if (monthDropdownRef.current && !monthDropdownRef.current.contains(e.target as Node)) {
-        setIsMonthDropdownOpen(false);
-      }
-    };
-    if (isYearDropdownOpen || isMonthDropdownOpen) {
-      document.addEventListener('mousedown', handleOutsideClick);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleOutsideClick);
-    };
-  }, [isYearDropdownOpen, isMonthDropdownOpen]);
+  // 년달력에서 1차 선택된 날짜 (2차 클릭 시 해당 월달력으로 진입)
+  const [selectedYearDate, setSelectedYearDate] = useState<string | null>(null);
 
-  // 일자 마우스 오버 툴팁 상태
+  // 일자 마우스 오버 및 모바일 탭 툴팁 상태
   const [hoveredTooltip, setHoveredTooltip] = useState<{
     x: number;
     y: number;
+    placement?: 'top' | 'bottom';
     dateStr: string;
     holidayName?: string;
     items: {
@@ -182,6 +169,36 @@ export function CalendarHubPage({
       days?: number;
     }[];
   } | null>(null);
+
+  // 드롭다운 및 모바일 툴팁 외부 클릭/터치 감지하여 닫기
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      if (yearDropdownRef.current && !yearDropdownRef.current.contains(target)) {
+        setIsYearDropdownOpen(false);
+      }
+      if (monthDropdownRef.current && !monthDropdownRef.current.contains(target)) {
+        setIsMonthDropdownOpen(false);
+      }
+      if (hoveredTooltip) {
+        // 년달력 날짜 버튼 클릭이 아닌 다른 곳을 누르면 툴팁 및 년달력 선택 해제
+        const clickedDayBtn = (target as HTMLElement)?.closest?.('[data-calendar-year-cell]');
+        const clickedTooltip = tooltipRef.current?.contains(target);
+        if (!clickedDayBtn && !clickedTooltip) {
+          setHoveredTooltip(null);
+          setSelectedYearDate(null);
+        }
+      }
+    };
+    if (isYearDropdownOpen || isMonthDropdownOpen || hoveredTooltip) {
+      document.addEventListener('mousedown', handleOutsideClick);
+      document.addEventListener('touchstart', handleOutsideClick, { passive: true });
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
+    };
+  }, [isYearDropdownOpen, isMonthDropdownOpen, hoveredTooltip]);
 
   // 뷰 모드: 월별 보기 ('month') vs 연간 보기 ('year')
   const [viewMode, setViewMode] = useState<'month' | 'year'>('month');
@@ -908,6 +925,7 @@ export function CalendarHubPage({
   // 날짜 셀 클릭 핸들러 (편집 모드 시 범위 선택 지원, 일반 모드 시 해당 날짜 일정 필터링)
   const handleCellClick = (cell: DayCellData, e: React.MouseEvent) => {
     e.stopPropagation();
+    setHoveredTooltip(null);
     if (isEditMode) {
       if (e.shiftKey && dragAnchorDate) {
         const newRange = normalizeRange(dragAnchorDate, cell.dateStr);
@@ -929,6 +947,47 @@ export function CalendarHubPage({
     }
   };
 
+  // 년달력 날짜 셀 클릭 핸들러 (1차 클릭: 날짜 선택 강조 및 모달 표시, 2차 클릭: 월달력으로 진입)
+  const handleYearDayClick = (
+    e: React.MouseEvent,
+    day: { dateStr: string; holidayName?: string },
+    monthIdx: number
+  ) => {
+    e.stopPropagation();
+
+    // 2차 클릭: 이미 선택 활성화된 날짜를 한 번 더 누르면 해당 월달력으로 진입
+    if (selectedYearDate === day.dateStr) {
+      setHoveredTooltip(null);
+      setSelectedYearDate(null);
+      setCurrentMonth(monthIdx);
+      setSelectedRange({ start: day.dateStr, end: day.dateStr });
+      setDragAnchorDate(day.dateStr);
+      toggleViewMode('month');
+      return;
+    }
+
+    // 1차 클릭: 년달력에서 해당 날짜 선택 활성화 및 일정 모달 표시
+    setSelectedYearDate(day.dateStr);
+    setSelectedRange({ start: day.dateStr, end: day.dateStr });
+    setDragAnchorDate(day.dateStr);
+
+    const matchedTrips = parsedJourneys.filter(pj => day.dateStr >= pj.range.start && day.dateStr <= pj.range.end);
+    const matchedEvents = customEvents.filter(evt => day.dateStr >= evt.startDate && day.dateStr <= (evt.endDate || evt.startDate));
+    const hasDetails = matchedTrips.length > 0 || matchedEvents.length > 0 || Boolean(day.holidayName);
+
+    if (hasDetails) {
+      handleDayHover(
+        e,
+        day.dateStr,
+        day.holidayName,
+        matchedTrips.map(mt => ({ title: mt.journey.title, isPlan: mt.isPlan, totalDays: getDaysDifference(mt.range.start, mt.range.end) })),
+        matchedEvents.map(me => ({ title: me.title, category: me.category, totalDays: getDaysDifference(me.startDate, me.endDate || me.startDate) }))
+      );
+    } else {
+      setHoveredTooltip(null);
+    }
+  };
+
   // 마우스 드래그 시작 (편집 모드 활성화 시에만 동작)
   const handleCellMouseDown = (dateStr: string, e: React.MouseEvent) => {
     if (e.button !== 0 || e.shiftKey) return;
@@ -945,7 +1004,7 @@ export function CalendarHubPage({
     setSelectedRange(normalizeRange(dragAnchorDate, dateStr));
   };
 
-  // 날짜 마우스 호버 시 툴팁 표시
+  // 날짜 마우스 호버 및 모바일 탭 시 툴팁 표시 (뷰포트 클램핑 및 상하 자동 반전)
   const handleDayHover = (
     e: React.MouseEvent,
     dateStr: string,
@@ -990,9 +1049,15 @@ export function CalendarHubPage({
       });
     });
 
+    // 상단 뷰포트 여백이 130px 미만이면 아래쪽에 렌더링하여 화면 상단 밖 잘림 방지
+    const placement: 'top' | 'bottom' = rect.top < 130 ? 'bottom' : 'top';
+    const clampedX = Math.max(100, Math.min(window.innerWidth - 100, rect.left + rect.width / 2));
+    const targetY = placement === 'bottom' ? rect.bottom + 8 : rect.top - 8;
+
     setHoveredTooltip({
-      x: rect.left + rect.width / 2,
-      y: rect.top,
+      x: clampedX,
+      y: targetY,
+      placement,
       dateStr,
       holidayName,
       items: tooltipItems
@@ -2010,6 +2075,12 @@ export function CalendarHubPage({
                       let circleClasses = 'w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full aspect-square flex items-center justify-center shrink-0 text-[10px] sm:text-xs md:text-sm font-bold transition-all relative z-10';
                       let textClasses = 'leading-none';
 
+                      const isYearSelected = selectedYearDate === day.dateStr;
+
+                      if (isYearSelected) {
+                        circleClasses += ' ring-2 ring-red-600 ring-offset-1 dark:ring-offset-black scale-105 z-20 font-black shadow-md';
+                      }
+
                       if (day.isToday) {
                         circleClasses += ' bg-black text-white dark:bg-white dark:text-black font-black shadow-xs';
                       } else if (day.hasTrip) {
@@ -2048,12 +2119,8 @@ export function CalendarHubPage({
 
                           <button
                             type="button"
-                            onClick={() => {
-                              setCurrentMonth(m.monthIdx);
-                              setSelectedRange({ start: day.dateStr, end: day.dateStr });
-                              setDragAnchorDate(day.dateStr);
-                              toggleViewMode('month');
-                            }}
+                            data-calendar-year-cell={day.dateStr}
+                            onClick={(e) => handleYearDayClick(e, day, m.monthIdx)}
                             onMouseEnter={(e) => {
                               const matchedTrips = parsedJourneys.filter(pj => day.dateStr >= pj.range.start && day.dateStr <= pj.range.end);
                               const matchedEvents = customEvents.filter(evt => day.dateStr >= evt.startDate && day.dateStr <= (evt.endDate || evt.startDate));
@@ -2065,7 +2132,11 @@ export function CalendarHubPage({
                                 matchedEvents.map(me => ({ title: me.title, category: me.category, totalDays: getDaysDifference(me.startDate, me.endDate || me.startDate) }))
                               );
                             }}
-                            onMouseLeave={handleDayLeave}
+                            onMouseLeave={() => {
+                              if (!selectedYearDate) {
+                                handleDayLeave();
+                              }
+                            }}
                             className={`cursor-pointer active:scale-95 ${circleClasses}`}
                             title={day.holidayName ? `${day.dateStr} (${day.holidayName})` : day.tripTitles.length > 0 ? `${day.dateStr} · ${day.tripTitles.join(', ')}` : day.dateStr}
                           >
@@ -2492,22 +2563,39 @@ export function CalendarHubPage({
       )}
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* Date Hover Information Tooltip (Swiss Minimal Floating Card)  */}
+      {/* Date Hover / Tap Information Modal Tooltip (Swiss Minimal)   */}
       {/* ───────────────────────────────────────────────────────────── */}
       {hoveredTooltip && (
         <div
-          className="fixed z-50 pointer-events-none -translate-x-1/2 -translate-y-full mb-3 px-3 py-2 rounded-md bg-black/95 dark:bg-zinc-900/95 text-white border border-white/15 shadow-2xl backdrop-blur-md min-w-[160px] max-w-xs animate-in fade-in zoom-in-95 duration-150 select-none"
-          style={{ left: hoveredTooltip.x, top: hoveredTooltip.y - 8 }}
+          ref={tooltipRef}
+          className={`fixed z-50 pointer-events-auto -translate-x-1/2 px-3.5 py-2.5 rounded-lg bg-black/95 dark:bg-zinc-900/95 text-white border border-white/20 shadow-2xl backdrop-blur-md min-w-[180px] max-w-xs animate-in fade-in zoom-in-95 duration-150 select-none ${
+            hoveredTooltip.placement === 'bottom' ? 'translate-y-0 mt-2' : '-translate-y-full mb-2'
+          }`}
+          style={{ left: hoveredTooltip.x, top: hoveredTooltip.y }}
         >
           <div className="flex items-center justify-between gap-2 pb-1.5 mb-1.5 border-b border-white/15 text-[10px] font-mono">
-            <span className="font-bold text-red-500 tracking-wider">
+            <span className="font-black text-red-500 tracking-wider">
               {hoveredTooltip.dateStr.replace(/-/g, '.')}
             </span>
-            {hoveredTooltip.holidayName && (
-              <span className="text-red-400 font-bold truncate">
-                {hoveredTooltip.holidayName}
-              </span>
-            )}
+            <div className="flex items-center gap-1.5">
+              {hoveredTooltip.holidayName && (
+                <span className="text-red-400 font-bold truncate max-w-[100px]">
+                  {hoveredTooltip.holidayName}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setHoveredTooltip(null);
+                  setSelectedYearDate(null);
+                }}
+                className="text-white/40 hover:text-white transition-colors p-0.5 cursor-pointer"
+                title="닫기"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
           </div>
           <div className="flex flex-col gap-1.5 text-xs">
             {hoveredTooltip.items.map((it, idx) => (
@@ -2529,6 +2617,28 @@ export function CalendarHubPage({
               </div>
             ))}
           </div>
+
+          {/* 년달력 모드일 때: 월달력으로 이동 링크/버튼 */}
+          {viewMode === 'year' && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                const parts = hoveredTooltip.dateStr.split('-');
+                const mIdx = parseInt(parts[1], 10) - 1;
+                setHoveredTooltip(null);
+                setSelectedYearDate(null);
+                if (!isNaN(mIdx)) setCurrentMonth(mIdx);
+                setSelectedRange({ start: hoveredTooltip.dateStr, end: hoveredTooltip.dateStr });
+                setDragAnchorDate(hoveredTooltip.dateStr);
+                toggleViewMode('month');
+              }}
+              className="mt-2.5 pt-1.5 border-t border-white/15 text-[10px] font-mono text-white/75 hover:text-white flex items-center justify-between cursor-pointer w-full group transition-colors"
+            >
+              <span>월달력 보기 (재클릭 시 진입)</span>
+              <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5 text-red-400" />
+            </button>
+          )}
         </div>
       )}
     </div>
