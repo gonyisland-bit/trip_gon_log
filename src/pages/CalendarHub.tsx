@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
+  ChevronLeft, ChevronRight, ChevronDown, Calendar as CalendarIcon, 
   MapPin, Clock, ArrowRight, Plane, Sparkles, Compass, 
   CheckCircle2, ArrowUpRight, Plus, Eye, Briefcase, Heart, 
   User, AlertCircle, Trash2, Edit3, X, Tag, FileText, Check,
@@ -143,6 +143,30 @@ export function CalendarHubPage({
 
   const [isEditingMonth, setIsEditingMonth] = useState<boolean>(false);
   const [monthInputVal, setMonthInputVal] = useState<string>(String(initialFocus.month + 1));
+
+  // 연도 / 월 스크롤형 드롭다운 메뉴 상태 및 Ref
+  const [isYearDropdownOpen, setIsYearDropdownOpen] = useState<boolean>(false);
+  const [isMonthDropdownOpen, setIsMonthDropdownOpen] = useState<boolean>(false);
+  const yearDropdownRef = useRef<HTMLDivElement>(null);
+  const monthDropdownRef = useRef<HTMLDivElement>(null);
+
+  // 드롭다운 외부 클릭 감지하여 닫기
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (yearDropdownRef.current && !yearDropdownRef.current.contains(e.target as Node)) {
+        setIsYearDropdownOpen(false);
+      }
+      if (monthDropdownRef.current && !monthDropdownRef.current.contains(e.target as Node)) {
+        setIsMonthDropdownOpen(false);
+      }
+    };
+    if (isYearDropdownOpen || isMonthDropdownOpen) {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [isYearDropdownOpen, isMonthDropdownOpen]);
 
   // 뷰 모드: 월별 보기 ('month') vs 연간 보기 ('year')
   const [viewMode, setViewMode] = useState<'month' | 'year'>('month');
@@ -1131,155 +1155,113 @@ export function CalendarHubPage({
               </span>
             </div>
 
-            <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
-              {/* 1. Year Display & Direct Edit + Navigation */}
-              <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-3 sm:gap-6 flex-nowrap whitespace-nowrap select-none">
+              {/* 1. Year Display & Scrollable Dropdown Selector */}
+              <div className="relative" ref={yearDropdownRef}>
                 <div className="flex flex-col">
                   <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 leading-tight">
                     YEAR
                   </span>
-                  {isEditingYear ? (
-                    <form
-                      onSubmit={(e) => { e.preventDefault(); handleYearSubmit(); }}
-                      className="inline-flex items-center h-9 sm:h-14 lg:h-16"
-                    >
-                      <input
-                        ref={yearInputRef}
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={yearInputVal}
-                        onChange={(e) => setYearInputVal(e.target.value)}
-                        onBlur={handleYearSubmit}
-                        onKeyDown={(e) => {
-                          if (e.key === 'ArrowUp') {
-                            e.preventDefault();
-                            setCurrentYear(prev => prev + 1);
-                          } else if (e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            setCurrentYear(prev => prev - 1);
-                          }
-                        }}
-                        className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter bg-transparent border-b-2 border-red-600 outline-none w-[4.5ch] h-full leading-none text-black dark:text-white p-0 m-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      />
-                    </form>
-                  ) : (
-                    <h1
-                      onClick={() => setIsEditingYear(true)}
-                      className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter cursor-pointer hover:opacity-80 transition-opacity flex items-baseline group leading-none h-9 sm:h-14 lg:h-16"
-                      title="클릭하여 연도 변경"
-                    >
-                      <span className="group-hover:underline decoration-red-600 decoration-2 underline-offset-4">{currentYear}</span>
-                    </h1>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsYearDropdownOpen(prev => !prev);
+                      setIsMonthDropdownOpen(false);
+                    }}
+                    className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1 leading-none h-9 sm:h-14 lg:h-16 group text-black dark:text-white"
+                    title="클릭하여 연도 선택"
+                  >
+                    <span className="group-hover:underline decoration-red-600 decoration-2 underline-offset-4">{currentYear}</span>
+                    <ChevronDown className={`w-4 h-4 sm:w-6 sm:h-6 text-black/30 dark:text-white/30 group-hover:text-red-600 transition-transform duration-200 ${isYearDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
+                  </button>
                 </div>
 
-                {/* Year Prev/Next Buttons (클릭하여 연도 활성화 상태일 때만 표시) */}
-                {isEditingYear && (
-                  <div className="flex flex-col gap-0.5 ml-0.5 animate-in fade-in zoom-in-95 duration-150">
-                    <button
-                      type="button"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => setCurrentYear(prev => prev + 1)}
-                      className="p-1 hover:bg-black/10 dark:hover:bg-white/15 rounded text-black/70 hover:text-black dark:text-white/70 dark:hover:text-white transition-colors cursor-pointer"
-                      title="다음 연도 (+1)"
-                    >
-                      <ChevronRight className="w-3.5 h-3.5 -rotate-90" />
-                    </button>
-                    <button
-                      type="button"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => setCurrentYear(prev => prev - 1)}
-                      className="p-1 hover:bg-black/10 dark:hover:bg-white/15 rounded text-black/70 hover:text-black dark:text-white/70 dark:hover:text-white transition-colors cursor-pointer"
-                      title="이전 연도 (-1)"
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5 -rotate-90" />
-                    </button>
+                {/* Scrollable Year Dropdown Popover */}
+                {isYearDropdownOpen && (
+                  <div className="absolute top-full left-0 mt-2 z-50 w-36 sm:w-44 max-h-64 overflow-y-auto rounded-md border border-black/15 dark:border-white/15 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md shadow-2xl py-1 text-sm font-mono animate-in fade-in zoom-in-95 duration-150">
+                    {Array.from({ length: 16 }, (_, i) => 2020 + i).map(year => {
+                      const isSelected = year === currentYear;
+                      return (
+                        <button
+                          key={year}
+                          type="button"
+                          onClick={() => {
+                            setCurrentYear(year);
+                            setIsYearDropdownOpen(false);
+                          }}
+                          className={`w-full px-3 py-2 text-left font-bold transition-colors flex items-center justify-between cursor-pointer ${
+                            isSelected
+                              ? 'bg-red-600 text-white font-black'
+                              : 'text-black/80 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/10'
+                          }`}
+                        >
+                          <span className="text-sm sm:text-base font-satoshi">{year}</span>
+                          {isSelected && <span className="text-[10px] uppercase font-mono tracking-wider">선택</span>}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
 
               {/* Swiss Minimal Divider */}
-              <span className="text-3xl sm:text-5xl font-light text-black/20 dark:text-white/20 select-none">/</span>
+              <span className="text-3xl sm:text-5xl font-light text-black/20 dark:text-white/20 select-none shrink-0">/</span>
 
-              {/* 2. Month Big Number & Direct Edit + Subtext */}
+              {/* 2. Month Big Number & Scrollable Dropdown Selector */}
               {viewMode === 'month' ? (
-                <div className="flex items-center gap-1.5">
+                <div className="relative" ref={monthDropdownRef}>
                   <div className="flex flex-col">
                     <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 leading-tight">
                       MONTH
                     </span>
-                    {isEditingMonth ? (
-                      <div className="flex items-baseline gap-2.5 h-9 sm:h-14 lg:h-16">
-                        <form
-                          onSubmit={(e) => { e.preventDefault(); handleMonthSubmit(); }}
-                          className="inline-flex items-center h-full"
-                        >
-                          <input
-                            ref={monthInputRef}
-                            type="text"
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            value={monthInputVal}
-                            onChange={(e) => setMonthInputVal(e.target.value)}
-                            onBlur={handleMonthSubmit}
-                            onKeyDown={(e) => {
-                              if (e.key === 'ArrowUp') {
-                                e.preventDefault();
-                                handleNextMonth();
-                              } else if (e.key === 'ArrowDown') {
-                                e.preventDefault();
-                                handlePrevMonth();
-                              }
-                            }}
-                            className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter bg-transparent border-b-2 border-red-600 outline-none w-[2.2ch] h-full leading-none text-black dark:text-white p-0 m-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          />
-                        </form>
-                        <div className="flex flex-col justify-end pb-0.5 sm:pb-1">
-                          <span className="text-base sm:text-lg md:text-xl font-black font-['Inter',sans-serif] tracking-wider uppercase text-red-600 dark:text-red-500 leading-none">
-                            {MONTH_NAMES[currentMonth]}
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div
-                        onClick={() => setIsEditingMonth(true)}
-                        className="flex items-baseline gap-2.5 cursor-pointer hover:opacity-80 transition-opacity group h-9 sm:h-14 lg:h-16"
-                        title="클릭하여 월 변경"
-                      >
-                        <span className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter leading-none text-black dark:text-white group-hover:underline decoration-red-600 decoration-2 underline-offset-4">
-                          {String(currentMonth + 1).padStart(2, '0')}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMonthDropdownOpen(prev => !prev);
+                        setIsYearDropdownOpen(false);
+                      }}
+                      className="flex items-baseline gap-2 sm:gap-2.5 cursor-pointer hover:opacity-80 transition-opacity group h-9 sm:h-14 lg:h-16 text-black dark:text-white"
+                      title="클릭하여 월 선택"
+                    >
+                      <span className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter leading-none group-hover:underline decoration-red-600 decoration-2 underline-offset-4">
+                        {String(currentMonth + 1).padStart(2, '0')}
+                      </span>
+                      <div className="flex items-center gap-1 justify-end pb-0.5 sm:pb-1">
+                        <span className="text-base sm:text-lg md:text-xl font-black font-['Inter',sans-serif] tracking-wider uppercase text-red-600 dark:text-red-500 leading-none">
+                          {MONTH_NAMES[currentMonth]}
                         </span>
-                        <div className="flex flex-col justify-end pb-0.5 sm:pb-1">
-                          <span className="text-base sm:text-lg md:text-xl font-black font-['Inter',sans-serif] tracking-wider uppercase text-red-600 dark:text-red-500 leading-none">
-                            {MONTH_NAMES[currentMonth]}
-                          </span>
-                        </div>
+                        <ChevronDown className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/30 dark:text-white/30 group-hover:text-red-600 transition-transform duration-200 ${isMonthDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
                       </div>
-                    )}
+                    </button>
                   </div>
 
-                  {/* Month Prev/Next Buttons (클릭하여 월 활성화 상태일 때만 표시) */}
-                  {isEditingMonth && (
-                    <div className="flex flex-col gap-0.5 ml-0.5 animate-in fade-in zoom-in-95 duration-150">
-                      <button
-                        type="button"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={handleNextMonth}
-                        className="p-1 hover:bg-black/10 dark:hover:bg-white/15 rounded text-black/70 hover:text-black dark:text-white/70 dark:hover:text-white transition-colors cursor-pointer"
-                        title="다음 달 (→)"
-                      >
-                        <ChevronRight className="w-3.5 h-3.5 -rotate-90" />
-                      </button>
-                      <button
-                        type="button"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={handlePrevMonth}
-                        className="p-1 hover:bg-black/10 dark:hover:bg-white/15 rounded text-black/70 hover:text-black dark:text-white/70 dark:hover:text-white transition-colors cursor-pointer"
-                        title="이전 달 (←)"
-                      >
-                        <ChevronLeft className="w-3.5 h-3.5 -rotate-90" />
-                      </button>
+                  {/* Scrollable Month Dropdown Popover */}
+                  {isMonthDropdownOpen && (
+                    <div className="absolute top-full left-0 mt-2 z-50 w-44 sm:w-52 max-h-72 overflow-y-auto rounded-md border border-black/15 dark:border-white/15 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md shadow-2xl py-1 text-sm animate-in fade-in zoom-in-95 duration-150">
+                      {MONTH_TABS.map((mTab, idx) => {
+                        const isSelected = idx === currentMonth;
+                        return (
+                          <button
+                            key={mTab.num}
+                            type="button"
+                            onClick={() => {
+                              setCurrentMonth(idx);
+                              setIsMonthDropdownOpen(false);
+                            }}
+                            className={`w-full px-3 py-2 text-left transition-colors flex items-center justify-between cursor-pointer ${
+                              isSelected
+                                ? 'bg-red-600 text-white font-black'
+                                : 'text-black/80 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/10'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-bold text-xs sm:text-sm">{String(mTab.num).padStart(2, '0')}</span>
+                              <span className="font-['Inter',sans-serif] font-black text-sm uppercase">{mTab.full}</span>
+                            </div>
+                            {isSelected && <span className="text-[10px] uppercase font-mono tracking-wider">선택</span>}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -1411,10 +1393,10 @@ export function CalendarHubPage({
                   }`}
                   title={`${mTab.full} (${mTab.num}월)`}
                 >
-                  <span className="text-xs sm:text-base md:text-lg font-black font-mono leading-none tracking-tight">
+                  <span className="text-sm sm:text-lg md:text-xl font-black font-['Inter',sans-serif] leading-none tracking-tight">
                     {mTab.num}
                   </span>
-                  <span className={`text-[8.5px] sm:text-[10px] md:text-[11px] font-bold tracking-tight uppercase leading-tight mt-0.5 font-['Inter',sans-serif] ${
+                  <span className={`text-[8px] sm:text-[9.5px] md:text-[10.5px] font-bold tracking-wider uppercase leading-tight mt-0.5 font-['Inter',sans-serif] ${
                     isActive ? 'text-white dark:text-black' : 'text-black/40 dark:text-white/40'
                   }`}>
                     {mTab.short}
@@ -1601,41 +1583,27 @@ export function CalendarHubPage({
             {/* Mockup-Style Unified 1-Line Agenda Feed (달력 하단 상시 일정 목록 및 선택 영역 색상화) */}
             <div className="mt-4 sm:mt-6 border-t border-black/15 dark:border-white/15 pt-4">
               <div className="flex items-center justify-between pb-3 px-1 text-xs font-mono text-black/60 dark:text-white/60">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold tracking-wider uppercase text-black/70 dark:text-white/70">
-                    {MONTH_TABS[currentMonth].full} SCHEDULES
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-bold tracking-wider uppercase text-black/80 dark:text-white/80 shrink-0">
+                    SCHEDULES
                   </span>
                   {selectedRange && (
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-red-600/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 font-bold">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-red-600/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 font-bold shrink-0 truncate">
                       {selectedRange.start === selectedRange.end
                         ? selectedRange.start.replace(/-/g, '.')
                         : `${selectedRange.start.replace(/-/g, '.')} ~ ${selectedRange.end.replace(/-/g, '.')}`}
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <button
                     type="button"
                     onClick={() => openNewEventModal(selectedRange?.start, selectedRange?.end)}
-                    className="px-2.5 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white text-[10px] sm:text-xs font-bold font-mono tracking-wider flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-xs"
+                    className="px-2.5 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white text-[10px] sm:text-xs font-bold font-mono tracking-wider flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-xs shrink-0"
                   >
                     <Plus className="w-3 h-3 stroke-[2.5]" />
-                    <span>ADD SCHEDULE</span>
+                    <span>+ ADD</span>
                   </button>
-                  {(selectedRange || selectedScheduleId) && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedRange(null);
-                        setSelectedScheduleId(null);
-                        setDragAnchorDate(null);
-                      }}
-                      className="p-1 rounded-full border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 transition-colors cursor-pointer"
-                      title="선택 해제 (ESC)"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
                 </div>
               </div>
 
@@ -1783,14 +1751,14 @@ export function CalendarHubPage({
                               : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.03] border-l-2 border-transparent'
                           }`}
                         >
-                          <div className="flex items-center gap-2.5 sm:gap-3 truncate flex-1 min-w-0">
-                            <span className={`font-bold shrink-0 min-w-[4.8rem] sm:min-w-[6.8rem] whitespace-nowrap ${
+                          <div className="flex items-center gap-2 sm:gap-2.5 truncate flex-1 min-w-0 overflow-hidden">
+                            <span className={`font-bold shrink-0 min-w-[4.2rem] sm:min-w-[6.2rem] whitespace-nowrap text-xs ${
                               isHighlighted ? 'text-red-600 dark:text-red-400' : 'text-black/70 dark:text-white/70'
                             }`}>
                               {item.dateBadge}
                             </span>
                             <span className="text-black/30 dark:text-white/30 shrink-0">|</span>
-                            <span className={`font-sans truncate ${
+                            <span className={`font-sans truncate block whitespace-nowrap text-xs sm:text-sm ${
                               isHighlighted 
                                 ? 'font-black text-red-600 dark:text-red-400' 
                                 : 'font-bold text-black dark:text-white group-hover:text-red-600 transition-colors'
@@ -2053,7 +2021,7 @@ export function CalendarHubPage({
                 <label className="block text-[11px] font-mono font-bold uppercase tracking-widest text-black/60 dark:text-white/60 mb-1.5">
                   DATE & PERIOD *
                 </label>
-                <div className="grid grid-cols-2 gap-2 min-w-0">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 min-w-0">
                   <div className="min-w-0">
                     <span className="text-[10px] font-mono text-black/50 dark:text-white/50 block mb-1">시작일</span>
                     <input
@@ -2066,7 +2034,7 @@ export function CalendarHubPage({
                           setEventFormEndDate(e.target.value);
                         }
                       }}
-                      className="w-full min-w-0 px-2.5 py-2 rounded-sm border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.05] text-sm font-mono font-bold text-black dark:text-white outline-none focus:border-red-600"
+                      className="w-full max-w-full box-border min-w-0 px-2.5 py-2 rounded-sm border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.05] text-sm font-mono font-bold text-black dark:text-white outline-none focus:border-red-600"
                     />
                   </div>
                   <div className="min-w-0">
@@ -2077,7 +2045,7 @@ export function CalendarHubPage({
                       min={eventFormStartDate}
                       value={eventFormEndDate}
                       onChange={(e) => setEventFormEndDate(e.target.value)}
-                      className="w-full min-w-0 px-2.5 py-2 rounded-sm border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.05] text-sm font-mono font-bold text-black dark:text-white outline-none focus:border-red-600"
+                      className="w-full max-w-full box-border min-w-0 px-2.5 py-2 rounded-sm border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.05] text-sm font-mono font-bold text-black dark:text-white outline-none focus:border-red-600"
                     />
                   </div>
                 </div>
