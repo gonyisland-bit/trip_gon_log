@@ -186,6 +186,7 @@ export function CalendarHubPage({
   const isDraggingRef = useRef<boolean>(false);
   const dragAnchorDateRef = useRef<string | null>(initialFocus.dateStr);
   const gridContainerRef = useRef<HTMLDivElement>(null);
+  const justDraggedRef = useRef<boolean>(false);
 
   useEffect(() => {
     isDraggingRef.current = isDragging;
@@ -194,6 +195,25 @@ export function CalendarHubPage({
   useEffect(() => {
     dragAnchorDateRef.current = dragAnchorDate;
   }, [dragAnchorDate]);
+
+  // 전역 마우스 및 터치 드래그 종료 리스너 (브라우저 어디서 마우스/터치를 떼도 정상 완료 및 선택 유지)
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isDraggingRef.current) {
+        setIsDragging(false);
+        isDraggingRef.current = false;
+        justDraggedRef.current = true;
+        setTimeout(() => {
+          justDraggedRef.current = false;
+        }, 150);
+      }
+    };
+
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => {
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, []);
 
   // Non-passive touch listener to prevent vertical scrolling during mobile drag (편집 모드 켜졌을 때만 동작)
   useEffect(() => {
@@ -219,6 +239,10 @@ export function CalendarHubPage({
       if (isDraggingRef.current) {
         setIsDragging(false);
         isDraggingRef.current = false;
+        justDraggedRef.current = true;
+        setTimeout(() => {
+          justDraggedRef.current = false;
+        }, 150);
       }
     };
 
@@ -262,7 +286,7 @@ export function CalendarHubPage({
   const yearInputRef = useRef<HTMLInputElement>(null);
   const monthInputRef = useRef<HTMLInputElement>(null);
 
-  // Firestore 동기화 (users/public/calendar_events)
+  // Firestore 동기화 (users/public/calendar_events) - 로컬 데이터 영구성 보장
   useEffect(() => {
     try {
       const colRef = collection(db, 'users', 'public', 'calendar_events');
@@ -271,10 +295,34 @@ export function CalendarHubPage({
         snapshot.forEach((docSnap) => {
           eventsList.push({ id: docSnap.id, ...(docSnap.data() as any) });
         });
-        if (eventsList.length > 0 || snapshot.metadata.fromCache === false) {
+
+        if (eventsList.length > 0) {
+          // 원격에 데이터가 있으면 로컬과 동기화
           setCustomEvents(eventsList);
           try {
             localStorage.setItem('custom_calendar_events', JSON.stringify(eventsList));
+          } catch (_) {}
+        } else {
+          // 원격이 빈 목록인 경우: 로컬 캐시가 이미 존재한다면 이를 지우지 않고 원격으로 복원 업로드
+          try {
+            const localSaved = localStorage.getItem('custom_calendar_events');
+            if (localSaved) {
+              const localList: CalendarCustomEvent[] = JSON.parse(localSaved);
+              if (Array.isArray(localList) && localList.length > 0) {
+                setCustomEvents(localList);
+                // Firestore에 누락된 로컬 데이터 업로드
+                localList.forEach(evt => {
+                  try {
+                    const docRef = doc(db, 'users', 'public', 'calendar_events', evt.id);
+                    const cleaned: any = {};
+                    Object.entries(evt).forEach(([k, v]) => {
+                      if (v !== undefined) cleaned[k] = v;
+                    });
+                    setDoc(docRef, cleaned).catch(() => {});
+                  } catch (_) {}
+                });
+              }
+            }
           } catch (_) {}
         }
       }, (err) => {
@@ -1001,10 +1049,14 @@ export function CalendarHubPage({
       return next;
     });
 
-    // Firestore 영구 저장
+    // Firestore 영구 저장 (undefined 필드 제거 후 전송)
     try {
       const docRef = doc(db, 'users', 'public', 'calendar_events', eventId);
-      await setDoc(docRef, newEvent);
+      const cleanedData: any = {};
+      Object.entries(newEvent).forEach(([k, v]) => {
+        if (v !== undefined) cleanedData[k] = v;
+      });
+      await setDoc(docRef, cleanedData);
     } catch (err) {
       console.warn("Firestore save event failed, local cache preserved", err);
     }
@@ -1056,7 +1108,8 @@ export function CalendarHubPage({
   return (
     <div 
       onClick={() => {
-        if ((selectedRange || selectedScheduleId) && !isDragging) {
+        if (justDraggedRef.current || isDragging || isDraggingRef.current) return;
+        if (selectedRange || selectedScheduleId) {
           setSelectedRange(null);
           setSelectedScheduleId(null);
           setDragAnchorDate(null);
@@ -1384,18 +1437,28 @@ export function CalendarHubPage({
         {viewMode === 'month' ? (
           /* ──────────────── MONTH VIEW (Pure Circular Swiss Minimal) ──────────────── */
           <div className="w-full max-w-4xl lg:max-w-5xl mx-auto px-2 sm:px-6 mt-3 sm:mt-5">
-            {/* Multi-Select Range Indicator & Quick Add button in Edit Mode */}
-            {isEditMode && selectedRange && (
-              <div className="flex items-center justify-between pb-2.5 px-1 text-xs sm:text-sm font-mono text-red-600 dark:text-red-400 font-bold animate-in fade-in">
-                <span>{selectedRange.start} ~ {selectedRange.end} ({selectedDaysCount}일 선택됨)</span>
-                <button
-                  type="button"
-                  onClick={() => openNewEventModal(selectedRange.start, selectedRange.end)}
-                  className="px-2.5 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white text-[10.5px] sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center gap-1"
-                >
-                  <Plus className="w-3 h-3 stroke-[2.5]" />
-                  <span>ADD SCHEDULE</span>
-                </button>
+            {/* Edit Mode Control & Multi-Select Indicator Bar (Fixed height slot prevents calendar layout shift) */}
+            {isEditMode && (
+              <div className="h-9 sm:h-10 flex items-center justify-between pb-2 px-1 text-xs sm:text-sm font-mono font-bold select-none">
+                {selectedRange ? (
+                  <div className="flex items-center justify-between w-full animate-in fade-in duration-150">
+                    <span className="text-red-600 dark:text-red-400 font-bold">
+                      {selectedRange.start} ~ {selectedRange.end} ({selectedDaysCount}일 선택됨)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => openNewEventModal(selectedRange.start, selectedRange.end)}
+                      className="px-2.5 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white text-[10.5px] sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center gap-1 shrink-0"
+                    >
+                      <Plus className="w-3 h-3 stroke-[2.5]" />
+                      <span>ADD SCHEDULE</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-black/40 dark:text-white/40 text-[11px] sm:text-xs tracking-wider font-medium">
+                    날짜를 드래그하거나 클릭하여 일정을 선택하세요
+                  </div>
+                )}
               </div>
             )}
 
@@ -1424,6 +1487,7 @@ export function CalendarHubPage({
             {/* Pure Circular Day Grid Cells with Continuous Trip Capsule Bands (사각 그리드 완전 제거) */}
             <div 
               ref={gridContainerRef}
+              onClick={(e) => e.stopPropagation()}
               onTouchMove={handleGridTouchMove}
               onTouchEnd={handleGridTouchEnd}
               className={`grid grid-cols-7 select-none justify-items-center w-full py-3 sm:py-5 ${
