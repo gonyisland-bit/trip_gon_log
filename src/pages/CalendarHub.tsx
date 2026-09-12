@@ -2365,17 +2365,24 @@ export function CalendarHubPage({
                     {viewingTrip.trip.date}
                   </span>
                 </div>
-                {viewingTrip.trip.days && (
-                  <span className="font-mono text-xs font-black text-red-600 dark:text-red-400">
-                    {viewingTrip.trip.days} DAYS
-                  </span>
-                )}
+                {(() => {
+                  const range = parseTripDateRange(viewingTrip.trip.date);
+                  if (range) {
+                    const days = getDaysDifference(range.start, range.end);
+                    return (
+                      <span className="font-mono text-xs font-black text-red-600 dark:text-red-400">
+                        {days} DAYS
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
 
-              {viewingTrip.trip.tag && (
+              {(viewingTrip.trip.locationStr || (viewingTrip.trip.tags && viewingTrip.trip.tags.length > 0)) && (
                 <div className="flex items-center gap-1.5 text-xs font-mono text-black/60 dark:text-white/60">
                   <MapPin className="w-3 h-3 text-black/40 dark:text-white/40" />
-                  <span>{viewingTrip.trip.tag}</span>
+                  <span>{viewingTrip.trip.locationStr || viewingTrip.trip.tags.join(', ')}</span>
                 </div>
               )}
             </div>
