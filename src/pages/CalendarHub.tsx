@@ -823,16 +823,13 @@ export function CalendarHubPage({
         setDragAnchorDate(cell.dateStr);
       }
     } else {
-      // 일반 모드: 해당 날짜 선택 및 일정이 있으면 모달 즉시 활성화
-      setSelectedRange({ start: cell.dateStr, end: cell.dateStr });
-      setDragAnchorDate(cell.dateStr);
-
-      if (cell.overlappingTrips.length > 0) {
-        const primaryTripItem = cell.overlappingTrips[0];
-        handleTripBandClick(e, primaryTripItem.trip, cell.dateStr, primaryTripItem.isPlan);
-      } else if (cell.overlappingEvents.length > 0) {
-        const primaryEventItem = cell.overlappingEvents[0].event;
-        handleCustomEventClick(e, primaryEventItem);
+      // 일반 모드: 이미 선택된 날짜면 해제(토글), 아니면 해당 날짜 선택 (모달은 바로 띄우지 않고 하단 일정 영역 색상화만 수행)
+      if (selectedRange && selectedRange.start === cell.dateStr && selectedRange.end === cell.dateStr) {
+        setSelectedRange(null);
+        setDragAnchorDate(null);
+      } else {
+        setSelectedRange({ start: cell.dateStr, end: cell.dateStr });
+        setDragAnchorDate(cell.dateStr);
       }
     }
   };
@@ -1053,7 +1050,15 @@ export function CalendarHubPage({
   const selectedDaysCount = selectedRange ? getDaysDifference(selectedRange.start, selectedRange.end) : 0;
 
   return (
-    <div className="w-full min-h-screen bg-transparent text-black dark:text-white transition-colors duration-300 select-none pb-24">
+    <div 
+      onClick={() => {
+        if (selectedRange && !isDragging) {
+          setSelectedRange(null);
+          setDragAnchorDate(null);
+        }
+      }}
+      className="w-full min-h-screen bg-transparent text-black dark:text-white transition-colors duration-300 select-none pb-24"
+    >
       {/* ───────────────────────────────────────────────────────────── */}
       {/* Top Banner & Swiss Minimal Typography Header                  */}
       {/* ───────────────────────────────────────────────────────────── */}
@@ -1491,13 +1496,7 @@ export function CalendarHubPage({
                     {/* Interactive Circular Day Button */}
                     <button
                       type="button"
-                      onClick={(e) => {
-                        if (hasTrip && !isEditMode) {
-                          handleTripBandClick(e, trip!, cell.dateStr, isPlan);
-                        } else {
-                          handleCellClick(cell, e);
-                        }
-                      }}
+                      onClick={(e) => handleCellClick(cell, e)}
                       onMouseDown={(e) => handleCellMouseDown(cell.dateStr, e)}
                       onMouseEnter={() => handleCellMouseEnter(cell.dateStr)}
                       onTouchStart={() => handleCellTouchStart(cell.dateStr)}
@@ -1664,12 +1663,14 @@ export function CalendarHubPage({
                         <div
                           key={item.id}
                           onClick={(e) => {
-                            // 하단 일정 클릭 시 해당 날짜 범위 선택 및 모달 즉시 활성화
-                            setSelectedRange({ start: item.startDate, end: item.endDate });
-                            if (item.type === 'trip') {
-                              handleTripBandClick(e, item.data.trip, item.startDate, item.data.isPlan);
+                            e.stopPropagation();
+                            // 하단 일정 행 클릭: 이미 선택된 일정이면 해제(토글), 아니면 해당 일정 날짜 선택 (모달 진입 금지)
+                            if (isHighlighted) {
+                              setSelectedRange(null);
+                              setDragAnchorDate(null);
                             } else {
-                              handleCustomEventClick(e, item.data);
+                              setSelectedRange({ start: item.startDate, end: item.endDate });
+                              setDragAnchorDate(item.startDate);
                             }
                           }}
                           className={`flex items-center justify-between py-2.5 sm:py-3 px-2 sm:px-3 font-mono text-xs sm:text-sm group cursor-pointer transition-all ${
@@ -1729,11 +1730,25 @@ export function CalendarHubPage({
                                 </button>
                               </div>
                             )}
-                            <ArrowRight className={`w-3.5 h-3.5 transition-all ${
-                              isHighlighted 
-                                ? 'text-red-600 dark:text-red-400 translate-x-0.5' 
-                                : 'text-black/40 dark:text-white/40 group-hover:text-black dark:group-hover:text-white group-hover:translate-x-0.5'
-                            }`} />
+                            {/* 우측 화살표 아이콘을 눌러야만 상세 모달 진입 */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedRange({ start: item.startDate, end: item.endDate });
+                                if (item.type === 'trip') {
+                                  handleTripBandClick(e, item.data.trip, item.startDate, item.data.isPlan);
+                                } else {
+                                  handleCustomEventClick(e, item.data);
+                                }
+                              }}
+                              className={`p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/15 active:scale-95 transition-all cursor-pointer ${
+                                isHighlighted ? 'text-red-600 dark:text-red-400' : 'text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
+                              }`}
+                              title="상세 일정 보기"
+                            >
+                              <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                            </button>
                           </div>
                         </div>
                       );
@@ -1811,18 +1826,18 @@ export function CalendarHubPage({
                     ))}
                   </div>
 
-                  {/* Mini Days Grid - Concept B Circular Button Layout with Proportional Sizing (원형 확대 및 간격 최적화) */}
-                  <div className="grid grid-cols-7 gap-y-1 sm:gap-y-1.5 text-center font-mono select-none">
+                  {/* Mini Days Grid - Concept B Circular Button Layout with Mobile-Optimized Proportion (세로 늘어짐 방지 및 정갈한 원형 비례) */}
+                  <div className="grid grid-cols-7 gap-y-0.5 sm:gap-y-1 md:gap-y-1.5 text-center font-mono select-none">
                     {m.days.map((day, dIdx) => {
                       if (!day.isCurrentMonth) {
-                        return <div key={`empty-${m.monthIdx}-${dIdx}`} className="w-full aspect-square max-w-[36px] max-h-[36px] sm:max-w-[42px] sm:max-h-[42px] md:max-w-[46px] md:max-h-[46px] mx-auto" />;
+                        return <div key={`empty-${m.monthIdx}-${dIdx}`} className="w-full aspect-square max-w-[32px] max-h-[32px] sm:max-w-[38px] sm:max-h-[38px] md:max-w-[44px] md:max-h-[44px] mx-auto" />;
                       }
 
                       const isSun = day.dayOfWeek === 6;
                       const isSat = day.dayOfWeek === 5;
 
-                      // Circular badge styling based on Concept B (정규 규격 원형과 폰트)
-                      let circleClasses = 'w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full aspect-square flex items-center justify-center shrink-0 text-xs sm:text-sm font-bold transition-all';
+                      // Circular badge styling based on Concept B (모바일에서 겹침 없이 숫자를 감싸는 원형과 폰트)
+                      let circleClasses = 'w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full aspect-square flex items-center justify-center shrink-0 text-[11px] sm:text-xs md:text-sm font-bold transition-all';
                       let textClasses = '';
 
                       if (day.isToday) {
@@ -1852,7 +1867,7 @@ export function CalendarHubPage({
                       return (
                         <div
                           key={day.dateStr}
-                          className="w-full aspect-square max-w-[36px] max-h-[36px] sm:max-w-[42px] sm:max-h-[42px] md:max-w-[46px] md:max-h-[46px] mx-auto flex items-center justify-center relative"
+                          className="w-full aspect-square max-w-[32px] max-h-[32px] sm:max-w-[38px] sm:max-h-[38px] md:max-w-[44px] md:max-h-[44px] mx-auto flex items-center justify-center relative"
                         >
                           <button
                             type="button"
