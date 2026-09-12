@@ -823,12 +823,16 @@ export function CalendarHubPage({
         setDragAnchorDate(cell.dateStr);
       }
     } else {
-      // 일반 모드: 해당 날짜 선택하여 하단 1행 일정 목록 필터링 (이미 선택된 날짜면 전체 월간으로 토글)
-      if (selectedRange && selectedRange.start === cell.dateStr && selectedRange.end === cell.dateStr) {
-        setSelectedRange(null);
-      } else {
-        setSelectedRange({ start: cell.dateStr, end: cell.dateStr });
-        setDragAnchorDate(cell.dateStr);
+      // 일반 모드: 해당 날짜 선택 및 일정이 있으면 모달 즉시 활성화
+      setSelectedRange({ start: cell.dateStr, end: cell.dateStr });
+      setDragAnchorDate(cell.dateStr);
+
+      if (cell.overlappingTrips.length > 0) {
+        const primaryTripItem = cell.overlappingTrips[0];
+        handleTripBandClick(e, primaryTripItem.trip, cell.dateStr, primaryTripItem.isPlan);
+      } else if (cell.overlappingEvents.length > 0) {
+        const primaryEventItem = cell.overlappingEvents[0].event;
+        handleCustomEventClick(e, primaryEventItem);
       }
     }
   };
@@ -1517,18 +1521,21 @@ export function CalendarHubPage({
               })}
             </div>
 
-            {/* Mockup-Style Unified 1-Line Agenda Feed (달력 하단 직결 1행 목록) */}
+            {/* Mockup-Style Unified 1-Line Agenda Feed (달력 하단 상시 일정 목록 및 선택 영역 색상화) */}
             <div className="mt-4 sm:mt-6 border-t border-black/15 dark:border-white/15 pt-4">
               <div className="flex items-center justify-between pb-3 px-1 text-xs font-mono text-black/60 dark:text-white/60">
-                <span className="font-bold tracking-wider uppercase text-black/70 dark:text-white/70">
-                  {selectedRange ? (
-                    selectedRange.start === selectedRange.end
-                      ? `${selectedRange.start.replace(/-/g, '.')} SCHEDULES`
-                      : `${selectedRange.start.replace(/-/g, '.')} ~ ${selectedRange.end.replace(/-/g, '.')} (${selectedDaysCount}D)`
-                  ) : (
-                    `${MONTH_TABS[currentMonth].full} SCHEDULES`
+                <div className="flex items-center gap-2">
+                  <span className="font-bold tracking-wider uppercase text-black/70 dark:text-white/70">
+                    {MONTH_TABS[currentMonth].full} SCHEDULES
+                  </span>
+                  {selectedRange && (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-red-600/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 font-bold">
+                      {selectedRange.start === selectedRange.end
+                        ? selectedRange.start.replace(/-/g, '.')
+                        : `${selectedRange.start.replace(/-/g, '.')} ~ ${selectedRange.end.replace(/-/g, '.')}`}
+                    </span>
                   )}
-                </span>
+                </div>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -1543,7 +1550,7 @@ export function CalendarHubPage({
                       type="button"
                       onClick={() => setSelectedRange(null)}
                       className="p-1 rounded-full border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 transition-colors cursor-pointer"
-                      title="전체 월간 일정 보기 (ESC)"
+                      title="선택 해제 (ESC)"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -1551,12 +1558,15 @@ export function CalendarHubPage({
                 </div>
               </div>
 
-              {/* Agenda List Items */}
+              {/* Agenda List Items - Always Shows All Month Events in Chronological Order */}
               {(() => {
+                const currentMonthCells = calendarGrid.filter(c => c.isCurrentMonth);
                 const items: {
                   id: string;
                   type: 'trip' | 'event';
                   sortDate: string;
+                  startDate: string;
+                  endDate: string;
                   dateBadge: string;
                   displayTitle: string;
                   days: number;
@@ -1564,9 +1574,9 @@ export function CalendarHubPage({
                   data: any;
                 }[] = [];
 
-                // 1) Trips in displayedAgendaCells
+                // 1) All Trips occurring in this month
                 const tripsMap = new Map<number, { trip: Trip | Plan; isPlan: boolean }>();
-                displayedAgendaCells.forEach(cell => {
+                currentMonthCells.forEach(cell => {
                   cell.overlappingTrips.forEach(t => {
                     if (!tripsMap.has(t.trip.id)) {
                       tripsMap.set(t.trip.id, { trip: t.trip, isPlan: t.isPlan });
@@ -1581,71 +1591,25 @@ export function CalendarHubPage({
                   const days = getDaysDifference(s, e);
 
                   const sParts = s.split('-');
-                  const eParts = e.split('-');
                   const sMonthStr = MONTH_TABS[parseInt(sParts[1], 10) - 1]?.short || '';
-                  const eMonthStr = MONTH_TABS[parseInt(eParts[1], 10) - 1]?.short || '';
                   const sDay = parseInt(sParts[2], 10);
-                  const eDay = parseInt(eParts[2], 10);
 
-                  if (selectedRange && selectedRange.start === selectedRange.end) {
-                    const cur = selectedRange.start;
-                    const curParts = cur.split('-');
-                    const curMonthStr = MONTH_TABS[parseInt(curParts[1], 10) - 1]?.short || '';
-                    const curDay = parseInt(curParts[2], 10);
-
-                    let prefix = isPlan ? 'PLAN' : 'TRIP';
-                    if (days > 1) {
-                      if (cur === s) prefix = 'START';
-                      else if (cur === e) prefix = 'END';
-                      else prefix = 'JOURNEY';
-                    }
-
-                    items.push({
-                      id: `trip-${trip.id}-${cur}`,
-                      type: 'trip',
-                      sortDate: cur,
-                      dateBadge: `${curDay < 10 ? `0${curDay}` : curDay} ${curMonthStr}`,
-                      displayTitle: `${prefix}: ${trip.title}${days > 1 ? ` (${getDaysDifference(s, cur)}/${days}D)` : ''}`,
-                      days,
-                      data: { trip, isPlan }
-                    });
-                  } else {
-                    if (days === 1 || s === e) {
-                      items.push({
-                        id: `trip-${trip.id}-single`,
-                        type: 'trip',
-                        sortDate: s,
-                        dateBadge: `${sDay < 10 ? `0${sDay}` : sDay} ${sMonthStr}`,
-                        displayTitle: `${isPlan ? 'PLAN' : 'TRIP'}: ${trip.title}`,
-                        days: 1,
-                        data: { trip, isPlan }
-                      });
-                    } else {
-                      items.push({
-                        id: `trip-${trip.id}-start`,
-                        type: 'trip',
-                        sortDate: s,
-                        dateBadge: `${sDay < 10 ? `0${sDay}` : sDay} ${sMonthStr}`,
-                        displayTitle: `START: ${trip.title}`,
-                        days,
-                        data: { trip, isPlan }
-                      });
-                      items.push({
-                        id: `trip-${trip.id}-end`,
-                        type: 'trip',
-                        sortDate: e,
-                        dateBadge: `${eDay < 10 ? `0${eDay}` : eDay} ${eMonthStr}`,
-                        displayTitle: `END: ${trip.title}`,
-                        days,
-                        data: { trip, isPlan }
-                      });
-                    }
-                  }
+                  items.push({
+                    id: `trip-${trip.id}`,
+                    type: 'trip',
+                    sortDate: s,
+                    startDate: s,
+                    endDate: e,
+                    dateBadge: `${sDay < 10 ? `0${sDay}` : sDay} ${sMonthStr}`,
+                    displayTitle: `${isPlan ? 'PLAN' : 'TRIP'}: ${trip.title}`,
+                    days,
+                    data: { trip, isPlan }
+                  });
                 });
 
-                // 2) Custom Events in displayedAgendaCells
+                // 2) All Custom Events in this month
                 const eventsMap = new Map<string, CalendarCustomEvent>();
-                displayedAgendaCells.forEach(cell => {
+                currentMonthCells.forEach(cell => {
                   cell.overlappingEvents.forEach(e => {
                     eventsMap.set(e.event.id, e.event);
                   });
@@ -1665,6 +1629,8 @@ export function CalendarHubPage({
                     id: `evt-${evt.id}`,
                     type: 'event',
                     sortDate: s,
+                    startDate: s,
+                    endDate: e,
                     dateBadge: `${sDay < 10 ? `0${sDay}` : sDay} ${sMonthStr}`,
                     displayTitle: `${cat.label}: ${evt.title}`,
                     days,
@@ -1673,79 +1639,105 @@ export function CalendarHubPage({
                   });
                 });
 
+                // 날짜 오름차순 정렬 절대 보존
                 items.sort((a, b) => a.sortDate.localeCompare(b.sortDate));
 
                 if (items.length === 0) {
                   return (
                     <div className="text-xs font-mono text-black/40 dark:text-white/40 py-8 text-center uppercase tracking-wider">
-                      {selectedRange ? '선택한 기간에 등록된 일정이 없습니다.' : '이번 달에 등록된 일정이 없습니다.'}
+                      이번 달에 등록된 일정이 없습니다.
                     </div>
                   );
                 }
 
                 return (
                   <div className="divide-y divide-black/10 dark:divide-white/10">
-                    {items.map((item) => (
-                      <div
-                        key={item.id}
-                        onClick={(e) => {
-                          if (item.type === 'trip') {
-                            handleTripBandClick(e, item.data.trip, item.sortDate, item.data.isPlan);
-                          } else {
-                            handleCustomEventClick(e, item.data);
-                          }
-                        }}
-                        className="flex items-center justify-between py-2.5 sm:py-3 px-1 border-b border-black/10 dark:border-white/10 font-mono text-xs sm:text-sm group cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors"
-                      >
-                        <div className="flex items-center gap-2.5 sm:gap-3 truncate flex-1 min-w-0">
-                          <span className="font-bold text-black/70 dark:text-white/70 shrink-0 w-16 sm:w-20">
-                            {item.dateBadge}
-                          </span>
-                          <span className="text-black/30 dark:text-white/30 shrink-0">|</span>
-                          <span className="font-sans font-bold text-black dark:text-white group-hover:text-red-600 transition-colors truncate">
-                            {item.displayTitle}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                          {item.type === 'trip' && (
-                            <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded-full bg-[#FF4500] text-white">
-                              {item.days}D
+                    {items.map((item) => {
+                      // 선택된 날짜와 겹치는지 판별 (영역 색상화)
+                      const isHighlighted = !!(
+                        selectedRange &&
+                        item.startDate <= selectedRange.end &&
+                        item.endDate >= selectedRange.start
+                      );
+
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={(e) => {
+                            // 하단 일정 클릭 시 해당 날짜 범위 선택 및 모달 즉시 활성화
+                            setSelectedRange({ start: item.startDate, end: item.endDate });
+                            if (item.type === 'trip') {
+                              handleTripBandClick(e, item.data.trip, item.startDate, item.data.isPlan);
+                            } else {
+                              handleCustomEventClick(e, item.data);
+                            }
+                          }}
+                          className={`flex items-center justify-between py-2.5 sm:py-3 px-2 sm:px-3 font-mono text-xs sm:text-sm group cursor-pointer transition-all ${
+                            isHighlighted
+                              ? 'bg-red-600/10 dark:bg-red-500/15 border-l-2 border-red-600 dark:border-red-500'
+                              : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.03] border-l-2 border-transparent'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 sm:gap-3 truncate flex-1 min-w-0">
+                            <span className={`font-bold shrink-0 w-16 sm:w-20 ${
+                              isHighlighted ? 'text-red-600 dark:text-red-400' : 'text-black/70 dark:text-white/70'
+                            }`}>
+                              {item.dateBadge}
                             </span>
-                          )}
-                          {item.type === 'event' && (
-                            <div className="flex items-center gap-1.5">
-                              <span
-                                className="w-2 h-2 rounded-full"
-                                style={{ backgroundColor: item.eventCatColor }}
-                              />
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleShareEvent(item.data);
-                                }}
-                                className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
-                                title="일정 공유"
-                              >
-                                <Share2 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openEditEventModal(item.data);
-                                }}
-                                className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
-                                title="일정 수정"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          )}
-                          <ArrowRight className="w-3.5 h-3.5 text-black/40 dark:text-white/40 group-hover:text-black dark:group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+                            <span className="text-black/30 dark:text-white/30 shrink-0">|</span>
+                            <span className={`font-sans truncate ${
+                              isHighlighted 
+                                ? 'font-black text-red-600 dark:text-red-400' 
+                                : 'font-bold text-black dark:text-white group-hover:text-red-600 transition-colors'
+                            }`}>
+                              {item.displayTitle}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                            {item.type === 'trip' && (
+                              <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded-full bg-[#FF4500] text-white">
+                                {item.days}D
+                              </span>
+                            )}
+                            {item.type === 'event' && (
+                              <div className="flex items-center gap-1.5">
+                                <span
+                                  className="w-2 h-2 rounded-full"
+                                  style={{ backgroundColor: item.eventCatColor }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleShareEvent(item.data);
+                                  }}
+                                  className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                                  title="일정 공유"
+                                >
+                                  <Share2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openEditEventModal(item.data);
+                                  }}
+                                  className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                                  title="일정 수정"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            )}
+                            <ArrowRight className={`w-3.5 h-3.5 transition-all ${
+                              isHighlighted 
+                                ? 'text-red-600 dark:text-red-400 translate-x-0.5' 
+                                : 'text-black/40 dark:text-white/40 group-hover:text-black dark:group-hover:text-white group-hover:translate-x-0.5'
+                            }`} />
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 );
               })()}
@@ -1823,14 +1815,14 @@ export function CalendarHubPage({
                   <div className="grid grid-cols-7 gap-y-1 sm:gap-y-1.5 text-center font-mono select-none">
                     {m.days.map((day, dIdx) => {
                       if (!day.isCurrentMonth) {
-                        return <div key={`empty-${m.monthIdx}-${dIdx}`} className="w-full aspect-square max-w-[30px] max-h-[30px] sm:max-w-[36px] sm:max-h-[36px] md:max-w-[40px] md:max-h-[40px] mx-auto" />;
+                        return <div key={`empty-${m.monthIdx}-${dIdx}`} className="w-full aspect-square max-w-[36px] max-h-[36px] sm:max-w-[42px] sm:max-h-[42px] md:max-w-[46px] md:max-h-[46px] mx-auto" />;
                       }
 
                       const isSun = day.dayOfWeek === 6;
                       const isSat = day.dayOfWeek === 5;
 
-                      // Circular badge styling based on Concept B (확대된 원형과 폰트)
-                      let circleClasses = 'w-7.5 h-7.5 sm:w-8.5 sm:h-8.5 md:w-9.5 md:h-9.5 rounded-full aspect-square flex items-center justify-center shrink-0 text-xs sm:text-sm font-bold transition-all';
+                      // Circular badge styling based on Concept B (정규 규격 원형과 폰트)
+                      let circleClasses = 'w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full aspect-square flex items-center justify-center shrink-0 text-xs sm:text-sm font-bold transition-all';
                       let textClasses = '';
 
                       if (day.isToday) {
@@ -1860,7 +1852,7 @@ export function CalendarHubPage({
                       return (
                         <div
                           key={day.dateStr}
-                          className="w-full aspect-square max-w-[30px] max-h-[30px] sm:max-w-[36px] sm:max-h-[36px] md:max-w-[40px] md:max-h-[40px] mx-auto flex items-center justify-center relative"
+                          className="w-full aspect-square max-w-[36px] max-h-[36px] sm:max-w-[42px] sm:max-h-[42px] md:max-w-[46px] md:max-h-[46px] mx-auto flex items-center justify-center relative"
                         >
                           <button
                             type="button"
