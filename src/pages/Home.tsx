@@ -2146,8 +2146,8 @@ export function HomePage({
                               {item.title}
                             </span>
                           </div>
-                          <span className="text-[10.5px] font-bold text-red-600 dark:text-red-400 shrink-0">
-                            {item.days}D
+                          <span className="text-[10.5px] font-bold font-mono text-red-600 dark:text-red-400 shrink-0">
+                            {item.days === 1 ? '1 DAY' : `${item.days} DAYS`}
                           </span>
                         </div>
                       );
@@ -2156,11 +2156,11 @@ export function HomePage({
                 )}
               </div>
 
-              {/* Right Column: Circular Dot Grid (7 Columns: M T W T F S S) */}
-              <div className="lg:col-span-4 flex flex-col items-start lg:items-end justify-center w-full">
-                <div className="inline-block max-w-full">
+              {/* Right Column: Circular Dot Grid (7 Columns: M T W T F S S) - Centered on Mobile */}
+              <div className="lg:col-span-4 flex flex-col items-center lg:items-end justify-center w-full">
+                <div className="w-full max-w-[320px] sm:max-w-[340px] mx-auto lg:mr-0">
                   {/* Weekday Headers: M T W T F S S */}
-                  <div className="grid grid-cols-7 gap-2 sm:gap-3 mb-2 text-center text-xs font-black font-mono select-none text-black/40 dark:text-white/40">
+                  <div className="grid grid-cols-7 gap-2 sm:gap-2.5 mb-2 text-center text-xs font-black font-mono select-none text-black/40 dark:text-white/40">
                     <div>M</div>
                     <div>T</div>
                     <div>W</div>
@@ -2171,18 +2171,40 @@ export function HomePage({
                   </div>
 
                   {/* Circular Dot Grid */}
-                  <div className="grid grid-cols-7 gap-2 sm:gap-3">
+                  <div className="grid grid-cols-7 gap-2 sm:gap-2.5">
                     {cells.map((cell) => {
                       if (!cell.isCurrentMonth) {
                         return (
                           <div
                             key={cell.key}
-                            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center pointer-events-none"
+                            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-black/5 dark:border-white/5 opacity-25 flex items-center justify-center pointer-events-none mx-auto"
                           />
                         );
                       }
 
-                      const isHighlighted = cell.hasTrip || cell.isToday;
+                      const isSun = cell.isSunday;
+                      const isHoliday = cell.isHoliday;
+                      const isSat = !isSun && new Date(cell.dateStr).getDay() === 6;
+
+                      let btnStyle = 'w-8 h-8 sm:w-9 sm:h-9 rounded-full flex flex-col items-center justify-center font-mono transition-all duration-150 cursor-pointer relative mx-auto ';
+                      let numStyle = 'text-[11px] sm:text-xs font-bold leading-none ';
+
+                      if (cell.isToday) {
+                        btnStyle += 'bg-black text-white dark:bg-white dark:text-black font-black shadow-xs';
+                        numStyle += 'text-white dark:text-black';
+                      } else if (cell.hasTrip) {
+                        btnStyle += 'bg-[#FF4500] hover:bg-[#E03E00] text-white font-black shadow-xs';
+                        numStyle += 'text-white';
+                      } else {
+                        btnStyle += 'bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20';
+                        if (isSun || isHoliday) {
+                          numStyle += 'text-red-600 dark:text-red-400';
+                        } else if (isSat) {
+                          numStyle += 'text-blue-600 dark:text-blue-400';
+                        } else {
+                          numStyle += 'text-black/80 dark:text-white/80';
+                        }
+                      }
 
                       return (
                         <button
@@ -2190,19 +2212,13 @@ export function HomePage({
                           type="button"
                           onClick={() => handleCellClick(cell.dateStr)}
                           title={cell.holidayName ? `${cell.dateStr} (${cell.holidayName})` : cell.dateStr}
-                          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex flex-col items-center justify-center font-mono transition-all duration-200 cursor-pointer relative group ${
-                            isHighlighted
-                              ? 'bg-[#FF6B35] hover:bg-[#FF5510] text-white shadow-md scale-105 active:scale-95'
-                              : 'bg-black text-white dark:bg-white dark:text-black hover:opacity-80 active:scale-95'
-                          }`}
+                          className={btnStyle}
                         >
-                          <span className={`text-[11px] sm:text-xs font-black leading-none ${
-                            !isHighlighted && cell.isHoliday ? 'text-red-300 dark:text-red-600' : ''
-                          }`}>
+                          <span className={numStyle}>
                             {cell.dayNum}
                           </span>
-                          {cell.isHoliday && (
-                            <span className="w-1 h-1 rounded-full bg-red-400 dark:bg-red-500 mt-0.5" />
+                          {cell.isHoliday && !cell.hasTrip && !cell.isToday && (
+                            <span className="w-1 h-1 rounded-full bg-red-500 absolute bottom-0.5 left-1/2 -translate-x-1/2 pointer-events-none" />
                           )}
                         </button>
                       );

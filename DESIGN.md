@@ -33,13 +33,17 @@
 
 ---
 
-## 3. 이모지 금지 조항 (Strict Emoji Ban)
+## 3. 이모지 금지 및 버튼 기호 중복 배제 (Emoji Ban & Icon Text Deduplication)
 
 - **비규격 이모지 사용 전면 금지**:
   - 비규격 유니코드 이모지를 UI 레이블, 버튼, 헤더, 배지에 사용하는 것을 엄격히 금지합니다.
 - **대체 수단**:
   1. **정갈한 대문자 텍스트**: `JOURNEY`, `FLIGHT`, `STAY`, `TRANSIT`, `SCHEDULE`
   2. **통일된 Lucide 아이콘**: `Calendar`, `Plane`, `MapPin`, `Compass`, `Clock`, `ArrowRight` 등 선 두께(`stroke-[1.5]`~`stroke-[2.5]`)가 통일된 벡터 아이콘 활용.
+- **버튼 내 아이콘과 텍스트의 중복 기호 금지 (Icon & Text Deduplication)**:
+  - 버튼 사용 시 미니멀 디자인 아이콘과 동일한 의미의 기호나 텍스트를 중복 표기하는 것을 금지합니다.
+  - ❌ 금지 예시: `<Plus /> + ADD`, `<Plus /> + 추가`, `<Search /> Search 검색`, `<Trash2 /> - 삭제`
+  - ✅ 권장 예시: `<Plus /> ADD`, `<Plus /> 추가`, `<Search /> SEARCH`, `<Trash2 /> DELETE`
 
 ---
 

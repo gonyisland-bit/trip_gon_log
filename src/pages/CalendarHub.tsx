@@ -168,6 +168,21 @@ export function CalendarHubPage({
     };
   }, [isYearDropdownOpen, isMonthDropdownOpen]);
 
+  // 일자 마우스 오버 툴팁 상태
+  const [hoveredTooltip, setHoveredTooltip] = useState<{
+    x: number;
+    y: number;
+    dateStr: string;
+    holidayName?: string;
+    items: {
+      title: string;
+      type: 'trip' | 'event';
+      isPlan?: boolean;
+      categoryColor?: string;
+      days?: number;
+    }[];
+  } | null>(null);
+
   // 뷰 모드: 월별 보기 ('month') vs 연간 보기 ('year')
   const [viewMode, setViewMode] = useState<'month' | 'year'>('month');
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
@@ -926,6 +941,64 @@ export function CalendarHubPage({
     setSelectedRange(normalizeRange(dragAnchorDate, dateStr));
   };
 
+  // 날짜 마우스 호버 시 툴팁 표시
+  const handleDayHover = (
+    e: React.MouseEvent,
+    dateStr: string,
+    holidayName?: string,
+    trips: { title: string; isPlan?: boolean; totalDays?: number }[] = [],
+    events: { title: string; category?: string; totalDays?: number }[] = []
+  ) => {
+    if (isDragging) {
+      setHoveredTooltip(null);
+      return;
+    }
+    const hasItems = trips.length > 0 || events.length > 0 || !!holidayName;
+    if (!hasItems) {
+      setHoveredTooltip(null);
+      return;
+    }
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const tooltipItems: {
+      title: string;
+      type: 'trip' | 'event';
+      isPlan?: boolean;
+      categoryColor?: string;
+      days?: number;
+    }[] = [];
+
+    trips.forEach(t => {
+      tooltipItems.push({
+        title: t.title,
+        type: 'trip',
+        isPlan: t.isPlan,
+        days: t.totalDays
+      });
+    });
+
+    events.forEach(ev => {
+      const cat = EVENT_CATEGORIES.find(c => c.id === ev.category);
+      tooltipItems.push({
+        title: ev.title,
+        type: 'event',
+        categoryColor: cat?.color,
+        days: ev.totalDays
+      });
+    });
+
+    setHoveredTooltip({
+      x: rect.left + rect.width / 2,
+      y: rect.top,
+      dateStr,
+      holidayName,
+      items: tooltipItems
+    });
+  };
+
+  const handleDayLeave = () => {
+    setHoveredTooltip(null);
+  };
+
   // 모바일 터치 드래그 시작 (편집 모드 활성화 시에만 동작)
   const handleCellTouchStart = (dateStr: string) => {
     if (!isEditMode) return;
@@ -1549,7 +1622,17 @@ export function CalendarHubPage({
                       type="button"
                       onClick={(e) => handleCellClick(cell, e)}
                       onMouseDown={(e) => handleCellMouseDown(cell.dateStr, e)}
-                      onMouseEnter={() => handleCellMouseEnter(cell.dateStr)}
+                      onMouseEnter={(e) => {
+                        handleCellMouseEnter(cell.dateStr);
+                        handleDayHover(
+                          e,
+                          cell.dateStr,
+                          cell.holiday?.name,
+                          cell.overlappingTrips.map(t => ({ title: t.trip.title, isPlan: t.isPlan, totalDays: t.totalDays })),
+                          cell.overlappingEvents.map(e => ({ title: e.event.title, category: e.event.category, totalDays: e.totalDays }))
+                        );
+                      }}
+                      onMouseLeave={handleDayLeave}
                       onTouchStart={() => handleCellTouchStart(cell.dateStr)}
                       className={circleClasses}
                       title={cell.holiday ? `${cell.dateStr} (${cell.holiday.name})` : cell.dateStr}
@@ -1602,7 +1685,7 @@ export function CalendarHubPage({
                     className="px-2.5 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white text-[10px] sm:text-xs font-bold font-mono tracking-wider flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-xs shrink-0"
                   >
                     <Plus className="w-3 h-3 stroke-[2.5]" />
-                    <span>+ ADD</span>
+                    <span>ADD</span>
                   </button>
                 </div>
               </div>
@@ -1647,8 +1730,8 @@ export function CalendarHubPage({
                   return `${sDayStr} ${sMonthStr} - ${eDayStr} ${eMonthStr}`;
                 };
 
-                // 1) All Trips occurring in this month
-                const tripsMap = new Map<number, { trip: Trip | Plan; isPlan: boolean }>();
+                // 여행(Trip) 수집 (중복 제거된 고유 여행 목록)
+                const tripsMap = new Map<number, { trip: Trip; isPlan: boolean }>();
                 currentMonthCells.forEach(cell => {
                   cell.overlappingTrips.forEach(t => {
                     if (!tripsMap.has(t.trip.id)) {
@@ -1658,10 +1741,10 @@ export function CalendarHubPage({
                 });
 
                 tripsMap.forEach(({ trip, isPlan }) => {
-                  const pj = parsedJourneys.find(p => p.journey.id === trip.id);
-                  const s = pj ? pj.range.start : (parseTripDateRange(trip.date)?.start || trip.date);
-                  const e = pj ? pj.range.end : (parseTripDateRange(trip.date)?.end || trip.date);
-                  const days = getDaysDifference(s, e);
+                  const parsed = parsedJourneys.find(pj => pj.journey.id === trip.id);
+                  const s = parsed?.range.start || '';
+                  const e = parsed?.range.end || s;
+                  const days = parsed ? getDaysDifference(s, e) : 1;
 
                   items.push({
                     id: `trip-${trip.id}`,
@@ -1670,17 +1753,19 @@ export function CalendarHubPage({
                     startDate: s,
                     endDate: e,
                     dateBadge: formatDateBadge(s, e),
-                    displayTitle: `${isPlan ? 'PLAN' : 'TRIP'}: ${trip.title}`,
+                    displayTitle: `${trip.title}${isPlan ? ' (Plan)' : ''}`,
                     days,
                     data: { trip, isPlan }
                   });
                 });
 
-                // 2) All Custom Events in this month
+                // 커스텀 일정(Event) 수집 (중복 제거된 고유 이벤트 목록)
                 const eventsMap = new Map<string, CalendarCustomEvent>();
                 currentMonthCells.forEach(cell => {
                   cell.overlappingEvents.forEach(e => {
-                    eventsMap.set(e.event.id, e.event);
+                    if (!eventsMap.has(e.event.id)) {
+                      eventsMap.set(e.event.id, e.event);
+                    }
                   });
                 });
 
@@ -1716,7 +1801,7 @@ export function CalendarHubPage({
                 }
 
                 return (
-                  <div className="divide-y divide-black/10 dark:divide-white/10">
+                  <div className="flex flex-col">
                     {items.map((item) => {
                       // 선택된 일정 판별:
                       // 1) 특정 일정을 직접 클릭한 경우(selectedScheduleId가 있는 경우) -> 해당 일정만 단독 활성화
@@ -1745,10 +1830,10 @@ export function CalendarHubPage({
                               setDragAnchorDate(item.startDate);
                             }
                           }}
-                          className={`flex items-center justify-between py-2.5 sm:py-3 px-2 sm:px-3 font-mono text-xs sm:text-sm group cursor-pointer transition-all ${
+                          className={`flex items-center justify-between py-2.5 sm:py-3 px-2 sm:px-3 font-mono text-xs sm:text-sm group cursor-pointer transition-all border-b border-black/10 dark:border-white/10 last:border-b-0 ${
                             isHighlighted
-                              ? 'bg-red-600/10 dark:bg-red-500/15 border-l-2 border-red-600 dark:border-red-500'
-                              : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.03] border-l-2 border-transparent'
+                              ? 'bg-red-600/10 dark:bg-red-500/15'
+                              : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.03]'
                           }`}
                         >
                           <div className="flex items-center gap-2 sm:gap-2.5 truncate flex-1 min-w-0 overflow-hidden">
@@ -1768,16 +1853,19 @@ export function CalendarHubPage({
                           </div>
                           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                             {item.type === 'trip' && (
-                              <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded-full bg-[#FF4500] text-white">
-                                {item.days}D
+                              <span className="text-[10.5px] sm:text-xs font-mono font-bold text-red-600 dark:text-red-400 shrink-0">
+                                {item.days === 1 ? '1 DAY' : `${item.days} DAYS`}
                               </span>
                             )}
                             {item.type === 'event' && (
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1.5 sm:gap-2">
                                 <span
-                                  className="w-2 h-2 rounded-full"
+                                  className="w-2 h-2 rounded-full shrink-0"
                                   style={{ backgroundColor: item.eventCatColor }}
                                 />
+                                <span className="text-[10.5px] sm:text-xs font-mono font-bold text-black/60 dark:text-white/60 shrink-0">
+                                  {item.days === 1 ? '1 DAY' : `${item.days} DAYS`}
+                                </span>
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -1899,36 +1987,33 @@ export function CalendarHubPage({
                     ))}
                   </div>
 
-                  {/* Mini Days Grid - Concept B Circular Button Layout with Mobile-Optimized Proportion (세로 늘어짐 방지 및 정갈한 원형 비례) */}
-                  <div className="grid grid-cols-7 gap-y-0.5 sm:gap-y-1 md:gap-y-1.5 text-center font-mono select-none">
+                  {/* Mini Days Grid - Continuous Pill Ribbons & Non-overlapping Circles */}
+                  <div className="grid grid-cols-7 gap-y-0.5 sm:gap-y-1 text-center font-mono select-none">
                     {m.days.map((day, dIdx) => {
                       if (!day.isCurrentMonth) {
-                        return <div key={`empty-${m.monthIdx}-${dIdx}`} className="w-full aspect-square max-w-[32px] max-h-[32px] sm:max-w-[38px] sm:max-h-[38px] md:max-w-[44px] md:max-h-[44px] mx-auto" />;
+                        return <div key={`empty-${m.monthIdx}-${dIdx}`} className="w-full aspect-square max-w-[28px] max-h-[28px] sm:max-w-[34px] sm:max-h-[34px] mx-auto" />;
                       }
 
+                      const col = dIdx % 7;
                       const isSun = day.dayOfWeek === 6;
                       const isSat = day.dayOfWeek === 5;
 
-                      // Circular badge styling based on Concept B (모바일에서 겹침 없이 숫자를 감싸는 원형과 폰트)
-                      let circleClasses = 'w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full aspect-square flex items-center justify-center shrink-0 text-[11px] sm:text-xs md:text-sm font-bold transition-all';
-                      let textClasses = '';
+                      // 이전/다음 날짜와 동일한 여정 연속성 판별 (주 단위 가로 알약 리본 생성)
+                      const prevInRowHasTrip = day.hasTrip && col > 0 && m.days[dIdx - 1]?.hasTrip;
+                      const nextInRowHasTrip = day.hasTrip && col < 6 && m.days[dIdx + 1]?.hasTrip;
+
+                      // 모바일 2열에서도 절대 겹치지 않는 스케일 (w-6 h-6 sm:w-7 sm:h-7)
+                      let circleClasses = 'w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full aspect-square flex items-center justify-center shrink-0 text-[10px] sm:text-xs md:text-sm font-bold transition-all relative z-10';
+                      let textClasses = 'leading-none';
 
                       if (day.isToday) {
-                        // Inverted clean monochrome circle without red ring
                         circleClasses += ' bg-black text-white dark:bg-white dark:text-black font-black shadow-xs';
-                        textClasses = 'leading-none';
                       } else if (day.hasTrip) {
-                        // Concept B energetic orange/vermilion circle for trips
-                        circleClasses += day.isPlan
-                          ? ' bg-amber-500 text-white font-bold shadow-xs'
-                          : ' bg-[#FF6B35] hover:bg-[#FF5510] text-white font-black shadow-xs';
-                        textClasses = 'leading-none text-white';
+                        circleClasses += ' text-white font-black hover:opacity-90';
+                        textClasses += ' text-white';
                       } else if (day.hasEvent) {
-                        // Subdued dark/light circle for events
                         circleClasses += ' bg-black/10 dark:bg-white/15 text-black dark:text-white font-bold';
-                        textClasses = 'leading-none';
                       } else {
-                        // Default subtle circular button
                         circleClasses += ' hover:bg-black/5 dark:hover:bg-white/10';
                         textClasses = isSun || day.isHoliday
                           ? 'text-red-600 dark:text-red-400 font-bold'
@@ -1940,8 +2025,23 @@ export function CalendarHubPage({
                       return (
                         <div
                           key={day.dateStr}
-                          className="w-full aspect-square max-w-[32px] max-h-[32px] sm:max-w-[38px] sm:max-h-[38px] md:max-w-[44px] md:max-h-[44px] mx-auto flex items-center justify-center relative"
+                          className="w-full aspect-square max-w-[28px] max-h-[28px] sm:max-w-[34px] sm:max-h-[34px] mx-auto flex items-center justify-center relative"
                         >
+                          {/* Continuous Trip Pill Ribbon (월달력과 동일한 이어진 알약 느낌) */}
+                          {day.hasTrip && (
+                            <div
+                              className={`absolute top-0.5 bottom-0.5 sm:top-1 sm:bottom-1 z-0 ${
+                                !prevInRowHasTrip && !nextInRowHasTrip
+                                  ? 'inset-x-0.5 sm:inset-x-1 rounded-full'
+                                  : !prevInRowHasTrip && nextInRowHasTrip
+                                    ? 'left-0.5 sm:left-1 right-0 rounded-l-full'
+                                    : prevInRowHasTrip && !nextInRowHasTrip
+                                      ? 'left-0 right-0.5 sm:right-1 rounded-r-full'
+                                      : 'left-0 right-0 rounded-none'
+                              } ${day.isPlan ? 'bg-amber-500' : 'bg-[#FF4500]'}`}
+                            />
+                          )}
+
                           <button
                             type="button"
                             onClick={() => {
@@ -1950,6 +2050,18 @@ export function CalendarHubPage({
                               setDragAnchorDate(day.dateStr);
                               toggleViewMode('month');
                             }}
+                            onMouseEnter={(e) => {
+                              const matchedTrips = parsedJourneys.filter(pj => day.dateStr >= pj.range.start && day.dateStr <= pj.range.end);
+                              const matchedEvents = customEvents.filter(evt => day.dateStr >= evt.startDate && day.dateStr <= (evt.endDate || evt.startDate));
+                              handleDayHover(
+                                e,
+                                day.dateStr,
+                                day.holidayName,
+                                matchedTrips.map(mt => ({ title: mt.journey.title, isPlan: mt.isPlan, totalDays: getDaysDifference(mt.range.start, mt.range.end) })),
+                                matchedEvents.map(me => ({ title: me.title, category: me.category, totalDays: getDaysDifference(me.startDate, me.endDate || me.startDate) }))
+                              );
+                            }}
+                            onMouseLeave={handleDayLeave}
                             className={`cursor-pointer active:scale-95 ${circleClasses}`}
                             title={day.holidayName ? `${day.dateStr} (${day.holidayName})` : day.tripTitles.length > 0 ? `${day.dateStr} · ${day.tripTitles.join(', ')}` : day.dateStr}
                           >
@@ -1960,7 +2072,7 @@ export function CalendarHubPage({
 
                           {/* Minimal Holiday Indicator Dot */}
                           {day.isHoliday && !day.isToday && !day.hasTrip && (
-                            <span className="w-1 h-1 rounded-full bg-red-600 dark:bg-red-400 absolute bottom-0.5 left-1/2 -translate-x-1/2 pointer-events-none" />
+                            <span className="w-1 h-1 rounded-full bg-red-600 dark:bg-red-400 absolute bottom-0.5 left-1/2 -translate-x-1/2 pointer-events-none z-20" />
                           )}
                         </div>
                       );
@@ -2021,8 +2133,8 @@ export function CalendarHubPage({
                 <label className="block text-[11px] font-mono font-bold uppercase tracking-widest text-black/60 dark:text-white/60 mb-1.5">
                   DATE & PERIOD *
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 min-w-0">
-                  <div className="min-w-0">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 min-w-0 w-full max-w-full">
+                  <div className="min-w-0 w-full max-w-full relative overflow-hidden box-border">
                     <span className="text-[10px] font-mono text-black/50 dark:text-white/50 block mb-1">시작일</span>
                     <input
                       type="date"
@@ -2034,10 +2146,10 @@ export function CalendarHubPage({
                           setEventFormEndDate(e.target.value);
                         }
                       }}
-                      className="w-full max-w-full box-border min-w-0 px-2.5 py-2 rounded-sm border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.05] text-sm font-mono font-bold text-black dark:text-white outline-none focus:border-red-600"
+                      className="block w-full max-w-full box-border min-w-0 pl-2.5 pr-1 py-2 rounded-sm border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.05] text-sm font-mono font-bold text-black dark:text-white outline-none focus:border-red-600 [&::-webkit-calendar-picker-indicator]:p-0 [&::-webkit-calendar-picker-indicator]:m-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 w-full max-w-full relative overflow-hidden box-border">
                     <span className="text-[10px] font-mono text-black/50 dark:text-white/50 block mb-1">종료일</span>
                     <input
                       type="date"
@@ -2045,7 +2157,7 @@ export function CalendarHubPage({
                       min={eventFormStartDate}
                       value={eventFormEndDate}
                       onChange={(e) => setEventFormEndDate(e.target.value)}
-                      className="w-full max-w-full box-border min-w-0 px-2.5 py-2 rounded-sm border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.05] text-sm font-mono font-bold text-black dark:text-white outline-none focus:border-red-600"
+                      className="block w-full max-w-full box-border min-w-0 pl-2.5 pr-1 py-2 rounded-sm border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.05] text-sm font-mono font-bold text-black dark:text-white outline-none focus:border-red-600 [&::-webkit-calendar-picker-indicator]:p-0 [&::-webkit-calendar-picker-indicator]:m-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
                 </div>
@@ -2371,6 +2483,47 @@ export function CalendarHubPage({
                 <ArrowRight className="w-4 h-4 stroke-[2.5]" />
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* Date Hover Information Tooltip (Swiss Minimal Floating Card)  */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {hoveredTooltip && (
+        <div
+          className="fixed z-50 pointer-events-none -translate-x-1/2 -translate-y-full mb-3 px-3 py-2 rounded-md bg-black/95 dark:bg-zinc-900/95 text-white border border-white/15 shadow-2xl backdrop-blur-md min-w-[160px] max-w-xs animate-in fade-in zoom-in-95 duration-150 select-none"
+          style={{ left: hoveredTooltip.x, top: hoveredTooltip.y - 8 }}
+        >
+          <div className="flex items-center justify-between gap-2 pb-1.5 mb-1.5 border-b border-white/15 text-[10px] font-mono">
+            <span className="font-bold text-red-500 tracking-wider">
+              {hoveredTooltip.dateStr.replace(/-/g, '.')}
+            </span>
+            {hoveredTooltip.holidayName && (
+              <span className="text-red-400 font-bold truncate">
+                {hoveredTooltip.holidayName}
+              </span>
+            )}
+          </div>
+          <div className="flex flex-col gap-1.5 text-xs">
+            {hoveredTooltip.items.map((it, idx) => (
+              <div key={idx} className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 truncate">
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: it.categoryColor || (it.isPlan ? '#F59E0B' : '#FF4500') }}
+                  />
+                  <span className="font-sans font-bold truncate text-white">
+                    {it.title}
+                  </span>
+                </div>
+                {it.days && (
+                  <span className="text-[10px] font-mono text-white/60 shrink-0 font-bold">
+                    {it.days === 1 ? '1 DAY' : `${it.days} DAYS`}
+                  </span>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}
