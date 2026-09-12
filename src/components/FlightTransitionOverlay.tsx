@@ -72,16 +72,16 @@ export const FlightTransitionOverlay: React.FC<FlightTransitionOverlayProps> = (
 
   if (!isActive && !animating) return null;
 
-  // Sophisticated Airline Gray Palette (No black, elegant neutral grays)
-  const fuselageFill = isDarkMode ? '#94A3B8' : '#64748B'; // Slate 400 / 500
-  const wingsFill = isDarkMode ? '#8091A5' : '#52627A';    // Slightly darker slate
-  const detailsFill = isDarkMode ? '#CBD5E1' : '#475569';  // Subtle slate detail
-  const cockpitFill = isDarkMode ? '#1E293B' : '#334155';  // Dark slate slit
-  const contrailColor = isDarkMode ? 'rgba(203, 213, 225, 0.45)' : 'rgba(100, 116, 139, 0.4)';
+  // Sophisticated Airline Palette with strong visibility and top-tier contrast
+  const fuselageFill = isDarkMode ? '#CBD5E1' : '#334155'; // High contrast Slate 300 / 700
+  const wingsFill = isDarkMode ? '#94A3B8' : '#1E293B';    // Strong wings contrast
+  const detailsFill = isDarkMode ? '#F1F5F9' : '#0F172A';  // Crisp details
+  const cockpitFill = isDarkMode ? '#0F172A' : '#F8FAFC';  // Cockpit slit
+  const contrailColor = isDarkMode ? 'rgba(241, 245, 249, 0.65)' : 'rgba(51, 65, 85, 0.55)';
 
   return (
     <div 
-      className="fixed inset-0 z-[9999] pointer-events-none overflow-hidden flex items-center justify-center select-none"
+      className="fixed inset-0 z-[999999] pointer-events-none overflow-hidden flex items-center justify-center select-none"
       aria-hidden="true"
     >
       <style>{`

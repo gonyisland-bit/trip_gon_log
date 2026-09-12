@@ -154,16 +154,22 @@ export function CalendarHubPage({
     setTimeout(() => {
       setViewMode(mode);
       setIsTransitioning(false);
+      if (mode === 'year') {
+        setTimeout(() => {
+          const el = document.getElementById(`year-month-${currentMonth}`);
+          el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 120);
+      }
     }, 180);
   };
 
-  // 드래그 선택 모드 토글 (기본값 false: 스크롤 원활, true: 날짜 범위 드래그 선택)
-  const [isDragSelectMode, setIsDragSelectMode] = useState<boolean>(false);
-  const isDragSelectModeRef = useRef<boolean>(false);
+  // 편집 모드 토글 (기본값 false: 안전한 순수 조회 모드 & 자유 스크롤, true: 날짜 선택/드래그 및 일정 추가 활성화)
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
+  const isEditModeRef = useRef<boolean>(false);
 
   useEffect(() => {
-    isDragSelectModeRef.current = isDragSelectMode;
-  }, [isDragSelectMode]);
+    isEditModeRef.current = isEditMode;
+  }, [isEditMode]);
 
   // 복수 날짜 선택 범위 상태 (단일 날짜 선택 시 start === end)
   const [selectedRange, setSelectedRange] = useState<{ start: string; end: string } | null>(() => {
@@ -187,13 +193,13 @@ export function CalendarHubPage({
     dragAnchorDateRef.current = dragAnchorDate;
   }, [dragAnchorDate]);
 
-  // Non-passive touch listener to prevent vertical scrolling during mobile drag (드래그 모드 켜졌을 때만 동작)
+  // Non-passive touch listener to prevent vertical scrolling during mobile drag (편집 모드 켜졌을 때만 동작)
   useEffect(() => {
     const el = gridContainerRef.current;
     if (!el) return;
 
     const handleTouchMoveNative = (e: TouchEvent) => {
-      if (!isDragSelectModeRef.current) return;
+      if (!isEditModeRef.current) return;
       if (!isDraggingRef.current || !dragAnchorDateRef.current) return;
       if (e.cancelable) {
         e.preventDefault();
@@ -223,7 +229,7 @@ export function CalendarHubPage({
       window.removeEventListener('touchend', handleTouchEndNative);
       window.removeEventListener('touchcancel', handleTouchEndNative);
     };
-  }, [viewMode, isDragSelectMode]);
+  }, [viewMode, isEditMode]);
 
   // 커스텀 사용자 등록 일정 상태
   const [customEvents, setCustomEvents] = useState<CalendarCustomEvent[]>(() => {
@@ -238,6 +244,9 @@ export function CalendarHubPage({
   const [viewingEvent, setViewingEvent] = useState<CalendarCustomEvent | null>(null);
   const [shareCopied, setShareCopied] = useState<boolean>(false);
 
+  // 여정 퀵 프리뷰 모달 상태 (클릭 시 바로 이동하지 않고 미니멀 모달 노출)
+  const [viewingTrip, setViewingTrip] = useState<{ trip: Trip | Plan; isPlan: boolean; dateStr: string } | null>(null);
+
   // 일정 등록/수정 모달 상태
   const [isEventModalOpen, setIsEventModalOpen] = useState<boolean>(false);
   const [editingEvent, setEditingEvent] = useState<CalendarCustomEvent | null>(null);
@@ -246,6 +255,7 @@ export function CalendarHubPage({
   const [eventFormEndDate, setEventFormEndDate] = useState<string>('');
   const [eventFormCategory, setEventFormCategory] = useState<'work' | 'family' | 'personal' | 'blocked'>('work');
   const [eventFormMemo, setEventFormMemo] = useState<string>('');
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState<boolean>(false);
 
   const yearInputRef = useRef<HTMLInputElement>(null);
   const monthInputRef = useRef<HTMLInputElement>(null);
@@ -357,11 +367,16 @@ export function CalendarHubPage({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        if (viewingTrip) {
+          setViewingTrip(null);
+          return;
+        }
         if (viewingEvent) {
           setViewingEvent(null);
           return;
         }
         if (isEventModalOpen) {
+          setIsConfirmingDelete(false);
           closeEventModal();
           return;
         }
@@ -382,7 +397,7 @@ export function CalendarHubPage({
         }
       }
 
-      if (isEditingYear || isEditingMonth || isEventModalOpen || viewingEvent) return;
+      if (isEditingYear || isEditingMonth || isEventModalOpen || viewingEvent || viewingTrip) return;
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
       if (e.key === 'ArrowLeft') {
@@ -794,9 +809,13 @@ export function CalendarHubPage({
     };
   }, [yearMonthsData, parsedJourneys, currentYear]);
 
-  // 날짜 셀 클릭 핸들러 (단일 클릭 및 Shift + 클릭 복수 선택 지원)
+  // 날짜 셀 클릭 핸들러 (편집 모드 활성화 시에만 범위 선택 지원, 비활성화 시에는 순수 조회)
   const handleCellClick = (cell: DayCellData, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!isEditMode) {
+      // 조회 모드: 날짜 드래그/선택을 하지 않고, 자유로운 스크롤 및 일정 조회 보장
+      return;
+    }
     if (e.shiftKey && dragAnchorDate) {
       const newRange = normalizeRange(dragAnchorDate, cell.dateStr);
       setSelectedRange(newRange);
@@ -806,13 +825,10 @@ export function CalendarHubPage({
     }
   };
 
-  // 마우스 드래그 시작 (드래그 모드 활성화 시에만 동작)
+  // 마우스 드래그 시작 (편집 모드 활성화 시에만 동작)
   const handleCellMouseDown = (dateStr: string, e: React.MouseEvent) => {
     if (e.button !== 0 || e.shiftKey) return;
-    if (!isDragSelectMode) {
-      // 드래그 모드가 꺼져있으면 단일 클릭만 처리
-      return;
-    }
+    if (!isEditMode) return;
     e.stopPropagation();
     setIsDragging(true);
     setDragAnchorDate(dateStr);
@@ -821,13 +837,13 @@ export function CalendarHubPage({
 
   // 마우스 호버 시 드래그 범위 확장
   const handleCellMouseEnter = (dateStr: string) => {
-    if (!isDragSelectMode || !isDragging || !dragAnchorDate) return;
+    if (!isEditMode || !isDragging || !dragAnchorDate) return;
     setSelectedRange(normalizeRange(dragAnchorDate, dateStr));
   };
 
-  // 모바일 터치 드래그 시작 (드래그 모드 활성화 시에만 동작)
+  // 모바일 터치 드래그 시작 (편집 모드 활성화 시에만 동작)
   const handleCellTouchStart = (dateStr: string) => {
-    if (!isDragSelectMode) return;
+    if (!isEditMode) return;
     setIsDragging(true);
     isDraggingRef.current = true;
     setDragAnchorDate(dateStr);
@@ -853,10 +869,9 @@ export function CalendarHubPage({
     }
   };
 
-  // 특정 여정 클릭 시 상세 페이지로 이동
-  const handleTripBandClick = (e: React.MouseEvent, trip: Trip | Plan, dateStr: string) => {
-    e.stopPropagation();
-    const targetDateKey = dateStr.replace(/-/g, '.');
+  // 실제 여정 상세 페이지로 비행기 전환과 함께 이동 (모달 내 진입 버튼에서 호출)
+  const executeNavigateToTrip = (trip: Trip | Plan, dateStr?: string) => {
+    const targetDateKey = (dateStr || trip.date).replace(/-/g, '.');
     try {
       sessionStorage.setItem('pending_detail_jump', JSON.stringify({
         tab: 'timeline',
@@ -864,6 +879,12 @@ export function CalendarHubPage({
       }));
     } catch (_) {}
     onNavigate('detail', trip.id);
+  };
+
+  // 특정 여정 클릭 시 바로 이동하지 않고 미니멀 퀵 프리뷰 모달 오픈
+  const handleTripBandClick = (e: React.MouseEvent, trip: Trip | Plan, dateStr: string, isPlan: boolean = false) => {
+    e.stopPropagation();
+    setViewingTrip({ trip, isPlan, dateStr });
   };
 
   // 커스텀 일정 클릭 시 스위스 뷰 모달 오픈
@@ -914,6 +935,7 @@ export function CalendarHubPage({
     setEventFormEndDate(e >= s ? e : s);
     setEventFormCategory('work');
     setEventFormMemo('');
+    setIsConfirmingDelete(false);
     setIsEventModalOpen(true);
   };
 
@@ -926,6 +948,7 @@ export function CalendarHubPage({
     setEventFormEndDate(evt.endDate || evt.startDate);
     setEventFormCategory(evt.category || 'work');
     setEventFormMemo(evt.memo || '');
+    setIsConfirmingDelete(false);
     setIsEventModalOpen(true);
   };
 
@@ -1230,12 +1253,12 @@ export function CalendarHubPage({
                 </button>
               </div>
 
-              {/* Drag Toggle Button (심플하게 DRAG 단일 표기, 끄면 선택 해제) */}
+              {/* Edit Mode Toggle Button (DRAG와 ADD 통폐합 단일 버튼: 켜야만 날짜 선택/일정 등록 가능) */}
               {viewMode === 'month' && (
                 <button
                   type="button"
                   onClick={() => {
-                    setIsDragSelectMode(prev => {
+                    setIsEditMode(prev => {
                       const next = !prev;
                       if (!next) {
                         setSelectedRange(null);
@@ -1243,20 +1266,20 @@ export function CalendarHubPage({
                       return next;
                     });
                   }}
-                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border text-[11px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1 shrink-0 shadow-xs ${
-                    isDragSelectMode
+                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border text-[11px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-xs ${
+                    isEditMode
                       ? 'bg-red-600 text-white border-red-600 ring-2 ring-red-600/30'
                       : 'bg-white/80 dark:bg-zinc-900/80 border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
                   }`}
-                  title={isDragSelectMode ? "드래그 모드 활성 (클릭 시 해제)" : "드래그 모드 켜기"}
+                  title={isEditMode ? "편집 모드 활성 (클릭 시 조회 전용 모드로 전환)" : "편집 모드 켜기 (날짜 선택 및 일정 등록)"}
                 >
-                  <MousePointerClick className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  <span>{isDragSelectMode ? 'DRAG: ON' : 'DRAG'}</span>
-                  {isDragSelectMode && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />}
+                  <Edit3 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span>{isEditMode ? 'EDIT: ON' : 'EDIT'}</span>
+                  {isEditMode && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />}
                 </button>
               )}
 
-              {/* Right group: Prev, Today, Next, Add & Days Badge */}
+              {/* Right group: Prev, Today, Next & Days Badge */}
               <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                 {/* Prev Button */}
                 <button
@@ -1286,17 +1309,6 @@ export function CalendarHubPage({
                   title={viewMode === 'month' ? "다음 달" : "다음 연도"}
                 >
                   <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </button>
-
-                {/* Add Schedule Button */}
-                <button
-                  type="button"
-                  onClick={() => openNewEventModal()}
-                  className="px-2 sm:px-2.5 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white text-[10.5px] sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center gap-1 shrink-0"
-                  title="새 일정 등록"
-                >
-                  <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2.5]" />
-                  <span>ADD</span>
                 </button>
 
                 {/* Days Metric Badge (우측에 나란히 배치하여 여백 낭비 제거, 이모지 제거) */}
@@ -1350,10 +1362,18 @@ export function CalendarHubPage({
         {viewMode === 'month' ? (
           /* ──────────────── MONTH VIEW ──────────────── */
           <div className="w-full max-w-7xl mx-auto px-1 sm:px-6 lg:px-8 mt-4 sm:mt-6">
-            {/* Multi-Select Range Indicator (불필요한 안내 문구 제거, 순수 상태만 간결하게 표시) */}
-            {isMultiDaySelected && (
-              <div className="flex items-center justify-end pb-2 px-1 text-xs sm:text-sm font-mono text-red-600 dark:text-red-400 font-bold animate-in fade-in">
-                <span>{selectedRange?.start} ~ {selectedRange?.end} ({selectedDaysCount}일 선택됨)</span>
+            {/* Multi-Select Range Indicator & Quick Add button in Edit Mode */}
+            {isEditMode && selectedRange && (
+              <div className="flex items-center justify-between pb-2 px-1 text-xs sm:text-sm font-mono text-red-600 dark:text-red-400 font-bold animate-in fade-in">
+                <span>{selectedRange.start} ~ {selectedRange.end} ({selectedDaysCount}일 선택됨)</span>
+                <button
+                  type="button"
+                  onClick={() => openNewEventModal(selectedRange.start, selectedRange.end)}
+                  className="px-2.5 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white text-[10.5px] sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3 stroke-[2.5]" />
+                  <span>ADD SCHEDULE</span>
+                </button>
               </div>
             )}
 
@@ -1385,7 +1405,7 @@ export function CalendarHubPage({
               onTouchMove={handleGridTouchMove}
               onTouchEnd={handleGridTouchEnd}
               className={`grid grid-cols-7 bg-transparent rounded-none overflow-hidden select-none ${
-                isDragSelectMode ? 'touch-none' : 'touch-auto'
+                isEditMode ? 'touch-none' : 'touch-auto'
               }`}
             >
               {calendarGrid.map((cell, cellIdx) => {
@@ -1408,7 +1428,7 @@ export function CalendarHubPage({
                   const hasLeftNeighbor = col > 0 && calendarGrid[cellIdx - 1]?.dateStr >= selectedRange!.start && calendarGrid[cellIdx - 1]?.dateStr <= selectedRange!.end;
                   const hasRightNeighbor = col < 6 && calendarGrid[cellIdx + 1]?.dateStr >= selectedRange!.start && calendarGrid[cellIdx + 1]?.dateStr <= selectedRange!.end;
 
-                  if (isDragSelectMode) {
+                  if (isEditMode) {
                     borderClasses = `bg-red-500/10 dark:bg-red-500/15 z-10 ${
                       !hasTopNeighbor ? 'border-t-2 border-t-red-600 dark:border-t-red-500' : ''
                     } ${
@@ -1624,11 +1644,12 @@ export function CalendarHubPage({
               </span>
             </div>
 
-            {/* 3-Column Year Grid (외곽 테두리 없이 플랫한 스위스 레이아웃) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 sm:gap-10">
+            {/* Year Grid: Mobile 2-Column (grid-cols-2), Desktop 3-Column (md:grid-cols-3) */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
               {yearMonthsData.map((m) => (
                 <div
                   key={m.monthIdx}
+                  id={`year-month-${m.monthIdx}`}
                   className="bg-transparent p-2 sm:p-3 flex flex-col justify-between transition-all group"
                 >
                   {/* Month Card Header */}
@@ -1642,24 +1663,24 @@ export function CalendarHubPage({
                       className="text-left cursor-pointer group"
                       title={`${m.monthTab.full} 월별 보기로 확대 이동`}
                     >
-                      <div className="flex items-baseline gap-2 text-black dark:text-white group-hover:text-red-600 transition-colors">
-                        <span className="text-lg sm:text-xl font-black font-mono tracking-tight">
+                      <div className="flex items-baseline gap-1.5 sm:gap-2 text-black dark:text-white group-hover:text-red-600 transition-colors">
+                        <span className="text-base sm:text-lg md:text-xl font-black font-mono tracking-tight">
                           {m.monthTab.num < 10 ? `0${m.monthTab.num}` : m.monthTab.num}
                         </span>
-                        <span className="text-xs sm:text-sm font-semibold font-['Inter',sans-serif] tracking-wider uppercase opacity-75">
-                          {m.monthTab.full}
+                        <span className="text-[11px] sm:text-xs md:text-sm font-semibold font-['Inter',sans-serif] tracking-wider uppercase opacity-75">
+                          {m.monthTab.short}
                         </span>
                       </div>
                     </button>
                     {m.totalTripDays > 0 && (
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-black/75 dark:text-white/75">
-                        ✈️ {m.totalTripDays}D
+                      <span className="text-[9.5px] sm:text-[10px] font-mono font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-black/75 dark:text-white/75">
+                        {m.totalTripDays}D
                       </span>
                     )}
                   </div>
 
                   {/* Mini Weekday Headers (M T W T F S S) */}
-                  <div className="grid grid-cols-7 text-center text-[10.5px] font-mono font-bold mb-1 select-none">
+                  <div className="grid grid-cols-7 text-center text-[10px] sm:text-[10.5px] font-mono font-bold mb-1 select-none">
                     {WEEKDAYS.map((wd, wIdx) => (
                       <div
                         key={wd}
@@ -1684,15 +1705,20 @@ export function CalendarHubPage({
                       const isTripSingle = day.hasTrip && day.isTripStart && day.isTripEnd;
                       const isTripStart = day.hasTrip && day.isTripStart && !day.isTripEnd;
                       const isTripEnd = day.hasTrip && day.isTripEnd && !day.isTripStart;
-                      const isTripMid = day.hasTrip && !day.isTripStart && !day.isTripEnd;
 
                       // Continuous Region Classes for Events
                       const isEventSingle = day.hasEvent && day.isEventStart && day.isEventEnd;
                       const isEventStart = day.hasEvent && day.isEventStart && !day.isEventEnd;
                       const isEventEnd = day.hasEvent && day.isEventEnd && !day.isEventStart;
-                      const isEventMid = day.hasEvent && !day.isEventStart && !day.isEventEnd;
 
-                      // Mini calendar styling: 연간 보기에서는 임의의 선택 영역(레드 하이라이트)을 표기하지 않고 전체 일정 분포를 명확히 보여줌
+                      // Soft Background Tint
+                      let bgTint = '';
+                      if (day.hasTrip) {
+                        bgTint = day.isPlan ? 'bg-amber-500/15 dark:bg-amber-500/20' : 'bg-red-500/10 dark:bg-red-500/15';
+                      } else if (day.hasEvent) {
+                        bgTint = 'bg-black/5 dark:bg-white/5';
+                      }
+
                       return (
                         <button
                           key={day.dateStr}
@@ -1703,45 +1729,45 @@ export function CalendarHubPage({
                             setDragAnchorDate(day.dateStr);
                             toggleViewMode('month');
                           }}
-                          className={`h-7 sm:h-8 text-xs font-bold flex flex-col items-center justify-center relative transition-all cursor-pointer hover:opacity-80 ${
-                            day.isToday
-                              ? 'bg-black text-white dark:bg-white dark:text-black font-black rounded-sm'
-                              : day.hasTrip
-                                ? `${
-                                    isTripSingle
-                                      ? 'rounded-full'
-                                      : isTripStart
-                                        ? 'rounded-l-full'
-                                        : isTripEnd
-                                          ? 'rounded-r-full'
-                                          : 'rounded-none'
-                                  } ${
-                                    day.isPlan
-                                      ? 'bg-amber-500/30 text-amber-950 dark:text-amber-200 font-bold'
-                                      : 'bg-red-600 text-white font-bold'
-                                  }`
-                                : day.hasEvent
-                                  ? `${
-                                      isEventSingle
-                                        ? 'rounded-full'
-                                        : isEventStart
-                                          ? 'rounded-l-full'
-                                          : isEventEnd
-                                            ? 'rounded-r-full'
-                                            : 'rounded-none'
-                                    } bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900 font-medium`
-                                  : day.isHoliday || isSun
-                                    ? 'text-red-600 dark:text-red-400 font-bold rounded-sm'
-                                    : isSat
-                                      ? 'text-blue-600 dark:text-blue-400 font-bold rounded-sm'
-                                      : 'text-black/80 dark:text-white/80 rounded-sm'
-                          }`}
+                          className={`h-7 sm:h-8 text-xs font-bold flex flex-col items-center justify-center relative transition-all cursor-pointer hover:opacity-80 ${bgTint}`}
                           title={day.holidayName ? `${day.dateStr} (${day.holidayName})` : day.tripTitles.length > 0 ? `${day.dateStr} · ${day.tripTitles.join(', ')}` : day.dateStr}
                         >
-                          <span className="leading-none text-[11px] sm:text-xs z-10">{day.dayNum}</span>
+                          {/* Continuous Slim Underline for Trips (2.5px) */}
+                          {day.hasTrip && (
+                            <span className={`absolute bottom-0.5 h-[2.5px] z-10 ${
+                              day.isPlan ? 'bg-amber-500' : 'bg-red-600 dark:bg-red-500'
+                            } ${
+                              isTripSingle ? 'left-1 right-1 rounded-full' : isTripStart ? 'left-1 right-0 rounded-l-full' : isTripEnd ? 'left-0 right-1 rounded-r-full' : 'left-0 right-0'
+                            }`} />
+                          )}
+
+                          {/* Continuous Slim Underline for Custom Events (2.5px) */}
+                          {day.hasEvent && !day.hasTrip && (
+                            <span className={`absolute bottom-0.5 h-[2.5px] z-10 bg-black/60 dark:bg-white/60 ${
+                              isEventSingle ? 'left-1 right-1 rounded-full' : isEventStart ? 'left-1 right-0 rounded-l-full' : isEventEnd ? 'left-0 right-1 rounded-r-full' : 'left-0 right-0'
+                            }`} />
+                          )}
+
+                          {/* Day Number: Distinct Inverted Circle Badge for Today */}
+                          {day.isToday ? (
+                            <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-black text-white dark:bg-white dark:text-black font-black flex items-center justify-center ring-2 ring-red-600 shadow-xs z-20 text-[10px] sm:text-xs">
+                              {day.dayNum}
+                            </span>
+                          ) : (
+                            <span className={`leading-none text-[11px] sm:text-xs z-10 font-bold ${
+                              day.isHoliday || isSun
+                                ? 'text-red-600 dark:text-red-400'
+                                : isSat
+                                  ? 'text-blue-600 dark:text-blue-400'
+                                  : 'text-black/80 dark:text-white/80'
+                            }`}>
+                              {day.dayNum}
+                            </span>
+                          )}
+
                           {/* Dot Indicator if multiple events/trips overlap on the same date */}
-                          {day.hasMultiEvents && (
-                            <span className="w-1 h-1 rounded-full bg-red-600 dark:bg-red-400 mt-0.5 z-10 animate-in fade-in" />
+                          {day.hasMultiEvents && !day.isToday && (
+                            <span className="w-1 h-1 rounded-full bg-red-600 dark:bg-red-400 absolute top-0.5 right-0.5 z-10 animate-in fade-in" />
                           )}
                         </button>
                       );
@@ -2015,21 +2041,20 @@ export function CalendarHubPage({
                 <input
                   type="text"
                   required
-                  placeholder="예: 도쿄 출장, 어머니 생신, 프로젝트 마감"
+                  placeholder="예: 도쿄 출장, 가족 모임, 프로젝트 마감"
                   value={eventFormTitle}
                   onChange={(e) => setEventFormTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-sm border border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.05] text-base sm:text-sm font-bold text-black dark:text-white outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all"
-                  autoFocus
+                  className="w-full px-3 py-2 rounded-sm border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.05] text-base sm:text-sm font-bold text-black dark:text-white outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all"
                 />
               </div>
 
-              {/* Unified Date & Period Inputs (No toggling, auto-synced) */}
+              {/* Unified Date & Period Inputs (No overlapping or overflow) */}
               <div>
                 <label className="block text-[11px] font-mono font-bold uppercase tracking-widest text-black/60 dark:text-white/60 mb-1.5">
                   DATE & PERIOD *
                 </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
+                <div className="grid grid-cols-2 gap-2 min-w-0">
+                  <div className="min-w-0">
                     <span className="text-[10px] font-mono text-black/50 dark:text-white/50 block mb-1">시작일</span>
                     <input
                       type="date"
@@ -2041,10 +2066,10 @@ export function CalendarHubPage({
                           setEventFormEndDate(e.target.value);
                         }
                       }}
-                      className="w-full px-3 py-2 rounded-sm border border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.05] text-base sm:text-sm font-mono font-bold text-black dark:text-white outline-none focus:border-red-600"
+                      className="w-full min-w-0 px-2.5 py-2 rounded-sm border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.05] text-sm font-mono font-bold text-black dark:text-white outline-none focus:border-red-600"
                     />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <span className="text-[10px] font-mono text-black/50 dark:text-white/50 block mb-1">종료일</span>
                     <input
                       type="date"
@@ -2052,7 +2077,7 @@ export function CalendarHubPage({
                       min={eventFormStartDate}
                       value={eventFormEndDate}
                       onChange={(e) => setEventFormEndDate(e.target.value)}
-                      className="w-full px-3 py-2 rounded-sm border border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.05] text-base sm:text-sm font-mono font-bold text-black dark:text-white outline-none focus:border-red-600"
+                      className="w-full min-w-0 px-2.5 py-2 rounded-sm border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.05] text-sm font-mono font-bold text-black dark:text-white outline-none focus:border-red-600"
                     />
                   </div>
                 </div>
@@ -2096,27 +2121,55 @@ export function CalendarHubPage({
                   placeholder="참고 사항, 항공편, 숙소 예약 번호 등 간단한 메모"
                   value={eventFormMemo}
                   onChange={(e) => setEventFormMemo(e.target.value)}
-                  className="w-full px-3 py-2 rounded-sm border border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.05] text-base sm:text-sm text-black dark:text-white outline-none focus:border-red-600 resize-none"
+                  className="w-full px-3 py-2 rounded-sm border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.05] text-base sm:text-sm text-black dark:text-white outline-none focus:border-red-600 resize-none"
                 />
               </div>
 
-              {/* Action Buttons */}
+              {/* Action Buttons with Safe Delete Confirmation */}
               <div className="flex items-center justify-between pt-4 border-t border-black/10 dark:border-white/10">
                 {editingEvent ? (
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteEvent(editingEvent.id)}
-                    className="px-3 py-2 rounded-sm border border-red-600/30 text-red-600 hover:bg-red-600 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>DELETE</span>
-                  </button>
+                  <div className="flex items-center">
+                    {isConfirmingDelete ? (
+                      <div className="flex items-center gap-1.5 animate-in fade-in">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsConfirmingDelete(false);
+                            handleDeleteEvent(editingEvent.id);
+                          }}
+                          className="px-2.5 py-1.5 rounded-sm bg-red-600 hover:bg-red-700 text-white text-xs font-mono font-bold tracking-wider cursor-pointer shadow-xs"
+                        >
+                          CONFIRM DELETE
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsConfirmingDelete(false)}
+                          className="px-2 py-1.5 rounded-sm border border-black/20 dark:border-white/20 text-xs font-mono font-bold text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
+                        >
+                          CANCEL
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setIsConfirmingDelete(true)}
+                        className="p-2 rounded-sm border border-red-600/30 text-red-600 hover:bg-red-600 hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
+                        title="일정 삭제"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span className="text-xs font-mono font-bold">DELETE</span>
+                      </button>
+                    )}
+                  </div>
                 ) : <div />}
 
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={closeEventModal}
+                    onClick={() => {
+                      setIsConfirmingDelete(false);
+                      closeEventModal();
+                    }}
                     className="px-4 py-2 rounded-sm border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-xs font-bold uppercase tracking-wider text-black/70 dark:text-white/70 cursor-pointer transition-colors"
                   >
                     CANCEL
@@ -2136,18 +2189,18 @@ export function CalendarHubPage({
       )}
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* View-Only Event Modal (Swiss Minimal Card & Share Action)     */}
+      {/* View-Only Event Modal (Swiss Minimal Card & Top Edit Icon)    */}
       {/* ───────────────────────────────────────────────────────────── */}
       {viewingEvent && (
         <div 
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150 select-none"
           onClick={() => setViewingEvent(null)}
         >
           <div 
-            className="w-full max-w-md bg-white dark:bg-[#141414] border border-black/20 dark:border-white/20 rounded-none shadow-2xl p-6 overflow-hidden relative select-none"
+            className="w-full max-w-md bg-white dark:bg-[#141414] border border-black/20 dark:border-white/20 rounded-none shadow-2xl p-6 overflow-hidden relative"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Top Bar: Category, Share, Close */}
+            {/* Top Bar: Category, Edit Icon, Share, Close */}
             <div className="flex items-center justify-between pb-4 border-b border-black/10 dark:border-white/10">
               {(() => {
                 const cat = EVENT_CATEGORIES.find(c => c.id === viewingEvent.category) || EVENT_CATEGORIES[0];
@@ -2166,6 +2219,20 @@ export function CalendarHubPage({
               })()}
 
               <div className="flex items-center gap-1">
+                {/* Minimal Edit Icon Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const evt = viewingEvent;
+                    setViewingEvent(null);
+                    openEditEventModal(evt);
+                  }}
+                  className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                  title="일정 수정"
+                >
+                  <Edit3 className="w-4 h-4" />
+                </button>
+
                 {/* Share Button */}
                 <button
                   type="button"
@@ -2179,6 +2246,7 @@ export function CalendarHubPage({
                     <Share2 className="w-4 h-4" />
                   )}
                 </button>
+
                 {/* Close Button */}
                 <button
                   type="button"
@@ -2243,33 +2311,89 @@ export function CalendarHubPage({
                 </div>
               ) : null}
             </div>
+          </div>
+        </div>
+      )}
 
-            {/* Bottom Actions: Edit / Delete */}
-            <div className="flex items-center justify-between pt-5 mt-6 border-t border-black/10 dark:border-white/10">
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* Journey Preview Modal (Swiss Minimal Editorial Card)           */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {viewingTrip && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150 select-none"
+          onClick={() => setViewingTrip(null)}
+        >
+          <div 
+            className="w-full max-w-sm bg-white dark:bg-[#141414] border border-black/20 dark:border-white/20 shadow-2xl p-5 overflow-hidden relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top Bar: Journey Type Badge & Close */}
+            <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10">
+              <div className="flex items-center gap-2">
+                <Plane className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />
+                <span className="text-[10.5px] font-mono font-bold uppercase tracking-widest text-red-600 dark:text-red-500">
+                  {viewingTrip.isPlan ? 'TRAVEL PLAN' : 'JOURNEY LOG'}
+                </span>
+              </div>
               <button
                 type="button"
-                onClick={() => {
-                  const evt = viewingEvent;
-                  setViewingEvent(null);
-                  handleDeleteEvent(evt.id);
-                }}
-                className="px-3 py-1.5 rounded-sm border border-red-600/30 text-red-600 hover:bg-red-600 hover:text-white text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5"
+                onClick={() => setViewingTrip(null)}
+                className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                title="닫기 (ESC)"
               >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>DELETE</span>
+                <X className="w-4 h-4" />
               </button>
+            </div>
 
+            {/* Content */}
+            <div className="py-4 space-y-3">
+              <div>
+                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 block mb-0.5">
+                  TITLE
+                </span>
+                <h3 className="text-xl font-black text-black dark:text-white font-satoshi tracking-tight leading-tight">
+                  {viewingTrip.trip.title}
+                </h3>
+              </div>
+
+              <div className="flex items-baseline justify-between py-2 border-y border-black/10 dark:border-white/10">
+                <div>
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 block">
+                    PERIOD
+                  </span>
+                  <span className="font-mono text-sm font-bold text-black dark:text-white">
+                    {viewingTrip.trip.date}
+                  </span>
+                </div>
+                {viewingTrip.trip.days && (
+                  <span className="font-mono text-xs font-black text-red-600 dark:text-red-400">
+                    {viewingTrip.trip.days} DAYS
+                  </span>
+                )}
+              </div>
+
+              {viewingTrip.trip.tag && (
+                <div className="flex items-center gap-1.5 text-xs font-mono text-black/60 dark:text-white/60">
+                  <MapPin className="w-3 h-3 text-black/40 dark:text-white/40" />
+                  <span>{viewingTrip.trip.tag}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Action: Enter Journey Arrow Button (비행기 전환 모션과 함께 상세 페이지 진입) */}
+            <div className="pt-3 border-t border-black/10 dark:border-white/10">
               <button
                 type="button"
                 onClick={() => {
-                  const evt = viewingEvent;
-                  setViewingEvent(null);
-                  openEditEventModal(evt);
+                  const t = viewingTrip.trip;
+                  const d = viewingTrip.dateStr;
+                  setViewingTrip(null);
+                  executeNavigateToTrip(t, d);
                 }}
-                className="px-4 py-1.5 rounded-sm bg-black dark:bg-white text-white dark:text-black hover:opacity-90 text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+                className="w-full py-2.5 px-4 bg-black text-white dark:bg-white dark:text-black hover:opacity-90 active:scale-[0.99] text-xs font-black font-mono uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm"
               >
-                <Edit3 className="w-3.5 h-3.5" />
-                <span>EDIT SCHEDULE</span>
+                <span>OPEN JOURNEY</span>
+                <ArrowRight className="w-4 h-4 stroke-[2.5]" />
               </button>
             </div>
           </div>
