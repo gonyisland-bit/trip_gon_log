@@ -77,11 +77,14 @@ TripGon Log는 고대비 무채색 모노크롬을 바탕으로 하되, 엄선�
 ### 1) 달력 허브 (Calendar Hub)
 - **월달력 (Month View)**:
   - 컨테이너 폭: `max-w-4xl lg:max-w-5xl mx-auto`로 넓고 시원한 시인성 확보.
-  - 날짜 원형(Circle): `w-9 h-9 sm:w-11 sm:h-11 md:w-12 md:h-12 lg:w-13 lg:h-13 aspect-square`로 균일한 원형 유지.
-  - 연속 여정 알약(Capsule ribbon): 상하 여백(`top-1.5 bottom-1.5 sm:top-2 sm:bottom-2 md:top-2.5 md:bottom-2.5 lg:top-3 lg:bottom-3`)과 좌우 캡슐 라운딩 반경을 일치시켜 단정한 대칭 실루엣 유지.
+  - 날짜 원형(Circle): `w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 aspect-square`로 균일한 대형 원형 유지.
+  - 일자 셀 높이(Week Height): `h-14 sm:h-16 md:h-20 lg:h-22`로 주 간격(세로)과 요일 간격(가로)의 시각적 1:1 황금비율 정립.
+  - 날짜 폰트: `text-xs sm:text-base md:text-lg lg:text-xl font-black font-mono`.
+  - 연속 여정 알약(Capsule ribbon): 상하 여백(`top-2 bottom-2 sm:top-2.5 sm:bottom-2.5 md:top-3 md:bottom-3 lg:top-3.5 lg:bottom-3.5`)과 좌우 캡슐 라운딩 반경을 원형 버튼의 곡률과 일치시켜 단정한 대칭 실루엣 유지.
 - **년달력 (Year View)**:
-  - 레이아웃: 모바일 2열(`grid-cols-2`), 태블릿 3열(`sm:grid-cols-3`), 데스크톱 4열(`lg:grid-cols-4`, 3행 x 4열 포스터 그리드).
-  - 모바일과 웹의 카드 폭과 폰트 크기 비율을 정돈하여 시각적 밀도를 일관되게 유지.
+  - 레이아웃: 모바일 2열(`grid-cols-2`), 데스크톱 웹 3열(`md:grid-cols-3`, 3행 x 4열 = 12M 블록).
+  - 컨테이너 폭: `max-w-5xl xl:max-w-6xl mx-auto`로 충분한 카드 폭 확보.
+  - 미니 날짜 원형: `w-7.5 h-7.5 sm:w-8.5 sm:h-8.5 md:w-9.5 md:h-9.5 aspect-square` 및 폰트 `text-xs sm:text-sm font-bold`로 3열 카드의 비례에 맞게 확대하여 휑한 여백 없이 밀도 있는 스위스 포스터 그리드 완성.
   - 기간 표기: `1D`, `3D` 대신 하이픈을 추가한 고대비 슬림 배지(`TRIP 3-D`, `EVENT 1-D`) 적용.
 
 ### 2) 모달 다이얼로그 (Modals)
