@@ -811,19 +811,25 @@ export function CalendarHubPage({
     };
   }, [yearMonthsData, parsedJourneys, currentYear]);
 
-  // 날짜 셀 클릭 핸들러 (편집 모드 활성화 시에만 범위 선택 지원, 비활성화 시에는 순수 조회)
+  // 날짜 셀 클릭 핸들러 (편집 모드 시 범위 선택 지원, 일반 모드 시 해당 날짜 일정 필터링)
   const handleCellClick = (cell: DayCellData, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isEditMode) {
-      // 조회 모드: 날짜 드래그/선택을 하지 않고, 자유로운 스크롤 및 일정 조회 보장
-      return;
-    }
-    if (e.shiftKey && dragAnchorDate) {
-      const newRange = normalizeRange(dragAnchorDate, cell.dateStr);
-      setSelectedRange(newRange);
+    if (isEditMode) {
+      if (e.shiftKey && dragAnchorDate) {
+        const newRange = normalizeRange(dragAnchorDate, cell.dateStr);
+        setSelectedRange(newRange);
+      } else {
+        setSelectedRange({ start: cell.dateStr, end: cell.dateStr });
+        setDragAnchorDate(cell.dateStr);
+      }
     } else {
-      setSelectedRange({ start: cell.dateStr, end: cell.dateStr });
-      setDragAnchorDate(cell.dateStr);
+      // 일반 모드: 해당 날짜 선택하여 하단 1행 일정 목록 필터링 (이미 선택된 날짜면 전체 월간으로 토글)
+      if (selectedRange && selectedRange.start === cell.dateStr && selectedRange.end === cell.dateStr) {
+        setSelectedRange(null);
+      } else {
+        setSelectedRange({ start: cell.dateStr, end: cell.dateStr });
+        setDragAnchorDate(cell.dateStr);
+      }
     }
   };
 
@@ -1362,11 +1368,11 @@ export function CalendarHubPage({
           : 'scale-100 opacity-100'
       }`}>
         {viewMode === 'month' ? (
-          /* ──────────────── MONTH VIEW ──────────────── */
-          <div className="w-full max-w-7xl mx-auto px-1 sm:px-6 lg:px-8 mt-4 sm:mt-6">
+          /* ──────────────── MONTH VIEW (Pure Circular Swiss Minimal) ──────────────── */
+          <div className="w-full max-w-3xl mx-auto px-2 sm:px-6 mt-3 sm:mt-5">
             {/* Multi-Select Range Indicator & Quick Add button in Edit Mode */}
             {isEditMode && selectedRange && (
-              <div className="flex items-center justify-between pb-2 px-1 text-xs sm:text-sm font-mono text-red-600 dark:text-red-400 font-bold animate-in fade-in">
+              <div className="flex items-center justify-between pb-2.5 px-1 text-xs sm:text-sm font-mono text-red-600 dark:text-red-400 font-bold animate-in fade-in">
                 <span>{selectedRange.start} ~ {selectedRange.end} ({selectedDaysCount}일 선택됨)</span>
                 <button
                   type="button"
@@ -1379,20 +1385,20 @@ export function CalendarHubPage({
               </div>
             )}
 
-            {/* Weekday Header Row */}
-            <div className="grid grid-cols-7 border-b border-black/20 dark:border-white/20 pb-1.5 sm:pb-2 text-center text-xs sm:text-sm md:text-base font-black tracking-widest font-mono select-none">
+            {/* Weekday Header Row: MON TUE WED THU FRI SAT SUN */}
+            <div className="grid grid-cols-7 border-b border-black/15 dark:border-white/15 pb-2 text-center text-xs sm:text-sm font-black tracking-widest font-mono select-none">
               {WEEKDAYS.map((day, idx) => {
                 const isSunday = idx === 6;
                 const isSaturday = idx === 5;
                 return (
                   <div 
                     key={day} 
-                    className={`py-0.5 sm:py-1 ${
+                    className={`py-0.5 ${
                       isSunday 
                         ? 'text-red-600 dark:text-red-500 font-black' 
                         : isSaturday 
                           ? 'text-blue-600 dark:text-blue-400' 
-                          : 'text-black/70 dark:text-white/70'
+                          : 'text-black/60 dark:text-white/60'
                     }`}
                   >
                     {day}
@@ -1401,239 +1407,348 @@ export function CalendarHubPage({
               })}
             </div>
 
-            {/* Day Grid Cells with Drag & Multi-Select Support (외곽 테두리 없는 스위스 미니멀 그리드) */}
+            {/* Pure Circular Day Grid Cells with Continuous Trip Capsule Bands (사각 그리드 완전 제거) */}
             <div 
               ref={gridContainerRef}
               onTouchMove={handleGridTouchMove}
               onTouchEnd={handleGridTouchEnd}
-              className={`grid grid-cols-7 bg-transparent rounded-none overflow-hidden select-none ${
+              className={`grid grid-cols-7 select-none justify-items-center w-full py-2 sm:py-3 ${
                 isEditMode ? 'touch-none' : 'touch-auto'
               }`}
             >
               {calendarGrid.map((cell, cellIdx) => {
+                const col = cellIdx % 7;
                 const isSunday = cell.dayOfWeek === 6;
                 const isSaturday = cell.dayOfWeek === 5;
                 const isHoliday = !!cell.holiday;
-
                 const isInRange = !!(selectedRange && cell.dateStr >= selectedRange.start && cell.dateStr <= selectedRange.end);
-                const isRangeEnd = !!(selectedRange && cell.dateStr === selectedRange.end);
 
-                // Unified Box Border Calculation (상하좌우 인접 셀이 선택 영역에 포함되는지 확인하여 외곽선만 렌더링)
-                // 드래그 활성화 시: 빨간 테두리 + 빨간 틴트 / 일반 선택 시: 검정 테두리 + 검정 반투명 틴트
-                let borderClasses = '';
-                if (isInRange) {
-                  const col = cellIdx % 7;
-                  const row = Math.floor(cellIdx / 7);
+                const hasTrip = cell.overlappingTrips.length > 0;
+                const tripItem = hasTrip ? cell.overlappingTrips[0] : null;
+                const trip = tripItem ? tripItem.trip : null;
+                const isPlan = tripItem ? tripItem.isPlan : false;
 
-                  const hasTopNeighbor = row > 0 && calendarGrid[cellIdx - 7]?.dateStr >= selectedRange!.start && calendarGrid[cellIdx - 7]?.dateStr <= selectedRange!.end;
-                  const hasBottomNeighbor = cellIdx + 7 < calendarGrid.length && calendarGrid[cellIdx + 7]?.dateStr >= selectedRange!.start && calendarGrid[cellIdx + 7]?.dateStr <= selectedRange!.end;
-                  const hasLeftNeighbor = col > 0 && calendarGrid[cellIdx - 1]?.dateStr >= selectedRange!.start && calendarGrid[cellIdx - 1]?.dateStr <= selectedRange!.end;
-                  const hasRightNeighbor = col < 6 && calendarGrid[cellIdx + 1]?.dateStr >= selectedRange!.start && calendarGrid[cellIdx + 1]?.dateStr <= selectedRange!.end;
+                // Multi-day trip ribbon connection logic for current row
+                const prevInRowHasSameTrip = hasTrip && col > 0 && calendarGrid[cellIdx - 1]?.overlappingTrips.some(t => t.trip.id === trip?.id);
+                const nextInRowHasSameTrip = hasTrip && col < 6 && calendarGrid[cellIdx + 1]?.overlappingTrips.some(t => t.trip.id === trip?.id);
 
-                  if (isEditMode) {
-                    borderClasses = `bg-red-500/10 dark:bg-red-500/15 z-10 ${
-                      !hasTopNeighbor ? 'border-t-2 border-t-red-600 dark:border-t-red-500' : ''
-                    } ${
-                      !hasBottomNeighbor ? 'border-b-2 border-b-red-600 dark:border-b-red-500' : ''
-                    } ${
-                      !hasLeftNeighbor ? 'border-l-2 border-l-red-600 dark:border-l-red-500' : ''
-                    } ${
-                      !hasRightNeighbor ? 'border-r-2 border-r-red-600 dark:border-r-red-500' : ''
-                    }`;
+                const hasEvent = cell.overlappingEvents.length > 0;
+                const eventItem = hasEvent ? cell.overlappingEvents[0].event : null;
+                const eventCat = eventItem ? EVENT_CATEGORIES.find(c => c.id === eventItem.category) : null;
+
+                // Circular badge styling based on Concept B & Swiss Minimal
+                let circleClasses = 'w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full aspect-square shrink-0 flex flex-col items-center justify-center font-mono transition-all duration-150 relative z-10 cursor-pointer';
+                let textClasses = 'text-xs sm:text-sm font-bold leading-none';
+
+                if (!cell.isCurrentMonth) {
+                  circleClasses += ' opacity-20 text-black/40 dark:text-white/40 hover:opacity-40';
+                } else if (cell.isToday) {
+                  circleClasses += ' bg-black text-white dark:bg-white dark:text-black font-black shadow-xs scale-105';
+                  textClasses = 'text-xs sm:text-sm font-black leading-none';
+                } else if (hasTrip) {
+                  circleClasses += ' text-white font-black hover:opacity-95';
+                  textClasses = 'text-xs sm:text-sm font-black leading-none text-white';
+                } else if (isInRange) {
+                  circleClasses += ' bg-red-600/20 ring-2 ring-red-600 text-red-600 dark:text-red-400 font-black';
+                } else if (hasEvent) {
+                  circleClasses += ' bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 text-black dark:text-white';
+                } else {
+                  circleClasses += ' bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20';
+                  if (isSunday || isHoliday) {
+                    textClasses += ' text-red-600 dark:text-red-400';
+                  } else if (isSaturday) {
+                    textClasses += ' text-blue-600 dark:text-blue-400';
                   } else {
-                    borderClasses = `bg-black/10 dark:bg-white/15 z-10 ${
-                      !hasTopNeighbor ? 'border-t-2 border-t-black dark:border-t-white' : ''
-                    } ${
-                      !hasBottomNeighbor ? 'border-b-2 border-b-black dark:border-b-white' : ''
-                    } ${
-                      !hasLeftNeighbor ? 'border-l-2 border-l-black dark:border-l-white' : ''
-                    } ${
-                      !hasRightNeighbor ? 'border-r-2 border-r-black dark:border-r-white' : ''
-                    }`;
+                    textClasses += ' text-black/80 dark:text-white/80';
                   }
                 }
-
-                // 트랙 슬롯 매핑: 월 전체의 globalMaxTracks를 기준으로 모든 셀이 일관된 슬롯 배열을 갖도록 보장
-                // 이를 통해 날짜별 일정 개수가 달라도 같은 트랙(0, 1, 2...)의 일정들이 정확히 같은 수평 높이에 위치하게 됨
-                const allItemsInCell: {
-                  type: 'trip' | 'event';
-                  trackIndex: number;
-                  data: any;
-                }[] = [
-                  ...cell.overlappingTrips.map(t => ({ type: 'trip' as const, trackIndex: t.trackIndex ?? 0, data: t })),
-                  ...cell.overlappingEvents.map(e => ({ type: 'event' as const, trackIndex: e.trackIndex ?? 0, data: e }))
-                ];
-
-                const trackSlots = Array.from({ length: globalMaxTracks + 1 }, (_, trackIdx) => {
-                  return allItemsInCell.find(item => item.trackIndex === trackIdx) || null;
-                });
-
-                // 외곽 테두리 없이 내부 구분선만 유지: 맨 우측 열(col === 6)은 border-r 제거, 맨 아래 행은 border-b 제거
-                const col = cellIdx % 7;
-                const row = Math.floor(cellIdx / 7);
-                const totalRows = Math.ceil(calendarGrid.length / 7);
-                const isLastCol = col === 6;
-                const isLastRow = row === totalRows - 1;
 
                 return (
                   <div
                     key={cell.dateStr}
                     data-calendar-date={cell.dateStr}
-                    onClick={(e) => handleCellClick(cell, e)}
-                    onMouseDown={(e) => handleCellMouseDown(cell.dateStr, e)}
-                    onMouseEnter={() => handleCellMouseEnter(cell.dateStr)}
-                    onTouchStart={() => handleCellTouchStart(cell.dateStr)}
-                    className={`min-h-[58px] sm:min-h-[110px] md:min-h-[135px] p-1 sm:p-2 ${
-                      !isLastCol ? 'border-r border-black/10 dark:border-white/10' : ''
-                    } ${
-                      !isLastRow ? 'border-b border-black/10 dark:border-white/10' : ''
-                    } flex flex-col justify-between transition-colors relative cursor-pointer group overflow-visible ${
-                      !cell.isCurrentMonth
-                        ? 'bg-black/[0.02] dark:bg-white/[0.02] opacity-40'
-                        : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.03]'
-                    } ${borderClasses}`}
+                    className="relative flex items-center justify-center h-10 sm:h-12 md:h-13 w-full"
                   >
-                    {/* Floating "+ ADD" Quick Action Badge (그리드 내부 우측 상단 고정, 이벤트 전파 차단) */}
-                    {isRangeEnd && (
-                      <button
-                        type="button"
-                        onMouseDown={(e) => e.stopPropagation()}
-                        onTouchStart={(e) => e.stopPropagation()}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (selectedRange) {
-                            openNewEventModal(selectedRange.start, selectedRange.end);
-                          }
-                        }}
-                        className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 z-40 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-red-600 hover:bg-red-700 text-white font-mono text-[8.5px] sm:text-[10.5px] font-black tracking-wider shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-1 cursor-pointer animate-in fade-in zoom-in-95 duration-150"
-                        title="선택한 기간으로 새 일정 등록"
-                      >
-                        <Plus className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" />
-                        <span>{isMultiDaySelected ? `ADD (${selectedDaysCount}D)` : 'ADD'}</span>
-                      </button>
+                    {/* Multi-day Trip Capsule Ribbon spanning across columns in row */}
+                    {hasTrip && cell.isCurrentMonth && (
+                      <div
+                        className={`absolute top-1 bottom-1 sm:top-1.5 sm:bottom-1.5 z-0 ${
+                          !prevInRowHasSameTrip && !nextInRowHasSameTrip
+                            ? 'inset-x-1 sm:inset-x-1.5 rounded-full'
+                            : !prevInRowHasSameTrip && nextInRowHasSameTrip
+                              ? 'left-1 sm:left-1.5 right-0 rounded-l-full'
+                              : prevInRowHasSameTrip && !nextInRowHasSameTrip
+                                ? 'left-0 right-1 sm:right-1.5 rounded-r-full'
+                                : 'left-0 right-0 rounded-none'
+                        } ${isPlan ? 'bg-amber-500' : 'bg-[#FF4500] dark:bg-[#FF4500]'}`}
+                      />
                     )}
 
-                    {/* Top: Day Number & Holiday Tag (Enlarged & Prominent) */}
-                    <div className="flex items-start justify-between gap-0.5 sm:gap-1 w-full">
-                      {/* Day Number: Concept B Circular Button / Badge */}
-                      <div className="flex items-center gap-1 sm:gap-1.5">
-                        <span
-                          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full aspect-square flex items-center justify-center shrink-0 font-mono text-xs sm:text-sm font-black transition-all ${
-                            cell.isToday
-                              ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
-                              : cell.overlappingTrips.length > 0
-                                ? 'bg-[#FF6B35] text-white shadow-xs'
-                                : isSunday || isHoliday
-                                  ? 'text-red-600 dark:text-red-500 hover:bg-black/5 dark:hover:bg-white/10'
-                                  : isSaturday
-                                    ? 'text-blue-600 dark:text-blue-400 hover:bg-black/5 dark:hover:bg-white/10'
-                                    : 'text-black/90 dark:text-white/90 hover:bg-black/5 dark:hover:bg-white/10'
-                          }`}
-                        >
-                          {cell.dayNum < 10 ? `0${cell.dayNum}` : cell.dayNum}
-                        </span>
-                        {cell.isToday && (
-                          <span className="hidden md:inline-block text-[8.5px] font-black uppercase text-black/60 dark:text-white/60 font-mono tracking-tighter">
-                            TODAY
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Public Holiday Tag - Enlarged for high legibility */}
-                      {cell.holiday && !isRangeEnd && (
-                        <span
-                          className="text-[8.5px] sm:text-[11px] md:text-xs font-bold text-red-600 dark:text-red-400 font-sans tracking-tight truncate max-w-[45px] sm:max-w-[110px] text-right"
-                          title={cell.holiday.name}
-                        >
-                          {cell.holiday.name}
-                        </span>
+                    {/* Interactive Circular Day Button */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        if (hasTrip && !isEditMode) {
+                          handleTripBandClick(e, trip!, cell.dateStr, isPlan);
+                        } else {
+                          handleCellClick(cell, e);
+                        }
+                      }}
+                      onMouseDown={(e) => handleCellMouseDown(cell.dateStr, e)}
+                      onMouseEnter={() => handleCellMouseEnter(cell.dateStr)}
+                      onTouchStart={() => handleCellTouchStart(cell.dateStr)}
+                      className={circleClasses}
+                      title={cell.holiday ? `${cell.dateStr} (${cell.holiday.name})` : cell.dateStr}
+                    >
+                      <span className={textClasses}>{cell.dayNum}</span>
+                      {/* Event Dot Indicator */}
+                      {hasEvent && !hasTrip && !cell.isToday && cell.isCurrentMonth && (
+                        <span 
+                          className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full mt-0.5" 
+                          style={{ backgroundColor: eventCat?.color || '#2563eb' }} 
+                        />
                       )}
-                    </div>
-
-                    {/* Middle / Bottom: Track Slot Aligned Ribbons */}
-                    {/* 모바일(sm 미만)에서는 공간 절약 및 늘어짐 방지를 위해 슬림 바(h-1.5), 데스크톱에서는 텍스트 리본 표시 */}
-                    <div className="mt-1 sm:mt-2 space-y-1 w-full flex-grow flex flex-col justify-end">
-                      {trackSlots.map((slotItem, sIdx) => {
-                        if (!slotItem) {
-                          // 빈 슬롯은 높이만 유지하여 다른 날짜의 같은 트랙 일정과 높이를 일치시킴
-                          return <div key={`spacer-${sIdx}`} className="h-[4px] sm:h-[22px] w-full" />;
-                        }
-
-                        if (slotItem.type === 'trip') {
-                          const { trip, isPlan, isStart, isEnd, dayIndex, totalDays } = slotItem.data;
-                          const isSingleDay = isStart && isEnd;
-                          return (
-                            <button
-                              key={`trip-${trip.id}`}
-                              type="button"
-                              onClick={(e) => handleTripBandClick(e, trip, cell.dateStr)}
-                              className={`h-[5px] sm:h-[22px] text-left text-[9px] sm:text-[10.5px] md:text-[11px] transition-all flex items-center select-none group/band cursor-pointer z-10 ${
-                                isSingleDay
-                                  ? 'w-full mx-0 rounded-full sm:rounded-xs px-0 sm:px-1.5'
-                                  : isStart
-                                    ? 'w-[calc(100%+0.25rem)] sm:w-[calc(100%+0.5rem)] -mr-1 sm:-mr-2 ml-0 rounded-l-full sm:rounded-l-xs pl-0 sm:pl-1.5 pr-0'
-                                    : isEnd
-                                      ? 'w-[calc(100%+0.25rem)] sm:w-[calc(100%+0.5rem)] -ml-1 sm:-ml-2 mr-0 rounded-r-full sm:rounded-r-xs pr-0 sm:pr-1.5 pl-0'
-                                      : 'w-[calc(100%+0.5rem)] sm:w-[calc(100%+1rem)] -mx-1 sm:-mx-2 rounded-none px-0'
-                              } ${
-                                isPlan
-                                  ? 'bg-amber-500/80 sm:bg-amber-500/25 sm:dark:bg-amber-500/35 text-amber-950 dark:text-amber-100 sm:border-y sm:border-dashed sm:border-amber-500/50 hover:bg-amber-500/40'
-                                  : 'bg-red-600 hover:bg-red-700 text-white font-black shadow-2xs'
-                              }`}
-                              title={`${trip.title} (DAY ${dayIndex}/${totalDays})`}
-                            >
-                              <div className="hidden sm:flex items-center gap-1 w-full min-w-0 px-0.5">
-                                {isStart && (
-                                  <Plane className="w-2.5 h-2.5 shrink-0 rotate-45 text-white/90" />
-                                )}
-                                <span className="font-bold truncate tracking-tight font-sans leading-tight text-white">
-                                  {isStart ? trip.title : `DAY ${dayIndex}`}
-                                </span>
-                              </div>
-                            </button>
-                          );
-                        }
-
-                        // slotItem.type === 'event'
-                        const { event, isStart, isEnd, dayIndex, totalDays } = slotItem.data;
-                        const categoryInfo = EVENT_CATEGORIES.find(c => c.id === event.category) || EVENT_CATEGORIES[0];
-                        const isSingleDay = isStart && isEnd;
-
-                        return (
-                          <button
-                            key={`event-${event.id}`}
-                            type="button"
-                            onClick={(e) => handleCustomEventClick(e, event)}
-                            className={`h-[5px] sm:h-[22px] text-left text-[8.5px] sm:text-[10px] transition-all flex items-center select-none cursor-pointer z-10 ${
-                              isSingleDay
-                                ? 'w-full mx-0 rounded-full sm:rounded-xs px-0 sm:px-1.5'
-                                : isStart
-                                  ? 'w-[calc(100%+0.25rem)] sm:w-[calc(100%+0.5rem)] -mr-1 sm:-mr-2 ml-0 rounded-l-full sm:rounded-l-xs pl-0 sm:pl-1.5 pr-0'
-                                  : isEnd
-                                    ? 'w-[calc(100%+0.25rem)] sm:w-[calc(100%+0.5rem)] -ml-1 sm:-ml-2 mr-0 rounded-r-full sm:rounded-r-xs pr-0 sm:pr-1.5 pl-0'
-                                    : 'w-[calc(100%+0.5rem)] sm:w-[calc(100%+1rem)] -mx-1 sm:-mx-2 rounded-none px-0'
-                            } bg-zinc-900 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 sm:border-y sm:border-zinc-800 sm:dark:border-zinc-300 font-medium`}
-                            title={`[${categoryInfo.label}] ${event.title} (클릭하여 보기/공유)`}
-                          >
-                            <div className="hidden sm:flex items-center gap-1.5 w-full min-w-0 px-0.5">
-                              {isStart && (
-                                <span 
-                                  className="w-1.5 h-1.5 rounded-full shrink-0" 
-                                  style={{ backgroundColor: categoryInfo.color }} 
-                                  title={categoryInfo.label}
-                                />
-                              )}
-                              <span className="font-semibold truncate tracking-tight font-sans leading-tight">
-                                {isStart ? event.title : `${event.title} (${dayIndex}/${totalDays})`}
-                              </span>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
+                      {cell.holiday && !hasTrip && !cell.isToday && !hasEvent && cell.isCurrentMonth && (
+                        <span className="w-1 h-1 rounded-full bg-red-600 dark:bg-red-400 mt-0.5" />
+                      )}
+                    </button>
                   </div>
                 );
               })}
+            </div>
+
+            {/* Mockup-Style Unified 1-Line Agenda Feed (달력 하단 직결 1행 목록) */}
+            <div className="mt-4 sm:mt-6 border-t border-black/15 dark:border-white/15 pt-4">
+              <div className="flex items-center justify-between pb-3 px-1 text-xs font-mono text-black/60 dark:text-white/60">
+                <span className="font-bold tracking-wider uppercase text-black/70 dark:text-white/70">
+                  {selectedRange ? (
+                    selectedRange.start === selectedRange.end
+                      ? `${selectedRange.start.replace(/-/g, '.')} SCHEDULES`
+                      : `${selectedRange.start.replace(/-/g, '.')} ~ ${selectedRange.end.replace(/-/g, '.')} (${selectedDaysCount}D)`
+                  ) : (
+                    `${MONTH_TABS[currentMonth].full} SCHEDULES`
+                  )}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openNewEventModal(selectedRange?.start, selectedRange?.end)}
+                    className="px-2.5 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white text-[10px] sm:text-xs font-bold font-mono tracking-wider flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-xs"
+                  >
+                    <Plus className="w-3 h-3 stroke-[2.5]" />
+                    <span>ADD SCHEDULE</span>
+                  </button>
+                  {selectedRange && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRange(null)}
+                      className="p-1 rounded-full border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 transition-colors cursor-pointer"
+                      title="전체 월간 일정 보기 (ESC)"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Agenda List Items */}
+              {(() => {
+                const items: {
+                  id: string;
+                  type: 'trip' | 'event';
+                  sortDate: string;
+                  dateBadge: string;
+                  displayTitle: string;
+                  days: number;
+                  eventCatColor?: string;
+                  data: any;
+                }[] = [];
+
+                // 1) Trips in displayedAgendaCells
+                const tripsMap = new Map<number, { trip: Trip | Plan; isPlan: boolean }>();
+                displayedAgendaCells.forEach(cell => {
+                  cell.overlappingTrips.forEach(t => {
+                    if (!tripsMap.has(t.trip.id)) {
+                      tripsMap.set(t.trip.id, { trip: t.trip, isPlan: t.isPlan });
+                    }
+                  });
+                });
+
+                tripsMap.forEach(({ trip, isPlan }) => {
+                  const pj = parsedJourneys.find(p => p.journey.id === trip.id);
+                  const s = pj ? pj.range.start : (parseTripDateRange(trip.date)?.start || trip.date);
+                  const e = pj ? pj.range.end : (parseTripDateRange(trip.date)?.end || trip.date);
+                  const days = getDaysDifference(s, e);
+
+                  const sParts = s.split('-');
+                  const eParts = e.split('-');
+                  const sMonthStr = MONTH_TABS[parseInt(sParts[1], 10) - 1]?.short || '';
+                  const eMonthStr = MONTH_TABS[parseInt(eParts[1], 10) - 1]?.short || '';
+                  const sDay = parseInt(sParts[2], 10);
+                  const eDay = parseInt(eParts[2], 10);
+
+                  if (selectedRange && selectedRange.start === selectedRange.end) {
+                    const cur = selectedRange.start;
+                    const curParts = cur.split('-');
+                    const curMonthStr = MONTH_TABS[parseInt(curParts[1], 10) - 1]?.short || '';
+                    const curDay = parseInt(curParts[2], 10);
+
+                    let prefix = isPlan ? 'PLAN' : 'TRIP';
+                    if (days > 1) {
+                      if (cur === s) prefix = 'START';
+                      else if (cur === e) prefix = 'END';
+                      else prefix = 'JOURNEY';
+                    }
+
+                    items.push({
+                      id: `trip-${trip.id}-${cur}`,
+                      type: 'trip',
+                      sortDate: cur,
+                      dateBadge: `${curDay < 10 ? `0${curDay}` : curDay} ${curMonthStr}`,
+                      displayTitle: `${prefix}: ${trip.title}${days > 1 ? ` (${getDaysDifference(s, cur)}/${days}D)` : ''}`,
+                      days,
+                      data: { trip, isPlan }
+                    });
+                  } else {
+                    if (days === 1 || s === e) {
+                      items.push({
+                        id: `trip-${trip.id}-single`,
+                        type: 'trip',
+                        sortDate: s,
+                        dateBadge: `${sDay < 10 ? `0${sDay}` : sDay} ${sMonthStr}`,
+                        displayTitle: `${isPlan ? 'PLAN' : 'TRIP'}: ${trip.title}`,
+                        days: 1,
+                        data: { trip, isPlan }
+                      });
+                    } else {
+                      items.push({
+                        id: `trip-${trip.id}-start`,
+                        type: 'trip',
+                        sortDate: s,
+                        dateBadge: `${sDay < 10 ? `0${sDay}` : sDay} ${sMonthStr}`,
+                        displayTitle: `START: ${trip.title}`,
+                        days,
+                        data: { trip, isPlan }
+                      });
+                      items.push({
+                        id: `trip-${trip.id}-end`,
+                        type: 'trip',
+                        sortDate: e,
+                        dateBadge: `${eDay < 10 ? `0${eDay}` : eDay} ${eMonthStr}`,
+                        displayTitle: `END: ${trip.title}`,
+                        days,
+                        data: { trip, isPlan }
+                      });
+                    }
+                  }
+                });
+
+                // 2) Custom Events in displayedAgendaCells
+                const eventsMap = new Map<string, CalendarCustomEvent>();
+                displayedAgendaCells.forEach(cell => {
+                  cell.overlappingEvents.forEach(e => {
+                    eventsMap.set(e.event.id, e.event);
+                  });
+                });
+
+                eventsMap.forEach((evt) => {
+                  const s = evt.startDate;
+                  const e = evt.endDate || evt.startDate;
+                  const days = getDaysDifference(s, e);
+                  const cat = EVENT_CATEGORIES.find(c => c.id === evt.category) || EVENT_CATEGORIES[0];
+
+                  const sParts = s.split('-');
+                  const sMonthStr = MONTH_TABS[parseInt(sParts[1], 10) - 1]?.short || '';
+                  const sDay = parseInt(sParts[2], 10);
+
+                  items.push({
+                    id: `evt-${evt.id}`,
+                    type: 'event',
+                    sortDate: s,
+                    dateBadge: `${sDay < 10 ? `0${sDay}` : sDay} ${sMonthStr}`,
+                    displayTitle: `${cat.label}: ${evt.title}`,
+                    days,
+                    eventCatColor: cat.color,
+                    data: evt
+                  });
+                });
+
+                items.sort((a, b) => a.sortDate.localeCompare(b.sortDate));
+
+                if (items.length === 0) {
+                  return (
+                    <div className="text-xs font-mono text-black/40 dark:text-white/40 py-8 text-center uppercase tracking-wider">
+                      {selectedRange ? '선택한 기간에 등록된 일정이 없습니다.' : '이번 달에 등록된 일정이 없습니다.'}
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="divide-y divide-black/10 dark:divide-white/10">
+                    {items.map((item) => (
+                      <div
+                        key={item.id}
+                        onClick={(e) => {
+                          if (item.type === 'trip') {
+                            handleTripBandClick(e, item.data.trip, item.sortDate, item.data.isPlan);
+                          } else {
+                            handleCustomEventClick(e, item.data);
+                          }
+                        }}
+                        className="flex items-center justify-between py-2.5 sm:py-3 px-1 border-b border-black/10 dark:border-white/10 font-mono text-xs sm:text-sm group cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors"
+                      >
+                        <div className="flex items-center gap-2.5 sm:gap-3 truncate flex-1 min-w-0">
+                          <span className="font-bold text-black/70 dark:text-white/70 shrink-0 w-16 sm:w-20">
+                            {item.dateBadge}
+                          </span>
+                          <span className="text-black/30 dark:text-white/30 shrink-0">|</span>
+                          <span className="font-sans font-bold text-black dark:text-white group-hover:text-red-600 transition-colors truncate">
+                            {item.displayTitle}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                          {item.type === 'trip' && (
+                            <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded-full bg-[#FF4500] text-white">
+                              {item.days}D
+                            </span>
+                          )}
+                          {item.type === 'event' && (
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className="w-2 h-2 rounded-full"
+                                style={{ backgroundColor: item.eventCatColor }}
+                              />
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleShareEvent(item.data);
+                                }}
+                                className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                                title="일정 공유"
+                              >
+                                <Share2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openEditEventModal(item.data);
+                                }}
+                                className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                                title="일정 수정"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+                          <ArrowRight className="w-3.5 h-3.5 text-black/40 dark:text-white/40 group-hover:text-black dark:group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         ) : (
@@ -1655,7 +1770,7 @@ export function CalendarHubPage({
                 <div
                   key={m.monthIdx}
                   id={`year-month-${m.monthIdx}`}
-                  className="bg-transparent p-1.5 sm:p-2.5 flex flex-col justify-between transition-all group"
+                  className="bg-transparent p-1.5 sm:p-2.5 flex flex-col transition-all group"
                 >
                   {/* Month Card Header */}
                   <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-black/10 dark:border-white/10">
@@ -1708,7 +1823,7 @@ export function CalendarHubPage({
                   <div className="grid grid-cols-7 gap-y-0.5 sm:gap-y-1 text-center font-mono select-none">
                     {m.days.map((day, dIdx) => {
                       if (!day.isCurrentMonth) {
-                        return <div key={`empty-${m.monthIdx}-${dIdx}`} className="h-6 sm:h-7" />;
+                        return <div key={`empty-${m.monthIdx}-${dIdx}`} className="w-full aspect-square max-w-[28px] max-h-[28px] sm:max-w-[32px] sm:max-h-[32px] mx-auto" />;
                       }
 
                       const isSun = day.dayOfWeek === 6;
@@ -1745,7 +1860,7 @@ export function CalendarHubPage({
                       return (
                         <div
                           key={day.dateStr}
-                          className="h-6 sm:h-7 flex items-center justify-center relative"
+                          className="w-full aspect-square max-w-[28px] max-h-[28px] sm:max-w-[32px] sm:max-h-[32px] mx-auto flex items-center justify-center relative"
                         >
                           <button
                             type="button"
@@ -1777,273 +1892,6 @@ export function CalendarHubPage({
           </div>
         )}
       </div>
-
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* Monthly / Selected Range Detail Drawer (Swiss Minimal Typography & Lines) */}
-      {/* ───────────────────────────────────────────────────────────── */}
-      {displayedAgendaCells.length > 0 && (
-        <div data-selected-drawer="true" className="w-full max-w-7xl mx-auto px-1 sm:px-6 lg:px-8 mt-6 animate-in slide-in-from-bottom-3 duration-200">
-          <div className="p-4 sm:p-6 rounded-none border-t-2 border-b border-black dark:border-white bg-transparent flex flex-col gap-5">
-            {/* Top row: Date header & Add button */}
-            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 border-b border-black/10 dark:border-white/10 pb-3">
-              <div className="flex items-baseline gap-3 flex-wrap">
-                {selectedRange ? (
-                  <>
-                    <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-black dark:text-white">
-                      {selectedRange.start === selectedRange.end
-                        ? selectedRange.start.replace(/-/g, '.')
-                        : `${selectedRange.start.replace(/-/g, '.')} — ${selectedRange.end.replace(/-/g, '.')}`}
-                    </span>
-                    {isMultiDaySelected && (
-                      <span className="text-xs font-mono font-bold tracking-widest text-red-600 dark:text-red-400 uppercase">
-                        [{selectedDaysCount} DAYS]
-                      </span>
-                    )}
-                    {selectedCells.length === 1 && selectedCells[0].holiday && (
-                      <span className="text-xs font-bold text-red-600 dark:text-red-400 font-sans">
-                        · {selectedCells[0].holiday.name}
-                      </span>
-                    )}
-                    {selectedCells.length === 1 && selectedCells[0].isToday && (
-                      <span className="text-xs font-mono font-bold text-black/50 dark:text-white/50 uppercase">
-                        · TODAY
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <span className="text-2xl sm:text-3xl font-black font-satoshi tracking-tight text-black dark:text-white uppercase">
-                      MONTH AGENDA
-                    </span>
-                    <span className="text-xs sm:text-sm font-mono font-bold text-red-600 dark:text-red-400 uppercase tracking-wider">
-                      {MONTH_NAMES[currentMonth]} {currentYear}
-                    </span>
-                  </>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => openNewEventModal(selectedRange?.start, selectedRange?.end)}
-                  className="px-3.5 py-1.5 rounded-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold font-mono tracking-wider flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>{selectedRange && isMultiDaySelected ? '선택 기간에 일정 등록' : '새 일정 등록'}</span>
-                </button>
-                {selectedRange && (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedRange(null)}
-                    className="p-1.5 rounded-full border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
-                    title="선택 해제 후 월간 전체 일정 보기 (ESC)"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Unified 1-Line Schedules Feed (홈 허브와 일관된 스위스 미니멀 1행 레이아웃) */}
-            <div className="w-full">
-              {(() => {
-                // 1) 고유 여행 목록 추출
-                const uniqueTripsMap = new Map<number, { trip: Trip | Plan; isPlan: boolean }>();
-                displayedAgendaCells.forEach(cell => {
-                  cell.overlappingTrips.forEach(t => {
-                    if (!uniqueTripsMap.has(t.trip.id)) {
-                      uniqueTripsMap.set(t.trip.id, { trip: t.trip, isPlan: t.isPlan });
-                    }
-                  });
-                });
-
-                // 2) 고유 사용자 일정 목록 추출
-                const uniqueEventsMap = new Map<string, CalendarCustomEvent>();
-                displayedAgendaCells.forEach(cell => {
-                  cell.overlappingEvents.forEach(e => {
-                    uniqueEventsMap.set(e.event.id, e.event);
-                  });
-                });
-
-                // 3) 통합 스케줄 리스트 생성 및 시작일 기준 정렬
-                const unifiedList: {
-                  id: string;
-                  type: 'trip' | 'event';
-                  startDate: string;
-                  endDate: string;
-                  title: string;
-                  location?: string;
-                  days: number;
-                  data: any;
-                }[] = [];
-
-                uniqueTripsMap.forEach(({ trip, isPlan }) => {
-                  const range = parseTripDateRange(trip.date);
-                  const s = range ? range.start : trip.date;
-                  const e = range ? range.end : trip.date;
-                  const days = range ? getDaysDifference(range.start, range.end) : 1;
-                  unifiedList.push({
-                    id: `agenda-trip-${trip.id}`,
-                    type: 'trip',
-                    startDate: s,
-                    endDate: e,
-                    title: trip.title,
-                    location: trip.locationStr || (trip.tags && trip.tags[0]),
-                    days,
-                    data: { trip, isPlan }
-                  });
-                });
-
-                uniqueEventsMap.forEach((event) => {
-                  const s = event.startDate;
-                  const e = event.endDate || event.startDate;
-                  const days = getDaysDifference(s, e);
-                  unifiedList.push({
-                    id: `agenda-event-${event.id}`,
-                    type: 'event',
-                    startDate: s,
-                    endDate: e,
-                    title: event.title,
-                    location: event.memo,
-                    days,
-                    data: event
-                  });
-                });
-
-                unifiedList.sort((a, b) => a.startDate.localeCompare(b.startDate));
-
-                if (unifiedList.length === 0) {
-                  return (
-                    <div className="text-xs font-mono text-black/40 dark:text-white/40 py-6 text-center">
-                      {selectedRange ? '선택한 기간에 등록된 여정이나 일정이 없습니다.' : '이번 달에 등록된 여정이나 일정이 없습니다.'}
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="divide-y divide-black/10 dark:divide-white/10">
-                    {unifiedList.map((item) => {
-                      const sFormatted = item.startDate ? `${parseInt(item.startDate.split('-')[1], 10)}/${parseInt(item.startDate.split('-')[2], 10)}` : '';
-                      const eFormatted = item.endDate && item.endDate !== item.startDate ? `${parseInt(item.endDate.split('-')[1], 10)}/${parseInt(item.endDate.split('-')[2], 10)}` : sFormatted;
-                      const dateRangeStr = sFormatted === eFormatted ? sFormatted : `${sFormatted} - ${eFormatted}`;
-
-                      if (item.type === 'trip') {
-                        const { trip, isPlan } = item.data;
-                        return (
-                          <div
-                            key={item.id}
-                            onClick={(e) => handleTripBandClick(e, trip, item.startDate)}
-                            className="py-3 px-1.5 flex items-center justify-between gap-3 group cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors"
-                          >
-                            {/* Left: Date Range & Type Badge & Title */}
-                            <div className="flex items-center gap-2.5 sm:gap-4 min-w-0 flex-1">
-                              <span className="font-mono text-xs sm:text-sm font-black text-red-600 dark:text-red-400 shrink-0 w-20 sm:w-24">
-                                {dateRangeStr}
-                              </span>
-
-                              <span className={`text-[9px] sm:text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
-                                isPlan ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30' : 'bg-red-600 text-white'
-                              }`}>
-                                {isPlan ? 'PLAN' : 'JOURNEY'}
-                              </span>
-
-                              <span className="font-sans font-bold text-sm sm:text-base text-black dark:text-white group-hover:text-red-600 transition-colors truncate">
-                                {item.title}
-                              </span>
-
-                              {item.location && (
-                                <span className="hidden md:flex items-center gap-1 text-xs text-black/50 dark:text-white/50 font-mono truncate">
-                                  <MapPin className="w-3 h-3 shrink-0 opacity-60" />
-                                  <span className="truncate">{item.location}</span>
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Right: Days & View Arrow */}
-                            <div className="flex items-center gap-3 shrink-0">
-                              <span className="font-mono text-xs font-bold text-red-600 dark:text-red-400">
-                                {item.days} DAYS
-                              </span>
-                              <div className="flex items-center gap-1 text-xs font-bold font-mono uppercase tracking-wider text-black/60 dark:text-white/60 group-hover:text-black dark:group-hover:text-white">
-                                <span className="hidden sm:inline">VIEW</span>
-                                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      }
-
-                      // item.type === 'event'
-                      const event: CalendarCustomEvent = item.data;
-                      const cat = EVENT_CATEGORIES.find(c => c.id === event.category) || EVENT_CATEGORIES[0];
-
-                      return (
-                        <div
-                          key={item.id}
-                          onClick={(e) => handleCustomEventClick(e, event)}
-                          className="py-3 px-1.5 flex items-center justify-between gap-3 group cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors"
-                        >
-                          {/* Left: Date Range & Category Badge & Title */}
-                          <div className="flex items-center gap-2.5 sm:gap-4 min-w-0 flex-1">
-                            <span className="font-mono text-xs sm:text-sm font-bold text-black/60 dark:text-white/60 shrink-0 w-20 sm:w-24">
-                              {dateRangeStr}
-                            </span>
-
-                            <span className={`text-[9px] sm:text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full shrink-0 ${cat.badgeClass}`}>
-                              {cat.label}
-                            </span>
-
-                            <span className="font-sans font-bold text-sm sm:text-base text-black dark:text-white group-hover:text-red-600 transition-colors truncate">
-                              {item.title}
-                            </span>
-
-                            {event.memo && (
-                              <span className="hidden md:inline-block text-xs text-black/40 dark:text-white/40 font-sans truncate">
-                                {event.memo}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Right: Days & Quick Actions */}
-                          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                            <span className="font-mono text-xs font-bold text-black/50 dark:text-white/50">
-                              {item.days} DAYS
-                            </span>
-                            <div className="flex items-center gap-1">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleShareEvent(event);
-                                }}
-                                className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
-                                title="일정 공유"
-                              >
-                                <Share2 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openEditEventModal(event);
-                                }}
-                                className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
-                                title="일정 수정"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ───────────────────────────────────────────────────────────── */}
       {/* Event Add / Edit Modal                                        */}
