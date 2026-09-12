@@ -178,6 +178,8 @@ export function CalendarHubPage({
     }
     return null;
   });
+  // 특정 개별 일정 선택 상태 (동일 날짜 복수 일정 등록 시 개별 일정 단독 활성화용)
+  const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
   const [dragAnchorDate, setDragAnchorDate] = useState<string | null>(initialFocus.dateStr);
   const [isDragging, setIsDragging] = useState<boolean>(false);
 
@@ -380,8 +382,9 @@ export function CalendarHubPage({
           closeEventModal();
           return;
         }
-        if (selectedRange) {
+        if (selectedRange || selectedScheduleId) {
           setSelectedRange(null);
+          setSelectedScheduleId(null);
           setDragAnchorDate(null);
           return;
         }
@@ -824,6 +827,7 @@ export function CalendarHubPage({
       }
     } else {
       // 일반 모드: 이미 선택된 날짜면 해제(토글), 아니면 해당 날짜 선택 (모달은 바로 띄우지 않고 하단 일정 영역 색상화만 수행)
+      setSelectedScheduleId(null);
       if (selectedRange && selectedRange.start === cell.dateStr && selectedRange.end === cell.dateStr) {
         setSelectedRange(null);
         setDragAnchorDate(null);
@@ -1052,8 +1056,9 @@ export function CalendarHubPage({
   return (
     <div 
       onClick={() => {
-        if (selectedRange && !isDragging) {
+        if ((selectedRange || selectedScheduleId) && !isDragging) {
           setSelectedRange(null);
+          setSelectedScheduleId(null);
           setDragAnchorDate(null);
         }
       }}
@@ -1504,12 +1509,21 @@ export function CalendarHubPage({
                       title={cell.holiday ? `${cell.dateStr} (${cell.holiday.name})` : cell.dateStr}
                     >
                       <span className={textClasses}>{cell.dayNum}</span>
-                      {/* Event Dot Indicator */}
+
+                      {/* Event Dots Indicator (Centered row of colored dots for multiple events) */}
                       {hasEvent && !hasTrip && !cell.isToday && cell.isCurrentMonth && (
-                        <span 
-                          className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full mt-1" 
-                          style={{ backgroundColor: eventCat?.color || '#2563eb' }} 
-                        />
+                        <div className="flex items-center justify-center gap-0.5 sm:gap-1 mt-1 max-w-[28px] overflow-hidden">
+                          {cell.overlappingEvents.slice(0, 4).map((evtWrap) => {
+                            const cat = EVENT_CATEGORIES.find(c => c.id === evtWrap.event.category);
+                            return (
+                              <span 
+                                key={evtWrap.event.id}
+                                className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full shrink-0" 
+                                style={{ backgroundColor: cat?.color || '#2563eb' }} 
+                              />
+                            );
+                          })}
+                        </div>
                       )}
                       {cell.holiday && !hasTrip && !cell.isToday && !hasEvent && cell.isCurrentMonth && (
                         <span className="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-400 mt-1" />
@@ -1544,10 +1558,14 @@ export function CalendarHubPage({
                     <Plus className="w-3 h-3 stroke-[2.5]" />
                     <span>ADD SCHEDULE</span>
                   </button>
-                  {selectedRange && (
+                  {(selectedRange || selectedScheduleId) && (
                     <button
                       type="button"
-                      onClick={() => setSelectedRange(null)}
+                      onClick={() => {
+                        setSelectedRange(null);
+                        setSelectedScheduleId(null);
+                        setDragAnchorDate(null);
+                      }}
                       className="p-1 rounded-full border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 transition-colors cursor-pointer"
                       title="선택 해제 (ESC)"
                     >
@@ -1573,6 +1591,30 @@ export function CalendarHubPage({
                   data: any;
                 }[] = [];
 
+                // 기간 날짜 배지 생성 헬퍼 (단일 날짜: '13 SEP', 기간 일정 동일 월: '13 - 16 SEP', 기간 일정 다른 월: '28 SEP - 02 OCT')
+                const formatDateBadge = (startDate: string, endDate: string) => {
+                  const sParts = startDate.split('-');
+                  const sMonth = parseInt(sParts[1], 10);
+                  const sDay = parseInt(sParts[2], 10);
+                  const sMonthStr = MONTH_TABS[sMonth - 1]?.short || '';
+                  const sDayStr = sDay < 10 ? `0${sDay}` : `${sDay}`;
+
+                  if (!endDate || startDate === endDate) {
+                    return `${sDayStr} ${sMonthStr}`;
+                  }
+
+                  const eParts = endDate.split('-');
+                  const eMonth = parseInt(eParts[1], 10);
+                  const eDay = parseInt(eParts[2], 10);
+                  const eMonthStr = MONTH_TABS[eMonth - 1]?.short || '';
+                  const eDayStr = eDay < 10 ? `0${eDay}` : `${eDay}`;
+
+                  if (sMonth === eMonth) {
+                    return `${sDayStr} - ${eDayStr} ${sMonthStr}`;
+                  }
+                  return `${sDayStr} ${sMonthStr} - ${eDayStr} ${eMonthStr}`;
+                };
+
                 // 1) All Trips occurring in this month
                 const tripsMap = new Map<number, { trip: Trip | Plan; isPlan: boolean }>();
                 currentMonthCells.forEach(cell => {
@@ -1589,17 +1631,13 @@ export function CalendarHubPage({
                   const e = pj ? pj.range.end : (parseTripDateRange(trip.date)?.end || trip.date);
                   const days = getDaysDifference(s, e);
 
-                  const sParts = s.split('-');
-                  const sMonthStr = MONTH_TABS[parseInt(sParts[1], 10) - 1]?.short || '';
-                  const sDay = parseInt(sParts[2], 10);
-
                   items.push({
                     id: `trip-${trip.id}`,
                     type: 'trip',
                     sortDate: s,
                     startDate: s,
                     endDate: e,
-                    dateBadge: `${sDay < 10 ? `0${sDay}` : sDay} ${sMonthStr}`,
+                    dateBadge: formatDateBadge(s, e),
                     displayTitle: `${isPlan ? 'PLAN' : 'TRIP'}: ${trip.title}`,
                     days,
                     data: { trip, isPlan }
@@ -1620,17 +1658,13 @@ export function CalendarHubPage({
                   const days = getDaysDifference(s, e);
                   const cat = EVENT_CATEGORIES.find(c => c.id === evt.category) || EVENT_CATEGORIES[0];
 
-                  const sParts = s.split('-');
-                  const sMonthStr = MONTH_TABS[parseInt(sParts[1], 10) - 1]?.short || '';
-                  const sDay = parseInt(sParts[2], 10);
-
                   items.push({
                     id: `evt-${evt.id}`,
                     type: 'event',
                     sortDate: s,
                     startDate: s,
                     endDate: e,
-                    dateBadge: `${sDay < 10 ? `0${sDay}` : sDay} ${sMonthStr}`,
+                    dateBadge: formatDateBadge(s, e),
                     displayTitle: `${cat.label}: ${evt.title}`,
                     days,
                     eventCatColor: cat.color,
@@ -1652,23 +1686,29 @@ export function CalendarHubPage({
                 return (
                   <div className="divide-y divide-black/10 dark:divide-white/10">
                     {items.map((item) => {
-                      // 선택된 날짜와 겹치는지 판별 (영역 색상화)
-                      const isHighlighted = !!(
-                        selectedRange &&
-                        item.startDate <= selectedRange.end &&
-                        item.endDate >= selectedRange.start
-                      );
+                      // 선택된 일정 판별:
+                      // 1) 특정 일정을 직접 클릭한 경우(selectedScheduleId가 있는 경우) -> 해당 일정만 단독 활성화
+                      // 2) 달력 날짜 알약을 클릭한 경우(selectedScheduleId가 null이고 selectedRange가 있는 경우) -> 해당 날짜에 걸친 일정들 활성화
+                      const isHighlighted = selectedScheduleId
+                        ? selectedScheduleId === item.id
+                        : !!(
+                            selectedRange &&
+                            item.startDate <= selectedRange.end &&
+                            item.endDate >= selectedRange.start
+                          );
 
                       return (
                         <div
                           key={item.id}
                           onClick={(e) => {
                             e.stopPropagation();
-                            // 하단 일정 행 클릭: 이미 선택된 일정이면 해제(토글), 아니면 해당 일정 날짜 선택 (모달 진입 금지)
-                            if (isHighlighted) {
+                            // 하단 일정 행 클릭: 이미 선택된 일정이면 해제(토글), 아니면 해당 일정 단독 선택
+                            if (selectedScheduleId === item.id) {
+                              setSelectedScheduleId(null);
                               setSelectedRange(null);
                               setDragAnchorDate(null);
                             } else {
+                              setSelectedScheduleId(item.id);
                               setSelectedRange({ start: item.startDate, end: item.endDate });
                               setDragAnchorDate(item.startDate);
                             }
@@ -1680,7 +1720,7 @@ export function CalendarHubPage({
                           }`}
                         >
                           <div className="flex items-center gap-2.5 sm:gap-3 truncate flex-1 min-w-0">
-                            <span className={`font-bold shrink-0 w-16 sm:w-20 ${
+                            <span className={`font-bold shrink-0 min-w-[4.8rem] sm:min-w-[6.8rem] whitespace-nowrap ${
                               isHighlighted ? 'text-red-600 dark:text-red-400' : 'text-black/70 dark:text-white/70'
                             }`}>
                               {item.dateBadge}
@@ -1735,6 +1775,7 @@ export function CalendarHubPage({
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
+                                setSelectedScheduleId(item.id);
                                 setSelectedRange({ start: item.startDate, end: item.endDate });
                                 if (item.type === 'trip') {
                                   handleTripBandClick(e, item.data.trip, item.startDate, item.data.isPlan);
