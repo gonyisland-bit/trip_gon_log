@@ -296,6 +296,12 @@ export function ManageHubPage({
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const bgmFileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Snapshot of saved BGM state for dirty checking and rollback
+  const savedBgmSnapshotRef = useRef<{ tracksJson: string; autoplay: boolean }>({
+    tracksJson: JSON.stringify(getStoredBgmTracks()),
+    autoplay: getStoredBgmAutoplay(),
+  });
+
   // Stop preview audio when unmounting
   useEffect(() => {
     return () => {
@@ -309,8 +315,6 @@ export function ManageHubPage({
   const handleToggleBgmTrack = (id: string) => {
     const updated = bgmTracks.map(t => (t.id === id ? { ...t, enabled: !t.enabled } : t));
     setBgmTracks(updated);
-    saveStoredBgmTracks(updated);
-    if (onSaveBgmSettings) onSaveBgmSettings(updated, bgmAutoplay);
   };
 
   const handleMoveBgmTrack = (index: number, direction: 'up' | 'down') => {
@@ -320,8 +324,6 @@ export function ManageHubPage({
     const [item] = next.splice(index, 1);
     next.splice(targetIdx, 0, item);
     setBgmTracks(next);
-    saveStoredBgmTracks(next);
-    if (onSaveBgmSettings) onSaveBgmSettings(next, bgmAutoplay);
   };
 
   const handleDeleteBgmTrack = (id: string) => {
@@ -331,20 +333,14 @@ export function ManageHubPage({
     }
     const updated = bgmTracks.filter(t => t.id !== id);
     setBgmTracks(updated);
-    saveStoredBgmTracks(updated);
-    if (onSaveBgmSettings) onSaveBgmSettings(updated, bgmAutoplay);
   };
 
   const handleRestoreDefaultBgm = () => {
     setBgmTracks(DEFAULT_BGM_TRACKS);
-    saveStoredBgmTracks(DEFAULT_BGM_TRACKS);
-    if (onSaveBgmSettings) onSaveBgmSettings(DEFAULT_BGM_TRACKS, bgmAutoplay);
   };
 
   const handleToggleBgmAutoplay = (val: boolean) => {
     setBgmAutoplay(val);
-    saveStoredBgmAutoplay(val);
-    if (onSaveBgmSettings) onSaveBgmSettings(bgmTracks, val);
   };
 
   const handleTogglePreviewTrack = (track: BgmTrack) => {
@@ -406,8 +402,6 @@ export function ManageHubPage({
       if (newTracks.length > 0) {
         const updated = [...bgmTracks, ...newTracks];
         setBgmTracks(updated);
-        saveStoredBgmTracks(updated);
-        if (onSaveBgmSettings) onSaveBgmSettings(updated, bgmAutoplay);
       }
     } catch (err) {
       console.error('Failed to upload BGM:', err);
@@ -1441,9 +1435,22 @@ export function ManageHubPage({
     );
   }, [hubMainTitle, hubSubtitle, hubBadgeText, hubVolumeText, saveRevision]);
 
+  // Dirty tracking for BGM playlist & options
+  const isBgmDirty = useMemo(() => {
+    const snap = savedBgmSnapshotRef.current;
+    return (
+      (snap.tracksJson || '[]') !== JSON.stringify(bgmTracks) ||
+      snap.autoplay !== bgmAutoplay
+    );
+  }, [bgmTracks, bgmAutoplay, saveRevision]);
+
   // Synchronize all snapshot references to current state so isAnyDirty becomes immediately false
   const syncAllSnapshotsToCurrent = () => {
     savedSectionsJsonRef.current = JSON.stringify(sectionsList);
+    savedBgmSnapshotRef.current = {
+      tracksJson: JSON.stringify(bgmTracks),
+      autoplay: bgmAutoplay,
+    };
     savedMagazineHubHeaderRef.current = {
       mainTitle: hubMainTitle,
       subtitle: hubSubtitle,
@@ -1492,7 +1499,7 @@ export function ManageHubPage({
   };
 
   // Unified global dirty state across all management tabs & sub-settings
-  const isAnyDirty = isHomeDirty || isArchiveDirty || isMagazineDirty || isArchiveHubHeaderDirty || isMagazineHubHeaderDirty;
+  const isAnyDirty = isHomeDirty || isArchiveDirty || isMagazineDirty || isArchiveHubHeaderDirty || isMagazineHubHeaderDirty || isBgmDirty;
 
   useEffect(() => {
     if (onDirtyChange) {
@@ -1570,6 +1577,14 @@ export function ManageHubPage({
     setHubSubtitle(magSnap.subtitle);
     setHubBadgeText(magSnap.badgeText);
     setHubVolumeText(magSnap.volumeText);
+
+    const bgmSnap = savedBgmSnapshotRef.current;
+    if (bgmSnap.tracksJson) {
+      try {
+        setBgmTracks(JSON.parse(bgmSnap.tracksJson));
+      } catch (_) {}
+    }
+    setBgmAutoplay(bgmSnap.autoplay);
   };
 
   // Safe navigation helper that explicitly clears dirty flag and passes force=true to App.tsx
@@ -2917,6 +2932,14 @@ export function ManageHubPage({
       } else if (onSaveMagazineMoments) {
         const mainSec = sectionsList.find(s => s.id === 'main') || sectionsList[0];
         await onSaveMagazineMoments(mainSec?.items || []);
+      }
+
+      // 6. Save BGM settings to Firestore & localStorage
+      if (onSaveBgmSettings) {
+        await onSaveBgmSettings(bgmTracks, bgmAutoplay);
+      } else {
+        saveStoredBgmTracks(bgmTracks);
+        saveStoredBgmAutoplay(bgmAutoplay);
       }
 
       // 6. Update all snapshot refs to ensure isAnyDirty is 100% false immediately
@@ -6265,6 +6288,21 @@ export function ManageHubPage({
                   </div>
                 )}
               </section>
+
+              {/* 4. Save BGM Settings Button */}
+              <div className="pt-4 border-t border-black/15 dark:border-white/15 flex justify-end">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await handleSaveAllChanges(true);
+                  }}
+                  disabled={isSavingAll}
+                  className="px-6 py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-widest font-sans flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{saveAllSuccess ? 'SAVED' : 'SAVE BGM SETTINGS'}</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -6893,18 +6931,19 @@ export function ManageHubPage({
             if (activeMode === 'HOME') await handleSaveHome();
             else if (activeMode === 'ARCHIVE') await handleSaveJourney();
             else if (activeMode === 'MAGAZINE') await handleSaveMagazine();
+            else if (activeMode === 'MAP') await handleSaveMapSettings();
             else await handleSaveAllChanges(true);
             syncAllSnapshotsToCurrent();
           }}
-          disabled={activeMode === 'HOME' ? isSavingHome : (activeMode === 'ARCHIVE' ? isSavingTrip : (activeMode === 'MAGAZINE' ? isSavingMagazine : isSavingAll))}
+          disabled={activeMode === 'HOME' ? isSavingHome : (activeMode === 'ARCHIVE' ? isSavingTrip : (activeMode === 'MAGAZINE' ? isSavingMagazine : (activeMode === 'MAP' ? isSavingMap : isSavingAll)))}
           className={`w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-all cursor-pointer border ${
-            (homeSaveSuccess || tripSaveSuccess || magazineSaveSuccess || saveAllSuccess)
+            (homeSaveSuccess || tripSaveSuccess || magazineSaveSuccess || mapSaveSuccess || saveAllSuccess)
               ? 'bg-green-600 text-white border-green-600 scale-105'
               : 'bg-black text-white dark:bg-white dark:text-black border-white/20 dark:border-black/20 hover:scale-110 active:scale-95'
           }`}
           title="변경사항 저장 (단축키: Ctrl + S)"
         >
-          {(homeSaveSuccess || tripSaveSuccess || magazineSaveSuccess || saveAllSuccess) ? (
+          {(homeSaveSuccess || tripSaveSuccess || magazineSaveSuccess || mapSaveSuccess || saveAllSuccess) ? (
             <Check className="w-5 h-5 animate-in zoom-in" />
           ) : (
             <Save className="w-5 h-5" />

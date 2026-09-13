@@ -186,12 +186,10 @@ export function SettingsModal({
     });
   };
 
-  // BGM Playlist Handlers
+  // BGM Playlist Handlers (Draft until Save)
   const handleToggleBgmTrack = (id: string) => {
     const updated = bgmTracks.map(t => t.id === id ? { ...t, enabled: !t.enabled } : t);
     setBgmTracks(updated);
-    saveStoredBgmTracks(updated);
-    if (onSaveBgmSettings) onSaveBgmSettings(updated, bgmAutoplay);
   };
 
   const handleMoveBgmTrack = (index: number, direction: 'up' | 'down') => {
@@ -201,8 +199,6 @@ export function SettingsModal({
     const [item] = next.splice(index, 1);
     next.splice(targetIdx, 0, item);
     setBgmTracks(next);
-    saveStoredBgmTracks(next);
-    if (onSaveBgmSettings) onSaveBgmSettings(next, bgmAutoplay);
   };
 
   const handleDeleteBgmTrack = (id: string) => {
@@ -212,20 +208,14 @@ export function SettingsModal({
     }
     const updated = bgmTracks.filter(t => t.id !== id);
     setBgmTracks(updated);
-    saveStoredBgmTracks(updated);
-    if (onSaveBgmSettings) onSaveBgmSettings(updated, bgmAutoplay);
   };
 
   const handleRestoreDefaultBgm = () => {
     setBgmTracks(DEFAULT_BGM_TRACKS);
-    saveStoredBgmTracks(DEFAULT_BGM_TRACKS);
-    if (onSaveBgmSettings) onSaveBgmSettings(DEFAULT_BGM_TRACKS, bgmAutoplay);
   };
 
   const handleToggleAutoplay = (val: boolean) => {
     setBgmAutoplay(val);
-    saveStoredBgmAutoplay(val);
-    if (onSaveBgmSettings) onSaveBgmSettings(bgmTracks, val);
   };
 
   const handleTogglePreviewTrack = (track: BgmTrack) => {
@@ -284,8 +274,6 @@ export function SettingsModal({
       if (newTracks.length > 0) {
         const updated = [...bgmTracks, ...newTracks];
         setBgmTracks(updated);
-        saveStoredBgmTracks(updated);
-        if (onSaveBgmSettings) onSaveBgmSettings(updated, bgmAutoplay);
       }
     } catch (err) {
       console.error('Failed to upload BGM:', err);
@@ -765,6 +753,26 @@ export function SettingsModal({
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* Save BGM Settings Action Button */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-black/10 dark:border-white/10 mt-4">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (onSaveBgmSettings) {
+                      await onSaveBgmSettings(bgmTracks, bgmAutoplay);
+                    } else {
+                      saveStoredBgmTracks(bgmTracks);
+                      saveStoredBgmAutoplay(bgmAutoplay);
+                    }
+                    onClose();
+                  }}
+                  className="px-5 py-2 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] font-black uppercase tracking-widest rounded-none transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  Save BGM Settings
+                </button>
               </div>
             </div>
           )}
