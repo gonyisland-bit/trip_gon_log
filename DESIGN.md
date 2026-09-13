@@ -23,17 +23,30 @@
 
 ---
 
-## 3. 타이포그래피
+## 3. 타이포그래피 (Typography System)
 
-| 용도 | 폰트 | 크기 | 변형 |
-|------|------|------|------|
-| 헤더/레이블 | font-mono | text-[10px] | uppercase tracking-widest font-black |
-| 본문 안내 | font-sans | text-xs | 일반 weight |
-| 강조 숫자 | font-mono | text-lg+ | font-black |
-| 버튼/CTA | font-mono | text-[10px] | uppercase tracking-widest font-black |
+### 폰트 패밀리 원칙
+- **영문 메인 폰트**: `Inter` (명확한 계층 구조, 높은 X-height와 탁월한 디지털 가독성)
+- **한글 메인 폰트**: `Noto Sans KR` (단정한 직선미와 산세리프 한글 가독성)
+- **고정폭(Mono) 폰트**: `SF Mono`, `Consolas` (날짜, 일수, 메타데이터, 코드)
 
-한글 안내 텍스트: 설명/힌트/오류 메시지는 한글 우선.
-메뉴/탭/라벨: 영문 대문자 유지.
+### 폰트 크기 최소화 규칙 (시인성 확보)
+- **초소형 폰트 지양**: `text-[9px]`, `text-[10px]` 등의 지나치게 작은 폰트 사용을 배제하고, 마이크로 카피라도 최소 `text-[11px]` 이상을 유지합니다.
+- **기본 레이블/안내**: `text-xs` (12px) 이상 기본 적용.
+- **본문/입력 필드**: `text-xs` ~ `text-sm` (12px~14px)을 적용하여 시인성과 터치 편의성을 극대화합니다.
+- **모달/섹션 타이틀**: `text-base` ~ `text-xl` 이상으로 스케일 대비 확보.
+
+| 용도 | 폰트 패밀리 | 권장 크기 | 변형 스타일 |
+|------|-----------|----------|------------|
+| 모달 헤더 대제목 | Inter (font-sans) | text-sm sm:text-base | font-black uppercase tracking-wider |
+| 폼 레이블 | SF Mono (font-mono) | text-xs | font-bold uppercase tracking-wider |
+| 본문 힌트/설명 | Noto Sans KR (font-sans) | text-xs | leading-relaxed text-black/60 |
+| 입력 필드 텍스트 | Inter / Noto Sans KR | text-xs sm:text-sm | py-2.5 px-3 |
+| 시즌/날씨 분석 | Inter / Noto Sans KR | text-xs sm:text-sm | font-bold(제목), leading-relaxed(본문) |
+| 버튼/CTA | Inter / Noto Sans KR | text-xs sm:text-sm | font-black uppercase tracking-widest |
+
+한글 안내 텍스트: 설명, 힌트, 탭 부제, 안내 메시지는 한글 우선 제공.
+메뉴/탭/시스템 라벨: 정제된 영문 대문자 유지.
 
 ---
 
@@ -112,7 +125,8 @@
 
 | 아이콘 | 용례 |
 |--------|------|
-| MapPin | 위치/장소 입력 |
+| MapPin | 국가(COUNTRY) 입력 또는 지도 핀 |
+| Building2 | 도시/명소(LOCATIONS) 입력 |
 | Calendar | 날짜 입력 |
 | Tag | 태그 입력 |
 | Edit3 | 제목 입력 |

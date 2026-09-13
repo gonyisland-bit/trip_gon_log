@@ -4,12 +4,12 @@
 
 @layer base {
   *, ::before, ::after {
-    font-family: 'Satoshi', 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
   
   html, body, input, textarea, button, select {
     -webkit-overflow-scrolling: touch;
-    font-family: 'Satoshi', 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
   code, kbd, samp, pre {
@@ -22,6 +22,9 @@
 }
 
 @layer utilities {
+  .font-sans {
+    font-family: 'Inter', 'Noto Sans KR', sans-serif !important;
+  }
   .font-mono {
     font-family: 'SF Mono', Consolas, 'Noto Sans KR', monospace !important;
   }

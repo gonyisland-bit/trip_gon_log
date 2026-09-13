@@ -612,11 +612,63 @@ export function CreateTripModal({
 
   const selectedPresetObj = presets.find(p => p.id === selectedPresetId);
 
-  // Shared input style tokens
-  const inputCls = 'w-full pl-10 pr-4 py-2 text-xs bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none text-black dark:text-white font-mono';
-  const labelCls = 'text-[10px] font-mono uppercase font-bold tracking-widest text-black/50 dark:text-white/50';
-  const iconCls = 'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30 dark:text-white/30';
-  const hintCls = 'text-[10px] text-black/40 dark:text-white/40 mt-0.5 leading-snug';
+  // Shared input style tokens (Inter & Noto Sans KR, minimum text >= 12px)
+  const inputCls = 'w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none text-black dark:text-white font-sans';
+  const labelCls = 'text-xs font-mono uppercase font-bold tracking-wider text-black/60 dark:text-white/60 mb-1.5 block';
+  const iconCls = 'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/40 dark:text-white/40 pointer-events-none';
+  const hintCls = 'text-xs text-black/50 dark:text-white/50 mt-1 leading-normal';
+
+  // Unified Season & Weather Analysis Renderer
+  const renderSeasonAnalysisBlock = (analysis: {
+    startMonth: number;
+    targetName?: string;
+    countryBest?: string;
+    avoidSeason?: string;
+    avoidReason?: string | null;
+    isWarning: boolean;
+    isBestSeason: boolean;
+  } | null) => {
+    if (!analysis) return null;
+
+    const badgeLabel = analysis.isWarning 
+      ? '시즌 주의' 
+      : analysis.isBestSeason 
+        ? '최적 시즌' 
+        : '시즌 안내';
+
+    const badgeCls = analysis.isWarning
+      ? 'bg-amber-500 text-white'
+      : analysis.isBestSeason
+        ? 'bg-emerald-600 text-white'
+        : 'bg-black/10 dark:bg-white/10 text-black/70 dark:text-white/70';
+
+    const containerCls = analysis.isWarning
+      ? 'border-amber-500 text-amber-900 dark:text-amber-200 bg-amber-500/5'
+      : analysis.isBestSeason
+        ? 'border-emerald-500 text-emerald-900 dark:text-emerald-200 bg-emerald-500/5'
+        : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 bg-black/[0.02] dark:bg-white/[0.02]';
+
+    return (
+      <div className={`border-l-4 pl-3.5 py-2.5 pr-3 ${containerCls} transition-all`}>
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <span className={`text-[10px] font-bold px-1.5 py-0.5 font-sans uppercase tracking-wider ${badgeCls}`}>
+            {badgeLabel}
+          </span>
+          <span className="text-xs sm:text-sm font-bold font-sans text-black dark:text-white">
+            {analysis.targetName ? `${analysis.targetName} · ` : ''}{analysis.startMonth}월 날씨 및 여행 시즌 분석
+          </span>
+        </div>
+        <p className="text-xs sm:text-sm font-sans leading-relaxed">
+          {analysis.isWarning
+            ? `주의 사유: ${analysis.avoidReason || '기상 악화 또는 극심한 인파 집중 우려'}`
+            : analysis.isBestSeason
+              ? '최적 여행 시기 — 온화하고 쾌적한 날씨로 야외 활동 및 도심 관광에 가장 이상적입니다.'
+              : `추천 시기: 해당 지역의 최적 여행 시즌은 ${analysis.countryBest || '봄·가을'}입니다.`
+          }
+        </p>
+      </div>
+    );
+  };
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex justify-center items-center p-2 sm:p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto">
@@ -624,16 +676,16 @@ export function CreateTripModal({
       <div className="absolute inset-0" onClick={onClose} />
 
       {/* Main Modal Card — no inner shadow-box, clean border */}
-      <div className="relative w-full max-w-xl bg-[#F9F8F6] dark:bg-[#121212] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col z-10 text-black dark:text-white max-h-[95vh] overflow-hidden my-auto shrink-0">
+      <div className="relative w-full max-w-xl bg-[#F9F8F6] dark:bg-[#121212] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col z-10 text-black dark:text-white max-h-[95vh] overflow-hidden my-auto shrink-0 font-sans">
         
-        {/* Header — typography only, no icon box */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-black/10 dark:border-white/10">
+        {/* Header — Inter font for title, Noto Sans KR for subtitle */}
+        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-black/10 dark:border-white/10">
           <div>
-            <h2 className="text-sm font-black uppercase font-mono tracking-widest leading-none text-black dark:text-white">
+            <h2 className="text-base sm:text-lg font-black uppercase font-sans tracking-wider leading-none text-black dark:text-white">
               TRIP GUIDE
             </h2>
-            <p className="text-[9px] font-mono text-black/40 dark:text-white/40 uppercase tracking-widest mt-0.5">
-              SMART TRIP BUILDER
+            <p className="text-xs font-sans text-black/55 dark:text-white/55 mt-1">
+              원클릭 스마트 트립 생성기
             </p>
           </div>
           <button 
@@ -641,30 +693,37 @@ export function CreateTripModal({
             onClick={onClose}
             className="p-1.5 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Tab Switcher — compact */}
-        <div className="flex border-b border-black/10 dark:border-white/10">
-          {(['presets', 'builder', 'manual'] as const).map(tab => {
-            const icons = { presets: Layers, builder: Globe, manual: Sliders };
-            const labels = { presets: 'PRESETS', builder: 'BUILDER', manual: 'MANUAL' };
-            const Icon = icons[tab];
-            const active = modalMode === tab;
+        {/* Tab Switcher — Inter + Noto Sans KR */}
+        <div className="flex border-b border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02]">
+          {([
+            { id: 'presets', label: 'PRESETS', sub: '추천 템플릿', icon: Layers },
+            { id: 'builder', label: 'BUILDER', sub: '맞춤 생성', icon: Globe },
+            { id: 'manual', label: 'MANUAL', sub: '직접 입력', icon: Sliders },
+          ] as const).map(tab => {
+            const Icon = tab.icon;
+            const active = modalMode === tab.id;
             return (
               <button
-                key={tab}
+                key={tab.id}
                 type="button"
-                onClick={() => setModalMode(tab)}
-                className={`flex-1 py-2.5 text-[10px] font-mono font-black uppercase tracking-wider flex items-center justify-center gap-1.5 border-b-2 transition-all cursor-pointer ${
+                onClick={() => setModalMode(tab.id)}
+                className={`flex-1 py-2.5 sm:py-3 px-2 flex flex-col items-center justify-center gap-0.5 border-b-2 transition-all cursor-pointer ${
                   active
-                    ? 'border-black dark:border-white bg-white dark:bg-[#161616] text-black dark:text-white'
-                    : 'border-transparent text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white'
+                    ? 'border-black dark:border-white bg-white dark:bg-[#161616] text-black dark:text-white shadow-xs'
+                    : 'border-transparent text-black/45 dark:text-white/45 hover:text-black dark:hover:text-white'
                 }`}
               >
-                <Icon className="w-3 h-3" />
-                <span>{labels[tab]}</span>
+                <div className="flex items-center gap-1.5 font-sans font-bold text-xs uppercase tracking-wider">
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{tab.label}</span>
+                </div>
+                <span className="text-[11px] font-sans opacity-70">
+                  {tab.sub}
+                </span>
               </button>
             );
           })}
@@ -683,9 +742,16 @@ export function CreateTripModal({
           {modalMode === 'presets' && (
             <div className="space-y-4">
               
+              {/* Korean Guide Description */}
+              <div className="border-l-2 border-black/20 dark:border-white/20 pl-3 py-1">
+                <p className="text-xs font-sans text-black/70 dark:text-white/70 leading-relaxed">
+                  검증된 추천 여정 템플릿을 선택하여 원클릭으로 나만의 트립을 바로 시작할 수 있습니다.
+                </p>
+              </div>
+
               {/* Header row */}
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono font-black uppercase tracking-wider text-black/60 dark:text-white/60">
+                <span className="text-xs font-mono font-black uppercase tracking-wider text-black/60 dark:text-white/60">
                   {presets.length} PRESETS
                 </span>
                 {isAdmin && (
@@ -810,6 +876,13 @@ export function CreateTripModal({
           {modalMode === 'builder' && (
             <div className="space-y-4">
               
+              {/* Korean Guide Description */}
+              <div className="border-l-2 border-black/20 dark:border-white/20 pl-3 py-1">
+                <p className="text-xs font-sans text-black/70 dark:text-white/70 leading-relaxed">
+                  방문할 국가와 도시, 출발일을 지정하면 최적의 추천 코스가 자동으로 설계됩니다.
+                </p>
+              </div>
+
               {/* Theme */}
               <div className="space-y-1.5">
                 <label className={labelCls}>THEME</label>
@@ -967,28 +1040,8 @@ export function CreateTripModal({
                 </div>
               </div>
 
-              {/* Season Analysis — inline, no box */}
-              {seasonRiskCheck && (
-                <div className={`border-l-2 pl-3 py-1 ${
-                  seasonRiskCheck.isWarning 
-                    ? 'border-amber-500 text-amber-800 dark:text-amber-300'
-                    : seasonRiskCheck.isBestSeason
-                      ? 'border-emerald-500 text-emerald-800 dark:text-emerald-300'
-                      : 'border-black/20 dark:border-white/20 text-black/55 dark:text-white/55'
-                }`}>
-                  <p className="text-[10px] font-mono font-bold uppercase tracking-wider">
-                    {seasonRiskCheck.startMonth}월 시즌 분석
-                  </p>
-                  <p className="text-[11px] font-sans mt-0.5 leading-snug">
-                    {seasonRiskCheck.isWarning
-                      ? `주의: ${seasonRiskCheck.avoidReason}`
-                      : seasonRiskCheck.isBestSeason
-                        ? '최적 시즌 — 야외 활동 및 관광에 이상적인 날씨입니다.'
-                        : `시즌 참고: 추천 여행 시기는 ${seasonRiskCheck.countryBest || '봄/가을'}입니다.`
-                    }
-                  </p>
-                </div>
-              )}
+              {/* Season Analysis — unified renderer */}
+              {renderSeasonAnalysisBlock(seasonRiskCheck)}
 
               {/* Generate Button */}
               <button
@@ -1008,6 +1061,13 @@ export function CreateTripModal({
           {modalMode === 'manual' && (
             <form onSubmit={handleManualSubmit} className="space-y-4">
               
+              {/* Korean Guide Description */}
+              <div className="border-l-2 border-black/20 dark:border-white/20 pl-3 py-1">
+                <p className="text-xs font-sans text-black/70 dark:text-white/70 leading-relaxed">
+                  트립 제목과 방문지, 일정 기간을 자유롭게 설정하여 나만의 맞춤 트립을 생성합니다.
+                </p>
+              </div>
+
               {/* Trip Title */}
               <div className="space-y-1">
                 <label className={labelCls}>TRIP TITLE</label>
@@ -1068,14 +1128,14 @@ export function CreateTripModal({
 
                 {/* Quick city chips — no box wrapper */}
                 {citiesForSelectedCountry.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    <span className="text-[9px] font-mono text-black/40 dark:text-white/40 self-center">추천:</span>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-xs font-mono text-black/40 dark:text-white/40 self-center">추천:</span>
                     {citiesForSelectedCountry.map(city => (
                       <button
                         key={city.nameEn}
                         type="button"
                         onClick={() => handleAddCityToLocations(city.nameKo, { lat: city.lat, lng: city.lng }, city.countryEn)}
-                        className="px-2 py-0.5 text-[9px] font-mono font-bold border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white transition-colors cursor-pointer"
+                        className="px-2.5 py-1 text-xs font-sans font-bold border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white transition-colors cursor-pointer"
                       >
                         {city.nameKo}
                       </button>
@@ -1104,9 +1164,9 @@ export function CreateTripModal({
                   </div>
                 )}
 
-                {/* Place autocomplete with icon */}
+                {/* Place autocomplete with Building2 icon */}
                 <div className="relative">
-                  <MapPin className={iconCls} />
+                  <Building2 className={iconCls} />
                   <PlaceAutocompleteInput 
                     value={locationInput}
                     onChange={setLocationInput}
@@ -1128,7 +1188,7 @@ export function CreateTripModal({
                       setLocationInput('');
                     }}
                     placeholder="도시/장소 검색 후 Enter..."
-                    className="w-full pl-10 pr-4 py-2 text-xs bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none rounded-none text-black dark:text-white font-mono"
+                    className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none rounded-none text-black dark:text-white font-sans"
                   />
                 </div>
               </div>
@@ -1159,28 +1219,8 @@ export function CreateTripModal({
                 </div>
               </div>
 
-              {/* Season Analysis for Manual Trip — inline, no box */}
-              {manualSeasonRisk && (
-                <div className={`border-l-2 pl-3 py-1 ${
-                  manualSeasonRisk.isWarning 
-                    ? 'border-amber-500 text-amber-800 dark:text-amber-300'
-                    : manualSeasonRisk.isBestSeason
-                      ? 'border-emerald-500 text-emerald-800 dark:text-emerald-300'
-                      : 'border-black/20 dark:border-white/20 text-black/55 dark:text-white/55'
-                }`}>
-                  <p className="text-[10px] font-mono font-bold uppercase tracking-wider">
-                    {manualSeasonRisk.targetName ? `${manualSeasonRisk.targetName} ` : ''}{manualSeasonRisk.startMonth}월 시즌 분석
-                  </p>
-                  <p className="text-[11px] font-sans mt-0.5 leading-snug">
-                    {manualSeasonRisk.isWarning
-                      ? `주의: ${manualSeasonRisk.avoidReason}`
-                      : manualSeasonRisk.isBestSeason
-                        ? '최적 시즌 — 야외 활동 및 관광에 이상적인 날씨입니다.'
-                        : `시즌 참고: 추천 여행 시기는 ${manualSeasonRisk.countryBest || '봄/가을'}입니다.`
-                    }
-                  </p>
-                </div>
-              )}
+              {/* Season Analysis for Manual Trip — unified renderer */}
+              {renderSeasonAnalysisBlock(manualSeasonRisk)}
 
               {/* Tags */}
               <div className="space-y-1.5">

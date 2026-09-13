@@ -806,7 +806,7 @@ export function Lightbox({
   return createPortal(
     <div
       className={`fixed inset-0 z-[10000] bg-black flex flex-col select-none animate-in fade-in duration-75 will-change-transform overflow-hidden ${
-        isSlideshow && !isControlsVisible ? 'cursor-none' : ''
+        isSlideshow && !isControlsVisible ? 'cursor-none [&_*]:!cursor-none' : ''
       }`}
       onMouseMove={resetControlsTimer}
       onMouseUp={handleMouseUp}
