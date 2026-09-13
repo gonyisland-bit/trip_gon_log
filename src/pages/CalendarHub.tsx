@@ -1297,48 +1297,109 @@ export function CalendarHubPage({
               </span>
             </div>
 
-            <div className="flex items-center justify-between gap-3 sm:gap-6 select-none flex-wrap sm:flex-nowrap">
-              <div className="flex items-center gap-2.5 sm:gap-6 flex-nowrap whitespace-nowrap">
-                {/* 1. Year Display & Scrollable Dropdown Selector */}
-                <div className="relative" ref={yearDropdownRef}>
+            <div className="flex items-center gap-2.5 sm:gap-6 flex-nowrap whitespace-nowrap select-none">
+              {/* 1. Year Display & Scrollable Dropdown Selector */}
+              <div className="relative" ref={yearDropdownRef}>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 leading-tight">
+                    YEAR
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsYearDropdownOpen(prev => !prev);
+                      setIsMonthDropdownOpen(false);
+                    }}
+                    className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1 leading-none h-9 sm:h-14 lg:h-16 group text-black dark:text-white"
+                    title="클릭하여 연도 선택"
+                  >
+                    <span className="group-hover:underline decoration-red-600 decoration-2 underline-offset-4">{currentYear}</span>
+                    <ChevronDown className={`w-4 h-4 sm:w-6 sm:h-6 text-black/30 dark:text-white/30 group-hover:text-red-600 transition-transform duration-200 ${isYearDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
+                  </button>
+                </div>
+
+                {/* Scrollable Year Dropdown Popover */}
+                {isYearDropdownOpen && (
+                  <div className="absolute top-full left-0 mt-2 z-50 w-36 sm:w-44 max-h-64 overflow-y-auto rounded-md border border-black/15 dark:border-white/15 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md shadow-2xl py-1 text-sm font-mono animate-in fade-in zoom-in-95 duration-150">
+                    {Array.from({ length: 16 }, (_, i) => 2020 + i).map(year => {
+                      const isSelected = year === currentYear;
+                      return (
+                        <button
+                          key={year}
+                          type="button"
+                          onClick={() => {
+                            setCurrentYear(year);
+                            setIsYearDropdownOpen(false);
+                          }}
+                          className={`w-full px-3 py-2 text-left font-bold transition-colors flex items-center justify-between cursor-pointer ${
+                            isSelected
+                              ? 'bg-red-600 text-white font-black'
+                              : 'text-black/80 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/10'
+                          }`}
+                        >
+                          <span className="text-sm sm:text-base font-satoshi">{year}</span>
+                          {isSelected && <span className="text-[10px] uppercase font-mono tracking-wider">선택</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Swiss Minimal Divider */}
+              <span className="text-3xl sm:text-5xl font-light text-black/20 dark:text-white/20 select-none shrink-0">/</span>
+
+              {/* 2. Month Big Number & Scrollable Dropdown Selector */}
+              {viewMode === 'month' ? (
+                <div className="relative" ref={monthDropdownRef}>
                   <div className="flex flex-col">
                     <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 leading-tight">
-                      YEAR
+                      MONTH
                     </span>
                     <button
                       type="button"
                       onClick={() => {
-                        setIsYearDropdownOpen(prev => !prev);
-                        setIsMonthDropdownOpen(false);
+                        setIsMonthDropdownOpen(prev => !prev);
+                        setIsYearDropdownOpen(false);
                       }}
-                      className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1 leading-none h-9 sm:h-14 lg:h-16 group text-black dark:text-white"
-                      title="클릭하여 연도 선택"
+                      className="flex items-baseline gap-2 sm:gap-2.5 cursor-pointer hover:opacity-80 transition-opacity group h-9 sm:h-14 lg:h-16 text-black dark:text-white"
+                      title="클릭하여 월 선택"
                     >
-                      <span className="group-hover:underline decoration-red-600 decoration-2 underline-offset-4">{currentYear}</span>
-                      <ChevronDown className={`w-4 h-4 sm:w-6 sm:h-6 text-black/30 dark:text-white/30 group-hover:text-red-600 transition-transform duration-200 ${isYearDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
+                      <span className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter leading-none group-hover:underline decoration-red-600 decoration-2 underline-offset-4">
+                        {String(currentMonth + 1).padStart(2, '0')}
+                      </span>
+                      <div className="flex items-center gap-1 justify-end pb-0.5 sm:pb-1">
+                        <span className="text-base sm:text-lg md:text-xl font-black font-['Inter',sans-serif] tracking-wider uppercase text-red-600 dark:text-red-500 leading-none">
+                          {MONTH_NAMES[currentMonth]}
+                        </span>
+                        <ChevronDown className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/30 dark:text-white/30 group-hover:text-red-600 transition-transform duration-200 ${isMonthDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
+                      </div>
                     </button>
                   </div>
 
-                  {/* Scrollable Year Dropdown Popover */}
-                  {isYearDropdownOpen && (
-                    <div className="absolute top-full left-0 mt-2 z-50 w-36 sm:w-44 max-h-64 overflow-y-auto rounded-md border border-black/15 dark:border-white/15 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md shadow-2xl py-1 text-sm font-mono animate-in fade-in zoom-in-95 duration-150">
-                      {Array.from({ length: 16 }, (_, i) => 2020 + i).map(year => {
-                        const isSelected = year === currentYear;
+                  {/* Scrollable Month Dropdown Popover */}
+                  {isMonthDropdownOpen && (
+                    <div className="absolute top-full left-0 mt-2 z-50 w-44 sm:w-52 max-h-72 overflow-y-auto rounded-md border border-black/15 dark:border-white/15 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md shadow-2xl py-1 text-sm animate-in fade-in zoom-in-95 duration-150">
+                      {MONTH_TABS.map((mTab, idx) => {
+                        const isSelected = idx === currentMonth;
                         return (
                           <button
-                            key={year}
+                            key={mTab.num}
                             type="button"
                             onClick={() => {
-                              setCurrentYear(year);
-                              setIsYearDropdownOpen(false);
+                              setCurrentMonth(idx);
+                              setIsMonthDropdownOpen(false);
                             }}
-                            className={`w-full px-3 py-2 text-left font-bold transition-colors flex items-center justify-between cursor-pointer ${
+                            className={`w-full px-3 py-2 text-left transition-colors flex items-center justify-between cursor-pointer ${
                               isSelected
                                 ? 'bg-red-600 text-white font-black'
                                 : 'text-black/80 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/10'
                             }`}
                           >
-                            <span className="text-sm sm:text-base font-satoshi">{year}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-bold text-xs sm:text-sm">{String(mTab.num).padStart(2, '0')}</span>
+                              <span className="font-['Inter',sans-serif] font-black text-sm uppercase">{mTab.full}</span>
+                            </div>
                             {isSelected && <span className="text-[10px] uppercase font-mono tracking-wider">선택</span>}
                           </button>
                         );
@@ -1346,123 +1407,57 @@ export function CalendarHubPage({
                     </div>
                   )}
                 </div>
-
-                {/* Swiss Minimal Divider */}
-                <span className="text-3xl sm:text-5xl font-light text-black/20 dark:text-white/20 select-none shrink-0">/</span>
-
-                {/* 2. Month Big Number & Scrollable Dropdown Selector */}
-                {viewMode === 'month' ? (
-                  <div className="relative" ref={monthDropdownRef}>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 leading-tight">
-                        MONTH
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsMonthDropdownOpen(prev => !prev);
-                          setIsYearDropdownOpen(false);
-                        }}
-                        className="flex items-baseline gap-2 sm:gap-2.5 cursor-pointer hover:opacity-80 transition-opacity group h-9 sm:h-14 lg:h-16 text-black dark:text-white"
-                        title="클릭하여 월 선택"
-                      >
-                        <span className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter leading-none group-hover:underline decoration-red-600 decoration-2 underline-offset-4">
-                          {String(currentMonth + 1).padStart(2, '0')}
-                        </span>
-                        <div className="flex items-center gap-1 justify-end pb-0.5 sm:pb-1">
-                          <span className="text-base sm:text-lg md:text-xl font-black font-['Inter',sans-serif] tracking-wider uppercase text-red-600 dark:text-red-500 leading-none">
-                            {MONTH_NAMES[currentMonth]}
-                          </span>
-                          <ChevronDown className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/30 dark:text-white/30 group-hover:text-red-600 transition-transform duration-200 ${isMonthDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
-                        </div>
-                      </button>
-                    </div>
-
-                    {/* Scrollable Month Dropdown Popover */}
-                    {isMonthDropdownOpen && (
-                      <div className="absolute top-full left-0 mt-2 z-50 w-44 sm:w-52 max-h-72 overflow-y-auto rounded-md border border-black/15 dark:border-white/15 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md shadow-2xl py-1 text-sm animate-in fade-in zoom-in-95 duration-150">
-                        {MONTH_TABS.map((mTab, idx) => {
-                          const isSelected = idx === currentMonth;
-                          return (
-                            <button
-                              key={mTab.num}
-                              type="button"
-                              onClick={() => {
-                                setCurrentMonth(idx);
-                                setIsMonthDropdownOpen(false);
-                              }}
-                              className={`w-full px-3 py-2 text-left transition-colors flex items-center justify-between cursor-pointer ${
-                                isSelected
-                                  ? 'bg-red-600 text-white font-black'
-                                  : 'text-black/80 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/10'
-                              }`}
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono font-bold text-xs sm:text-sm">{String(mTab.num).padStart(2, '0')}</span>
-                                <span className="font-['Inter',sans-serif] font-black text-sm uppercase">{mTab.full}</span>
-                              </div>
-                              {isSelected && <span className="text-[10px] uppercase font-mono tracking-wider">선택</span>}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex flex-col justify-end h-9 sm:h-14 lg:h-16">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 leading-tight">
-                      VIEW
-                    </span>
-                    <span className="text-2xl sm:text-4xl font-black font-satoshi tracking-tight leading-none uppercase text-black/80 dark:text-white/80">
-                      ANNUAL 12M
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Navigation Controls: < TODAY > (같은 줄로 이동시켜 모바일 공간 최적화, days 배지는 제외) */}
-              <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 self-end pb-0.5 sm:pb-1">
-                {/* Prev Button */}
-                <button
-                  type="button"
-                  onClick={viewMode === 'month' ? handlePrevMonth : () => setCurrentYear(prev => prev - 1)}
-                  className="p-1 sm:p-1.5 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center"
-                  title={viewMode === 'month' ? "이전 달" : "이전 연도"}
-                >
-                  <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </button>
-
-                {/* Today Button */}
-                <button
-                  type="button"
-                  onClick={handleGoToday}
-                  className="px-2 sm:px-2.5 py-1 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black text-black dark:text-white hover:text-white dark:hover:bg-white dark:hover:text-black text-[10.5px] sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs"
-                  title="오늘 날짜로 이동"
-                >
-                  TODAY
-                </button>
-
-                {/* Next Button */}
-                <button
-                  type="button"
-                  onClick={viewMode === 'month' ? handleNextMonth : () => setCurrentYear(prev => prev + 1)}
-                  className="p-1 sm:p-1.5 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center"
-                  title={viewMode === 'month' ? "다음 달" : "다음 연도"}
-                >
-                  <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </button>
-              </div>
+              ) : (
+                <div className="flex flex-col justify-end h-9 sm:h-14 lg:h-16">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 leading-tight">
+                    VIEW
+                  </span>
+                  <span className="text-2xl sm:text-4xl font-black font-satoshi tracking-tight leading-none uppercase text-black/80 dark:text-white/80">
+                    ANNUAL 12M
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Right/Secondary group: View Mode Switcher + EDIT Mode Toggle Button */}
-          <div className="flex items-center justify-between md:justify-end gap-1.5 sm:gap-2 shrink-0">
-            {/* View Mode Switcher */}
-            <div className="flex items-center p-0.5 bg-black/5 dark:bg-white/10 rounded-full border border-black/10 dark:border-white/10 font-mono text-[11px] sm:text-xs font-bold shrink-0">
+          {/* Unified Controls Block (모바일: 1줄 완전 통합 / 웹: [ < TODAY > ] 와 [ MONTH | YEAR ] 가 나란히 결합) */}
+          <div className="flex items-center justify-between md:justify-end gap-1.5 sm:gap-2 w-full md:w-auto shrink-0 flex-nowrap">
+            {/* 1. < TODAY > Navigation (h-7 sm:h-8 통일) */}
+            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={viewMode === 'month' ? handlePrevMonth : () => setCurrentYear(prev => prev - 1)}
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
+                title={viewMode === 'month' ? "이전 달" : "이전 연도"}
+              >
+                <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={handleGoToday}
+                className="h-7 sm:h-8 px-2 sm:px-2.5 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black text-black dark:text-white hover:text-white dark:hover:bg-white dark:hover:text-black text-[10.5px] sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center justify-center shrink-0"
+                title="오늘 날짜로 이동"
+              >
+                TODAY
+              </button>
+
+              <button
+                type="button"
+                onClick={viewMode === 'month' ? handleNextMonth : () => setCurrentYear(prev => prev + 1)}
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
+                title={viewMode === 'month' ? "다음 달" : "다음 연도"}
+              >
+                <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </button>
+            </div>
+
+            {/* 2. [ MONTH | YEAR ] View Mode Switcher (h-7 sm:h-8 통일) */}
+            <div className="h-7 sm:h-8 flex items-center p-0.5 bg-black/5 dark:bg-white/10 rounded-full border border-black/10 dark:border-white/10 font-mono text-[10.5px] sm:text-xs font-bold shrink-0">
               <button
                 type="button"
                 onClick={() => toggleViewMode('month')}
-                className={`px-2 sm:px-2.5 py-1 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
+                className={`h-full px-2 sm:px-2.5 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
                   viewMode === 'month'
                     ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
                     : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -1475,7 +1470,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={() => toggleViewMode('year')}
-                className={`px-2 sm:px-2.5 py-1 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
+                className={`h-full px-2 sm:px-2.5 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
                   viewMode === 'year'
                     ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
                     : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -1487,7 +1482,7 @@ export function CalendarHubPage({
               </button>
             </div>
 
-            {/* Edit Mode Toggle Button (DRAG와 ADD 통폐합 단일 버튼: 켜야만 날짜 선택/일정 등록 가능) */}
+            {/* 3. Edit Mode Toggle Button (h-7 sm:h-8 통일) */}
             {viewMode === 'month' && (
               <button
                 type="button"
@@ -1500,7 +1495,7 @@ export function CalendarHubPage({
                     return next;
                   });
                 }}
-                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border text-[11px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-xs ${
+                className={`h-7 sm:h-8 px-2.5 sm:px-3 rounded-full border text-[10.5px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-xs ${
                   isEditMode
                     ? 'bg-red-600 text-white border-red-600 ring-2 ring-red-600/30'
                     : 'bg-white/80 dark:bg-zinc-900/80 border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
