@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, LogOut, User, Sun, Moon, Settings, Search, Home, Archive as ArchiveIcon, Compass, X, SlidersHorizontal } from 'lucide-react';
+import { Menu, LogOut, User, Sun, Moon, Search, Home, Archive as ArchiveIcon, Compass, X, SlidersHorizontal } from 'lucide-react';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 
@@ -13,7 +13,7 @@ interface NavigationProps {
   showSettings: boolean;
   setShowSettings: (value: boolean) => void;
   openAuthModal: (mode: 'login' | 'signup') => void;
-  openSettingModal: () => void;
+  openSettingModal?: () => void;
   onSearchClick: () => void;
   isAdmin?: boolean;
   isHomeGradientActive?: boolean;
@@ -196,16 +196,6 @@ export function Navigation({
               <SlidersHorizontal className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             </button>
           )}
-
-          {/* App Settings Modal Button (BGM Playlist & App Config) */}
-          <button
-            type="button"
-            onClick={openSettingModal}
-            className="hidden md:flex p-2 sm:p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors cursor-pointer items-center justify-center"
-            title="앱 및 BGM 플레이리스트 설정"
-          >
-            <Settings className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-          </button>
 
           {/* Night Mode Button - Desktop Only */}
           <button
@@ -404,21 +394,6 @@ export function Navigation({
                   {isDarkMode ? 'ON' : 'OFF'}
                 </span>
               </div>
-            </button>
-
-            <button
-              onClick={() => {
-                setShowSettings(false);
-                openSettingModal();
-              }}
-              className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-2"
-            >
-              <span className="font-mono text-xs sm:text-sm font-bold text-orange-500 mr-4 sm:mr-6 select-none">
-                BGM
-              </span>
-              <span className="font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white transition-colors">
-                MUSIC & CONFIG
-              </span>
             </button>
           </div>
 

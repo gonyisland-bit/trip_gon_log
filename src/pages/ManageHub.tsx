@@ -41,7 +41,11 @@ import {
   CheckCircle2,
   AlertCircle,
   Server,
-  Terminal
+  Terminal,
+  Music,
+  Volume2,
+  VolumeX,
+  Pause
 } from 'lucide-react';
 import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc, deleteField, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -57,6 +61,15 @@ import {
   compareMagazineItemsChronologically,
   syncSectionItemsWithTimeline
 } from '../utils/magazineHelper';
+import {
+  BgmTrack,
+  DEFAULT_BGM_TRACKS,
+  getStoredBgmTracks,
+  saveStoredBgmTracks,
+  getStoredBgmAutoplay,
+  saveStoredBgmAutoplay,
+  bgmPlayer
+} from '../utils/audioHelper';
 
 interface ManageHubPageProps {
   trips: Trip[];
@@ -261,15 +274,140 @@ export function ManageHubPage({
     }
   };
 
-  // Top-level mode tabs ordered: 'HOME' | 'ARCHIVE' | 'MAGAZINE' | 'MAP' | 'TRASH' | 'CLEANUP'
-  const [activeMode, setActiveMode] = useState<'HOME' | 'ARCHIVE' | 'MAGAZINE' | 'MAP' | 'TRASH' | 'CLEANUP'>(() => {
+  // Top-level mode tabs ordered: 'HOME' | 'ARCHIVE' | 'MAGAZINE' | 'MAP' | 'BGM' | 'TRASH' | 'CLEANUP'
+  const [activeMode, setActiveMode] = useState<'HOME' | 'ARCHIVE' | 'MAGAZINE' | 'MAP' | 'BGM' | 'TRASH' | 'CLEANUP'>(() => {
     const fromSession = sessionStorage.getItem('initialManageTab');
-    if (fromSession && ['HOME', 'ARCHIVE', 'MAGAZINE', 'MAP', 'TRASH', 'CLEANUP'].includes(fromSession)) {
+    if (fromSession && ['HOME', 'ARCHIVE', 'MAGAZINE', 'MAP', 'BGM', 'TRASH', 'CLEANUP'].includes(fromSession)) {
       sessionStorage.removeItem('initialManageTab');
       return fromSession as any;
     }
     return 'HOME';
   });
+
+  // BGM Playlist Management State
+  const [bgmTracks, setBgmTracks] = useState<BgmTrack[]>(() => getStoredBgmTracks());
+  const [bgmAutoplay, setBgmAutoplay] = useState<boolean>(() => getStoredBgmAutoplay());
+  const [isUploadingBgm, setIsUploadingBgm] = useState<boolean>(false);
+  const [previewTrackId, setPreviewTrackId] = useState<string | null>(null);
+  const [isDraggingBgmFile, setIsDraggingBgmFile] = useState<boolean>(false);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const bgmFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Stop preview audio when unmounting
+  useEffect(() => {
+    return () => {
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+        previewAudioRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleToggleBgmTrack = (id: string) => {
+    const updated = bgmTracks.map(t => (t.id === id ? { ...t, enabled: !t.enabled } : t));
+    setBgmTracks(updated);
+    saveStoredBgmTracks(updated);
+  };
+
+  const handleMoveBgmTrack = (index: number, direction: 'up' | 'down') => {
+    const targetIdx = direction === 'up' ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= bgmTracks.length) return;
+    const next = [...bgmTracks];
+    const [item] = next.splice(index, 1);
+    next.splice(targetIdx, 0, item);
+    setBgmTracks(next);
+    saveStoredBgmTracks(next);
+  };
+
+  const handleDeleteBgmTrack = (id: string) => {
+    if (previewTrackId === id && previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      setPreviewTrackId(null);
+    }
+    const updated = bgmTracks.filter(t => t.id !== id);
+    setBgmTracks(updated);
+    saveStoredBgmTracks(updated);
+  };
+
+  const handleRestoreDefaultBgm = () => {
+    setBgmTracks(DEFAULT_BGM_TRACKS);
+    saveStoredBgmTracks(DEFAULT_BGM_TRACKS);
+  };
+
+  const handleToggleBgmAutoplay = (val: boolean) => {
+    setBgmAutoplay(val);
+    saveStoredBgmAutoplay(val);
+  };
+
+  const handleTogglePreviewTrack = (track: BgmTrack) => {
+    if (previewTrackId === track.id) {
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+      }
+      setPreviewTrackId(null);
+      return;
+    }
+
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause();
+    }
+    const audio = new Audio(track.url);
+    previewAudioRef.current = audio;
+    audio.addEventListener('ended', () => setPreviewTrackId(null));
+    audio
+      .play()
+      .then(() => {
+        setPreviewTrackId(track.id);
+      })
+      .catch(err => {
+        console.warn('Audio preview failed:', err);
+        setPreviewTrackId(null);
+      });
+  };
+
+  const handleBgmFileUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setIsUploadingBgm(true);
+    try {
+      const newTracks: BgmTrack[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (!file.type.startsWith('audio/') && !/\.(mp3|m4a|wav|aac|ogg)$/i.test(file.name)) {
+          alert(`${file.name}은(는) 지원되지 않는 오디오 파일 형식입니다.`);
+          continue;
+        }
+
+        const path = `bgm/${Date.now()}_${file.name}`;
+        let publicUrl = '';
+        try {
+          publicUrl = await uploadFileToR2(file, path);
+        } catch (uploadErr) {
+          console.warn('R2 upload failed, fallback to local blob:', uploadErr);
+          publicUrl = URL.createObjectURL(file);
+        }
+
+        const cleanTitle = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
+        newTracks.push({
+          id: `bgm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          title: cleanTitle,
+          url: publicUrl,
+          enabled: true,
+        });
+      }
+
+      if (newTracks.length > 0) {
+        const updated = [...bgmTracks, ...newTracks];
+        setBgmTracks(updated);
+        saveStoredBgmTracks(updated);
+      }
+    } catch (err) {
+      console.error('Failed to upload BGM:', err);
+      alert('음원 업로드 중 오류가 발생했습니다.');
+    } finally {
+      setIsUploadingBgm(false);
+      if (bgmFileInputRef.current) bgmFileInputRef.current.value = '';
+    }
+  };
 
   const handleMoveHeroOrder = (index: number, direction: 'up' | 'down') => {
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
@@ -2965,13 +3103,14 @@ export function ManageHubPage({
           </div>
         </div>
 
-        {/* Mode Switcher: home / trip / magazine / map / trash / opt */}
+        {/* Mode Switcher: home / trip / magazine / map / bgm / trash / opt */}
         <div className="w-full md:w-auto max-w-full overflow-x-auto scrollbar-none flex items-center border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 p-0.5 rounded-none shrink-0">
           {([
             { id: 'HOME', label: 'home' },
             { id: 'ARCHIVE', label: 'trip' },
             { id: 'MAGAZINE', label: 'magazine' },
             { id: 'MAP', label: 'map' },
+            { id: 'BGM', label: 'bgm' },
             { id: 'TRASH', label: 'trash' },
             { id: 'CLEANUP', label: 'opt' },
           ] as const).map(tab => (
@@ -5895,6 +6034,228 @@ export function ManageHubPage({
                   <span>SAVE MAP SETTINGS</span>
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─────────────────────────────────────────────────────────────────── */}
+        {/* MODE: BGM (Background Music Playlist & Slideshow Audio Config)     */}
+        {/* ─────────────────────────────────────────────────────────────────── */}
+        {activeMode === 'BGM' && (
+          <div
+            onScroll={handleContainerScroll}
+            className="w-full max-w-3xl mx-auto p-4 sm:p-8 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200"
+          >
+            <div className="flex flex-col gap-8">
+              {/* Header Title */}
+              <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
+                <span className="text-[9px] font-mono font-black uppercase tracking-widest text-orange-600 dark:text-orange-500 block mb-0.5">
+                  AUDIO & PLAYLIST CONFIGURATION
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                  BACKGROUND MUSIC
+                </h2>
+                <p className="text-xs text-black/60 dark:text-white/60 font-mono">
+                  [라이트박스 슬라이드쇼 배경음악 및 플레이리스트 관리]
+                </p>
+              </div>
+
+              {/* 1. Autoplay Option Section */}
+              <section className="flex flex-col gap-3">
+                <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
+                  <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-sans">
+                    PLAYBACK OPTIONS
+                  </h3>
+                </div>
+
+                <div className="flex items-center justify-between p-3.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/15 dark:border-white/15">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-sans">
+                      슬라이드쇼 시작 시 BGM 자동 재생
+                    </span>
+                    <span className="text-[10px] text-black/50 dark:text-white/50 font-mono">
+                      슬라이드쇼 재생 버튼 클릭 시 활성화된 BGM 트랙을 자동 재생합니다.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleBgmAutoplay(!bgmAutoplay)}
+                    className={`px-3 py-1 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer ${
+                      bgmAutoplay
+                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                        : 'border-black/20 dark:border-white/20 text-black/40 dark:text-white/40'
+                    }`}
+                  >
+                    {bgmAutoplay ? 'ON' : 'OFF'}
+                  </button>
+                </div>
+              </section>
+
+              {/* 2. Upload Track Section */}
+              <section className="flex flex-col gap-3">
+                <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
+                  <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-sans">
+                    ADD TRACK
+                  </h3>
+                </div>
+
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDraggingBgmFile(true);
+                  }}
+                  onDragLeave={() => setIsDraggingBgmFile(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDraggingBgmFile(false);
+                    handleBgmFileUpload(e.dataTransfer.files);
+                  }}
+                  onClick={() => bgmFileInputRef.current?.click()}
+                  className={`border-2 border-dashed p-6 sm:p-8 text-center cursor-pointer transition-colors ${
+                    isDraggingBgmFile
+                      ? 'border-orange-500 bg-orange-500/10'
+                      : 'border-black/20 dark:border-white/20 hover:border-black/40 dark:hover:border-white/40 bg-black/[0.01] dark:bg-white/[0.01]'
+                  }`}
+                >
+                  <input
+                    ref={bgmFileInputRef}
+                    type="file"
+                    accept="audio/*,.mp3,.m4a,.wav,.aac,.ogg"
+                    multiple
+                    onChange={(e) => handleBgmFileUpload(e.target.files)}
+                    className="hidden"
+                  />
+                  <div className="flex flex-col items-center gap-2">
+                    {isUploadingBgm ? (
+                      <>
+                        <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
+                        <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                          음원 파일 업로드 중...
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-5 h-5 text-black/40 dark:text-white/40" />
+                        <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                          오디오 파일 추가 (클릭 또는 드래그 앤 드롭)
+                        </span>
+                        <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                          MP3, M4A, WAV, AAC, OGG 파일 지원
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              {/* 3. Playlist Tracks Section */}
+              <section className="flex flex-col gap-3">
+                <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
+                  <div className="flex items-center gap-2">
+                    <Music className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
+                    <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-sans">
+                      PLAYLIST ({bgmTracks.length})
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRestoreDefaultBgm}
+                    className="flex items-center gap-1 text-[10px] font-mono text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white underline cursor-pointer"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    기본 트랙 복구
+                  </button>
+                </div>
+
+                {bgmTracks.length === 0 ? (
+                  <div className="p-8 text-center text-xs font-mono text-black/40 dark:text-white/40 border border-dashed border-black/15 dark:border-white/15">
+                    등록된 배경음악 트랙이 없습니다.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {bgmTracks.map((track, idx) => (
+                      <div
+                        key={track.id}
+                        className={`flex items-center justify-between p-3 border transition-colors ${
+                          track.enabled
+                            ? 'bg-black/[0.02] dark:bg-white/[0.02] border-black/20 dark:border-white/20'
+                            : 'bg-black/[0.01] dark:bg-white/[0.01] border-black/10 dark:border-white/10 opacity-50'
+                        }`}
+                      >
+                        {/* Checkbox & Track Name */}
+                        <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
+                          <input
+                            type="checkbox"
+                            checked={track.enabled}
+                            onChange={() => handleToggleBgmTrack(track.id)}
+                            className="w-4 h-4 accent-orange-500 cursor-pointer rounded-none"
+                            title="재생 목록 포함 여부"
+                          />
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-bold truncate text-black dark:text-white font-sans">
+                              {track.title}
+                            </span>
+                            {track.isDefault && (
+                              <span className="text-[9px] font-mono font-bold text-orange-600 dark:text-orange-400 uppercase tracking-widest">
+                                DEFAULT TRACK
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-1.5 shrink-0 font-mono">
+                          {/* Preview button */}
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePreviewTrack(track)}
+                            className={`p-1.5 border transition-colors cursor-pointer ${
+                              previewTrackId === track.id
+                                ? 'bg-orange-500 text-white border-orange-500'
+                                : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5'
+                            }`}
+                            title={previewTrackId === track.id ? '정지' : '미리듣기'}
+                          >
+                            {previewTrackId === track.id ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                          </button>
+
+                          {/* Reorder Up */}
+                          <button
+                            type="button"
+                            disabled={idx === 0}
+                            onClick={() => handleMoveBgmTrack(idx, 'up')}
+                            className="p-1.5 border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-25 cursor-pointer"
+                            title="위로 이동"
+                          >
+                            <ArrowUp className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Reorder Down */}
+                          <button
+                            type="button"
+                            disabled={idx === bgmTracks.length - 1}
+                            onClick={() => handleMoveBgmTrack(idx, 'down')}
+                            className="p-1.5 border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-25 cursor-pointer"
+                            title="아래로 이동"
+                          >
+                            <ArrowDown className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Delete */}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteBgmTrack(track.id)}
+                            className="p-1.5 border border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white transition-colors cursor-pointer"
+                            title="트랙 삭제"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
             </div>
           </div>
         )}

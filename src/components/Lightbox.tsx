@@ -385,7 +385,7 @@ export function Lightbox({
     return () => stopSlideshow();
   }, [isSlideshow, isPaused, currentIndex, startSlideshowCycle, stopSlideshow]);
 
-  // Stop slideshow & BGM when lightbox closes
+  // Stop slideshow & BGM when lightbox closes or unmounts
   useEffect(() => {
     if (!isOpen) {
       setIsSlideshow(false);
@@ -393,13 +393,16 @@ export function Lightbox({
       stopSlideshow();
       bgmPlayer.stop();
     }
+    return () => {
+      bgmPlayer.stop();
+    };
   }, [isOpen, stopSlideshow]);
 
   const handleStartSlideshow = () => {
     setIsSlideshow(true);
     setIsPaused(false);
     resetZoom();
-    if (getStoredBgmAutoplay() && !bgmPlayer.isPlaying()) {
+    if (getStoredBgmAutoplay()) {
       bgmPlayer.play();
     }
   };
@@ -408,10 +411,21 @@ export function Lightbox({
     setIsSlideshow(false);
     setIsPaused(false);
     stopSlideshow();
+    bgmPlayer.stop();
   };
 
   const handleTogglePause = () => {
-    setIsPaused(prev => !prev);
+    setIsPaused(prev => {
+      const next = !prev;
+      if (next) {
+        bgmPlayer.pause();
+      } else {
+        if (getStoredBgmAutoplay()) {
+          bgmPlayer.play();
+        }
+      }
+      return next;
+    });
   };
 
   // Touch event refs for mobile swiping & panning
@@ -778,7 +792,10 @@ export function Lightbox({
                 갤러리로
               </button>
               <button
-                onClick={onClose}
+                onClick={() => {
+                  handleStopSlideshow();
+                  onClose();
+                }}
                 className="p-2 rounded-full hover:bg-white/10 text-white transition-all"
                 title="닫기"
               >
@@ -943,7 +960,10 @@ export function Lightbox({
 
             {/* Exit/Close Button (Always visible & prominent on mobile) */}
             <button
-              onClick={onClose}
+              onClick={() => {
+                bgmPlayer.stop();
+                onClose();
+              }}
               className="p-2 sm:p-2.5 rounded-full bg-black/60 hover:bg-white/20 active:scale-95 text-white transition-all shadow-md cursor-pointer border border-white/20 flex items-center justify-center shrink-0"
               title="나가기 / 닫기 (ESC)"
               aria-label="Close Lightbox"

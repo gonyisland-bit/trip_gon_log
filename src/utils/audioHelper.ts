@@ -64,6 +64,7 @@ export function saveStoredBgmAutoplay(enabled: boolean) {
 class BgmPlayerManager {
   private audio: HTMLAudioElement | null = null;
   private currentTrackIndex = 0;
+  private currentTrackId: string | null = null;
   private isPlayingState = false;
   private listeners: Set<() => void> = new Set();
 
@@ -106,7 +107,19 @@ class BgmPlayerManager {
     return this.isPlayingState;
   }
 
-  public playTrackAtIndex(index: number) {
+  private isSameSource(audioSrc: string, targetUrl: string): boolean {
+    if (!audioSrc || !targetUrl) return false;
+    if (audioSrc === targetUrl) return true;
+    try {
+      const parsedAudio = new URL(audioSrc, window.location.href);
+      const parsedTarget = new URL(targetUrl, window.location.href);
+      return parsedAudio.href === parsedTarget.href;
+    } catch {
+      return audioSrc.endsWith(targetUrl) || targetUrl.endsWith(audioSrc);
+    }
+  }
+
+  public playTrackAtIndex(index: number, forceRestart = false) {
     const tracks = this.getPlayableTracks();
     if (tracks.length === 0) {
       this.stop();
@@ -127,9 +140,13 @@ class BgmPlayerManager {
       });
     }
 
-    if (this.audio.src !== track.url) {
+    const needNewSource = forceRestart || !this.currentTrackId || this.currentTrackId !== track.id || !this.isSameSource(this.audio.src, track.url);
+
+    if (needNewSource) {
+      this.currentTrackId = track.id;
       this.audio.src = track.url;
       this.audio.load();
+      this.audio.currentTime = 0;
     }
 
     this.audio
@@ -148,7 +165,10 @@ class BgmPlayerManager {
   public play() {
     const tracks = this.getPlayableTracks();
     if (tracks.length === 0) return;
-    if (this.audio && this.audio.src) {
+
+    const track = tracks[this.currentTrackIndex % tracks.length];
+
+    if (this.audio && this.audio.src && this.currentTrackId === track?.id) {
       this.audio
         .play()
         .then(() => {
@@ -156,10 +176,10 @@ class BgmPlayerManager {
           this.notify();
         })
         .catch(() => {
-          this.playTrackAtIndex(this.currentTrackIndex);
+          this.playTrackAtIndex(this.currentTrackIndex, false);
         });
     } else {
-      this.playTrackAtIndex(this.currentTrackIndex);
+      this.playTrackAtIndex(this.currentTrackIndex, false);
     }
   }
 
@@ -182,19 +202,21 @@ class BgmPlayerManager {
   public next() {
     const tracks = this.getPlayableTracks();
     if (tracks.length === 0) return;
-    this.playTrackAtIndex((this.currentTrackIndex + 1) % tracks.length);
+    this.playTrackAtIndex((this.currentTrackIndex + 1) % tracks.length, true);
   }
 
   public prev() {
     const tracks = this.getPlayableTracks();
     if (tracks.length === 0) return;
-    this.playTrackAtIndex((this.currentTrackIndex - 1 + tracks.length) % tracks.length);
+    this.playTrackAtIndex((this.currentTrackIndex - 1 + tracks.length) % tracks.length, true);
   }
 
   public stop() {
     if (this.audio) {
       this.audio.pause();
-      this.audio.currentTime = 0;
+      try {
+        this.audio.currentTime = 0;
+      } catch (_) {}
     }
     this.isPlayingState = false;
     this.notify();
