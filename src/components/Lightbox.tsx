@@ -43,6 +43,21 @@ export function Lightbox({
   const [slideProgress, setSlideProgress] = useState(0); // 0-100 for progress bar
   const slideshowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const wasFullscreenBeforeSlideshowRef = useRef<boolean>(false);
+
+  // Auto-hide controls in slideshow mode
+  const [isControlsVisible, setIsControlsVisible] = useState(true);
+  const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const resetControlsTimer = useCallback(() => {
+    setIsControlsVisible(true);
+    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    if (isSlideshow && !isPaused) {
+      controlsTimeoutRef.current = setTimeout(() => {
+        setIsControlsVisible(false);
+      }, 2500);
+    }
+  }, [isSlideshow, isPaused]);
 
   // BGM Player state
   const [isBgmPlaying, setIsBgmPlaying] = useState(() => bgmPlayer.isPlaying());
@@ -385,33 +400,97 @@ export function Lightbox({
     return () => stopSlideshow();
   }, [isSlideshow, isPaused, currentIndex, startSlideshowCycle, stopSlideshow]);
 
-  // Stop slideshow & BGM when lightbox closes or unmounts
+  // Synchronize controls timer when slideshow/pause state changes
+  useEffect(() => {
+    if (isSlideshow) {
+      if (isPaused) {
+        setIsControlsVisible(true);
+        if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+      } else {
+        resetControlsTimer();
+      }
+    } else {
+      setIsControlsVisible(true);
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    }
+  }, [isSlideshow, isPaused, resetControlsTimer]);
+
+  // Stop slideshow & BGM & exit fullscreen when lightbox closes or unmounts
   useEffect(() => {
     if (!isOpen) {
       setIsSlideshow(false);
       setIsPaused(false);
+      setIsControlsVisible(true);
       stopSlideshow();
       bgmPlayer.stop();
+
+      // Exit fullscreen if it was entered specifically for slideshow
+      if (!wasFullscreenBeforeSlideshowRef.current) {
+        try {
+          if (document.fullscreenElement || (document as any).webkitFullscreenElement) {
+            if (document.exitFullscreen) {
+              document.exitFullscreen();
+            } else if ((document as any).webkitExitFullscreen) {
+              (document as any).webkitExitFullscreen();
+            }
+          }
+        } catch (_) {}
+      }
     }
     return () => {
       bgmPlayer.stop();
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     };
   }, [isOpen, stopSlideshow]);
 
-  const handleStartSlideshow = () => {
+  const handleStartSlideshow = async () => {
+    // Record whether user was already in fullscreen before starting slideshow
+    const isCurrentlyFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+    wasFullscreenBeforeSlideshowRef.current = isCurrentlyFullscreen;
+
+    if (!isCurrentlyFullscreen) {
+      try {
+        const docEl = document.documentElement as any;
+        if (docEl.requestFullscreen) {
+          await docEl.requestFullscreen();
+        } else if (docEl.webkitRequestFullscreen) {
+          await docEl.webkitRequestFullscreen();
+        }
+      } catch (err) {
+        console.warn('Fullscreen request denied or not supported:', err);
+      }
+    }
+
     setIsSlideshow(true);
     setIsPaused(false);
+    setIsControlsVisible(true);
     resetZoom();
     if (getStoredBgmAutoplay()) {
       bgmPlayer.play();
     }
   };
 
-  const handleStopSlideshow = () => {
+  const handleStopSlideshow = async () => {
     setIsSlideshow(false);
     setIsPaused(false);
+    setIsControlsVisible(true);
     stopSlideshow();
     bgmPlayer.stop();
+
+    // Revert to non-fullscreen only if user wasn't in fullscreen before
+    if (!wasFullscreenBeforeSlideshowRef.current) {
+      try {
+        if (document.fullscreenElement || (document as any).webkitFullscreenElement) {
+          if (document.exitFullscreen) {
+            await document.exitFullscreen();
+          } else if ((document as any).webkitExitFullscreen) {
+            await (document as any).webkitExitFullscreen();
+          }
+        }
+      } catch (err) {
+        console.warn('Exit fullscreen failed:', err);
+      }
+    }
   };
 
   const handleTogglePause = () => {
@@ -419,10 +498,13 @@ export function Lightbox({
       const next = !prev;
       if (next) {
         bgmPlayer.pause();
+        setIsControlsVisible(true);
+        if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
       } else {
         if (getStoredBgmAutoplay()) {
           bgmPlayer.play();
         }
+        resetControlsTimer();
       }
       return next;
     });
@@ -539,7 +621,30 @@ export function Lightbox({
   // ESC & Arrow & Space key handling
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isOpen) return;
+      // Reset controls timer on key interaction
+      resetControlsTimer();
+
+      // F key: toggle fullscreen
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        try {
+          if (document.fullscreenElement || (document as any).webkitFullscreenElement) {
+            if (document.exitFullscreen) {
+              document.exitFullscreen();
+            } else if ((document as any).webkitExitFullscreen) {
+              (document as any).webkitExitFullscreen();
+            }
+          } else {
+            const docEl = document.documentElement as any;
+            if (docEl.requestFullscreen) {
+              docEl.requestFullscreen();
+            } else if (docEl.webkitRequestFullscreen) {
+              docEl.webkitRequestFullscreen();
+            }
+          }
+        } catch (_) {}
+      }
+
       if (e.key === 'Escape') {
         if (isSlideshow) {
           handleStopSlideshow();
@@ -683,10 +788,16 @@ export function Lightbox({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[10000] bg-black flex flex-col select-none animate-in fade-in duration-75 will-change-transform overflow-hidden"
+      className={`fixed inset-0 z-[10000] bg-black flex flex-col select-none animate-in fade-in duration-75 will-change-transform overflow-hidden ${
+        isSlideshow && !isControlsVisible ? 'cursor-none' : ''
+      }`}
+      onMouseMove={resetControlsTimer}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
-      onTouchStart={handleTouchStart}
+      onTouchStart={(e) => {
+        resetControlsTimer();
+        handleTouchStart(e);
+      }}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
@@ -714,11 +825,21 @@ export function Lightbox({
         <div className="absolute inset-0 bg-black/20" />
       </div>
 
-      {/* ── SLIDESHOW MODE OVERLAY ── */}
+      {/* ── SLIDESHOW MODE OVERLAY (Auto-hide on idle) ── */}
       {isSlideshow && (
-        <div className="absolute inset-0 z-30 flex flex-col pointer-events-none">
+        <div
+          className={`absolute inset-0 z-30 flex flex-col justify-between pointer-events-none transition-opacity duration-300 ${
+            isControlsVisible ? 'opacity-100' : 'opacity-0'
+          }`}
+          onMouseEnter={() => {
+            if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+          }}
+          onMouseLeave={() => {
+            resetControlsTimer();
+          }}
+        >
           {/* Top gradient + controls */}
-          <div className="pointer-events-auto flex justify-between items-center px-5 py-4 bg-gradient-to-b from-black/70 to-transparent">
+          <div className="pointer-events-auto flex justify-between items-center px-5 py-4 bg-gradient-to-b from-black/75 to-transparent">
             <div className="flex items-center gap-2">
               {/* Image counter */}
               <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest">
@@ -734,7 +855,7 @@ export function Lightbox({
               {/* Prev button */}
               <button
                 onClick={handlePrev}
-                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
+                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer"
                 title="이전 (←)"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -742,7 +863,7 @@ export function Lightbox({
               {/* Pause / Resume */}
               <button
                 onClick={handleTogglePause}
-                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
+                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer"
                 title={isPaused ? '재생 (Space)' : '일시정지 (Space)'}
               >
                 {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
@@ -750,7 +871,7 @@ export function Lightbox({
               {/* Next button */}
               <button
                 onClick={handleNext}
-                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
+                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer"
                 title="다음 (→)"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -785,7 +906,7 @@ export function Lightbox({
               {/* Stop slideshow */}
               <button
                 onClick={handleStopSlideshow}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-white/10 hover:bg-white/20 text-white text-[9px] font-black uppercase tracking-widest transition-all border border-white/20"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-white/10 hover:bg-white/20 text-white text-[9px] font-black uppercase tracking-widest transition-all border border-white/20 cursor-pointer"
                 title="슬라이드쇼 종료 (ESC)"
               >
                 <SkipBack className="w-3.5 h-3.5" />
@@ -796,7 +917,7 @@ export function Lightbox({
                   handleStopSlideshow();
                   onClose();
                 }}
-                className="p-2 rounded-full hover:bg-white/10 text-white transition-all"
+                className="p-2 rounded-full hover:bg-white/10 text-white transition-all cursor-pointer"
                 title="닫기"
               >
                 <X className="w-4 h-4" />
@@ -804,11 +925,15 @@ export function Lightbox({
             </div>
           </div>
 
-          {/* Spacer */}
-          <div className="flex-grow" />
+          {/* Spacer: click to toggle pause/play */}
+          <div
+            onClick={handleTogglePause}
+            className="flex-grow pointer-events-auto cursor-pointer"
+            title={isPaused ? '재생 (Click / Space)' : '일시정지 (Click / Space)'}
+          />
 
           {/* Bottom info + progress bar */}
-          <div className="pointer-events-auto bg-gradient-to-t from-black/80 to-transparent px-6 pb-6 pt-10 flex flex-col items-center gap-3">
+          <div className="pointer-events-auto bg-gradient-to-t from-black/85 to-transparent px-6 pb-6 pt-10 flex flex-col items-center gap-3">
             {/* Place & memo without duplicate title/location */}
             {(() => {
               const primaryTitle = (currentMeta.place || currentMeta.imgNote || '').trim();
@@ -852,20 +977,25 @@ export function Lightbox({
               />
             </div>
 
-            {/* Dot indicators */}
-            <div className="flex gap-1.5 flex-wrap justify-center max-w-xs">
-              {images.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => { onNavigate(idx); }}
-                  className={`rounded-full transition-all duration-300 ${
-                    idx === currentIndex
-                      ? 'w-4 h-1.5 bg-orange-500'
-                      : 'w-1.5 h-1.5 bg-white/30 hover:bg-white/60'
-                  }`}
-                />
-              ))}
-            </div>
+            {/* Dot indicators - 멈추었을 때(isPaused)에만 등장 */}
+            {isPaused && (
+              <div className="flex gap-1.5 flex-wrap justify-center max-w-sm max-h-16 overflow-y-auto px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-full border border-white/10 animate-in fade-in duration-200 hide-scrollbar">
+                {images.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onNavigate(idx);
+                    }}
+                    className={`rounded-full transition-all duration-200 cursor-pointer ${
+                      idx === currentIndex
+                        ? 'w-4 h-1.5 bg-orange-500'
+                        : 'w-1.5 h-1.5 bg-white/30 hover:bg-white/70'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -980,10 +1110,12 @@ export function Lightbox({
         onWheel={isSlideshow ? undefined : handleWheel}
       >
         {/* Left Arrow */}
-        {images.length > 1 && (
+        {images.length > 1 && (!isSlideshow || isControlsVisible) && (
           <button
             onClick={handlePrev}
-            className="absolute left-3 md:left-8 z-40 p-2 md:p-3 bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-xs border border-white/20 hover:border-white/40 text-white rounded-full transition-all focus:outline-none flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
+            className={`absolute left-3 md:left-8 z-40 p-2 md:p-3 bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-xs border border-white/20 hover:border-white/40 text-white rounded-full transition-all duration-300 focus:outline-none flex items-center justify-center cursor-pointer shadow-lg active:scale-95 ${
+              isSlideshow && !isControlsVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'
+            }`}
             title="이전 사진 (←)"
             aria-label="Previous photo"
           >
@@ -1017,9 +1149,7 @@ export function Lightbox({
               data-pin-nopin="true"
               style={{
                 maxHeight: isSlideshow
-                  ? isMobile
-                    ? 'calc(100vh - 130px)'
-                    : 'calc(100vh - 150px)'
+                  ? '100vh'
                   : isMobile
                     ? 'calc(100vh - 85px)'
                     : 'calc(100vh - 145px)',
@@ -1028,6 +1158,8 @@ export function Lightbox({
                   : isMobile
                     ? 'calc(100vw - 8px)'
                     : 'min(96vw, calc(100vw - 100px))',
+                width: isSlideshow ? '100vw' : undefined,
+                height: isSlideshow ? '100vh' : undefined,
                 objectFit: 'contain',
                 userSelect: 'none',
                 display: 'block',
@@ -1084,10 +1216,12 @@ export function Lightbox({
         </div>
 
         {/* Right Arrow */}
-        {images.length > 1 && (
+        {images.length > 1 && (!isSlideshow || isControlsVisible) && (
           <button
             onClick={handleNext}
-            className="absolute right-3 md:right-8 z-40 p-2 md:p-3 bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-xs border border-white/20 hover:border-white/40 text-white rounded-full transition-all focus:outline-none flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
+            className={`absolute right-3 md:right-8 z-40 p-2 md:p-3 bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-xs border border-white/20 hover:border-white/40 text-white rounded-full transition-all duration-300 focus:outline-none flex items-center justify-center cursor-pointer shadow-lg active:scale-95 ${
+              isSlideshow && !isControlsVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'
+            }`}
             title="다음 사진 (→)"
             aria-label="Next photo"
           >
