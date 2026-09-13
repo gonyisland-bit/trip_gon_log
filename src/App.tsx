@@ -1660,7 +1660,7 @@ function App() {
     lat?: number,
     lng?: number,
     members?: string[],
-    locations?: { name: string; lat?: number; lng?: number }[],
+    locations?: { name: string; lat?: number; lng?: number; country?: string }[],
     statusBadge?: string,
     country?: string,
     customCoverImg?: string,
