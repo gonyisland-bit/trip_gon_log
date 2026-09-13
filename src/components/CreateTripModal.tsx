@@ -798,21 +798,21 @@ export function CreateTripModal({
                       <img 
                         src={preset.coverImg} 
                         alt={preset.title}
-                        className="w-14 h-14 object-cover grayscale group-hover:grayscale-0 transition-all shrink-0"
+                        className="w-16 h-16 object-cover grayscale group-hover:grayscale-0 transition-all shrink-0"
                       />
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="text-[8px] font-mono font-black bg-black text-white dark:bg-white dark:text-black px-1.5 py-0.5 uppercase tracking-wider">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="text-[10px] font-mono font-black bg-black text-white dark:bg-white dark:text-black px-1.5 py-0.5 uppercase tracking-wider">
                             {preset.country}
                           </span>
-                          <span className="text-[8px] font-mono font-bold text-orange-600 dark:text-orange-400 uppercase">
+                          <span className="text-[10px] font-mono font-bold text-orange-600 dark:text-orange-400 uppercase">
                             {preset.durationDays}D
                           </span>
                         </div>
-                        <h4 className="text-[11px] font-bold truncate text-black dark:text-white uppercase leading-tight">
+                        <h4 className="text-xs sm:text-sm font-bold truncate text-black dark:text-white uppercase leading-tight font-sans">
                           {preset.title}
                         </h4>
-                        <p className="text-[10px] text-black/45 dark:text-white/45 truncate leading-tight mt-0.5">
+                        <p className="text-xs text-black/60 dark:text-white/60 truncate leading-normal mt-0.5 font-sans">
                           {preset.highlights[0]}
                         </p>
                       </div>
@@ -824,14 +824,14 @@ export function CreateTripModal({
                             onClick={(e) => handleOpenEditPreset(preset, e)}
                             className="p-1 hover:text-black dark:hover:text-white text-black/30 dark:text-white/30 transition-colors"
                           >
-                            <Edit className="w-3 h-3" />
+                            <Edit className="w-3.5 h-3.5" />
                           </button>
                           <button
                             type="button"
                             onClick={(e) => handleDeletePreset(preset.id, e)}
                             className="p-1 hover:text-red-600 dark:hover:text-red-400 text-black/30 dark:text-white/30 transition-colors"
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       )}
@@ -842,18 +842,18 @@ export function CreateTripModal({
 
               {/* Selected Preset — inline preview, no nested box */}
               {selectedPresetObj && (
-                <div className="pt-2 border-t border-black/10 dark:border-white/10 space-y-2">
+                <div className="pt-3 border-t border-black/10 dark:border-white/10 space-y-2.5">
                   <div className="flex items-baseline justify-between">
-                    <span className="text-[10px] font-mono font-black uppercase tracking-wider text-black dark:text-white">
+                    <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-black dark:text-white font-sans">
                       {selectedPresetObj.title}
                     </span>
-                    <span className="text-[9px] font-mono text-black/40 dark:text-white/40">
-                      {selectedPresetObj.city} · {selectedPresetObj.durationDays}박
+                    <span className="text-xs font-mono text-black/50 dark:text-white/50">
+                      {selectedPresetObj.city} · {selectedPresetObj.durationDays}박 {selectedPresetObj.durationDays + 1}일
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex flex-wrap gap-1.5">
                     {selectedPresetObj.highlights.map((h, i) => (
-                      <span key={i} className="text-[9px] font-mono text-black/55 dark:text-white/55 border-l border-black/20 dark:border-white/20 pl-1.5">
+                      <span key={i} className="text-xs font-sans text-black/70 dark:text-white/70 border-l-2 border-black/30 dark:border-white/30 pl-2">
                         {h}
                       </span>
                     ))}
@@ -861,9 +861,9 @@ export function CreateTripModal({
                   <button
                     type="button"
                     onClick={() => handleConfirmPresetGeneration(selectedPresetObj)}
-                    className="w-full py-2.5 bg-black text-white dark:bg-white dark:text-black text-[10px] font-mono font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <Check className="w-3.5 h-3.5" />
+                    <Check className="w-4 h-4" />
                     <span>APPLY & CREATE TRIP</span>
                   </button>
                 </div>
@@ -1167,7 +1167,7 @@ export function CreateTripModal({
 
                 {/* Place autocomplete with Building2 icon */}
                 <div className="relative">
-                  <Building2 className={iconCls} />
+                  <Building2 className={`${iconCls} z-10`} />
                   <PlaceAutocompleteInput 
                     value={locationInput}
                     onChange={setLocationInput}
