@@ -2751,6 +2751,7 @@ function App() {
           {/* Create Trip Modal Popup */}
           <CreateTripModal
             isOpen={isCreateModalOpen}
+            isAdmin={isAdmin}
             onClose={() => {
               setIsCreateModalOpen(false);
               setCreateCountryInitial('');

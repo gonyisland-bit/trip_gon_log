@@ -5,7 +5,6 @@ import {
   MapPin, 
   Tag, 
   Edit3, 
-  Zap, 
   Sliders, 
   CheckCircle, 
   Compass, 
@@ -18,7 +17,8 @@ import {
   Edit,
   Check,
   Globe,
-  Layers
+  Layers,
+  Calendar
 } from 'lucide-react';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { 
@@ -38,6 +38,7 @@ import { ConfirmModal } from './ConfirmModal';
 interface CreateTripModalProps {
   isOpen: boolean;
   onClose: () => void;
+  isAdmin?: boolean;
   onCreate: (
     title: string, 
     dateRange: string, 
@@ -84,9 +85,17 @@ function extractCountry(address: string): string {
   return address.trim().toUpperCase();
 }
 
+/** 타이틀이 비어있을 때 도시 목록으로 자동 생성 */
+function buildAutoTitle(currentLocations: { name: string }[], newCityName: string): string {
+  const allNames = [...currentLocations.map(l => l.name), newCityName]
+    .filter((n, i, arr) => arr.indexOf(n) === i); // dedupe
+  return allNames.join(' · ').toUpperCase() + ' TRIP';
+}
+
 export function CreateTripModal({
   isOpen,
   onClose,
+  isAdmin = false,
   onCreate,
   existingTags,
   initialCountry,
@@ -94,11 +103,11 @@ export function CreateTripModal({
   // Modal Top Navigation Mode: PRESETS | BUILDER | MANUAL
   const [modalMode, setModalMode] = useState<'presets' | 'builder' | 'manual'>('presets');
 
-  // Presets List State (loaded from worldDestinations + localStorage)
+  // Presets List State
   const [presets, setPresets] = useState<PresetTripPlan[]>([]);
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
 
-  // Preset Editor Modal/Panel State
+  // Preset Editor State (admin only)
   const [isPresetEditing, setIsPresetEditing] = useState(false);
   const [editingPresetData, setEditingPresetData] = useState<PresetTripPlan | null>(null);
 
@@ -108,12 +117,7 @@ export function CreateTripModal({
     title: string;
     message: string;
     payload: (() => void) | null;
-  }>({
-    isOpen: false,
-    title: '',
-    message: '',
-    payload: null,
-  });
+  }>({ isOpen: false, title: '', message: '', payload: null });
 
   // Manual & Common Form State
   const [title, setTitle] = useState('');
@@ -154,7 +158,7 @@ export function CreateTripModal({
       setIsPresetEditing(false);
       setEditingPresetData(null);
       setModalMode('presets');
-      setTitle(initialCountry ? `${initialCountry} Journey` : '');
+      setTitle(initialCountry ? `${initialCountry} TRIP` : '');
       
       const defaultStart = new Date();
       defaultStart.setDate(defaultStart.getDate() + 7);
@@ -197,7 +201,7 @@ export function CreateTripModal({
     }
   }, [isOpen, initialCountry]);
 
-  // Close on Escape key
+  // Close on Escape
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -226,12 +230,11 @@ export function CreateTripModal({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Check seasonal risks for smart builder
+  // Season risk analysis for builder
   const seasonRiskCheck = useMemo(() => {
     if (!smartCity && !smartCountry) return null;
     const city = smartCity;
     const countryObj = smartCountry || (city ? findCountryByNameOrAlias(city.countryEn) : null);
-    
     const startMonth = new Date(smartStartDate).getMonth() + 1;
 
     let warningReason: string | null = null;
@@ -243,7 +246,6 @@ export function CreateTripModal({
         }
       }
     }
-
     const isBestSeason = city?.bestMonths.includes(startMonth);
 
     return {
@@ -256,7 +258,7 @@ export function CreateTripModal({
     };
   }, [smartCity, smartCountry, smartStartDate]);
 
-  // Filtered Country List for Autocomplete
+  // Filtered Country List (only opens when typing)
   const filteredCountries = useMemo(() => {
     if (!countrySearchInput.trim()) return [];
     const q = countrySearchInput.trim().toLowerCase();
@@ -267,10 +269,7 @@ export function CreateTripModal({
     ).slice(0, 15);
   }, [countrySearchInput]);
 
-  // Matched Country Object from current manual country state
   const matchedCountry = useMemo(() => findCountryByNameOrAlias(country), [country]);
-
-  // Available cities under selected country for quick pills
   const citiesForSelectedCountry = useMemo(() => {
     if (!matchedCountry) return [];
     return WORLD_CITIES.filter(c => c.countryEn === matchedCountry.nameEn);
@@ -278,7 +277,7 @@ export function CreateTripModal({
 
   if (!isOpen) return null;
 
-  // Select a country in manual mode
+  // --- Handler: Select Country (Manual)
   const handleSelectCountry = (c: DestinationCountry) => {
     setCountry(c.nameEn);
     setCountrySearchInput(`${c.nameKo} (${c.nameEn})`);
@@ -288,12 +287,17 @@ export function CreateTripModal({
     }
   };
 
-  // Add city to locations
+  // --- Handler: Add City to Locations + auto-title
   const handleAddCityToLocations = (cityName: string, coords?: { lat: number; lng: number }, countryEn?: string) => {
     if (!cityName) return;
-    if (!locations.some(l => l.name.toLowerCase() === cityName.toLowerCase())) {
-      setLocations(prev => [...prev, { name: cityName, lat: coords?.lat, lng: coords?.lng, country: countryEn }]);
-    }
+    if (locations.some(l => l.name.toLowerCase() === cityName.toLowerCase())) return;
+    const newLoc = { name: cityName, lat: coords?.lat, lng: coords?.lng, country: countryEn };
+    setLocations(prev => {
+      const next = [...prev, newLoc];
+      // Auto title if empty
+      setTitle(t => t.trim() ? t : buildAutoTitle(prev, cityName));
+      return next;
+    });
     if (countryEn && !country) {
       setCountry(countryEn);
       const cObj = findCountryByNameOrAlias(countryEn);
@@ -301,10 +305,10 @@ export function CreateTripModal({
     }
   };
 
-  // Manual Form Submission
+  // --- Handler: Manual Form Submit
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return setError('여정 제목을 입력해 주세요.');
+    if (!title.trim()) return setError('트립 제목을 입력해 주세요.');
     if (!startDate || !endDate) return setError('날짜를 입력해 주세요.');
 
     const startFormatted = startDate.replace(/-/g, '.');
@@ -316,32 +320,25 @@ export function CreateTripModal({
 
     setConfirmModalState({
       isOpen: true,
-      title: 'CREATE JOURNEY',
-      message: `'${title.trim()}' 여정을 새로 생성하시겠습니까?`,
+      title: 'CREATE TRIP',
+      message: `'${title.trim()}' 트립을 새로 생성하시겠습니까?`,
       payload: () => {
         onCreate(
-          title.trim(),
-          dateRange,
-          combinedLocationStr,
+          title.trim(), dateRange, combinedLocationStr,
           tags.length > 0 ? tags : ['Personal'],
-          firstLat,
-          firstLng,
-          members,
-          locations,
-          statusBadge,
-          country.trim()
+          firstLat, firstLng, members, locations, statusBadge, country.trim()
         );
         onClose();
       }
     });
   };
 
-  // Select Preset Card -> Fill Details & Prompt Confirmation
+  // --- Handler: Select Preset Card
   const handleSelectPreset = (preset: PresetTripPlan) => {
     setSelectedPresetId(preset.id);
   };
 
-  // Confirm Generation from Preset
+  // --- Handler: Confirm Generation from Preset
   const handleConfirmPresetGeneration = (preset: PresetTripPlan) => {
     const today = new Date();
     today.setDate(today.getDate() + 14);
@@ -371,19 +368,13 @@ export function CreateTripModal({
 
       const daySched = preset.schedule.find(s => s.dayOffset === i) || preset.schedule[i % (preset.schedule.length || 1)];
       const items = daySched ? daySched.items.map((it, idx) => ({
-        id: baseId + i * 100 + idx + 1,
-        time: it.time,
-        type: it.type,
-        place: it.place,
-        memo: it.memo,
-        cost: it.cost || '-',
-        date: dateKey
+        id: baseId + i * 100 + idx + 1, time: it.time, type: it.type,
+        place: it.place, memo: it.memo, cost: it.cost || '-', date: dateKey
       })) : [
         { id: baseId + i * 100 + 1, time: '10:00 AM', type: 'activity', place: `${preset.city} 관광`, memo: '추천 명소 탐방', cost: '-', date: dateKey },
         { id: baseId + i * 100 + 2, time: '01:00 PM', type: 'dining', place: `${preset.city} 맛집`, memo: '현지 식사', cost: '-', date: dateKey },
         { id: baseId + i * 100 + 3, time: '07:00 PM', type: 'activity', place: `${preset.city} 야경`, memo: '야경 및 휴식', cost: '-', date: dateKey }
       ];
-
       timelineDays.push({ date: dateKey, items });
     }
 
@@ -392,32 +383,22 @@ export function CreateTripModal({
     setConfirmModalState({
       isOpen: true,
       title: 'CREATE PRESET TRIP',
-      message: `'${preset.title}' 프리셋으로 여정을 생성하시겠습니까?`,
+      message: `'${preset.title}' 프리셋으로 트립을 생성하시겠습니까?`,
       payload: () => {
         onCreate(
-          preset.title,
-          dateRange,
-          preset.city,
-          [...preset.tags, preset.country],
-          cityMeta?.lat,
-          cityMeta?.lng,
-          [],
+          preset.title, dateRange, preset.city, [...preset.tags, preset.country],
+          cityMeta?.lat, cityMeta?.lng, [],
           [{ name: preset.city, lat: cityMeta?.lat, lng: cityMeta?.lng, country: preset.country }],
-          'NEW',
-          preset.country,
-          preset.coverImg,
-          timelineDays
+          'NEW', preset.country, preset.coverImg, timelineDays
         );
         onClose();
       }
     });
   };
 
-  // Smart Builder Submit
+  // --- Handler: Smart Builder Submit
   const handleSmartBuilderSubmit = () => {
-    if (!smartCity && !smartCountry) {
-      return setError('목표 도시 또는 국가를 선택해 주세요.');
-    }
+    if (!smartCity && !smartCountry) return setError('목표 도시 또는 국가를 선택해 주세요.');
 
     const city = smartCity;
     const countryObj = smartCountry || (city ? findCountryByNameOrAlias(city.countryEn) : null);
@@ -438,7 +419,7 @@ export function CreateTripModal({
     const endStr = `${endY}.${endM}.${endD}`;
     const dateRange = `${startStr} - ${endStr}`;
 
-    const titleStr = `${cityName.toUpperCase()} ${selectedTheme !== 'all' ? selectedTheme.toUpperCase() : 'SMART'} JOURNEY`;
+    const titleStr = `${cityName.toUpperCase()} ${selectedTheme !== 'all' ? selectedTheme.toUpperCase() : 'SMART'} TRIP`;
     const coverImg = city?.coverImage || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?q=80&w=1200&auto=format&fit=crop';
 
     const timelineDays: { date: string; items: any[] }[] = [];
@@ -463,49 +444,35 @@ export function CreateTripModal({
         { id: baseId + i * 100 + 4, time: '03:30 PM', type: 'activity', place: spot2, memo: '트렌디 거리 탐방 & 쇼핑', cost: '-', date: dateKey },
         { id: baseId + i * 100 + 5, time: '07:30 PM', type: 'dining', place: `${cityName} 디너 & 야경 바`, memo: '낭만적인 저녁 식사와 야경 감상', cost: '-', date: dateKey }
       ];
-
       timelineDays.push({ date: dateKey, items });
     }
 
     setConfirmModalState({
       isOpen: true,
       title: 'GENERATE TRIP',
-      message: `'${titleStr}' 여정을 생성하시겠습니까?`,
+      message: `'${titleStr}' 트립을 생성하시겠습니까?`,
       payload: () => {
         onCreate(
-          titleStr,
-          dateRange,
-          cityName,
+          titleStr, dateRange, cityName,
           [countryName, cityName, selectedTheme !== 'all' ? selectedTheme : 'SmartTrip'],
-          city?.lat,
-          city?.lng,
-          [],
+          city?.lat, city?.lng, [],
           [{ name: cityName, lat: city?.lat, lng: city?.lng, country: countryName }],
-          'NEW',
-          countryName,
-          coverImg,
-          timelineDays
+          'NEW', countryName, coverImg, timelineDays
         );
         onClose();
       }
     });
   };
 
-  // Preset CRUD Operations
+  // --- Preset CRUD (admin only)
   const handleOpenNewPreset = () => {
     setEditingPresetData({
       id: `custom-preset-${Date.now()}`,
-      title: '',
-      subtitle: '',
-      country: 'JAPAN',
-      city: '도쿄',
-      durationDays: 4,
-      tags: ['Custom'],
+      title: '', subtitle: '', country: 'JAPAN', city: '도쿄',
+      durationDays: 4, tags: ['Custom'],
       coverImg: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=1000&auto=format&fit=crop',
-      theme: 'culture',
-      highlights: ['핵심 명소 탐방', '로컬 미식 체험'],
-      schedule: [],
-      isCustom: true
+      theme: 'culture', highlights: ['핵심 명소 탐방', '로컬 미식 체험'],
+      schedule: [], isCustom: true
     });
     setIsPresetEditing(true);
   };
@@ -536,240 +503,202 @@ export function CreateTripModal({
   const themes = [
     { id: 'all', label: 'ALL', icon: Globe },
     { id: 'shopping', label: 'SHOPPING', icon: ShoppingBag },
-    { id: 'food', label: 'FOOD & DINING', icon: Utensils },
+    { id: 'food', label: 'FOOD', icon: Utensils },
     { id: 'nature', label: 'NATURE', icon: Palmtree },
     { id: 'activity', label: 'ACTIVITY', icon: Compass },
-    { id: 'art', label: 'ART & ARCHITECTURE', icon: Building2 }
+    { id: 'art', label: 'ART', icon: Building2 }
   ];
 
   const selectedPresetObj = presets.find(p => p.id === selectedPresetId);
 
+  // Shared input style tokens
+  const inputCls = 'w-full pl-10 pr-4 py-2 text-xs bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none text-black dark:text-white font-mono';
+  const labelCls = 'text-[10px] font-mono uppercase font-bold tracking-widest text-black/50 dark:text-white/50';
+  const iconCls = 'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30 dark:text-white/30';
+  const hintCls = 'text-[10px] text-black/40 dark:text-white/40 mt-0.5 leading-snug';
+
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex justify-center items-center p-3 sm:p-6 bg-black/70 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] flex justify-center items-center p-2 sm:p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto">
       {/* Backdrop */}
       <div className="absolute inset-0" onClick={onClose} />
 
-      {/* Main Modal Card */}
-      <div className="relative w-full max-w-2xl bg-[#F9F8F6] dark:bg-[#121212] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col z-10 transition-colors duration-300 text-black dark:text-white max-h-[92vh] overflow-hidden my-auto shrink-0">
+      {/* Main Modal Card — no inner shadow-box, clean border */}
+      <div className="relative w-full max-w-xl bg-[#F9F8F6] dark:bg-[#121212] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col z-10 text-black dark:text-white max-h-[95vh] overflow-hidden my-auto shrink-0">
         
-        {/* Top Header Bar */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-black/10 dark:border-white/10 bg-white/50 dark:bg-black/40 backdrop-blur-xs">
-          <div className="flex items-center gap-3">
-            <span className="p-1.5 bg-black text-white dark:bg-white dark:text-black">
-              <Zap className="w-4 h-4" />
-            </span>
-            <div>
-              <h2 className="text-base sm:text-lg font-black uppercase font-mono tracking-tight leading-none">
-                NEW TRIP GENERATOR
-              </h2>
-              <p className="text-[10px] font-mono text-black/45 dark:text-white/45 uppercase tracking-widest mt-0.5">
-                SWISS MINIMAL TRAVEL ARCHITECTURE
-              </p>
-            </div>
+        {/* Header — typography only, no icon box */}
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-black/10 dark:border-white/10">
+          <div>
+            <h2 className="text-sm font-black uppercase font-mono tracking-widest leading-none text-black dark:text-white">
+              TRIP GUIDE
+            </h2>
+            <p className="text-[9px] font-mono text-black/40 dark:text-white/40 uppercase tracking-widest mt-0.5">
+              SMART TRIP BUILDER
+            </p>
           </div>
-
           <button 
             type="button" 
             onClick={onClose}
             className="p-1.5 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Tab Switcher: PRESETS | BUILDER | MANUAL */}
-        <div className="flex border-b border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02]">
-          <button
-            type="button"
-            onClick={() => setModalMode('presets')}
-            className={`flex-1 py-3 text-xs font-mono font-black uppercase tracking-wider flex items-center justify-center gap-2 border-b-2 transition-all cursor-pointer ${
-              modalMode === 'presets'
-                ? 'border-black dark:border-white bg-white dark:bg-[#161616] text-black dark:text-white'
-                : 'border-transparent text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>PRESETS</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setModalMode('builder')}
-            className={`flex-1 py-3 text-xs font-mono font-black uppercase tracking-wider flex items-center justify-center gap-2 border-b-2 transition-all cursor-pointer ${
-              modalMode === 'builder'
-                ? 'border-black dark:border-white bg-white dark:bg-[#161616] text-black dark:text-white'
-                : 'border-transparent text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
-            }`}
-          >
-            <Zap className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
-            <span>BUILDER</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setModalMode('manual')}
-            className={`flex-1 py-3 text-xs font-mono font-black uppercase tracking-wider flex items-center justify-center gap-2 border-b-2 transition-all cursor-pointer ${
-              modalMode === 'manual'
-                ? 'border-black dark:border-white bg-white dark:bg-[#161616] text-black dark:text-white'
-                : 'border-transparent text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
-            }`}
-          >
-            <Sliders className="w-3.5 h-3.5" />
-            <span>MANUAL</span>
-          </button>
+        {/* Tab Switcher — compact */}
+        <div className="flex border-b border-black/10 dark:border-white/10">
+          {(['presets', 'builder', 'manual'] as const).map(tab => {
+            const icons = { presets: Layers, builder: Globe, manual: Sliders };
+            const labels = { presets: 'PRESETS', builder: 'BUILDER', manual: 'MANUAL' };
+            const Icon = icons[tab];
+            const active = modalMode === tab;
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setModalMode(tab)}
+                className={`flex-1 py-2.5 text-[10px] font-mono font-black uppercase tracking-wider flex items-center justify-center gap-1.5 border-b-2 transition-all cursor-pointer ${
+                  active
+                    ? 'border-black dark:border-white bg-white dark:bg-[#161616] text-black dark:text-white'
+                    : 'border-transparent text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white'
+                }`}
+              >
+                <Icon className="w-3 h-3" />
+                <span>{labels[tab]}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Scrollable Content Body */}
-        <div className="p-5 sm:p-7 overflow-y-auto max-h-[calc(92vh-130px)] space-y-6">
+        <div className="px-4 py-4 sm:px-6 sm:py-5 overflow-y-auto flex-1 space-y-4">
           
           {error && (
-            <div className="p-3 bg-red-500/10 border border-red-500/25 text-red-600 dark:text-red-400 text-xs font-mono font-medium flex items-center gap-2">
-              <span>{error}</span>
-            </div>
+            <p className="text-red-600 dark:text-red-400 text-[11px] font-mono border-l-2 border-red-500 pl-3">{error}</p>
           )}
 
-          {/* ========================================================================= */}
-          {/* TAB 1: PRESETS (Curated + Custom + CRUD) */}
-          {/* ========================================================================= */}
+          {/* ============================================================ */}
+          {/* TAB 1: PRESETS */}
+          {/* ============================================================ */}
           {modalMode === 'presets' && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               
-              {/* Header & Add Preset Action */}
-              <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
-                <div>
-                  <h3 className="text-xs font-mono font-black uppercase tracking-wider text-black dark:text-white">
-                    CURATED & CUSTOM PRESETS
-                  </h3>
-                  <p className="text-[10px] font-mono text-black/40 dark:text-white/40 uppercase">
-                    Select a preset to inspect details before generation
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleOpenNewPreset}
-                  className="px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black text-[10px] font-mono font-black uppercase tracking-wider flex items-center gap-1.5 hover:opacity-85 transition-opacity cursor-pointer"
-                >
-                  <Plus className="w-3 h-3" />
-                  <span>NEW PRESET</span>
-                </button>
+              {/* Header row */}
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-black uppercase tracking-wider text-black/60 dark:text-white/60">
+                  {presets.length} PRESETS
+                </span>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={handleOpenNewPreset}
+                    className="flex items-center gap-1 text-[10px] font-mono font-black uppercase tracking-wider hover:opacity-70 transition-opacity cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>NEW PRESET</span>
+                  </button>
+                )}
               </div>
 
-              {/* Grid of Presets */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Presets Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {presets.map((preset) => {
                   const isSelected = selectedPresetId === preset.id;
                   return (
                     <div
                       key={preset.id}
                       onClick={() => handleSelectPreset(preset)}
-                      className={`group relative border p-3.5 flex flex-col justify-between transition-all cursor-pointer overflow-hidden ${
+                      className={`group relative flex gap-3 items-center p-3 border transition-all cursor-pointer ${
                         isSelected 
-                          ? 'border-black dark:border-white bg-black/5 dark:bg-white/10 shadow-md ring-1 ring-black dark:ring-white'
-                          : 'border-black/15 dark:border-white/15 bg-white dark:bg-[#161616] hover:border-black/50 dark:hover:border-white/50'
+                          ? 'border-black dark:border-white bg-black/[0.04] dark:bg-white/[0.06]'
+                          : 'border-black/12 dark:border-white/12 hover:border-black/40 dark:hover:border-white/40'
                       }`}
                     >
-                      <div className="flex gap-3 items-center">
-                        <img 
-                          src={preset.coverImg} 
-                          alt={preset.title}
-                          className="w-16 h-16 object-cover grayscale group-hover:grayscale-0 transition-all border border-black/10 dark:border-white/10 shrink-0"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5 mb-1">
-                            <span className="text-[9px] font-mono font-black bg-black text-white dark:bg-white dark:text-black px-1.5 py-0.5 uppercase tracking-wider">
-                              {preset.country}
-                            </span>
-                            <span className="text-[9px] font-mono font-bold text-orange-600 dark:text-orange-400 uppercase">
-                              {preset.durationDays} DAYS
-                            </span>
-                          </div>
-                          <h4 className="text-xs font-bold truncate text-black dark:text-white font-sans uppercase">
-                            {preset.title}
-                          </h4>
-                          <p className="text-[10px] text-black/55 dark:text-white/55 truncate">
-                            {preset.subtitle}
-                          </p>
+                      <img 
+                        src={preset.coverImg} 
+                        alt={preset.title}
+                        className="w-14 h-14 object-cover grayscale group-hover:grayscale-0 transition-all shrink-0"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className="text-[8px] font-mono font-black bg-black text-white dark:bg-white dark:text-black px-1.5 py-0.5 uppercase tracking-wider">
+                            {preset.country}
+                          </span>
+                          <span className="text-[8px] font-mono font-bold text-orange-600 dark:text-orange-400 uppercase">
+                            {preset.durationDays}D
+                          </span>
                         </div>
+                        <h4 className="text-[11px] font-bold truncate text-black dark:text-white uppercase leading-tight">
+                          {preset.title}
+                        </h4>
+                        <p className="text-[10px] text-black/45 dark:text-white/45 truncate leading-tight mt-0.5">
+                          {preset.highlights[0]}
+                        </p>
                       </div>
-
-                      {/* Footer Info & Action Icons */}
-                      <div className="mt-2.5 pt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-[9px] font-mono text-black/50 dark:text-white/50">
-                        <span className="truncate max-w-[65%]">{preset.highlights[0]}</span>
-                        <div className="flex items-center gap-1">
+                      {/* Admin CRUD icons */}
+                      {isAdmin && (
+                        <div className="flex flex-col gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             type="button"
                             onClick={(e) => handleOpenEditPreset(preset, e)}
-                            className="p-1 hover:text-black dark:hover:text-white transition-colors"
-                            title="Edit Preset"
+                            className="p-1 hover:text-black dark:hover:text-white text-black/30 dark:text-white/30 transition-colors"
                           >
                             <Edit className="w-3 h-3" />
                           </button>
                           <button
                             type="button"
                             onClick={(e) => handleDeletePreset(preset.id, e)}
-                            className="p-1 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                            title="Delete Preset"
+                            className="p-1 hover:text-red-600 dark:hover:text-red-400 text-black/30 dark:text-white/30 transition-colors"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
                         </div>
-                      </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
 
-              {/* Selected Preset Detailed Preview & Action Confirmation */}
+              {/* Selected Preset — inline preview, no nested box */}
               {selectedPresetObj && (
-                <div className="p-4 border border-black/20 dark:border-white/20 bg-black/[0.02] dark:bg-white/[0.02] space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-[9px] font-mono font-bold text-orange-600 dark:text-orange-400 uppercase tracking-widest">
-                        SELECTED PRESET
-                      </span>
-                      <h4 className="text-sm font-bold font-mono uppercase text-black dark:text-white">
-                        {selectedPresetObj.title}
-                      </h4>
-                    </div>
-                    <span className="text-xs font-mono text-black/50 dark:text-white/50">
-                      {selectedPresetObj.city}, {selectedPresetObj.country} ({selectedPresetObj.durationDays} DAYS)
+                <div className="pt-2 border-t border-black/10 dark:border-white/10 space-y-2">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-[10px] font-mono font-black uppercase tracking-wider text-black dark:text-white">
+                      {selectedPresetObj.title}
+                    </span>
+                    <span className="text-[9px] font-mono text-black/40 dark:text-white/40">
+                      {selectedPresetObj.city} · {selectedPresetObj.durationDays}박
                     </span>
                   </div>
-
-                  <div className="flex flex-wrap gap-1.5 pt-1">
+                  <div className="flex flex-wrap gap-1">
                     {selectedPresetObj.highlights.map((h, i) => (
-                      <span key={i} className="text-[10px] font-mono px-2 py-0.5 border border-black/10 dark:border-white/10 bg-white dark:bg-[#181818]">
+                      <span key={i} className="text-[9px] font-mono text-black/55 dark:text-white/55 border-l border-black/20 dark:border-white/20 pl-1.5">
                         {h}
                       </span>
                     ))}
                   </div>
-
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={() => handleConfirmPresetGeneration(selectedPresetObj)}
-                      className="w-full py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-black uppercase tracking-widest hover:opacity-85 active:opacity-95 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
-                    >
-                      <Check className="w-4 h-4" />
-                      <span>APPLY & GENERATE JOURNEY</span>
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleConfirmPresetGeneration(selectedPresetObj)}
+                    className="w-full py-2.5 bg-black text-white dark:bg-white dark:text-black text-[10px] font-mono font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>APPLY & CREATE TRIP</span>
+                  </button>
                 </div>
               )}
-
             </div>
           )}
 
-          {/* ========================================================================= */}
-          {/* TAB 2: BUILDER (Theme + Destination + Date) */}
-          {/* ========================================================================= */}
+          {/* ============================================================ */}
+          {/* TAB 2: BUILDER */}
+          {/* ============================================================ */}
           {modalMode === 'builder' && (
-            <div className="space-y-5">
+            <div className="space-y-4">
               
-              {/* Step 1: Theme selection */}
+              {/* Theme */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
-                  THEME & MOOD
-                </label>
-                <div className="flex flex-wrap gap-1.5">
+                <label className={labelCls}>THEME</label>
+                <div className="flex flex-wrap gap-1">
                   {themes.map(t => {
                     const IconComp = t.icon;
                     const isSelected = selectedTheme === t.id;
@@ -778,13 +707,13 @@ export function CreateTripModal({
                         key={t.id}
                         type="button"
                         onClick={() => setSelectedTheme(t.id)}
-                        className={`px-3 py-1.5 text-[10px] font-mono font-bold uppercase tracking-wider border flex items-center gap-1.5 transition-all cursor-pointer ${
+                        className={`px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider border flex items-center gap-1 transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
-                            : 'bg-white dark:bg-[#161616] border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/40 dark:hover:border-white/40'
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                            : 'border-black/15 dark:border-white/15 text-black/55 dark:text-white/55 hover:border-black/40 dark:hover:border-white/40'
                         }`}
                       >
-                        <IconComp className="w-3 h-3" />
+                        <IconComp className="w-2.5 h-2.5" />
                         <span>{t.label}</span>
                       </button>
                     );
@@ -792,170 +721,143 @@ export function CreateTripModal({
                 </div>
               </div>
 
-              {/* Step 2: Destination Select (Country & City) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                {/* Select Country */}
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
-                    COUNTRY
-                  </label>
+              {/* Country & City */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className={labelCls}>COUNTRY</label>
                   <select
                     value={smartCountry?.code || ''}
                     onChange={(e) => {
                       const found = WORLD_COUNTRIES.find(c => c.code === e.target.value);
                       setSmartCountry(found || null);
-                      if (found) {
-                        const firstCity = WORLD_CITIES.find(c => c.countryEn === found.nameEn);
-                        setSmartCity(firstCity || null);
-                      } else {
-                        setSmartCity(null);
-                      }
+                      setSmartCity(found ? (WORLD_CITIES.find(c => c.countryEn === found.nameEn) || null) : null);
                     }}
-                    className="w-full px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 text-black dark:text-white outline-none rounded-none"
+                    className="w-full px-2.5 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 text-black dark:text-white outline-none rounded-none"
                   >
-                    <option value="">SELECT COUNTRY...</option>
+                    <option value="">국가 선택...</option>
                     {WORLD_COUNTRIES.map(c => (
-                      <option key={c.code} value={c.code}>
-                        {c.nameKo} ({c.nameEn})
-                      </option>
+                      <option key={c.code} value={c.code}>{c.nameKo} ({c.nameEn})</option>
                     ))}
                   </select>
                 </div>
-
-                {/* Select City */}
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
-                    CITY
-                  </label>
+                <div className="space-y-1">
+                  <label className={labelCls}>CITY</label>
                   <select
                     value={smartCity?.nameEn || ''}
                     onChange={(e) => {
                       const found = WORLD_CITIES.find(c => c.nameEn === e.target.value);
                       setSmartCity(found || null);
                       if (found) {
-                        const matchedC = WORLD_COUNTRIES.find(c => c.nameEn === found.countryEn);
-                        if (matchedC) setSmartCountry(matchedC);
+                        const mc = WORLD_COUNTRIES.find(c => c.nameEn === found.countryEn);
+                        if (mc) setSmartCountry(mc);
                       }
                     }}
-                    className="w-full px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 text-black dark:text-white outline-none rounded-none"
+                    className="w-full px-2.5 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 text-black dark:text-white outline-none rounded-none"
                   >
-                    <option value="">SELECT CITY...</option>
+                    <option value="">도시 선택...</option>
                     {(smartCountry ? WORLD_CITIES.filter(c => c.countryEn === smartCountry.nameEn) : WORLD_CITIES).map(c => (
-                      <option key={c.nameEn} value={c.nameEn}>
-                        {c.nameKo} - {c.nameEn} ({c.countryKo})
-                      </option>
+                      <option key={c.nameEn} value={c.nameEn}>{c.nameKo} ({c.nameEn})</option>
                     ))}
                   </select>
                 </div>
               </div>
 
-              {/* Step 3: Date & Duration */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
-                    START DATE
-                  </label>
+              {/* Date & Duration */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className={labelCls}>START DATE</label>
                   <input
                     type="date"
                     value={smartStartDate}
                     onChange={(e) => setSmartStartDate(e.target.value)}
-                    className="w-full px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 text-black dark:text-white outline-none rounded-none"
+                    className="w-full px-2.5 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 text-black dark:text-white outline-none rounded-none"
                   />
+                  <p className={hintCls}>출발 예정일 — 피크 시즌 전 여유 있게</p>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
-                    DURATION
-                  </label>
-                  <div className="flex gap-1.5">
+                <div className="space-y-1">
+                  <label className={labelCls}>DURATION</label>
+                  <div className="flex gap-1">
                     {[3, 4, 5, 6, 7].map(days => (
                       <button
                         key={days}
                         type="button"
                         onClick={() => setSmartDurationDays(days)}
-                        className={`flex-1 py-2 text-xs font-mono font-black uppercase tracking-wider border transition-all cursor-pointer ${
+                        className={`flex-1 py-2 text-[10px] font-mono font-black border transition-all cursor-pointer ${
                           smartDurationDays === days
                             ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                            : 'bg-white dark:bg-[#161616] border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/30'
+                            : 'border-black/15 dark:border-white/15 text-black/55 dark:text-white/55 hover:border-black/30'
                         }`}
                       >
                         {days}D
                       </button>
                     ))}
                   </div>
+                  <p className={hintCls}>전체 여행 기간 (박+1일 기준)</p>
                 </div>
               </div>
 
-              {/* Step 4: Season Diagnostic */}
+              {/* Season Analysis — inline, no box */}
               {seasonRiskCheck && (
-                <div className={`p-3.5 border text-xs font-mono ${
+                <div className={`border-l-2 pl-3 py-1 ${
                   seasonRiskCheck.isWarning 
-                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-200' 
-                    : (seasonRiskCheck.isBestSeason 
-                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-900 dark:text-emerald-200' 
-                        : 'bg-black/[0.02] dark:bg-white/[0.02] border-black/10 dark:border-white/10 text-black/70 dark:text-white/70')
-                } space-y-1`}>
-                  <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-[11px]">
-                    <CheckCircle className="w-3.5 h-3.5 shrink-0" />
-                    <span>MONTH {seasonRiskCheck.startMonth} SEASON ANALYSIS</span>
-                  </div>
-                  <p className="leading-relaxed font-sans text-xs">
-                    {seasonRiskCheck.isWarning ? (
-                      <span><strong>NOTICE:</strong> {seasonRiskCheck.avoidReason}</span>
-                    ) : seasonRiskCheck.isBestSeason ? (
-                      <span><strong>OPTIMAL SEASON:</strong> Ideal weather conditions for outdoor excursions.</span>
-                    ) : (
-                      <span><strong>SEASON INFO:</strong> Recommended period is {seasonRiskCheck.countryBest || 'Spring / Autumn'}.</span>
-                    )}
+                    ? 'border-amber-500 text-amber-800 dark:text-amber-300'
+                    : seasonRiskCheck.isBestSeason
+                      ? 'border-emerald-500 text-emerald-800 dark:text-emerald-300'
+                      : 'border-black/20 dark:border-white/20 text-black/55 dark:text-white/55'
+                }`}>
+                  <p className="text-[10px] font-mono font-bold uppercase tracking-wider">
+                    {seasonRiskCheck.startMonth}월 시즌 분석
+                  </p>
+                  <p className="text-[11px] font-sans mt-0.5 leading-snug">
+                    {seasonRiskCheck.isWarning
+                      ? `주의: ${seasonRiskCheck.avoidReason}`
+                      : seasonRiskCheck.isBestSeason
+                        ? '최적 시즌 — 야외 활동 및 관광에 이상적인 날씨입니다.'
+                        : `시즌 참고: 추천 여행 시기는 ${seasonRiskCheck.countryBest || '봄/가을'}입니다.`
+                    }
                   </p>
                 </div>
               )}
 
               {/* Generate Button */}
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={handleSmartBuilderSubmit}
-                  className="w-full py-3.5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-black uppercase tracking-widest hover:opacity-85 active:opacity-95 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
-                >
-                  <Zap className="w-4 h-4 text-orange-400 dark:text-orange-600" />
-                  <span>GENERATE TRIP</span>
-                </button>
-              </div>
-
+              <button
+                type="button"
+                onClick={handleSmartBuilderSubmit}
+                className="w-full py-3 bg-black text-white dark:bg-white dark:text-black text-[10px] font-mono font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>GENERATE TRIP</span>
+              </button>
             </div>
           )}
 
-          {/* ========================================================================= */}
-          {/* TAB 3: MANUAL FORM (Minimal Clean Inputs) */}
-          {/* ========================================================================= */}
+          {/* ============================================================ */}
+          {/* TAB 3: MANUAL */}
+          {/* ============================================================ */}
           {modalMode === 'manual' && (
-            <form onSubmit={handleManualSubmit} className="flex flex-col gap-4">
+            <form onSubmit={handleManualSubmit} className="space-y-4">
               
-              {/* Title */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-mono uppercase font-bold tracking-widest text-black/50 dark:text-white/50">
-                  JOURNEY TITLE
-                </label>
+              {/* Trip Title */}
+              <div className="space-y-1">
+                <label className={labelCls}>TRIP TITLE</label>
                 <div className="relative">
-                  <Edit3 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30 dark:text-white/30" />
+                  <Edit3 className={iconCls} />
                   <input 
                     type="text"
                     required
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="e.g. KYOTO AUTUMN TRIP"
-                    className="w-full pl-10 pr-4 py-2 text-xs bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none text-black dark:text-white font-mono"
+                    className={inputCls}
                   />
                 </div>
               </div>
 
-              {/* Country with Bidirectional Autocomplete (Only opens on typing) */}
-              <div className="flex flex-col gap-1.5 relative" ref={countryDropdownRef}>
-                <label className="text-[10px] font-mono uppercase font-bold tracking-widest text-black/50 dark:text-white/50">
-                  COUNTRY
-                </label>
+              {/* Country */}
+              <div className="space-y-1 relative" ref={countryDropdownRef}>
+                <label className={labelCls}>COUNTRY</label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30 dark:text-white/30" />
+                  <MapPin className={iconCls} />
                   <input 
                     type="text"
                     value={countrySearchInput}
@@ -964,26 +866,24 @@ export function CreateTripModal({
                       setCountry(e.target.value.toUpperCase());
                       setIsCountryDropdownOpen(e.target.value.trim().length > 0);
                     }}
-                    placeholder="Search country (e.g. 일본, France, 베트남)..."
-                    className="w-full pl-10 pr-4 py-2 text-xs bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none text-black dark:text-white font-mono"
+                    placeholder="국가 검색 (예: 일본, France, 베트남)..."
+                    className={inputCls}
                   />
                 </div>
-
-                {/* Country dropdown (only when typing) */}
                 {isCountryDropdownOpen && filteredCountries.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5">
+                  <div className="absolute top-full left-0 right-0 mt-0.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 shadow-xl max-h-40 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5">
                     {filteredCountries.map(c => (
                       <button
                         key={c.code}
                         type="button"
                         onClick={() => handleSelectCountry(c)}
-                        className="w-full text-left px-3.5 py-2 text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between cursor-pointer"
+                        className="w-full text-left px-3 py-1.5 text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between cursor-pointer"
                       >
-                        <span className="font-bold text-black dark:text-white font-mono">
+                        <span className="font-bold text-black dark:text-white font-mono text-[11px]">
                           {c.nameKo} ({c.nameEn})
                         </span>
-                        <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
-                          {c.popularCities.slice(0, 3).join(', ')}
+                        <span className="text-[9px] font-mono text-black/35 dark:text-white/35">
+                          {c.popularCities.slice(0, 2).join(', ')}
                         </span>
                       </button>
                     ))}
@@ -991,24 +891,20 @@ export function CreateTripModal({
                 )}
               </div>
 
-              {/* Locations (Spots & Cities) */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-mono uppercase font-bold tracking-widest text-black/50 dark:text-white/50">
-                  LOCATIONS
-                </label>
+              {/* Locations */}
+              <div className="space-y-1.5">
+                <label className={labelCls}>LOCATIONS</label>
 
-                {/* Popular City Recommendation Chips */}
+                {/* Quick city chips — no box wrapper */}
                 {citiesForSelectedCountry.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 p-2 bg-black/[0.025] dark:bg-white/[0.025] border border-black/10 dark:border-white/10">
-                    <span className="text-[9px] font-mono font-bold text-black/50 dark:text-white/50 self-center mr-1">
-                      QUICK:
-                    </span>
+                  <div className="flex flex-wrap gap-1">
+                    <span className="text-[9px] font-mono text-black/40 dark:text-white/40 self-center">추천:</span>
                     {citiesForSelectedCountry.map(city => (
                       <button
                         key={city.nameEn}
                         type="button"
                         onClick={() => handleAddCityToLocations(city.nameKo, { lat: city.lat, lng: city.lng }, city.countryEn)}
-                        className="px-2 py-0.5 text-[9px] font-mono font-bold bg-white dark:bg-[#1a1a1a] border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white transition-colors cursor-pointer"
+                        className="px-2 py-0.5 text-[9px] font-mono font-bold border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white transition-colors cursor-pointer"
                       >
                         {city.nameKo}
                       </button>
@@ -1016,19 +912,19 @@ export function CreateTripModal({
                   </div>
                 )}
 
-                {/* Location Pills */}
+                {/* Location pills — minimal */}
                 {locations.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-1 max-h-24 overflow-y-auto p-1.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+                  <div className="flex flex-wrap gap-1">
                     {locations.map((loc, idx) => (
                       <span 
                         key={idx} 
-                        className="flex items-center gap-1.5 bg-white dark:bg-[#151515] text-[9px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 border border-black/15 dark:border-white/15 text-black dark:text-white"
+                        className="flex items-center gap-1 text-[9px] font-mono font-bold uppercase px-2 py-0.5 border border-black/15 dark:border-white/15 text-black dark:text-white"
                       >
                         {loc.name}
                         <button 
                           type="button" 
                           onClick={() => setLocations(prev => prev.filter((_, i) => i !== idx))} 
-                          className="text-black/45 dark:text-white/45 hover:text-red-500 transition-colors text-xs leading-none"
+                          className="text-black/35 dark:text-white/35 hover:text-red-500 transition-colors leading-none"
                         >
                           &times;
                         </button>
@@ -1037,32 +933,39 @@ export function CreateTripModal({
                   </div>
                 )}
 
-                <PlaceAutocompleteInput 
-                  value={locationInput}
-                  onChange={setLocationInput}
-                  onSelectPlace={(placeName, coords, address, countryName) => {
-                    if (placeName && !locations.some(l => l.name.toLowerCase() === placeName.toLowerCase())) {
-                      const detectedCountry = countryName || (address ? extractCountry(address) : country);
-                      setLocations(prev => [...prev, { name: placeName, lat: coords?.lat, lng: coords?.lng, country: detectedCountry }]);
-                      if (detectedCountry && !country) {
-                        setCountry(detectedCountry);
-                        const cObj = findCountryByNameOrAlias(detectedCountry);
-                        if (cObj) setCountrySearchInput(`${cObj.nameKo} (${cObj.nameEn})`);
+                {/* Place autocomplete with icon */}
+                <div className="relative">
+                  <MapPin className={iconCls} />
+                  <PlaceAutocompleteInput 
+                    value={locationInput}
+                    onChange={setLocationInput}
+                    onSelectPlace={(placeName, coords, address, countryName) => {
+                      if (placeName && !locations.some(l => l.name.toLowerCase() === placeName.toLowerCase())) {
+                        const detectedCountry = countryName || (address ? extractCountry(address) : country);
+                        const newLoc = { name: placeName, lat: coords?.lat, lng: coords?.lng, country: detectedCountry };
+                        setLocations(prev => {
+                          const next = [...prev, newLoc];
+                          setTitle(t => t.trim() ? t : buildAutoTitle(prev, placeName));
+                          return next;
+                        });
+                        if (detectedCountry && !country) {
+                          setCountry(detectedCountry);
+                          const cObj = findCountryByNameOrAlias(detectedCountry);
+                          if (cObj) setCountrySearchInput(`${cObj.nameKo} (${cObj.nameEn})`);
+                        }
                       }
-                    }
-                    setLocationInput('');
-                  }}
-                  placeholder="Type city or spot name and press Enter..."
-                  className="w-full py-2 text-xs bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none rounded-none text-black dark:text-white font-mono"
-                />
+                      setLocationInput('');
+                    }}
+                    placeholder="도시/장소 검색 후 Enter..."
+                    className="w-full pl-10 pr-4 py-2 text-xs bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none rounded-none text-black dark:text-white font-mono"
+                  />
+                </div>
               </div>
 
               {/* Date Range */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-mono uppercase font-bold tracking-widest text-black/50 dark:text-white/50">
-                    START DATE
-                  </label>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className={labelCls}>START DATE</label>
                   <input 
                     type="date"
                     required
@@ -1070,11 +973,10 @@ export function CreateTripModal({
                     onChange={(e) => setStartDate(e.target.value)}
                     className="w-full px-3 py-2 text-xs bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none rounded-none text-black dark:text-white font-mono"
                   />
+                  <p className={hintCls}>출발 예정일을 선택하세요.</p>
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-mono uppercase font-bold tracking-widest text-black/50 dark:text-white/50">
-                    END DATE
-                  </label>
+                <div className="space-y-1">
+                  <label className={labelCls}>END DATE</label>
                   <input 
                     type="date"
                     required
@@ -1082,27 +984,25 @@ export function CreateTripModal({
                     onChange={(e) => setEndDate(e.target.value)}
                     className="w-full px-3 py-2 text-xs bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none rounded-none text-black dark:text-white font-mono"
                   />
+                  <p className={hintCls}>귀국 또는 마지막 일정일</p>
                 </div>
               </div>
 
               {/* Tags */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-mono uppercase font-bold tracking-widest text-black/50 dark:text-white/50">
-                  TAGS
-                </label>
-                
+              <div className="space-y-1.5">
+                <label className={labelCls}>TAGS</label>
                 {tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-1 max-h-24 overflow-y-auto p-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+                  <div className="flex flex-wrap gap-1">
                     {tags.map(tag => (
                       <span 
                         key={tag} 
-                        className="flex items-center gap-1.5 bg-white dark:bg-[#151515] text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 border border-black/15 dark:border-white/15 text-black dark:text-white"
+                        className="flex items-center gap-1 text-[9px] font-mono font-bold uppercase px-2 py-0.5 border border-black/15 dark:border-white/15 text-black dark:text-white"
                       >
                         {tag}
                         <button 
                           type="button" 
                           onClick={() => setTags(prev => prev.filter(t => t !== tag))} 
-                          className="text-black/45 dark:text-white/45 hover:text-red-500 transition-colors text-xs leading-none"
+                          className="text-black/35 dark:text-white/35 hover:text-red-500 transition-colors leading-none"
                         >
                           &times;
                         </button>
@@ -1110,9 +1010,8 @@ export function CreateTripModal({
                     ))}
                   </div>
                 )}
-
                 <div className="relative">
-                  <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30 dark:text-white/30" />
+                  <Tag className={iconCls} />
                   <input 
                     type="text"
                     value={tagInput}
@@ -1125,8 +1024,8 @@ export function CreateTripModal({
                         setTagInput('');
                       }
                     }}
-                    placeholder="Enter tags separated by comma or Enter..."
-                    className="w-full pl-10 pr-4 py-2 text-xs bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none rounded-none text-black dark:text-white font-mono"
+                    placeholder="태그 입력 후 Enter 또는 쉼표..."
+                    className={inputCls}
                   />
                 </div>
               </div>
@@ -1134,9 +1033,9 @@ export function CreateTripModal({
               {/* Submit */}
               <button 
                 type="submit"
-                className="mt-3 py-3.5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-black uppercase tracking-widest hover:opacity-85 active:opacity-95 transition-opacity flex items-center justify-center rounded-none cursor-pointer"
+                className="w-full py-3 bg-black text-white dark:bg-white dark:text-black text-[10px] font-mono font-black uppercase tracking-widest hover:opacity-85 transition-opacity cursor-pointer"
               >
-                CREATE JOURNEY
+                CREATE TRIP
               </button>
             </form>
           )}
@@ -1144,103 +1043,66 @@ export function CreateTripModal({
         </div>
       </div>
 
-      {/* Preset Edit / Creation Sub-Modal */}
-      {isPresetEditing && editingPresetData && (
+      {/* Preset Edit / Create Sub-Modal (admin only) */}
+      {isAdmin && isPresetEditing && editingPresetData && (
         <div className="fixed inset-0 z-[10000] flex justify-center items-center p-4 bg-black/80 backdrop-blur-xs">
-          <div className="relative w-full max-w-lg bg-[#F9F8F6] dark:bg-[#141414] border border-black/30 dark:border-white/30 shadow-2xl p-6 text-black dark:text-white font-mono">
-            <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3 mb-4">
-              <h3 className="text-sm font-black uppercase tracking-wider">
-                {editingPresetData.title ? 'EDIT PRESET' : 'NEW CUSTOM PRESET'}
+          <div className="relative w-full max-w-md bg-[#F9F8F6] dark:bg-[#141414] border border-black/30 dark:border-white/30 shadow-2xl p-5 text-black dark:text-white font-mono overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-2.5 mb-4">
+              <h3 className="text-xs font-black uppercase tracking-wider">
+                {editingPresetData.isCustom && !editingPresetData.title ? 'NEW PRESET' : 'EDIT PRESET'}
               </h3>
               <button 
                 type="button" 
                 onClick={() => { setIsPresetEditing(false); setEditingPresetData(null); }}
                 className="p-1 hover:opacity-70 transition-opacity"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            <form onSubmit={handleSavePresetData} className="space-y-3.5 text-xs">
+            <form onSubmit={handleSavePresetData} className="space-y-3 text-xs">
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider opacity-60 mb-1">
-                  TITLE
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={editingPresetData.title}
+                <label className="block text-[9px] font-bold uppercase tracking-wider opacity-55 mb-1">TITLE</label>
+                <input type="text" required value={editingPresetData.title}
                   onChange={e => setEditingPresetData({ ...editingPresetData, title: e.target.value })}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 outline-none rounded-none"
-                  placeholder="e.g. TOKYO COFFEE & DESIGN TOUR"
-                />
+                  className="w-full px-3 py-1.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 outline-none rounded-none text-xs"
+                  placeholder="e.g. TOKYO COFFEE & DESIGN TOUR" />
               </div>
-
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider opacity-60 mb-1">
-                  SUBTITLE / SUMMARY
-                </label>
-                <input
-                  type="text"
-                  value={editingPresetData.subtitle}
+                <label className="block text-[9px] font-bold uppercase tracking-wider opacity-55 mb-1">SUBTITLE</label>
+                <input type="text" value={editingPresetData.subtitle}
                   onChange={e => setEditingPresetData({ ...editingPresetData, subtitle: e.target.value })}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 outline-none rounded-none"
-                  placeholder="e.g. 4박 5일 감성 카페 및 건축 명소 탐방"
-                />
+                  className="w-full px-3 py-1.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 outline-none rounded-none text-xs"
+                  placeholder="간단한 설명..." />
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider opacity-60 mb-1">
-                    COUNTRY
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={editingPresetData.country}
+                  <label className="block text-[9px] font-bold uppercase tracking-wider opacity-55 mb-1">COUNTRY</label>
+                  <input type="text" required value={editingPresetData.country}
                     onChange={e => setEditingPresetData({ ...editingPresetData, country: e.target.value.toUpperCase() })}
-                    className="w-full px-3 py-2 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 outline-none rounded-none"
-                    placeholder="e.g. JAPAN"
-                  />
+                    className="w-full px-3 py-1.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 outline-none rounded-none text-xs"
+                    placeholder="JAPAN" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider opacity-60 mb-1">
-                    CITY
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={editingPresetData.city}
+                  <label className="block text-[9px] font-bold uppercase tracking-wider opacity-55 mb-1">CITY</label>
+                  <input type="text" required value={editingPresetData.city}
                     onChange={e => setEditingPresetData({ ...editingPresetData, city: e.target.value })}
-                    className="w-full px-3 py-2 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 outline-none rounded-none"
-                    placeholder="e.g. 도쿄"
-                  />
+                    className="w-full px-3 py-1.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 outline-none rounded-none text-xs"
+                    placeholder="도쿄" />
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider opacity-60 mb-1">
-                    DURATION (DAYS)
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={30}
-                    value={editingPresetData.durationDays}
+                  <label className="block text-[9px] font-bold uppercase tracking-wider opacity-55 mb-1">DURATION (DAYS)</label>
+                  <input type="number" min={1} max={30} value={editingPresetData.durationDays}
                     onChange={e => setEditingPresetData({ ...editingPresetData, durationDays: parseInt(e.target.value) || 3 })}
-                    className="w-full px-3 py-2 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 outline-none rounded-none"
-                  />
+                    className="w-full px-3 py-1.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 outline-none rounded-none text-xs" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider opacity-60 mb-1">
-                    THEME
-                  </label>
-                  <select
-                    value={editingPresetData.theme}
+                  <label className="block text-[9px] font-bold uppercase tracking-wider opacity-55 mb-1">THEME</label>
+                  <select value={editingPresetData.theme}
                     onChange={e => setEditingPresetData({ ...editingPresetData, theme: e.target.value as any })}
-                    className="w-full px-3 py-2 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 outline-none rounded-none"
-                  >
+                    className="w-full px-3 py-1.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 outline-none rounded-none text-xs">
                     <option value="culture">CULTURE</option>
                     <option value="shopping">SHOPPING</option>
                     <option value="food">FOOD</option>
@@ -1250,45 +1112,28 @@ export function CreateTripModal({
                   </select>
                 </div>
               </div>
-
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider opacity-60 mb-1">
-                  COVER IMAGE URL
-                </label>
-                <input
-                  type="text"
-                  value={editingPresetData.coverImg}
+                <label className="block text-[9px] font-bold uppercase tracking-wider opacity-55 mb-1">COVER IMAGE URL</label>
+                <input type="text" value={editingPresetData.coverImg}
                   onChange={e => setEditingPresetData({ ...editingPresetData, coverImg: e.target.value })}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 outline-none rounded-none"
-                  placeholder="https://..."
-                />
+                  className="w-full px-3 py-1.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 outline-none rounded-none text-xs"
+                  placeholder="https://..." />
               </div>
-
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider opacity-60 mb-1">
-                  HIGHLIGHTS (COMMA SEPARATED)
-                </label>
-                <input
-                  type="text"
-                  value={editingPresetData.highlights.join(', ')}
+                <label className="block text-[9px] font-bold uppercase tracking-wider opacity-55 mb-1">HIGHLIGHTS (쉼표 구분)</label>
+                <input type="text" value={editingPresetData.highlights.join(', ')}
                   onChange={e => setEditingPresetData({ ...editingPresetData, highlights: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 outline-none rounded-none"
-                  placeholder="명소 1, 명소 2, 명소 3"
-                />
+                  className="w-full px-3 py-1.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 outline-none rounded-none text-xs"
+                  placeholder="명소 1, 명소 2, 명소 3" />
               </div>
-
-              <div className="flex gap-2 pt-3">
-                <button
-                  type="button"
+              <div className="flex gap-2 pt-2">
+                <button type="button"
                   onClick={() => { setIsPresetEditing(false); setEditingPresetData(null); }}
-                  className="flex-1 py-2.5 border border-black/20 dark:border-white/20 font-bold uppercase tracking-wider hover:bg-black/5 transition-colors"
-                >
+                  className="flex-1 py-2 border border-black/20 dark:border-white/20 text-[10px] font-black uppercase tracking-wider hover:bg-black/5 transition-colors">
                   CANCEL
                 </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-2.5 bg-black text-white dark:bg-white dark:text-black font-black uppercase tracking-wider hover:opacity-85 transition-opacity"
-                >
+                <button type="submit"
+                  className="flex-1 py-2 bg-black text-white dark:bg-white dark:text-black text-[10px] font-black uppercase tracking-wider hover:opacity-85 transition-opacity">
                   SAVE PRESET
                 </button>
               </div>
