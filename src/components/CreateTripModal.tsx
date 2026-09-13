@@ -277,10 +277,11 @@ export function CreateTripModal({
         }
       }
     }
-    const isBestSeason = city?.bestMonths.includes(startMonth);
+    const isBestSeason = Boolean(city?.bestMonths.includes(startMonth));
 
     return {
       startMonth,
+      targetName: city ? city.nameKo : (countryObj ? countryObj.nameKo : ''),
       countryBest: countryObj?.bestSeason,
       avoidSeason: countryObj?.avoidSeason,
       avoidReason: warningReason || countryObj?.avoidReason,
@@ -626,7 +627,7 @@ export function CreateTripModal({
     avoidSeason?: string;
     avoidReason?: string | null;
     isWarning: boolean;
-    isBestSeason: boolean;
+    isBestSeason?: boolean;
   } | null) => {
     if (!analysis) return null;
 
