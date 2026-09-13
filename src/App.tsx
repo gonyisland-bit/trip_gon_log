@@ -322,6 +322,11 @@ function App() {
   const [marqueeOverrideText, setMarqueeOverrideText] = useState<string | null>(null);
   const [showSaveCompleteModal, setShowSaveCompleteModal] = useState<boolean>(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState<boolean>(false);
+  const [journeyDeleteConfirm, setJourneyDeleteConfirm] = useState<{ isOpen: boolean; tripId: number | null; title: string }>({
+    isOpen: false,
+    tripId: null,
+    title: ''
+  });
   const [pendingNavigation, setPendingNavigation] = useState<{ view: string; tripId: number | null } | null>(null);
   const detailSaveRef = useRef<((showModal?: boolean) => Promise<void>) | null>(null);
   const manageSaveRef = useRef<((showModal?: boolean) => Promise<void>) | null>(null);
@@ -1678,6 +1683,13 @@ function App() {
     const mapImg = 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1600&auto=format&fit=crop';
     const collectionName = createModalType === 'archive' ? 'trips' : 'plans';
 
+    // Calculate front-most display order
+    const allExisting = [...trips, ...plans];
+    const minOrder = allExisting.length > 0 
+      ? Math.min(...allExisting.map(t => t.displayOrder ?? 9999)) 
+      : 0;
+    const newDisplayOrder = Math.min(-1, minOrder - 1);
+
     const newJourney: any = {
       id: newId,
       title,
@@ -1692,8 +1704,16 @@ function App() {
       gallery: [],
       members: members || [],
       statusBadge: statusBadge || '',
-      country: country || ''
+      country: country || '',
+      displayOrder: newDisplayOrder
     };
+
+    // Prepend to localStorage journey_order immediately so UI renders it at the top
+    try {
+      const saved = localStorage.getItem('journey_order');
+      const order: number[] = saved ? JSON.parse(saved) : [];
+      localStorage.setItem('journey_order', JSON.stringify([newId, ...order.filter(id => id !== newId)]));
+    } catch (_) {}
 
     try {
       // 1. Save journey doc immediately with cleanForFirestore to purge undefined values
@@ -2020,12 +2040,25 @@ function App() {
 
   const handleDeleteJourney = async (tripId: number) => {
     if (!isLoggedIn) return;
-
-    // First confirmation
     const tripToDelete = trips.find(t => t.id === tripId) || plans.find(p => p.id === tripId);
     const journeyTitle = tripToDelete?.title || '이 여정';
-    const confirmed = window.confirm(`'${journeyTitle}' 여정을 삭제하시겠습니까?\n\n삭제된 여정은 휴지통(Settings)에서 복구하거나 완전히 삭제할 수 있습니다.`);
-    if (!confirmed) return;
+    setJourneyDeleteConfirm({
+      isOpen: true,
+      tripId,
+      title: journeyTitle
+    });
+  };
+
+  const handleConfirmDeleteJourney = async () => {
+    const tripId = journeyDeleteConfirm.tripId;
+    if (!tripId || !isLoggedIn) {
+      setJourneyDeleteConfirm({ isOpen: false, tripId: null, title: '' });
+      return;
+    }
+
+    const tripToDelete = trips.find(t => t.id === tripId) || plans.find(p => p.id === tripId);
+    const journeyTitle = tripToDelete?.title || journeyDeleteConfirm.title;
+    setJourneyDeleteConfirm({ isOpen: false, tripId: null, title: '' });
 
     try {
       const batch = writeBatch(db);
@@ -2044,8 +2077,13 @@ function App() {
       batch.delete(tripRef);
 
       await batch.commit();
-      alert(`'${journeyTitle}' 여정이 휴지통으로 이동되었습니다.\n\nSettings > 휴지통에서 복구하거나 완전히 삭제할 수 있습니다.`);
-      navigateTo('home');
+      
+      // If currently on Manage page, DO NOT navigate to home - stay on manage page!
+      if (currentView === 'detail' && activeTripId === tripId) {
+        navigateTo('archive');
+      } else if (currentView !== 'manage') {
+        navigateTo('archive');
+      }
     } catch (err: any) {
       console.error("Error soft-deleting journey:", err);
       alert("삭제에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
@@ -2794,6 +2832,19 @@ function App() {
             onConfirm={handleSaveAndNavigate}
             onDiscard={handleDiscardAndNavigate}
             onCancel={handleCancelUnsavedModal}
+          />
+
+          {/* Delete Journey Swiss Minimal Confirmation Modal */}
+          <ConfirmModal
+            isOpen={journeyDeleteConfirm.isOpen}
+            title="MOVE TO TRASH"
+            message={`'${journeyDeleteConfirm.title}' 여정을 휴지통으로 이동하시겠습니까?`}
+            confirmLabel="DELETE"
+            cancelLabel="CANCEL"
+            confirmVariant="danger"
+            iconType="alert"
+            onConfirm={handleConfirmDeleteJourney}
+            onCancel={() => setJourneyDeleteConfirm({ isOpen: false, tripId: null, title: '' })}
           />
         </Suspense>
 

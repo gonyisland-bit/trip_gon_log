@@ -4559,11 +4559,7 @@ export function ManageHubPage({
 
                     <button
                       type="button"
-                      onClick={() => {
-                        if (confirm(`'${selectedJourney.title}' 여정을 정말 삭제하시겠습니까? (휴지통으로 이동)`)) {
-                          onDeleteTrip(selectedJourney.id);
-                        }
-                      }}
+                      onClick={() => onDeleteTrip(selectedJourney.id)}
                       className="px-3 py-2 text-red-600 dark:text-red-400 border border-red-600/30 dark:border-red-400/30 text-xs font-black uppercase tracking-wider hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer rounded-none"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
