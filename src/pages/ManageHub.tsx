@@ -6445,6 +6445,8 @@ export function ManageHubPage({
               </div>
             </div>
           </div>
+        )}
+
         {/* ─────────────────────────────────────────────────────────────────── */}
         {/* MODE: PRESETS (Trip Preset Templates & Itinerary Recommendation)   */}
         {/* ─────────────────────────────────────────────────────────────────── */}
