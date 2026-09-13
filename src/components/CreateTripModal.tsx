@@ -194,6 +194,35 @@ export function CreateTripModal({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+  // Check seasonal risks for smart builder
+  const seasonRiskCheck = useMemo(() => {
+    if (!smartCity && !smartCountry) return null;
+    const city = smartCity;
+    const countryObj = smartCountry || (city ? findCountryByNameOrAlias(city.countryEn) : null);
+    
+    const startMonth = new Date(smartStartDate).getMonth() + 1;
+
+    let warningReason: string | null = null;
+    if (city) {
+      for (const av of city.avoidMonths) {
+        if (av.months.includes(startMonth)) {
+          warningReason = av.reason;
+          break;
+        }
+      }
+    }
+
+    const isBestSeason = city?.bestMonths.includes(startMonth);
+
+    return {
+      startMonth,
+      countryBest: countryObj?.bestSeason,
+      avoidSeason: countryObj?.avoidSeason,
+      avoidReason: warningReason || countryObj?.avoidReason,
+      isWarning: Boolean(warningReason),
+      isBestSeason
+    };
+  }, [smartCity, smartCountry, smartStartDate]);
 
   if (!isOpen) return null;
 
@@ -428,35 +457,6 @@ export function CreateTripModal({
     onClose();
   };
 
-  // Check seasonal risks for smart builder
-  const seasonRiskCheck = useMemo(() => {
-    if (!smartCity && !smartCountry) return null;
-    const city = smartCity;
-    const countryObj = smartCountry || (city ? findCountryByNameOrAlias(city.countryEn) : null);
-    
-    const startMonth = new Date(smartStartDate).getMonth() + 1;
-
-    let warningReason: string | null = null;
-    if (city) {
-      for (const av of city.avoidMonths) {
-        if (av.months.includes(startMonth)) {
-          warningReason = av.reason;
-          break;
-        }
-      }
-    }
-
-    const isBestSeason = city?.bestMonths.includes(startMonth);
-
-    return {
-      startMonth,
-      countryBest: countryObj?.bestSeason,
-      avoidSeason: countryObj?.avoidSeason,
-      avoidReason: warningReason || countryObj?.avoidReason,
-      isWarning: Boolean(warningReason),
-      isBestSeason
-    };
-  }, [smartCity, smartCountry, smartStartDate]);
 
   const themes = [
     { id: 'all', label: '전체 (ALL)', icon: Sparkles },
