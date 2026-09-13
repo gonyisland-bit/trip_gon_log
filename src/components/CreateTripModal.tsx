@@ -1040,10 +1040,10 @@ export function CreateTripModal({
                 <PlaceAutocompleteInput 
                   value={locationInput}
                   onChange={setLocationInput}
-                  onSelect={(place) => {
-                    if (place.name && !locations.some(l => l.name.toLowerCase() === place.name.toLowerCase())) {
-                      const detectedCountry = place.address ? extractCountry(place.address) : (place.country || country);
-                      setLocations(prev => [...prev, { name: place.name, lat: place.lat, lng: place.lng, country: detectedCountry }]);
+                  onSelectPlace={(placeName, coords, address, countryName) => {
+                    if (placeName && !locations.some(l => l.name.toLowerCase() === placeName.toLowerCase())) {
+                      const detectedCountry = countryName || (address ? extractCountry(address) : country);
+                      setLocations(prev => [...prev, { name: placeName, lat: coords?.lat, lng: coords?.lng, country: detectedCountry }]);
                       if (detectedCountry && !country) {
                         setCountry(detectedCountry);
                         const cObj = findCountryByNameOrAlias(detectedCountry);
