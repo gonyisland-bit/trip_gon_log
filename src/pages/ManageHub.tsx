@@ -46,7 +46,8 @@ import {
   Music,
   Volume2,
   VolumeX,
-  Pause
+  Pause,
+  Edit
 } from 'lucide-react';
 import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc, deleteField, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -71,6 +72,17 @@ import {
   saveStoredBgmAutoplay,
   bgmPlayer
 } from '../utils/audioHelper';
+import {
+  PresetTripPlan,
+  getSavedPresets,
+  saveCustomPreset,
+  deletePresetById,
+  restoreDefaultPresets,
+  saveAllPresets,
+  DEFAULT_PRESET_TRIP_PLANS,
+  WORLD_COUNTRIES,
+  WORLD_CITIES
+} from '../data/worldDestinations';
 
 interface ManageHubPageProps {
   trips: Trip[];
@@ -277,15 +289,40 @@ export function ManageHubPage({
     }
   };
 
-  // Top-level mode tabs ordered: 'HOME' | 'ARCHIVE' | 'MAGAZINE' | 'MAP' | 'BGM' | 'TRASH' | 'CLEANUP'
-  const [activeMode, setActiveMode] = useState<'HOME' | 'ARCHIVE' | 'MAGAZINE' | 'MAP' | 'BGM' | 'TRASH' | 'CLEANUP'>(() => {
+  // Top-level mode tabs ordered: 'HOME' | 'ARCHIVE' | 'MAGAZINE' | 'MAP' | 'BGM' | 'PRESETS' | 'TRASH' | 'CLEANUP'
+  const [activeMode, setActiveMode] = useState<'HOME' | 'ARCHIVE' | 'MAGAZINE' | 'MAP' | 'BGM' | 'PRESETS' | 'TRASH' | 'CLEANUP'>(() => {
     const fromSession = sessionStorage.getItem('initialManageTab');
-    if (fromSession && ['HOME', 'ARCHIVE', 'MAGAZINE', 'MAP', 'BGM', 'TRASH', 'CLEANUP'].includes(fromSession)) {
+    if (fromSession && ['HOME', 'ARCHIVE', 'MAGAZINE', 'MAP', 'BGM', 'PRESETS', 'TRASH', 'CLEANUP'].includes(fromSession)) {
       sessionStorage.removeItem('initialManageTab');
       return fromSession as any;
     }
     return 'HOME';
   });
+
+  // PRESETS Management State
+  const [presetsList, setPresetsList] = useState<PresetTripPlan[]>(() => getSavedPresets());
+  const [presetSearchQuery, setPresetSearchQuery] = useState<string>('');
+  const [presetThemeFilter, setPresetThemeFilter] = useState<string>('all');
+  const [editingPreset, setEditingPreset] = useState<PresetTripPlan | null>(null);
+  const [isPresetModalOpen, setIsPresetModalOpen] = useState<boolean>(false);
+  const [presetToDelete, setPresetToDelete] = useState<PresetTripPlan | null>(null);
+  const [isSavingPresets, setIsSavingPresets] = useState<boolean>(false);
+  const [presetsSaveSuccess, setPresetsSaveSuccess] = useState<boolean>(false);
+  const [showRestorePresetsConfirm, setShowRestorePresetsConfirm] = useState<boolean>(false);
+
+  // Snapshot of saved Presets state for dirty checking
+  const savedPresetsSnapshotRef = useRef<string>(JSON.stringify(getSavedPresets()));
+
+  // Listen to external preset changes (e.g. from CreateTripModal or other windows)
+  useEffect(() => {
+    const handlePresetsChanged = () => {
+      const current = getSavedPresets();
+      setPresetsList(current);
+      savedPresetsSnapshotRef.current = JSON.stringify(current);
+    };
+    window.addEventListener('tripPresetsChanged', handlePresetsChanged);
+    return () => window.removeEventListener('tripPresetsChanged', handlePresetsChanged);
+  }, []);
 
   // BGM Playlist Management State
   const [bgmTracks, setBgmTracks] = useState<BgmTrack[]>(() => getStoredBgmTracks());
@@ -409,6 +446,87 @@ export function ManageHubPage({
     } finally {
       setIsUploadingBgm(false);
       if (bgmFileInputRef.current) bgmFileInputRef.current.value = '';
+    }
+  };
+
+  // PRESET Management Handlers
+  const handleOpenNewPreset = () => {
+    setEditingPreset({
+      id: `preset_custom_${Date.now()}`,
+      title: '',
+      subtitle: '',
+      country: '',
+      city: '',
+      durationDays: 4,
+      tags: [],
+      coverImg: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1200&q=80',
+      theme: 'culture',
+      highlights: [],
+      schedule: [],
+      isCustom: true
+    });
+    setIsPresetModalOpen(true);
+  };
+
+  const handleOpenEditPreset = (preset: PresetTripPlan) => {
+    setEditingPreset({ ...preset, highlights: [...preset.highlights] });
+    setIsPresetModalOpen(true);
+  };
+
+  const handleSavePresetModal = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPreset || !editingPreset.title.trim()) return;
+    const nextList = [...presetsList];
+    const idx = nextList.findIndex(p => p.id === editingPreset.id);
+    if (idx >= 0) {
+      nextList[idx] = { ...editingPreset, isCustom: true };
+    } else {
+      nextList.unshift({ ...editingPreset, isCustom: true });
+    }
+    setPresetsList(nextList);
+    setIsPresetModalOpen(false);
+    setEditingPreset(null);
+  };
+
+  const handleDeletePresetClick = (preset: PresetTripPlan) => {
+    setPresetToDelete(preset);
+  };
+
+  const handleConfirmDeletePreset = () => {
+    if (!presetToDelete) return;
+    const nextList = presetsList.filter(p => p.id !== presetToDelete.id);
+    setPresetsList(nextList);
+    setPresetToDelete(null);
+  };
+
+  const handleConfirmRestorePresets = () => {
+    const restored = restoreDefaultPresets();
+    setPresetsList(restored);
+    savedPresetsSnapshotRef.current = JSON.stringify(restored);
+    setShowRestorePresetsConfirm(false);
+  };
+
+  const handleSavePresets = async (showModal: boolean = true) => {
+    setIsSavingPresets(true);
+    try {
+      saveAllPresets(presetsList);
+      try {
+        await setDoc(doc(db, 'users', 'public', 'settings', 'presets'), {
+          presets: presetsList,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (fErr) {
+        console.warn('Firestore presets sync warning:', fErr);
+      }
+      savedPresetsSnapshotRef.current = JSON.stringify(presetsList);
+      setPresetsSaveSuccess(true);
+      if (showModal) setShowSaveSuccessModal(true);
+      setTimeout(() => setPresetsSaveSuccess(false), 2000);
+    } catch (err) {
+      console.error('Failed to save presets:', err);
+      alert('프리셋 저장 중 오류가 발생했습니다.');
+    } finally {
+      setIsSavingPresets(false);
     }
   };
 
@@ -1444,6 +1562,11 @@ export function ManageHubPage({
     );
   }, [bgmTracks, bgmAutoplay, saveRevision]);
 
+  // Dirty tracking for PRESETS list
+  const isPresetsDirty = useMemo(() => {
+    return (savedPresetsSnapshotRef.current || '[]') !== JSON.stringify(presetsList);
+  }, [presetsList, saveRevision]);
+
   // Synchronize all snapshot references to current state so isAnyDirty becomes immediately false
   const syncAllSnapshotsToCurrent = () => {
     savedSectionsJsonRef.current = JSON.stringify(sectionsList);
@@ -1451,6 +1574,7 @@ export function ManageHubPage({
       tracksJson: JSON.stringify(bgmTracks),
       autoplay: bgmAutoplay,
     };
+    savedPresetsSnapshotRef.current = JSON.stringify(presetsList);
     savedMagazineHubHeaderRef.current = {
       mainTitle: hubMainTitle,
       subtitle: hubSubtitle,
@@ -1499,7 +1623,7 @@ export function ManageHubPage({
   };
 
   // Unified global dirty state across all management tabs & sub-settings
-  const isAnyDirty = isHomeDirty || isArchiveDirty || isMagazineDirty || isArchiveHubHeaderDirty || isMagazineHubHeaderDirty || isBgmDirty;
+  const isAnyDirty = isHomeDirty || isArchiveDirty || isMagazineDirty || isArchiveHubHeaderDirty || isMagazineHubHeaderDirty || isBgmDirty || isPresetsDirty;
 
   useEffect(() => {
     if (onDirtyChange) {
@@ -1585,6 +1709,12 @@ export function ManageHubPage({
       } catch (_) {}
     }
     setBgmAutoplay(bgmSnap.autoplay);
+
+    if (savedPresetsSnapshotRef.current) {
+      try {
+        setPresetsList(JSON.parse(savedPresetsSnapshotRef.current));
+      } catch (_) {}
+    }
   };
 
   // Safe navigation helper that explicitly clears dirty flag and passes force=true to App.tsx
@@ -2942,6 +3072,18 @@ export function ManageHubPage({
         saveStoredBgmAutoplay(bgmAutoplay);
       }
 
+      // 7. Save Presets settings to Firestore & localStorage
+      saveAllPresets(presetsList);
+      try {
+        await setDoc(doc(db, 'users', 'public', 'settings', 'presets'), {
+          presets: presetsList,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (fErr) {
+        console.warn('Firestore presets sync warning:', fErr);
+      }
+      setPresetsSaveSuccess(true);
+
       // 6. Update all snapshot refs to ensure isAnyDirty is 100% false immediately
       savedHomeSnapshotRef.current = {
         title,
@@ -3103,6 +3245,7 @@ export function ManageHubPage({
         return 'archive';
       case 'MAP':
         return 'map';
+      case 'PRESETS':
       case 'CLEANUP':
       case 'HOME':
       default:
@@ -3135,7 +3278,7 @@ export function ManageHubPage({
           </div>
         </div>
 
-        {/* Mode Switcher: home / trip / magazine / map / bgm / trash / opt */}
+        {/* Mode Switcher: home / trip / magazine / map / bgm / presets / trash / opt */}
         <div className="w-full md:w-auto max-w-full overflow-x-auto scrollbar-none flex items-center border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 p-0.5 rounded-none shrink-0">
           {([
             { id: 'HOME', label: 'home' },
@@ -3143,6 +3286,7 @@ export function ManageHubPage({
             { id: 'MAGAZINE', label: 'magazine' },
             { id: 'MAP', label: 'map' },
             { id: 'BGM', label: 'bgm' },
+            { id: 'PRESETS', label: 'presets' },
             { id: 'TRASH', label: 'trash' },
             { id: 'CLEANUP', label: 'opt' },
           ] as const).map(tab => (
@@ -6301,6 +6445,209 @@ export function ManageHubPage({
               </div>
             </div>
           </div>
+        {/* ─────────────────────────────────────────────────────────────────── */}
+        {/* MODE: PRESETS (Trip Preset Templates & Itinerary Recommendation)   */}
+        {/* ─────────────────────────────────────────────────────────────────── */}
+        {activeMode === 'PRESETS' && (
+          <div
+            onScroll={handleContainerScroll}
+            className="w-full max-w-5xl mx-auto p-4 sm:p-8 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200"
+          >
+            <div className="flex flex-col gap-6">
+              {/* Header Title */}
+              <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
+                <span className="text-[9px] font-mono font-black uppercase tracking-widest text-orange-600 dark:text-orange-500 block mb-0.5">
+                  PRESET TRIP TEMPLATES
+                </span>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                    TRIP PRESETS
+                  </h2>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowRestorePresetsConfirm(true)}
+                      className="flex items-center gap-1 text-[10px] font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white border border-black/20 dark:border-white/20 px-2.5 py-1.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>기본 복구</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleOpenNewPreset}
+                      className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase bg-black text-white dark:bg-white dark:text-black px-3 py-1.5 hover:opacity-85 transition-opacity cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>NEW PRESET</span>
+                    </button>
+                  </div>
+                </div>
+                <p className="text-xs text-black/60 dark:text-white/60 font-mono">
+                  [원클릭 트립 생성을 위한 국가별/테마별 추천 여정 템플릿 관리]
+                </p>
+              </div>
+
+              {/* Filter Bar: Search & Theme Chips */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-black/10 dark:border-white/10">
+                {/* Search Input */}
+                <div className="relative flex-1 max-w-xs">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+                  <input
+                    type="text"
+                    value={presetSearchQuery}
+                    onChange={e => setPresetSearchQuery(e.target.value)}
+                    placeholder="프리셋 검색 (도시, 국가, 제목)..."
+                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-black/[0.02] dark:bg-white/[0.02] border border-black/20 dark:border-white/20 outline-none font-mono"
+                  />
+                  {presetSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setPresetSearchQuery('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Theme Filter Chips */}
+                <div className="flex flex-wrap items-center gap-1 font-mono">
+                  {(['all', 'shopping', 'food', 'nature', 'activity', 'art', 'culture'] as const).map(theme => (
+                    <button
+                      key={theme}
+                      type="button"
+                      onClick={() => setPresetThemeFilter(theme)}
+                      className={`px-2 py-1 text-[10px] font-bold uppercase border transition-colors cursor-pointer ${
+                        presetThemeFilter === theme
+                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                          : 'border-black/15 dark:border-white/15 text-black/50 dark:text-white/50 hover:border-black/40 dark:hover:border-white/40'
+                      }`}
+                    >
+                      {theme}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Presets Count Badge */}
+              <div className="flex items-center justify-between text-[11px] font-mono text-black/50 dark:text-white/50">
+                <span>
+                  TOTAL {presetsList.filter(p => {
+                    if (presetThemeFilter !== 'all' && p.theme !== presetThemeFilter) return false;
+                    if (presetSearchQuery.trim()) {
+                      const q = presetSearchQuery.trim().toLowerCase();
+                      return p.title.toLowerCase().includes(q) || p.country.toLowerCase().includes(q) || p.city.toLowerCase().includes(q) || (p.subtitle && p.subtitle.toLowerCase().includes(q));
+                    }
+                    return true;
+                  }).length} PRESETS
+                </span>
+                {isPresetsDirty && (
+                  <span className="text-orange-600 dark:text-orange-400 font-bold">
+                    * 변경사항 있음 (저장 필요)
+                  </span>
+                )}
+              </div>
+
+              {/* Presets List Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {presetsList
+                  .filter(p => {
+                    if (presetThemeFilter !== 'all' && p.theme !== presetThemeFilter) return false;
+                    if (presetSearchQuery.trim()) {
+                      const q = presetSearchQuery.trim().toLowerCase();
+                      return (
+                        p.title.toLowerCase().includes(q) ||
+                        p.country.toLowerCase().includes(q) ||
+                        p.city.toLowerCase().includes(q) ||
+                        (p.subtitle && p.subtitle.toLowerCase().includes(q))
+                      );
+                    }
+                    return true;
+                  })
+                  .map(preset => (
+                    <div
+                      key={preset.id}
+                      className="flex gap-3 p-3 border border-black/15 dark:border-white/15 bg-black/[0.01] dark:bg-white/[0.01] hover:border-black/40 dark:hover:border-white/40 transition-colors group"
+                    >
+                      <img
+                        src={preset.coverImg}
+                        alt={preset.title}
+                        className="w-20 h-20 sm:w-24 sm:h-24 object-cover grayscale group-hover:grayscale-0 transition-all shrink-0 border border-black/10 dark:border-white/10"
+                      />
+                      <div className="flex flex-col justify-between min-w-0 flex-1">
+                        <div>
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[8px] font-mono font-black bg-black text-white dark:bg-white dark:text-black px-1.5 py-0.5 uppercase tracking-wider">
+                                {preset.country}
+                              </span>
+                              <span className="text-[10px] font-mono font-bold text-black/60 dark:text-white/60">
+                                {preset.city}
+                              </span>
+                              <span className="text-[9px] font-mono px-1 border border-black/20 dark:border-white/20 text-black/50 dark:text-white/50">
+                                {preset.durationDays}D
+                              </span>
+                              <span className="text-[8px] font-mono font-bold uppercase text-orange-600 dark:text-orange-400">
+                                {preset.theme}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditPreset(preset)}
+                                className="p-1 border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
+                                title="수정"
+                              >
+                                <Edit className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeletePresetClick(preset)}
+                                className="p-1 border border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white transition-colors cursor-pointer"
+                                title="삭제"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                          <h4 className="text-xs sm:text-sm font-bold truncate text-black dark:text-white font-sans">
+                            {preset.title}
+                          </h4>
+                          {preset.subtitle && (
+                            <p className="text-[10px] text-black/50 dark:text-white/50 truncate font-sans mt-0.5">
+                              {preset.subtitle}
+                            </p>
+                          )}
+                        </div>
+
+                        {preset.highlights && preset.highlights.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {preset.highlights.slice(0, 3).map((h, i) => (
+                              <span key={i} className="text-[9px] font-mono text-black/45 dark:text-white/45 border-l border-black/20 dark:border-white/20 pl-1">
+                                {h}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+
+              {/* Save Presets Settings Button */}
+              <div className="pt-4 border-t border-black/15 dark:border-white/15 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => handleSavePresets(true)}
+                  disabled={isSavingPresets}
+                  className="px-6 py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-widest font-sans flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{presetsSaveSuccess ? 'SAVED' : 'SAVE PRESET SETTINGS'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* ─────────────────────────────────────────────────────────────────── */}
@@ -7217,6 +7564,172 @@ export function ManageHubPage({
         singleButton
         onConfirm={() => setShowCleanSuccessModal(false)}
         onCancel={() => setShowCleanSuccessModal(false)}
+      />
+
+      {/* Preset Create/Edit Modal */}
+      {isPresetModalOpen && editingPreset && (
+        <div 
+          className="fixed inset-0 z-[650] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150" 
+          onClick={() => { setIsPresetModalOpen(false); setEditingPreset(null); }}
+        >
+          <div 
+            className="w-full max-w-lg bg-white dark:bg-[#161616] border border-black dark:border-white p-6 shadow-2xl flex flex-col gap-4 max-h-[90vh] overflow-y-auto" 
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
+              <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                {editingPreset.isCustom && !editingPreset.title ? 'NEW PRESET' : 'EDIT PRESET'}
+              </h3>
+              <button 
+                type="button" 
+                onClick={() => { setIsPresetModalOpen(false); setEditingPreset(null); }} 
+                className="p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePresetModal} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">TITLE</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={editingPreset.title}
+                  onChange={e => setEditingPreset({ ...editingPreset, title: e.target.value })}
+                  className="w-full px-3 py-2 bg-black/[0.02] dark:bg-white/[0.02] border border-black/20 dark:border-white/20 outline-none text-xs font-sans"
+                  placeholder="예: TOKYO COFFEE & DESIGN TOUR" 
+                />
+              </div>
+              <div>
+                <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">SUBTITLE</label>
+                <input 
+                  type="text" 
+                  value={editingPreset.subtitle || ''}
+                  onChange={e => setEditingPreset({ ...editingPreset, subtitle: e.target.value })}
+                  className="w-full px-3 py-2 bg-black/[0.02] dark:bg-white/[0.02] border border-black/20 dark:border-white/20 outline-none text-xs font-sans"
+                  placeholder="간단한 설명..." 
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">COUNTRY</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={editingPreset.country}
+                    onChange={e => setEditingPreset({ ...editingPreset, country: e.target.value.toUpperCase() })}
+                    className="w-full px-3 py-2 bg-black/[0.02] dark:bg-white/[0.02] border border-black/20 dark:border-white/20 outline-none text-xs font-mono uppercase"
+                    placeholder="JAPAN" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">CITY</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={editingPreset.city}
+                    onChange={e => setEditingPreset({ ...editingPreset, city: e.target.value })}
+                    className="w-full px-3 py-2 bg-black/[0.02] dark:bg-white/[0.02] border border-black/20 dark:border-white/20 outline-none text-xs font-sans"
+                    placeholder="도쿄" 
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">DURATION (DAYS)</label>
+                  <input 
+                    type="number" 
+                    min={1} 
+                    max={30} 
+                    value={editingPreset.durationDays}
+                    onChange={e => setEditingPreset({ ...editingPreset, durationDays: parseInt(e.target.value) || 3 })}
+                    className="w-full px-3 py-2 bg-black/[0.02] dark:bg-white/[0.02] border border-black/20 dark:border-white/20 outline-none text-xs font-mono" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">THEME</label>
+                  <select 
+                    value={editingPreset.theme}
+                    onChange={e => setEditingPreset({ ...editingPreset, theme: e.target.value as any })}
+                    className="w-full px-3 py-2 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 outline-none text-xs font-mono"
+                  >
+                    <option value="culture">CULTURE</option>
+                    <option value="shopping">SHOPPING</option>
+                    <option value="food">FOOD</option>
+                    <option value="nature">NATURE</option>
+                    <option value="activity">ACTIVITY</option>
+                    <option value="art">ART</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">COVER IMAGE URL</label>
+                <input 
+                  type="text" 
+                  value={editingPreset.coverImg}
+                  onChange={e => setEditingPreset({ ...editingPreset, coverImg: e.target.value })}
+                  className="w-full px-3 py-2 bg-black/[0.02] dark:bg-white/[0.02] border border-black/20 dark:border-white/20 outline-none text-xs font-mono"
+                  placeholder="https://..." 
+                />
+              </div>
+              <div>
+                <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">HIGHLIGHTS (쉼표 구분)</label>
+                <input 
+                  type="text" 
+                  value={editingPreset.highlights?.join(', ') || ''}
+                  onChange={e => setEditingPreset({ 
+                    ...editingPreset, 
+                    highlights: e.target.value.split(',').map(s => s.trim()).filter(Boolean) 
+                  })}
+                  className="w-full px-3 py-2 bg-black/[0.02] dark:bg-white/[0.02] border border-black/20 dark:border-white/20 outline-none text-xs font-sans"
+                  placeholder="오모테산도, 시부야 스카이, 긴자..." 
+                />
+              </div>
+              <div className="flex gap-2 pt-3 border-t border-black/10 dark:border-white/10">
+                <button 
+                  type="button"
+                  onClick={() => { setIsPresetModalOpen(false); setEditingPreset(null); }}
+                  className="flex-1 py-2.5 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                >
+                  CANCEL
+                </button>
+                <button 
+                  type="submit"
+                  className="flex-1 py-2.5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:opacity-85 transition-opacity cursor-pointer"
+                >
+                  SAVE PRESET
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Preset Delete Confirm Modal */}
+      <ConfirmModal
+        isOpen={Boolean(presetToDelete)}
+        title="DELETE PRESET"
+        message={`'${presetToDelete?.title}' 프리셋을 삭제하시겠습니까?\n기본 프리셋인 경우 목록에서 숨겨지며 언제든지 '기본 복구'를 통해 복원할 수 있습니다.`}
+        confirmLabel="삭제 (DELETE)"
+        cancelLabel="취소"
+        confirmVariant="danger"
+        iconType="alert"
+        onConfirm={handleConfirmDeletePreset}
+        onCancel={() => setPresetToDelete(null)}
+      />
+
+      {/* Restore Default Presets Confirm Modal */}
+      <ConfirmModal
+        isOpen={showRestorePresetsConfirm}
+        title="RESTORE DEFAULT PRESETS"
+        message="모든 커스텀 프리셋을 초기화하고 시스템 기본 프리셋 목록으로 되돌리시겠습니까?"
+        confirmLabel="복구 (RESTORE)"
+        cancelLabel="취소"
+        confirmVariant="black"
+        iconType="alert"
+        onConfirm={handleConfirmRestorePresets}
+        onCancel={() => setShowRestorePresetsConfirm(false)}
       />
 
       {/* Restore Magazine Sections Modal */}

@@ -14232,6 +14232,7 @@ export function saveCustomPreset(preset: PresetTripPlan): PresetTripPlan[] {
       list = [{ ...preset, isCustom: true }, ...list];
     }
     localStorage.setItem('custom_trip_presets', JSON.stringify(list));
+    window.dispatchEvent(new CustomEvent('tripPresetsChanged'));
     return getSavedPresets();
   } catch (_) {
     return DEFAULT_PRESET_TRIP_PLANS;
@@ -14256,9 +14257,38 @@ export function deletePresetById(id: string): PresetTripPlan[] {
         localStorage.setItem('deleted_preset_ids', JSON.stringify(hiddenIds));
       }
     }
+    window.dispatchEvent(new CustomEvent('tripPresetsChanged'));
     return getSavedPresets();
   } catch (_) {
     return DEFAULT_PRESET_TRIP_PLANS;
+  }
+}
+
+export function restoreDefaultPresets(): PresetTripPlan[] {
+  try {
+    localStorage.removeItem('custom_trip_presets');
+    localStorage.removeItem('deleted_preset_ids');
+    window.dispatchEvent(new CustomEvent('tripPresetsChanged'));
+    return DEFAULT_PRESET_TRIP_PLANS;
+  } catch (_) {
+    return DEFAULT_PRESET_TRIP_PLANS;
+  }
+}
+
+export function saveAllPresets(presets: PresetTripPlan[]): PresetTripPlan[] {
+  try {
+    const customList = presets.filter(p => p.isCustom);
+    const presentDefaultIds = presets.filter(p => !p.isCustom).map(p => p.id);
+    const deletedDefaultIds = DEFAULT_PRESET_TRIP_PLANS
+      .filter(p => !presentDefaultIds.includes(p.id))
+      .map(p => p.id);
+
+    localStorage.setItem('custom_trip_presets', JSON.stringify(customList));
+    localStorage.setItem('deleted_preset_ids', JSON.stringify(deletedDefaultIds));
+    window.dispatchEvent(new CustomEvent('tripPresetsChanged'));
+    return presets;
+  } catch (_) {
+    return presets;
   }
 }
 

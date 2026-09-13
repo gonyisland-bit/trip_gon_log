@@ -999,7 +999,6 @@ export function Lightbox({
           <div
             onClick={handleTogglePause}
             className="flex-grow pointer-events-auto cursor-pointer"
-            title={isPaused ? '재생 (Click / Space)' : '일시정지 (Click / Space)'}
           />
 
           {/* Bottom info + progress bar */}

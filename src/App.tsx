@@ -426,8 +426,9 @@ function App() {
       postSaveNavTimerRef.current = setTimeout(() => {
         postSaveNavTimerRef.current = null;
         postSaveNavTargetRef.current = null;
+        setShowSaveCompleteModal(false);
         navigateTo(view, tripId, true, null, true);
-      }, 2000);
+      }, 1000);
     }
   };
 
@@ -1097,6 +1098,9 @@ function App() {
       setShowUnsavedModal(true);
       return;
     }
+
+    // Close any residual save complete modal upon navigation
+    setShowSaveCompleteModal(false);
 
     // 트립허브나 다른 화면으로 이동 시 잔여 비행기 전환 즉시 강제 취소 (원복 증상 원천 차단)
     if (view !== 'detail' || (tripId !== null && tripId !== flightTransition.targetTripId)) {
@@ -2759,6 +2763,10 @@ function App() {
             onCreate={handleCreateJourney}
             existingTags={existingTags}
             initialCountry={createCountryInitial}
+            onOpenManagePresets={() => {
+              sessionStorage.setItem('initialManageTab', 'PRESETS');
+              navigateTo('manage');
+            }}
           />
 
           {/* Settings Modal Popup */}
@@ -2817,7 +2825,7 @@ function App() {
             iconType="check"
             singleButton
             autoDismiss
-            autoDismissDuration={2000}
+            autoDismissDuration={1000}
             onConfirm={handleCloseSaveCompleteModal}
             onCancel={handleCloseSaveCompleteModal}
           />
