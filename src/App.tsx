@@ -56,6 +56,11 @@ import {
   compareMagazineItemsChronologically,
   syncSectionItemsWithTimeline
 } from './utils/magazineHelper';
+import {
+  BgmTrack,
+  saveStoredBgmTracks,
+  saveStoredBgmAutoplay,
+} from './utils/audioHelper';
 import { 
   initialTrips, 
   initialPlans, 
@@ -855,6 +860,12 @@ function App() {
           setHomeGradientTo(data.homeGradientTo);
           localStorage.setItem('home_gradient_to', data.homeGradientTo);
         }
+        if (Array.isArray(data.bgmPlaylist) && data.bgmPlaylist.length > 0) {
+          saveStoredBgmTracks(data.bgmPlaylist);
+        }
+        if (data.bgmAutoplay !== undefined) {
+          saveStoredBgmAutoplay(data.bgmAutoplay);
+        }
       }
       // Always mark settings as loaded, even if doc doesn't exist (prevents premature hydration)
       setSettingsLoaded(true);
@@ -1533,6 +1544,24 @@ function App() {
     try {
       localStorage.setItem('cached_magazine_sections', JSON.stringify(sections));
     } catch (_) {}
+  };
+
+  const handleSaveBgmSettings = async (tracks: BgmTrack[], autoplay?: boolean) => {
+    try {
+      saveStoredBgmTracks(tracks);
+      if (autoplay !== undefined) {
+        saveStoredBgmAutoplay(autoplay);
+      }
+      const dataToSave: any = {
+        bgmPlaylist: cleanForFirestore(tracks),
+      };
+      if (autoplay !== undefined) {
+        dataToSave.bgmAutoplay = autoplay;
+      }
+      await setDoc(doc(db, 'users', 'public', 'settings', 'home'), cleanForFirestore(dataToSave), { merge: true });
+    } catch (err) {
+      console.error("Failed to save BGM settings to Firestore:", err);
+    }
   };
 
   // Helper to generate date list for shifting logic
@@ -2592,6 +2621,7 @@ function App() {
                   isDarkMode={isDarkMode}
                   onDirtyChange={setIsManageDirty}
                   saveRef={manageSaveRef}
+                  onSaveBgmSettings={handleSaveBgmSettings}
                 />
               )}
               {currentView === 'magazine' && (
@@ -2705,6 +2735,7 @@ function App() {
             marqueeShow={marqueeShow}
             marqueeMessage={marqueeMessage}
             marqueeSpeed={marqueeSpeed}
+            onSaveBgmSettings={handleSaveBgmSettings}
           />
 
           {/* Edit Trip Cover Modal */}

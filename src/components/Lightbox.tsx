@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, MessageSquare, Play, Pause, SkipBack, MapPin, Music, Volume2, VolumeX, SkipForward } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, MessageSquare, Play, Pause, SkipBack, MapPin, Music, Volume2, VolumeX, SkipForward, Check } from 'lucide-react';
 import { bgmPlayer, getStoredBgmAutoplay, BgmTrack } from '../utils/audioHelper';
 
 export interface LightboxImageMeta {
@@ -62,6 +62,8 @@ export function Lightbox({
   // BGM Player state
   const [isBgmPlaying, setIsBgmPlaying] = useState(() => bgmPlayer.isPlaying());
   const [currentBgmTrack, setCurrentBgmTrack] = useState<BgmTrack | null>(() => bgmPlayer.getCurrentTrack());
+  const [isTrackListOpen, setIsTrackListOpen] = useState(false);
+  const bgmPopoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const unsub = bgmPlayer.subscribe(() => {
@@ -70,6 +72,21 @@ export function Lightbox({
     });
     return () => unsub();
   }, []);
+
+  // Close BGM track list popover when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (bgmPopoverRef.current && !bgmPopoverRef.current.contains(e.target as Node)) {
+        setIsTrackListOpen(false);
+      }
+    };
+    if (isTrackListOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isTrackListOpen]);
 
   // True crossfade: old image fades out on top while new is already visible underneath
   const [fadeOutSrc, setFadeOutSrc] = useState<string | null>(null);
@@ -879,26 +896,79 @@ export function Lightbox({
 
               <div className="h-4 w-[1px] bg-white/20 mx-1" />
 
-              {/* BGM Toggle & Next Track Control */}
-              <div className="flex items-center bg-white/10 rounded-sm border border-white/20 px-1 py-0.5">
+              {/* BGM Toggle, Track Selector Popover, & Next Track Control */}
+              <div className="relative flex items-center bg-white/10 rounded-sm border border-white/20 px-1 py-0.5" ref={bgmPopoverRef}>
+                {/* Mute/Play Toggle */}
                 <button
                   onClick={() => bgmPlayer.toggle()}
-                  className={`flex items-center gap-1.5 px-2 py-1 text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer ${
+                  className={`p-1 text-[9px] transition-all cursor-pointer ${
                     isBgmPlaying ? 'text-orange-400 font-black' : 'text-white/50 hover:text-white'
                   }`}
-                  title={isBgmPlaying ? `배경음악 일시정지 (${currentBgmTrack?.title || 'BGM'})` : '배경음악 재생'}
+                  title={isBgmPlaying ? '배경음악 일시정지' : '배경음악 재생'}
                 >
                   {isBgmPlaying ? <Volume2 className="w-3.5 h-3.5 animate-pulse text-orange-400" /> : <VolumeX className="w-3.5 h-3.5 opacity-60" />}
-                  <span className="hidden sm:inline max-w-[110px] truncate">{isBgmPlaying ? (currentBgmTrack?.title || 'BGM ON') : 'BGM OFF'}</span>
                 </button>
-                {isBgmPlaying && (
-                  <button
-                    onClick={() => bgmPlayer.next()}
-                    className="p-1 hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer border-l border-white/15"
-                    title="다음 배경음악 트랙"
-                  >
-                    <SkipForward className="w-3 h-3" />
-                  </button>
+
+                {/* Track Title Button: Click to open track list selector */}
+                <button
+                  onClick={() => setIsTrackListOpen(prev => !prev)}
+                  className={`flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer max-w-[130px] truncate ${
+                    isBgmPlaying ? 'text-orange-400' : 'text-white/70 hover:text-white'
+                  }`}
+                  title="클릭하여 음원 선택"
+                >
+                  <span className="truncate">{currentBgmTrack?.title || (isBgmPlaying ? 'BGM ON' : 'BGM OFF')}</span>
+                </button>
+
+                {/* Next Track Button */}
+                <button
+                  onClick={() => bgmPlayer.next()}
+                  className="p-1 hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer border-l border-white/15"
+                  title="다음 배경음악 트랙"
+                >
+                  <SkipForward className="w-3 h-3" />
+                </button>
+
+                {/* Swiss Minimal Track Selector Popover */}
+                {isTrackListOpen && (
+                  <div className="absolute bottom-full left-0 mb-2 w-60 max-h-56 overflow-y-auto bg-black/90 backdrop-blur-md border border-white/20 rounded-sm shadow-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="px-2 py-1 border-b border-white/10 flex items-center justify-between text-[9px] font-mono text-white/50 uppercase tracking-widest">
+                      <span>BGM PLAYLIST</span>
+                      <span className="text-orange-400 font-bold">{bgmPlayer.getPlayableTracks().length} TRACKS</span>
+                    </div>
+                    <div className="flex flex-col gap-0.5 mt-1">
+                      {bgmPlayer.getPlayableTracks().length === 0 ? (
+                        <div className="p-3 text-center text-[10px] text-white/40 font-mono">
+                          재생 가능한 음원이 없습니다
+                        </div>
+                      ) : (
+                        bgmPlayer.getPlayableTracks().map((track, idx) => {
+                          const isSelected = currentBgmTrack?.id === track.id;
+                          return (
+                            <button
+                              key={track.id}
+                              type="button"
+                              onClick={() => {
+                                bgmPlayer.playTrackById(track.id);
+                                setIsTrackListOpen(false);
+                              }}
+                              className={`w-full text-left px-2 py-1.5 rounded-xs flex items-center justify-between transition-colors text-[10px] font-mono cursor-pointer ${
+                                isSelected
+                                  ? 'bg-orange-500/20 text-orange-400 font-bold'
+                                  : 'text-white/80 hover:bg-white/10 hover:text-white'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 min-w-0 pr-2">
+                                <span className="text-[9px] opacity-40 shrink-0">#{idx + 1}</span>
+                                <span className="truncate">{track.title}</span>
+                              </div>
+                              {isSelected && <Check className="w-3 h-3 text-orange-400 shrink-0" />}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
 

@@ -31,6 +31,7 @@ interface SettingsModalProps {
   marqueeShow: boolean;
   marqueeMessage: string;
   marqueeSpeed: number;
+  onSaveBgmSettings?: (tracks: BgmTrack[], autoplay?: boolean) => Promise<void>;
 }
 
 type SettingsTab = 'general' | 'music' | 'trash';
@@ -53,6 +54,7 @@ export function SettingsModal({
   marqueeShow,
   marqueeMessage,
   marqueeSpeed,
+  onSaveBgmSettings,
 }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [title, setTitle] = useState(homeTitle);
@@ -189,6 +191,7 @@ export function SettingsModal({
     const updated = bgmTracks.map(t => t.id === id ? { ...t, enabled: !t.enabled } : t);
     setBgmTracks(updated);
     saveStoredBgmTracks(updated);
+    if (onSaveBgmSettings) onSaveBgmSettings(updated, bgmAutoplay);
   };
 
   const handleMoveBgmTrack = (index: number, direction: 'up' | 'down') => {
@@ -199,6 +202,7 @@ export function SettingsModal({
     next.splice(targetIdx, 0, item);
     setBgmTracks(next);
     saveStoredBgmTracks(next);
+    if (onSaveBgmSettings) onSaveBgmSettings(next, bgmAutoplay);
   };
 
   const handleDeleteBgmTrack = (id: string) => {
@@ -209,16 +213,19 @@ export function SettingsModal({
     const updated = bgmTracks.filter(t => t.id !== id);
     setBgmTracks(updated);
     saveStoredBgmTracks(updated);
+    if (onSaveBgmSettings) onSaveBgmSettings(updated, bgmAutoplay);
   };
 
   const handleRestoreDefaultBgm = () => {
     setBgmTracks(DEFAULT_BGM_TRACKS);
     saveStoredBgmTracks(DEFAULT_BGM_TRACKS);
+    if (onSaveBgmSettings) onSaveBgmSettings(DEFAULT_BGM_TRACKS, bgmAutoplay);
   };
 
   const handleToggleAutoplay = (val: boolean) => {
     setBgmAutoplay(val);
     saveStoredBgmAutoplay(val);
+    if (onSaveBgmSettings) onSaveBgmSettings(bgmTracks, val);
   };
 
   const handleTogglePreviewTrack = (track: BgmTrack) => {
@@ -278,6 +285,7 @@ export function SettingsModal({
         const updated = [...bgmTracks, ...newTracks];
         setBgmTracks(updated);
         saveStoredBgmTracks(updated);
+        if (onSaveBgmSettings) onSaveBgmSettings(updated, bgmAutoplay);
       }
     } catch (err) {
       console.error('Failed to upload BGM:', err);
@@ -694,14 +702,14 @@ export function SettingsModal({
                             title="재생 목록 포함 여부"
                           />
                           <div className="flex flex-col min-w-0">
-                            <span className="text-xs font-bold truncate text-black dark:text-white">
-                              {track.title}
-                            </span>
-                            {track.isDefault && (
-                              <span className="text-[9px] font-mono font-bold text-orange-500 uppercase tracking-widest">
-                                DEFAULT TRACK
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-[10px] font-mono font-bold text-black/40 dark:text-white/40">
+                                #{idx + 1}
                               </span>
-                            )}
+                              <span className="text-xs font-bold truncate text-black dark:text-white">
+                                {track.title}
+                              </span>
+                            </div>
                           </div>
                         </div>
 

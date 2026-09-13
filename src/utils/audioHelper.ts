@@ -12,7 +12,6 @@ export const DEFAULT_BGM_TRACKS: BgmTrack[] = [
     title: 'Acoustic Journey Serenade',
     url: '/audio/default_bgm.mp3',
     enabled: true,
-    isDefault: true,
   },
 ];
 
@@ -82,8 +81,12 @@ class BgmPlayerManager {
     }
   }
 
-  private getPlayableTracks(): BgmTrack[] {
+  public getPlayableTracks(): BgmTrack[] {
     return getStoredBgmTracks().filter((t) => t.enabled && t.url);
+  }
+
+  public getAllTracks(): BgmTrack[] {
+    return getStoredBgmTracks();
   }
 
   public subscribe(cb: () => void) {
@@ -160,6 +163,14 @@ class BgmPlayerManager {
         this.isPlayingState = false;
         this.notify();
       });
+  }
+
+  public playTrackById(id: string) {
+    const tracks = this.getPlayableTracks();
+    const idx = tracks.findIndex((t) => t.id === id);
+    if (idx !== -1) {
+      this.playTrackAtIndex(idx, true);
+    }
   }
 
   public play() {
