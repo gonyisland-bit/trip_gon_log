@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, MessageSquare, Play, Pause, SkipBack, MapPin } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, MessageSquare, Play, Pause, SkipBack, MapPin, Music, Volume2, VolumeX, SkipForward } from 'lucide-react';
+import { bgmPlayer, getStoredBgmAutoplay, BgmTrack } from '../utils/audioHelper';
 
 export interface LightboxImageMeta {
   url: string;
@@ -42,6 +43,18 @@ export function Lightbox({
   const [slideProgress, setSlideProgress] = useState(0); // 0-100 for progress bar
   const slideshowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // BGM Player state
+  const [isBgmPlaying, setIsBgmPlaying] = useState(() => bgmPlayer.isPlaying());
+  const [currentBgmTrack, setCurrentBgmTrack] = useState<BgmTrack | null>(() => bgmPlayer.getCurrentTrack());
+
+  useEffect(() => {
+    const unsub = bgmPlayer.subscribe(() => {
+      setIsBgmPlaying(bgmPlayer.isPlaying());
+      setCurrentBgmTrack(bgmPlayer.getCurrentTrack());
+    });
+    return () => unsub();
+  }, []);
 
   // True crossfade: old image fades out on top while new is already visible underneath
   const [fadeOutSrc, setFadeOutSrc] = useState<string | null>(null);
@@ -372,12 +385,13 @@ export function Lightbox({
     return () => stopSlideshow();
   }, [isSlideshow, isPaused, currentIndex, startSlideshowCycle, stopSlideshow]);
 
-  // Stop slideshow when lightbox closes
+  // Stop slideshow & BGM when lightbox closes
   useEffect(() => {
     if (!isOpen) {
       setIsSlideshow(false);
       setIsPaused(false);
       stopSlideshow();
+      bgmPlayer.stop();
     }
   }, [isOpen, stopSlideshow]);
 
@@ -385,6 +399,9 @@ export function Lightbox({
     setIsSlideshow(true);
     setIsPaused(false);
     resetZoom();
+    if (getStoredBgmAutoplay() && !bgmPlayer.isPlaying()) {
+      bgmPlayer.play();
+    }
   };
 
   const handleStopSlideshow = () => {
@@ -724,6 +741,32 @@ export function Lightbox({
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
+
+              <div className="h-4 w-[1px] bg-white/20 mx-1" />
+
+              {/* BGM Toggle & Next Track Control */}
+              <div className="flex items-center bg-white/10 rounded-sm border border-white/20 px-1 py-0.5">
+                <button
+                  onClick={() => bgmPlayer.toggle()}
+                  className={`flex items-center gap-1.5 px-2 py-1 text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer ${
+                    isBgmPlaying ? 'text-orange-400 font-black' : 'text-white/50 hover:text-white'
+                  }`}
+                  title={isBgmPlaying ? `배경음악 일시정지 (${currentBgmTrack?.title || 'BGM'})` : '배경음악 재생'}
+                >
+                  {isBgmPlaying ? <Volume2 className="w-3.5 h-3.5 animate-pulse text-orange-400" /> : <VolumeX className="w-3.5 h-3.5 opacity-60" />}
+                  <span className="hidden sm:inline max-w-[110px] truncate">{isBgmPlaying ? (currentBgmTrack?.title || 'BGM ON') : 'BGM OFF'}</span>
+                </button>
+                {isBgmPlaying && (
+                  <button
+                    onClick={() => bgmPlayer.next()}
+                    className="p-1 hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer border-l border-white/15"
+                    title="다음 배경음악 트랙"
+                  >
+                    <SkipForward className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
               <div className="h-4 w-[1px] bg-white/20 mx-1" />
               {/* Stop slideshow */}
               <button
@@ -845,6 +888,20 @@ export function Lightbox({
                 Slide
               </button>
             )}
+
+            {/* BGM Toggle in Normal Mode */}
+            <button
+              onClick={() => bgmPlayer.toggle()}
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-widest border transition-all ${
+                isBgmPlaying
+                  ? 'border-orange-500/80 bg-orange-500/10 text-orange-400 font-black'
+                  : 'border-white/20 hover:bg-white/10 text-white/60 hover:text-white'
+              }`}
+              title={isBgmPlaying ? `배경음악 끄기 (${currentBgmTrack?.title || 'BGM'})` : '배경음악 켜기'}
+            >
+              {isBgmPlaying ? <Volume2 className="w-3 h-3 text-orange-400 animate-pulse" /> : <VolumeX className="w-3 h-3 opacity-60" />}
+              BGM
+            </button>
 
             {/* Desktop Zoom controls */}
             <div className="hidden sm:flex items-center gap-1">

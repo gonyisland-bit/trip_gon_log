@@ -181,8 +181,8 @@ export function CalendarHubPage({
         setIsMonthDropdownOpen(false);
       }
       if (hoveredTooltip) {
-        // 년달력 날짜 버튼 클릭이 아닌 다른 곳을 누르면 툴팁 및 년달력 선택 해제
-        const clickedDayBtn = (target as HTMLElement)?.closest?.('[data-calendar-year-cell]');
+        // 년달력 또는 월달력 날짜 버튼 클릭이 아닌 다른 곳을 누르면 툴팁 및 선택 해제
+        const clickedDayBtn = (target as HTMLElement)?.closest?.('[data-calendar-year-cell], [data-calendar-month-cell]');
         const clickedTooltip = tooltipRef.current?.contains(target);
         if (!clickedDayBtn && !clickedTooltip) {
           setHoveredTooltip(null);
@@ -935,14 +935,31 @@ export function CalendarHubPage({
         setDragAnchorDate(cell.dateStr);
       }
     } else {
-      // 일반 모드: 이미 선택된 날짜면 해제(토글), 아니면 해당 날짜 선택 (모달은 바로 띄우지 않고 하단 일정 영역 색상화만 수행)
+      // 일반 모드: 이미 선택된 날짜면 해제(토글), 아니면 해당 날짜 선택
       setSelectedScheduleId(null);
-      if (selectedRange && selectedRange.start === cell.dateStr && selectedRange.end === cell.dateStr) {
+      const isSameDate = selectedRange && selectedRange.start === cell.dateStr && selectedRange.end === cell.dateStr;
+
+      if (isSameDate && hoveredTooltip?.dateStr === cell.dateStr) {
         setSelectedRange(null);
         setDragAnchorDate(null);
+        setHoveredTooltip(null);
       } else {
         setSelectedRange({ start: cell.dateStr, end: cell.dateStr });
         setDragAnchorDate(cell.dateStr);
+
+        // 여정, 일정 또는 공휴일이 있는 경우 클릭/터치 시에도 툴팁 정보창 팝업 표시
+        const hasDetails = cell.overlappingTrips.length > 0 || cell.overlappingEvents.length > 0 || Boolean(cell.holiday?.name);
+        if (hasDetails) {
+          handleDayHover(
+            e,
+            cell.dateStr,
+            cell.holiday?.name,
+            cell.overlappingTrips.map(t => ({ title: t.trip.title, isPlan: t.isPlan, totalDays: t.totalDays })),
+            cell.overlappingEvents.map(ev => ({ title: ev.event.title, category: ev.event.category, totalDays: ev.totalDays }))
+          );
+        } else {
+          setHoveredTooltip(null);
+        }
       }
     }
   };
@@ -1681,6 +1698,7 @@ export function CalendarHubPage({
                     {/* Interactive Circular Day Button */}
                     <button
                       type="button"
+                      data-calendar-month-cell={cell.dateStr}
                       onClick={(e) => handleCellClick(cell, e)}
                       onMouseDown={(e) => handleCellMouseDown(cell.dateStr, e)}
                       onMouseEnter={(e) => {

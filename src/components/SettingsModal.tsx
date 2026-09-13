@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { X, Save, Settings, Loader2, Trash2, RotateCcw, AlertTriangle, Star, Check } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Save, Settings, Loader2, Trash2, RotateCcw, AlertTriangle, Star, Check, Music, Upload, ArrowUp, ArrowDown, Play, Pause, RefreshCw, Volume2 } from 'lucide-react';
 import { Trip } from '../types';
+import { BgmTrack, DEFAULT_BGM_TRACKS, getStoredBgmTracks, saveStoredBgmTracks, getStoredBgmAutoplay, saveStoredBgmAutoplay, bgmPlayer } from '../utils/audioHelper';
+import { uploadFileToR2 } from '../utils/storageHelper';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -31,7 +33,7 @@ interface SettingsModalProps {
   marqueeSpeed: number;
 }
 
-type SettingsTab = 'general' | 'trash';
+type SettingsTab = 'general' | 'music' | 'trash';
 
 export function SettingsModal({
   isOpen,
@@ -65,6 +67,25 @@ export function SettingsModal({
   const [loadingId, setLoadingId] = useState<number | null>(null);
   const [playVideoOnActivate, setPlayVideoOnActivate] = useState(() => localStorage.getItem('playVideoOnActivate') !== 'false');
 
+  // BGM Playlist state
+  const [bgmTracks, setBgmTracks] = useState<BgmTrack[]>(() => getStoredBgmTracks());
+  const [bgmAutoplay, setBgmAutoplay] = useState<boolean>(() => getStoredBgmAutoplay());
+  const [isUploadingBgm, setIsUploadingBgm] = useState<boolean>(false);
+  const [previewTrackId, setPreviewTrackId] = useState<string | null>(null);
+  const [isDraggingFile, setIsDraggingFile] = useState<boolean>(false);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Stop preview audio when modal closes or unmounts
+  useEffect(() => {
+    return () => {
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+        previewAudioRef.current = null;
+      }
+    };
+  }, []);
+
   // Sync state with props when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -77,6 +98,8 @@ export function SettingsModal({
       setMarqueeMsg(marqueeMessage);
       setMarqueeSpd(marqueeSpeed);
       setActiveTab('general');
+      setBgmTracks(getStoredBgmTracks());
+      setBgmAutoplay(getStoredBgmAutoplay());
     }
   }, [
     isOpen,
@@ -161,6 +184,110 @@ export function SettingsModal({
     });
   };
 
+  // BGM Playlist Handlers
+  const handleToggleBgmTrack = (id: string) => {
+    const updated = bgmTracks.map(t => t.id === id ? { ...t, enabled: !t.enabled } : t);
+    setBgmTracks(updated);
+    saveStoredBgmTracks(updated);
+  };
+
+  const handleMoveBgmTrack = (index: number, direction: 'up' | 'down') => {
+    const targetIdx = direction === 'up' ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= bgmTracks.length) return;
+    const next = [...bgmTracks];
+    const [item] = next.splice(index, 1);
+    next.splice(targetIdx, 0, item);
+    setBgmTracks(next);
+    saveStoredBgmTracks(next);
+  };
+
+  const handleDeleteBgmTrack = (id: string) => {
+    if (previewTrackId === id && previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      setPreviewTrackId(null);
+    }
+    const updated = bgmTracks.filter(t => t.id !== id);
+    setBgmTracks(updated);
+    saveStoredBgmTracks(updated);
+  };
+
+  const handleRestoreDefaultBgm = () => {
+    setBgmTracks(DEFAULT_BGM_TRACKS);
+    saveStoredBgmTracks(DEFAULT_BGM_TRACKS);
+  };
+
+  const handleToggleAutoplay = (val: boolean) => {
+    setBgmAutoplay(val);
+    saveStoredBgmAutoplay(val);
+  };
+
+  const handleTogglePreviewTrack = (track: BgmTrack) => {
+    if (previewTrackId === track.id) {
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+      }
+      setPreviewTrackId(null);
+      return;
+    }
+
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause();
+    }
+    const audio = new Audio(track.url);
+    previewAudioRef.current = audio;
+    audio.addEventListener('ended', () => setPreviewTrackId(null));
+    audio.play().then(() => {
+      setPreviewTrackId(track.id);
+    }).catch(err => {
+      console.warn('Audio preview failed:', err);
+      setPreviewTrackId(null);
+    });
+  };
+
+  const handleFileUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setIsUploadingBgm(true);
+    try {
+      const newTracks: BgmTrack[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (!file.type.startsWith('audio/') && !/\.(mp3|m4a|wav|aac|ogg)$/i.test(file.name)) {
+          alert(`${file.name}은(는) 지원되지 않는 오디오 파일 형식입니다.`);
+          continue;
+        }
+
+        const path = `bgm/${Date.now()}_${file.name}`;
+        let publicUrl = '';
+        try {
+          publicUrl = await uploadFileToR2(file, path);
+        } catch (uploadErr) {
+          console.warn('R2 upload failed, falling back to local Blob URL:', uploadErr);
+          publicUrl = URL.createObjectURL(file);
+        }
+
+        const cleanTitle = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
+        newTracks.push({
+          id: `bgm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          title: cleanTitle,
+          url: publicUrl,
+          enabled: true,
+        });
+      }
+
+      if (newTracks.length > 0) {
+        const updated = [...bgmTracks, ...newTracks];
+        setBgmTracks(updated);
+        saveStoredBgmTracks(updated);
+      }
+    } catch (err) {
+      console.error('Failed to upload BGM:', err);
+      alert('음원 업로드 중 오류가 발생했습니다.');
+    } finally {
+      setIsUploadingBgm(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   // All journeys (trips + plans) available for hero selection
   const allJourneys = [...trips, ...plans];
 
@@ -194,6 +321,7 @@ export function SettingsModal({
         <div className="flex border-b border-black/10 dark:border-white/10 shrink-0">
           {[
             { id: 'general' as SettingsTab, label: 'General' },
+            { id: 'music' as SettingsTab, label: `Music (BGM)${bgmTracks.filter(t => t.enabled).length > 0 ? ` (${bgmTracks.filter(t => t.enabled).length})` : ''}` },
             {
               id: 'trash' as SettingsTab,
               label: `Trash${trashedJourneys.length > 0 ? ` (${trashedJourneys.length})` : ''}`,
@@ -444,6 +572,193 @@ export function SettingsModal({
                 </button>
               </div>
             </form>
+          )}
+
+          {/* MUSIC (BGM) TAB */}
+          {activeTab === 'music' && (
+            <div className="p-6 md:p-8 space-y-6">
+              {/* Autoplay setting */}
+              <div className="flex items-center justify-between p-3.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider">
+                    슬라이드쇼 시작 시 BGM 자동 재생
+                  </span>
+                  <span className="text-[10px] text-black/50 dark:text-white/50">
+                    라이트박스 슬라이드쇼 재생 버튼을 누를 때 선택된 배경음악을 자동으로 시작합니다.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleToggleAutoplay(!bgmAutoplay)}
+                  className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                    bgmAutoplay ? 'bg-orange-500' : 'bg-black/20 dark:bg-white/20'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                      bgmAutoplay ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Upload Zone (Drag & Drop + File Selector) */}
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDraggingFile(true);
+                }}
+                onDragLeave={() => setIsDraggingFile(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDraggingFile(false);
+                  handleFileUpload(e.dataTransfer.files);
+                }}
+                onClick={() => fileInputRef.current?.click()}
+                className={`border-2 border-dashed p-6 text-center cursor-pointer transition-all ${
+                  isDraggingFile
+                    ? 'border-orange-500 bg-orange-500/10'
+                    : 'border-black/15 dark:border-white/15 hover:border-black/30 dark:hover:border-white/30 bg-black/2 dark:bg-white/2'
+                }`}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="audio/*,.mp3,.m4a,.wav,.aac,.ogg"
+                  multiple
+                  onChange={(e) => handleFileUpload(e.target.files)}
+                  className="hidden"
+                />
+                <div className="flex flex-col items-center gap-2">
+                  {isUploadingBgm ? (
+                    <>
+                      <Loader2 className="w-7 h-7 animate-spin text-orange-500" />
+                      <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider">
+                        음원 업로드 중...
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-6 h-6 text-black/40 dark:text-white/40" />
+                      <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider">
+                        음원 파일 추가 (클릭하거나 드래그하여 놓기)
+                      </span>
+                      <span className="text-[10px] text-black/40 dark:text-white/40">
+                        MP3, M4A, WAV 등 다양한 오디오 파일 지원
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Playlist Section */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between pb-1 border-b border-black/10 dark:border-white/10">
+                  <div className="flex items-center gap-2">
+                    <Music className="w-3.5 h-3.5 text-orange-500" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-black/70 dark:text-white/70">
+                      PLAYLIST ({bgmTracks.length})
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRestoreDefaultBgm}
+                    className="text-[9px] font-mono text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white underline cursor-pointer"
+                  >
+                    기본 트랙 복구
+                  </button>
+                </div>
+
+                {bgmTracks.length === 0 ? (
+                  <div className="text-center py-8 text-black/40 dark:text-white/40 text-xs font-mono">
+                    등록된 배경음악 트랙이 없습니다.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {bgmTracks.map((track, idx) => (
+                      <div
+                        key={track.id}
+                        className={`flex items-center justify-between p-3 border transition-colors ${
+                          track.enabled
+                            ? 'bg-black/5 dark:bg-white/5 border-black/15 dark:border-white/15'
+                            : 'bg-black/2 dark:bg-white/2 border-black/5 dark:border-white/5 opacity-50'
+                        }`}
+                      >
+                        {/* Checkbox & Track Name */}
+                        <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
+                          <input
+                            type="checkbox"
+                            checked={track.enabled}
+                            onChange={() => handleToggleBgmTrack(track.id)}
+                            className="w-4 h-4 accent-orange-500 cursor-pointer"
+                            title="재생 목록 포함 여부"
+                          />
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-bold truncate text-black dark:text-white">
+                              {track.title}
+                            </span>
+                            {track.isDefault && (
+                              <span className="text-[9px] font-mono font-bold text-orange-500 uppercase tracking-widest">
+                                DEFAULT TRACK
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {/* Preview button */}
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePreviewTrack(track)}
+                            className={`p-1.5 rounded-sm border transition-colors cursor-pointer ${
+                              previewTrackId === track.id
+                                ? 'bg-orange-500 text-white border-orange-500'
+                                : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5'
+                            }`}
+                            title={previewTrackId === track.id ? '정지' : '미리듣기'}
+                          >
+                            {previewTrackId === track.id ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                          </button>
+
+                          {/* Reorder Up */}
+                          <button
+                            type="button"
+                            disabled={idx === 0}
+                            onClick={() => handleMoveBgmTrack(idx, 'up')}
+                            className="p-1.5 rounded-sm border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 cursor-pointer"
+                            title="위로 이동"
+                          >
+                            <ArrowUp className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Reorder Down */}
+                          <button
+                            type="button"
+                            disabled={idx === bgmTracks.length - 1}
+                            onClick={() => handleMoveBgmTrack(idx, 'down')}
+                            className="p-1.5 rounded-sm border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 cursor-pointer"
+                            title="아래로 이동"
+                          >
+                            <ArrowDown className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Delete */}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteBgmTrack(track.id)}
+                            className="p-1.5 rounded-sm border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white transition-colors cursor-pointer"
+                            title="트랙 삭제"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           )}
 
           {/* TRASH TAB */}
