@@ -1662,15 +1662,18 @@ function App() {
     members?: string[],
     locations?: { name: string; lat?: number; lng?: number }[],
     statusBadge?: string,
-    country?: string
+    country?: string,
+    customCoverImg?: string,
+    customTimelineItems?: { date: string; items: any[] }[]
   ) => {
     const user = auth.currentUser;
     if (!user) return;
 
     const newId = Date.now();
-    const img = createModalType === 'archive'
+    const defaultImg = createModalType === 'archive'
       ? 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=800&auto=format&fit=crop'
       : 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=800&auto=format&fit=crop';
+    const img = customCoverImg || defaultImg;
 
     const mapImg = 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1600&auto=format&fit=crop';
     const collectionName = createModalType === 'archive' ? 'trips' : 'plans';
@@ -1696,8 +1699,11 @@ function App() {
       // 1. Save journey doc immediately with cleanForFirestore to purge undefined values
       await setDoc(doc(db, 'users', 'public', collectionName, String(newId)), cleanForFirestore(newJourney));
 
-      // 2. Generate default template timeline items
+      // 2. Generate template or custom timeline items
       const generateTemplateDays = (): { date: string; items: any[] }[] => {
+        if (customTimelineItems && customTimelineItems.length > 0) {
+          return customTimelineItems;
+        }
         const parts = dateRange.split(' - ');
         if (parts.length < 2) return [];
         const parseDate = (s: string) => {
