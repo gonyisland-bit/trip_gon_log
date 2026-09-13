@@ -6931,19 +6931,18 @@ export function ManageHubPage({
             if (activeMode === 'HOME') await handleSaveHome();
             else if (activeMode === 'ARCHIVE') await handleSaveJourney();
             else if (activeMode === 'MAGAZINE') await handleSaveMagazine();
-            else if (activeMode === 'MAP') await handleSaveMapSettings();
             else await handleSaveAllChanges(true);
             syncAllSnapshotsToCurrent();
           }}
-          disabled={activeMode === 'HOME' ? isSavingHome : (activeMode === 'ARCHIVE' ? isSavingTrip : (activeMode === 'MAGAZINE' ? isSavingMagazine : (activeMode === 'MAP' ? isSavingMap : isSavingAll)))}
+          disabled={activeMode === 'HOME' ? isSavingHome : (activeMode === 'ARCHIVE' ? isSavingTrip : (activeMode === 'MAGAZINE' ? isSavingMagazine : isSavingAll))}
           className={`w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-all cursor-pointer border ${
-            (homeSaveSuccess || tripSaveSuccess || magazineSaveSuccess || mapSaveSuccess || saveAllSuccess)
+            (homeSaveSuccess || tripSaveSuccess || magazineSaveSuccess || saveAllSuccess)
               ? 'bg-green-600 text-white border-green-600 scale-105'
               : 'bg-black text-white dark:bg-white dark:text-black border-white/20 dark:border-black/20 hover:scale-110 active:scale-95'
           }`}
           title="변경사항 저장 (단축키: Ctrl + S)"
         >
-          {(homeSaveSuccess || tripSaveSuccess || magazineSaveSuccess || mapSaveSuccess || saveAllSuccess) ? (
+          {(homeSaveSuccess || tripSaveSuccess || magazineSaveSuccess || saveAllSuccess) ? (
             <Check className="w-5 h-5 animate-in zoom-in" />
           ) : (
             <Save className="w-5 h-5" />
