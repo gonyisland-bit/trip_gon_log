@@ -1376,6 +1376,19 @@ export function getCountryLiveTime(countryCode: string, now: Date) {
     weekday: 'short'
   }).format(now);
 
+  // 12-hour format for travel clock widget (am/pm, 8.55)
+  let ampm = 'am';
+  let dotTime = '12.00';
+  try {
+    const targetDateObj = new Date(now.toLocaleString('en-US', { timeZone }));
+    const rawH = targetDateObj.getHours();
+    const rawM = targetDateObj.getMinutes();
+    ampm = rawH >= 12 ? 'pm' : 'am';
+    const h12 = rawH % 12 || 12;
+    const m2 = String(rawM).padStart(2, '0');
+    dotTime = `${h12}.${m2}`;
+  } catch (_) {}
+
   // Time difference in hours compared to Korea (KST, UTC+9)
   try {
     const kstDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
@@ -1387,9 +1400,9 @@ export function getCountryLiveTime(countryCode: string, now: Date) {
     const absH = Math.abs(diffHours);
     const diffText = `${sign}${absH}:00`;
 
-    return { timeStr, dateStr, diffText, diffHours, timeZone, second: now.getSeconds() };
+    return { timeStr, dateStr, diffText, diffHours, timeZone, second: now.getSeconds(), ampm, dotTime };
   } catch (_) {
-    return { timeStr, dateStr, diffText: '±0:00', diffHours: 0, timeZone, second: now.getSeconds() };
+    return { timeStr, dateStr, diffText: '±0:00', diffHours: 0, timeZone, second: now.getSeconds(), ampm, dotTime };
   }
 }
 
@@ -2947,49 +2960,50 @@ export function MapHubPage({
               );
             })()}
 
-            {/* 2. Compact 2-Column Grid: Live Local Time & Currency Exchange (Slim Line Layout) */}
-            <div className="grid grid-cols-2 gap-3 pb-3 border-b border-black/10 dark:border-white/10">
-              {/* Col 1: Live Local Time (Swiss Minimal Style) */}
+            {/* 2. Compact 2-Column Grid: Modern Travel Clock & Currency Exchange */}
+            <div className="grid grid-cols-2 gap-2.5 pb-3 border-b border-black/10 dark:border-white/10">
+              {/* Col 1: Modern Travel Clock Card (Attached Reference Style) */}
               <div>
                 {(() => {
                   const liveInfo = getCountryLiveTime(selectedCountry.code, liveClockNow);
-                  const secondPct = ((liveInfo.second + 1) / 60) * 100;
+                  const mainCity = selectedCountry.cities?.[0] || selectedCountry.nameKo;
+                  const countryCode = selectedCountry.code === 'ES' ? 'SPA' : selectedCountry.code === 'JP' ? 'JPN' : selectedCountry.code === 'KR' ? 'KOR' : selectedCountry.code === 'US' ? 'USA' : selectedCountry.code;
+
                   return (
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-1.5 text-[10px] font-mono font-black uppercase tracking-wider text-black/50 dark:text-white/50 mb-1">
-                        <Clock className="w-3 h-3 text-red-600 dark:text-red-400 shrink-0" />
-                        <span>LOCAL TIME ({liveInfo.diffText})</span>
-                      </div>
-                      <span className="text-2xl font-black font-mono tracking-tight text-black dark:text-white leading-none">
-                        {liveInfo.timeStr}
+                    <div className="bg-[#f0f0f0] dark:bg-[#252525] rounded-2xl p-3 flex flex-col items-center justify-center text-center shadow-xs border border-black/5 dark:border-white/10 h-full">
+                      <span className="text-[11px] font-bold text-black/60 dark:text-white/60 lowercase tracking-wider">
+                        {liveInfo.ampm}
                       </span>
-                      <div className="flex items-center justify-between text-[10px] font-mono font-bold text-black/45 dark:text-white/45 mt-1">
-                        <span>{liveInfo.dateStr}</span>
+                      <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-black dark:text-white my-0.5 font-sans leading-none">
+                        {liveInfo.dotTime}
+                      </span>
+                      <div className="mt-1.5 rounded-full bg-white/90 dark:bg-white/10 px-2.5 py-0.5 inline-flex items-center gap-1 shadow-xs border border-black/5 dark:border-white/10">
+                        <span className="text-[11px] font-bold text-black dark:text-white">{mainCity}</span>
+                        <span className="text-[10px] font-mono text-black/40 dark:text-white/40 uppercase">{countryCode}</span>
                       </div>
-                      {/* Swiss 1px Second Flow Line */}
-                      <div className="w-full h-[1.5px] bg-black/10 dark:bg-white/10 mt-1.5 overflow-hidden">
-                        <div 
-                          className="h-full bg-red-600 dark:bg-red-400 transition-all duration-300"
-                          style={{ width: `${secondPct}%` }}
-                        />
+                      <div className="text-[9.5px] font-mono text-black/40 dark:text-white/40 mt-1.5">
+                        {liveInfo.diffText} (KST)
                       </div>
                     </div>
                   );
                 })()}
               </div>
 
-              {/* Col 2: Currency & Exchange Rate */}
-              <div className="border-l border-black/10 dark:border-white/10 pl-3 flex flex-col justify-between">
+              {/* Col 2: Currency & Exchange Rate Card */}
+              <div className="bg-black/[0.03] dark:bg-white/[0.03] rounded-2xl p-3 flex flex-col justify-between border border-black/5 dark:border-white/10">
                 <div>
                   <div className="text-[10px] font-mono font-black uppercase tracking-widest text-black/40 dark:text-white/40 mb-1">
                     CURRENCY
                   </div>
-                  <div className="text-base sm:text-lg font-black font-mono tracking-tight text-black dark:text-white leading-none">
+                  <div className="text-base sm:text-lg font-black font-mono tracking-tight text-black dark:text-white leading-tight">
                     {selectedCountry.currencySymbol} {selectedCountry.currency}
                   </div>
                 </div>
-                <div className="text-[10px] font-mono font-bold text-black/60 dark:text-white/60 mt-1">
-                  1 {selectedCountry.currency} ≈ ₩{selectedCountry.rateToKRW.toLocaleString()}
+                <div className="mt-2 pt-2 border-t border-black/10 dark:border-white/10 text-[10.5px] font-mono font-bold text-black/70 dark:text-white/70">
+                  1 {selectedCountry.currency}
+                  <div className="text-xs sm:text-sm font-black text-black dark:text-white">
+                    ≈ ₩{selectedCountry.rateToKRW.toLocaleString()}
+                  </div>
                 </div>
               </div>
             </div>

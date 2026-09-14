@@ -64,6 +64,87 @@ export const CONTINENT_COUNTRY_MAP: Record<string, string[]> = {
 };
 
 /**
+ * 국가 또는 도시의 bestSeason 문자열 (예: "3월~5월 (벚꽃), 10월~11월", "11월~3월")에서
+ * 해당하는 1~12월 숫자 배열을 정확하게 추출
+ */
+export function parseBestMonthsFromSeasonString(seasonText?: string): number[] {
+  if (!seasonText) return [];
+  const text = seasonText.trim();
+  const monthsSet = new Set<number>();
+
+  // 1. 범위 매칭 (예: 11월~3월, 4월-6월, 10~11월)
+  const rangeRegex = /(\d{1,2})\s*월?\s*[~–\-]\s*(\d{1,2})\s*월?/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = rangeRegex.exec(text)) !== null) {
+    const start = parseInt(match[1], 10);
+    const end = parseInt(match[2], 10);
+
+    if (start >= 1 && start <= 12 && end >= 1 && end <= 12) {
+      if (start <= end) {
+        for (let m = start; m <= end; m++) {
+          monthsSet.add(m);
+        }
+      } else {
+        // 연도 넘어가는 경우 (예: 11월~3월 -> 11, 12, 1, 2, 3)
+        for (let m = start; m <= 12; m++) {
+          monthsSet.add(m);
+        }
+        for (let m = 1; m <= end; m++) {
+          monthsSet.add(m);
+        }
+      }
+    }
+  }
+
+  // 2. 단일 월 매칭 (예: 5월, 10월 등 단독 월)
+  const singleRegex = /(\d{1,2})\s*월/g;
+  while ((match = singleRegex.exec(text)) !== null) {
+    const m = parseInt(match[1], 10);
+    if (m >= 1 && m <= 12) {
+      monthsSet.add(m);
+    }
+  }
+
+  return Array.from(monthsSet).sort((a, b) => a - b);
+}
+
+/**
+ * CuratedTripProposal 제안을 PresetTripPlan(템플릿) 형식으로 변환
+ */
+export function convertProposalToPreset(prop: CuratedTripProposal) {
+  const schedule = prop.timeline.map((day, dayIdx) => ({
+    dayOffset: dayIdx,
+    items: day.items.map(it => ({
+      time: it.time,
+      type: (it.type || 'activity') as 'transit' | 'activity' | 'dining' | 'stay',
+      place: it.title,
+      memo: it.memo,
+      cost: ''
+    }))
+  }));
+
+  const themeToUse = ['shopping', 'food', 'activity', 'nature', 'art', 'culture'].includes(prop.theme)
+    ? (prop.theme as 'shopping' | 'food' | 'activity' | 'nature' | 'art' | 'culture')
+    : 'culture';
+
+  return {
+    id: `custom-template-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    title: prop.title,
+    subtitle: prop.subtitle,
+    country: prop.countryEn,
+    city: prop.cityName,
+    durationDays: prop.durationDays,
+    tags: [prop.countryEn, prop.theme.toUpperCase(), ...prop.tags],
+    coverImg: prop.coverImg,
+    theme: themeToUse,
+    highlights: prop.highlights,
+    schedule,
+    isCustom: true
+  };
+}
+
+/**
  * 선택 지역 및 월에 따른 스위스 미니멀 기후/기온 메트릭
  */
 export function getClimateMiniMetric(cityNameKo?: string, countryNameKo?: string, month: number = 10): string {

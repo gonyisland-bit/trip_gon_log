@@ -19,7 +19,8 @@ import {
   Sparkles,
   RefreshCw,
   ArrowLeft,
-  ChevronRight
+  ChevronRight,
+  Bookmark
 } from 'lucide-react';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { 
@@ -40,7 +41,9 @@ import {
   CuratedTripProposal,
   CONTINENTS,
   CONTINENT_COUNTRY_MAP,
-  getClimateMiniMetric
+  getClimateMiniMetric,
+  parseBestMonthsFromSeasonString,
+  convertProposalToPreset
 } from '../utils/tripRecommender';
 
 export interface TripBuilderPanelProps {
@@ -166,13 +169,20 @@ export function TripBuilderPanel({
   const [seedOffset, setSeedOffset] = useState<number>(0);
   const [targetYear, setTargetYear] = useState<number>(() => new Date().getFullYear());
   const [targetMonth, setTargetMonth] = useState<number>(0); // 0: Auto Nearest Best, 1-12: Specific Month
+  const [savedTemplateIds, setSavedTemplateIds] = useState<Set<string>>(new Set());
 
   // Selected area's best months (for highlighting the best season range in month grid)
   const activeBestMonths = useMemo<number[]>(() => {
+    // 1. 특정 도시가 선택된 경우 해당 도시의 최적 월
     if (smartCity && smartCity.bestMonths && smartCity.bestMonths.length > 0) {
       return smartCity.bestMonths;
     }
+    // 2. 국가가 선택된 경우: 국가의 bestSeason ("11월~3월", "4월~6월, 9월~10월" 등) 정밀 파싱
     if (smartCountry) {
+      const parsedCountryMonths = parseBestMonthsFromSeasonString(smartCountry.bestSeason);
+      if (parsedCountryMonths.length > 0) {
+        return parsedCountryMonths;
+      }
       const cities = WORLD_CITIES.filter(c => c.countryEn.toUpperCase() === smartCountry.nameEn.toUpperCase());
       const monthsSet = new Set<number>();
       cities.forEach(c => (c.bestMonths || []).forEach(m => monthsSet.add(m)));
@@ -244,6 +254,7 @@ export function TripBuilderPanel({
       setBuilderStep('criteria');
       setCuratedProposals([]);
       setSelectedProposalId(null);
+      setSavedTemplateIds(new Set());
 
       let matchedCity: DestinationCity | undefined;
       let matchedCountryObj: DestinationCountry | undefined;
@@ -761,6 +772,17 @@ export function TripBuilderPanel({
         onClose();
       }
     });
+  };
+
+  const handleSaveProposalAsTemplate = (prop: CuratedTripProposal) => {
+    try {
+      const presetPlan = convertProposalToPreset(prop);
+      saveCustomPreset(presetPlan);
+      setSavedTemplateIds(prev => new Set(prev).add(prop.id));
+      window.dispatchEvent(new Event('tripPresetsChanged'));
+    } catch (err) {
+      console.error('Failed to save proposal as template:', err);
+    }
   };
 
   const handleSmartBuilderGenerate = () => {
@@ -1390,11 +1412,11 @@ export function TripBuilderPanel({
                   <div className="flex items-center justify-between">
                     <label className={labelCls}>3. DEPARTURE PERIOD (출발 시기)</label>
                     <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
-                      {targetMonth === 0 ? `최적 시즌 자동 배정 (${autoBestMonth}월)` : `${targetYear}년 ${targetMonth}월`}
+                      {targetMonth === 0 ? `AUTO (${autoBestMonth}M)` : `${targetYear}년 ${targetMonth}월`}
                     </span>
                   </div>
 
-                  {/* Year Selection */}
+                  {/* Year Selection & AUTO button */}
                   <div className="flex items-center gap-1 mb-1.5">
                     {[new Date().getFullYear(), new Date().getFullYear() + 1, new Date().getFullYear() + 2].map(yr => (
                       <button
@@ -1413,19 +1435,19 @@ export function TripBuilderPanel({
                     <button
                       type="button"
                       onClick={() => setTargetMonth(0)}
-                      className={`ml-auto px-2.5 py-1 text-[10px] font-mono font-bold border transition-all cursor-pointer ${
+                      className={`ml-auto px-3 py-1 text-[10.5px] font-mono font-bold border transition-all cursor-pointer ${
                         targetMonth === 0
                           ? 'bg-red-600 text-white border-red-600'
                           : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/35'
                       }`}
-                      title="지역별 가장 가까운 최적 시즌 월 자동 배정"
+                      title="지역별 가장 가까운 최적 시즌 자동 배정"
                     >
-                      최적 시즌 자동 ({autoBestMonth}월)
+                      AUTO
                     </button>
                   </div>
 
-                  {/* Month Grid */}
-                  <div className="grid grid-cols-6 gap-1">
+                  {/* Calendar Style Circular Month Buttons */}
+                  <div className="grid grid-cols-6 sm:grid-cols-12 gap-1.5 justify-items-center py-1">
                     {Array.from({ length: 12 }).map((_, mIdx) => {
                       const m = mIdx + 1;
                       const isSelected = targetMonth === m;
@@ -1437,20 +1459,20 @@ export function TripBuilderPanel({
                           key={m}
                           type="button"
                           onClick={() => setTargetMonth(isSelected ? 0 : m)}
-                          className={`py-1.5 text-[10px] font-mono border text-center transition-all cursor-pointer relative ${
+                          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[11px] font-mono font-bold transition-all cursor-pointer relative ${
                             isSelected
-                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-black shadow-sm'
+                              ? 'bg-black text-white dark:bg-white dark:text-black font-black shadow-sm'
                               : isAutoBest
-                                ? 'border-red-500 text-red-600 dark:text-red-400 bg-red-500/10 ring-1 ring-red-500/50 font-black'
+                                ? 'bg-red-500/15 text-red-600 dark:text-red-400 ring-1.5 ring-red-500 font-black'
                                 : isBestSeason
-                                  ? 'border-orange-400 dark:border-orange-500/60 bg-orange-500/10 text-orange-600 dark:text-orange-400 font-bold hover:bg-orange-500/20'
-                                  : 'border-black/10 dark:border-white/10 text-black/50 dark:text-white/50 hover:border-black/30'
+                                  ? 'bg-orange-500/15 text-orange-600 dark:text-orange-400 font-extrabold ring-1 ring-orange-400/50 hover:bg-orange-500/25'
+                                  : 'text-black/50 dark:text-white/50 hover:bg-black/5 dark:hover:bg-white/10'
                           }`}
-                          title={isAutoBest ? `가장 빠른 추천 최적 시즌 (${m}월)` : isBestSeason ? `추천 최적 시즌 (${m}월)` : `${m}월`}
+                          title={isAutoBest ? `AUTO 추천 월 (${m}월)` : isBestSeason ? `추천 최적 시즌 (${m}월)` : `${m}월`}
                         >
-                          <span>{m}월</span>
+                          <span>{m}</span>
                           {isAutoBest && (
-                            <span className="absolute -top-1 -right-0.5 w-1.5 h-1.5 bg-red-600 rounded-full" />
+                            <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-600 rounded-full ring-1 ring-white dark:ring-black" />
                           )}
                         </button>
                       );
@@ -1513,8 +1535,8 @@ export function TripBuilderPanel({
                     onClick={() => handleProposeTrips()}
                     className="w-full py-3.5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center justify-center gap-2 cursor-pointer shadow-lg"
                   >
-                    <Sparkles className="w-4 h-4 text-orange-500 animate-pulse" />
-                    <span>PROPOSE TRIPS (추천 여정 3선 탐색)</span>
+                    <Sparkles className="w-3.5 h-3.5 text-orange-500 animate-pulse" />
+                    <span>CURATING</span>
                   </button>
                   <p className="text-[10px] font-mono text-center text-black/40 dark:text-white/40 mt-1.5">
                     선택하지 않은 항목은 해당 시즌 최고의 설정으로 자동 큐레이션됩니다.
@@ -1621,18 +1643,47 @@ export function TripBuilderPanel({
                           {prop.seasonNote}
                         </div>
 
-                        {/* Select & Create Button */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleConfirmProposalGeneration(prop);
-                          }}
-                          className="w-full py-2.5 mt-1 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-black uppercase tracking-wider hover:opacity-85 transition-opacity flex items-center justify-center gap-1.5 cursor-pointer"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                          <span>SELECT & CREATE TRIP</span>
-                        </button>
+                        {/* Action Buttons: Save Template & Select Create */}
+                        <div className="grid grid-cols-2 gap-2 mt-1">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSaveProposalAsTemplate(prop);
+                            }}
+                            disabled={savedTemplateIds.has(prop.id)}
+                            className={`py-2 px-2 text-[11px] font-mono font-bold uppercase tracking-wider border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                              savedTemplateIds.has(prop.id)
+                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                                : 'border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white text-black/80 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/5'
+                            }`}
+                            title="TEMPLATES 탭에 저장하여 나중에 언제든 불러오기"
+                          >
+                            {savedTemplateIds.has(prop.id) ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                <span>SAVED</span>
+                              </>
+                            ) : (
+                              <>
+                                <Bookmark className="w-3.5 h-3.5" />
+                                <span>SAVE TEMPLATE</span>
+                              </>
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleConfirmProposalGeneration(prop);
+                            }}
+                            className="py-2 px-2 bg-black text-white dark:bg-white dark:text-black text-[11px] font-mono font-black uppercase tracking-wider hover:opacity-85 transition-opacity flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>CREATE TRIP</span>
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
