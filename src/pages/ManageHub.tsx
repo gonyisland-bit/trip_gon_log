@@ -289,12 +289,16 @@ export function ManageHubPage({
     }
   };
 
-  // Top-level mode tabs ordered: 'HOME' | 'ARCHIVE' | 'MAGAZINE' | 'MAP' | 'BGM' | 'PRESETS' | 'TRASH' | 'CLEANUP'
-  const [activeMode, setActiveMode] = useState<'HOME' | 'ARCHIVE' | 'MAGAZINE' | 'MAP' | 'BGM' | 'PRESETS' | 'TRASH' | 'CLEANUP'>(() => {
+  // Top-level mode tabs ordered: 'HOME' | 'ARCHIVE' | 'MAGAZINE' | 'MAP' | 'BGM' | 'PRESETS' | 'TRASH'
+  const [activeMode, setActiveMode] = useState<'HOME' | 'ARCHIVE' | 'MAGAZINE' | 'MAP' | 'BGM' | 'PRESETS' | 'TRASH'>(() => {
     const fromSession = sessionStorage.getItem('initialManageTab');
-    if (fromSession && ['HOME', 'ARCHIVE', 'MAGAZINE', 'MAP', 'BGM', 'PRESETS', 'TRASH', 'CLEANUP'].includes(fromSession)) {
+    if (fromSession && ['HOME', 'ARCHIVE', 'MAGAZINE', 'MAP', 'BGM', 'PRESETS', 'TRASH'].includes(fromSession)) {
       sessionStorage.removeItem('initialManageTab');
       return fromSession as any;
+    }
+    if (fromSession === 'CLEANUP') {
+      sessionStorage.removeItem('initialManageTab');
+      return 'TRASH';
     }
     return 'HOME';
   });
@@ -1222,17 +1226,20 @@ export function ManageHubPage({
       };
 
       setDiagReport(report);
+      return report;
     } catch (err: any) {
       console.error('Diagnostic scan error:', err);
       alert(`데이터베이스 진단 스캔 중 오류가 발생했습니다:\n${err?.message || err}`);
+      return null;
     } finally {
       setIsScanning(false);
     }
   };
 
-  const handleExecuteCleanup = async () => {
-    if (!diagReport) return;
-    if (!confirm('안전 최적화 및 찌꺼기 정리를 실행하시겠습니까?\n\n[안전 보장 원칙]\n- 현재 등록된 모든 활성 여정 및 타임라인 데이터는 100% 안전하게 온전히 보존됩니다.\n- 이미 삭제된 과거 여정의 고아(Orphaned) 문서와 폐기된 subtitle 속성만 선별 정리됩니다.\n- 매거진은 원본 타임라인 데이터를 기준으로 완벽하게 최적화 및 동기화됩니다.')) {
+  const handleExecuteCleanup = async (reportParam?: DiagnosticReport, skipConfirm = false) => {
+    const targetReport = reportParam || diagReport;
+    if (!targetReport) return;
+    if (!skipConfirm && !confirm('안전 최적화 및 찌꺼기 정리를 실행하시겠습니까?\n\n[안전 보장 원칙]\n- 현재 등록된 모든 활성 여정 및 타임라인 데이터는 100% 안전하게 온전히 보존됩니다.\n- 이미 삭제된 과거 여정의 고아(Orphaned) 문서와 폐기된 subtitle 속성만 선별 정리됩니다.\n- 매거진은 원본 타임라인 데이터를 기준으로 완벽하게 최적화 및 동기화됩니다.')) {
       return;
     }
 
@@ -1253,35 +1260,35 @@ export function ManageHubPage({
       logs.push(`[${new Date().toLocaleTimeString()}] 🚀 데이터 최적화 및 클린화 작업 시작...`);
 
       // 1. Delete orphaned timeline docs
-      for (const item of diagReport.orphanedTimelineDocs) {
+      for (const item of targetReport.orphanedTimelineDocs) {
         await deleteDoc(doc(db, 'users', uid, 'timeline', item.id));
         orphanedDeleted++;
         logs.push(`- [타임라인] 고아 문서 안전 제거 (ID: ${item.id})`);
       }
 
       // 2. Delete orphaned stays
-      for (const item of diagReport.orphanedStaysDocs) {
+      for (const item of targetReport.orphanedStaysDocs) {
         await deleteDoc(doc(db, 'users', uid, 'stays', item.id));
         orphanedDeleted++;
         logs.push(`- [숙소] 고아 문서 안전 제거 (ID: ${item.id})`);
       }
 
       // 3. Delete orphaned flights
-      for (const item of diagReport.orphanedFlightsDocs) {
+      for (const item of targetReport.orphanedFlightsDocs) {
         await deleteDoc(doc(db, 'users', uid, 'flights', item.id));
         orphanedDeleted++;
         logs.push(`- [항공] 고아 문서 안전 제거 (ID: ${item.id})`);
       }
 
       // 4. Delete orphaned transits
-      for (const item of diagReport.orphanedTransitsDocs) {
+      for (const item of targetReport.orphanedTransitsDocs) {
         await deleteDoc(doc(db, 'users', uid, 'transits', item.id));
         orphanedDeleted++;
         logs.push(`- [교통] 고아 문서 안전 제거 (ID: ${item.id})`);
       }
 
       // 5. Clean deprecated subtitle field
-      for (const item of diagReport.deprecatedSubtitleDocs) {
+      for (const item of targetReport.deprecatedSubtitleDocs) {
         try {
           await updateDoc(doc(db, 'users', uid, item.collection, item.id), {
             subtitle: deleteField()
@@ -1294,15 +1301,15 @@ export function ManageHubPage({
       }
 
       // 6. Clear obsolete storage keys
-      for (const key of diagReport.obsoleteStorageKeys) {
+      for (const key of targetReport.obsoleteStorageKeys) {
         localStorage.removeItem(key);
         cacheCleaned++;
         logs.push(`- [로컬 캐시] 폐기된 임시 키 정리: ${key}`);
       }
 
       // 7. Clean and Optimize Magazine Moments
-      if (diagReport.orphanedMagazineMoments.length > 0 || diagReport.outOfSyncMagazineMoments.length > 0) {
-        const orphanedMomentIds = new Set(diagReport.orphanedMagazineMoments.map(m => m.momentId));
+      if (targetReport.orphanedMagazineMoments.length > 0 || targetReport.outOfSyncMagazineMoments.length > 0) {
+        const orphanedMomentIds = new Set(targetReport.orphanedMagazineMoments.map(m => m.momentId));
         
         // Prepare timeline lookup
         const allTripTimelineItems: TimelineItem[] = [];
@@ -1408,6 +1415,32 @@ export function ManageHubPage({
       console.error('Execute cleanup error:', err);
       alert(`정리 작업 중 오류가 발생했습니다:\n${err?.message || err}`);
     } finally {
+      setIsCleaning(false);
+    }
+  };
+
+  /** TRASH 탭 통합: 스캔과 안전 정리를 원터치로 한 번에 실행 */
+  const handleOneTouchOptimize = async () => {
+    if (isScanning || isCleaning) return;
+    setIsScanning(true);
+    setCleanLog([`[${new Date().toLocaleTimeString()}] 🔍 데이터베이스 무결성 정밀 스캔 시작...`]);
+    try {
+      const report = await handleScanCleanup();
+      if (!report) {
+        setCleanLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ❌ 스캔 중 오류가 발생했습니다.`]);
+        return;
+      }
+      if (!report.isClean) {
+        setCleanLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ⚠️ 정리 대상 발견: 고아 문서 및 캐시 자동 정리 진행...`]);
+        await handleExecuteCleanup(report, true);
+      } else {
+        setCleanLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ✅ 모든 데이터가 100% 정상 최적화 상태입니다 (정리할 찌꺼기 없음).`]);
+      }
+    } catch (err: any) {
+      console.error('One-touch optimize error:', err);
+      setCleanLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ❌ 최적화 중 오류: ${err?.message || err}`]);
+    } finally {
+      setIsScanning(false);
       setIsCleaning(false);
     }
   };
@@ -3246,7 +3279,6 @@ export function ManageHubPage({
       case 'MAP':
         return 'map';
       case 'PRESETS':
-      case 'CLEANUP':
       case 'HOME':
       default:
         return 'home';
@@ -3278,17 +3310,16 @@ export function ManageHubPage({
           </div>
         </div>
 
-        {/* Mode Switcher: home / trip / magazine / map / bgm / presets / trash / opt */}
+        {/* Mode Switcher: HOME / TRIP / MAGAZINE / MAP / BGM / PRESETS / TRASH */}
         <div className="w-full md:w-auto max-w-full overflow-x-auto scrollbar-none flex items-center border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 p-0.5 rounded-none shrink-0">
           {([
-            { id: 'HOME', label: 'home' },
-            { id: 'ARCHIVE', label: 'trip' },
-            { id: 'MAGAZINE', label: 'magazine' },
-            { id: 'MAP', label: 'map' },
-            { id: 'BGM', label: 'bgm' },
-            { id: 'PRESETS', label: 'presets' },
-            { id: 'TRASH', label: 'trash' },
-            { id: 'CLEANUP', label: 'opt' },
+            { id: 'HOME', label: 'HOME' },
+            { id: 'ARCHIVE', label: 'TRIP' },
+            { id: 'MAGAZINE', label: 'MAGAZINE' },
+            { id: 'MAP', label: 'MAP' },
+            { id: 'BGM', label: 'BGM' },
+            { id: 'PRESETS', label: 'PRESETS' },
+            { id: 'TRASH', label: 'TRASH' },
           ] as const).map(tab => (
             <button
               key={tab.id}
@@ -3296,12 +3327,9 @@ export function ManageHubPage({
                 if (activeMode === tab.id) return;
                 executeWithGuard(() => {
                   setActiveMode(tab.id);
-                  if (tab.id === 'CLEANUP' && !diagReport && !isScanning) {
-                    handleScanCleanup();
-                  }
                 });
               }}
-              className={`flex-1 md:flex-none px-2.5 sm:px-3.5 py-1.5 text-xs font-mono font-bold lowercase tracking-tight transition-colors cursor-pointer whitespace-nowrap text-center ${
+              className={`flex-1 md:flex-none px-2.5 sm:px-3.5 py-1.5 text-xs font-mono font-bold uppercase tracking-tight transition-colors cursor-pointer whitespace-nowrap text-center ${
                 activeMode === tab.id
                   ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
                   : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -6669,10 +6697,67 @@ export function ManageHubPage({
                   TRASH SETTING ({trashedJourneys.length + trashedSections.length})
                 </h2>
                 <span className="text-xs font-mono text-black/50 dark:text-white/50">
-                  삭제된 여정 및 매거진 섹션은 영구 삭제 전까지 안전하게 보관됩니다.
+                  삭제된 여정 보관 및 데이터베이스 무결성 최적화
                 </span>
               </div>
             </div>
+
+            {/* Swiss Minimal One-Touch Optimizer Bar (1px border, flat monochrome, no box-in-box) */}
+            <div className="border border-black/15 dark:border-white/15 p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white dark:bg-[#141414]">
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <div className="flex items-center gap-2">
+                  <Database className="w-4 h-4 text-black dark:text-white" />
+                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                    DATABASE OPTIMIZER
+                  </span>
+                  {diagReport?.isClean && (
+                    <span className="text-[9.5px] font-mono font-bold px-1.5 py-0.2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                      100% HEALTHY
+                    </span>
+                  )}
+                </div>
+                <span className="text-[11px] font-mono text-black/50 dark:text-white/50 truncate">
+                  {diagReport 
+                    ? `ACTIVE: ${diagReport.activeTripsCount} trips (${diagReport.activeTimelineCount} timelines) | ORPHANED: ${diagReport.orphanedTimelineDocs.length + diagReport.orphanedStaysDocs.length + diagReport.orphanedFlightsDocs.length + diagReport.orphanedTransitsDocs.length + diagReport.orphanedMagazineMoments.length} items`
+                    : '고아 문서, 폐기 필드 및 로컬 캐시를 안전하게 자동 스캔 및 정리합니다.'}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleOneTouchOptimize}
+                disabled={isScanning || isCleaning}
+                className="px-3.5 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-xs font-mono font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50 shadow-xs"
+                title="데이터베이스 무결성을 진단하고 불필요한 고아 문서를 원터치로 정리합니다."
+              >
+                {isScanning || isCleaning ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>{isScanning ? 'SCANNING...' : 'OPTIMIZING...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>ONE-TOUCH OPTIMIZE</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Clean Log Output (if any) */}
+            {cleanLog.length > 0 && (
+              <div className="border border-black/10 dark:border-white/10 p-3 bg-black/[0.02] dark:bg-white/[0.02] text-[11px] font-mono space-y-1">
+                <div className="flex items-center justify-between text-[10px] text-black/40 dark:text-white/40 font-bold uppercase mb-1">
+                  <span>OPTIMIZATION REPORT</span>
+                  <button type="button" onClick={() => setCleanLog([])} className="hover:text-black dark:hover:text-white cursor-pointer">CLEAR</button>
+                </div>
+                <div className="max-h-32 overflow-y-auto space-y-0.5 text-black/80 dark:text-white/80">
+                  {cleanLog.map((log, idx) => (
+                    <div key={idx} className="truncate">{log}</div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Action Toolbar: Multi-select & Batch Actions */}
             {(trashedJourneys.length > 0 || trashedSections.length > 0) && (
@@ -6890,376 +6975,6 @@ export function ManageHubPage({
                     </div>
                   </div>
                 )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* MODE: CLEANUP & DATABASE OPTIMIZER (데이터 클린화 및 최적화 도구)     */}
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {activeMode === 'CLEANUP' && (
-          <div
-            onScroll={handleContainerScroll}
-            className="w-full max-w-4xl mx-auto p-4 sm:p-8 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200"
-          >
-            {/* Header Title Section */}
-            <div className="flex flex-col gap-2 border-b-2 border-black dark:border-white pb-4">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
-                    DATABASE INTEGRITY & REPOSITORY OPTIMIZER
-                  </span>
-                  <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans flex items-center gap-2.5">
-                    <Database className="w-6 h-6 sm:w-7 sm:h-7 text-red-600 dark:text-red-500" />
-                    <span>CLEANUP & OPTIMIZE</span>
-                  </h2>
-                  <p className="text-xs text-black/60 dark:text-white/60 font-mono mt-1">
-                    [데이터베이스 무결성 검사 및 불필요한 찌꺼기 / 고아 데이터 안전 선별 정리]
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleScanCleanup}
-                    disabled={isScanning || isCleaning}
-                    className="px-4 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-wider font-sans hover:opacity-90 transition-all flex items-center gap-2 cursor-pointer shadow-sm rounded-none disabled:opacity-50"
-                  >
-                    {isScanning ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        <span>진단 검사 중...</span>
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="w-3.5 h-3.5" />
-                        <span>정밀 진단 스캔 (Scan)</span>
-                      </>
-                    )}
-                  </button>
-
-                  {diagReport && !diagReport.isClean && (
-                    <button
-                      type="button"
-                      onClick={handleExecuteCleanup}
-                      disabled={isScanning || isCleaning}
-                      className="px-4 py-2 bg-red-600 text-white text-xs font-black uppercase tracking-wider font-sans hover:bg-red-700 transition-all flex items-center gap-2 cursor-pointer shadow-sm rounded-none disabled:opacity-50"
-                    >
-                      {isCleaning ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>정리 실행 중...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>안전 정리 실행 (Clean)</span>
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* 0. Magazine Sections Firestore Direct Diagnostic Panel */}
-            <div className="border border-red-500/40 bg-red-500/[0.03] p-4 flex flex-col gap-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
-                    MAGAZINE SECTIONS FIRESTORE DIAGNOSTIC
-                  </span>
-                  <span className="text-xs text-black/70 dark:text-white/70">
-                    Firestore에 실제 저장된 매거진 섹션 데이터를 직접 읽어서 확인하고 복구합니다.
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={handleLoadFirestoreMagazineSections}
-                    disabled={isLoadingFirestoreMag}
-                    className="px-3 py-2 bg-black text-white dark:bg-white dark:text-black text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hover:opacity-80 disabled:opacity-40 transition-all"
-                  >
-                    {isLoadingFirestoreMag ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5" />}
-                    <span>Firestore 직접 읽기 (SCAN)</span>
-                  </button>
-                  {firestoreMagSections && firestoreMagSections.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={handleForceRestoreSectionsFromFirestore}
-                      className="px-3 py-2 bg-emerald-600 text-white text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hover:bg-emerald-700 transition-all"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>편집기로 불러오기 (RESTORE)</span>
-                    </button>
-                  )}
-                  {sectionsList.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={handleForceSaveCurrentSectionsToFirestore}
-                      className="px-3 py-2 bg-red-600 text-white text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer hover:bg-red-700 transition-all"
-                    >
-                      <Save className="w-3.5 h-3.5" />
-                      <span>현재 섹션 강제 저장 (FORCE SAVE)</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Diagnostic Result */}
-              {firestoreMagSections !== null && (
-                <div className="flex flex-col gap-2">
-                  <div className={`flex items-center gap-2 text-xs font-mono font-bold ${firestoreMagSections.length > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}`}>
-                    {firestoreMagSections.length > 0 ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                    <span>
-                      Firestore 저장 상태: {firestoreMagSections.length > 0 ? `${firestoreMagSections.length}개 섹션 발견 (데이터 존재)` : '❌ magazineSections 필드 없음 또는 빈 배열 (데이터 없음)'}
-                    </span>
-                    {firestoreMagLoadedAt && <span className="text-black/40 dark:text-white/40 text-[10px] font-normal ml-2">조회 시각: {firestoreMagLoadedAt}</span>}
-                  </div>
-                  {firestoreMagSections.length > 0 && (
-                    <div className="space-y-1.5 max-h-40 overflow-y-auto border border-black/10 dark:border-white/10 p-3 bg-white dark:bg-[#121212]">
-                      {firestoreMagSections.map((sec, idx) => (
-                        <div key={sec.id} className="flex items-center justify-between text-xs py-1 border-b border-black/5 dark:border-white/5 last:border-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-mono text-black/40 dark:text-white/40">#{idx + 1}</span>
-                            <span className="font-bold text-black dark:text-white uppercase">{sec.title}</span>
-                            <span className="text-black/50 dark:text-white/50 font-normal">{sec.subtitle}</span>
-                          </div>
-                          <span className="text-[10px] font-mono px-1.5 py-0.5 bg-black/5 dark:bg-white/5">
-                            {sec.items?.length || 0} items
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {firestoreMagSections.length === 0 && (
-                    <div className="p-3 bg-red-500/5 border border-red-500/20 text-xs text-red-700 dark:text-red-400">
-                      ⚠️ Firestore에 매거진 섹션 데이터가 없습니다. "현재 섹션 강제 저장 (FORCE SAVE)" 버튼으로 현재 편집기 섹션을 저장하거나, MAGAZINE 탭에서 섹션을 다시 구성 후 저장하세요.
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* 1. Absolute Safety Guarantee Notice Banner */}
-
-            <div className="bg-emerald-500/10 border border-emerald-500/30 p-4 flex items-start gap-3">
-              <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-              <div className="text-xs leading-relaxed">
-                <span className="font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider block mb-0.5">
-                  100% 안전 보장 원칙 (Zero Data Loss Safety Principle)
-                </span>
-                <span className="text-emerald-950 dark:text-emerald-200/80">
-                  현재 등록되어 있는 모든 활성 여정({trips.length + plans.length}개) 및 연결된 타임라인, 사진, 항공, 숙소, 교통 데이터는 <strong>절대 삭제되지 않고 100% 온전히 보존</strong>됩니다. 오직 이미 삭제된 과거 여정의 고아(Orphaned) 문서 및 폐기된 <code className="px-1 py-0.5 bg-black/10 dark:bg-white/10 font-mono">subtitle</code> 속성만 안전하게 정리됩니다.
-                </span>
-              </div>
-            </div>
-
-            {/* 2. System Status Diagnostic Cards */}
-            {isScanning ? (
-              <div className="py-16 flex flex-col items-center justify-center gap-4 bg-black/[0.02] dark:bg-white/[0.02] border border-black/15 dark:border-white/15">
-                <Loader2 className="w-8 h-8 animate-spin text-red-600" />
-                <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
-                  Firestore & Cloudflare R2 스토리지 메타데이터 정밀 분석 중...
-                </span>
-              </div>
-            ) : diagReport ? (
-              <div className="flex flex-col gap-6">
-                {/* Metrics 3-column Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {/* Card 1: Active Protected Data */}
-                  <div className="p-4 bg-white dark:bg-[#161616] border border-black/15 dark:border-white/15 flex flex-col justify-between gap-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
-                        PROTECTED ACTIVE DATA
-                      </span>
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    </div>
-                    <div>
-                      <div className="text-2xl sm:text-3xl font-black font-mono">
-                        {diagReport.activeTripsCount} <span className="text-sm font-sans font-normal text-black/60 dark:text-white/60">Journeys</span>
-                      </div>
-                      <div className="text-xs text-black/60 dark:text-white/60 font-mono mt-1">
-                        연결된 타임라인: {diagReport.activeTimelineCount}개 (보호됨)
-                      </div>
-                    </div>
-                    <span className="text-[9px] font-mono px-1.5 py-0.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 w-fit">
-                      100% HEALTHY & PRESERVED
-                    </span>
-                  </div>
-
-                  {/* Card 2: Orphaned Documents */}
-                  <div className={`p-4 bg-white dark:bg-[#161616] border flex flex-col justify-between gap-3 ${
-                    (diagReport.orphanedTimelineDocs.length + diagReport.orphanedStaysDocs.length + diagReport.orphanedFlightsDocs.length + diagReport.orphanedTransitsDocs.length + diagReport.orphanedMagazineMoments.length) > 0
-                      ? 'border-amber-500/50 bg-amber-500/[0.02]'
-                      : 'border-black/15 dark:border-white/15'
-                  }`}>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
-                        ORPHANED DOCUMENTS
-                      </span>
-                      {(diagReport.orphanedTimelineDocs.length + diagReport.orphanedStaysDocs.length + diagReport.orphanedFlightsDocs.length + diagReport.orphanedTransitsDocs.length + diagReport.orphanedMagazineMoments.length) > 0 ? (
-                        <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                      ) : (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                      )}
-                    </div>
-                    <div>
-                      <div className="text-2xl sm:text-3xl font-black font-mono">
-                        {diagReport.orphanedTimelineDocs.length + diagReport.orphanedStaysDocs.length + diagReport.orphanedFlightsDocs.length + diagReport.orphanedTransitsDocs.length + diagReport.orphanedMagazineMoments.length}{' '}
-                        <span className="text-sm font-sans font-normal text-black/60 dark:text-white/60">Items</span>
-                      </div>
-                      <div className="text-xs text-black/60 dark:text-white/60 font-mono mt-1">
-                        과거 삭제 여정 잔여물 (타임라인/숙소/매거진 등)
-                      </div>
-                    </div>
-                    <span className={`text-[9px] font-mono px-1.5 py-0.5 w-fit ${
-                      (diagReport.orphanedTimelineDocs.length + diagReport.orphanedStaysDocs.length + diagReport.orphanedFlightsDocs.length + diagReport.orphanedTransitsDocs.length + diagReport.orphanedMagazineMoments.length) > 0
-                        ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
-                        : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                    }`}>
-                      {(diagReport.orphanedTimelineDocs.length + diagReport.orphanedStaysDocs.length + diagReport.orphanedFlightsDocs.length + diagReport.orphanedTransitsDocs.length + diagReport.orphanedMagazineMoments.length) > 0
-                        ? '정리 대상 발견 (CLEANUP READY)'
-                        : '고아 데이터 없음 (CLEAN)'}
-                    </span>
-                  </div>
-
-                  {/* Card 3: Magazine & Fields Optimization */}
-                  <div className={`p-4 bg-white dark:bg-[#161616] border flex flex-col justify-between gap-3 ${
-                    (diagReport.outOfSyncMagazineMoments.length + diagReport.deprecatedSubtitleDocs.length + diagReport.obsoleteStorageKeys.length) > 0
-                      ? 'border-amber-500/50 bg-amber-500/[0.02]'
-                      : 'border-black/15 dark:border-white/15'
-                  }`}>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
-                        OPTIMIZATION & CACHE
-                      </span>
-                      {(diagReport.outOfSyncMagazineMoments.length + diagReport.deprecatedSubtitleDocs.length + diagReport.obsoleteStorageKeys.length) > 0 ? (
-                        <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                      ) : (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                      )}
-                    </div>
-                    <div>
-                      <div className="text-2xl sm:text-3xl font-black font-mono">
-                        {diagReport.outOfSyncMagazineMoments.length + diagReport.deprecatedSubtitleDocs.length + diagReport.obsoleteStorageKeys.length}{' '}
-                        <span className="text-sm font-sans font-normal text-black/60 dark:text-white/60">Items</span>
-                      </div>
-                      <div className="text-xs text-black/60 dark:text-white/60 font-mono mt-1">
-                        매거진 동기화: {diagReport.outOfSyncMagazineMoments.length}개 / 폐기 필드: {diagReport.deprecatedSubtitleDocs.length}개 / 캐시: {diagReport.obsoleteStorageKeys.length}개
-                      </div>
-                    </div>
-                    <span className={`text-[9px] font-mono px-1.5 py-0.5 w-fit ${
-                      (diagReport.outOfSyncMagazineMoments.length + diagReport.deprecatedSubtitleDocs.length + diagReport.obsoleteStorageKeys.length) > 0
-                        ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
-                        : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                    }`}>
-                      {(diagReport.outOfSyncMagazineMoments.length + diagReport.deprecatedSubtitleDocs.length + diagReport.obsoleteStorageKeys.length) > 0
-                        ? '최적화 정리 권장'
-                        : '최적화 상태 (OPTIMIZED)'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Detailed Findings Table */}
-                <div className="flex flex-col gap-3 p-4 bg-white dark:bg-[#161616] border border-black/15 dark:border-white/15">
-                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
-                    진단 상세 항목 (Detailed Audit Log)
-                  </span>
-
-                  {diagReport.isClean ? (
-                    <div className="py-8 text-center flex flex-col items-center justify-center gap-2 text-emerald-600 dark:text-emerald-400">
-                      <CheckCircle2 className="w-6 h-6" />
-                      <span className="text-xs font-bold font-sans">
-                        데이터베이스가 완벽하게 최적화되어 있으며 정리할 불필요한 데이터가 없습니다.
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="space-y-2 max-h-60 overflow-y-auto text-xs font-mono border border-black/10 dark:border-white/10 p-2 bg-black/[0.02] dark:bg-white/[0.02]">
-                      {diagReport.orphanedTimelineDocs.map((item, idx) => (
-                        <div key={`orph-timeline-${idx}`} className="flex items-center justify-between text-amber-700 dark:text-amber-300 py-0.5 border-b border-black/5 dark:border-white/5">
-                          <span>[고아 타임라인 문서] ID: {item.id} (연결 여정 없음)</span>
-                          <span className="text-[10px] px-1 bg-amber-500/10 font-bold">DELETE READY</span>
-                        </div>
-                      ))}
-                      {diagReport.orphanedMagazineMoments.map((item, idx) => (
-                        <div key={`orph-mag-${idx}`} className="flex items-center justify-between text-amber-700 dark:text-amber-300 py-0.5 border-b border-black/5 dark:border-white/5">
-                          <span>[고아 매거진 카드] '{item.title}' (섹션: {item.sectionTitle} / 삭제된 여정 ID: {item.tripId})</span>
-                          <span className="text-[10px] px-1 bg-amber-500/10 font-bold">DELETE READY</span>
-                        </div>
-                      ))}
-                      {diagReport.outOfSyncMagazineMoments.map((item, idx) => (
-                        <div key={`sync-mag-${idx}`} className="flex items-center justify-between text-blue-700 dark:text-blue-300 py-0.5 border-b border-black/5 dark:border-white/5">
-                          <span>[매거진 최적화 대상] '{item.title}' ({item.reason})</span>
-                          <span className="text-[10px] px-1 bg-blue-500/10 font-bold">OPTIMIZE READY</span>
-                        </div>
-                      ))}
-                      {diagReport.orphanedStaysDocs.map((item, idx) => (
-                        <div key={`orph-stay-${idx}`} className="flex items-center justify-between text-amber-700 dark:text-amber-300 py-0.5 border-b border-black/5 dark:border-white/5">
-                          <span>[고아 숙소 문서] ID: {item.id}</span>
-                          <span className="text-[10px] px-1 bg-amber-500/10 font-bold">DELETE READY</span>
-                        </div>
-                      ))}
-                      {diagReport.orphanedFlightsDocs.map((item, idx) => (
-                        <div key={`orph-flight-${idx}`} className="flex items-center justify-between text-amber-700 dark:text-amber-300 py-0.5 border-b border-black/5 dark:border-white/5">
-                          <span>[고아 항공 문서] ID: {item.id}</span>
-                          <span className="text-[10px] px-1 bg-amber-500/10 font-bold">DELETE READY</span>
-                        </div>
-                      ))}
-                      {diagReport.orphanedTransitsDocs.map((item, idx) => (
-                        <div key={`orph-transit-${idx}`} className="flex items-center justify-between text-amber-700 dark:text-amber-300 py-0.5 border-b border-black/5 dark:border-white/5">
-                          <span>[고아 교통 문서] ID: {item.id}</span>
-                          <span className="text-[10px] px-1 bg-amber-500/10 font-bold">DELETE READY</span>
-                        </div>
-                      ))}
-                      {diagReport.deprecatedSubtitleDocs.map((item, idx) => (
-                        <div key={`dep-sub-${idx}`} className="flex items-center justify-between text-blue-700 dark:text-blue-300 py-0.5 border-b border-black/5 dark:border-white/5">
-                          <span>[폐기된 subtitle 필드] {item.collection} / {item.id}</span>
-                          <span className="text-[10px] px-1 bg-blue-500/10 font-bold">STRIP FIELD</span>
-                        </div>
-                      ))}
-                      {diagReport.obsoleteStorageKeys.map((key, idx) => (
-                        <div key={`obs-key-${idx}`} className="flex items-center justify-between text-purple-700 dark:text-purple-300 py-0.5 border-b border-black/5 dark:border-white/5">
-                          <span>[로컬 임시 키] {key}</span>
-                          <span className="text-[10px] px-1 bg-purple-500/10 font-bold">CLEAR KEY</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Execution Log Terminal */}
-                {cleanLog.length > 0 && (
-                  <div className="flex flex-col gap-2 p-4 bg-black text-emerald-400 font-mono text-xs border border-emerald-500/30">
-                    <div className="flex items-center gap-2 text-white/60 text-[10px] uppercase font-bold border-b border-white/10 pb-1">
-                      <Terminal className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>실행 로그 (EXECUTION TERMINAL)</span>
-                    </div>
-                    <div className="space-y-1 max-h-48 overflow-y-auto">
-                      {cleanLog.map((log, idx) => (
-                        <div key={idx}>{log}</div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="py-16 flex flex-col items-center justify-center gap-4 bg-white dark:bg-[#161616] border border-black/15 dark:border-white/15 text-center p-6">
-                <Database className="w-12 h-12 text-black/30 dark:text-white/30" />
-                <div className="flex flex-col gap-1 max-w-md">
-                  <span className="text-sm font-bold uppercase">시스템 최적화 진단 준비 완료</span>
-                  <span className="text-xs text-black/60 dark:text-white/60 font-sans">
-                    위의 <strong>'정밀 진단 스캔 (Scan)'</strong> 버튼을 클릭하여 Firestore 데이터베이스와 로컬 캐시의 찌꺼기 및 고아 데이터를 안전하게 진단하세요.
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleScanCleanup}
-                  className="px-6 py-2.5 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-wider font-sans hover:opacity-90 transition-all cursor-pointer rounded-none"
-                >
-                  진단 스캔 시작하기
-                </button>
               </div>
             )}
           </div>

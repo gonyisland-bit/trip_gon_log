@@ -1376,9 +1376,9 @@ export function getCountryLiveTime(countryCode: string, now: Date) {
     weekday: 'short'
   }).format(now);
 
-  // 12-hour format for travel clock widget (am/pm, 8.55)
+  // 12-hour format for travel clock widget (am/pm, 8:55)
   let ampm = 'am';
-  let dotTime = '12.00';
+  let dotTime = '12:00';
   try {
     const targetDateObj = new Date(now.toLocaleString('en-US', { timeZone }));
     const rawH = targetDateObj.getHours();
@@ -1386,7 +1386,7 @@ export function getCountryLiveTime(countryCode: string, now: Date) {
     ampm = rawH >= 12 ? 'pm' : 'am';
     const h12 = rawH % 12 || 12;
     const m2 = String(rawM).padStart(2, '0');
-    dotTime = `${h12}.${m2}`;
+    dotTime = `${h12}:${m2}`;
   } catch (_) {}
 
   // Time difference in hours compared to Korea (KST, UTC+9)
@@ -1404,6 +1404,17 @@ export function getCountryLiveTime(countryCode: string, now: Date) {
   } catch (_) {
     return { timeStr, dateStr, diffText: '±0:00', diffHours: 0, timeZone, second: now.getSeconds(), ampm, dotTime };
   }
+}
+
+/** 1,000원에 가장 가까운 통화 기준 단위(1, 10, 100, 1,000, 10,000) 산출 */
+function getOptimalCurrencyUnit(rate: number, currency: string): number {
+  if (currency === 'JPY') return 100;
+  if (currency === 'VND' || currency === 'IDR') return 10000;
+  if (!rate || rate <= 0) return 1;
+  const target = 1000;
+  const ideal = target / rate;
+  const power = Math.round(Math.log10(ideal));
+  return Math.max(1, Math.pow(10, power));
 }
 
 interface MapPinGroup {
@@ -2999,12 +3010,19 @@ export function MapHubPage({
                     {selectedCountry.currencySymbol} {selectedCountry.currency}
                   </div>
                 </div>
-                <div className="mt-2 pt-2 border-t border-black/10 dark:border-white/10 text-[10.5px] font-mono font-bold text-black/70 dark:text-white/70">
-                  1 {selectedCountry.currency}
-                  <div className="text-xs sm:text-sm font-black text-black dark:text-white">
-                    ≈ ₩{selectedCountry.rateToKRW.toLocaleString()}
-                  </div>
-                </div>
+                {(() => {
+                  const unit = getOptimalCurrencyUnit(selectedCountry.rateToKRW, selectedCountry.currency);
+                  const approxKRW = Math.round(selectedCountry.rateToKRW * unit);
+
+                  return (
+                    <div className="mt-2 pt-2 border-t border-black/10 dark:border-white/10 text-[10.5px] font-mono font-bold text-black/70 dark:text-white/70">
+                      {unit.toLocaleString()} {selectedCountry.currency}
+                      <div className="text-xs sm:text-sm font-black text-black dark:text-white">
+                        ≈ ₩{approxKRW.toLocaleString()}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 

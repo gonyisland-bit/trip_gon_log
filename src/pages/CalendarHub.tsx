@@ -1440,9 +1440,9 @@ export function CalendarHubPage({
           </div>
 
           {/* Unified Controls Block (모바일: 1줄 완전 통합 / 웹: [ < TODAY > ] 와 [ MONTH | YEAR ] 가 나란히 결합) */}
-          <div className="flex items-center justify-between md:justify-end gap-1.5 sm:gap-2 w-full md:w-auto shrink-0 flex-nowrap">
+          <div className="flex items-center justify-between md:justify-end gap-1 sm:gap-2 w-full md:w-auto shrink-0 flex-nowrap">
             {/* 1. < TODAY > Navigation (h-7 sm:h-8 통일) */}
-            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
               <button
                 type="button"
                 onClick={viewMode === 'month' ? handlePrevMonth : () => setCurrentYear(prev => prev - 1)}
@@ -1455,7 +1455,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={handleGoToday}
-                className="h-7 sm:h-8 px-2 sm:px-2.5 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black text-black dark:text-white hover:text-white dark:hover:bg-white dark:hover:text-black text-[10.5px] sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center justify-center shrink-0"
+                className="h-7 sm:h-8 px-1.5 sm:px-2.5 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black text-black dark:text-white hover:text-white dark:hover:bg-white dark:hover:text-black text-[10px] sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center justify-center shrink-0"
                 title="오늘 날짜로 이동"
               >
                 TODAY
@@ -1472,11 +1472,11 @@ export function CalendarHubPage({
             </div>
 
             {/* 2. [ MONTH | YEAR ] View Mode Switcher (h-7 sm:h-8 통일) */}
-            <div className="h-7 sm:h-8 flex items-center p-0.5 bg-black/5 dark:bg-white/10 rounded-full border border-black/10 dark:border-white/10 font-mono text-[10.5px] sm:text-xs font-bold shrink-0">
+            <div className="h-7 sm:h-8 flex items-center p-0.5 bg-black/5 dark:bg-white/10 rounded-full border border-black/10 dark:border-white/10 font-mono text-[10px] sm:text-xs font-bold shrink-0">
               <button
                 type="button"
                 onClick={() => toggleViewMode('month')}
-                className={`h-full px-2 sm:px-2.5 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
+                className={`h-full px-1.5 sm:px-2.5 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
                   viewMode === 'month'
                     ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
                     : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -1489,7 +1489,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={() => toggleViewMode('year')}
-                className={`h-full px-2 sm:px-2.5 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
+                className={`h-full px-1.5 sm:px-2.5 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
                   viewMode === 'year'
                     ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
                     : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -1501,7 +1501,7 @@ export function CalendarHubPage({
               </button>
             </div>
 
-            {/* 3. Edit Mode Toggle Button (h-7 sm:h-8 통일) */}
+            {/* 3. Edit Mode Toggle Button (h-7 sm:h-8 통일 - 모바일에서는 ON으로 축약하여 폭 확보) */}
             {viewMode === 'month' && (
               <button
                 type="button"
@@ -1514,7 +1514,7 @@ export function CalendarHubPage({
                     return next;
                   });
                 }}
-                className={`h-7 sm:h-8 px-2.5 sm:px-3 rounded-full border text-[10.5px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-xs ${
+                className={`h-7 sm:h-8 px-2 sm:px-3 rounded-full border text-[10px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 shadow-xs ${
                   isEditMode
                     ? 'bg-red-600 text-white border-red-600 ring-2 ring-red-600/30'
                     : 'bg-white/80 dark:bg-zinc-900/80 border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
@@ -1522,12 +1522,21 @@ export function CalendarHubPage({
                 title={isEditMode ? "편집 모드 활성 (클릭 시 조회 전용 모드로 전환)" : "편집 모드 켜기 (날짜 선택 및 일정 등록)"}
               >
                 <Edit3 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>{isEditMode ? 'EDIT: ON' : 'EDIT'}</span>
+                <span>
+                  {isEditMode ? (
+                    <>
+                      <span className="inline sm:hidden">ON</span>
+                      <span className="hidden sm:inline">EDIT: ON</span>
+                    </>
+                  ) : (
+                    'EDIT'
+                  )}
+                </span>
                 {isEditMode && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />}
               </button>
             )}
 
-            {/* 4. Swiss Minimal NEW TRIP Button */}
+            {/* 4. Swiss Minimal NEW TRIP Button (모바일에서는 TRIP으로 축약) */}
             {onCreateTrip && (
               <button
                 type="button"
@@ -1537,11 +1546,13 @@ export function CalendarHubPage({
                   const dd = '01';
                   onCreateTrip(`${yyyy}-${mm}-${dd}`);
                 }}
-                className="h-7 sm:h-8 px-2.5 sm:px-3 rounded-full bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10.5px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-xs"
+                className="h-7 sm:h-8 px-2 sm:px-3 rounded-full bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 shadow-xs"
                 title="이 달을 기준으로 새로운 트립 생성"
               >
                 <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>NEW TRIP</span>
+                <span>
+                  <span className="hidden sm:inline">NEW </span>TRIP
+                </span>
               </button>
             )}
           </div>
