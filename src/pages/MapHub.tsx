@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, X, ArrowRight, Calendar, Star, Plus, Tag, MapPin, Bookmark, Home as HomeIcon, List, Clock } from 'lucide-react';
+import { Search, X, ArrowRight, Calendar, Star, Plus, Tag, MapPin, Bookmark, Home as HomeIcon, List, Clock, LocateFixed } from 'lucide-react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Trip, Plan } from '../types';
@@ -1459,6 +1459,15 @@ export function MapHubPage({
   const [builderCity, setBuilderCity] = useState<string>(initialBuilderCity);
   const [builderDate, setBuilderDate] = useState<string>(initialBuilderDate);
   const builderRouteLayerRef = useRef<any>(null);
+  const builderMarkersRef = useRef<any[]>([]);
+  const builderActiveTargetRef = useRef<{
+    name: string;
+    center?: [number, number];
+    zoom?: number;
+    bounds?: any;
+  } | null>(null);
+  const [builderTargetName, setBuilderTargetName] = useState<string>('');
+  const [isMapDivergedFromBuilder, setIsMapDivergedFromBuilder] = useState<boolean>(false);
 
   // Sync initial props
   useEffect(() => {
@@ -2433,6 +2442,50 @@ export function MapHubPage({
     }
   }, []);
 
+  // Divergence check effect: detect if user panned away from active builder target
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const checkDivergence = () => {
+      if (!isBuilderOpen || !builderActiveTargetRef.current) {
+        setIsMapDivergedFromBuilder(false);
+        return;
+      }
+      const target = builderActiveTargetRef.current;
+      if (target.bounds) {
+        const intersects = map.getBounds().intersects(target.bounds);
+        setIsMapDivergedFromBuilder(!intersects);
+      } else if (target.center) {
+        const L = (window as any).L;
+        if (L) {
+          const currentCenter = map.getCenter();
+          const targetLatLng = L.latLng(target.center[0], target.center[1]);
+          const dist = currentCenter.distanceTo(targetLatLng); // in meters
+          setIsMapDivergedFromBuilder(dist > 150000); // 150km threshold
+        }
+      }
+    };
+
+    map.on('moveend', checkDivergence);
+    return () => {
+      map.off('moveend', checkDivergence);
+    };
+  }, [isBuilderOpen]);
+
+  const handleReCenterBuilderTarget = useCallback(() => {
+    const target = builderActiveTargetRef.current;
+    const map = mapRef.current;
+    if (!target || !map) return;
+
+    if (target.bounds) {
+      map.fitBounds(target.bounds, { padding: [60, 60], maxZoom: 9 });
+    } else if (target.center) {
+      map.flyTo(target.center, target.zoom || 8.5, { duration: 1.2 });
+    }
+    setIsMapDivergedFromBuilder(false);
+  }, []);
+
   const handleCloseTripBuilder = useCallback(() => {
     setIsBuilderOpen(false);
     setBuilderCountry('');
@@ -2442,6 +2495,14 @@ export function MapHubPage({
       builderRouteLayerRef.current.remove();
       builderRouteLayerRef.current = null;
     }
+    builderMarkersRef.current.forEach(m => {
+      try { m.remove(); } catch (_) {}
+    });
+    builderMarkersRef.current = [];
+    builderActiveTargetRef.current = null;
+    setBuilderTargetName('');
+    setIsMapDivergedFromBuilder(false);
+
     // Cleanly restore the map back to default global view (South Korea center)
     handleResetToDefaultView();
     setTimeout(() => {
@@ -2459,17 +2520,24 @@ export function MapHubPage({
   }) => {
     if (!mapRef.current) return;
 
-    // Clean previous route
+    // Clean previous route and builder markers
     if (builderRouteLayerRef.current) {
       builderRouteLayerRef.current.remove();
       builderRouteLayerRef.current = null;
     }
+    builderMarkersRef.current.forEach(m => {
+      try { m.remove(); } catch (_) {}
+    });
+    builderMarkersRef.current = [];
 
     const validLocs = (data.locations || []).filter(l => l.lat && l.lng);
-    if (validLocs.length > 0) {
-      const latLngs = validLocs.map(l => [l.lat, l.lng]);
-      const L = (window as any).L;
-      if (L) {
+    const L = (window as any).L;
+
+    if (validLocs.length > 0 && L) {
+      const latLngs = validLocs.map(l => [l.lat!, l.lng!]);
+      
+      // Create polyline route connecting locations
+      if (validLocs.length > 1) {
         const polyline = L.polyline(latLngs, {
           color: '#dc2626',
           weight: 3,
@@ -2478,17 +2546,71 @@ export function MapHubPage({
         }).addTo(mapRef.current);
         builderRouteLayerRef.current = polyline;
 
-        if (validLocs.length === 1) {
-          mapRef.current.flyTo([validLocs[0].lat, validLocs[0].lng], 8, { duration: 1.2 });
-        } else {
-          mapRef.current.fitBounds(polyline.getBounds(), { padding: [50, 50], maxZoom: 10 });
-        }
+        // Add Swiss Minimal numbered badge markers for each stop
+        validLocs.forEach((loc, idx) => {
+          const numStr = String(idx + 1).padStart(2, '0');
+          const stopIcon = L.divIcon({
+            className: 'custom-builder-stop-icon',
+            html: `
+              <div style="display: flex; flex-direction: column; align-items: center; pointer-events: none;">
+                <div style="background: #111111; color: #ffffff; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 900; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 2px solid #ffffff; box-shadow: 0 4px 10px rgba(0,0,0,0.35);">
+                  ${numStr}
+                </div>
+                <div style="margin-top: 2px; background: rgba(0,0,0,0.85); color: #ffffff; font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 2px; white-space: nowrap; letter-spacing: 0.05em; text-transform: uppercase;">
+                  ${loc.name}
+                </div>
+              </div>
+            `,
+            iconSize: [60, 42],
+            iconAnchor: [30, 11],
+          });
+
+          const stopMarker = L.marker([loc.lat!, loc.lng!], { icon: stopIcon, interactive: false }).addTo(mapRef.current);
+          builderMarkersRef.current.push(stopMarker);
+        });
+
+        const bounds = polyline.getBounds();
+        const targetTitle = data.preset?.title || validLocs.map(l => l.name).join(' · ');
+        builderActiveTargetRef.current = { name: targetTitle, bounds };
+        setBuilderTargetName(targetTitle);
+        setIsMapDivergedFromBuilder(false);
+        mapRef.current.fitBounds(bounds, { padding: [60, 60], maxZoom: 9 });
+      } else {
+        // Single location
+        const loc = validLocs[0];
+        const stopIcon = L.divIcon({
+          className: 'custom-builder-single-stop',
+          html: `
+            <div style="display: flex; flex-direction: column; align-items: center; pointer-events: none;">
+              <div style="background: #dc2626; color: #ffffff; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 900; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 2px solid #ffffff; box-shadow: 0 4px 10px rgba(0,0,0,0.35);">
+                01
+              </div>
+              <div style="margin-top: 2px; background: rgba(0,0,0,0.85); color: #ffffff; font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 2px; white-space: nowrap; letter-spacing: 0.05em; text-transform: uppercase;">
+                ${loc.name}
+              </div>
+            </div>
+          `,
+          iconSize: [60, 42],
+          iconAnchor: [30, 11],
+        });
+        const stopMarker = L.marker([loc.lat!, loc.lng!], { icon: stopIcon, interactive: false }).addTo(mapRef.current);
+        builderMarkersRef.current.push(stopMarker);
+
+        const targetTitle = data.preset?.title || loc.name;
+        builderActiveTargetRef.current = { name: targetTitle, center: [loc.lat!, loc.lng!], zoom: 8.5 };
+        setBuilderTargetName(targetTitle);
+        setIsMapDivergedFromBuilder(false);
+        mapRef.current.flyTo([loc.lat!, loc.lng!], 8.5, { duration: 1.2 });
       }
       return;
     }
 
     if (data.city && data.city.lat && data.city.lng) {
-      mapRef.current.flyTo([data.city.lat, data.city.lng], 8, { duration: 1.2 });
+      const targetTitle = data.city.nameKo || data.city.nameEn;
+      builderActiveTargetRef.current = { name: targetTitle, center: [data.city.lat, data.city.lng], zoom: 8.5 };
+      setBuilderTargetName(targetTitle);
+      setIsMapDivergedFromBuilder(false);
+      mapRef.current.flyTo([data.city.lat, data.city.lng], 8.5, { duration: 1.2 });
       return;
     }
 
@@ -2498,6 +2620,10 @@ export function MapHubPage({
         c.name.toLowerCase() === data.country?.nameEn.toLowerCase()
       );
       if (matched) {
+        const targetTitle = data.country.nameKo || data.country.nameEn;
+        builderActiveTargetRef.current = { name: targetTitle, center: matched.center, zoom: matched.zoom || 5 };
+        setBuilderTargetName(targetTitle);
+        setIsMapDivergedFromBuilder(false);
         mapRef.current.flyTo(matched.center, matched.zoom || 5, { duration: 1.2 });
       }
     }
@@ -2716,6 +2842,18 @@ export function MapHubPage({
             <Plus className={`w-3.5 h-3.5 ${isBuilderOpen ? 'rotate-45' : ''} transition-transform`} />
             <span className="hidden sm:inline">TRIP</span>
           </button>
+
+          {/* 7. Re-Center to Active Builder Target Button */}
+          {isBuilderOpen && builderTargetName && (
+            <button
+              type="button"
+              onClick={handleReCenterBuilderTarget}
+              className="p-2 sm:px-2.5 sm:py-2 text-black/70 dark:text-white/70 hover:text-red-600 dark:hover:text-red-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center border-l border-black/15 dark:border-white/15"
+              title={`RE-CENTER TO: ${builderTargetName}`}
+            >
+              <LocateFixed className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+            </button>
+          )}
         </div>
 
       </div>
@@ -2725,6 +2863,20 @@ export function MapHubPage({
         ref={mapContainerRef} 
         className="w-full h-full z-0" 
       />
+
+      {/* 2.5 Floating Re-center Button when diverged during trip building */}
+      {isBuilderOpen && isMapDivergedFromBuilder && builderTargetName && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[500] animate-in fade-in slide-in-from-bottom-2 duration-200 pointer-events-auto">
+          <button
+            type="button"
+            onClick={handleReCenterBuilderTarget}
+            className="flex items-center gap-2 px-3.5 py-2 bg-black dark:bg-white text-white dark:text-black border border-white/20 dark:border-black/20 shadow-2xl hover:bg-black/90 dark:hover:bg-white/90 active:scale-95 transition-all text-xs font-mono font-bold tracking-wider uppercase cursor-pointer"
+          >
+            <LocateFixed className="w-3.5 h-3.5 text-red-500 animate-pulse" />
+            <span>RE-CENTER: {builderTargetName}</span>
+          </button>
+        </div>
+      )}
 
       {/* 3. Selected Country Card (Swiss Minimal Editorial Style - Slim Lines, Compact Height, No Box Overload) */}
       {selectedCountry && (

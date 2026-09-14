@@ -249,7 +249,39 @@ export function TripBuilderPanel({
     if (!isOpen) return;
     const selectedPresetObj = presets.find(p => p.id === selectedPresetId);
     if (panelTab === 'presets') {
-      onFocusLocationChange?.({ preset: selectedPresetObj || presets[0] || null });
+      const activePreset = selectedPresetObj;
+      if (activePreset) {
+        // Parse cities from preset and look up coordinates
+        const rawCities = activePreset.city.split(/[\/,·+]/).map(s => s.trim()).filter(Boolean);
+        const presetLocs: { name: string; lat?: number; lng?: number; country?: string }[] = [];
+        
+        rawCities.forEach(cName => {
+          const cObj = findCityByNameOrAlias(cName);
+          if (cObj && cObj.lat && cObj.lng) {
+            if (!presetLocs.some(l => l.name === (cObj.nameKo || cObj.nameEn))) {
+              presetLocs.push({ name: cObj.nameKo || cObj.nameEn, lat: cObj.lat, lng: cObj.lng, country: activePreset.country });
+            }
+          }
+        });
+
+        // Fallback: try full city string
+        if (presetLocs.length === 0) {
+          const cObj = findCityByNameOrAlias(activePreset.city);
+          if (cObj && cObj.lat && cObj.lng) {
+            presetLocs.push({ name: cObj.nameKo || cObj.nameEn, lat: cObj.lat, lng: cObj.lng, country: activePreset.country });
+          }
+        }
+
+        const countryObj = findCountryByNameOrAlias(activePreset.country);
+        onFocusLocationChange?.({
+          preset: activePreset,
+          country: countryObj || null,
+          city: presetLocs[0] ? (findCityByNameOrAlias(presetLocs[0].name) || null) : null,
+          locations: presetLocs
+        });
+      } else {
+        onFocusLocationChange?.({ preset: null });
+      }
     } else if (panelTab === 'builder') {
       onFocusLocationChange?.({ country: smartCountry, city: smartCity });
     } else if (panelTab === 'manual') {
