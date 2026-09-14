@@ -244,6 +244,7 @@ function App() {
   const [createCountryInitial, setCreateCountryInitial] = useState<string>('');
   const [createCityInitial, setCreateCityInitial] = useState<string>('');
   const [createDateInitial, setCreateDateInitial] = useState<string>('');
+  const [mapBuilderRequested, setMapBuilderRequested] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
   
   // Hydrate from localStorage cache for instant 0ms mobile launch
@@ -1104,6 +1105,10 @@ function App() {
     // Close any residual save complete modal upon navigation
     setShowSaveCompleteModal(false);
 
+    if (view !== 'map') {
+      setMapBuilderRequested(false);
+    }
+
     // 트립허브나 다른 화면으로 이동 시 잔여 비행기 전환 즉시 강제 취소 (원복 증상 원천 차단)
     if (view !== 'detail' || (tripId !== null && tripId !== flightTransition.targetTripId)) {
       setFlightTransition({ isActive: false, targetTripId: null });
@@ -1662,7 +1667,10 @@ function App() {
     setCreateCityInitial(cityName || '');
     setCreateDateInitial(initialDate || '');
     setCreateModalType('plan');
-    setIsCreateModalOpen(true);
+    setMapBuilderRequested(true);
+    if (currentView !== 'map') {
+      navigateTo('map');
+    }
   };
 
   const handleCreateJourney = async (
@@ -1817,6 +1825,13 @@ function App() {
         });
         await batch.commit();
       }
+
+      // Clear creator & builder states
+      setMapBuilderRequested(false);
+      setCreateCountryInitial('');
+      setCreateCityInitial('');
+      setCreateDateInitial('');
+      setIsCreateModalOpen(false);
 
       // Navigate to detail page
       navigateTo('detail', newId);
@@ -2601,6 +2616,12 @@ function App() {
                   onNavigate={navigateTo}
                   onCreateTripForCountry={handleCreateTripForCountry}
                   isDarkMode={isDarkMode}
+                  isAdmin={isAdmin}
+                  onSaveTrip={handleCreateJourney}
+                  initialBuilderOpen={mapBuilderRequested}
+                  initialBuilderCountry={createCountryInitial}
+                  initialBuilderCity={createCityInitial}
+                  initialBuilderDate={createDateInitial}
                 />
               )}
               {currentView === 'manage' && (

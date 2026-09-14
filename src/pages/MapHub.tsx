@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Search, X, ArrowRight, Calendar, Star, Plus, Tag, MapPin, Bookmark, Home as HomeIcon, List, Clock } from 'lucide-react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Trip, Plan } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
+import { TripBuilderPanel } from '../components/TripBuilderPanel';
+import { findCityByNameOrAlias, DestinationCountry, DestinationCity, PresetTripPlan } from '../data/worldDestinations';
 
 export interface CountryInfo {
   code: string;
@@ -1408,9 +1410,40 @@ interface MapHubPageProps {
   onNavigate: (view: string, tripId?: number | null) => void;
   onCreateTripForCountry?: (countryName: string, cityName?: string) => void;
   isDarkMode: boolean;
+  isAdmin?: boolean;
+  onSaveTrip?: (
+    title: string, 
+    dateRange: string, 
+    location: string, 
+    tags: string[], 
+    lat?: number, 
+    lng?: number, 
+    members?: string[], 
+    locations?: { name: string; lat?: number; lng?: number; country?: string }[], 
+    statusBadge?: string, 
+    country?: string,
+    customCoverImg?: string,
+    customTimelineItems?: { date: string; items: any[] }[]
+  ) => void;
+  initialBuilderOpen?: boolean;
+  initialBuilderCountry?: string;
+  initialBuilderCity?: string;
+  initialBuilderDate?: string;
 }
 
-export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, isDarkMode }: MapHubPageProps) {
+export function MapHubPage({
+  trips,
+  plans,
+  onNavigate,
+  onCreateTripForCountry,
+  isDarkMode,
+  isAdmin = false,
+  onSaveTrip,
+  initialBuilderOpen = false,
+  initialBuilderCountry = '',
+  initialBuilderCity = '',
+  initialBuilderDate = '',
+}: MapHubPageProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const tileLayerRef = useRef<any>(null);
@@ -1419,6 +1452,34 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
   const selectPinRef = useRef<any>(null);
   const yellowMarkersRef = useRef<any[]>([]);
   const countryDotsRef = useRef<any[]>([]);
+
+  // In-place Trip Builder Split-Screen State
+  const [isBuilderOpen, setIsBuilderOpen] = useState<boolean>(() => Boolean(initialBuilderOpen));
+  const [builderCountry, setBuilderCountry] = useState<string>(initialBuilderCountry);
+  const [builderCity, setBuilderCity] = useState<string>(initialBuilderCity);
+  const [builderDate, setBuilderDate] = useState<string>(initialBuilderDate);
+  const builderRouteLayerRef = useRef<any>(null);
+
+  // Sync initial props
+  useEffect(() => {
+    if (initialBuilderOpen) {
+      setIsBuilderOpen(true);
+      if (initialBuilderCountry) setBuilderCountry(initialBuilderCountry);
+      if (initialBuilderCity) setBuilderCity(initialBuilderCity);
+      if (initialBuilderDate) setBuilderDate(initialBuilderDate);
+      setSelectedCountry(null);
+    }
+  }, [initialBuilderOpen, initialBuilderCountry, initialBuilderCity, initialBuilderDate]);
+
+  // Invalidate Leaflet size on builder split change
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [isBuilderOpen]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCountry, setSelectedCountry] = useState<CountryInfo | null>(null);
@@ -2341,11 +2402,147 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
 
   const isCurrentCountryFavorite = selectedCountry && favoriteCountries.includes(selectedCountry.code);
 
+  // In-place Trip Builder Handlers
+  const handleOpenTripBuilder = useCallback((country?: string, city?: string, date?: string) => {
+    setIsBuilderOpen(true);
+    if (country) setBuilderCountry(country);
+    if (city) setBuilderCity(city);
+    if (date) setBuilderDate(date);
+    setSelectedCountry(null);
+    setSelectedPinGroup(null);
+    setIsWishlistModalOpen(false);
+
+    // If city is provided, fly to it immediately
+    if (city) {
+      const cityData = findCityByNameOrAlias(city);
+      if (cityData && mapRef.current) {
+        mapRef.current.flyTo([cityData.lat, cityData.lng], 8, { duration: 1.2 });
+        return;
+      }
+    }
+    // If country is provided, fly to country center
+    if (country) {
+      const matched = COUNTRIES_DATA.find(c => 
+        c.name.toLowerCase() === country.toLowerCase() ||
+        c.nameKo === country ||
+        c.code.toLowerCase() === country.toLowerCase()
+      );
+      if (matched && mapRef.current) {
+        mapRef.current.flyTo(matched.center, matched.zoom || 5, { duration: 1.2 });
+      }
+    }
+  }, []);
+
+  const handleCloseTripBuilder = useCallback(() => {
+    setIsBuilderOpen(false);
+    if (builderRouteLayerRef.current) {
+      builderRouteLayerRef.current.remove();
+      builderRouteLayerRef.current = null;
+    }
+    setTimeout(() => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+      }
+    }, 250);
+  }, []);
+
+  const handleBuilderFocusChange = useCallback((data: {
+    country?: DestinationCountry | null;
+    city?: DestinationCity | null;
+    preset?: PresetTripPlan | null;
+    locations?: { name: string; lat?: number; lng?: number }[];
+  }) => {
+    if (!mapRef.current) return;
+
+    // Clean previous route
+    if (builderRouteLayerRef.current) {
+      builderRouteLayerRef.current.remove();
+      builderRouteLayerRef.current = null;
+    }
+
+    const validLocs = (data.locations || []).filter(l => l.lat && l.lng);
+    if (validLocs.length > 0) {
+      const latLngs = validLocs.map(l => [l.lat, l.lng]);
+      const L = (window as any).L;
+      if (L) {
+        const polyline = L.polyline(latLngs, {
+          color: '#dc2626',
+          weight: 3,
+          dashArray: '6, 6',
+          opacity: 0.85,
+        }).addTo(mapRef.current);
+        builderRouteLayerRef.current = polyline;
+
+        if (validLocs.length === 1) {
+          mapRef.current.flyTo([validLocs[0].lat, validLocs[0].lng], 8, { duration: 1.2 });
+        } else {
+          mapRef.current.fitBounds(polyline.getBounds(), { padding: [50, 50], maxZoom: 10 });
+        }
+      }
+      return;
+    }
+
+    if (data.city && data.city.lat && data.city.lng) {
+      mapRef.current.flyTo([data.city.lat, data.city.lng], 8, { duration: 1.2 });
+      return;
+    }
+
+    if (data.country) {
+      const matched = COUNTRIES_DATA.find(c => 
+        c.code.toLowerCase() === data.country?.code.toLowerCase() ||
+        c.name.toLowerCase() === data.country?.nameEn.toLowerCase()
+      );
+      if (matched) {
+        mapRef.current.flyTo(matched.center, matched.zoom || 5, { duration: 1.2 });
+      }
+    }
+  }, []);
+
+  const handleCreateJourneyFromPanel = useCallback((
+    title: string,
+    dateRange: string,
+    location: string,
+    tags: string[],
+    lat?: number,
+    lng?: number,
+    members?: string[],
+    locations?: { name: string; lat?: number; lng?: number; country?: string }[],
+    statusBadge?: string,
+    country?: string,
+    customCoverImg?: string,
+    customTimelineItems?: { date: string; items: any[] }[]
+  ) => {
+    if (onSaveTrip) {
+      onSaveTrip(
+        title,
+        dateRange,
+        location,
+        tags,
+        lat,
+        lng,
+        members,
+        locations,
+        statusBadge,
+        country,
+        customCoverImg,
+        customTimelineItems
+      );
+    }
+    handleCloseTripBuilder();
+  }, [onSaveTrip, handleCloseTripBuilder]);
+
   return (
-    <main className={`relative w-full h-[calc(100vh-56px)] h-[calc(100dvh-56px)] flex flex-col bg-white dark:bg-[#141414] overflow-hidden overscroll-none select-none font-sans touch-pan-x touch-pan-y ${!showPinLabels ? 'map-hide-pin-labels' : ''}`}>
+    <main className={`relative w-full h-[calc(100vh-56px)] h-[calc(100dvh-56px)] flex flex-col lg:flex-row bg-white dark:bg-[#141414] overflow-hidden overscroll-none select-none font-sans touch-pan-x touch-pan-y ${!showPinLabels ? 'map-hide-pin-labels' : ''}`}>
       
-      {/* 1. Top Bar: Search with Integrated Wishlist Star & Swiss Minimal Layer Toggles */}
-      <div className="absolute top-4 left-4 right-4 sm:left-6 sm:right-auto z-[500] flex flex-wrap items-center gap-2">
+      {/* MAP VIEW CONTAINER (Full screen or Split 58% on Desktop / 38vh on Mobile) */}
+      <div className={`relative transition-all duration-300 ease-in-out ${
+        isBuilderOpen 
+          ? 'w-full lg:w-[58%] h-[38vh] lg:h-full shrink-0 border-b lg:border-b-0 lg:border-r border-black/15 dark:border-white/15' 
+          : 'w-full h-full'
+      } overflow-hidden`}>
+        
+        {/* 1. Top Bar: Search with Integrated Wishlist Star & Swiss Minimal Layer Toggles */}
+        <div className="absolute top-4 left-4 right-4 sm:left-6 sm:right-auto z-[500] flex flex-wrap items-center gap-2">
         
         {/* Country & Continent Search Bar with Integrated Wishlist Star Button */}
         <div className="relative flex items-center bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/20 dark:border-white/20 shadow-2xl z-30">
@@ -2492,6 +2689,27 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
             title="PLACES LIST"
           >
             <List className="w-3.5 h-3.5" />
+          </button>
+
+          {/* 6. In-place Trip Builder Toggle Button */}
+          <button
+            type="button"
+            onClick={() => {
+              if (isBuilderOpen) {
+                handleCloseTripBuilder();
+              } else {
+                handleOpenTripBuilder();
+              }
+            }}
+            className={`p-2 sm:px-3 sm:py-2 text-xs font-mono font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer border-l border-black/15 dark:border-white/15 ${
+              isBuilderOpen
+                ? 'bg-red-600 text-white dark:bg-red-500 dark:text-black'
+                : 'bg-black text-white dark:bg-white dark:text-black hover:opacity-85'
+            }`}
+            title={isBuilderOpen ? "CLOSE TRIP BUILDER" : "CREATE NEW TRIP"}
+          >
+            <Plus className={`w-3.5 h-3.5 ${isBuilderOpen ? 'rotate-45' : ''} transition-transform`} />
+            <span className="hidden sm:inline">TRIP</span>
           </button>
         </div>
 
@@ -2645,10 +2863,7 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                       <button
                         type="button"
                         onClick={() => {
-                          if (onCreateTripForCountry) {
-                            onCreateTripForCountry(selectedCountry.name, city);
-                            handleCloseCountry();
-                          }
+                          handleOpenTripBuilder(selectedCountry.name, city);
                         }}
                         className="pr-2 pl-0.5 py-0.5 hover:underline cursor-pointer"
                         title={`${city} 여정 생성`}
@@ -2676,21 +2891,36 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                 <span>{isCurrentCountryFavorite ? 'SAVED WISH' : 'WISH'}</span>
               </button>
 
-              {onCreateTripForCountry && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onCreateTripForCountry(selectedCountry.name);
-                    handleCloseCountry();
-                  }}
-                  className="w-full py-2 px-3 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-widest font-mono flex items-center justify-center gap-1.5 hover:opacity-85 transition-opacity cursor-pointer shadow-xs"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>TRIP</span>
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => {
+                  handleOpenTripBuilder(selectedCountry.name);
+                }}
+                className="w-full py-2 px-3 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-widest font-mono flex items-center justify-center gap-1.5 hover:opacity-85 transition-opacity cursor-pointer shadow-xs"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>TRIP</span>
+              </button>
             </div>
           </div>
+        </div>
+      )}
+
+      </div>
+
+      {/* 4. INLINE SPLIT TRIP BUILDER PANEL (42% on Desktop / remaining height on Mobile) */}
+      {isBuilderOpen && (
+        <div className="w-full lg:w-[42%] h-[calc(100%-38vh)] lg:h-full flex-1 overflow-hidden z-20 bg-white dark:bg-[#121212] flex flex-col min-h-0 animate-in fade-in duration-200">
+          <TripBuilderPanel
+            isOpen={true}
+            onClose={handleCloseTripBuilder}
+            onCreate={handleCreateJourneyFromPanel}
+            initialCountry={builderCountry}
+            initialCity={builderCity}
+            initialStartDate={builderDate}
+            isAdmin={isAdmin}
+            onFocusLocationChange={handleBuilderFocusChange}
+          />
         </div>
       )}
 
@@ -2776,19 +3006,16 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                         </div>
 
                         <div className="flex items-center gap-1.5 shrink-0">
-                          {onCreateTripForCountry && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                onCreateTripForCountry(country.name);
-                                setIsWishlistModalOpen(false);
-                              }}
-                              className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-[10px] font-black uppercase tracking-wider cursor-pointer hover:opacity-85 flex items-center gap-1"
-                            >
-                              <Plus className="w-3 h-3" />
-                              <span>TRIP</span>
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleOpenTripBuilder(country.name);
+                            }}
+                            className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-[10px] font-black uppercase tracking-wider cursor-pointer hover:opacity-85 flex items-center gap-1"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>TRIP</span>
+                          </button>
                           <button
                             type="button"
                             onClick={() => toggleFavoriteCountry(country.code)}
@@ -2837,19 +3064,16 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                         </div>
 
                         <div className="flex items-center gap-1.5 shrink-0">
-                          {onCreateTripForCountry && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                onCreateTripForCountry(matchedCountry?.name || '', city);
-                                setIsWishlistModalOpen(false);
-                              }}
-                              className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-[10px] font-black uppercase tracking-wider cursor-pointer hover:opacity-85 flex items-center gap-1"
-                            >
-                              <Plus className="w-3 h-3" />
-                              <span>TRIP</span>
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleOpenTripBuilder(matchedCountry?.name || '', city);
+                            }}
+                            className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-[10px] font-black uppercase tracking-wider cursor-pointer hover:opacity-85 flex items-center gap-1"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>TRIP</span>
+                          </button>
                           <button
                             type="button"
                             onClick={() => toggleFavoriteCity(city)}
