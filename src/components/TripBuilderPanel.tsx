@@ -35,7 +35,13 @@ import {
   PresetTripPlan
 } from '../data/worldDestinations';
 import { ConfirmModal } from './ConfirmModal';
-import { generateCuratedTripProposals, CuratedTripProposal } from '../utils/tripRecommender';
+import { 
+  generateCuratedTripProposals, 
+  CuratedTripProposal,
+  CONTINENTS,
+  CONTINENT_COUNTRY_MAP,
+  getClimateMiniMetric
+} from '../utils/tripRecommender';
 
 export interface TripBuilderPanelProps {
   isOpen: boolean;
@@ -132,6 +138,7 @@ export function TripBuilderPanel({
   const [error, setError] = useState('');
 
   // Smart Builder State
+  const [selectedContinent, setSelectedContinent] = useState<string>('all');
   const [selectedTheme, setSelectedTheme] = useState<string>('all');
   const [smartCountry, setSmartCountry] = useState<DestinationCountry | null>(null);
   const [smartCity, setSmartCity] = useState<DestinationCity | null>(null);
@@ -160,22 +167,42 @@ export function TripBuilderPanel({
   const [targetYear, setTargetYear] = useState<number>(() => new Date().getFullYear());
   const [targetMonth, setTargetMonth] = useState<number>(0); // 0: Auto Nearest Best, 1-12: Specific Month
 
-  // Nearest best month for currently selected city or country
-  const autoBestMonth = useMemo(() => {
-    const nowMonth = new Date().getMonth() + 1;
+  // Selected area's best months (for highlighting the best season range in month grid)
+  const activeBestMonths = useMemo<number[]>(() => {
     if (smartCity && smartCity.bestMonths && smartCity.bestMonths.length > 0) {
-      const upcoming = smartCity.bestMonths.filter(m => m >= nowMonth);
-      return upcoming.length > 0 ? upcoming[0] : smartCity.bestMonths[0];
+      return smartCity.bestMonths;
     }
     if (smartCountry) {
-      const c = WORLD_CITIES.find(city => city.countryEn === smartCountry.nameEn);
-      if (c && c.bestMonths && c.bestMonths.length > 0) {
-        const upcoming = c.bestMonths.filter(m => m >= nowMonth);
-        return upcoming.length > 0 ? upcoming[0] : c.bestMonths[0];
+      const cities = WORLD_CITIES.filter(c => c.countryEn.toUpperCase() === smartCountry.nameEn.toUpperCase());
+      const monthsSet = new Set<number>();
+      cities.forEach(c => (c.bestMonths || []).forEach(m => monthsSet.add(m)));
+      if (monthsSet.size > 0) {
+        return Array.from(monthsSet).sort((a, b) => a - b);
       }
     }
-    return nowMonth <= 10 ? 10 : (nowMonth === 11 ? 11 : 4);
+    return [4, 5, 9, 10, 11];
   }, [smartCity, smartCountry]);
+
+  // Nearest best month for currently selected city or country
+  const autoBestMonth = useMemo(() => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    const currentDay = now.getDate();
+
+    if (activeBestMonths.length === 0) return 10;
+
+    if (targetYear === currentYear) {
+      // Find upcoming best month in this year (if past middle of month, look for upcoming)
+      const upcoming = activeBestMonths.filter(m => m > currentMonth || (m === currentMonth && currentDay <= 15));
+      if (upcoming.length > 0) {
+        return upcoming[0];
+      }
+      return activeBestMonths[0];
+    } else {
+      return activeBestMonths[0];
+    }
+  }, [activeBestMonths, targetYear]);
 
   // Sync presets
   useEffect(() => {
@@ -425,20 +452,58 @@ export function TripBuilderPanel({
     };
   }, [startDate, locations, country]);
 
+  // Real-time season risk for curator tab
+  const curatorSeasonRisk = useMemo(() => {
+    if (!smartCity && !smartCountry) return null;
+    const city = smartCity;
+    const countryObj = smartCountry || (city ? findCountryByNameOrAlias(city.countryEn) : null);
+    const activeM = targetMonth === 0 ? autoBestMonth : targetMonth;
+
+    let warningReason: string | null = null;
+    if (city) {
+      for (const av of (city.avoidMonths || [])) {
+        if (av.months.includes(activeM)) {
+          warningReason = av.reason;
+          break;
+        }
+      }
+    }
+    const isBestSeason = Boolean(city?.bestMonths.includes(activeM));
+
+    return {
+      startMonth: activeM,
+      targetName: city ? city.nameKo : (countryObj ? countryObj.nameKo : ''),
+      countryBest: countryObj?.bestSeason,
+      avoidSeason: countryObj?.avoidSeason,
+      avoidReason: warningReason || countryObj?.avoidReason,
+      isWarning: Boolean(warningReason),
+      isBestSeason
+    };
+  }, [smartCity, smartCountry, targetMonth, autoBestMonth]);
+
   // Autocomplete filters
   const filteredBuilderCountries = useMemo(() => {
+    let pool = WORLD_COUNTRIES;
+    if (selectedContinent !== 'all') {
+      const allowed = CONTINENT_COUNTRY_MAP[selectedContinent] || [];
+      pool = pool.filter(c => allowed.includes(c.nameEn.toUpperCase()));
+    }
     const q = builderCountrySearch.trim().toLowerCase();
-    if (!q) return WORLD_COUNTRIES;
-    return WORLD_COUNTRIES.filter(c => 
+    if (!q) return pool;
+    return pool.filter(c => 
       c.nameKo.toLowerCase().includes(q) ||
       c.nameEn.toLowerCase().includes(q) ||
       c.code.toLowerCase().includes(q) ||
       c.aliases.some(a => a.toLowerCase().includes(q))
     );
-  }, [builderCountrySearch]);
+  }, [builderCountrySearch, selectedContinent]);
 
   const filteredBuilderCities = useMemo(() => {
-    const pool = smartCountry ? WORLD_CITIES.filter(c => c.countryEn === smartCountry.nameEn) : WORLD_CITIES;
+    let pool = smartCountry ? WORLD_CITIES.filter(c => c.countryEn === smartCountry.nameEn) : WORLD_CITIES;
+    if (selectedContinent !== 'all' && !smartCountry) {
+      const allowed = CONTINENT_COUNTRY_MAP[selectedContinent] || [];
+      pool = pool.filter(c => allowed.includes(c.countryEn.toUpperCase()));
+    }
     const q = builderCitySearch.trim().toLowerCase();
     if (!q) return pool;
     return pool.filter(c => 
@@ -448,7 +513,7 @@ export function TripBuilderPanel({
       c.countryEn.toLowerCase().includes(q) ||
       c.tags.some(t => t.toLowerCase().includes(q))
     );
-  }, [smartCountry, builderCitySearch]);
+  }, [smartCountry, builderCitySearch, selectedContinent]);
 
   // Handlers
   const handleAddCityToLocations = (cityName: string, coords?: { lat: number; lng: number }, countryEn?: string) => {
@@ -475,9 +540,60 @@ export function TripBuilderPanel({
     const startFormatted = startDate.replace(/-/g, '.');
     const endFormatted = endDate.replace(/-/g, '.');
     const dateRange = `${startFormatted} - ${endFormatted}`;
-    const combinedLocationStr = locations.map(loc => loc.name).join(', ');
-    const firstLat = locations[0]?.lat;
-    const firstLng = locations[0]?.lng;
+    
+    const combinedLocationStr = locations.length > 0 
+      ? locations.map(loc => loc.name).join(', ') 
+      : (smartCity?.nameKo || smartCountry?.nameKo || country || '자유 여정');
+
+    const firstLat = locations[0]?.lat || smartCity?.lat;
+    const firstLng = locations[0]?.lng || smartCity?.lng;
+
+    // 타임라인 생성 로직 (등록된 LOCATIONS 스팟들을 날짜별로 자동 분배 배치)
+    const startD = new Date(startDate);
+    const endD = new Date(endDate);
+    const diffTime = Math.max(0, endD.getTime() - startD.getTime());
+    const totalDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
+
+    const targetCityName = smartCity?.nameKo || (locations[0]?.name || '');
+
+    const customTimelineItems = Array.from({ length: totalDays }).map((_, dIdx) => {
+      const curDate = new Date(startD);
+      curDate.setDate(curDate.getDate() + dIdx);
+      const curStr = `${curDate.getFullYear()}.${String(curDate.getMonth() + 1).padStart(2, '0')}.${String(curDate.getDate()).padStart(2, '0')}`;
+      
+      // 일자별 스팟 분배 (예: 1일차, 2일차...)
+      const daySpots = locations.filter((_, lIdx) => lIdx % totalDays === dIdx);
+      const items = daySpots.map((sp, sIdx) => ({
+        id: Date.now() + dIdx * 100 + sIdx,
+        time: sIdx === 0 ? '11:00' : '15:30',
+        title: `${sp.name} 방문`,
+        location: sp.name,
+        memo: '사용자 지정 희망 방문 스팟',
+        category: '관광',
+        type: 'activity' as const
+      }));
+
+      if (items.length === 0) {
+        items.push({
+          id: Date.now() + dIdx * 100,
+          time: '11:00',
+          title: `${targetCityName || '도심'} 투어 & 일정`,
+          location: targetCityName || '',
+          memo: '자유 일정 및 로컬 탐방',
+          category: '관광',
+          type: 'activity' as const
+        });
+      }
+
+      return {
+        date: curStr,
+        items
+      };
+    });
+
+    const finalLocations = locations.length > 0 
+      ? locations 
+      : (smartCity ? [{ name: smartCity.nameKo, lat: smartCity.lat, lng: smartCity.lng, country: smartCity.countryEn }] : []);
 
     setConfirmModalState({
       isOpen: true,
@@ -485,9 +601,18 @@ export function TripBuilderPanel({
       message: `'${title.trim()}' 트립을 새로 생성하시겠습니까?`,
       payload: () => {
         onCreate(
-          title.trim(), dateRange, combinedLocationStr,
-          tags.length > 0 ? tags : ['Personal'],
-          firstLat, firstLng, members, locations, statusBadge, country.trim()
+          title.trim(), 
+          dateRange, 
+          combinedLocationStr,
+          tags.length > 0 ? tags : [country || 'Personal'],
+          firstLat, 
+          firstLng, 
+          members, 
+          finalLocations, 
+          statusBadge, 
+          country.trim(),
+          smartCity?.coverImage || '',
+          customTimelineItems
         );
         onClose();
       }
@@ -558,6 +683,7 @@ export function TripBuilderPanel({
     const curOffset = customOffset !== undefined ? customOffset : seedOffset;
     const proposals = generateCuratedTripProposals({
       theme: selectedTheme,
+      continent: selectedContinent,
       country: smartCountry,
       city: smartCity,
       targetYear,
@@ -1026,6 +1152,47 @@ export function TripBuilderPanel({
                   </p>
                 </div>
 
+                {/* Continent Filter */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className={labelCls}>CONTINENT (대륙 필터)</label>
+                    <span className="text-[9.5px] font-mono text-black/40 dark:text-white/40">
+                      {CONTINENTS.find(c => c.id === selectedContinent)?.labelEn}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {CONTINENTS.map(c => {
+                      const isSel = selectedContinent === c.id;
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedContinent(c.id);
+                            if (c.id !== 'all' && smartCountry) {
+                              const allowed = CONTINENT_COUNTRY_MAP[c.id] || [];
+                              if (!allowed.includes(smartCountry.nameEn.toUpperCase())) {
+                                setSmartCountry(null);
+                                setSmartCity(null);
+                                setBuilderCountrySearch('');
+                                setBuilderCitySearch('');
+                                onFocusLocationChange?.({});
+                              }
+                            }
+                          }}
+                          className={`px-2 py-1 text-[10px] font-mono uppercase border transition-all cursor-pointer ${
+                            isSel
+                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold'
+                              : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/40'
+                          }`}
+                        >
+                          {c.labelEn}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* 1. Theme */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
@@ -1090,8 +1257,27 @@ export function TripBuilderPanel({
                           }}
                           onFocus={() => setIsBuilderCountryOpen(true)}
                           placeholder="국가 (전체 스크롤 가능)..."
-                          className={inputCls}
+                          className={`${inputCls} pr-7`}
                         />
+                        {builderCountrySearch && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSmartCountry(null);
+                              setSmartCity(null);
+                              setBuilderCountrySearch('');
+                              setBuilderCitySearch('');
+                              setCountry('');
+                              setCountrySearchInput('');
+                              onFocusLocationChange?.({});
+                            }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
+                            title="국가 선택 해제"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                       {isBuilderCountryOpen && filteredBuilderCountries.length > 0 && (
                         <div className="absolute top-full left-0 right-0 mt-0.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 shadow-xl max-h-56 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5">
@@ -1105,18 +1291,9 @@ export function TripBuilderPanel({
                                 setCountry(c.nameEn);
                                 setCountrySearchInput(`${c.nameKo} (${c.nameEn})`);
                                 setIsBuilderCountryOpen(false);
-                                const cFirst = WORLD_CITIES.find(city => city.countryEn === c.nameEn);
-                                if (cFirst) {
-                                  setSmartCity(cFirst);
-                                  setBuilderCitySearch(cFirst.nameKo);
-                                  onFocusLocationChange?.({
-                                    country: c,
-                                    city: cFirst,
-                                    locations: [{ name: cFirst.nameKo, lat: cFirst.lat, lng: cFirst.lng, country: cFirst.countryEn }]
-                                  });
-                                } else {
-                                  onFocusLocationChange?.({ country: c });
-                                }
+                                setSmartCity(null);
+                                setBuilderCitySearch('');
+                                onFocusLocationChange?.({ country: c });
                               }}
                               className="w-full text-left px-3 py-1.5 text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between cursor-pointer"
                             >
@@ -1144,8 +1321,27 @@ export function TripBuilderPanel({
                           }}
                           onFocus={() => setIsBuilderCityOpen(true)}
                           placeholder="도시 (선택 사항)..."
-                          className={inputCls}
+                          className={`${inputCls} pr-7`}
                         />
+                        {builderCitySearch && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSmartCity(null);
+                              setBuilderCitySearch('');
+                              if (smartCountry) {
+                                onFocusLocationChange?.({ country: smartCountry });
+                              } else {
+                                onFocusLocationChange?.({});
+                              }
+                            }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
+                            title="도시 선택 해제"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                       {isBuilderCityOpen && filteredBuilderCities.length > 0 && (
                         <div className="absolute top-full left-0 right-0 mt-0.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 shadow-xl max-h-56 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5">
@@ -1167,7 +1363,6 @@ export function TripBuilderPanel({
                                     setCountrySearchInput(`${parentCountry.nameKo} (${parentCountry.nameEn})`);
                                   }
                                 }
-                                // Trigger live map focus & marker pin for same-country city switch!
                                 onFocusLocationChange?.({
                                   country: parentCountry,
                                   city: city,
@@ -1195,7 +1390,7 @@ export function TripBuilderPanel({
                   <div className="flex items-center justify-between">
                     <label className={labelCls}>3. DEPARTURE PERIOD (출발 시기)</label>
                     <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
-                      {targetMonth === 0 ? '현재 기준 가장 가까운 최적 시즌' : `${targetYear}년 ${targetMonth}월`}
+                      {targetMonth === 0 ? `최적 시즌 자동 배정 (${autoBestMonth}월)` : `${targetYear}년 ${targetMonth}월`}
                     </span>
                   </div>
 
@@ -1223,9 +1418,9 @@ export function TripBuilderPanel({
                           ? 'bg-red-600 text-white border-red-600'
                           : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/35'
                       }`}
-                      title="도시별 가장 가까운 최적 시즌 자동 배정"
+                      title="지역별 가장 가까운 최적 시즌 월 자동 배정"
                     >
-                      최적 시즌 자동
+                      최적 시즌 자동 ({autoBestMonth}월)
                     </button>
                   </div>
 
@@ -1235,19 +1430,23 @@ export function TripBuilderPanel({
                       const m = mIdx + 1;
                       const isSelected = targetMonth === m;
                       const isAutoBest = targetMonth === 0 && autoBestMonth === m;
+                      const isBestSeason = activeBestMonths.includes(m);
+
                       return (
                         <button
                           key={m}
                           type="button"
                           onClick={() => setTargetMonth(isSelected ? 0 : m)}
-                          className={`py-1 text-[10px] font-mono font-bold border text-center transition-all cursor-pointer relative ${
+                          className={`py-1.5 text-[10px] font-mono border text-center transition-all cursor-pointer relative ${
                             isSelected
-                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-black shadow-sm'
                               : isAutoBest
-                                ? 'border-red-500 text-red-600 dark:text-red-400 bg-red-500/10 ring-1 ring-red-500/40 font-black'
-                                : 'border-black/10 dark:border-white/10 text-black/60 dark:text-white/60 hover:border-black/30'
+                                ? 'border-red-500 text-red-600 dark:text-red-400 bg-red-500/10 ring-1 ring-red-500/50 font-black'
+                                : isBestSeason
+                                  ? 'border-orange-400 dark:border-orange-500/60 bg-orange-500/10 text-orange-600 dark:text-orange-400 font-bold hover:bg-orange-500/20'
+                                  : 'border-black/10 dark:border-white/10 text-black/50 dark:text-white/50 hover:border-black/30'
                           }`}
-                          title={isAutoBest ? '현재 추천 최적 시즌 월' : `${m}월`}
+                          title={isAutoBest ? `가장 빠른 추천 최적 시즌 (${m}월)` : isBestSeason ? `추천 최적 시즌 (${m}월)` : `${m}월`}
                         >
                           <span>{m}월</span>
                           {isAutoBest && (
@@ -1257,6 +1456,28 @@ export function TripBuilderPanel({
                       );
                     })}
                   </div>
+
+                  {/* Climate Metric & Season Warning */}
+                  {(() => {
+                    const activeM = targetMonth === 0 ? autoBestMonth : targetMonth;
+                    const climateMetric = getClimateMiniMetric(smartCity?.nameKo, smartCountry?.nameKo, activeM);
+                    return (
+                      <div className="space-y-1 pt-1">
+                        {climateMetric && (
+                          <div className="text-[10px] font-mono text-black/70 dark:text-white/70 bg-black/[0.03] dark:bg-white/[0.03] px-2.5 py-1.5 border-l-2 border-black/30 dark:border-white/30 flex items-center justify-between">
+                            <span className="font-bold text-black/50 dark:text-white/50">{activeM}월 현지 기후</span>
+                            <span className="font-semibold text-black dark:text-white">{climateMetric}</span>
+                          </div>
+                        )}
+                        {curatorSeasonRisk && curatorSeasonRisk.isWarning && (
+                          <div className="p-2 border-l-2 border-red-500 bg-red-500/10 text-red-600 dark:text-red-400 text-[10.5px] font-mono leading-tight">
+                            <span className="font-bold">[주의 시즌 알림] {curatorSeasonRisk.targetName} {curatorSeasonRisk.startMonth}월: </span>
+                            <span>{curatorSeasonRisk.avoidReason}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* 4. Duration */}
@@ -1424,6 +1645,50 @@ export function TripBuilderPanel({
         {/* ─── TAB: CUSTOM (formerly Manual) ─── */}
         {panelTab === 'custom' && (
           <form onSubmit={handleManualSubmit} className="space-y-3.5">
+            {/* Continent Filter */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className={labelCls}>CONTINENT (대륙 필터)</label>
+                <span className="text-[9.5px] font-mono text-black/40 dark:text-white/40">
+                  {CONTINENTS.find(c => c.id === selectedContinent)?.labelEn}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {CONTINENTS.map(c => {
+                  const isSel = selectedContinent === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedContinent(c.id);
+                        if (c.id !== 'all' && smartCountry) {
+                          const allowed = CONTINENT_COUNTRY_MAP[c.id] || [];
+                          if (!allowed.includes(smartCountry.nameEn.toUpperCase())) {
+                            setSmartCountry(null);
+                            setSmartCity(null);
+                            setBuilderCountrySearch('');
+                            setBuilderCitySearch('');
+                            setCountry('');
+                            setCountrySearchInput('');
+                            onFocusLocationChange?.({});
+                          }
+                        }
+                      }}
+                      className={`px-2 py-1 text-[10px] font-mono uppercase border transition-all cursor-pointer ${
+                        isSel
+                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold'
+                          : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/40'
+                      }`}
+                    >
+                      {c.labelEn}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Trip Title */}
             <div className="space-y-1">
               <label className={labelCls}>TRIP TITLE *</label>
               <div className="relative">
@@ -1434,15 +1699,25 @@ export function TripBuilderPanel({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="예: 2026 도쿄 미식 탐방..."
-                  className={inputCls}
+                  className={`${inputCls} pr-7`}
                 />
+                {title && (
+                  <button
+                    type="button"
+                    onClick={() => setTitle('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
+                    title="제목 지우기"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </div>
 
             {/* Region (Country & City) - Synced with Curator */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className={labelCls}>REGION (국가 / 도시)</label>
+                <label className={labelCls}>REGION (거점 국가 / 도시)</label>
                 {(smartCountry || smartCity) && (
                   <button
                     type="button"
@@ -1474,8 +1749,27 @@ export function TripBuilderPanel({
                       }}
                       onFocus={() => setIsCountryDropdownOpen(true)}
                       placeholder="국가 검색..."
-                      className={inputCls}
+                      className={`${inputCls} pr-7`}
                     />
+                    {builderCountrySearch && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSmartCountry(null);
+                          setSmartCity(null);
+                          setBuilderCountrySearch('');
+                          setBuilderCitySearch('');
+                          setCountry('');
+                          setCountrySearchInput('');
+                          onFocusLocationChange?.({});
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
+                        title="국가 선택 해제"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                   {isCountryDropdownOpen && filteredBuilderCountries.length > 0 && (
                     <div className="absolute top-full left-0 right-0 mt-0.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 shadow-xl max-h-56 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5">
@@ -1489,19 +1783,9 @@ export function TripBuilderPanel({
                             setCountry(c.nameEn);
                             setCountrySearchInput(`${c.nameKo} (${c.nameEn})`);
                             setIsCountryDropdownOpen(false);
-                            const cFirst = WORLD_CITIES.find(city => city.countryEn === c.nameEn);
-                            if (cFirst) {
-                              setSmartCity(cFirst);
-                              setBuilderCitySearch(cFirst.nameKo);
-                              handleAddCityToLocations(cFirst.nameKo, { lat: cFirst.lat, lng: cFirst.lng }, cFirst.countryEn);
-                              onFocusLocationChange?.({
-                                country: c,
-                                city: cFirst,
-                                locations: [{ name: cFirst.nameKo, lat: cFirst.lat, lng: cFirst.lng, country: cFirst.countryEn }]
-                              });
-                            } else {
-                              onFocusLocationChange?.({ country: c });
-                            }
+                            setSmartCity(null);
+                            setBuilderCitySearch('');
+                            onFocusLocationChange?.({ country: c });
                           }}
                           className="w-full text-left px-3 py-1.5 text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between cursor-pointer"
                         >
@@ -1517,7 +1801,7 @@ export function TripBuilderPanel({
                   )}
                 </div>
 
-                <div className="space-y-1 relative">
+                <div className="space-y-1 relative" ref={builderCityRef}>
                   <div className="relative">
                     <Building2 className={iconCls} />
                     <input
@@ -1529,8 +1813,27 @@ export function TripBuilderPanel({
                       }}
                       onFocus={() => setIsBuilderCityOpen(true)}
                       placeholder="도시 선택..."
-                      className={inputCls}
+                      className={`${inputCls} pr-7`}
                     />
+                    {builderCitySearch && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSmartCity(null);
+                          setBuilderCitySearch('');
+                          if (smartCountry) {
+                            onFocusLocationChange?.({ country: smartCountry });
+                          } else {
+                            onFocusLocationChange?.({});
+                          }
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
+                        title="도시 선택 해제"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                   {isBuilderCityOpen && filteredBuilderCities.length > 0 && (
                     <div className="absolute top-full left-0 right-0 mt-0.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 shadow-xl max-h-56 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5">
@@ -1552,7 +1855,9 @@ export function TripBuilderPanel({
                                 setCountrySearchInput(`${parentCountry.nameKo} (${parentCountry.nameEn})`);
                               }
                             }
-                            handleAddCityToLocations(city.nameKo, { lat: city.lat, lng: city.lng }, city.countryEn);
+                            if (!title.trim()) {
+                              setTitle(`${city.nameKo} TRIP`);
+                            }
                             onFocusLocationChange?.({
                               country: parentCountry,
                               city: city,
@@ -1598,12 +1903,32 @@ export function TripBuilderPanel({
               </div>
             </div>
 
+            {/* Climate Metric for custom selected date */}
+            {(() => {
+              if (!startDate) return null;
+              const m = new Date(startDate).getMonth() + 1;
+              if (isNaN(m)) return null;
+              const climateMetric = getClimateMiniMetric(smartCity?.nameKo, smartCountry?.nameKo || country, m);
+              if (!climateMetric) return null;
+              return (
+                <div className="text-[10px] font-mono text-black/70 dark:text-white/70 bg-black/[0.03] dark:bg-white/[0.03] px-2.5 py-1.5 border-l-2 border-black/30 dark:border-white/30 flex items-center justify-between">
+                  <span className="font-bold text-black/50 dark:text-white/50">{m}월 현지 기후</span>
+                  <span className="font-semibold text-black dark:text-white">{climateMetric}</span>
+                </div>
+              );
+            })()}
+
             {/* Season Analysis */}
             {renderSeasonAnalysisBlock(manualSeasonRisk)}
 
-            {/* Locations */}
-            <div className="space-y-1">
-              <label className={labelCls}>LOCATIONS</label>
+            {/* Locations (방문 희망 스팟) */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className={labelCls}>LOCATIONS (일정에 넣을 세부 스팟)</label>
+                <span className="text-[9.5px] font-mono text-black/40 dark:text-white/40">
+                  타임라인에 자동 배치
+                </span>
+              </div>
               <div className="relative">
                 <PlaceAutocompleteInput
                   value={locationInput}
@@ -1614,24 +1939,71 @@ export function TripBuilderPanel({
                       setLocationInput('');
                     }
                   }}
-                  placeholder="방문 장소 검색 후 추가..."
+                  placeholder="예: 도쿄타워, 시부야 스카이, 센소지 등 검색..."
                   className={inputCls}
                 />
               </div>
+
+              {/* Quick-Add Spots for selected city */}
+              {(() => {
+                const targetCityObj = smartCity || (smartCountry ? WORLD_CITIES.find(c => c.countryEn === smartCountry.nameEn) : null);
+                if (!targetCityObj) return null;
+                const recommendedSpots = [...(targetCityObj.iconicSpots || []), ...(targetCityObj.hiddenGems || [])].slice(0, 5);
+                if (recommendedSpots.length === 0) return null;
+                return (
+                  <div className="space-y-1 pt-1">
+                    <div className="text-[9.5px] font-mono text-black/50 dark:text-white/50 flex items-center justify-between">
+                      <span>{targetCityObj.nameKo} 대표 명소 추천 (클릭하여 스팟에 추가)</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {recommendedSpots.map(spot => {
+                        const isAlreadyAdded = locations.some(l => l.name === spot);
+                        return (
+                          <button
+                            key={spot}
+                            type="button"
+                            onClick={() => {
+                              if (!isAlreadyAdded) {
+                                handleAddCityToLocations(spot, undefined, targetCityObj.countryEn);
+                              }
+                            }}
+                            disabled={isAlreadyAdded}
+                            className={`px-2 py-0.5 text-[10px] font-mono border transition-all cursor-pointer flex items-center gap-1 ${
+                              isAlreadyAdded
+                                ? 'border-black/10 dark:border-white/10 text-black/30 dark:text-white/30 line-through bg-black/[0.02]'
+                                : 'border-black/20 dark:border-white/20 text-black/75 dark:text-white/75 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white bg-white dark:bg-[#1a1a1a]'
+                            }`}
+                          >
+                            <Plus className="w-2.5 h-2.5" />
+                            <span>{spot}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Added Locations Chips */}
               {locations.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-1.5">
-                  {locations.map((loc, idx) => (
-                    <span key={idx} className="inline-flex items-center gap-1 text-[10px] font-mono font-bold bg-black/5 dark:bg-white/10 px-2 py-0.5 border border-black/10 dark:border-white/10">
-                      <span>{loc.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => setLocations(prev => prev.filter((_, i) => i !== idx))}
-                        className="text-black/40 dark:text-white/40 hover:text-red-500"
-                      >
-                        &times;
-                      </button>
-                    </span>
-                  ))}
+                <div className="space-y-1 mt-1.5">
+                  <div className="flex flex-wrap gap-1">
+                    {locations.map((loc, idx) => (
+                      <span key={idx} className="inline-flex items-center gap-1 text-[10px] font-mono font-bold bg-black/5 dark:bg-white/10 px-2 py-0.5 border border-black/10 dark:border-white/10">
+                        <span>{loc.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => setLocations(prev => prev.filter((_, i) => i !== idx))}
+                          className="text-black/40 dark:text-white/40 hover:text-red-500 cursor-pointer"
+                        >
+                          &times;
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-[9.5px] font-mono text-black/40 dark:text-white/40">
+                    * 위 장소들은 트립 생성 시 일자별 추천 타임라인(1일차, 2일차...)에 자동 분배됩니다.
+                  </p>
                 </div>
               )}
             </div>

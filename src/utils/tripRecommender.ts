@@ -34,6 +34,7 @@ export interface CuratedTripProposal {
 }
 
 export interface TripCriteria {
+  continent?: string; // 'all' | 'asia' | 'europe' | 'north_america' | 'south_america' | 'oceania' | 'africa'
   theme?: string; // 'all' | 'food' | 'shopping' | 'nature' | 'activity' | 'art' | 'relax'
   country?: DestinationCountry | null;
   city?: DestinationCity | null;
@@ -41,6 +42,67 @@ export interface TripCriteria {
   targetMonth?: number; // 1-12 (0: all)
   durationDays?: number; // 3, 4, 5, 7, 10
   seedOffset?: number;
+}
+
+export const CONTINENTS = [
+  { id: 'all', labelEn: 'ALL', labelKo: '전세계' },
+  { id: 'asia', labelEn: 'ASIA', labelKo: '아시아' },
+  { id: 'europe', labelEn: 'EUROPE', labelKo: '유럽' },
+  { id: 'north_america', labelEn: 'N.AMERICA', labelKo: '북미' },
+  { id: 'south_america', labelEn: 'S.AMERICA', labelKo: '남미' },
+  { id: 'oceania', labelEn: 'OCEANIA', labelKo: '오세아니아' },
+  { id: 'africa', labelEn: 'AFRICA', labelKo: '아프리카' },
+] as const;
+
+export const CONTINENT_COUNTRY_MAP: Record<string, string[]> = {
+  asia: ['JAPAN', 'SOUTH KOREA', 'TAIWAN', 'VIETNAM', 'THAILAND', 'CHINA', 'HONG KONG', 'MACAU', 'SINGAPORE', 'MALAYSIA', 'INDONESIA', 'PHILIPPINES', 'MONGOLIA', 'INDIA', 'NEPAL', 'LAOS', 'CAMBODIA', 'MALDIVES', 'SRI LANKA', 'UZBEKISTAN', 'KAZAKHSTAN', 'GEORGIA', 'ARMENIA', 'AZERBAIJAN', 'TURKEY', 'UNITED ARAB EMIRATES', 'QATAR', 'SAUDI ARABIA', 'JORDAN', 'ISRAEL', 'OMAN'],
+  europe: ['FRANCE', 'ITALY', 'UNITED KINGDOM', 'SPAIN', 'GERMANY', 'SWITZERLAND', 'AUSTRIA', 'CZECH REPUBLIC', 'HUNGARY', 'PORTUGAL', 'NETHERLANDS', 'BELGIUM', 'GREECE', 'CROATIA', 'ICELAND', 'NORWAY', 'SWEDEN', 'FINLAND', 'DENMARK', 'IRELAND', 'POLAND', 'SLOVENIA', 'MALTA', 'CYPRUS', 'ESTONIA', 'LATVIA', 'LITHUANIA', 'ROMANIA', 'BULGARIA'],
+  north_america: ['USA', 'CANADA', 'MEXICO', 'CUBA', 'JAMAICA', 'COSTA RICA', 'PANAMA'],
+  south_america: ['BRAZIL', 'ARGENTINA', 'CHILE', 'PERU', 'COLOMBIA', 'BOLIVIA', 'ECUADOR'],
+  oceania: ['AUSTRALIA', 'NEW ZEALAND', 'GUAM', 'SAIPAN', 'FIJI'],
+  africa: ['EGYPT', 'MOROCCO', 'SOUTH AFRICA', 'KENYA', 'TANZANIA', 'MADAGASCAR', 'MAURITIUS', 'SEYCHELLES', 'TUNISIA']
+};
+
+/**
+ * 선택 지역 및 월에 따른 스위스 미니멀 기후/기온 메트릭
+ */
+export function getClimateMiniMetric(cityNameKo?: string, countryNameKo?: string, month: number = 10): string {
+  const cName = cityNameKo || '';
+  const cntry = countryNameKo || '';
+
+  // 동남아/열대권 특성
+  const isTropical = ['방콕', '다낭', '발리', '싱가포르', '하노이', '푸켓', '치앙마이', '세부', '보라카이'].some(t => cName.includes(t)) ||
+    ['태국', '베트남', '인도네시아', '필리핀', '싱가포르', '말레이시아'].some(t => cntry.includes(t));
+
+  if (isTropical) {
+    if ([11, 12, 1, 2].includes(month)) {
+      return 'AVG 27~30°C · 건기 최적 시즌 · 비가 적고 쾌적한 관광';
+    } else if ([3, 4, 5].includes(month)) {
+      return 'AVG 33~36°C · 핫 시즌 · 실내 쇼핑몰 & 나이트마켓 추천';
+    } else {
+      return 'AVG 29~32°C · 우기 스콜 시즌 · 스콜 대비 & 칠링 휴양';
+    }
+  }
+
+  // 삿포로 등 한랭지
+  if (['삿포로', '하코다테', '오타루'].some(t => cName.includes(t))) {
+    if ([12, 1, 2].includes(month)) {
+      return 'AVG -4~-1°C · 파우더 스노우 시즌 · 설경 & 눈축제 이상적';
+    } else if ([7, 8].includes(month)) {
+      return 'AVG 21~25°C · 청정 여름 시즌 · 라벤더 꽃밭 & 쾌적한 산책';
+    }
+  }
+
+  // 온대 북반구 기본
+  if ([3, 4, 5].includes(month)) {
+    return 'AVG 15~21°C · 온화하고 화창한 봄 시즌 · 쾌적한 도심 산책';
+  } else if ([6, 7, 8].includes(month)) {
+    return 'AVG 26~31°C · 활기찬 여름 썸머 페스티벌 · 쿨링 실내 & 야경 투어';
+  } else if ([9, 10, 11].includes(month)) {
+    return 'AVG 16~22°C · 맑고 청명한 단풍 최적 시즌 · 야외 관광 이상적';
+  } else {
+    return 'AVG 4~11°C · 차분한 윈터 라이프 & 온천/미식 · 낭만적인 도시 야경';
+  }
 }
 
 /**
@@ -222,6 +284,7 @@ const THEME_PRESETS_META: Record<string, {
 export function generateCuratedTripProposals(criteria: TripCriteria): CuratedTripProposal[] {
   const {
     theme = 'all',
+    continent = 'all',
     country = null,
     city = null,
     targetYear,
@@ -243,8 +306,13 @@ export function generateCuratedTripProposals(criteria: TripCriteria): CuratedTri
       c.countryKo === country.nameKo
     );
   } else {
-    // 국가/도시 미지정: 전체 도시 대상
-    candidateCities = [...WORLD_CITIES];
+    // 국가/도시 미지정: 대륙 필터 반영
+    if (continent && continent !== 'all') {
+      const allowedCountries = CONTINENT_COUNTRY_MAP[continent] || [];
+      candidateCities = WORLD_CITIES.filter(c => allowedCountries.includes(c.countryEn.toUpperCase()));
+    } else {
+      candidateCities = [...WORLD_CITIES];
+    }
   }
 
   // 2. 테마 필터링 (all이 아닌 경우 태그 일치 우선)
@@ -364,10 +432,17 @@ export function generateCuratedTripProposals(criteria: TripCriteria): CuratedTri
 
   for (const c of shuffled) {
     if (selectedCities.length >= 3) break;
-    // 국가가 다양하게 분산되도록 우선 선별
-    if (!seenCountries.has(c.countryEn) || candidateCities.length <= 5) {
-      selectedCities.push(c);
-      seenCountries.add(c.countryEn);
+    if (country) {
+      // 국가가 지정된 경우: 해당 국가 내 서로 다른 도시들을 3개 채움
+      if (!selectedCities.some(sc => sc.nameEn === c.nameEn)) {
+        selectedCities.push(c);
+      }
+    } else {
+      // 국가 미지정인 경우: 여러 국가로 분산되도록 우선 선별
+      if (!seenCountries.has(c.countryEn) || candidateCities.length <= 5) {
+        selectedCities.push(c);
+        seenCountries.add(c.countryEn);
+      }
     }
   }
 
