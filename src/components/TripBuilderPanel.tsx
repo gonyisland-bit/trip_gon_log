@@ -85,6 +85,21 @@ export function TripBuilderPanel({
   // Presets List State
   const [presets, setPresets] = useState<PresetTripPlan[]>([]);
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
+  const [presetStartDate, setPresetStartDate] = useState<string>(() => {
+    if (initialStartDate) return initialStartDate;
+    const today = new Date();
+    today.setDate(today.getDate() + 14);
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  });
+
+  useEffect(() => {
+    if (initialStartDate) {
+      setPresetStartDate(initialStartDate);
+    }
+  }, [initialStartDate]);
 
   // Confirm Modal for Trip Generation
   const [confirmModalState, setConfirmModalState] = useState<{
@@ -403,14 +418,13 @@ export function TripBuilderPanel({
   };
 
   const handleConfirmPresetGeneration = (preset: PresetTripPlan) => {
-    const today = new Date();
-    today.setDate(today.getDate() + 14);
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
+    const baseDate = presetStartDate ? new Date(presetStartDate) : new Date();
+    const yyyy = baseDate.getFullYear();
+    const mm = String(baseDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(baseDate.getDate()).padStart(2, '0');
     const startStr = `${yyyy}.${mm}.${dd}`;
 
-    const endD = new Date(today);
+    const endD = new Date(baseDate);
     endD.setDate(endD.getDate() + preset.durationDays);
     const endStr = `${endD.getFullYear()}.${String(endD.getMonth() + 1).padStart(2, '0')}.${String(endD.getDate()).padStart(2, '0')}`;
     const dateRange = `${startStr} - ${endStr}`;
@@ -420,7 +434,7 @@ export function TripBuilderPanel({
     const lng = cityObj?.lng;
 
     const timelineItemsToCreate = preset.schedule.map(day => {
-      const curDate = new Date(today);
+      const curDate = new Date(baseDate);
       curDate.setDate(curDate.getDate() + day.dayOffset);
       const curStr = `${curDate.getFullYear()}.${String(curDate.getMonth() + 1).padStart(2, '0')}.${String(curDate.getDate()).padStart(2, '0')}`;
       return {
@@ -440,7 +454,7 @@ export function TripBuilderPanel({
     setConfirmModalState({
       isOpen: true,
       title: 'CREATE TRIP',
-      message: `'${preset.title}' 추천 여정으로 새 트립을 생성하시겠습니까?`,
+      message: `'${preset.title}' 여정을 생성하시겠습니까?\n(${startStr} - ${endStr}, ${preset.durationDays}박 ${preset.durationDays + 1}일)`,
       payload: () => {
         onCreate(
           preset.title,
@@ -542,6 +556,28 @@ export function TripBuilderPanel({
   ];
 
   const selectedPresetObj = presets.find(p => p.id === selectedPresetId);
+
+  const presetDateCalc = useMemo(() => {
+    if (!selectedPresetObj) return null;
+    const sDate = presetStartDate ? new Date(presetStartDate) : new Date();
+    const eDate = new Date(sDate);
+    eDate.setDate(eDate.getDate() + selectedPresetObj.durationDays);
+
+    const formatDot = (d: Date) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}.${m}.${day}`;
+    };
+
+    return {
+      startDateFormatted: formatDot(sDate),
+      endDateFormatted: formatDot(eDate),
+      rangeStr: `${formatDot(sDate)} - ${formatDot(eDate)}`,
+      nightsDays: `${selectedPresetObj.durationDays}박 ${selectedPresetObj.durationDays + 1}일`,
+      totalDays: selectedPresetObj.durationDays + 1
+    };
+  }, [selectedPresetObj, presetStartDate]);
 
   const inputCls = 'w-full pl-10 pr-4 py-2 text-xs bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none text-black dark:text-white font-sans';
   const labelCls = 'text-[10.5px] font-mono uppercase font-bold tracking-wider text-black/60 dark:text-white/60 mb-1 block';
@@ -695,30 +731,121 @@ export function TripBuilderPanel({
               })}
             </div>
 
-            {selectedPresetObj && (
-              <div className="pt-3 border-t border-black/10 dark:border-white/10 space-y-2.5">
-                <div className="flex items-baseline justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-black dark:text-white">
-                    {selectedPresetObj.title}
-                  </span>
-                  <span className="text-xs font-mono text-black/50 dark:text-white/50">
-                    {selectedPresetObj.city} · {selectedPresetObj.durationDays}박 {selectedPresetObj.durationDays + 1}일
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {selectedPresetObj.highlights.map((h, i) => (
-                    <span key={i} className="text-xs text-black/70 dark:text-white/70 border-l-2 border-black/30 dark:border-white/30 pl-2">
-                      {h}
+            {/* Expanded Preset Specification Summary Sheet */}
+            {selectedPresetObj && presetDateCalc && (
+              <div className="pt-4 mt-2 border-t border-black/15 dark:border-white/15 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                {/* Header */}
+                <div className="flex items-center justify-between pb-2 border-b border-black/10 dark:border-white/10">
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-red-600 dark:bg-red-500"></span>
+                    <span className="text-[11px] font-mono font-black uppercase tracking-widest text-black dark:text-white">
+                      PRESET SUMMARY
                     </span>
-                  ))}
+                  </div>
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-400">
+                    {selectedPresetObj.theme.toUpperCase()}
+                  </span>
                 </div>
+
+                {/* Swiss Minimal 1px Line Data Grid */}
+                <div className="divide-y divide-black/10 dark:divide-white/10 text-xs font-sans">
+                  {/* 1. Country / City */}
+                  <div className="py-2.5 flex items-center justify-between gap-3">
+                    <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-black/50 dark:text-white/50 shrink-0">
+                      DESTINATION
+                    </span>
+                    <div className="text-right flex items-center gap-1.5">
+                      <span className="font-mono font-black text-black dark:text-white uppercase px-1.5 py-0.5 bg-black/5 dark:bg-white/10 text-[10.5px]">
+                        {selectedPresetObj.country}
+                      </span>
+                      <span className="font-bold text-black dark:text-white">
+                        {selectedPresetObj.city}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 2. Start Date (Adjustable) */}
+                  <div className="py-2.5 flex items-center justify-between gap-3">
+                    <div>
+                      <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-black/50 dark:text-white/50 block">
+                        START DATE
+                      </span>
+                      <span className="text-[9.5px] font-sans text-black/40 dark:text-white/40">
+                        출발 예정일
+                      </span>
+                    </div>
+                    <input
+                      type="date"
+                      value={presetStartDate}
+                      onChange={(e) => setPresetStartDate(e.target.value)}
+                      className="px-2.5 py-1 text-xs font-mono font-bold bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 text-black dark:text-white outline-none focus:border-black dark:focus:border-white rounded-none cursor-pointer"
+                    />
+                  </div>
+
+                  {/* 3. Duration & Calculated Period */}
+                  <div className="py-2.5 flex items-center justify-between gap-3">
+                    <div>
+                      <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-black/50 dark:text-white/50 block">
+                        DURATION
+                      </span>
+                      <span className="text-[9.5px] font-sans text-black/40 dark:text-white/40">
+                        전체 일정
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-mono font-black text-black dark:text-white text-xs">
+                        {presetDateCalc.nightsDays}
+                      </span>
+                      <span className="text-[10.5px] font-mono text-black/50 dark:text-white/50 block mt-0.5">
+                        {presetDateCalc.rangeStr}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 4. Highlight Route */}
+                  <div className="py-2.5">
+                    <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-black/50 dark:text-white/50 block mb-2">
+                      HIGHLIGHT ROUTE
+                    </span>
+                    <div className="flex flex-col gap-1.5 pl-3 border-l-2 border-black/20 dark:border-white/20">
+                      {selectedPresetObj.highlights.map((h, i) => (
+                        <div key={i} className="flex items-baseline gap-2 text-xs">
+                          <span className="text-[9.5px] font-mono font-bold text-red-600 dark:text-red-400 shrink-0">
+                            0{i + 1}
+                          </span>
+                          <span className="text-black/80 dark:text-white/80 leading-relaxed font-medium">
+                            {h}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 5. Tags */}
+                  {selectedPresetObj.tags && selectedPresetObj.tags.length > 0 && (
+                    <div className="py-2 flex items-center justify-between gap-3">
+                      <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-black/50 dark:text-white/50 shrink-0">
+                        TAGS
+                      </span>
+                      <div className="flex flex-wrap gap-1 justify-end">
+                        {selectedPresetObj.tags.map((t, idx) => (
+                          <span key={idx} className="text-[9.5px] font-mono font-bold uppercase px-1.5 py-0.5 bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70">
+                            #{t}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Create Trip Action Button */}
                 <button
                   type="button"
                   onClick={() => handleConfirmPresetGeneration(selectedPresetObj)}
-                  className="w-full py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center justify-center gap-2 cursor-pointer mt-3"
                 >
                   <Check className="w-4 h-4" />
-                  <span>APPLY & CREATE TRIP</span>
+                  <span>CREATE TRIP</span>
                 </button>
               </div>
             )}

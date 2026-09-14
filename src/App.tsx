@@ -42,7 +42,6 @@ const JourneyDetailPage = lazyWithRetry(() => import('./pages/Detail').then(m =>
 const CalendarHubPage = lazyWithRetry(() => import('./pages/CalendarHub').then(m => ({ default: m.CalendarHubPage })));
 
 const AuthModal = lazyWithRetry(() => import('./components/AuthModal').then(m => ({ default: m.AuthModal })));
-const CreateTripModal = lazyWithRetry(() => import('./components/CreateTripModal').then(m => ({ default: m.CreateTripModal })));
 const SettingsModal = lazyWithRetry(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
 const SearchModal = lazyWithRetry(() => import('./components/SearchModal').then(m => ({ default: m.SearchModal })));
 const EditTripModal = lazyWithRetry(() => import('./components/EditTripModal').then(m => ({ default: m.EditTripModal })));
@@ -237,7 +236,6 @@ function App() {
   
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [isShareMode, setIsShareMode] = useState<boolean>(() => initialNavState.isShare);
   const [isManageModalOpen, setIsManageModalOpen] = useState<boolean>(false);
   const [createModalType, setCreateModalType] = useState<'archive' | 'plan'>('archive');
@@ -1658,7 +1656,11 @@ function App() {
   const handleAddArchive = async () => {
     if (!isLoggedIn) return alert("로그인 후 이용 가능합니다.");
     setCreateModalType('archive');
-    setIsCreateModalOpen(true);
+    setCreateCountryInitial('');
+    setCreateCityInitial('');
+    setCreateDateInitial('');
+    setMapBuilderRequested(true);
+    navigateTo('map');
   };
 
   const handleCreateTripForCountry = (countryName: string, cityName?: string, initialDate?: string) => {
@@ -1831,7 +1833,6 @@ function App() {
       setCreateCountryInitial('');
       setCreateCityInitial('');
       setCreateDateInitial('');
-      setIsCreateModalOpen(false);
 
       // Navigate to detail page
       navigateTo('detail', newId);
@@ -2777,30 +2778,6 @@ function App() {
             onClose={() => setIsAuthModalOpen(false)} 
             initialMode={authModalMode}
           />
-
-          {/* Create Trip Modal Popup */}
-          {isCreateModalOpen && (
-            <CreateTripModal
-              isOpen={isCreateModalOpen}
-              isAdmin={isAdmin}
-              onClose={() => {
-                setIsCreateModalOpen(false);
-                setCreateCountryInitial('');
-                setCreateCityInitial('');
-                setCreateDateInitial('');
-              }}
-              onCreate={handleCreateJourney}
-              existingTags={existingTags}
-              initialCountry={createCountryInitial}
-              initialCity={createCityInitial}
-              initialStartDate={createDateInitial}
-              isDarkMode={isDarkMode}
-              onOpenManagePresets={() => {
-                sessionStorage.setItem('initialManageTab', 'PRESETS');
-                navigateTo('manage');
-              }}
-            />
-          )}
 
           {/* Settings Modal Popup */}
           <SettingsModal

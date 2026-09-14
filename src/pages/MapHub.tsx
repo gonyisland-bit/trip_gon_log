@@ -2435,10 +2435,15 @@ export function MapHubPage({
 
   const handleCloseTripBuilder = useCallback(() => {
     setIsBuilderOpen(false);
+    setBuilderCountry('');
+    setBuilderCity('');
+    setBuilderDate('');
     if (builderRouteLayerRef.current) {
       builderRouteLayerRef.current.remove();
       builderRouteLayerRef.current = null;
     }
+    // Cleanly restore the map back to default global view (South Korea center)
+    handleResetToDefaultView();
     setTimeout(() => {
       if (mapRef.current) {
         mapRef.current.invalidateSize();
