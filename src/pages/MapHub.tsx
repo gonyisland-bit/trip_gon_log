@@ -1406,7 +1406,7 @@ interface MapHubPageProps {
   trips: Trip[];
   plans: Plan[];
   onNavigate: (view: string, tripId?: number | null) => void;
-  onCreateTripForCountry?: (countryName: string) => void;
+  onCreateTripForCountry?: (countryName: string, cityName?: string) => void;
   isDarkMode: boolean;
 }
 
@@ -2626,20 +2626,36 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                 {selectedCountry.cities.map(city => {
                   const isCityFavorite = favoriteCities.includes(city.toUpperCase());
                   return (
-                    <button
+                    <div
                       key={city}
-                      type="button"
-                      onClick={() => toggleFavoriteCity(city)}
-                      className={`px-2 py-0.5 text-[10.5px] font-bold uppercase transition-all cursor-pointer flex items-center gap-1 border ${
+                      className={`inline-flex items-center text-[10.5px] font-bold uppercase transition-all border ${
                         isCityFavorite
                           ? 'bg-amber-500 text-black border-amber-500 shadow-xs'
                           : 'bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white'
                       }`}
-                      title={`${city} 위시리스트 토글`}
                     >
-                      <Star className={`w-2.5 h-2.5 ${isCityFavorite ? 'fill-black text-black' : 'text-black/30 dark:text-white/30'}`} />
-                      <span>{city}</span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleFavoriteCity(city)}
+                        className="p-1 hover:opacity-75 cursor-pointer"
+                        title={`${city} 위시리스트 토글`}
+                      >
+                        <Star className={`w-2.5 h-2.5 ${isCityFavorite ? 'fill-black text-black' : 'text-black/30 dark:text-white/30'}`} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onCreateTripForCountry) {
+                            onCreateTripForCountry(selectedCountry.name, city);
+                            handleCloseCountry();
+                          }
+                        }}
+                        className="pr-2 pl-0.5 py-0.5 hover:underline cursor-pointer"
+                        title={`${city} 여정 생성`}
+                      >
+                        <span>{city}</span>
+                      </button>
+                    </div>
                   );
                 })}
               </div>
@@ -2678,42 +2694,36 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
         </div>
       )}
 
-      {/* 4. Wishlist Countries Modal Popup */}
+      {/* Wishlist Modal (Favorite Countries & Cities) */}
       {isWishlistModalOpen && (
-        <div 
-          className="fixed inset-0 z-[600] bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
-          onClick={() => setIsWishlistModalOpen(false)}
-        >
-          <div 
-            className="w-full max-w-md bg-white dark:bg-[#111111] border border-black/20 dark:border-white/20 shadow-2xl p-6 select-none"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-3">
-              <div>
-                <span className="text-[10px] font-mono font-black uppercase tracking-widest text-amber-500 block mb-0.5">
-                  MY TRAVEL WISHLIST
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="w-full max-w-lg bg-[#FAF9F6] dark:bg-[#181818] border border-black/20 dark:border-white/20 p-5 shadow-2xl flex flex-col gap-4 font-['Inter',sans-serif]">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <Bookmark className="w-4 h-4 text-amber-500" />
+                <span className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-mono">
+                  WISHLIST
                 </span>
-                <h3 className="text-xl font-black uppercase tracking-tight text-black dark:text-white">
-                  위시리스트 ({favoriteCountries.length + favoriteCities.length})
-                </h3>
               </div>
-              <button
+              <button 
+                type="button"
                 onClick={() => setIsWishlistModalOpen(false)}
-                className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer"
+                className="p-1 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Tabs: COUNTRIES vs CITIES */}
-            <div className="flex border-b border-black/10 dark:border-white/10 mb-3">
+            {/* Tabs: Countries vs Cities */}
+            <div className="flex border-b border-black/10 dark:border-white/10 text-xs font-mono font-bold">
               <button
                 type="button"
                 onClick={() => setWishlistTab('countries')}
-                className={`flex-1 py-2 text-center text-xs font-black uppercase tracking-wider font-mono cursor-pointer transition-colors border-b-2 ${
+                className={`pb-2 px-3 tracking-wider cursor-pointer transition-colors ${
                   wishlistTab === 'countries'
-                    ? 'border-black dark:border-white text-black dark:text-white font-bold'
-                    : 'border-transparent text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
+                    ? 'border-b-2 border-black dark:border-white text-black dark:text-white font-black'
+                    : 'text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
                 }`}
               >
                 COUNTRIES ({favoriteCountries.length})
@@ -2721,70 +2731,76 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
               <button
                 type="button"
                 onClick={() => setWishlistTab('cities')}
-                className={`flex-1 py-2 text-center text-xs font-black uppercase tracking-wider font-mono cursor-pointer transition-colors border-b-2 ${
+                className={`pb-2 px-3 tracking-wider cursor-pointer transition-colors ${
                   wishlistTab === 'cities'
-                    ? 'border-black dark:border-white text-black dark:text-white font-bold'
-                    : 'border-transparent text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
+                    ? 'border-b-2 border-black dark:border-white text-black dark:text-white font-black'
+                    : 'text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
                 }`}
               >
                 CITIES ({favoriteCities.length})
               </button>
             </div>
 
+            {/* Modal Body */}
             {wishlistTab === 'countries' ? (
-              wishlistCountriesData.length === 0 ? (
+              favoriteCountries.length === 0 ? (
                 <div className="py-12 text-center text-xs font-mono text-black/40 dark:text-white/40">
                   즐겨찾기에 등록된 국가가 없습니다. <br />
-                  국가를 검색하거나 지도에서 선택하여 가고싶은 나라를 담아보세요.
+                  지도에서 국가를 클릭한 후 ★ WISH 버튼을 눌러보세요.
                 </div>
               ) : (
                 <div className="flex flex-col gap-2 max-h-80 overflow-y-auto pr-1 divide-y divide-black/5 dark:divide-white/5">
-                  {wishlistCountriesData.map(c => (
-                    <div key={c.code} className="pt-2 flex items-center justify-between gap-3">
-                      <div 
-                        className="cursor-pointer flex-1 min-w-0"
-                        onClick={() => {
-                          handleSelectCountry(c);
-                          setIsWishlistModalOpen(false);
-                        }}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-black uppercase truncate text-black dark:text-white">
-                            {c.name}
-                          </span>
-                          <span className="text-[10px] font-sans text-black/50 dark:text-white/50">
-                            ({c.nameKo})
+                  {favoriteCountries.map(code => {
+                    const country = COUNTRIES_DATA.find(c => c.code === code);
+                    if (!country) return null;
+                    return (
+                      <div key={code} className="pt-2 flex items-center justify-between gap-3">
+                        <div 
+                          className="cursor-pointer flex-1 min-w-0"
+                          onClick={() => {
+                            handleSelectCountry(country);
+                            setIsWishlistModalOpen(false);
+                          }}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-black uppercase truncate text-black dark:text-white">
+                              {country.name}
+                            </span>
+                            <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                              ({country.nameKo})
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-mono text-black/40 dark:text-white/40 truncate block mt-0.5">
+                            {country.cities.slice(0, 3).join(', ')}
                           </span>
                         </div>
-                        <span className="text-[10px] font-mono text-black/40 dark:text-white/40 block truncate">
-                          {c.cities.slice(0, 3).join(', ')}
-                        </span>
-                      </div>
 
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {onCreateTripForCountry && (
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {onCreateTripForCountry && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                onCreateTripForCountry(country.name);
+                                setIsWishlistModalOpen(false);
+                              }}
+                              className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-[10px] font-black uppercase tracking-wider cursor-pointer hover:opacity-85 flex items-center gap-1"
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span>TRIP</span>
+                            </button>
+                          )}
                           <button
                             type="button"
-                            onClick={() => {
-                              onCreateTripForCountry(c.name);
-                              setIsWishlistModalOpen(false);
-                            }}
-                            className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-[10px] font-black uppercase tracking-wider cursor-pointer hover:opacity-85"
+                            onClick={() => toggleFavoriteCountry(country.code)}
+                            className="p-1 text-black/30 dark:text-white/30 hover:text-red-500 cursor-pointer"
+                            title="즐겨찾기 해제"
                           >
-                            + 여정 만들기
+                            <X className="w-3.5 h-3.5" />
                           </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => toggleFavoriteCountry(c.code)}
-                          className="p-1 text-black/30 dark:text-white/30 hover:text-red-500 cursor-pointer"
-                          title="즐겨찾기 해제"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )
             ) : (
@@ -2825,12 +2841,13 @@ export function MapHubPage({ trips, plans, onNavigate, onCreateTripForCountry, i
                             <button
                               type="button"
                               onClick={() => {
-                                onCreateTripForCountry(city);
+                                onCreateTripForCountry(matchedCountry?.name || '', city);
                                 setIsWishlistModalOpen(false);
                               }}
-                              className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-[10px] font-black uppercase tracking-wider cursor-pointer hover:opacity-85"
+                              className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-[10px] font-black uppercase tracking-wider cursor-pointer hover:opacity-85 flex items-center gap-1"
                             >
-                              + 여정 만들기
+                              <Plus className="w-3 h-3" />
+                              <span>TRIP</span>
                             </button>
                           )}
                           <button

@@ -242,6 +242,8 @@ function App() {
   const [isManageModalOpen, setIsManageModalOpen] = useState<boolean>(false);
   const [createModalType, setCreateModalType] = useState<'archive' | 'plan'>('archive');
   const [createCountryInitial, setCreateCountryInitial] = useState<string>('');
+  const [createCityInitial, setCreateCityInitial] = useState<string>('');
+  const [createDateInitial, setCreateDateInitial] = useState<string>('');
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
   
   // Hydrate from localStorage cache for instant 0ms mobile launch
@@ -1654,9 +1656,11 @@ function App() {
     setIsCreateModalOpen(true);
   };
 
-  const handleCreateTripForCountry = (countryName: string) => {
+  const handleCreateTripForCountry = (countryName: string, cityName?: string, initialDate?: string) => {
     if (!isLoggedIn) return alert("로그인 후 이용 가능합니다.");
-    setCreateCountryInitial(countryName);
+    setCreateCountryInitial(countryName || '');
+    setCreateCityInitial(cityName || '');
+    setCreateDateInitial(initialDate || '');
     setCreateModalType('plan');
     setIsCreateModalOpen(true);
   };
@@ -2691,6 +2695,7 @@ function App() {
                   plans={plans}
                   timelineData={timelineData}
                   onNavigate={navigateTo}
+                  onCreateTrip={(dateStr) => handleCreateTripForCountry('', '', dateStr)}
                   isDarkMode={isDarkMode}
                 />
               )}
@@ -2759,10 +2764,15 @@ function App() {
             onClose={() => {
               setIsCreateModalOpen(false);
               setCreateCountryInitial('');
+              setCreateCityInitial('');
+              setCreateDateInitial('');
             }}
             onCreate={handleCreateJourney}
             existingTags={existingTags}
             initialCountry={createCountryInitial}
+            initialCity={createCityInitial}
+            initialStartDate={createDateInitial}
+            isDarkMode={isDarkMode}
             onOpenManagePresets={() => {
               sessionStorage.setItem('initialManageTab', 'PRESETS');
               navigateTo('manage');

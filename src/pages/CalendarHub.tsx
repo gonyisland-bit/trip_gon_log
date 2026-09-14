@@ -17,6 +17,7 @@ interface CalendarHubPageProps {
   plans: Plan[];
   timelineData?: TimelineData;
   onNavigate: (view: string, tripId?: number | null) => void;
+  onCreateTrip?: (dateStr?: string) => void;
   isDarkMode?: boolean;
 }
 
@@ -117,6 +118,7 @@ export function CalendarHubPage({
   plans,
   timelineData,
   onNavigate,
+  onCreateTrip,
   isDarkMode = false
 }: CalendarHubPageProps) {
   const today = useMemo(() => new Date(), []);
@@ -1522,6 +1524,24 @@ export function CalendarHubPage({
                 <Edit3 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 <span>{isEditMode ? 'EDIT: ON' : 'EDIT'}</span>
                 {isEditMode && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />}
+              </button>
+            )}
+
+            {/* 4. Swiss Minimal NEW TRIP Button */}
+            {onCreateTrip && (
+              <button
+                type="button"
+                onClick={() => {
+                  const yyyy = currentYear;
+                  const mm = String(currentMonth + 1).padStart(2, '0');
+                  const dd = '01';
+                  onCreateTrip(`${yyyy}-${mm}-${dd}`);
+                }}
+                className="h-7 sm:h-8 px-2.5 sm:px-3 rounded-full bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10.5px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-xs"
+                title="이 달을 기준으로 새로운 트립 생성"
+              >
+                <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                <span>NEW TRIP</span>
               </button>
             )}
           </div>

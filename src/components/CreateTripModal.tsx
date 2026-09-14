@@ -13,6 +13,8 @@ import {
   Palmtree, 
   Building2,
   Plus,
+  Minus,
+  Maximize2,
   Trash2,
   Edit,
   Check,
@@ -55,6 +57,9 @@ interface CreateTripModalProps {
   ) => void;
   existingTags: string[];
   initialCountry?: string;
+  initialCity?: string;
+  initialStartDate?: string;
+  isDarkMode?: boolean;
   onOpenManagePresets?: () => void;
 }
 
@@ -100,6 +105,9 @@ export function CreateTripModal({
   onCreate,
   existingTags,
   initialCountry,
+  initialCity,
+  initialStartDate,
+  isDarkMode,
   onOpenManagePresets,
 }: CreateTripModalProps) {
   // Modal Top Navigation Mode: PRESETS | BUILDER | MANUAL
@@ -159,6 +167,14 @@ export function CreateTripModal({
   });
   const [smartDurationDays, setSmartDurationDays] = useState<number>(4);
 
+  // ─── Leaflet Interactive Map State & References ───
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const markersLayerGroupRef = useRef<any>(null);
+  const polylineLayerRef = useRef<any>(null);
+  const [mapReady, setMapReady] = useState(false);
+  const [mapFocusedLabel, setMapFocusedLabel] = useState<string>('GLOBAL MAP');
+
   // Sync presets on custom event
   useEffect(() => {
     const handlePresetsChanged = () => {
@@ -175,11 +191,16 @@ export function CreateTripModal({
       setSelectedPresetId(null);
       setIsPresetEditing(false);
       setEditingPresetData(null);
-      setModalMode('presets');
-      setTitle(initialCountry ? `${initialCountry} TRIP` : '');
       
-      const defaultStart = new Date();
-      defaultStart.setDate(defaultStart.getDate() + 7);
+      // Prefer builder tab if initialCity or initialCountry is specified
+      if (initialCity || initialCountry) {
+        setModalMode('builder');
+      } else {
+        setModalMode('presets');
+      }
+      
+      const defaultStart = initialStartDate ? new Date(initialStartDate) : new Date();
+      if (!initialStartDate) defaultStart.setDate(defaultStart.getDate() + 7);
       const yyyy = defaultStart.getFullYear();
       const mm = String(defaultStart.getMonth() + 1).padStart(2, '0');
       const dd = String(defaultStart.getDate()).padStart(2, '0');
@@ -194,36 +215,112 @@ export function CreateTripModal({
 
       setStartDate(startStr);
       setEndDate(endStr);
-      setCountry(initialCountry || '');
-      setCountrySearchInput(initialCountry || '');
-      setLocations(initialCountry ? [{ name: initialCountry }] : []);
+      setSmartStartDate(startStr);
       setLocationInput('');
-      setTags(initialCountry ? [initialCountry] : []);
       setTagInput('');
       setMembers([]);
       setMemberInput('');
       setStatusBadge('');
       setError('');
 
-      if (initialCountry) {
-        const found = findCountryByNameOrAlias(initialCountry);
-        if (found) {
-          setSmartCountry(found);
-          setBuilderCountrySearch(`${found.nameKo} (${found.nameEn})`);
-          const firstCity = WORLD_CITIES.find(c => c.countryEn === found.nameEn);
-          if (firstCity) {
-            setSmartCity(firstCity);
-            setBuilderCitySearch(firstCity.nameKo);
-          }
+      let matchedCity: DestinationCity | undefined;
+      let matchedCountryObj: DestinationCountry | undefined;
+
+      if (initialCity) {
+        matchedCity = findCityByNameOrAlias(initialCity);
+        if (matchedCity) {
+          matchedCountryObj = findCountryByNameOrAlias(matchedCity.countryEn);
         }
+      }
+
+      if (!matchedCountryObj && initialCountry) {
+        matchedCountryObj = findCountryByNameOrAlias(initialCountry);
+        if (!matchedCity && matchedCountryObj) {
+          matchedCity = WORLD_CITIES.find(c => c.countryEn === matchedCountryObj!.nameEn);
+        }
+      }
+
+      if (matchedCountryObj) {
+        setSmartCountry(matchedCountryObj);
+        setBuilderCountrySearch(`${matchedCountryObj.nameKo} (${matchedCountryObj.nameEn})`);
+        setCountry(matchedCountryObj.nameEn);
+        setCountrySearchInput(`${matchedCountryObj.nameKo} (${matchedCountryObj.nameEn})`);
+        setTags([matchedCountryObj.nameEn]);
       } else {
         setSmartCountry(null);
-        setSmartCity(null);
         setBuilderCountrySearch('');
+        setCountry('');
+        setCountrySearchInput('');
+        setTags([]);
+      }
+
+      if (matchedCity) {
+        setSmartCity(matchedCity);
+        setBuilderCitySearch(matchedCity.nameKo);
+        setTitle(`${matchedCity.nameEn.toUpperCase()} TRIP`);
+        setLocations([{ name: matchedCity.nameKo, lat: matchedCity.lat, lng: matchedCity.lng, country: matchedCity.countryEn }]);
+      } else if (matchedCountryObj) {
+        setTitle(`${matchedCountryObj.nameEn.toUpperCase()} TRIP`);
+        setLocations([{ name: matchedCountryObj.nameEn, country: matchedCountryObj.nameEn }]);
+      } else {
+        setSmartCity(null);
         setBuilderCitySearch('');
+        setTitle('');
+        setLocations([]);
       }
     }
-  }, [isOpen, initialCountry]);
+  }, [isOpen, initialCountry, initialCity, initialStartDate]);
+
+  // Leaflet Map Initialization
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const timer = setTimeout(() => {
+      if (!mapContainerRef.current) return;
+      const L = (window as any).L;
+      if (!L) return;
+
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+        return;
+      }
+
+      const map = L.map(mapContainerRef.current, {
+        zoomControl: false,
+        attributionControl: false,
+        scrollWheelZoom: true,
+        doubleClickZoom: true,
+        dragging: true,
+      }).setView([28, 20], 2);
+
+      const effectiveDark = isDarkMode ?? (typeof document !== 'undefined' && document.documentElement.classList.contains('dark'));
+      const tileUrl = effectiveDark
+        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+        : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+
+      L.tileLayer(tileUrl, {
+        maxZoom: 18,
+        subdomains: 'abcd',
+      }).addTo(map);
+
+      markersLayerGroupRef.current = L.layerGroup().addTo(map);
+      mapInstanceRef.current = map;
+      setMapReady(true);
+    }, 150);
+
+    return () => {
+      clearTimeout(timer);
+      if (mapInstanceRef.current) {
+        try {
+          mapInstanceRef.current.remove();
+        } catch (_) {}
+        mapInstanceRef.current = null;
+        markersLayerGroupRef.current = null;
+        polylineLayerRef.current = null;
+        setMapReady(false);
+      }
+    };
+  }, [isOpen, isDarkMode]);
 
   // Close on Escape
   useEffect(() => {
@@ -613,6 +710,204 @@ export function CreateTripModal({
 
   const selectedPresetObj = presets.find(p => p.id === selectedPresetId);
 
+  // ─── Real-time Map Markers & Route Synchronization ───
+  useEffect(() => {
+    if (!mapReady || !mapInstanceRef.current) return;
+    const L = (window as any).L;
+    if (!L) return;
+
+    const markersGroup = markersLayerGroupRef.current;
+    if (!markersGroup) return;
+    markersGroup.clearLayers();
+
+    if (polylineLayerRef.current) {
+      try {
+        mapInstanceRef.current.removeLayer(polylineLayerRef.current);
+      } catch (_) {}
+      polylineLayerRef.current = null;
+    }
+
+    const boundsPoints: [number, number][] = [];
+
+    const createSwissMarker = (
+      lat: number,
+      lng: number,
+      label: string,
+      isActive = false,
+      seqIndex?: number,
+      onClick?: () => void
+    ) => {
+      const activeColor = '#f97316';
+      const normalColor = '#18181b';
+
+      const labelBadge = label ? `
+        <span style="
+          display: inline-block;
+          font-family: 'Inter', ui-monospace, monospace;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.05em;
+          padding: 2px 6px;
+          background: ${isActive ? activeColor : 'rgba(15,15,15,0.85)'};
+          color: #ffffff;
+          border-radius: 2px;
+          white-space: nowrap;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+          text-transform: uppercase;
+        ">
+          ${seqIndex !== undefined ? `${seqIndex}. ` : ''}${label}
+        </span>
+      ` : '';
+
+      const html = `
+        <div style="display: flex; flex-direction: column; align-items: center; cursor: pointer; transform: translate(-50%, -50%);">
+          <div style="
+            width: ${isActive ? '14px' : '10px'};
+            height: ${isActive ? '14px' : '10px'};
+            border-radius: 9999px;
+            background: ${isActive ? activeColor : normalColor};
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 10px ${isActive ? 'rgba(249,115,22,0.7)' : 'rgba(0,0,0,0.4)'};
+            transition: all 0.2s ease;
+          "></div>
+          <div style="margin-top: 3px;">
+            ${labelBadge}
+          </div>
+        </div>
+      `;
+
+      const icon = L.divIcon({
+        html,
+        className: 'swiss-minimal-marker',
+        iconSize: [0, 0],
+      });
+
+      const marker = L.marker([lat, lng], { icon }).addTo(markersGroup);
+      if (onClick) {
+        marker.on('click', onClick);
+      }
+      return marker;
+    };
+
+    if (modalMode === 'presets') {
+      const preset = selectedPresetObj || presets[0];
+      if (preset) {
+        setMapFocusedLabel(`${preset.country} · ${preset.city}`);
+        const cityList: DestinationCity[] = [];
+        const pCity = findCityByNameOrAlias(preset.city);
+        if (pCity) cityList.push(pCity);
+
+        for (const h of preset.highlights) {
+          const c = findCityByNameOrAlias(h);
+          if (c && !cityList.some(item => item.nameEn === c.nameEn)) {
+            cityList.push(c);
+          }
+        }
+
+        if (cityList.length === 0) {
+          const countryCities = WORLD_CITIES.filter(c => c.countryEn.toUpperCase() === preset.country.toUpperCase());
+          if (countryCities.length > 0) cityList.push(countryCities[0]);
+        }
+
+        cityList.forEach((c, idx) => {
+          boundsPoints.push([c.lat, c.lng]);
+          createSwissMarker(c.lat, c.lng, c.nameKo || c.nameEn, true, cityList.length > 1 ? idx + 1 : undefined);
+        });
+
+        if (boundsPoints.length > 1) {
+          polylineLayerRef.current = L.polyline(boundsPoints, {
+            color: '#f97316',
+            weight: 2,
+            dashArray: '5, 7',
+            opacity: 0.9,
+          }).addTo(mapInstanceRef.current);
+          mapInstanceRef.current.fitBounds(polylineLayerRef.current.getBounds(), { padding: [45, 45], maxZoom: 12 });
+        } else if (boundsPoints.length === 1) {
+          mapInstanceRef.current.flyTo(boundsPoints[0], 9, { duration: 1.0 });
+        }
+      }
+    } else if (modalMode === 'builder') {
+      if (smartCountry) {
+        setMapFocusedLabel(`${smartCountry.nameKo} (${smartCountry.nameEn})`);
+        const countryCities = WORLD_CITIES.filter(c => c.countryEn === smartCountry.nameEn);
+
+        countryCities.forEach(c => {
+          const isSelected = smartCity?.nameEn === c.nameEn;
+          if (isSelected) boundsPoints.push([c.lat, c.lng]);
+          createSwissMarker(
+            c.lat,
+            c.lng,
+            c.nameKo,
+            isSelected,
+            undefined,
+            () => {
+              setSmartCity(c);
+              setBuilderCitySearch(c.nameKo);
+              if (!title.trim() || title.endsWith('TRIP')) {
+                setTitle(`${c.nameEn.toUpperCase()} TRIP`);
+              }
+            }
+          );
+        });
+
+        if (smartCity) {
+          mapInstanceRef.current.flyTo([smartCity.lat, smartCity.lng], 9, { duration: 1.2 });
+        } else if (countryCities.length > 0) {
+          const cBounds = L.latLngBounds(countryCities.map(c => [c.lat, c.lng]));
+          mapInstanceRef.current.fitBounds(cBounds, { padding: [45, 45], maxZoom: 9 });
+        }
+      } else {
+        setMapFocusedLabel('전 세계 주요 여행지');
+        const sampleCities = WORLD_CITIES.slice(0, 35);
+        sampleCities.forEach(c => {
+          createSwissMarker(c.lat, c.lng, c.nameKo, false, undefined, () => {
+            const countryObj = findCountryByNameOrAlias(c.countryEn);
+            if (countryObj) {
+              setSmartCountry(countryObj);
+              setBuilderCountrySearch(`${countryObj.nameKo} (${countryObj.nameEn})`);
+            }
+            setSmartCity(c);
+            setBuilderCitySearch(c.nameKo);
+            if (!title.trim() || title.endsWith('TRIP')) {
+              setTitle(`${c.nameEn.toUpperCase()} TRIP`);
+            }
+          });
+        });
+      }
+    } else if (modalMode === 'manual') {
+      setMapFocusedLabel(title.trim() ? title : '직접 입력 트립');
+      locations.forEach((loc, idx) => {
+        if (loc.lat !== undefined && loc.lng !== undefined) {
+          boundsPoints.push([loc.lat, loc.lng]);
+          createSwissMarker(loc.lat, loc.lng, loc.name, true, locations.length > 1 ? idx + 1 : undefined);
+        } else {
+          const c = findCityByNameOrAlias(loc.name);
+          if (c) {
+            boundsPoints.push([c.lat, c.lng]);
+            createSwissMarker(c.lat, c.lng, c.nameKo, true, locations.length > 1 ? idx + 1 : undefined);
+          }
+        }
+      });
+
+      if (boundsPoints.length > 1) {
+        polylineLayerRef.current = L.polyline(boundsPoints, {
+          color: '#f97316',
+          weight: 2,
+          dashArray: '5, 7',
+          opacity: 0.9,
+        }).addTo(mapInstanceRef.current);
+        mapInstanceRef.current.fitBounds(polylineLayerRef.current.getBounds(), { padding: [45, 45], maxZoom: 12 });
+      } else if (boundsPoints.length === 1) {
+        mapInstanceRef.current.flyTo(boundsPoints[0], 9, { duration: 1.0 });
+      }
+    }
+
+    setTimeout(() => {
+      if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
+    }, 200);
+
+  }, [modalMode, smartCountry, smartCity, selectedPresetId, locations, mapReady]);
+
   // Shared input style tokens (Inter & Noto Sans KR, minimum text >= 12px)
   const inputCls = 'w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none text-black dark:text-white font-sans';
   const labelCls = 'text-xs font-mono uppercase font-bold tracking-wider text-black/60 dark:text-white/60 mb-1.5 block';
@@ -632,21 +927,21 @@ export function CreateTripModal({
     if (!analysis) return null;
 
     const badgeLabel = analysis.isWarning 
-      ? '시즌 주의' 
+      ? '주의 시즌' 
       : analysis.isBestSeason 
         ? '최적 시즌' 
-        : '시즌 안내';
+        : '시즌 참고';
 
     const badgeCls = analysis.isWarning
-      ? 'bg-amber-500 text-white'
+      ? 'bg-red-600 text-white'
       : analysis.isBestSeason
-        ? 'bg-emerald-600 text-white'
+        ? 'bg-black text-white dark:bg-white dark:text-black'
         : 'bg-black/10 dark:bg-white/10 text-black/70 dark:text-white/70';
 
     const containerCls = analysis.isWarning
-      ? 'border-amber-500 text-amber-900 dark:text-amber-200 bg-amber-500/5'
+      ? 'border-red-600 text-red-700 dark:text-red-400 bg-red-500/5'
       : analysis.isBestSeason
-        ? 'border-emerald-500 text-emerald-900 dark:text-emerald-200 bg-emerald-500/5'
+        ? 'border-black dark:border-white text-black dark:text-white bg-black/5 dark:bg-white/5'
         : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 bg-black/[0.02] dark:bg-white/[0.02]';
 
     return (
@@ -672,21 +967,22 @@ export function CreateTripModal({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex justify-center items-center p-2 sm:p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] flex justify-center items-center p-2 sm:p-4 md:p-6 bg-black/75 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto">
       {/* Backdrop */}
       <div className="absolute inset-0" onClick={onClose} />
 
-      {/* Main Modal Card — no inner shadow-box, clean border */}
-      <div className="relative w-full max-w-xl bg-[#F9F8F6] dark:bg-[#121212] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col z-10 text-black dark:text-white max-h-[95vh] overflow-hidden my-auto shrink-0 font-sans">
+      {/* Main Wide Split Modal — Swiss Minimal Architecture */}
+      <div className="relative w-full max-w-6xl h-[92vh] max-h-[94vh] bg-[#F9F8F6] dark:bg-[#121212] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col z-10 text-black dark:text-white overflow-hidden my-auto shrink-0 font-sans">
         
-        {/* Header — Inter font for title, Noto Sans KR for subtitle */}
-        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-black/10 dark:border-white/10">
-          <div>
+        {/* Header — Inter font for title, minimal layout */}
+        <div className="flex items-center justify-between px-5 sm:px-6 py-3.5 border-b border-black/10 dark:border-white/10 shrink-0 bg-white/50 dark:bg-black/30 backdrop-blur-xs">
+          <div className="flex items-center gap-3">
             <h2 className="text-base sm:text-lg font-black uppercase font-sans tracking-wider leading-none text-black dark:text-white">
               TRIP GUIDE
             </h2>
-            <p className="text-xs font-sans text-black/55 dark:text-white/55 mt-1">
-              원클릭 스마트 트립 생성기
+            <span className="hidden sm:inline-block w-px h-3.5 bg-black/20 dark:bg-white/20" />
+            <p className="text-xs font-sans text-black/55 dark:text-white/55">
+              스마트 맵 연동 트립 생성기
             </p>
           </div>
           <button 
@@ -698,40 +994,96 @@ export function CreateTripModal({
           </button>
         </div>
 
-        {/* Tab Switcher — Inter + Noto Sans KR */}
-        <div className="flex border-b border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02]">
-          {([
-            { id: 'presets', label: 'PRESETS', sub: '추천 템플릿', icon: Layers },
-            { id: 'builder', label: 'BUILDER', sub: '맞춤 생성', icon: Globe },
-            { id: 'manual', label: 'MANUAL', sub: '직접 입력', icon: Sliders },
-          ] as const).map(tab => {
-            const Icon = tab.icon;
-            const active = modalMode === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setModalMode(tab.id)}
-                className={`flex-1 py-2.5 sm:py-3 px-2 flex flex-col items-center justify-center gap-0.5 border-b-2 transition-all cursor-pointer ${
-                  active
-                    ? 'border-black dark:border-white bg-white dark:bg-[#161616] text-black dark:text-white shadow-xs'
-                    : 'border-transparent text-black/45 dark:text-white/45 hover:text-black dark:hover:text-white'
-                }`}
-              >
-                <div className="flex items-center gap-1.5 font-sans font-bold text-xs uppercase tracking-wider">
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{tab.label}</span>
-                </div>
-                <span className="text-[11px] font-sans opacity-70">
-                  {tab.sub}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        {/* 2-Column Split Body: Desktop Left Map (52%) + Right Form (48%), Mobile Vertical Stack */}
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
+          
+          {/* Left: Interactive Swiss Minimal Leaflet Map */}
+          <div className="lg:w-[52%] h-56 sm:h-64 lg:h-full relative bg-zinc-100 dark:bg-[#111111] border-b lg:border-b-0 lg:border-r border-black/10 dark:border-white/10 shrink-0 overflow-hidden">
+            <div ref={mapContainerRef} className="w-full h-full z-0" />
+            
+            {/* Top Left: Focus Badge & Status */}
+            <div className="absolute top-3 left-3 z-[1000] pointer-events-none flex flex-col gap-1">
+              <div className="bg-black/85 dark:bg-white/90 text-white dark:text-black px-2.5 py-1 text-[11px] font-mono font-black tracking-wider uppercase backdrop-blur-xs flex items-center gap-1.5 shadow-md">
+                <MapPin className="w-3 h-3 text-orange-500" />
+                <span>{mapFocusedLabel}</span>
+              </div>
+              <span className="text-[10px] font-sans font-medium text-black/60 dark:text-white/60 bg-white/70 dark:bg-black/70 px-2 py-0.5 backdrop-blur-xs">
+                지도 위 도시 핀 클릭 시 목적지로 선택됩니다
+              </span>
+            </div>
 
-        {/* Scrollable Content Body */}
-        <div className="px-4 py-4 sm:px-6 sm:py-5 overflow-y-auto flex-1 space-y-4">
+            {/* Top Right: Zoom & World Reset Controls */}
+            <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-1">
+              <button
+                type="button"
+                onClick={() => mapInstanceRef.current?.zoomIn()}
+                title="Zoom In"
+                className="w-7 h-7 bg-white/90 dark:bg-black/90 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black border border-black/20 dark:border-white/20 text-black dark:text-white flex items-center justify-center transition-colors shadow-sm cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => mapInstanceRef.current?.zoomOut()}
+                title="Zoom Out"
+                className="w-7 h-7 bg-white/90 dark:bg-black/90 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black border border-black/20 dark:border-white/20 text-black dark:text-white flex items-center justify-center transition-colors shadow-sm cursor-pointer"
+              >
+                <Minus className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  mapInstanceRef.current?.setView([25, 15], 2);
+                  setMapFocusedLabel('GLOBAL MAP');
+                }}
+                title="World View"
+                className="w-7 h-7 bg-white/90 dark:bg-black/90 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black border border-black/20 dark:border-white/20 text-black dark:text-white flex items-center justify-center transition-colors shadow-sm cursor-pointer"
+              >
+                <Maximize2 className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+
+          {/* Right: Swiss Minimal Form Panel */}
+          <div className="lg:w-[48%] flex-1 flex flex-col h-full overflow-hidden bg-[#F9F8F6] dark:bg-[#121212]">
+            
+            {/* Tab Switcher — Inter + Noto Sans KR */}
+            <div className="flex border-b border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] shrink-0">
+              {([
+                { id: 'presets', label: 'PRESETS', sub: '추천 템플릿', icon: Layers },
+                { id: 'builder', label: 'BUILDER', sub: '맞춤 생성', icon: Globe },
+                { id: 'manual', label: 'MANUAL', sub: '직접 입력', icon: Sliders },
+              ] as const).map(tab => {
+                const Icon = tab.icon;
+                const active = modalMode === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => {
+                      setModalMode(tab.id);
+                      setTimeout(() => mapInstanceRef.current?.invalidateSize(), 150);
+                    }}
+                    className={`flex-1 py-2.5 sm:py-3 px-2 flex flex-col items-center justify-center gap-0.5 border-b-2 transition-all cursor-pointer ${
+                      active
+                        ? 'border-black dark:border-white bg-white dark:bg-[#161616] text-black dark:text-white shadow-xs'
+                        : 'border-transparent text-black/45 dark:text-white/45 hover:text-black dark:hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 font-sans font-bold text-xs uppercase tracking-wider">
+                      <Icon className="w-3.5 h-3.5" />
+                      <span>{tab.label}</span>
+                    </div>
+                    <span className="text-[11px] font-sans opacity-70">
+                      {tab.sub}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Scrollable Content Body */}
+            <div className="px-4 py-4 sm:px-6 sm:py-5 overflow-y-auto flex-1 space-y-4">
           
           {error && (
             <p className="text-red-600 dark:text-red-400 text-[11px] font-mono border-l-2 border-red-500 pl-3">{error}</p>
@@ -1275,6 +1627,8 @@ export function CreateTripModal({
             </form>
           )}
 
+        </div>
+          </div>
         </div>
       </div>
 
