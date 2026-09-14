@@ -474,8 +474,6 @@ export function CreateTripModal({
     return WORLD_CITIES.filter(c => c.countryEn === matchedCountry.nameEn);
   }, [matchedCountry]);
 
-  if (!isOpen) return null;
-
   // --- Handler: Select Country (Manual)
   const handleSelectCountry = (c: DestinationCountry) => {
     setCountry(c.nameEn);
@@ -965,6 +963,8 @@ export function CreateTripModal({
       </div>
     );
   };
+
+  if (!isOpen) return null;
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex justify-center items-center p-2 sm:p-4 md:p-6 bg-black/75 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto">

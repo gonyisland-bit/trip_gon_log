@@ -2758,26 +2758,28 @@ function App() {
           />
 
           {/* Create Trip Modal Popup */}
-          <CreateTripModal
-            isOpen={isCreateModalOpen}
-            isAdmin={isAdmin}
-            onClose={() => {
-              setIsCreateModalOpen(false);
-              setCreateCountryInitial('');
-              setCreateCityInitial('');
-              setCreateDateInitial('');
-            }}
-            onCreate={handleCreateJourney}
-            existingTags={existingTags}
-            initialCountry={createCountryInitial}
-            initialCity={createCityInitial}
-            initialStartDate={createDateInitial}
-            isDarkMode={isDarkMode}
-            onOpenManagePresets={() => {
-              sessionStorage.setItem('initialManageTab', 'PRESETS');
-              navigateTo('manage');
-            }}
-          />
+          {isCreateModalOpen && (
+            <CreateTripModal
+              isOpen={isCreateModalOpen}
+              isAdmin={isAdmin}
+              onClose={() => {
+                setIsCreateModalOpen(false);
+                setCreateCountryInitial('');
+                setCreateCityInitial('');
+                setCreateDateInitial('');
+              }}
+              onCreate={handleCreateJourney}
+              existingTags={existingTags}
+              initialCountry={createCountryInitial}
+              initialCity={createCityInitial}
+              initialStartDate={createDateInitial}
+              isDarkMode={isDarkMode}
+              onOpenManagePresets={() => {
+                sessionStorage.setItem('initialManageTab', 'PRESETS');
+                navigateTo('manage');
+              }}
+            />
+          )}
 
           {/* Settings Modal Popup */}
           <SettingsModal
