@@ -84,8 +84,8 @@ export function TripBuilderPanel({
   onCreate,
   onFocusLocationChange,
 }: TripBuilderPanelProps) {
-  // Tabs: PRESETS | BUILDER | MANUAL
-  const [panelTab, setPanelTab] = useState<'presets' | 'builder' | 'manual'>('builder');
+  // Tabs: CURATOR | TEMPLATES | CUSTOM
+  const [panelTab, setPanelTab] = useState<'curator' | 'templates' | 'custom'>('curator');
 
   // Presets List State
   const [presets, setPresets] = useState<PresetTripPlan[]>([]);
@@ -160,6 +160,23 @@ export function TripBuilderPanel({
   const [targetYear, setTargetYear] = useState<number>(() => new Date().getFullYear());
   const [targetMonth, setTargetMonth] = useState<number>(0); // 0: Auto Nearest Best, 1-12: Specific Month
 
+  // Nearest best month for currently selected city or country
+  const autoBestMonth = useMemo(() => {
+    const nowMonth = new Date().getMonth() + 1;
+    if (smartCity && smartCity.bestMonths && smartCity.bestMonths.length > 0) {
+      const upcoming = smartCity.bestMonths.filter(m => m >= nowMonth);
+      return upcoming.length > 0 ? upcoming[0] : smartCity.bestMonths[0];
+    }
+    if (smartCountry) {
+      const c = WORLD_CITIES.find(city => city.countryEn === smartCountry.nameEn);
+      if (c && c.bestMonths && c.bestMonths.length > 0) {
+        const upcoming = c.bestMonths.filter(m => m >= nowMonth);
+        return upcoming.length > 0 ? upcoming[0] : c.bestMonths[0];
+      }
+    }
+    return nowMonth <= 10 ? 10 : (nowMonth === 11 ? 11 : 4);
+  }, [smartCity, smartCountry]);
+
   // Sync presets
   useEffect(() => {
     const handlePresetsChanged = () => setPresets(getSavedPresets());
@@ -172,13 +189,7 @@ export function TripBuilderPanel({
     if (isOpen) {
       setPresets(getSavedPresets());
       setSelectedPresetId(null);
-
-      // Default tab: builder if city/country specified, else presets
-      if (initialCity || initialCountry) {
-        setPanelTab('builder');
-      } else {
-        setPanelTab('presets');
-      }
+      setPanelTab('curator');
 
       const defaultStart = initialStartDate ? new Date(initialStartDate) : new Date();
       if (!initialStartDate) defaultStart.setDate(defaultStart.getDate() + 7);
@@ -264,7 +275,7 @@ export function TripBuilderPanel({
   useEffect(() => {
     if (!isOpen) return;
     const selectedPresetObj = presets.find(p => p.id === selectedPresetId);
-    if (panelTab === 'presets') {
+    if (panelTab === 'templates') {
       const activePreset = selectedPresetObj;
       if (activePreset) {
         // Parse cities from preset and look up coordinates
@@ -298,10 +309,26 @@ export function TripBuilderPanel({
       } else {
         onFocusLocationChange?.({ preset: null });
       }
-    } else if (panelTab === 'builder') {
-      onFocusLocationChange?.({ country: smartCountry, city: smartCity });
-    } else if (panelTab === 'manual') {
-      onFocusLocationChange?.({ locations });
+    } else if (panelTab === 'curator') {
+      if (smartCity) {
+        onFocusLocationChange?.({
+          country: smartCountry,
+          city: smartCity,
+          locations: [{ name: smartCity.nameKo, lat: smartCity.lat, lng: smartCity.lng, country: smartCity.countryEn }]
+        });
+      } else if (smartCountry) {
+        onFocusLocationChange?.({ country: smartCountry });
+      }
+    } else if (panelTab === 'custom') {
+      if (smartCity) {
+        onFocusLocationChange?.({
+          country: smartCountry,
+          city: smartCity,
+          locations: [{ name: smartCity.nameKo, lat: smartCity.lat, lng: smartCity.lng, country: smartCity.countryEn }]
+        });
+      } else if (locations.length > 0) {
+        onFocusLocationChange?.({ locations });
+      }
     }
   }, [panelTab, smartCountry, smartCity, selectedPresetId, locations, isOpen]);
 
@@ -401,7 +428,7 @@ export function TripBuilderPanel({
   // Autocomplete filters
   const filteredBuilderCountries = useMemo(() => {
     const q = builderCountrySearch.trim().toLowerCase();
-    if (!q) return WORLD_COUNTRIES.slice(0, 15);
+    if (!q) return WORLD_COUNTRIES;
     return WORLD_COUNTRIES.filter(c => 
       c.nameKo.toLowerCase().includes(q) ||
       c.nameEn.toLowerCase().includes(q) ||
@@ -413,10 +440,12 @@ export function TripBuilderPanel({
   const filteredBuilderCities = useMemo(() => {
     const pool = smartCountry ? WORLD_CITIES.filter(c => c.countryEn === smartCountry.nameEn) : WORLD_CITIES;
     const q = builderCitySearch.trim().toLowerCase();
-    if (!q) return pool.slice(0, 20);
+    if (!q) return pool;
     return pool.filter(c => 
       c.nameKo.toLowerCase().includes(q) ||
       c.nameEn.toLowerCase().includes(q) ||
+      c.countryKo.toLowerCase().includes(q) ||
+      c.countryEn.toLowerCase().includes(q) ||
       c.tags.some(t => t.toLowerCase().includes(q))
     );
   }, [smartCountry, builderCitySearch]);
@@ -780,9 +809,9 @@ export function TripBuilderPanel({
       {/* Tabs */}
       <div className="flex border-b border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] shrink-0">
         {([
-          { id: 'presets', label: 'PRESETS', icon: Layers },
-          { id: 'builder', label: 'BUILDER', icon: Globe },
-          { id: 'manual', label: 'MANUAL', icon: Sliders },
+          { id: 'curator', label: 'CURATOR', icon: Compass },
+          { id: 'templates', label: 'TEMPLATES', icon: Layers },
+          { id: 'custom', label: 'CUSTOM', icon: Sliders },
         ] as const).map(tab => {
           const Icon = tab.icon;
           const active = panelTab === tab.id;
@@ -810,8 +839,8 @@ export function TripBuilderPanel({
           <p className="text-red-600 dark:text-red-400 text-xs font-mono border-l-2 border-red-500 pl-3">{error}</p>
         )}
 
-        {/* ─── TAB 1: PRESETS ─── */}
-        {panelTab === 'presets' && (
+        {/* ─── TAB: TEMPLATES (formerly Presets) ─── */}
+        {panelTab === 'templates' && (
           <div className="space-y-3">
             <div className="border-l-2 border-black/20 dark:border-white/20 pl-3 py-1">
               <p className="text-xs text-black/70 dark:text-white/70 leading-relaxed font-sans">
@@ -985,8 +1014,8 @@ export function TripBuilderPanel({
           </div>
         )}
 
-        {/* ─── TAB 2: BUILDER (Emotional Curated Recommender) ─── */}
-        {panelTab === 'builder' && (
+        {/* ─── TAB: CURATOR (formerly Builder) ─── */}
+        {panelTab === 'curator' && (
           <div className="space-y-4">
             {builderStep === 'criteria' ? (
               <>
@@ -1038,6 +1067,9 @@ export function TripBuilderPanel({
                           setSmartCity(null);
                           setBuilderCountrySearch('');
                           setBuilderCitySearch('');
+                          setCountry('');
+                          setCountrySearchInput('');
+                          onFocusLocationChange?.({});
                         }}
                         className="text-[10px] font-mono text-red-600 dark:text-red-400 hover:underline cursor-pointer"
                       >
@@ -1057,12 +1089,12 @@ export function TripBuilderPanel({
                             setIsBuilderCountryOpen(true);
                           }}
                           onFocus={() => setIsBuilderCountryOpen(true)}
-                          placeholder="국가 (선택 사항)..."
+                          placeholder="국가 (전체 스크롤 가능)..."
                           className={inputCls}
                         />
                       </div>
                       {isBuilderCountryOpen && filteredBuilderCountries.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 mt-0.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5">
+                        <div className="absolute top-full left-0 right-0 mt-0.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 shadow-xl max-h-56 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5">
                           {filteredBuilderCountries.map(c => (
                             <button
                               key={c.code}
@@ -1070,11 +1102,20 @@ export function TripBuilderPanel({
                               onClick={() => {
                                 setSmartCountry(c);
                                 setBuilderCountrySearch(`${c.nameKo} (${c.nameEn})`);
+                                setCountry(c.nameEn);
+                                setCountrySearchInput(`${c.nameKo} (${c.nameEn})`);
                                 setIsBuilderCountryOpen(false);
                                 const cFirst = WORLD_CITIES.find(city => city.countryEn === c.nameEn);
                                 if (cFirst) {
                                   setSmartCity(cFirst);
                                   setBuilderCitySearch(cFirst.nameKo);
+                                  onFocusLocationChange?.({
+                                    country: c,
+                                    city: cFirst,
+                                    locations: [{ name: cFirst.nameKo, lat: cFirst.lat, lng: cFirst.lng, country: cFirst.countryEn }]
+                                  });
+                                } else {
+                                  onFocusLocationChange?.({ country: c });
                                 }
                               }}
                               className="w-full text-left px-3 py-1.5 text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between cursor-pointer"
@@ -1083,7 +1124,7 @@ export function TripBuilderPanel({
                                 {c.nameKo} ({c.nameEn})
                               </span>
                               <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
-                                {c.popularCities.slice(0, 2).join(', ')}
+                                {c.popularCities?.slice(0, 2).join(', ') || c.code}
                               </span>
                             </button>
                           ))}
@@ -1107,7 +1148,7 @@ export function TripBuilderPanel({
                         />
                       </div>
                       {isBuilderCityOpen && filteredBuilderCities.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 mt-0.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5">
+                        <div className="absolute top-full left-0 right-0 mt-0.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 shadow-xl max-h-56 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5">
                           {filteredBuilderCities.map(city => (
                             <button
                               key={city.nameEn}
@@ -1116,13 +1157,22 @@ export function TripBuilderPanel({
                                 setSmartCity(city);
                                 setBuilderCitySearch(city.nameKo);
                                 setIsBuilderCityOpen(false);
-                                if (!smartCountry) {
-                                  const cObj = findCountryByNameOrAlias(city.countryEn);
-                                  if (cObj) {
-                                    setSmartCountry(cObj);
-                                    setBuilderCountrySearch(`${cObj.nameKo} (${cObj.nameEn})`);
+                                let parentCountry = smartCountry;
+                                if (!parentCountry) {
+                                  parentCountry = findCountryByNameOrAlias(city.countryEn) || null;
+                                  if (parentCountry) {
+                                    setSmartCountry(parentCountry);
+                                    setBuilderCountrySearch(`${parentCountry.nameKo} (${parentCountry.nameEn})`);
+                                    setCountry(parentCountry.nameEn);
+                                    setCountrySearchInput(`${parentCountry.nameKo} (${parentCountry.nameEn})`);
                                   }
                                 }
+                                // Trigger live map focus & marker pin for same-country city switch!
+                                onFocusLocationChange?.({
+                                  country: parentCountry,
+                                  city: city,
+                                  locations: [{ name: city.nameKo, lat: city.lat, lng: city.lng, country: city.countryEn }]
+                                });
                               }}
                               className="w-full text-left px-3 py-1.5 text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between cursor-pointer"
                             >
@@ -1184,18 +1234,25 @@ export function TripBuilderPanel({
                     {Array.from({ length: 12 }).map((_, mIdx) => {
                       const m = mIdx + 1;
                       const isSelected = targetMonth === m;
+                      const isAutoBest = targetMonth === 0 && autoBestMonth === m;
                       return (
                         <button
                           key={m}
                           type="button"
                           onClick={() => setTargetMonth(isSelected ? 0 : m)}
-                          className={`py-1 text-[10px] font-mono font-bold border text-center transition-all cursor-pointer ${
+                          className={`py-1 text-[10px] font-mono font-bold border text-center transition-all cursor-pointer relative ${
                             isSelected
                               ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                              : 'border-black/10 dark:border-white/10 text-black/60 dark:text-white/60 hover:border-black/30'
+                              : isAutoBest
+                                ? 'border-red-500 text-red-600 dark:text-red-400 bg-red-500/10 ring-1 ring-red-500/40 font-black'
+                                : 'border-black/10 dark:border-white/10 text-black/60 dark:text-white/60 hover:border-black/30'
                           }`}
+                          title={isAutoBest ? '현재 추천 최적 시즌 월' : `${m}월`}
                         >
-                          {m}월
+                          <span>{m}월</span>
+                          {isAutoBest && (
+                            <span className="absolute -top-1 -right-0.5 w-1.5 h-1.5 bg-red-600 rounded-full" />
+                          )}
                         </button>
                       );
                     })}
@@ -1364,8 +1421,8 @@ export function TripBuilderPanel({
           </div>
         )}
 
-        {/* ─── TAB 3: MANUAL ─── */}
-        {panelTab === 'manual' && (
+        {/* ─── TAB: CUSTOM (formerly Manual) ─── */}
+        {panelTab === 'custom' && (
           <form onSubmit={handleManualSubmit} className="space-y-3.5">
             <div className="space-y-1">
               <label className={labelCls}>TRIP TITLE *</label>
@@ -1379,6 +1436,142 @@ export function TripBuilderPanel({
                   placeholder="예: 2026 도쿄 미식 탐방..."
                   className={inputCls}
                 />
+              </div>
+            </div>
+
+            {/* Region (Country & City) - Synced with Curator */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className={labelCls}>REGION (국가 / 도시)</label>
+                {(smartCountry || smartCity) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSmartCountry(null);
+                      setSmartCity(null);
+                      setBuilderCountrySearch('');
+                      setBuilderCitySearch('');
+                      setCountry('');
+                      setCountrySearchInput('');
+                      onFocusLocationChange?.({});
+                    }}
+                    className="text-[10px] font-mono text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                  >
+                    CLEAR
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1 relative" ref={countryDropdownRef}>
+                  <div className="relative">
+                    <MapPin className={iconCls} />
+                    <input
+                      type="text"
+                      value={builderCountrySearch}
+                      onChange={(e) => {
+                        setBuilderCountrySearch(e.target.value);
+                        setIsCountryDropdownOpen(true);
+                      }}
+                      onFocus={() => setIsCountryDropdownOpen(true)}
+                      placeholder="국가 검색..."
+                      className={inputCls}
+                    />
+                  </div>
+                  {isCountryDropdownOpen && filteredBuilderCountries.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-0.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 shadow-xl max-h-56 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5">
+                      {filteredBuilderCountries.map(c => (
+                        <button
+                          key={c.code}
+                          type="button"
+                          onClick={() => {
+                            setSmartCountry(c);
+                            setBuilderCountrySearch(`${c.nameKo} (${c.nameEn})`);
+                            setCountry(c.nameEn);
+                            setCountrySearchInput(`${c.nameKo} (${c.nameEn})`);
+                            setIsCountryDropdownOpen(false);
+                            const cFirst = WORLD_CITIES.find(city => city.countryEn === c.nameEn);
+                            if (cFirst) {
+                              setSmartCity(cFirst);
+                              setBuilderCitySearch(cFirst.nameKo);
+                              handleAddCityToLocations(cFirst.nameKo, { lat: cFirst.lat, lng: cFirst.lng }, cFirst.countryEn);
+                              onFocusLocationChange?.({
+                                country: c,
+                                city: cFirst,
+                                locations: [{ name: cFirst.nameKo, lat: cFirst.lat, lng: cFirst.lng, country: cFirst.countryEn }]
+                              });
+                            } else {
+                              onFocusLocationChange?.({ country: c });
+                            }
+                          }}
+                          className="w-full text-left px-3 py-1.5 text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between cursor-pointer"
+                        >
+                          <span className="font-bold text-black dark:text-white font-mono text-[11px]">
+                            {c.nameKo} ({c.nameEn})
+                          </span>
+                          <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                            {c.popularCities?.slice(0, 2).join(', ') || c.code}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1 relative">
+                  <div className="relative">
+                    <Building2 className={iconCls} />
+                    <input
+                      type="text"
+                      value={builderCitySearch}
+                      onChange={(e) => {
+                        setBuilderCitySearch(e.target.value);
+                        setIsBuilderCityOpen(true);
+                      }}
+                      onFocus={() => setIsBuilderCityOpen(true)}
+                      placeholder="도시 선택..."
+                      className={inputCls}
+                    />
+                  </div>
+                  {isBuilderCityOpen && filteredBuilderCities.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-0.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 shadow-xl max-h-56 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5">
+                      {filteredBuilderCities.map(city => (
+                        <button
+                          key={city.nameEn}
+                          type="button"
+                          onClick={() => {
+                            setSmartCity(city);
+                            setBuilderCitySearch(city.nameKo);
+                            setIsBuilderCityOpen(false);
+                            let parentCountry = smartCountry;
+                            if (!parentCountry) {
+                              parentCountry = findCountryByNameOrAlias(city.countryEn) || null;
+                              if (parentCountry) {
+                                setSmartCountry(parentCountry);
+                                setBuilderCountrySearch(`${parentCountry.nameKo} (${parentCountry.nameEn})`);
+                                setCountry(parentCountry.nameEn);
+                                setCountrySearchInput(`${parentCountry.nameKo} (${parentCountry.nameEn})`);
+                              }
+                            }
+                            handleAddCityToLocations(city.nameKo, { lat: city.lat, lng: city.lng }, city.countryEn);
+                            onFocusLocationChange?.({
+                              country: parentCountry,
+                              city: city,
+                              locations: [{ name: city.nameKo, lat: city.lat, lng: city.lng, country: city.countryEn }]
+                            });
+                          }}
+                          className="w-full text-left px-3 py-1.5 text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between cursor-pointer"
+                        >
+                          <span className="font-bold text-black dark:text-white font-mono text-[11px]">
+                            {city.nameKo} ({city.nameEn})
+                          </span>
+                          <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                            {city.countryEn}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

@@ -1383,16 +1383,13 @@ export function getCountryLiveTime(countryCode: string, now: Date) {
     const diffMs = targetDate.getTime() - kstDate.getTime();
     const diffHours = Math.round(diffMs / (1000 * 60 * 60));
 
-    let diffText = '한국과 동일 (±0h)';
-    if (diffHours > 0) {
-      diffText = `한국보다 ${diffHours}시간 빠름 (+${diffHours}h)`;
-    } else if (diffHours < 0) {
-      diffText = `한국보다 ${Math.abs(diffHours)}시간 느림 (${diffHours}h)`;
-    }
+    const sign = diffHours > 0 ? '+' : diffHours < 0 ? '-' : '±';
+    const absH = Math.abs(diffHours);
+    const diffText = `${sign}${absH}:00`;
 
-    return { timeStr, dateStr, diffText, diffHours, timeZone };
+    return { timeStr, dateStr, diffText, diffHours, timeZone, second: now.getSeconds() };
   } catch (_) {
-    return { timeStr, dateStr, diffText: '시차 계산 불가', diffHours: 0, timeZone };
+    return { timeStr, dateStr, diffText: '±0:00', diffHours: 0, timeZone, second: now.getSeconds() };
   }
 }
 
@@ -2952,25 +2949,30 @@ export function MapHubPage({
 
             {/* 2. Compact 2-Column Grid: Live Local Time & Currency Exchange (Slim Line Layout) */}
             <div className="grid grid-cols-2 gap-3 pb-3 border-b border-black/10 dark:border-white/10">
-              {/* Col 1: Live Local Time */}
+              {/* Col 1: Live Local Time (Swiss Minimal Style) */}
               <div>
                 {(() => {
                   const liveInfo = getCountryLiveTime(selectedCountry.code, liveClockNow);
+                  const secondPct = ((liveInfo.second + 1) / 60) * 100;
                   return (
                     <div className="flex flex-col">
-                      <div className="flex items-center gap-1 text-[10px] font-mono font-black uppercase tracking-widest text-black/40 dark:text-white/40 mb-1">
-                        <Clock className="w-2.5 h-2.5 text-red-600 dark:text-red-400" />
-                        <span>LOCAL TIME</span>
-                        <span className="ml-auto text-[9.5px] font-mono font-bold text-red-600 dark:text-red-400">
-                          {liveInfo.diffText}
-                        </span>
+                      <div className="flex items-center gap-1.5 text-[10px] font-mono font-black uppercase tracking-wider text-black/50 dark:text-white/50 mb-1">
+                        <Clock className="w-3 h-3 text-red-600 dark:text-red-400 shrink-0" />
+                        <span>LOCAL TIME ({liveInfo.diffText})</span>
                       </div>
-                      <span className="text-xl sm:text-2xl font-black font-mono tracking-tight text-black dark:text-white leading-none">
+                      <span className="text-2xl font-black font-mono tracking-tight text-black dark:text-white leading-none">
                         {liveInfo.timeStr}
                       </span>
-                      <span className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50 mt-1">
-                        {liveInfo.dateStr}
-                      </span>
+                      <div className="flex items-center justify-between text-[10px] font-mono font-bold text-black/45 dark:text-white/45 mt-1">
+                        <span>{liveInfo.dateStr}</span>
+                      </div>
+                      {/* Swiss 1px Second Flow Line */}
+                      <div className="w-full h-[1.5px] bg-black/10 dark:bg-white/10 mt-1.5 overflow-hidden">
+                        <div 
+                          className="h-full bg-red-600 dark:bg-red-400 transition-all duration-300"
+                          style={{ width: `${secondPct}%` }}
+                        />
+                      </div>
                     </div>
                   );
                 })()}
