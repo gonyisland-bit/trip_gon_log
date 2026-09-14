@@ -30,7 +30,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     nameKo: '일본',
     currency: 'JPY',
     currencySymbol: '¥',
-    rateToKRW: 9.0,
+    rateToKRW: 9.30,
     cities: ['TOKYO', 'OSAKA', 'KYOTO', 'FUKUOKA', 'SAPPORO', 'NAGOYA', 'OKINAWA', 'KOBE', 'NARA'],
     center: [36.2048, 138.2529],
     zoom: 5.5,
@@ -56,7 +56,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     nameKo: '대만',
     currency: 'TWD',
     currencySymbol: 'NT$',
-    rateToKRW: 43.0,
+    rateToKRW: 43.2,
     cities: ['TAIPEI', 'KAOHSIUNG', 'TAICHUNG', 'TAINAN', 'HUALIEN', 'JIUFEN'],
     center: [23.7, 121.0],
     zoom: 7,
@@ -69,7 +69,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     nameKo: '홍콩',
     currency: 'HKD',
     currencySymbol: 'HK$',
-    rateToKRW: 177.0,
+    rateToKRW: 177.4,
     cities: ['HONG KONG', 'KOWLOON', 'CENTRAL', 'TSIM SHA TSUI', 'LANTAU'],
     center: [22.3193, 114.1694],
     zoom: 11,
@@ -95,7 +95,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     nameKo: '중국',
     currency: 'CNY',
     currencySymbol: '¥',
-    rateToKRW: 190.0,
+    rateToKRW: 191.5,
     cities: ['SHANGHAI', 'BEIJING', 'QINGDAO', 'ZHANGJIAJIE', 'CHENGDU', 'GUANGZHOU', 'XIAN'],
     center: [35.8617, 104.1954],
     zoom: 4,
@@ -123,7 +123,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     nameKo: '베트남',
     currency: 'VND',
     currencySymbol: '₫',
-    rateToKRW: 0.055,
+    rateToKRW: 0.0546,
     cities: ['DA NANG', 'HANOI', 'HO CHI MINH', 'NHA TRANG', 'PHU QUOC', 'HOI AN', 'SAPA'],
     center: [15.8, 108.0],
     zoom: 5.5,
@@ -136,7 +136,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     nameKo: '태국',
     currency: 'THB',
     currencySymbol: '฿',
-    rateToKRW: 38.0,
+    rateToKRW: 38.4,
     cities: ['BANGKOK', 'CHIANG MAI', 'PHUKET', 'PATTAYA', 'KOH SAMUI', 'KRABI'],
     center: [14.5, 101.0],
     zoom: 5.5,
@@ -1513,6 +1513,16 @@ export function MapHubPage({
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCountry, setSelectedCountry] = useState<CountryInfo | null>(null);
+  const [selectedDestCities, setSelectedDestCities] = useState<string[]>([]);
+  useEffect(() => {
+    setSelectedDestCities([]);
+  }, [selectedCountry?.code]);
+
+  const toggleDestCity = (cityName: string) => {
+    setSelectedDestCities(prev => 
+      prev.includes(cityName) ? prev.filter(c => c !== cityName) : [...prev, cityName]
+    );
+  };
   const [selectedPinGroup, setSelectedPinGroup] = useState<MapPinGroup | null>(null);
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
   const [isWishlistModalOpen, setIsWishlistModalOpen] = useState(false);
@@ -3000,68 +3010,82 @@ export function MapHubPage({
                 })()}
               </div>
 
-              {/* Col 2: Currency & Exchange Rate Card */}
-              <div className="bg-black/[0.03] dark:bg-white/[0.03] rounded-2xl p-3 flex flex-col justify-between border border-black/5 dark:border-white/10">
-                <div>
-                  <div className="text-[10px] font-mono font-black uppercase tracking-widest text-black/40 dark:text-white/40 mb-1">
-                    CURRENCY
-                  </div>
-                  <div className="text-base sm:text-lg font-black font-mono tracking-tight text-black dark:text-white leading-tight">
-                    {selectedCountry.currencySymbol} {selectedCountry.currency}
-                  </div>
-                </div>
+              {/* Col 2: Balanced 50:50 Modern Travel Exchange Widget Card */}
+              <div className="bg-[#f0f0f0] dark:bg-[#252525] rounded-2xl p-3 flex flex-col justify-between shadow-xs border border-black/5 dark:border-white/10 h-full select-none">
                 {(() => {
                   const unit = getOptimalCurrencyUnit(selectedCountry.rateToKRW, selectedCountry.currency);
                   const approxKRW = Math.round(selectedCountry.rateToKRW * unit);
 
                   return (
-                    <div className="mt-2 pt-2 border-t border-black/10 dark:border-white/10 text-[10.5px] font-mono font-bold text-black/70 dark:text-white/70">
-                      {unit.toLocaleString()} {selectedCountry.currency}
-                      <div className="text-xs sm:text-sm font-black text-black dark:text-white">
-                        ≈ ₩{approxKRW.toLocaleString()}
+                    <>
+                      {/* Top Half (50%): Local Currency (e.g. 100 JPY) */}
+                      <div className="flex-1 flex flex-col items-center justify-center pb-1.5 border-b border-black/10 dark:border-white/10 text-center">
+                        <span className="text-[10px] font-mono font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-0.5">
+                          LOCAL
+                        </span>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-black dark:text-white font-sans leading-none">
+                            {unit.toLocaleString()}
+                          </span>
+                          <span className="text-xs sm:text-sm font-mono font-black text-black/70 dark:text-white/70 uppercase">
+                            {selectedCountry.currency}
+                          </span>
+                        </div>
                       </div>
-                    </div>
+
+                      {/* Bottom Half (50%): Korean Won (e.g. 930 KRW) */}
+                      <div className="flex-1 flex flex-col items-center justify-center pt-1.5 text-center">
+                        <span className="text-[10px] font-mono font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-0.5">
+                          KOREAN WON
+                        </span>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-black dark:text-white font-sans leading-none">
+                            {approxKRW.toLocaleString()}
+                          </span>
+                          <span className="text-xs sm:text-sm font-mono font-black text-black/70 dark:text-white/70 uppercase">
+                            KRW
+                          </span>
+                        </div>
+                      </div>
+                    </>
                   );
                 })()}
               </div>
             </div>
 
-            {/* 3. Major Destinations (Clean Pill Buttons, No Redundant Help Text) */}
+            {/* 3. Major Destinations (Clean Pill Buttons, No Star Icon, Toggle Selection) */}
             <div className="pb-3 border-b border-black/10 dark:border-white/10">
-              <div className="text-[10px] font-mono font-black uppercase tracking-widest text-black/40 dark:text-white/40 mb-2">
-                DESTINATIONS ({selectedCountry.cities.length})
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-[10px] font-mono font-black uppercase tracking-widest text-black/40 dark:text-white/40">
+                  DESTINATIONS ({selectedCountry.cities.length})
+                </div>
+                {selectedDestCities.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDestCities([])}
+                    className="text-[10px] font-mono text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white underline cursor-pointer"
+                  >
+                    RESET ({selectedDestCities.length})
+                  </button>
+                )}
               </div>
               <div className="flex flex-wrap gap-1 font-['Inter',sans-serif]">
                 {selectedCountry.cities.map(city => {
-                  const isCityFavorite = favoriteCities.includes(city.toUpperCase());
+                  const isCitySelected = selectedDestCities.includes(city);
                   return (
-                    <div
+                    <button
                       key={city}
-                      className={`inline-flex items-center text-[10.5px] font-bold uppercase transition-all border ${
-                        isCityFavorite
+                      type="button"
+                      onClick={() => toggleDestCity(city)}
+                      className={`px-2.5 py-1 text-[10.5px] font-mono font-bold uppercase transition-all border cursor-pointer select-none ${
+                        isCitySelected
                           ? 'bg-amber-500 text-black border-amber-500 shadow-xs'
                           : 'bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white'
                       }`}
+                      title={`${city} 선택 (하단 트립 생성 연동)`}
                     >
-                      <button
-                        type="button"
-                        onClick={() => toggleFavoriteCity(city)}
-                        className="p-1 hover:opacity-75 cursor-pointer"
-                        title={`${city} 위시리스트 토글`}
-                      >
-                        <Star className={`w-2.5 h-2.5 ${isCityFavorite ? 'fill-black text-black' : 'text-black/30 dark:text-white/30'}`} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleOpenTripBuilder(selectedCountry.name, city);
-                        }}
-                        className="pr-2 pl-0.5 py-0.5 hover:underline cursor-pointer"
-                        title={`${city} 여정 생성`}
-                      >
-                        <span>{city}</span>
-                      </button>
-                    </div>
+                      {city}
+                    </button>
                   );
                 })}
               </div>
@@ -3071,7 +3095,15 @@ export function MapHubPage({
             <div className="grid grid-cols-2 gap-2 pt-0.5">
               <button
                 type="button"
-                onClick={() => toggleFavoriteCountry(selectedCountry.code)}
+                onClick={() => {
+                  toggleFavoriteCountry(selectedCountry.code);
+                  // 선택된 도시들도 즐겨찾기에 함께 반영
+                  selectedDestCities.forEach(c => {
+                    if (!favoriteCities.includes(c.toUpperCase())) {
+                      toggleFavoriteCity(c);
+                    }
+                  });
+                }}
                 className={`w-full py-2 px-3 text-xs font-black uppercase tracking-widest font-mono flex items-center justify-center gap-1.5 transition-colors cursor-pointer border ${
                   isCurrentCountryFavorite
                     ? 'bg-amber-500 text-black border-amber-500 shadow-xs'
@@ -3085,12 +3117,18 @@ export function MapHubPage({
               <button
                 type="button"
                 onClick={() => {
-                  handleOpenTripBuilder(selectedCountry.name);
+                  const targetCity = selectedDestCities.length > 0 ? selectedDestCities[0] : undefined;
+                  handleOpenTripBuilder(selectedCountry.name, targetCity);
                 }}
-                className="w-full py-2 px-3 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-widest font-mono flex items-center justify-center gap-1.5 hover:opacity-85 transition-opacity cursor-pointer shadow-xs"
+                className="w-full py-2 px-3 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-widest font-mono flex items-center justify-center gap-1.5 hover:opacity-85 transition-opacity cursor-pointer shadow-xs truncate"
+                title="선택된 장소 또는 국가 기준으로 새로운 트립 생성"
               >
-                <Plus className="w-3.5 h-3.5" />
-                <span>TRIP</span>
+                <Plus className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">
+                  {selectedDestCities.length > 0
+                    ? `TRIP (${selectedDestCities.length})`
+                    : 'CREATE TRIP'}
+                </span>
               </button>
             </div>
           </div>
