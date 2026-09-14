@@ -15,7 +15,11 @@ import {
   Globe,
   Layers,
   Calendar,
-  Sliders
+  Sliders,
+  Sparkles,
+  RefreshCw,
+  ArrowLeft,
+  ChevronRight
 } from 'lucide-react';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { 
@@ -31,6 +35,7 @@ import {
   PresetTripPlan
 } from '../data/worldDestinations';
 import { ConfirmModal } from './ConfirmModal';
+import { generateCuratedTripProposals, CuratedTripProposal } from '../utils/tripRecommender';
 
 export interface TripBuilderPanelProps {
   isOpen: boolean;
@@ -147,6 +152,14 @@ export function TripBuilderPanel({
   });
   const [smartDurationDays, setSmartDurationDays] = useState<number>(4);
 
+  // Emotional Curated Proposals State
+  const [builderStep, setBuilderStep] = useState<'criteria' | 'proposals'>('criteria');
+  const [curatedProposals, setCuratedProposals] = useState<CuratedTripProposal[]>([]);
+  const [selectedProposalId, setSelectedProposalId] = useState<string | null>(null);
+  const [seedOffset, setSeedOffset] = useState<number>(0);
+  const [targetYear, setTargetYear] = useState<number>(() => new Date().getFullYear());
+  const [targetMonth, setTargetMonth] = useState<number>(0); // 0: Auto Nearest Best, 1-12: Specific Month
+
   // Sync presets
   useEffect(() => {
     const handlePresetsChanged = () => setPresets(getSavedPresets());
@@ -190,6 +203,9 @@ export function TripBuilderPanel({
       setMemberInput('');
       setStatusBadge('');
       setError('');
+      setBuilderStep('criteria');
+      setCuratedProposals([]);
+      setSelectedProposalId(null);
 
       let matchedCity: DestinationCity | undefined;
       let matchedCountryObj: DestinationCountry | undefined;
@@ -501,6 +517,91 @@ export function TripBuilderPanel({
           preset.country,
           preset.coverImg,
           timelineItemsToCreate
+        );
+        onClose();
+      }
+    });
+  };
+
+  // Propose Curated Trips using Smart Engine
+  const handleProposeTrips = (customOffset?: number) => {
+    setError('');
+    const curOffset = customOffset !== undefined ? customOffset : seedOffset;
+    const proposals = generateCuratedTripProposals({
+      theme: selectedTheme,
+      country: smartCountry,
+      city: smartCity,
+      targetYear,
+      targetMonth,
+      durationDays: smartDurationDays,
+      seedOffset: curOffset
+    });
+
+    if (proposals.length === 0) {
+      setError('추천 여정을 찾지 못했습니다. 다른 조건으로 시도해 주세요.');
+      return;
+    }
+
+    setCuratedProposals(proposals);
+    setSelectedProposalId(proposals[0].id);
+    setBuilderStep('proposals');
+
+    // Focus map on the first proposal
+    const p = proposals[0];
+    onFocusLocationChange?.({
+      country: findCountryByNameOrAlias(p.countryEn),
+      city: p.cityObj,
+      locations: p.locations
+    });
+  };
+
+  const handleShuffleProposals = () => {
+    const nextOffset = seedOffset + 1;
+    setSeedOffset(nextOffset);
+    handleProposeTrips(nextOffset);
+  };
+
+  const handleSelectProposalForMap = (prop: CuratedTripProposal) => {
+    setSelectedProposalId(prop.id);
+    onFocusLocationChange?.({
+      country: findCountryByNameOrAlias(prop.countryEn),
+      city: prop.cityObj,
+      locations: prop.locations
+    });
+  };
+
+  const handleConfirmProposalGeneration = (prop: CuratedTripProposal) => {
+    const dateRange = `${prop.startDate.replace(/-/g, '.')} - ${prop.endDate.replace(/-/g, '.')}`;
+    const timelineItems = prop.timeline.map((day, dIdx) => ({
+      date: day.date.replace(/-/g, '.'),
+      items: day.items.map((item, iIdx) => ({
+        id: Date.now() + dIdx * 100 + iIdx,
+        time: item.time,
+        title: item.title,
+        memo: item.memo,
+        category: item.category,
+        type: item.type
+      }))
+    }));
+
+    setConfirmModalState({
+      isOpen: true,
+      title: 'CREATE CURATED TRIP',
+      message: `'${prop.title}' (${prop.nightsDays}) 여정을 생성하시겠습니까?`,
+      payload: () => {
+        onCreate(
+          prop.title,
+          dateRange,
+          `${prop.countryEn}, ${prop.cityName}`,
+          [prop.countryEn, prop.theme.toUpperCase(), `${prop.durationDays}박${prop.durationDays + 1}일`],
+          prop.cityObj.lat,
+          prop.cityObj.lng,
+          [],
+          prop.locations,
+          'NEW',
+          prop.countryEn,
+          prop.coverImg,
+          timelineItems
         );
         onClose();
       }
@@ -884,185 +985,382 @@ export function TripBuilderPanel({
           </div>
         )}
 
-        {/* ─── TAB 2: BUILDER ─── */}
+        {/* ─── TAB 2: BUILDER (Emotional Curated Recommender) ─── */}
         {panelTab === 'builder' && (
           <div className="space-y-4">
-            <div className="border-l-2 border-black/20 dark:border-white/20 pl-3 py-1">
-              <p className="text-xs text-black/70 dark:text-white/70 leading-relaxed font-sans">
-                방문할 국가와 도시를 지정하면 좌측 지도가 해당 지역으로 이동하며 추천 코스를 생성합니다.
-              </p>
-            </div>
-
-            {/* Theme */}
-            <div className="space-y-1.5">
-              <label className={labelCls}>THEME</label>
-              <div className="flex flex-wrap gap-1">
-                {themes.map(t => {
-                  const IconComp = t.icon;
-                  const isSelected = selectedTheme === t.id;
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => setSelectedTheme(t.id)}
-                      className={`px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider border flex items-center gap-1 transition-all cursor-pointer ${
-                        isSelected
-                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                          : 'border-black/15 dark:border-white/15 text-black/55 dark:text-white/55 hover:border-black/40 dark:hover:border-white/40'
-                      }`}
-                    >
-                      <IconComp className="w-2.5 h-2.5" />
-                      <span>{t.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Country & City */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1 relative" ref={builderCountryRef}>
-                <label className={labelCls}>COUNTRY</label>
-                <div className="relative">
-                  <MapPin className={iconCls} />
-                  <input
-                    type="text"
-                    value={builderCountrySearch}
-                    onChange={(e) => {
-                      setBuilderCountrySearch(e.target.value);
-                      setIsBuilderCountryOpen(true);
-                    }}
-                    onFocus={() => setIsBuilderCountryOpen(true)}
-                    placeholder="국가 검색..."
-                    className={inputCls}
-                  />
+            {builderStep === 'criteria' ? (
+              <>
+                {/* Intro Guide */}
+                <div className="border-l-2 border-black/20 dark:border-white/20 pl-3 py-1">
+                  <p className="text-xs text-black/70 dark:text-white/70 leading-relaxed font-sans">
+                    원하시는 조건(테마, 시기, 기간 등)만 가볍게 선택해 보세요. 최적 시즌의 완성도 높은 3가지 여정을 큐레이션해 드립니다.
+                  </p>
                 </div>
-                {isBuilderCountryOpen && filteredBuilderCountries.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-0.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5">
-                    {filteredBuilderCountries.map(c => (
+
+                {/* 1. Theme */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className={labelCls}>1. THEME (여행 테마)</label>
+                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40">선택 사항</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {themes.map(t => {
+                      const IconComp = t.icon;
+                      const isSelected = selectedTheme === t.id;
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => setSelectedTheme(t.id)}
+                          className={`px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider border flex items-center gap-1 transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                              : 'border-black/15 dark:border-white/15 text-black/55 dark:text-white/55 hover:border-black/40 dark:hover:border-white/40'
+                          }`}
+                        >
+                          <IconComp className="w-2.5 h-2.5" />
+                          <span>{t.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. Region (Country & City) */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className={labelCls}>2. REGION (목적지 — 미선택 시 전 세계 자동 큐레이션)</label>
+                    {(smartCountry || smartCity) && (
                       <button
-                        key={c.code}
                         type="button"
                         onClick={() => {
-                          setSmartCountry(c);
-                          setBuilderCountrySearch(`${c.nameKo} (${c.nameEn})`);
-                          setIsBuilderCountryOpen(false);
-                          const cFirst = WORLD_CITIES.find(city => city.countryEn === c.nameEn);
-                          if (cFirst) {
-                            setSmartCity(cFirst);
-                            setBuilderCitySearch(cFirst.nameKo);
-                          }
+                          setSmartCountry(null);
+                          setSmartCity(null);
+                          setBuilderCountrySearch('');
+                          setBuilderCitySearch('');
                         }}
-                        className="w-full text-left px-3 py-1.5 text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between cursor-pointer"
+                        className="text-[10px] font-mono text-red-600 dark:text-red-400 hover:underline cursor-pointer"
                       >
-                        <span className="font-bold text-black dark:text-white font-mono text-[11px]">
-                          {c.nameKo} ({c.nameEn})
-                        </span>
-                        <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
-                          {c.popularCities.slice(0, 2).join(', ')}
-                        </span>
+                        CLEAR
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1 relative" ref={builderCountryRef}>
+                      <div className="relative">
+                        <MapPin className={iconCls} />
+                        <input
+                          type="text"
+                          value={builderCountrySearch}
+                          onChange={(e) => {
+                            setBuilderCountrySearch(e.target.value);
+                            setIsBuilderCountryOpen(true);
+                          }}
+                          onFocus={() => setIsBuilderCountryOpen(true)}
+                          placeholder="국가 (선택 사항)..."
+                          className={inputCls}
+                        />
+                      </div>
+                      {isBuilderCountryOpen && filteredBuilderCountries.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 mt-0.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5">
+                          {filteredBuilderCountries.map(c => (
+                            <button
+                              key={c.code}
+                              type="button"
+                              onClick={() => {
+                                setSmartCountry(c);
+                                setBuilderCountrySearch(`${c.nameKo} (${c.nameEn})`);
+                                setIsBuilderCountryOpen(false);
+                                const cFirst = WORLD_CITIES.find(city => city.countryEn === c.nameEn);
+                                if (cFirst) {
+                                  setSmartCity(cFirst);
+                                  setBuilderCitySearch(cFirst.nameKo);
+                                }
+                              }}
+                              className="w-full text-left px-3 py-1.5 text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between cursor-pointer"
+                            >
+                              <span className="font-bold text-black dark:text-white font-mono text-[11px]">
+                                {c.nameKo} ({c.nameEn})
+                              </span>
+                              <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                                {c.popularCities.slice(0, 2).join(', ')}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-1 relative" ref={builderCityRef}>
+                      <div className="relative">
+                        <Building2 className={iconCls} />
+                        <input
+                          type="text"
+                          value={builderCitySearch}
+                          onChange={(e) => {
+                            setBuilderCitySearch(e.target.value);
+                            setIsBuilderCityOpen(true);
+                          }}
+                          onFocus={() => setIsBuilderCityOpen(true)}
+                          placeholder="도시 (선택 사항)..."
+                          className={inputCls}
+                        />
+                      </div>
+                      {isBuilderCityOpen && filteredBuilderCities.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 mt-0.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5">
+                          {filteredBuilderCities.map(city => (
+                            <button
+                              key={city.nameEn}
+                              type="button"
+                              onClick={() => {
+                                setSmartCity(city);
+                                setBuilderCitySearch(city.nameKo);
+                                setIsBuilderCityOpen(false);
+                                if (!smartCountry) {
+                                  const cObj = findCountryByNameOrAlias(city.countryEn);
+                                  if (cObj) {
+                                    setSmartCountry(cObj);
+                                    setBuilderCountrySearch(`${cObj.nameKo} (${cObj.nameEn})`);
+                                  }
+                                }
+                              }}
+                              className="w-full text-left px-3 py-1.5 text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between cursor-pointer"
+                            >
+                              <span className="font-bold text-black dark:text-white font-mono text-[11px]">
+                                {city.nameKo} ({city.nameEn})
+                              </span>
+                              <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                                {city.countryEn}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Departure Timing (Year & Month) */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className={labelCls}>3. DEPARTURE PERIOD (출발 시기)</label>
+                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                      {targetMonth === 0 ? '현재 기준 가장 가까운 최적 시즌' : `${targetYear}년 ${targetMonth}월`}
+                    </span>
+                  </div>
+
+                  {/* Year Selection */}
+                  <div className="flex items-center gap-1 mb-1.5">
+                    {[new Date().getFullYear(), new Date().getFullYear() + 1, new Date().getFullYear() + 2].map(yr => (
+                      <button
+                        key={yr}
+                        type="button"
+                        onClick={() => setTargetYear(yr)}
+                        className={`px-3 py-1 text-[10.5px] font-mono font-bold border transition-all cursor-pointer ${
+                          targetYear === yr
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                            : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/35'
+                        }`}
+                      >
+                        {yr}년
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setTargetMonth(0)}
+                      className={`ml-auto px-2.5 py-1 text-[10px] font-mono font-bold border transition-all cursor-pointer ${
+                        targetMonth === 0
+                          ? 'bg-red-600 text-white border-red-600'
+                          : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/35'
+                      }`}
+                      title="도시별 가장 가까운 최적 시즌 자동 배정"
+                    >
+                      최적 시즌 자동
+                    </button>
+                  </div>
+
+                  {/* Month Grid */}
+                  <div className="grid grid-cols-6 gap-1">
+                    {Array.from({ length: 12 }).map((_, mIdx) => {
+                      const m = mIdx + 1;
+                      const isSelected = targetMonth === m;
+                      return (
+                        <button
+                          key={m}
+                          type="button"
+                          onClick={() => setTargetMonth(isSelected ? 0 : m)}
+                          className={`py-1 text-[10px] font-mono font-bold border text-center transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                              : 'border-black/10 dark:border-white/10 text-black/60 dark:text-white/60 hover:border-black/30'
+                          }`}
+                        >
+                          {m}월
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 4. Duration */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className={labelCls}>4. DURATION (희망 여행 기간)</label>
+                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                      {smartDurationDays}박 {smartDurationDays + 1}일
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {[3, 4, 5, 7, 10].map(days => (
+                      <button
+                        key={days}
+                        type="button"
+                        onClick={() => setSmartDurationDays(days)}
+                        className={`flex-1 py-2 text-xs font-mono font-bold border transition-all cursor-pointer ${
+                          smartDurationDays === days
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                            : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/40 dark:hover:border-white/40'
+                        }`}
+                      >
+                        {days}D ({days}박)
                       </button>
                     ))}
                   </div>
-                )}
-              </div>
-
-              <div className="space-y-1 relative" ref={builderCityRef}>
-                <label className={labelCls}>CITY</label>
-                <div className="relative">
-                  <Building2 className={iconCls} />
-                  <input
-                    type="text"
-                    value={builderCitySearch}
-                    onChange={(e) => {
-                      setBuilderCitySearch(e.target.value);
-                      setIsBuilderCityOpen(true);
-                    }}
-                    onFocus={() => setIsBuilderCityOpen(true)}
-                    placeholder="도시 선택..."
-                    className={inputCls}
-                  />
                 </div>
-                {isBuilderCityOpen && filteredBuilderCities.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-0.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 shadow-xl max-h-48 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5">
-                    {filteredBuilderCities.map(city => (
-                      <button
-                        key={city.nameEn}
-                        type="button"
-                        onClick={() => {
-                          setSmartCity(city);
-                          setBuilderCitySearch(city.nameKo);
-                          setIsBuilderCityOpen(false);
-                          if (!smartCountry) {
-                            const cObj = findCountryByNameOrAlias(city.countryEn);
-                            if (cObj) {
-                              setSmartCountry(cObj);
-                              setBuilderCountrySearch(`${cObj.nameKo} (${cObj.nameEn})`);
-                            }
-                          }
-                        }}
-                        className="w-full text-left px-3 py-1.5 text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between cursor-pointer"
+
+                {/* Action Submit */}
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => handleProposeTrips()}
+                    className="w-full py-3.5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+                  >
+                    <Sparkles className="w-4 h-4 text-orange-500 animate-pulse" />
+                    <span>PROPOSE TRIPS (추천 여정 3선 탐색)</span>
+                  </button>
+                  <p className="text-[10px] font-mono text-center text-black/40 dark:text-white/40 mt-1.5">
+                    선택하지 않은 항목은 해당 시즌 최고의 설정으로 자동 큐레이션됩니다.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Proposal View Header */}
+                <div className="flex items-center justify-between pb-2 border-b border-black/10 dark:border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setBuilderStep('criteria')}
+                    className="flex items-center gap-1 text-[11px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer transition-colors"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>CRITERIA</span>
+                  </button>
+                  <span className="text-[11px] font-mono font-black uppercase tracking-wider text-black dark:text-white">
+                    3 CURATED PROPOSALS
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleShuffleProposals}
+                    className="flex items-center gap-1 text-[11px] font-mono font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 hover:opacity-80 cursor-pointer transition-opacity"
+                    title="다른 추천 조합 보기"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>SHUFFLE</span>
+                  </button>
+                </div>
+
+                <p className="text-xs text-black/60 dark:text-white/60 font-sans leading-relaxed">
+                  카드를 클릭하면 좌측 지도가 해당 여정의 위치로 이동합니다. 마음에 드는 옵션을 선택하여 여정을 생성하세요.
+                </p>
+
+                {/* Proposals Card List */}
+                <div className="space-y-3">
+                  {curatedProposals.map((prop, idx) => {
+                    const isSelected = selectedProposalId === prop.id;
+                    return (
+                      <div
+                        key={prop.id}
+                        onClick={() => handleSelectProposalForMap(prop)}
+                        className={`p-3.5 border transition-all cursor-pointer flex flex-col gap-2.5 ${
+                          isSelected
+                            ? 'border-black dark:border-white bg-black/5 dark:bg-white/10 ring-1 ring-black dark:ring-white'
+                            : 'border-black/15 dark:border-white/15 hover:border-black/40 dark:hover:border-white/40 bg-white dark:bg-[#181818]'
+                        }`}
                       >
-                        <span className="font-bold text-black dark:text-white font-mono text-[11px]">
-                          {city.nameKo} ({city.nameEn})
-                        </span>
-                        <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
-                          {city.countryEn}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+                        {/* Card Top: Number, Region, Theme Badge */}
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-5 h-5 flex items-center justify-center bg-black text-white dark:bg-white dark:text-black text-[10px] font-mono font-black">
+                              0{idx + 1}
+                            </span>
+                            <span className="text-xs font-mono font-black uppercase text-black dark:text-white">
+                              {prop.cityName} ({prop.countryKo})
+                            </span>
+                            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70">
+                              {prop.themeLabel}
+                            </span>
+                          </div>
+                          <span className="text-[9.5px] font-mono font-bold px-1.5 py-0.5 bg-orange-600 text-white uppercase tracking-wider">
+                            {prop.seasonBadge}
+                          </span>
+                        </div>
 
-            {/* Dates & Duration */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <label className={labelCls}>START DATE</label>
-                <div className="relative">
-                  <Calendar className={iconCls} />
-                  <input
-                    type="date"
-                    value={smartStartDate}
-                    onChange={(e) => setSmartStartDate(e.target.value)}
-                    className={inputCls}
-                  />
+                        {/* Title & Subtitle */}
+                        <div>
+                          <h4 className="text-sm font-sans font-bold text-black dark:text-white leading-tight">
+                            {prop.title}
+                          </h4>
+                          <p className="text-[11px] font-sans text-black/60 dark:text-white/60 mt-0.5 line-clamp-1">
+                            {prop.subtitle}
+                          </p>
+                        </div>
+
+                        {/* Schedule Line: Dates & Nights */}
+                        <div className="flex items-center justify-between text-[11px] font-mono font-bold text-black/75 dark:text-white/75 py-1 border-y border-black/10 dark:border-white/10">
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+                            <span>{prop.startDate.replace(/-/g, '.')} - {prop.endDate.replace(/-/g, '.')}</span>
+                          </div>
+                          <span className="text-red-600 dark:text-red-400 font-black">{prop.nightsDays}</span>
+                        </div>
+
+                        {/* Highlights Chips */}
+                        {prop.highlights && prop.highlights.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {prop.highlights.map((h, hIdx) => (
+                              <span
+                                key={hIdx}
+                                className="text-[9.5px] font-mono font-medium px-1.5 py-0.5 bg-black/[0.04] dark:bg-white/[0.06] text-black/70 dark:text-white/70"
+                              >
+                                #{h}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Season Note Bar */}
+                        <div className="border-l-2 border-black/30 dark:border-white/30 pl-2 py-0.5 text-[10.5px] font-sans text-black/60 dark:text-white/60">
+                          {prop.seasonNote}
+                        </div>
+
+                        {/* Select & Create Button */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleConfirmProposalGeneration(prop);
+                          }}
+                          className="w-full py-2.5 mt-1 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-black uppercase tracking-wider hover:opacity-85 transition-opacity flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>SELECT & CREATE TRIP</span>
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
-              <div className="space-y-1">
-                <label className={labelCls}>DURATION (일수)</label>
-                <div className="flex items-center gap-1">
-                  {[3, 4, 5, 7, 10].map(days => (
-                    <button
-                      key={days}
-                      type="button"
-                      onClick={() => setSmartDurationDays(days)}
-                      className={`flex-1 py-2 text-xs font-mono font-bold border transition-all cursor-pointer ${
-                        smartDurationDays === days
-                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                          : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/40 dark:hover:border-white/40'
-                      }`}
-                    >
-                      {days}D
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Season Analysis */}
-            {renderSeasonAnalysisBlock(seasonRiskCheck)}
-
-            {/* Submit */}
-            <button
-              type="button"
-              onClick={handleSmartBuilderGenerate}
-              className="w-full py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>GENERATE & CREATE TRIP</span>
-            </button>
+              </>
+            )}
           </div>
         )}
 

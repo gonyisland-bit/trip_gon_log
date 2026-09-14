@@ -1,0 +1,451 @@
+import { DestinationCity, DestinationCountry, WORLD_CITIES, WORLD_COUNTRIES, PresetTripPlan } from '../data/worldDestinations';
+
+export interface CuratedTripProposal {
+  id: string;
+  title: string;
+  subtitle: string;
+  countryEn: string;
+  countryKo: string;
+  cityName: string;
+  cityObj: DestinationCity;
+  theme: string;
+  themeLabel: string;
+  startDate: string;
+  endDate: string;
+  durationDays: number; // 박수 (예: 3 -> 3박 4일)
+  nightsDays: string;
+  coverImg: string;
+  seasonBadge: string;
+  seasonNote: string;
+  highlights: string[];
+  tags: string[];
+  locations: { name: string; lat: number; lng: number; country: string }[];
+  timeline: {
+    date: string;
+    items: {
+      time: string;
+      title: string;
+      location: string;
+      memo: string;
+      category: string;
+      type: 'transit' | 'activity' | 'dining' | 'stay';
+    }[];
+  }[];
+}
+
+export interface TripCriteria {
+  theme?: string; // 'all' | 'food' | 'shopping' | 'nature' | 'activity' | 'art' | 'relax'
+  country?: DestinationCountry | null;
+  city?: DestinationCity | null;
+  targetYear?: number;
+  targetMonth?: number; // 1-12 (0: all)
+  durationDays?: number; // 3, 4, 5, 7, 10
+  seedOffset?: number;
+}
+
+/**
+ * 주어진 월의 2번째 금요일(주말 연계 추천 출발일) 날짜 구하기
+ */
+function getSecondFridayOfMonth(year: number, month: number): Date {
+  const d = new Date(year, month - 1, 1);
+  let fridayCount = 0;
+  while (d.getMonth() === month - 1) {
+    if (d.getDay() === 5) {
+      fridayCount++;
+      if (fridayCount === 2) {
+        return new Date(d);
+      }
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  // 혹시 못 찾으면 15일 반환
+  return new Date(year, month - 1, 15);
+}
+
+function formatDateToIso(d: Date): string {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/**
+ * 현재 시점 기준 가장 가까운 최적 출발 시기 산출
+ */
+export function calculateNearestBestDate(
+  city: DestinationCity,
+  baseYear?: number,
+  targetMonth?: number,
+  durationDays: number = 3
+): { startDate: string; endDate: string; startMonth: number; isUpcomingBest: boolean } {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1; // 1-12
+  const currentDay = now.getDate();
+
+  const yearToUse = baseYear && baseYear >= currentYear ? baseYear : currentYear;
+  const bestMonths = city.bestMonths && city.bestMonths.length > 0 ? city.bestMonths : [4, 5, 9, 10, 11];
+
+  let chosenYear = yearToUse;
+  let chosenMonth: number;
+  let isUpcomingBest = true;
+
+  if (targetMonth && targetMonth >= 1 && targetMonth <= 12) {
+    // 사용자가 특정 월을 지정한 경우
+    chosenMonth = targetMonth;
+    // 지정된 연도가 현재 연도인데 이미 해당 월의 중순이 지났다면 이듬해로 이월
+    if (chosenYear === currentYear && (chosenMonth < currentMonth || (chosenMonth === currentMonth && currentDay > 20))) {
+      chosenYear = currentYear + 1;
+    }
+    isUpcomingBest = bestMonths.includes(chosenMonth);
+  } else {
+    // 사용자가 월을 정하지 않고 가장 가까운 최적 시기를 요구한 경우
+    if (chosenYear === currentYear) {
+      // 올해 남은 월 중 bestMonths 탐색
+      const remainingBest = bestMonths.filter(m => m > currentMonth || (m === currentMonth && currentDay <= 15));
+      if (remainingBest.length > 0) {
+        chosenMonth = remainingBest[0];
+      } else {
+        // 올해 최적 시즌이 모두 지났으면 내년의 첫 최적 월
+        chosenYear = currentYear + 1;
+        chosenMonth = bestMonths[0];
+      }
+    } else {
+      // 다른 미래 연도를 지정한 경우 해당 연도의 첫 번째 최적 월
+      chosenMonth = bestMonths[0];
+    }
+  }
+
+  const startDateObj = getSecondFridayOfMonth(chosenYear, chosenMonth);
+  const endDateObj = new Date(startDateObj);
+  endDateObj.setDate(endDateObj.getDate() + durationDays);
+
+  return {
+    startDate: formatDateToIso(startDateObj),
+    endDate: formatDateToIso(endDateObj),
+    startMonth: chosenMonth,
+    isUpcomingBest
+  };
+}
+
+/**
+ * 테마별 감성 타이틀 & 서브타이틀 템플릿
+ */
+const THEME_PRESETS_META: Record<string, {
+  label: string;
+  titleTemplates: ((city: string) => string)[];
+  subtitleTemplates: string[];
+}> = {
+  food: {
+    label: 'FOOD · 미식 탐방',
+    titleTemplates: [
+      (city) => `${city} 골목 미식 & 심야 식당 여정`,
+      (city) => `${city} 로컬 미식과 감성 카페 투어`,
+      (city) => `${city} 셰프들의 숨은 맛집 탐방 트립`
+    ],
+    subtitleTemplates: [
+      '현지인이 사랑하는 대표 골목 맛집과 계절 별미를 즐기는 미식 여행',
+      '전통 시장부터 미슐랭 다이닝까지 오감을 만족시키는 코스',
+      '소박한 로컬 맛집과 감성 디저트를 음미하는 여유로운 동선'
+    ]
+  },
+  shopping: {
+    label: 'SHOPPING · 도심 트렌드',
+    titleTemplates: [
+      (city) => `${city} 어반 라이프스타일 & 셀렉트샵 투어`,
+      (city) => `${city} 트렌드 거리 & 백화점 럭셔리 쇼핑`,
+      (city) => `${city} 빈티지 마켓과 디자이너 브랜드 산책`
+    ],
+    subtitleTemplates: [
+      '핫한 편집숍과 부티크 거리를 둘러보는 스타일리시한 도시 여정',
+      '도심의 감각적인 플래그십 스토어와 기념품 쇼핑을 함께 즐기는 일정',
+      '골목 구석구석 숨은 디자이너 샵과 면세 쇼핑을 만끽하는 코스'
+    ]
+  },
+  nature: {
+    label: 'NATURE · 힐링 자연',
+    titleTemplates: [
+      (city) => `${city} 근교 자연 & 피톤치드 힐링 트립`,
+      (city) => `${city} 해변과 노을이 머무는 휴식 여정`,
+      (city) => `${city} 숲길 산책과 고즈넉한 온천 쉼표`
+    ],
+    subtitleTemplates: [
+      '도심의 번잡함을 벗어나 맑은 공기와 풍경 속에서 재충전하는 시간',
+      '계절의 아름다움이 깃든 자연 공원과 탁 트인 전망을 즐기는 여행',
+      '몸과 마음을 편안하게 녹여주는 자연 속 휴양 코스'
+    ]
+  },
+  activity: {
+    label: 'ACTIVITY · 액티비티',
+    titleTemplates: [
+      (city) => `${city} 다이내믹 시티 & 어드벤처 투어`,
+      (city) => `${city} 테마파크 & 야경 명소 익스플로어`,
+      (city) => `${city} 바이크 라이딩과 아웃도어 트립`
+    ],
+    subtitleTemplates: [
+      '활기 넘치는 어트랙션과 이색 체험으로 가득 채운 다채로운 여정',
+      '랜드마크 전망대부터 액티브한 레저까지 신나는 탐험 코스',
+      '도시의 숨겨진 뷰포인트를 찾아 걷고 즐기는 액티비티'
+    ]
+  },
+  art: {
+    label: 'ART · 문화 예술',
+    titleTemplates: [
+      (city) => `${city} 뮤지엄 & 건축 디자인 산책`,
+      (city) => `${city} 예술 골목과 헤리티지 감성 투어`,
+      (city) => `${city} 갤러리와 현대 건축을 만나는 여정`
+    ],
+    subtitleTemplates: [
+      '세계적인 미술관과 감각적인 현대 건축물을 감상하는 인스피레이션 코스',
+      '역사 깊은 유적과 현대적 예술 공간이 조화를 이루는 문화 여행',
+      '도시의 고유한 예술적 감성과 영감을 채우는 시간'
+    ]
+  },
+  all: {
+    label: 'DISCOVERY · 올라운드 여정',
+    titleTemplates: [
+      (city) => `${city} 핵심 랜드마크 & 올라운드 트립`,
+      (city) => `${city} 에센셜 시티 익스플로어`,
+      (city) => `${city} 첫 여행자를 위한 시그니처 코스`
+    ],
+    subtitleTemplates: [
+      '도시의 대표 랜드마크와 로컬 분위기를 균형 있게 누리는 완성형 여정',
+      '핵심 관광 명소와 현지인의 일상을 모두 경험하는 완벽한 동선',
+      '누구와 떠나도 실패 없는 시그니처 추천 코스'
+    ]
+  }
+};
+
+/**
+ * 도시와 테마에 맞는 추천 여정 제안 생성기
+ */
+export function generateCuratedTripProposals(criteria: TripCriteria): CuratedTripProposal[] {
+  const {
+    theme = 'all',
+    country = null,
+    city = null,
+    targetYear,
+    targetMonth,
+    durationDays: rawDuration,
+    seedOffset = 0
+  } = criteria;
+
+  // 1. 후보 도시 선별 풀(Pool) 생성
+  let candidateCities: DestinationCity[] = [];
+
+  if (city) {
+    // 특정 도시가 지정된 경우 해당 도시 단독
+    candidateCities = [city];
+  } else if (country) {
+    // 국가가 지정된 경우 해당 국가의 도시들
+    candidateCities = WORLD_CITIES.filter(c => 
+      c.countryEn.toLowerCase() === country.nameEn.toLowerCase() ||
+      c.countryKo === country.nameKo
+    );
+  } else {
+    // 국가/도시 미지정: 전체 도시 대상
+    candidateCities = [...WORLD_CITIES];
+  }
+
+  // 2. 테마 필터링 (all이 아닌 경우 태그 일치 우선)
+  if (theme !== 'all' && !city) {
+    const themeKeyword = theme.toLowerCase();
+    const matched = candidateCities.filter(c => 
+      (c.tags || []).some(t => t.toLowerCase().includes(themeKeyword))
+    );
+    if (matched.length >= 3) {
+      candidateCities = matched;
+    }
+  }
+
+  // 3. 시기(targetMonth) 필터링 우선 정렬
+  if (targetMonth && targetMonth >= 1 && targetMonth <= 12 && !city) {
+    const bestInMonth = candidateCities.filter(c => (c.bestMonths || []).includes(targetMonth));
+    if (bestInMonth.length >= 3) {
+      candidateCities = bestInMonth;
+    }
+  }
+
+  // 후보 도시가 부족할 경우 fallback
+  if (candidateCities.length === 0) {
+    candidateCities = [...WORLD_CITIES];
+  }
+
+  // 4. 상황별 3개 여정 조합 생성
+  const proposals: CuratedTripProposal[] = [];
+
+  // 상황 A: 단일 도시가 정해진 경우 (사례 2의 도시 선택 시) -> 3가지 다른 테마의 여정 제안
+  if (city) {
+    const themeList = ['food', 'shopping', 'nature', 'art', 'activity'];
+    const chosenThemes = theme !== 'all' 
+      ? [theme, ...themeList.filter(t => t !== theme).slice(0, 2)]
+      : ['food', 'shopping', 'nature'];
+
+    const durations = rawDuration ? [rawDuration, rawDuration, rawDuration] : [3, 4, 5];
+
+    chosenThemes.forEach((tKey, idx) => {
+      const dur = durations[idx % durations.length];
+      const dateCalc = calculateNearestBestDate(city, targetYear, targetMonth, dur);
+      const meta = THEME_PRESETS_META[tKey] || THEME_PRESETS_META.all;
+      const title = meta.titleTemplates[(idx + seedOffset) % meta.titleTemplates.length](city.nameKo);
+      const subtitle = meta.subtitleTemplates[(idx + seedOffset) % meta.subtitleTemplates.length];
+
+      const spots = [...(city.iconicSpots || []), ...(city.hiddenGems || [])];
+      const highlights = spots.slice(idx * 2, idx * 2 + 3);
+      if (highlights.length === 0) highlights.push(`${city.nameKo} 중심가`, `${city.nameKo} 대표 랜드마크`);
+
+      const timeline = Array.from({ length: dur + 1 }).map((_, dIdx) => {
+        const d = new Date(dateCalc.startDate);
+        d.setDate(d.getDate() + dIdx);
+        const dStr = formatDateToIso(d);
+        return {
+          date: dStr,
+          items: [
+            {
+              time: '10:30',
+              title: `${city.nameKo} ${highlights[dIdx % highlights.length] || '시티 투어'}`,
+              location: highlights[dIdx % highlights.length] || city.nameKo,
+              memo: `${meta.label} 맞춤 추천 명소 탐방`,
+              category: '관광',
+              type: 'activity' as const
+            },
+            {
+              time: '18:30',
+              title: `${city.nameKo} 추천 디너`,
+              location: city.nameKo,
+              memo: '현지 식재료로 완성하는 로컬 미식 디너',
+              category: '식사',
+              type: 'dining' as const
+            }
+          ]
+        };
+      });
+
+      proposals.push({
+        id: `proposal-${city.nameEn}-${tKey}-${idx}`,
+        title,
+        subtitle,
+        countryEn: city.countryEn,
+        countryKo: city.countryKo,
+        cityName: city.nameKo,
+        cityObj: city,
+        theme: tKey,
+        themeLabel: meta.label,
+        startDate: dateCalc.startDate,
+        endDate: dateCalc.endDate,
+        durationDays: dur,
+        nightsDays: `${dur}박 ${dur + 1}일`,
+        coverImg: city.coverImage,
+        seasonBadge: `${dateCalc.startMonth}월 최적 시즌`,
+        seasonNote: dateCalc.isUpcomingBest
+          ? `${dateCalc.startMonth}월은 ${city.nameKo}을(를) 여행하기 가장 온화하고 쾌적한 최적 시기입니다.`
+          : `${dateCalc.startMonth}월 방문 일정 — 현지 분위기를 만끽할 수 있는 시즌입니다.`,
+        highlights,
+        tags: [city.countryEn, tKey.toUpperCase(), `${dur}박${dur + 1}일`],
+        locations: [{ name: city.nameKo, lat: city.lat, lng: city.lng, country: city.countryEn }],
+        timeline
+      });
+    });
+
+    return proposals;
+  }
+
+  // 상황 B: 도시가 미정인 경우 (사례 1, 사례 3, 사례 4, 사례 5) -> 3개의 매력적인 도시를 선정하여 제안
+  // 셔플 알고리즘 적용
+  const shuffled = [...candidateCities].sort((a, b) => {
+    const hashA = (a.nameEn.length * 31 + seedOffset * 17) % 100;
+    const hashB = (b.nameEn.length * 31 + seedOffset * 17) % 100;
+    return hashA - hashB;
+  });
+
+  // 서로 다른 3개 도시 선택
+  const selectedCities: DestinationCity[] = [];
+  const seenCountries = new Set<string>();
+
+  for (const c of shuffled) {
+    if (selectedCities.length >= 3) break;
+    // 국가가 다양하게 분산되도록 우선 선별
+    if (!seenCountries.has(c.countryEn) || candidateCities.length <= 5) {
+      selectedCities.push(c);
+      seenCountries.add(c.countryEn);
+    }
+  }
+
+  // 3개가 안 채워졌으면 중복 국가라도 채움
+  if (selectedCities.length < 3) {
+    for (const c of shuffled) {
+      if (selectedCities.length >= 3) break;
+      if (!selectedCities.some(sc => sc.nameEn === c.nameEn)) {
+        selectedCities.push(c);
+      }
+    }
+  }
+
+  const durToUse = rawDuration || 4;
+
+  selectedCities.forEach((cObj, idx) => {
+    const activeTheme = theme !== 'all' ? theme : (['food', 'nature', 'shopping'][idx % 3]);
+    const dateCalc = calculateNearestBestDate(cObj, targetYear, targetMonth, durToUse);
+    const meta = THEME_PRESETS_META[activeTheme] || THEME_PRESETS_META.all;
+    const title = meta.titleTemplates[(idx + seedOffset) % meta.titleTemplates.length](cObj.nameKo);
+    const subtitle = meta.subtitleTemplates[(idx + seedOffset) % meta.subtitleTemplates.length];
+
+    const spots = [...(cObj.iconicSpots || []), ...(cObj.hiddenGems || [])];
+    const highlights = spots.slice(0, 3);
+    if (highlights.length === 0) highlights.push(`${cObj.nameKo} 중심가`, `${cObj.nameKo} 대표 명소`);
+
+    const timeline = Array.from({ length: durToUse + 1 }).map((_, dIdx) => {
+      const d = new Date(dateCalc.startDate);
+      d.setDate(d.getDate() + dIdx);
+      const dStr = formatDateToIso(d);
+      return {
+        date: dStr,
+        items: [
+          {
+            time: '11:00',
+            title: `${cObj.nameKo} ${highlights[dIdx % highlights.length] || '랜드마크'}`,
+            location: highlights[dIdx % highlights.length] || cObj.nameKo,
+            memo: '추천 스팟 탐방 및 여유로운 산책',
+            category: '관광',
+            type: 'activity' as const
+          },
+          {
+            time: '19:00',
+            title: `${cObj.nameKo} 디너 & 야경`,
+            location: cObj.nameKo,
+            memo: '대표 야경 명소 조망 및 로컬 디너',
+            category: '식사',
+            type: 'dining' as const
+          }
+        ]
+      };
+    });
+
+    proposals.push({
+      id: `proposal-${cObj.nameEn}-${activeTheme}-${idx}`,
+      title,
+      subtitle,
+      countryEn: cObj.countryEn,
+      countryKo: cObj.countryKo,
+      cityName: cObj.nameKo,
+      cityObj: cObj,
+      theme: activeTheme,
+      themeLabel: meta.label,
+      startDate: dateCalc.startDate,
+      endDate: dateCalc.endDate,
+      durationDays: durToUse,
+      nightsDays: `${durToUse}박 ${durToUse + 1}일`,
+      coverImg: cObj.coverImage,
+      seasonBadge: `${dateCalc.startMonth}월 최적 시즌`,
+      seasonNote: dateCalc.isUpcomingBest
+        ? `${dateCalc.startMonth}월은 ${cObj.nameKo}을(를) 여행하기 가장 온화하고 쾌적한 최적 시기입니다.`
+        : `${dateCalc.startMonth}월 출발 — 현지 분위기를 만끽할 수 있는 추천 일정입니다.`,
+      highlights,
+      tags: [cObj.countryEn, activeTheme.toUpperCase(), `${durToUse}박${durToUse + 1}일`],
+      locations: [{ name: cObj.nameKo, lat: cObj.lat, lng: cObj.lng, country: cObj.countryEn }],
+      timeline
+    });
+  });
+
+  return proposals;
+}
