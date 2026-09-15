@@ -2023,13 +2023,19 @@ export function MapHubPage({
     const startLat = 37.4602;
     const startLng = 126.4407;
     const endLat = targetCountry.center[0];
-    const endLng = targetCountry.center[1];
+    const rawEndLng = targetCountry.center[1];
+
+    // 날짜변경선(태평양) 최단 경로 계산: 미국/미주 대륙 등은 동쪽(태평양)으로 비행
+    let deltaLng = rawEndLng - startLng;
+    if (deltaLng > 180) deltaLng -= 360;
+    else if (deltaLng < -180) deltaLng += 360;
+    const effectiveEndLng = startLng + deltaLng;
 
     // Great-circle Arc control point calculation (subtle curvature)
     const midLat = (startLat + endLat) / 2;
-    const midLng = (startLng + endLng) / 2;
-    const dist = Math.sqrt((endLat - startLat) ** 2 + (endLng - startLng) ** 2);
-    const perpLat = -(endLng - startLng) * 0.22;
+    const midLng = (startLng + effectiveEndLng) / 2;
+    const dist = Math.sqrt((endLat - startLat) ** 2 + (effectiveEndLng - startLng) ** 2);
+    const perpLat = -(effectiveEndLng - startLng) * 0.22;
     const perpLng = (endLat - startLat) * 0.22;
     const ctrlLat = midLat + perpLat;
     const ctrlLng = midLng + perpLng;
@@ -2074,7 +2080,7 @@ export function MapHubPage({
     const cruiseZoom = Math.min(Math.max(currentMapZoom, 3.2), 4.2);
 
     // Calculate initial bearing
-    const initialAngle = Math.atan2(endLng - startLng, endLat - startLat) * 180 / Math.PI;
+    const initialAngle = Math.atan2(effectiveEndLng - startLng, endLat - startLat) * 180 / Math.PI;
 
     // Flight trail polyline (subtle dashed flight path)
     const trailLine = L.polyline([], {
@@ -2116,11 +2122,11 @@ export function MapHubPage({
 
       const inv = 1 - ease;
       const curLat = inv * inv * startLat + 2 * inv * ease * ctrlLat + ease * ease * endLat;
-      const curLng = inv * inv * startLng + 2 * inv * ease * ctrlLng + ease * ease * endLng;
+      const curLng = inv * inv * startLng + 2 * inv * ease * ctrlLng + ease * ease * effectiveEndLng;
 
       // Tangent bearing
       const dLat = 2 * inv * (ctrlLat - startLat) + 2 * ease * (endLat - ctrlLat);
-      const dLng = 2 * inv * (ctrlLng - startLng) + 2 * ease * (endLng - ctrlLng);
+      const dLng = 2 * inv * (ctrlLng - startLng) + 2 * ease * (effectiveEndLng - ctrlLng);
       const curAngle = Math.atan2(dLng, dLat) * 180 / Math.PI;
 
       // Elevation Scale: Takeoff (0.8) -> Cruise (1.2) -> Landing (0.85)
@@ -2142,12 +2148,13 @@ export function MapHubPage({
         // 비행기 터치다운 완료
         flightAnimRef.current = null;
 
-        // 모바일 하단 시트를 고려한 착륙 중심점 계산
+        // 모바일 하단 시트를 고려한 착륙 중심점 계산 (경도 연속성 유지)
         const isMobile = window.innerWidth < 640;
-        let targetCenter = targetCountry.center;
+        let landingCoords: [number, number] = [targetCountry.center[0], effectiveEndLng];
+        let targetCenter: [number, number] = landingCoords;
         if (isMobile) {
-          const targetPoint = map.project(targetCountry.center, targetCountry.zoom).add([0, window.innerHeight * 0.22]);
-          targetCenter = map.unproject(targetPoint, targetCountry.zoom);
+          const targetPoint = map.project(landingCoords, targetCountry.zoom).add([0, window.innerHeight * 0.22]);
+          targetCenter = [map.unproject(targetPoint, targetCountry.zoom).lat, map.unproject(targetPoint, targetCountry.zoom).lng];
         }
 
         // 목적지에 다 와서 부드럽게 착륙 줌인 실행 (내장 flyTo로 깜박임 없이 자연스럽게 확대)

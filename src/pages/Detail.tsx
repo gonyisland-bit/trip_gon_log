@@ -3788,13 +3788,13 @@ export function JourneyDetailPage({
                   </span>
                 </button>
               ) : (
-                /* Expanded State: Stadium Pill Content */
+                /* Expanded State: Stadium Pill Content (Swiss Minimal Style) */
                 currentCinematicItem && (
                   <div className="w-full h-full flex items-center justify-between gap-2.5 transition-opacity duration-300 animate-in fade-in">
-                    {/* Mini Progress Bar along the bottom of the pill */}
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/20">
+                    {/* Swiss Precision Progress Bar along the bottom of the pill */}
+                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white/15">
                       <div
-                        className="h-full bg-gradient-to-r from-red-600 via-orange-500 to-amber-400 transition-all duration-75"
+                        className="h-full bg-red-600 transition-all duration-75"
                         style={{ width: `${cinematicProgress}%` }}
                       />
                     </div>
@@ -3810,19 +3810,19 @@ export function JourneyDetailPage({
                       )}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="bg-red-600 text-white px-1.5 py-0.2 text-[7.5px] font-black uppercase rounded-full tracking-wider shrink-0">
+                          <span className="bg-neutral-800 border border-white/15 text-white px-1.5 py-0.5 text-[8px] font-mono font-bold uppercase rounded-sm tracking-wider shrink-0">
                             DAY {allTripDates.indexOf(currentCinematicItem.dateKey) + 1}
                           </span>
                           {currentCinematicItem.time && (
-                            <span className="text-[8.5px] font-mono text-amber-400 font-bold shrink-0">
+                            <span className="text-[8.5px] font-mono text-white/90 font-bold shrink-0">
                               {currentCinematicItem.time}
                             </span>
                           )}
-                          <span className="text-[7.5px] font-mono text-white/50 shrink-0">
-                            {cinematicIndex + 1}/{cinematicItems.length}
+                          <span className="text-[8px] font-mono text-white/40 shrink-0">
+                            {String(cinematicIndex + 1).padStart(2, '0')}/{String(cinematicItems.length).padStart(2, '0')}
                           </span>
                         </div>
-                        <h4 className="text-xs font-bold text-white tracking-tight truncate uppercase font-satoshi">
+                        <h4 className="text-xs font-bold text-white tracking-tight truncate uppercase font-sans mt-0.5">
                           {currentCinematicItem.place || 'Spot'}
                         </h4>
                       </div>
@@ -3832,10 +3832,10 @@ export function JourneyDetailPage({
                     <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={() => setCinematicSpeed(s => s === 3800 ? 2200 : (s === 2200 ? 5500 : 3800))}
-                        className="px-1.5 py-0.5 bg-white/10 hover:bg-white/20 rounded-full text-white/80 text-[7.5px] font-mono transition-colors cursor-pointer"
+                        className="px-1.5 py-0.5 bg-white/10 hover:bg-white/20 rounded-sm text-white/80 text-[8px] font-mono font-bold transition-colors cursor-pointer"
                         title="속도 조절"
                       >
-                        {cinematicSpeed === 3800 ? '1x' : (cinematicSpeed === 2200 ? '1.5x' : '0.7x')}
+                        {cinematicSpeed === 3800 ? '1.0X' : (cinematicSpeed === 2200 ? '1.5X' : '0.7X')}
                       </button>
 
                       <button
@@ -3851,7 +3851,7 @@ export function JourneyDetailPage({
 
                       <button
                         onClick={() => setIsCinematicPaused(p => !p)}
-                        className="p-1.5 bg-white text-black hover:bg-amber-400 rounded-full shadow transition-all active:scale-95 cursor-pointer"
+                        className="p-1.5 bg-white text-black hover:bg-neutral-200 rounded-full shadow transition-all active:scale-95 cursor-pointer"
                         title={isCinematicPaused ? '재생 (Space)' : '일시정지 (Space)'}
                       >
                         {isCinematicPaused ? <Play className="w-3 h-3 fill-current ml-0.5" /> : <Pause className="w-3 h-3 fill-current" />}

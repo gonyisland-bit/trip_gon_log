@@ -645,9 +645,23 @@ export function MapArea({
             if (L) {
               const travelerIcon = L.divIcon({
                 className: 'traveler-icon-container',
-                html: `<div style="font-size: 32px; line-height: 1; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)); transform: translate(-50%, -100%) translateY(-8px);" class="animate-bounce select-none pointer-events-none">🚶‍♂️</div>`,
-                iconSize: [36, 36],
-                iconAnchor: [18, 36]
+                html: `
+                  <div style="width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; position: relative; pointer-events: none; transform: translate(-50%, -100%) translateY(-6px);">
+                    <!-- Traffic Light Glowing Pulse Ring -->
+                    <span style="position: absolute; width: 44px; height: 44px; border-radius: 50%; background-color: rgba(16, 185, 129, 0.3); animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></span>
+                    <!-- High-Contrast Traffic Light Badge -->
+                    <div style="width: 36px; height: 36px; border-radius: 50%; background-color: #059669; border: 2.5px solid #FFFFFF; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; position: relative; z-index: 2;">
+                      <!-- Traffic Light Pedestrian Walking Symbol -->
+                      <svg viewBox="0 0 24 24" width="22" height="22" fill="#FFFFFF">
+                        <circle cx="12" cy="4" r="2.2" />
+                        <path d="M15.5 8.5L14.2 7.3C13.8 6.9 13.2 6.5 12.4 6.5C11.6 6.5 11 6.9 10.5 7.4L7.5 10.5C7.1 10.9 7.1 11.5 7.5 11.9C7.9 12.3 8.5 12.3 8.9 11.9L10.5 10.3V14.2L8.2 16.5C7.8 16.9 7.8 17.5 8.2 17.9C8.6 18.3 9.2 18.3 9.6 17.9L12.2 15.3C12.4 15.1 12.5 14.8 12.5 14.5V9.8L13.8 11.1L15.2 14.8C15.4 15.3 15.9 15.6 16.4 15.6C16.6 15.6 16.8 15.5 17 15.4C17.6 15.2 17.9 14.6 17.7 14L16.2 10.1C16.1 9.5 15.8 9 15.5 8.5Z" />
+                        <path d="M12.5 14.5L14.5 19.5C14.7 20 15.3 20.3 15.8 20.1C16.3 19.9 16.6 19.3 16.4 18.8L14.2 13.3L12.5 14.5Z" />
+                      </svg>
+                    </div>
+                  </div>
+                `,
+                iconSize: [42, 42],
+                iconAnchor: [21, 42]
               });
               if (!travelerMarkerRef.current) {
                 travelerMarkerRef.current = L.marker([prevCoords.lat, prevCoords.lng], {
@@ -1063,6 +1077,29 @@ export function MapArea({
         const ctrlLng = midLng + perpLng;
 
         const updateVehicleIcon = (rot: number, scaleVal: number = 1) => {
+          if (isFlight) {
+            return L.divIcon({
+              className: 'sleek-flight-plane-marker',
+              html: `
+                <div class="animated-vehicle-wrapper" style="transform: rotate(${rot}deg) scale(${scaleVal}); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; position: relative; z-index: 500000; pointer-events: none; transition: transform 0.04s linear;">
+                  <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 44px; height: 44px; filter: drop-shadow(0px 6px 12px rgba(0,0,0,0.55));">
+                    <!-- Fuselage & Wings (Clean White with sleek border) -->
+                    <path d="M24 2C22.6 2 21.5 3.5 21.5 5.5V17L6 26.5V30.5L21.5 25.5V37.5L16 41.5V44.5L24 42.5L32 44.5V41.5L26.5 37.5V25.5L42 30.5V26.5L26.5 17V5.5C26.5 3.5 25.4 2 24 2Z" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.3" stroke-linejoin="round" />
+                    <!-- Cockpit Windows -->
+                    <ellipse cx="24" cy="7.5" rx="1.5" ry="2.6" fill="#1E293B" />
+                    <!-- Jet Engines -->
+                    <rect x="13.5" y="21.5" width="2.4" height="6.5" rx="1.2" fill="#E2E8F0" stroke="#475569" stroke-width="0.8" />
+                    <rect x="32.1" y="21.5" width="2.4" height="6.5" rx="1.2" fill="#E2E8F0" stroke="#475569" stroke-width="0.8" />
+                    <!-- Tail Accent Line -->
+                    <line x1="24" y1="35" x2="24" y2="42" stroke="#CBD5E1" stroke-width="1" />
+                  </svg>
+                </div>
+              `,
+              iconSize: [44, 44],
+              iconAnchor: [22, 22]
+            });
+          }
+
           return L.divIcon({
             className: 'custom-animated-vehicle-icon',
             html: `
