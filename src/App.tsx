@@ -40,6 +40,7 @@ const MapHubPage = lazyWithRetry(() => import('./pages/MapHub').then(m => ({ def
 const ManageHubPage = lazyWithRetry(() => import('./pages/ManageHub').then(m => ({ default: m.ManageHubPage })));
 const JourneyDetailPage = lazyWithRetry(() => import('./pages/Detail').then(m => ({ default: m.JourneyDetailPage })));
 const CalendarHubPage = lazyWithRetry(() => import('./pages/CalendarHub').then(m => ({ default: m.CalendarHubPage })));
+const PocketHubPage = lazyWithRetry(() => import('./pages/PocketHub').then(m => ({ default: m.PocketHubPage })));
 
 const AuthModal = lazyWithRetry(() => import('./components/AuthModal').then(m => ({ default: m.AuthModal })));
 const SettingsModal = lazyWithRetry(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
@@ -1051,7 +1052,8 @@ function App() {
       setFlightTransition({ isActive: false, targetTripId: null });
 
       const state = event.state;
-      if (isDetailEditing || isManageDirty) {
+      const isUnsaved = (currentView === 'manage' && isManageDirty) || (currentView === 'detail' && isDetailEditing);
+      if (isUnsaved) {
         // Lock page transition and show unsaved changes modal
         window.history.pushState({ view: currentView, tripId: activeTripId }, '', window.location.pathname + window.location.search);
         if (state && state.view) {
@@ -1062,6 +1064,10 @@ function App() {
         setShowUnsavedModal(true);
         return;
       }
+
+      // Leaving manage or detail safely resets dirty flags
+      if (currentView === 'manage') setIsManageDirty(false);
+      if (currentView === 'detail') setIsDetailEditing(false);
 
       const params = new URLSearchParams(window.location.search);
       setIsShareMode(params.get('share') === 'true');
@@ -1083,6 +1089,8 @@ function App() {
           setCurrentView('manage');
         } else if (path === '/calendar' || window.location.hash === '#calendar') {
           setCurrentView('calendar');
+        } else if (path === '/pocket' || window.location.hash === '#pocket') {
+          setCurrentView('pocket');
         } else {
           setCurrentView('home');
         }
@@ -1094,11 +1102,16 @@ function App() {
   }, [isDetailEditing, isManageDirty, currentView, activeTripId]);
 
   const navigateTo = (view: string, tripId: number | null = null, pushHistory = true, tagFilter: string | null = null, force = false) => {
-    if (!force && (isDetailEditing || isManageDirty) && (view !== 'detail' || (tripId !== null && tripId !== activeTripId))) {
+    const isUnsaved = (currentView === 'manage' && isManageDirty) || (currentView === 'detail' && isDetailEditing);
+    if (!force && isUnsaved && (view !== 'detail' || (tripId !== null && tripId !== activeTripId))) {
       setPendingNavigation({ view, tripId });
       setShowUnsavedModal(true);
       return;
     }
+
+    // Leaving manage or detail safely resets dirty flags
+    if (view !== 'manage' && currentView === 'manage') setIsManageDirty(false);
+    if (view !== 'detail' && currentView === 'detail') setIsDetailEditing(false);
 
     // Close any residual save complete modal upon navigation
     setShowSaveCompleteModal(false);
@@ -2718,6 +2731,25 @@ function App() {
                   timelineData={timelineData}
                   onNavigate={navigateTo}
                   onCreateTrip={(dateStr) => handleCreateTripForCountry('', '', dateStr)}
+                  isDarkMode={isDarkMode}
+                />
+              )}
+              {currentView === 'pocket' && (
+                <PocketHubPage
+                  trips={trips}
+                  plans={plans}
+                  onNavigate={navigateTo}
+                  onAddTimelineItemToTrip={(tripId, newItem) => {
+                    setTimelineData(prev => {
+                      const updated = { ...prev };
+                      const date = newItem.date || '2025.04.12';
+                      if (!updated[date]) updated[date] = [];
+                      updated[date] = [...updated[date], newItem];
+                      return updated;
+                    });
+                  }}
+                  isLoggedIn={isLoggedIn}
+                  isAdmin={isAdmin}
                   isDarkMode={isDarkMode}
                 />
               )}

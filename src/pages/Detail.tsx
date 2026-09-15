@@ -19,6 +19,8 @@ import { Lightbox, LightboxImageMeta } from '../components/Lightbox';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { Footer } from '../components/Footer';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { SpotPocketView } from '../components/SpotPocketView';
+import { getSavedPockets, findNearbySpots } from '../utils/pocketStorage';
 import { 
   Trip, 
   Plan,
@@ -27,7 +29,8 @@ import {
   FlightItem, 
   StayItem, 
   TransitItem,
-  TabType
+  TabType,
+  SpotPocketItem
 } from '../types';
 import { fetchCoordinates, fetchPlacePredictions, fetchCoordinatesByPlaceId } from '../utils/googleMapsHelper';
 import { fetchAddressFromCoords, fetchCountryFromCoords } from '../utils/googleMapsHelper';
@@ -86,6 +89,7 @@ interface JourneyDetailPageProps {
   saveRef?: React.MutableRefObject<((showModal?: boolean) => Promise<void>) | null>;
   allTrips?: Trip[];
   allPlans?: Plan[];
+  isAdmin?: boolean;
 }
 
 
@@ -736,6 +740,7 @@ export function JourneyDetailPage({
   saveRef,
   allTrips = [],
   allPlans = [],
+  isAdmin = false,
 }: JourneyDetailPageProps) {
   // All hooks must be called before conditional return
   const [activeTab, setActiveTab] = useState<TabType>('summary');
@@ -767,6 +772,9 @@ export function JourneyDetailPage({
   const [switcherSearch, setSwitcherSearch] = useState('');
   const [showTripDeleteConfirm, setShowTripDeleteConfirm] = useState(false);
   const [costModalItem, setCostModalItem] = useState<TimelineItem | null>(null);
+
+  // ── 300m Hotspot Radar State ──
+  const [nearbySpotAlert, setNearbySpotAlert] = useState<{ spot: SpotPocketItem; distance: number } | null>(null);
 
   useEffect(() => {
     if (!isSwitcherOpen) return;
@@ -1837,6 +1845,57 @@ export function JourneyDetailPage({
     });
     return map;
   }, [baseTimeline]);
+
+  // ── 300m Hotspot Radar Watcher & Auto-Alert ──
+  useEffect(() => {
+    const savedPockets = getSavedPockets();
+    if (savedPockets.length === 0) return;
+
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const nearby = findNearbySpots(savedPockets, pos.coords.latitude, pos.coords.longitude, 300);
+          if (nearby.length > 0) {
+            setNearbySpotAlert(nearby[0]);
+          }
+        },
+        () => {
+          const refItem = (isEditing ? draftTimeline : baseTimeline).find(item => typeof item.lat === 'number' && typeof item.lng === 'number');
+          const refLat = refItem?.lat ?? trip?.lat;
+          const refLng = refItem?.lng ?? trip?.lng;
+          if (typeof refLat === 'number' && typeof refLng === 'number') {
+            const nearby = findNearbySpots(savedPockets, refLat, refLng, 300);
+            if (nearby.length > 0) {
+              setNearbySpotAlert(nearby[0]);
+            }
+          }
+        },
+        { timeout: 5000, enableHighAccuracy: false }
+      );
+    }
+  }, [trip?.id, baseTimeline]);
+
+  const handleDirectAddFromPocket = (spot: SpotPocketItem) => {
+    const targetDate = selectedDate === 'ALL' ? (allTripDates[0] || trip?.date?.split('-')[0]?.trim() || '2025.04.12') : selectedDate;
+    const newItem: TimelineItem = {
+      id: Date.now(),
+      time: '12:00 PM',
+      type: spot.category === 'food' || spot.category === 'cafe' ? 'restaurant' : 'activity',
+      place: spot.title,
+      cost: '-',
+      memo: spot.memo || '',
+      lat: spot.lat,
+      lng: spot.lng,
+      date: targetDate,
+      tripId: trip?.id,
+      link: spot.sourceUrl || ''
+    };
+    recordHistory();
+    setDraftTimeline(prev => [...prev, newItem]);
+    setIsEditing(true);
+    setActiveTab('timeline');
+    setExpandedItemId(newItem.id);
+  };
 
   // Auto-clear day section flash highlight
   useEffect(() => {
@@ -3661,7 +3720,37 @@ export function JourneyDetailPage({
   );
 
   return (
-    <main className="animate-in slide-in-from-right-8 duration-500 flex flex-col md:flex-row h-full w-full overflow-hidden">
+    <main className="animate-in slide-in-from-right-8 duration-500 flex flex-col md:flex-row h-full w-full overflow-hidden relative">
+      {/* ── 300m Hotspot Radar Minimal Floating Chip ── */}
+      {nearbySpotAlert && (
+        <div className="absolute top-16 right-4 sm:right-6 z-50 bg-black/95 dark:bg-white/95 text-white dark:text-black backdrop-blur-md px-3.5 py-2 border border-red-500 shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-200 select-none">
+          <div className="flex items-center gap-2 text-xs font-mono">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+            <span className="font-bold text-red-500 uppercase tracking-wider text-[10px]">RADAR 300M</span>
+            <span className="text-black/30 dark:text-white/30">|</span>
+            <span className="font-bold text-xs truncate max-w-[150px] sm:max-w-[200px]">{nearbySpotAlert.spot.title}</span>
+            <span className="text-[10px] text-red-400 font-mono">({nearbySpotAlert.distance}m)</span>
+          </div>
+          <button
+            onClick={() => {
+              handleDirectAddFromPocket(nearbySpotAlert.spot);
+              setNearbySpotAlert(null);
+            }}
+            className="h-6 px-2 bg-red-600 hover:bg-red-700 text-white text-[10px] font-mono font-bold tracking-wider uppercase flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+            title="현재 타임라인에 바로 추가"
+          >
+            <Plus className="w-3 h-3" />
+            <span>ADD TO TIMELINE</span>
+          </button>
+          <button
+            onClick={() => setNearbySpotAlert(null)}
+            className="text-white/50 dark:text-black/50 hover:text-white dark:hover:text-black text-xs ml-0.5 cursor-pointer"
+            title="닫기"
+          >
+            ✕
+          </button>
+        </div>
+      )}
       
       {/* Left: Map & Info Section (Responsive Height driven by mobileSheetSnap) */}
       <section 
@@ -3923,7 +4012,8 @@ export function JourneyDetailPage({
             { id: 'flights', label: 'FLIGHT' }, 
             { id: 'stays', label: 'STAY' }, 
             { id: 'transit', label: 'TRANS' }, 
-            { id: 'gallery', label: 'PHOTO' }
+            { id: 'gallery', label: 'PHOTO' },
+            { id: 'pocket', label: 'POCKET' }
           ].map(tab => (
             <button 
               key={tab.id} 
@@ -5490,8 +5580,27 @@ export function JourneyDetailPage({
           )}
         </div>
 
+        {/* SPOT POCKET TAB */}
+        <div className={activeTab === 'pocket' ? 'contents' : 'hidden'}>
+          {visitedTabs.has('pocket') && (
+            <SpotPocketView
+              trip={tripToUse!}
+              selectedDate={selectedDate}
+              allTripDates={allTripDates}
+              onAddTimelineItem={(newItem) => {
+                recordHistory();
+                setDraftTimeline(prev => [...prev, newItem]);
+                setIsEditing(true);
+              }}
+              isLoggedIn={isLoggedIn}
+              isAdmin={isAdmin}
+              isDarkMode={isDarkMode}
+            />
+          )}
+        </div>
+
           {/* Footer inside Detail scroll container */}
-          {activeTab !== 'settlement' && activeTab !== 'gallery' && (
+          {activeTab !== 'settlement' && activeTab !== 'gallery' && activeTab !== 'pocket' && (
             <div className="w-full shrink-0">
               <Footer className="mt-12" />
             </div>

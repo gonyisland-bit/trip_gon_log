@@ -1559,18 +1559,22 @@ export function ManageHubPage({
   });
 
   // Helper to normalize journey data for reliable dirty tracking
-  const getNormalizedJourneyData = (j: any) => ({
-    title: (j?.title || '').trim(),
-    date: (j?.date || '').trim(),
-    locationStr: (j?.locationStr || '').trim(),
-    country: (j?.country || '').trim(),
-    tags: Array.isArray(j?.tags) ? [...j.tags].map(t => String(t).trim()).sort() : [],
-    img: (j?.img || '').trim(),
-    videoUrl: (j?.videoUrl || '').trim(),
-    heroImg: (j?.heroImg || '').trim(),
-    heroVideoUrl: (j?.heroVideoUrl || '').trim(),
-    statusBadge: (j?.statusBadge || '').trim(),
-  });
+  const getNormalizedJourneyData = (j: any) => {
+    const isPlan = Boolean((j as any)?.isPlan || j?.tags?.includes('Plan') || j?.title?.includes('(Plan)'));
+    const normalizedBadge = String(j?.statusBadge || (isPlan ? 'PLAN' : '')).trim();
+    return {
+      title: (j?.title || '').trim(),
+      date: (j?.date || '').trim(),
+      locationStr: (j?.locationStr || '').trim(),
+      country: (j?.country || '').trim(),
+      tags: Array.isArray(j?.tags) ? [...j.tags].map(t => String(t).trim()).sort() : [],
+      img: (j?.img || '').trim(),
+      videoUrl: (j?.videoUrl || '').trim(),
+      heroImg: (j?.heroImg || '').trim(),
+      heroVideoUrl: (j?.heroVideoUrl || '').trim(),
+      statusBadge: normalizedBadge,
+    };
+  };
 
   const [saveRevision, setSaveRevision] = useState(0);
 
@@ -1882,11 +1886,15 @@ export function ManageHubPage({
       setEditVideoUrl(selectedJourney.videoUrl || '');
       setEditHeroImg(selectedJourney.heroImg || '');
       const isPlan = (selectedJourney as any).isPlan || selectedJourney.tags?.includes('Plan') || selectedJourney.title?.includes('(Plan)');
-      setEditStatusBadge(selectedJourney.statusBadge || (isPlan ? 'PLAN' : ''));
+      const initialStatusBadge = selectedJourney.statusBadge || (isPlan ? 'PLAN' : '');
+      setEditStatusBadge(initialStatusBadge);
       setTripSaveSuccess(false);
 
       if (!savedArchiveSnapshotRef.current[selectedJourney.id]) {
-        savedArchiveSnapshotRef.current[selectedJourney.id] = JSON.stringify(getNormalizedJourneyData(selectedJourney));
+        savedArchiveSnapshotRef.current[selectedJourney.id] = JSON.stringify(getNormalizedJourneyData({
+          ...selectedJourney,
+          statusBadge: initialStatusBadge
+        }));
       }
     }
   }, [selectedJourneyId, selectedJourney]);

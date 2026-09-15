@@ -53,6 +53,7 @@ export interface Trip {
   };
   members?: string[];
   customExpenses?: CustomExpenseItem[];
+  pocketSpots?: SpotPocketItem[];
 }
 
 export interface CustomExpenseItem {
@@ -167,7 +168,27 @@ export interface TransitItem {
   attachments?: string[];
 }
 
-export type TabType = 'summary' | 'timeline' | 'flights' | 'stays' | 'transit' | 'gallery' | 'settlement';
+export type TabType = 'summary' | 'timeline' | 'flights' | 'stays' | 'transit' | 'gallery' | 'settlement' | 'pocket';
+
+export type PocketCategory = 'food' | 'cafe' | 'spot' | 'shopping' | 'tip';
+export type SpotPocketPlatform = 'instagram' | 'youtube' | 'blog' | 'maps' | 'web';
+
+export interface SpotPocketItem {
+  id: string;
+  tripId?: number | null;
+  title: string;
+  category: PocketCategory;
+  memo?: string;
+  sourceUrl?: string;
+  platform?: SpotPocketPlatform;
+  thumbnailUrl?: string;
+  country?: string;
+  city?: string;
+  lat?: number;
+  lng?: number;
+  address?: string;
+  createdAt: number;
+}
 
 export interface MagazineMoment {
   id: string;

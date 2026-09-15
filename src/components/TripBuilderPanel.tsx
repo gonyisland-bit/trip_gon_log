@@ -45,6 +45,8 @@ import {
   parseBestMonthsFromSeasonString,
   convertProposalToPreset
 } from '../utils/tripRecommender';
+import { getSavedPockets } from '../utils/pocketStorage';
+import { SpotPocketItem } from '../types';
 
 export interface TripBuilderPanelProps {
   isOpen: boolean;
@@ -192,6 +194,25 @@ export function TripBuilderPanel({
     }
     return [4, 5, 9, 10, 11];
   }, [smartCity, smartCountry]);
+
+  // ── Smart Pocket Spots for Selected Country/City ──
+  const [isPocketDrawerOpen, setIsPocketDrawerOpen] = useState(false);
+  const relevantPocketSpots = useMemo(() => {
+    const allPockets = getSavedPockets();
+    const targetCountry = (smartCountry?.nameKo || smartCountry?.nameEn || country || '').toLowerCase().trim();
+    const targetCity = (smartCity?.nameKo || smartCity?.nameEn || locations[0]?.name || '').toLowerCase().trim();
+
+    if (!targetCountry && !targetCity) return [];
+
+    return allPockets.filter(s => {
+      const c = (s.country || '').toLowerCase().trim();
+      const city = (s.city || '').toLowerCase().trim();
+      if (targetCountry && c && (targetCountry.includes(c) || c.includes(targetCountry))) return true;
+      if (targetCity && city && (targetCity.includes(city) || city.includes(targetCity))) return true;
+      if (targetCountry && city && targetCountry.includes(city)) return true;
+      return false;
+    });
+  }, [smartCountry, country, smartCity, locations]);
 
   // Nearest best month for currently selected city or country
   const autoBestMonth = useMemo(() => {
@@ -2034,6 +2055,54 @@ export function TripBuilderPanel({
                   </div>
                 );
               })()}
+
+              {/* ── Saved Pocket Spots for this Destination ── */}
+              {relevantPocketSpots.length > 0 && (
+                <div className="space-y-1.5 pt-1.5 border-t border-black/10 dark:border-white/10">
+                  <div className="flex items-center justify-between text-[9.5px] font-mono">
+                    <span className="text-red-500 font-bold flex items-center gap-1">
+                      <Bookmark className="w-3 h-3 text-red-500" />
+                      <span>포켓 보관함 ({relevantPocketSpots.length}개 스팟 발견)</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsPocketDrawerOpen(!isPocketDrawerOpen)}
+                      className="text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white underline cursor-pointer"
+                    >
+                      {isPocketDrawerOpen ? '접기 ▲' : '모두 보기 ▼'}
+                    </button>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1">
+                    {(isPocketDrawerOpen ? relevantPocketSpots : relevantPocketSpots.slice(0, 4)).map(spot => {
+                      const isAlreadyAdded = locations.some(l => l.name === spot.title);
+                      return (
+                        <button
+                          key={spot.id}
+                          type="button"
+                          onClick={() => {
+                            if (!isAlreadyAdded) {
+                              const coords = (spot.lat && spot.lng) ? { lat: spot.lat, lng: spot.lng } : undefined;
+                              handleAddCityToLocations(spot.title, coords, spot.country);
+                            }
+                          }}
+                          disabled={isAlreadyAdded}
+                          title={spot.memo || spot.title}
+                          className={`px-2 py-1 text-[10px] font-mono border transition-all cursor-pointer flex items-center gap-1 ${
+                            isAlreadyAdded
+                              ? 'border-black/10 dark:border-white/10 text-black/30 dark:text-white/30 line-through bg-black/[0.02]'
+                              : 'border-red-500/40 text-black dark:text-white hover:border-red-500 bg-red-500/5 dark:bg-red-500/10'
+                          }`}
+                        >
+                          <Plus className="w-2.5 h-2.5 text-red-500" />
+                          <span className="font-bold">{spot.title}</span>
+                          {spot.memo && <span className="text-[9px] text-black/40 dark:text-white/40 truncate max-w-[120px]">· {spot.memo}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Added Locations Chips */}
               {locations.length > 0 && (
