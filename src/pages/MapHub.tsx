@@ -1526,22 +1526,37 @@ export function MapHubPage({
 
   // Flight Arc animation state from South Korea to destination country
   const [isFlyingToCountry, setIsFlyingToCountry] = useState(false);
+  const isFlyingToCountryRef = useRef(false);
   const flightAnimRef = useRef<number | null>(null);
   const flightPlaneMarkerRef = useRef<any>(null);
   const flightTrailPolylineRef = useRef<any>(null);
   const flightPreTimeoutRef = useRef<any>(null);
+  const flightLandingTimeoutRef = useRef<any>(null);
+  const flightSessionIdRef = useRef<number>(0);
 
   // Clean up flight animation on unmount
   useEffect(() => {
     return () => {
+      flightSessionIdRef.current++;
       if (flightAnimRef.current !== null) {
         cancelAnimationFrame(flightAnimRef.current);
       }
       if (flightPreTimeoutRef.current !== null) {
         clearTimeout(flightPreTimeoutRef.current);
       }
+      if (flightLandingTimeoutRef.current !== null) {
+        clearTimeout(flightLandingTimeoutRef.current);
+      }
+      try {
+        mapRef.current?.dragging?.enable();
+        mapRef.current?.scrollWheelZoom?.enable();
+      } catch (_) {}
     };
   }, []);
+
+  useEffect(() => {
+    isFlyingToCountryRef.current = isFlyingToCountry;
+  }, [isFlyingToCountry]);
 
   const [selectedPinGroup, setSelectedPinGroup] = useState<MapPinGroup | null>(null);
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
@@ -2044,10 +2059,19 @@ export function MapHubPage({
       });
     };
 
-    // Monotonic Smooth Zoom: 출발 줌(전경 뷰)에서 목적지 줌으로 단방향 점진적 확대
+    // Session safety: 새로운 비행 시작 시 이전 세션 취소
+    flightSessionIdRef.current++;
+    const currentSessionId = flightSessionIdRef.current;
+
+    // 비행 중 우발적 드래그/휠 줌 잠금 (카메라 추종 안정화)
+    try {
+      map.dragging.disable();
+      map.scrollWheelZoom.disable();
+    } catch (_) {}
+
+    // 순항 줌(전경 뷰): 비행 중에는 줌을 고정하여 타일 깜박임 100% 제거
     const currentMapZoom = map.getZoom();
-    const startZoom = Math.min(Math.max(currentMapZoom, 3.2), 4.2);
-    const destZoom = Math.max(targetCountry.zoom, startZoom);
+    const cruiseZoom = Math.min(Math.max(currentMapZoom, 3.2), 4.2);
 
     // Calculate initial bearing
     const initialAngle = Math.atan2(endLng - startLng, endLat - startLat) * 180 / Math.PI;
@@ -2071,10 +2095,10 @@ export function MapHubPage({
     flightPlaneMarkerRef.current = planeMarker;
 
     // 출발지(한국 인천)에 부드럽게 카메라 셋업 후 곧바로 이륙
-    map.setView([startLat, startLng], startZoom, { animate: false });
+    map.setView([startLat, startLng], cruiseZoom, { animate: false });
 
-    // Smooth duration between 2000ms ~ 2600ms
-    const duration = Math.min(2600, Math.max(2000, dist * 24));
+    // Smooth duration between 1800ms ~ 2400ms
+    const duration = Math.min(2400, Math.max(1800, dist * 22));
     let startTime: number | null = null;
     const trailPoints: [number, number][] = [];
 
@@ -2082,6 +2106,9 @@ export function MapHubPage({
     const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
     const animateFlight = (timestamp: number) => {
+      // 세션 검증: 이미 취소되었거나 다른 비행이 시작된 경우 즉각 중단
+      if (currentSessionId !== flightSessionIdRef.current) return;
+
       if (!startTime) startTime = timestamp;
       const elapsed = timestamp - startTime;
       const rawProgress = Math.min(1, elapsed / duration);
@@ -2106,31 +2133,31 @@ export function MapHubPage({
       trailPoints.push([curLat, curLng]);
       trailLine.setLatLngs(trailPoints);
 
-      // 단방향 점진적 확대 (Monotonic Smooth Zoom):
-      // 비행 진행도(ease)에 따라 서서히 목적지 줌으로만 자연스럽게 확대 (반복/역행 없음)
-      const smoothZoomT = ease * ease * (3 - 2 * ease);
-      const curZoom = startZoom + (destZoom - startZoom) * smoothZoomT;
-
-      let curCenterLat = curLat;
-      let curCenterLng = curLng;
-      const isMobile = window.innerWidth < 640;
-      if (isMobile && smoothZoomT > 0) {
-        // 모바일 하단 시트를 고려하여 착륙에 가까워질수록 중심을 미세하게 남쪽으로 보정
-        const latOffset = 0.012 * Math.pow(2, Math.max(0, 6 - curZoom)) * smoothZoomT;
-        curCenterLat = curLat - latOffset;
-      }
-
-      // 비행기와 함께 지도가 부드럽게 이동 및 선제 확대 진행
-      mapRef.current?.setView([curCenterLat, curCenterLng], curZoom, { animate: false });
+      // 깜박임 없는 비행 추종: 줌 레벨을 고정한 채 카메라 중심만 부드럽게 추종
+      map.panTo([curLat, curLng], { animate: false });
 
       if (rawProgress < 1) {
         flightAnimRef.current = requestAnimationFrame(animateFlight);
       } else {
-        // Touchdown & Landing (이미 destZoom에 도달하여 추가 줌 없이 완벽하게 착륙)
+        // 비행기 터치다운 완료
         flightAnimRef.current = null;
 
-        // Clean up plane and trail after landing, then display modal
-        setTimeout(() => {
+        // 모바일 하단 시트를 고려한 착륙 중심점 계산
+        const isMobile = window.innerWidth < 640;
+        let targetCenter = targetCountry.center;
+        if (isMobile) {
+          const targetPoint = map.project(targetCountry.center, targetCountry.zoom).add([0, window.innerHeight * 0.22]);
+          targetCenter = map.unproject(targetPoint, targetCountry.zoom);
+        }
+
+        // 목적지에 다 와서 부드럽게 착륙 줌인 실행 (내장 flyTo로 깜박임 없이 자연스럽게 확대)
+        map.flyTo(targetCenter, targetCountry.zoom, { duration: 0.9 });
+
+        // 착륙 줌인 완료 후 비행기 마커 정리 및 모달 오픈
+        flightLandingTimeoutRef.current = setTimeout(() => {
+          flightLandingTimeoutRef.current = null;
+          if (currentSessionId !== flightSessionIdRef.current) return;
+
           if (flightPlaneMarkerRef.current && mapRef.current) {
             try { mapRef.current.removeLayer(flightPlaneMarkerRef.current); } catch (_) {}
             flightPlaneMarkerRef.current = null;
@@ -2140,10 +2167,16 @@ export function MapHubPage({
             flightTrailPolylineRef.current = null;
           }
 
+          // 지도 드래그 및 줌 다시 활성화
+          try {
+            mapRef.current?.dragging?.enable();
+            mapRef.current?.scrollWheelZoom?.enable();
+          } catch (_) {}
+
           setIsFlyingToCountry(false);
           setSelectedCountry(targetCountry);
           setSearchQuery(targetCountry.name);
-        }, 220);
+        }, 920);
       }
     };
 
@@ -2215,8 +2248,9 @@ export function MapHubPage({
     flyAirplaneToDestination(country);
   };
 
-  // Close country handler: removes highlight and restores South Korea center view
+  // Close country handler: removes highlight, stops flight, and restores South Korea center view
   const handleCloseCountry = () => {
+    flightSessionIdRef.current++;
     if (flightAnimRef.current !== null) {
       cancelAnimationFrame(flightAnimRef.current);
       flightAnimRef.current = null;
@@ -2224,6 +2258,10 @@ export function MapHubPage({
     if (flightPreTimeoutRef.current !== null) {
       clearTimeout(flightPreTimeoutRef.current);
       flightPreTimeoutRef.current = null;
+    }
+    if (flightLandingTimeoutRef.current !== null) {
+      clearTimeout(flightLandingTimeoutRef.current);
+      flightLandingTimeoutRef.current = null;
     }
     if (flightPlaneMarkerRef.current && mapRef.current) {
       try { mapRef.current.removeLayer(flightPlaneMarkerRef.current); } catch (_) {}
@@ -2233,11 +2271,14 @@ export function MapHubPage({
       try { mapRef.current.removeLayer(flightTrailPolylineRef.current); } catch (_) {}
       flightTrailPolylineRef.current = null;
     }
-    setIsFlyingToCountry(false);
-    setSelectedCountry(null);
-    setSearchQuery('');
+
     const map = mapRef.current;
     if (map) {
+      try {
+        map.dragging?.enable();
+        map.scrollWheelZoom?.enable();
+      } catch (_) {}
+
       if (highlightLayerRef.current) {
         map.removeLayer(highlightLayerRef.current);
         highlightLayerRef.current = null;
@@ -2253,6 +2294,10 @@ export function MapHubPage({
         try { map.invalidateSize(); } catch (_) {}
       }, 300);
     }
+
+    setIsFlyingToCountry(false);
+    setSelectedCountry(null);
+    setSearchQuery('');
   };
 
   // ESC key to close modal / selection, and 'h' key to reset to global home view
@@ -2263,7 +2308,7 @@ export function MapHubPage({
         if (selectedPinGroup) setSelectedPinGroup(null);
         else if (isPlaceListModalOpen) setIsPlaceListModalOpen(false);
         else if (isWishlistModalOpen) setIsWishlistModalOpen(false);
-        else if (selectedCountry) handleCloseCountry();
+        else if (selectedCountry || isFlyingToCountry) handleCloseCountry();
         setIsSearchDropdownOpen(false);
       } else if (!isInput && (e.key === 'h' || e.key === 'H')) {
         e.preventDefault();
@@ -2272,7 +2317,7 @@ export function MapHubPage({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedCountry, selectedPinGroup, isWishlistModalOpen, isPlaceListModalOpen]);
+  }, [selectedCountry, isFlyingToCountry, selectedPinGroup, isWishlistModalOpen, isPlaceListModalOpen]);
 
   const handleSelectCountryRef = useRef(handleSelectCountry);
   useEffect(() => {
@@ -2282,7 +2327,7 @@ export function MapHubPage({
   // Geocoder & distance based country selector for direct map clicks
   const matchCountryFromLatLng = (latlng: { lat: number; lng: number }) => {
     const L = (window as any).L;
-    if (!L) return;
+    if (!L || isFlyingToCountryRef.current) return;
 
     // Helper: geometric distance match within country influence radius
     const matchByDistance = () => {
