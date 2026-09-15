@@ -359,7 +359,7 @@ function App() {
 
         // 2. Ensure currentView is valid; fallback to home if corrupted or empty
         setCurrentView(prev => {
-          const validViews = ['home', 'archive', 'magazine', 'calendar', 'map', 'manage', 'detail'];
+          const validViews = ['home', 'archive', 'magazine', 'calendar', 'map', 'manage', 'detail', 'pocket'];
           return validViews.includes(prev) ? prev : 'home';
         });
 

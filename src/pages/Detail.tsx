@@ -764,9 +764,20 @@ export function JourneyDetailPage({
 
   // Floating Day Quick Jump state
   const [showQuickJump, setShowQuickJump] = useState(false);
+  const [isQuickJumpExpanded, setIsQuickJumpExpanded] = useState(false);
+  const quickJumpAutoCollapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeSpyDate, setActiveSpyDate] = useState<string>('ALL');
   const [highlightedDateSection, setHighlightedDateSection] = useState<string | null>(null);
   const quickJumpChipsRef = useRef<HTMLDivElement | null>(null);
+
+  const resetQuickJumpCollapseTimer = () => {
+    if (quickJumpAutoCollapseTimerRef.current) {
+      clearTimeout(quickJumpAutoCollapseTimerRef.current);
+    }
+    quickJumpAutoCollapseTimerRef.current = setTimeout(() => {
+      setIsQuickJumpExpanded(false);
+    }, 3500);
+  };
   // Quick Switcher & Delete Confirm States
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
   const [switcherSearch, setSwitcherSearch] = useState('');
@@ -4829,27 +4840,6 @@ export function JourneyDetailPage({
                     </button>
                   </div>
                 )}
-
-                {selectedDate === 'ALL' && currentTimeline.length > 0 && (
-                  <>
-                    <button
-                      onClick={() => handleScrollToDateSection('up')}
-                      className="sticky top-2 right-2 ml-auto z-40 p-1.5 bg-black/80 hover:bg-black text-white dark:bg-white/80 dark:hover:bg-white dark:text-black rounded-full shadow-md transition-colors duration-200 pointer-events-auto shrink-0 w-8 h-8 flex items-center justify-center"
-                      style={{ marginBottom: '-32px' }}
-                      title="Scroll to Previous Day"
-                    >
-                      <ChevronUp className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleScrollToDateSection('down')}
-                      className="sticky bottom-2 right-2 ml-auto mt-auto z-40 p-1.5 bg-black/80 hover:bg-black text-white dark:bg-white/80 dark:hover:bg-white dark:text-black rounded-full shadow-md transition-colors duration-200 pointer-events-auto shrink-0 w-8 h-8 flex items-center justify-center"
-                      style={{ marginTop: '-32px' }}
-                      title="Scroll to Next Day"
-                    >
-                      <ChevronDown className="w-4 h-4" />
-                    </button>
-                  </>
-                )}
               </div>
               </>
             )}
@@ -5638,70 +5628,101 @@ export function JourneyDetailPage({
             isOpen={isPocketWidgetOpen}
             onToggle={() => setIsPocketWidgetOpen(!isPocketWidgetOpen)}
             onAddSpotToTimeline={(spot) => handleDirectAddFromPocket(spot)}
+            isEditing={isEditing}
           />
         )}
 
-        {/* Floating Smart Day Quick Jump Bar */}
+        {/* Floating Smart Day Quick Jump Indicator & Bar (Swiss Minimal, positioned at bottom-20 right-6 without overlapping) */}
         {activeTab === 'timeline' && allTripDates.length >= 2 && (
           <div 
-            className={`absolute bottom-4 sm:bottom-6 right-3 sm:right-6 z-40 transition-all duration-300 transform pointer-events-none ${
+            className={`fixed bottom-20 right-6 z-40 transition-all duration-300 pointer-events-auto select-none ${
               showQuickJump ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
             }`}
           >
-            <div className="bg-[#18181B]/95 dark:bg-[#18181B]/95 text-white backdrop-blur-md border border-white/20 dark:border-white/15 shadow-2xl rounded-full p-1 sm:p-1.5 flex items-center gap-1 pointer-events-auto select-none">
-              {/* Scroll to Top Button */}
+            {!isQuickJumpExpanded ? (
+              /* Minimized Initial Circular State */
               <button
                 type="button"
-                onClick={handleScrollToTop}
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all text-white/80 hover:text-white cursor-pointer shrink-0"
-                title="맨 위로 스크롤 (Scroll to top)"
+                onClick={() => {
+                  setIsQuickJumpExpanded(true);
+                  resetQuickJumpCollapseTimer();
+                }}
+                className="w-10 h-10 rounded-full bg-[#18181B]/95 text-white backdrop-blur-md border border-white/20 shadow-xl flex items-center justify-center cursor-pointer hover:bg-black active:scale-95 transition-all text-xs font-mono font-black"
+                title="날짜 빠른 이동 (클릭하여 일차 펼치기)"
+                aria-label="Expand day quick jump bar"
               >
-                <ChevronUp className="w-4 h-4" />
+                {activeSpyDate === 'ALL' ? 'ALL' : `D${Math.max(1, allTripDates.indexOf(activeSpyDate) + 1)}`}
               </button>
-
-              <div className="w-px h-3.5 bg-white/20 mx-0.5 shrink-0" />
-
-              {/* Scrollable Day Chips Container */}
+            ) : (
+              /* Expanded State (Auto-collapses after 3.5s of inactivity) */
               <div 
-                ref={quickJumpChipsRef}
-                className="flex items-center gap-1 max-w-[190px] sm:max-w-[320px] overflow-x-auto hide-scrollbar px-0.5"
+                onMouseEnter={resetQuickJumpCollapseTimer}
+                onTouchStart={resetQuickJumpCollapseTimer}
+                className="bg-[#18181B]/95 text-white backdrop-blur-md border border-white/20 shadow-2xl rounded-full p-1 sm:p-1.5 flex items-center gap-1 animate-in fade-in slide-in-from-right-2 duration-200"
               >
-                {/* ALL Chip */}
+                {/* Scroll to Top Button */}
                 <button
                   type="button"
-                  data-quick-date="ALL"
-                  onClick={() => handleQuickJumpToDate('ALL')}
-                  className={`px-2 py-1 rounded-full text-[10px] sm:text-[10.5px] font-black tracking-wider transition-all cursor-pointer shrink-0 ${
-                    activeSpyDate === 'ALL'
-                      ? 'bg-red-600 text-white shadow-sm scale-105'
-                      : 'text-white/70 hover:text-white hover:bg-white/15'
-                  }`}
+                  onClick={() => {
+                    handleScrollToTop();
+                    resetQuickJumpCollapseTimer();
+                  }}
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all text-white/80 hover:text-white cursor-pointer shrink-0"
+                  title="맨 위로 스크롤 (Scroll to top)"
                 >
-                  ALL
+                  <ChevronUp className="w-4 h-4" />
                 </button>
 
-                {allTripDates.map((d, idx) => {
-                  const dayNum = idx + 1;
-                  const isActive = activeSpyDate === d;
-                  return (
-                    <button
-                      key={d}
-                      type="button"
-                      data-quick-date={d}
-                      onClick={() => handleQuickJumpToDate(d)}
-                      className={`min-w-[26px] h-6 sm:min-w-[28px] sm:h-7 px-1.5 rounded-full flex items-center justify-center text-[10.5px] font-mono font-black transition-all cursor-pointer shrink-0 ${
-                        isActive
-                          ? 'bg-red-600 text-white shadow-md scale-105'
-                          : 'text-white/70 hover:text-white hover:bg-white/15'
-                      }`}
-                      title={`Day ${dayNum} (${d})`}
-                    >
-                      D{dayNum}
-                    </button>
-                  );
-                })}
+                <div className="w-px h-3.5 bg-white/20 mx-0.5 shrink-0" />
+
+                {/* Scrollable Day Chips Container */}
+                <div 
+                  ref={quickJumpChipsRef}
+                  className="flex items-center gap-1 max-w-[190px] sm:max-w-[320px] overflow-x-auto hide-scrollbar px-0.5"
+                >
+                  {/* ALL Chip */}
+                  <button
+                    type="button"
+                    data-quick-date="ALL"
+                    onClick={() => {
+                      handleQuickJumpToDate('ALL');
+                      setTimeout(() => setIsQuickJumpExpanded(false), 500);
+                    }}
+                    className={`px-2 py-1 rounded-full text-[10px] sm:text-[10.5px] font-black tracking-wider transition-all cursor-pointer shrink-0 ${
+                      activeSpyDate === 'ALL'
+                        ? 'bg-red-600 text-white shadow-sm scale-105'
+                        : 'text-white/70 hover:text-white hover:bg-white/15'
+                    }`}
+                  >
+                    ALL
+                  </button>
+
+                  {allTripDates.map((d, idx) => {
+                    const dayNum = idx + 1;
+                    const isActive = activeSpyDate === d;
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        data-quick-date={d}
+                        onClick={() => {
+                          handleQuickJumpToDate(d);
+                          setTimeout(() => setIsQuickJumpExpanded(false), 500);
+                        }}
+                        className={`min-w-[26px] h-6 sm:min-w-[28px] sm:h-7 px-1.5 rounded-full flex items-center justify-center text-[10.5px] font-mono font-black transition-all cursor-pointer shrink-0 ${
+                          isActive
+                            ? 'bg-red-600 text-white shadow-md scale-105'
+                            : 'text-white/70 hover:text-white hover:bg-white/15'
+                        }`}
+                        title={`Day ${dayNum} (${d})`}
+                      >
+                        D{dayNum}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
       </section>

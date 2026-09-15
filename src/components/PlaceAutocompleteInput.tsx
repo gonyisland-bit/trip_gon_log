@@ -4,7 +4,7 @@ import { Search, X } from 'lucide-react';
 interface PlaceAutocompleteInputProps {
   value: string;
   onChange: (val: string) => void;
-  onSelectPlace: (placeName: string, coords: { lat: number; lng: number } | null, address: string, countryName?: string) => void;
+  onSelectPlace: (placeName: string, coords: { lat: number; lng: number } | null, address: string, countryName?: string, cityName?: string) => void;
   className?: string;
   placeholder?: string;
   onBlur?: () => void;
@@ -53,7 +53,7 @@ export function PlaceAutocompleteInput({
     }
 
     const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
-      fields: ['geometry', 'name', 'formatted_address', 'address_components']
+      fields: ['geometry', 'name', 'formatted_address', 'address_components', 'types']
     });
     autocompleteRef.current = autocomplete;
 
@@ -65,20 +65,41 @@ export function PlaceAutocompleteInput({
           const lng = place.geometry.location.lng();
           const name = place.name || place.formatted_address || '';
           const address = place.formatted_address || name;
-          // Extract country name from address_components for accuracy
+          
+          // Extract country name and city name from address_components
           let countryName: string | undefined;
+          let cityName: string | undefined;
+
           if (place.address_components) {
-            const countryComp = (place.address_components as any[]).find(
+            const comps = place.address_components as any[];
+            const countryComp = comps.find(
               (comp: any) => comp.types && comp.types.includes('country')
             );
             if (countryComp) countryName = countryComp.long_name;
+
+            const cityComp = comps.find(
+              (comp: any) => comp.types && (
+                comp.types.includes('locality') || 
+                comp.types.includes('sublocality_level_1') || 
+                comp.types.includes('administrative_area_level_1')
+              )
+            );
+            if (cityComp) {
+              cityName = cityComp.long_name;
+            }
           }
+
+          // If the searched entity itself is a locality/city or has no extracted city
+          if (!cityName && place.types && (place.types.includes('locality') || place.types.includes('administrative_area_level_1') || place.types.includes('political'))) {
+            cityName = name;
+          }
+
           hasSelectedRef.current = true;
           lastTypedValRef.current = address;
           if (inputRef.current) {
             inputRef.current.value = address;
           }
-          onSelectPlaceRef.current(name, { lat, lng }, address, countryName);
+          onSelectPlaceRef.current(name, { lat, lng }, address, countryName, cityName);
         }
       } catch (err) {
         console.error("Autocomplete select failed:", err);

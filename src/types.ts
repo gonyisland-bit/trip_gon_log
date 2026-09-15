@@ -187,6 +187,7 @@ export interface SpotPocketItem {
   lat?: number;
   lng?: number;
   address?: string;
+  isFavorite?: boolean;
   createdAt: number;
 }
 

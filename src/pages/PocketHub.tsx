@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Bookmark, MapPin, Plus, ExternalLink, Trash2, Edit3, Compass, 
   Search, Check, X, ArrowUpRight, ChevronRight, Layers, Sparkles,
-  Utensils, Coffee, Camera, ShoppingBag, Lightbulb, Map
+  Utensils, Coffee, Camera, ShoppingBag, Lightbulb, Map, MoreVertical, Star
 } from 'lucide-react';
 import { SpotPocketItem, PocketCategory, Trip, Plan, TimelineItem } from '../types';
 import { getSavedPockets, savePockets, detectPlatform } from '../utils/pocketStorage';
@@ -41,9 +41,14 @@ export function PocketHubPage({
   const [selectedRegion, setSelectedRegion] = useState<string>('ALL');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isFavoriteFilter, setIsFavoriteFilter] = useState<boolean>(false);
+  const [visibleCount, setVisibleCount] = useState<number>(40);
   
-  // New Spot Modal state
+  // New or Edit Spot Modal state
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  const [editingSpot, setEditingSpot] = useState<SpotPocketItem | null>(null);
+  const [activeMenuSpotId, setActiveMenuSpotId] = useState<string | null>(null);
+
   const [newTitle, setNewTitle] = useState<string>('');
   const [newCategory, setNewCategory] = useState<PocketCategory>('spot');
   const [newMemo, setNewMemo] = useState<string>('');
@@ -68,6 +73,14 @@ export function PocketHubPage({
     setSpots(getSavedPockets());
   }, []);
 
+  // Close card menu when clicking outside
+  useEffect(() => {
+    if (!activeMenuSpotId) return;
+    const handleDocumentClick = () => setActiveMenuSpotId(null);
+    window.addEventListener('click', handleDocumentClick);
+    return () => window.removeEventListener('click', handleDocumentClick);
+  }, [activeMenuSpotId]);
+
   const allAvailableTrips = useMemo(() => {
     return [...trips, ...plans];
   }, [trips, plans]);
@@ -84,9 +97,18 @@ export function PocketHubPage({
     return Object.entries(counts).map(([region, count]) => ({ region, count }));
   }, [spots]);
 
+  // Favorite count
+  const favoriteCount = useMemo(() => {
+    return spots.filter(s => s.isFavorite).length;
+  }, [spots]);
+
   // Filtered spots
   const filteredSpots = useMemo(() => {
     return spots.filter(s => {
+      // Favorite filter
+      if (isFavoriteFilter && !s.isFavorite) {
+        return false;
+      }
       // Region filter
       if (selectedRegion !== 'ALL') {
         const country = (s.country || '').trim();
@@ -108,35 +130,36 @@ export function PocketHubPage({
       }
       return true;
     });
-  }, [spots, selectedRegion, selectedCategory, searchQuery]);
+  }, [spots, isFavoriteFilter, selectedRegion, selectedCategory, searchQuery]);
 
-  // Create new spot
-  const handleCreateSpot = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle.trim()) return;
-
-    const platform = detectPlatform(newSourceUrl);
-    const item: SpotPocketItem = {
-      id: `spot-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      title: newTitle.trim(),
-      category: newCategory,
-      memo: newMemo.trim(),
-      sourceUrl: newSourceUrl.trim() || undefined,
-      platform,
-      thumbnailUrl: newThumbnailUrl.trim() || undefined,
-      country: newCountry.trim() || undefined,
-      city: newCity.trim() || undefined,
-      lat: newLat,
-      lng: newLng,
-      address: newAddress.trim() || undefined,
-      createdAt: Date.now()
-    };
-
-    const updated = [item, ...spots];
+  // Toggle Favorite
+  const handleToggleFavorite = async (spotId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const updated = spots.map(s => s.id === spotId ? { ...s, isFavorite: !s.isFavorite } : s);
     setSpots(updated);
     await savePockets(updated);
+  };
 
-    // Reset form
+  // Open Edit Modal
+  const handleOpenEditSpot = (spot: SpotPocketItem) => {
+    setEditingSpot(spot);
+    setNewTitle(spot.title);
+    setNewCategory(spot.category);
+    setNewMemo(spot.memo || '');
+    setNewSourceUrl(spot.sourceUrl || '');
+    setNewThumbnailUrl(spot.thumbnailUrl || '');
+    setNewCountry(spot.country || '');
+    setNewCity(spot.city || '');
+    setNewLat(spot.lat);
+    setNewLng(spot.lng);
+    setNewAddress(spot.address || '');
+    setActiveMenuSpotId(null);
+    setIsAddModalOpen(true);
+  };
+
+  // Reset form
+  const handleCloseModal = () => {
+    setEditingSpot(null);
     setNewTitle('');
     setNewCategory('spot');
     setNewMemo('');
@@ -148,8 +171,73 @@ export function PocketHubPage({
     setNewLng(undefined);
     setNewAddress('');
     setIsAddModalOpen(false);
+  };
 
-    setActionSuccessToast(`'${item.title}' 포켓에 보관 완료`);
+  // Create or Update spot
+  const handleSaveSpot = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // 장소명이 비어있고 팁인 경우 자동 명명
+    let finalTitle = newTitle.trim();
+    if (!finalTitle && newCategory === 'tip') {
+      finalTitle = newCity || newCountry ? `${newCity || newCountry} 여행 꿀팁` : '여행 꿀팁';
+    }
+
+    if (!finalTitle) {
+      alert('제목(장소명 또는 꿀팁 제목)을 입력해주세요.');
+      return;
+    }
+
+    const platform = detectPlatform(newSourceUrl);
+
+    if (editingSpot) {
+      // Update existing
+      const updated = spots.map(s => {
+        if (s.id === editingSpot.id) {
+          return {
+            ...s,
+            title: finalTitle,
+            category: newCategory,
+            memo: newMemo.trim() || undefined,
+            sourceUrl: newSourceUrl.trim() || undefined,
+            platform,
+            thumbnailUrl: newThumbnailUrl.trim() || undefined,
+            country: newCountry.trim() || undefined,
+            city: newCity.trim() || undefined,
+            lat: newLat,
+            lng: newLng,
+            address: newAddress.trim() || undefined,
+          };
+        }
+        return s;
+      });
+      setSpots(updated);
+      await savePockets(updated);
+      setActionSuccessToast(`'${finalTitle}' 수정 완료`);
+    } else {
+      // Create new
+      const item: SpotPocketItem = {
+        id: `spot-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        title: finalTitle,
+        category: newCategory,
+        memo: newMemo.trim() || undefined,
+        sourceUrl: newSourceUrl.trim() || undefined,
+        platform,
+        thumbnailUrl: newThumbnailUrl.trim() || undefined,
+        country: newCountry.trim() || undefined,
+        city: newCity.trim() || undefined,
+        lat: newLat,
+        lng: newLng,
+        address: newAddress.trim() || undefined,
+        createdAt: Date.now()
+      };
+      const updated = [item, ...spots];
+      setSpots(updated);
+      await savePockets(updated);
+      setActionSuccessToast(`'${item.title}' 포켓에 보관 완료`);
+    }
+
+    handleCloseModal();
     setTimeout(() => setActionSuccessToast(null), 3000);
   };
 
@@ -273,14 +361,28 @@ export function PocketHubPage({
 
         {/* Filter Controls Bar */}
         <div className="space-y-4 mb-8">
-          {/* 1. Region Chips (Country · City) */}
+          {/* 1. Region Chips (Country · City) & Favorites */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none">
-            <span className="text-[10px] font-mono tracking-widest text-black/40 dark:text-white/40 uppercase whitespace-nowrap mr-1">
+            {/* Favorite Filter Chip */}
+            <button
+              type="button"
+              onClick={() => setIsFavoriteFilter(prev => !prev)}
+              className={`px-3 py-1 text-xs font-mono uppercase tracking-wider border transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
+                isFavoriteFilter
+                  ? 'bg-amber-500 text-white border-amber-500 font-bold shadow-xs'
+                  : 'border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:border-black/40'
+              }`}
+            >
+              <Star className={`w-3 h-3 ${isFavoriteFilter ? 'fill-white text-white' : 'text-amber-500 fill-amber-500'}`} />
+              <span>FAVORITES ({favoriteCount})</span>
+            </button>
+
+            <span className="text-[10px] font-mono tracking-widest text-black/40 dark:text-white/40 uppercase whitespace-nowrap mx-1">
               REGION:
             </span>
             <button
               onClick={() => setSelectedRegion('ALL')}
-              className={`px-3 py-1 text-xs font-mono uppercase tracking-wider border transition-colors whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-1 text-xs font-mono uppercase tracking-wider border transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
                 selectedRegion === 'ALL'
                   ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold'
                   : 'border-black/15 dark:border-white/15 hover:border-black/40 dark:hover:border-white/40 text-black/70 dark:text-white/70'
@@ -292,7 +394,7 @@ export function PocketHubPage({
               <button
                 key={region}
                 onClick={() => setSelectedRegion(region)}
-                className={`px-3 py-1 text-xs font-mono uppercase tracking-wider border transition-colors whitespace-nowrap cursor-pointer ${
+                className={`px-3 py-1 text-xs font-mono uppercase tracking-wider border transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
                   selectedRegion === region
                     ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold'
                     : 'border-black/15 dark:border-white/15 hover:border-black/40 dark:hover:border-white/40 text-black/70 dark:text-white/70'
@@ -309,7 +411,7 @@ export function PocketHubPage({
             <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
               <button
                 onClick={() => setSelectedCategory('ALL')}
-                className={`px-2.5 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors cursor-pointer ${
+                className={`px-2.5 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors cursor-pointer shrink-0 ${
                   selectedCategory === 'ALL'
                     ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold'
                     : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60'
@@ -325,7 +427,7 @@ export function PocketHubPage({
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`px-2.5 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors flex items-center gap-1.5 cursor-pointer ${
+                    className={`px-2.5 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors flex items-center gap-1.5 cursor-pointer shrink-0 ${
                       isSelected
                         ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold'
                         : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -352,7 +454,7 @@ export function PocketHubPage({
           </div>
         </div>
 
-        {/* Gallery Grid */}
+        {/* Gallery Grid (Mobile 2-column: grid-cols-2) */}
         {filteredSpots.length === 0 ? (
           <div className="flex-grow flex flex-col items-center justify-center py-24 border border-dashed border-black/20 dark:border-white/20 text-center">
             <Bookmark className="w-8 h-8 text-black/20 dark:text-white/20 mb-3" />
@@ -360,120 +462,187 @@ export function PocketHubPage({
               보관된 스팟이 없습니다
             </p>
             <p className="text-xs text-black/40 dark:text-white/40 mt-1">
-              상단의 \'KEEP SPOT\' 버튼을 눌러 인스타, 유튜브 등의 핫플과 꿀팁을 킵해보세요.
+              상단의 'KEEP SPOT' 버튼을 눌러 인스타, 유튜브 등의 핫플과 꿀팁을 킵해보세요.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {filteredSpots.map(spot => {
-              const meta = CATEGORY_META[spot.category] || CATEGORY_META.spot;
-              const Icon = meta.icon;
-              const locationLabel = [spot.country, spot.city].filter(Boolean).join(' · ') || 'LOCATION';
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-5">
+              {filteredSpots.slice(0, visibleCount).map(spot => {
+                const meta = CATEGORY_META[spot.category] || CATEGORY_META.spot;
+                const Icon = meta.icon;
+                const locationLabel = [spot.country, spot.city].filter(Boolean).join(' · ') || 'LOCATION';
 
-              return (
-                <div
-                  key={spot.id}
-                  className="group flex flex-col border border-black/15 dark:border-white/15 bg-white dark:bg-[#111111] hover:border-black/50 dark:hover:border-white/50 transition-all duration-200 overflow-hidden shadow-sm hover:shadow-md"
-                >
-                  {/* Card Visual / Thumbnail */}
-                  <div className="relative aspect-[16/10] bg-black/5 dark:bg-white/5 overflow-hidden">
-                    {spot.thumbnailUrl ? (
-                      <img
-                        src={spot.thumbnailUrl}
-                        alt={spot.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                        onError={(e) => {
-                          // fallback on image error
-                          (e.currentTarget as HTMLElement).style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-black/20 dark:text-white/20">
-                        <Icon className="w-10 h-10 mb-1" />
-                        <span className="text-[10px] font-mono tracking-widest uppercase">{meta.label}</span>
-                      </div>
-                    )}
-
-                    {/* Platform Badge Overlay */}
-                    {spot.platform && spot.platform !== 'web' && (
-                      <div className="absolute top-2.5 left-2.5 px-2 py-0.5 bg-black/80 backdrop-blur-sm text-white text-[9px] font-mono tracking-widest uppercase border border-white/20">
-                        {spot.platform}
-                      </div>
-                    )}
-
-                    {/* Category Chip Overlay */}
-                    <div className="absolute top-2.5 right-2.5 px-2 py-0.5 bg-white/90 dark:bg-black/90 backdrop-blur-sm text-black dark:text-white text-[9px] font-mono tracking-wider uppercase border border-black/10 dark:border-white/10 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: meta.color }} />
-                      <span>{meta.label}</span>
-                    </div>
-                  </div>
-
-                  {/* Card Body */}
-                  <div className="p-4 flex-grow flex flex-col justify-between">
-                    <div>
-                      {/* Region Tag */}
-                      <div className="flex items-center gap-1 text-[10px] font-mono tracking-wider uppercase text-black/50 dark:text-white/50 mb-1">
-                        <MapPin className="w-3 h-3 text-red-500" />
-                        <span className="truncate">{locationLabel}</span>
-                      </div>
-
-                      {/* Title */}
-                      <h3 className="text-base font-bold tracking-tight text-black dark:text-white group-hover:text-red-500 transition-colors line-clamp-1">
-                        {spot.title}
-                      </h3>
-
-                      {/* Memo / Tip Highlight */}
-                      {spot.memo && (
-                        <div className="mt-2.5 p-2.5 bg-black/[0.03] dark:bg-white/[0.03] border-l-2 border-red-500 text-xs text-black/80 dark:text-white/80 font-mono leading-relaxed line-clamp-3">
-                          {spot.memo}
+                return (
+                  <div
+                    key={spot.id}
+                    className="group flex flex-col border border-black/15 dark:border-white/15 bg-white dark:bg-[#111111] hover:border-black/50 dark:hover:border-white/50 transition-all duration-200 overflow-hidden shadow-2xs hover:shadow-md"
+                  >
+                    {/* Card Visual / Thumbnail */}
+                    <div className="relative aspect-[16/10] bg-black/5 dark:bg-white/5 overflow-hidden">
+                      {spot.thumbnailUrl ? (
+                        <img
+                          src={spot.thumbnailUrl}
+                          alt={spot.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          loading="lazy"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-black/20 dark:text-white/20">
+                          <Icon className="w-8 h-8 sm:w-10 sm:h-10 mb-1" />
+                          <span className="text-[9px] sm:text-[10px] font-mono tracking-widest uppercase">{meta.label}</span>
                         </div>
                       )}
 
-                      {/* Address preview */}
-                      {spot.address && (
-                        <p className="mt-2 text-[11px] text-black/40 dark:text-white/40 font-mono truncate">
-                          {spot.address}
-                        </p>
+                      {/* Favorite Star Button Overlay */}
+                      <button
+                        type="button"
+                        onClick={(e) => handleToggleFavorite(spot.id, e)}
+                        className="absolute top-2 left-2 w-6 h-6 sm:w-7 sm:h-7 bg-black/70 backdrop-blur-sm flex items-center justify-center border border-white/20 hover:bg-black transition-colors cursor-pointer z-10"
+                        title={spot.isFavorite ? "즐겨찾기 해제" : "자주 쓰는 스팟 즐겨찾기"}
+                      >
+                        <Star className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${spot.isFavorite ? 'text-amber-400 fill-amber-400' : 'text-white/80'}`} />
+                      </button>
+
+                      {/* Platform Badge Overlay */}
+                      {spot.platform && spot.platform !== 'web' && (
+                        <div className="absolute top-2 left-9 sm:left-10 px-1.5 sm:px-2 py-0.5 bg-black/80 backdrop-blur-sm text-white text-[8px] sm:text-[9px] font-mono tracking-widest uppercase border border-white/20">
+                          {spot.platform}
+                        </div>
                       )}
+
+                      {/* Category Chip Overlay */}
+                      <div className="absolute top-2 right-2 px-1.5 sm:px-2 py-0.5 bg-white/90 dark:bg-black/90 backdrop-blur-sm text-black dark:text-white text-[8.5px] sm:text-[9px] font-mono tracking-wider uppercase border border-black/10 dark:border-white/10 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: meta.color }} />
+                        <span>{meta.label}</span>
+                      </div>
                     </div>
 
-                    {/* Action Bar */}
-                    <div className="pt-4 mt-4 border-t border-black/10 dark:border-white/10 flex items-center justify-between gap-2">
-                      <button
-                        onClick={() => setSpotToUseInTrip(spot)}
-                        className="flex-1 h-7 px-2.5 bg-black text-white dark:bg-white dark:text-black text-[10px] font-mono tracking-wider uppercase font-bold flex items-center justify-center gap-1 hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer"
-                        title="트립 타임라인에 바로 복사 추가"
-                      >
-                        <Plus className="w-3 h-3" />
-                        <span>USE IN TRIP</span>
-                      </button>
+                    {/* Card Body */}
+                    <div className="p-2.5 sm:p-4 flex-grow flex flex-col justify-between">
+                      <div>
+                        {/* Region Tag */}
+                        <div className="flex items-center gap-1 text-[9px] sm:text-[10px] font-mono tracking-wider uppercase text-black/50 dark:text-white/50 mb-1">
+                          <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-red-500 shrink-0" />
+                          <span className="truncate">{locationLabel}</span>
+                        </div>
 
-                      {spot.sourceUrl && (
-                        <a
-                          href={spot.sourceUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="h-7 w-7 flex items-center justify-center border border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black dark:hover:border-white transition-colors cursor-pointer"
-                          title="원본 SNS 링크 열기"
+                        {/* Title */}
+                        <h3 className="text-xs sm:text-base font-bold tracking-tight text-black dark:text-white group-hover:text-red-500 transition-colors line-clamp-1">
+                          {spot.title}
+                        </h3>
+
+                        {/* Memo / Tip Highlight */}
+                        {spot.memo && (
+                          <div className="mt-1.5 sm:mt-2.5 p-1.5 sm:p-2.5 bg-black/[0.03] dark:bg-white/[0.03] border-l-2 border-red-500 text-[10px] sm:text-xs text-black/80 dark:text-white/80 font-mono leading-relaxed line-clamp-2 sm:line-clamp-3">
+                            {spot.memo}
+                          </div>
+                        )}
+
+                        {/* Address preview */}
+                        {spot.address && (
+                          <p className="mt-1.5 sm:mt-2 text-[9.5px] sm:text-[11px] text-black/40 dark:text-white/40 font-mono truncate">
+                            {spot.address}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Action Bar */}
+                      <div className="pt-2 sm:pt-4 mt-2 sm:mt-4 border-t border-black/10 dark:border-white/10 flex items-center justify-between gap-1 sm:gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSpotToUseInTrip(spot)}
+                          className="flex-1 h-6 sm:h-7 px-1.5 sm:px-2.5 bg-black text-white dark:bg-white dark:text-black text-[9px] sm:text-[10px] font-mono tracking-wider uppercase font-bold flex items-center justify-center gap-1 hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer"
+                          title="트립 타임라인에 바로 복사 추가"
                         >
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
+                          <Plus className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
+                          <span className="hidden sm:inline">USE IN TRIP</span>
+                          <span className="sm:hidden">USE</span>
+                        </button>
 
-                      <button
-                        onClick={() => setSpotToDelete(spot)}
-                        className="h-7 w-7 flex items-center justify-center border border-black/15 dark:border-white/15 text-black/40 dark:text-white/40 hover:text-red-500 hover:border-red-500 transition-colors cursor-pointer"
-                        title="스팟 삭제"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
+                        {spot.sourceUrl && (
+                          <a
+                            href={spot.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="h-6 w-6 sm:h-7 sm:w-7 flex items-center justify-center border border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer shrink-0"
+                            title="원본 SNS 링크 열기"
+                          >
+                            <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                          </a>
+                        )}
+
+                        {/* Hamburger More Menu (Edit & Delete) */}
+                        <div className="relative shrink-0">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveMenuSpotId(prev => prev === spot.id ? null : spot.id);
+                            }}
+                            className={`h-6 w-6 sm:h-7 sm:w-7 flex items-center justify-center border transition-colors cursor-pointer ${
+                              activeMenuSpotId === spot.id
+                                ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
+                                : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                            }`}
+                            title="스팟 메뉴 (수정/삭제)"
+                          >
+                            <MoreVertical className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                          </button>
+
+                          {activeMenuSpotId === spot.id && (
+                            <div 
+                              onClick={(e) => e.stopPropagation()}
+                              className="absolute right-0 bottom-full mb-1 z-30 w-28 bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 shadow-xl py-1 animate-in fade-in zoom-in-95 duration-100 font-mono text-[10px] sm:text-[11px]"
+                            >
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditSpot(spot)}
+                                className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer font-bold"
+                              >
+                                <Edit3 className="w-3 h-3 text-blue-500" />
+                                <span>수정</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveMenuSpotId(null);
+                                  setSpotToDelete(spot);
+                                }}
+                                className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-red-500/10 text-red-500 cursor-pointer font-bold"
+                              >
+                                <Trash2 className="w-3 h-3 text-red-500" />
+                                <span>삭제</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+
+            {/* Pagination: 40 items per batch */}
+            {visibleCount < filteredSpots.length && (
+              <div className="flex justify-center mt-10">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount(prev => prev + 40)}
+                  className="h-10 px-6 border border-black dark:border-white text-xs font-mono font-black uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer flex items-center gap-2"
+                >
+                  <span>LOAD MORE (+40)</span>
+                  <span className="text-black/40 dark:text-white/40 font-normal">
+                    ({visibleCount} / {filteredSpots.length})
+                  </span>
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -550,42 +719,51 @@ export function PocketHubPage({
         />
       )}
 
-      {/* ── CREATE NEW SPOT MODAL ── */}
+      {/* ── CREATE OR EDIT SPOT MODAL (Swiss Minimal) ── */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#111111] border border-black dark:border-white w-full max-w-lg p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white dark:bg-[#111111] border border-black/20 dark:border-white/20 w-full max-w-lg p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-3 mb-5">
               <div>
-                <span className="text-[10px] font-mono tracking-widest text-red-500 uppercase">CURATE SPOT</span>
-                <h3 className="text-xl font-black uppercase tracking-tight">KEEP NEW SPOT</h3>
+                <span className="text-[10px] font-mono tracking-widest text-red-500 uppercase">
+                  {editingSpot ? 'EDIT SPOT' : 'KEEP SPOT'}
+                </span>
+                <h3 className="text-xl font-black uppercase tracking-tight">
+                  {editingSpot ? 'EDIT SAVED SPOT' : 'KEEP NEW SPOT'}
+                </h3>
               </div>
               <button
-                onClick={() => setIsAddModalOpen(false)}
+                type="button"
+                onClick={handleCloseModal}
                 className="text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateSpot} className="space-y-4">
-              {/* Place Name (with Google Autocomplete) */}
+            <form onSubmit={handleSaveSpot} className="space-y-4">
+              {/* Title / Spot Name or Tip Title */}
               <div>
                 <label className="block text-[10px] font-mono uppercase tracking-wider text-black/60 dark:text-white/60 mb-1">
-                  장소명 / 스팟 이름 *
+                  제목 (장소명 또는 꿀팁 제목) *
                 </label>
                 <PlaceAutocompleteInput
                   value={newTitle}
                   onChange={setNewTitle}
-                  onSelectPlace={(placeName, coords, address, countryName) => {
-                    setNewTitle(placeName || '');
+                  onSelectPlace={(placeName, coords, address, countryName, cityName) => {
+                    if (placeName) setNewTitle(placeName);
                     if (coords?.lat) setNewLat(coords.lat);
                     if (coords?.lng) setNewLng(coords.lng);
                     if (address) setNewAddress(address);
                     if (countryName) setNewCountry(countryName);
+                    if (cityName) setNewCity(cityName);
                   }}
-                  placeholder="예: 푸글렌 도쿄 시부야점 (구글 장소 자동완성)"
-                  className="w-full h-9 px-3 bg-black/5 dark:bg-white/5 border border-black/20 dark:border-white/20 text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none"
+                  placeholder="장소 검색 또는 직접 꿀팁 제목 입력 (예: 시부야 환전 꿀팁)"
+                  className="w-full h-9 px-3 bg-white dark:bg-black border border-black/20 dark:border-white/20 text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none"
                 />
+                <p className="text-[9.5px] font-mono text-black/40 dark:text-white/40 mt-1">
+                  구글 장소 자동완성을 사용하거나, 꿀팁인 경우 제목을 직접 입력하세요.
+                </p>
               </div>
 
               {/* Category selector */}
@@ -625,7 +803,7 @@ export function PocketHubPage({
                     value={newCountry}
                     onChange={e => setNewCountry(e.target.value)}
                     placeholder="예: Japan, France"
-                    className="w-full h-8 px-3 bg-black/5 dark:bg-white/5 border border-black/20 dark:border-white/20 text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none"
+                    className="w-full h-8 px-3 bg-white dark:bg-black border border-black/20 dark:border-white/20 text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none"
                   />
                 </div>
                 <div>
@@ -637,7 +815,7 @@ export function PocketHubPage({
                     value={newCity}
                     onChange={e => setNewCity(e.target.value)}
                     placeholder="예: Tokyo, Paris"
-                    className="w-full h-8 px-3 bg-black/5 dark:bg-white/5 border border-black/20 dark:border-white/20 text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none"
+                    className="w-full h-8 px-3 bg-white dark:bg-black border border-black/20 dark:border-white/20 text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none"
                   />
                 </div>
               </div>
@@ -652,7 +830,7 @@ export function PocketHubPage({
                   onChange={e => setNewMemo(e.target.value)}
                   rows={3}
                   placeholder="예: 3시 이후 웨이팅 없음. 바닐라 라떼 & 크루아상 추천. 인스타 예약 필수."
-                  className="w-full p-2.5 bg-black/5 dark:bg-white/5 border border-black/20 dark:border-white/20 text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none resize-none leading-relaxed"
+                  className="w-full p-2.5 bg-white dark:bg-black border border-black/20 dark:border-white/20 text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none resize-none leading-relaxed"
                 />
               </div>
 
@@ -666,7 +844,7 @@ export function PocketHubPage({
                   value={newSourceUrl}
                   onChange={e => setNewSourceUrl(e.target.value)}
                   placeholder="https://www.instagram.com/p/..."
-                  className="w-full h-8 px-3 bg-black/5 dark:bg-white/5 border border-black/20 dark:border-white/20 text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none"
+                  className="w-full h-8 px-3 bg-white dark:bg-black border border-black/20 dark:border-white/20 text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none"
                 />
               </div>
 
@@ -680,7 +858,7 @@ export function PocketHubPage({
                   value={newThumbnailUrl}
                   onChange={e => setNewThumbnailUrl(e.target.value)}
                   placeholder="https://images.unsplash.com/..."
-                  className="w-full h-8 px-3 bg-black/5 dark:bg-white/5 border border-black/20 dark:border-white/20 text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none"
+                  className="w-full h-8 px-3 bg-white dark:bg-black border border-black/20 dark:border-white/20 text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none"
                 />
               </div>
 
@@ -688,17 +866,16 @@ export function PocketHubPage({
               <div className="pt-3 border-t border-black/15 dark:border-white/15 flex justify-end gap-2">
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={handleCloseModal}
                   className="h-9 px-4 border border-black/20 dark:border-white/20 text-xs font-mono uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
                 >
                   CANCEL
                 </button>
                 <button
                   type="submit"
-                  disabled={!newTitle.trim()}
-                  className="h-9 px-5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white disabled:opacity-40 transition-colors cursor-pointer"
+                  className="h-9 px-5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer"
                 >
-                  SAVE SPOT
+                  {editingSpot ? 'UPDATE SPOT' : 'KEEP SPOT'}
                 </button>
               </div>
             </form>

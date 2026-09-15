@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Bookmark, Plus, X, ChevronDown, ChevronUp, MapPin, ExternalLink,
   Utensils, Coffee, Camera, ShoppingBag, Lightbulb, Check
@@ -13,6 +13,7 @@ interface FloatingPocketWidgetProps {
   onAddSpotToTimeline: (spot: SpotPocketItem) => void;
   isOpen: boolean;
   onToggle: () => void;
+  isEditing: boolean;
 }
 
 const CATEGORY_ICONS: Record<PocketCategory, React.ElementType> = {
@@ -30,6 +31,7 @@ export function FloatingPocketWidget({
   onAddSpotToTimeline,
   isOpen,
   onToggle,
+  isEditing,
 }: FloatingPocketWidgetProps) {
   const [spots] = useState<SpotPocketItem[]>(() => getSavedPockets());
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
@@ -61,7 +63,7 @@ export function FloatingPocketWidget({
   }, [displayList, selectedCategory]);
 
   return (
-    <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end font-sans select-none">
+    <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end font-sans select-none pointer-events-auto">
       {/* Expanded Widget Panel */}
       {isOpen && (
         <div className="mb-2.5 w-[300px] sm:w-[330px] max-h-[440px] bg-white dark:bg-[#111111] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col animate-in fade-in slide-in-from-bottom-3 duration-200 overflow-hidden">
@@ -121,7 +123,6 @@ export function FloatingPocketWidget({
               </div>
             ) : (
               filteredList.map(spot => {
-                const Icon = CATEGORY_ICONS[spot.category] || Camera;
                 return (
                   <div
                     key={spot.id}
@@ -144,14 +145,19 @@ export function FloatingPocketWidget({
                         )}
                       </div>
 
-                      {/* + ADD Action Button */}
+                      {/* + Icon Button (Minimal, disabled when !isEditing) */}
                       <button
+                        type="button"
                         onClick={() => onAddSpotToTimeline(spot)}
-                        className="h-6 px-2 bg-black text-white dark:bg-white dark:text-black text-[9.5px] font-mono font-bold uppercase tracking-wider flex items-center gap-1 hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer shrink-0 shadow-2xs"
-                        title="타임라인에 추가"
+                        disabled={!isEditing}
+                        className={`w-7 h-7 flex items-center justify-center transition-colors shrink-0 ${
+                          isEditing
+                            ? 'bg-black text-white dark:bg-white dark:text-black hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white cursor-pointer'
+                            : 'bg-black/10 text-black/30 dark:bg-white/10 dark:text-white/30 cursor-not-allowed'
+                        }`}
+                        title={isEditing ? "타임라인에 추가" : "수정 모드에서만 타임라인에 추가할 수 있습니다"}
                       >
-                        <Plus className="w-2.5 h-2.5" />
-                        <span>ADD</span>
+                        <Plus className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
@@ -162,19 +168,20 @@ export function FloatingPocketWidget({
         </div>
       )}
 
-      {/* Floating Toggle Capsule (Swiss Minimal) */}
+      {/* Floating Toggle Button (Swiss Minimal Circular Icon Button) */}
       <button
         type="button"
         onClick={onToggle}
-        className="h-9 px-3.5 bg-black text-white dark:bg-white dark:text-black border border-black/20 dark:border-white/20 shadow-xl hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-all flex items-center gap-2 text-xs font-mono font-black uppercase tracking-widest cursor-pointer rounded-none active:scale-95"
-        title="포켓 위젯 토글"
+        className="w-10 h-10 rounded-full bg-black text-white dark:bg-white dark:text-black border border-black/20 dark:border-white/20 shadow-xl hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-all flex items-center justify-center cursor-pointer active:scale-95 relative"
+        title="포켓 위젯 열기"
+        aria-label="Toggle pocket widget"
       >
-        <Bookmark className="w-3.5 h-3.5 text-red-500 fill-red-500 shrink-0" />
-        <span>POCKET</span>
-        <span className="text-[10px] font-mono bg-red-600 text-white dark:bg-black dark:text-white px-1.5 py-0.2">
-          {displayList.length}
-        </span>
-        {isOpen ? <ChevronDown className="w-3.5 h-3.5 opacity-60" /> : <ChevronUp className="w-3.5 h-3.5 opacity-60" />}
+        <Bookmark className="w-4 h-4 text-red-500 fill-red-500 shrink-0" />
+        {displayList.length > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-red-600 text-white text-[9px] font-mono font-bold flex items-center justify-center shadow-xs">
+            {displayList.length > 99 ? '99+' : displayList.length}
+          </span>
+        )}
       </button>
     </div>
   );
