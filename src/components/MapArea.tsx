@@ -1002,41 +1002,82 @@ export function MapArea({
           }
         }
 
-        const vehicleIconHtml = `
-          <div class="animated-vehicle-wrapper" style="transform: rotate(${angle}deg); width: ${width}px; height: ${height}px; display: flex; align-items: center; justify-content: center;">
-            <img src="${src}" style="width: ${width}px; height: ${height}px; object-fit: contain; filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.4));" />
-          </div>
-        `;
+        // EaseInOutQuad helper for smooth gradual takeoff and landing
+        const easeInOutQuad = (t: number) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
 
-        const vehicleIcon = L.divIcon({
-          className: 'custom-animated-vehicle-icon',
-          html: vehicleIconHtml,
-          iconSize: [width, height],
-          iconAnchor: [width / 2, height / 2]
-        });
+        // Calculate arc control point for flights (curved great-circle like route)
+        const isFlight = activeTab === 'flights';
+        const midLat = (startLat + endLat) / 2;
+        const midLng = (startLng + endLng) / 2;
+        const perpLat = -(endLng - startLng) * 0.18;
+        const perpLng = (endLat - startLat) * 0.18;
+        const ctrlLat = midLat + perpLat;
+        const ctrlLng = midLng + perpLng;
 
-        const animMarker = L.marker([startLat, startLng], { icon: vehicleIcon, zIndexOffset: 3000 }).addTo(map);
+        const updateVehicleIcon = (rot: number, scaleVal: number = 1) => {
+          return L.divIcon({
+            className: 'custom-animated-vehicle-icon',
+            html: `
+              <div class="animated-vehicle-wrapper" style="transform: rotate(${rot}deg) scale(${scaleVal}); width: ${width}px; height: ${height}px; display: flex; align-items: center; justify-content: center; transition: transform 0.05s linear;">
+                <img src="${src}" style="width: ${width}px; height: ${height}px; object-fit: contain; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.45));" />
+              </div>
+            `,
+            iconSize: [width, height],
+            iconAnchor: [width / 2, height / 2]
+          });
+        };
+
+        const initialIcon = updateVehicleIcon(angle, isFlight ? 0.9 : 1);
+        const animMarker = L.marker([startLat, startLng], { 
+          icon: initialIcon, 
+          zIndexOffset: 3000 // 핀 마커(스팟) 위에 배치하되 메인 UI 표기 방해 방지
+        }).addTo(map);
+        if (animMarker.bringToFront) animMarker.bringToFront();
         animMarkerRef.current = animMarker;
 
-        const duration = 3000; // 3 seconds flight cycle
+        const duration = isFlight ? 3200 : 2500; // 3.2s for flight, 2.5s for transit
         let startTime: number | null = null;
 
         const animate = (timestamp: number) => {
           if (!startTime) startTime = timestamp;
-          let elapsed = timestamp - startTime;
-          let progress = elapsed / duration;
+          const elapsed = timestamp - startTime;
+          const rawProgress = Math.min(1, elapsed / duration);
+          const ease = easeInOutQuad(rawProgress);
 
-          if (progress >= 1) {
-            startTime = timestamp; // Loop back
-            progress = 0;
+          let curLat: number;
+          let curLng: number;
+          let curAngle = angle;
+          let curScale = 1;
+
+          if (isFlight) {
+            // Quadratic Bezier interpolation for Arc route
+            const inv = 1 - ease;
+            curLat = inv * inv * startLat + 2 * inv * ease * ctrlLat + ease * ease * endLat;
+            curLng = inv * inv * startLng + 2 * inv * ease * ctrlLng + ease * ease * endLng;
+
+            // Instantaneous tangent bearing
+            const dLat = 2 * inv * (ctrlLat - startLat) + 2 * ease * (endLat - ctrlLat);
+            const dLng = 2 * inv * (ctrlLng - startLng) + 2 * ease * (endLng - ctrlLng);
+            curAngle = Math.atan2(dLng, dLat) * 180 / Math.PI;
+
+            // Elevation scale: Takeoff (0.9) -> Cruise (1.15) -> Landing (1.0)
+            curScale = 0.9 + Math.sin(ease * Math.PI) * 0.25;
+          } else {
+            curLat = startLat + (endLat - startLat) * ease;
+            curLng = startLng + (endLng - startLng) * ease;
           }
 
-          // Interpolated position
-          const currentLat = startLat + (endLat - startLat) * progress;
-          const currentLng = startLng + (endLng - startLng) * progress;
+          animMarker.setLatLng([curLat, curLng]);
+          animMarker.setIcon(updateVehicleIcon(curAngle, curScale));
 
-          animMarker.setLatLng([currentLat, currentLng]);
-          animFrameIdRef.current = requestAnimationFrame(animate);
+          if (rawProgress < 1) {
+            animFrameIdRef.current = requestAnimationFrame(animate);
+          } else {
+            // 1회 완결: 목적지 착륙/정차 후 종료 (무한 루프 방지)
+            animMarker.setLatLng([endLat, endLng]);
+            animMarker.setIcon(updateVehicleIcon(curAngle, 1.0));
+            animFrameIdRef.current = null;
+          }
         };
 
         animFrameIdRef.current = requestAnimationFrame(animate);

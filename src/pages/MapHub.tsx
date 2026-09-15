@@ -1523,6 +1523,22 @@ export function MapHubPage({
       prev.includes(cityName) ? prev.filter(c => c !== cityName) : [...prev, cityName]
     );
   };
+
+  // Flight Arc animation state from South Korea to destination country
+  const [isFlyingToCountry, setIsFlyingToCountry] = useState(false);
+  const flightAnimRef = useRef<number | null>(null);
+  const flightPlaneMarkerRef = useRef<any>(null);
+  const flightTrailPolylineRef = useRef<any>(null);
+
+  // Clean up flight animation on unmount
+  useEffect(() => {
+    return () => {
+      if (flightAnimRef.current !== null) {
+        cancelAnimationFrame(flightAnimRef.current);
+      }
+    };
+  }, []);
+
   const [selectedPinGroup, setSelectedPinGroup] = useState<MapPinGroup | null>(null);
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
   const [isWishlistModalOpen, setIsWishlistModalOpen] = useState(false);
@@ -1954,11 +1970,171 @@ export function MapHubPage({
     );
   }, [pinGroups, placeSearchQuery]);
 
-  // Country selection handler: highlights country area and places pulse selection pin
+  // Fly airplane from South Korea (Incheon) to target country in an arc trajectory
+  const flyAirplaneToDestination = (targetCountry: CountryInfo) => {
+    const map = mapRef.current;
+    const L = (window as any).L;
+    if (!map || !L) {
+      setSelectedCountry(targetCountry);
+      setSearchQuery(targetCountry.name);
+      return;
+    }
+
+    // Stop existing flight animation if running
+    if (flightAnimRef.current !== null) {
+      cancelAnimationFrame(flightAnimRef.current);
+      flightAnimRef.current = null;
+    }
+    if (flightPlaneMarkerRef.current) {
+      try { map.removeLayer(flightPlaneMarkerRef.current); } catch (_) {}
+      flightPlaneMarkerRef.current = null;
+    }
+    if (flightTrailPolylineRef.current) {
+      try { map.removeLayer(flightTrailPolylineRef.current); } catch (_) {}
+      flightTrailPolylineRef.current = null;
+    }
+
+    setIsFlyingToCountry(true);
+
+    // Incheon International Airport (ICN, Korea) as Origin
+    const startLat = 37.4602;
+    const startLng = 126.4407;
+    const endLat = targetCountry.center[0];
+    const endLng = targetCountry.center[1];
+
+    // Great-circle Arc control point calculation (subtle curvature)
+    const midLat = (startLat + endLat) / 2;
+    const midLng = (startLng + endLng) / 2;
+    const dist = Math.sqrt((endLat - startLat) ** 2 + (endLng - startLng) ** 2);
+    const perpLat = -(endLng - startLng) * 0.22;
+    const perpLng = (endLat - startLat) * 0.22;
+    const ctrlLat = midLat + perpLat;
+    const ctrlLng = midLng + perpLng;
+
+    // SVG sleek minimal white airliner icon with drop shadow
+    const createAirplaneIcon = (angleDeg: number, scaleVal: number = 1) => {
+      const iconHtml = `
+        <div style="transform: rotate(${angleDeg}deg) scale(${scaleVal}); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; transition: transform 0.04s linear;">
+          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 44px; height: 44px; filter: drop-shadow(0px 6px 12px rgba(0,0,0,0.55));">
+            <!-- Fuselage & Wings (Clean White with sleek border) -->
+            <path d="M24 2C22.6 2 21.5 3.5 21.5 5.5V17L6 26.5V30.5L21.5 25.5V37.5L16 41.5V44.5L24 42.5L32 44.5V41.5L26.5 37.5V25.5L42 30.5V26.5L26.5 17V5.5C26.5 3.5 25.4 2 24 2Z" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.3" stroke-linejoin="round" />
+            <!-- Cockpit Windows -->
+            <ellipse cx="24" cy="7.5" rx="1.5" ry="2.6" fill="#1E293B" />
+            <!-- Jet Engines -->
+            <rect x="13.5" y="21.5" width="2.4" height="6.5" rx="1.2" fill="#E2E8F0" stroke="#475569" stroke-width="0.8" />
+            <rect x="32.1" y="21.5" width="2.4" height="6.5" rx="1.2" fill="#E2E8F0" stroke="#475569" stroke-width="0.8" />
+            <!-- Tail Accent Line -->
+            <line x1="24" y1="35" x2="24" y2="42" stroke="#CBD5E1" stroke-width="1" />
+          </svg>
+        </div>
+      `;
+      return L.divIcon({
+        className: 'sleek-flight-plane-marker',
+        html: iconHtml,
+        iconSize: [44, 44],
+        iconAnchor: [22, 22]
+      });
+    };
+
+    // Calculate initial bearing
+    const initialAngle = Math.atan2(endLng - startLng, endLat - startLat) * 180 / Math.PI;
+
+    // Flight trail polyline (subtle dashed flight path)
+    const trailLine = L.polyline([], {
+      color: '#DC2626',
+      weight: 2.2,
+      opacity: 0.7,
+      dashArray: '5, 7',
+      lineCap: 'round',
+    }).addTo(map);
+    flightTrailPolylineRef.current = trailLine;
+
+    // Plane marker with zIndexOffset 2500 (above spot pins, safely below UI & popups)
+    const planeMarker = L.marker([startLat, startLng], {
+      icon: createAirplaneIcon(initialAngle, 0.8),
+      zIndexOffset: 2500,
+    }).addTo(map);
+    if (planeMarker.bringToFront) planeMarker.bringToFront();
+    flightPlaneMarkerRef.current = planeMarker;
+
+    // Pan map to Korea start
+    map.setView([startLat, startLng], Math.min(map.getZoom(), 4.5), { animate: false });
+
+    // Smooth duration between 1800ms ~ 2300ms
+    const duration = Math.min(2300, Math.max(1800, dist * 22));
+    let startTime: number | null = null;
+    const trailPoints: [number, number][] = [];
+
+    // EaseInOutCubic: gradual takeoff, cruise, gradual landing
+    const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+    const animateFlight = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const rawProgress = Math.min(1, elapsed / duration);
+      const ease = easeInOutCubic(rawProgress);
+
+      const inv = 1 - ease;
+      const curLat = inv * inv * startLat + 2 * inv * ease * ctrlLat + ease * ease * endLat;
+      const curLng = inv * inv * startLng + 2 * inv * ease * ctrlLng + ease * ease * endLng;
+
+      // Tangent bearing
+      const dLat = 2 * inv * (ctrlLat - startLat) + 2 * ease * (endLat - ctrlLat);
+      const dLng = 2 * inv * (ctrlLng - startLng) + 2 * ease * (endLng - ctrlLng);
+      const curAngle = Math.atan2(dLng, dLat) * 180 / Math.PI;
+
+      // Elevation Scale: Takeoff (0.8) -> Cruise (1.2) -> Landing (0.85)
+      const curScale = 0.8 + Math.sin(ease * Math.PI) * 0.4;
+
+      planeMarker.setLatLng([curLat, curLng]);
+      planeMarker.setIcon(createAirplaneIcon(curAngle, curScale));
+
+      // Append to flight trail
+      trailPoints.push([curLat, curLng]);
+      trailLine.setLatLngs(trailPoints);
+
+      // Map camera follows plane smoothly
+      map.panTo([curLat, curLng], { animate: false });
+
+      if (rawProgress < 1) {
+        flightAnimRef.current = requestAnimationFrame(animateFlight);
+      } else {
+        // Touchdown & Landing
+        flightAnimRef.current = null;
+
+        // Smooth zoom to destination country zoom level
+        const isMobile = window.innerWidth < 640;
+        let targetCenter = targetCountry.center;
+        if (isMobile) {
+          const targetPoint = map.project(targetCountry.center, targetCountry.zoom).add([0, window.innerHeight * 0.22]);
+          targetCenter = map.unproject(targetPoint, targetCountry.zoom);
+        }
+        map.flyTo(targetCenter, targetCountry.zoom, { duration: 0.8 });
+
+        // Clean up plane and trail after landing, then display modal
+        setTimeout(() => {
+          if (flightPlaneMarkerRef.current && mapRef.current) {
+            try { mapRef.current.removeLayer(flightPlaneMarkerRef.current); } catch (_) {}
+            flightPlaneMarkerRef.current = null;
+          }
+          if (flightTrailPolylineRef.current && mapRef.current) {
+            try { mapRef.current.removeLayer(flightTrailPolylineRef.current); } catch (_) {}
+            flightTrailPolylineRef.current = null;
+          }
+
+          setIsFlyingToCountry(false);
+          setSelectedCountry(targetCountry);
+          setSearchQuery(targetCountry.name);
+        }, 350);
+      }
+    };
+
+    flightAnimRef.current = requestAnimationFrame(animateFlight);
+  };
+
+  // Country selection handler: highlights country area and flies airplane from Korea
   const handleSelectCountry = (country: CountryInfo) => {
-    setSelectedCountry(country);
     setIsSearchDropdownOpen(false);
-    setSearchQuery(country.name);
 
     const map = mapRef.current;
     const L = (window as any).L;
@@ -2005,21 +2181,37 @@ export function MapHubPage({
         iconAnchor: [20, 20],
       });
       selectPinRef.current = L.marker(country.center, { icon: selectIcon, zIndexOffset: 1200 }).addTo(map);
-
-      // On mobile screens, offset center downward so pin appears in the upper 1/3 of viewport above bottom sheet
-      const isMobile = window.innerWidth < 640;
-      if (isMobile) {
-        const targetPoint = map.project(country.center, country.zoom).add([0, window.innerHeight * 0.22]);
-        const targetCenter = map.unproject(targetPoint, country.zoom);
-        map.flyTo(targetCenter, country.zoom, { duration: 1.2 });
-      } else {
-        map.flyTo(country.center, country.zoom, { duration: 1.2 });
-      }
     }
+
+    // 대한민국인 경우 비행 없이 즉시 선택
+    if (country.code === 'KR') {
+      setSelectedCountry(country);
+      setSearchQuery(country.name);
+      if (map) {
+        map.flyTo(country.center, country.zoom, { duration: 1.0 });
+      }
+      return;
+    }
+
+    // 외국인 경우: 한국에서 비행기가 날아가 착륙한 뒤 모달 오픈
+    flyAirplaneToDestination(country);
   };
 
   // Close country handler: removes highlight and restores South Korea center view
   const handleCloseCountry = () => {
+    if (flightAnimRef.current !== null) {
+      cancelAnimationFrame(flightAnimRef.current);
+      flightAnimRef.current = null;
+    }
+    if (flightPlaneMarkerRef.current && mapRef.current) {
+      try { mapRef.current.removeLayer(flightPlaneMarkerRef.current); } catch (_) {}
+      flightPlaneMarkerRef.current = null;
+    }
+    if (flightTrailPolylineRef.current && mapRef.current) {
+      try { mapRef.current.removeLayer(flightTrailPolylineRef.current); } catch (_) {}
+      flightTrailPolylineRef.current = null;
+    }
+    setIsFlyingToCountry(false);
     setSelectedCountry(null);
     setSearchQuery('');
     const map = mapRef.current;
@@ -2910,7 +3102,7 @@ export function MapHubPage({
       )}
 
       {/* 3. Selected Country Card (Swiss Minimal Editorial Style - Slim Lines, Compact Height, No Box Overload) */}
-      {selectedCountry && (
+      {selectedCountry && !isFlyingToCountry && (
         <div className="fixed sm:absolute bottom-0 sm:bottom-auto sm:top-20 left-0 right-0 sm:left-auto sm:right-6 w-full sm:w-[380px] max-h-[78vh] sm:max-h-[82vh] bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border-t sm:border border-black/15 dark:border-white/15 shadow-2xl z-[500] p-4 sm:p-5 overflow-y-auto animate-in fade-in slide-in-from-bottom sm:slide-in-from-right duration-200">
           
           {/* Header: Code + Continent & Country Name */}
@@ -3351,8 +3543,8 @@ export function MapHubPage({
                       <button
                         type="button"
                         onClick={() => {
-                          setSelectedCountry(c);
-                          setSearchQuery(c.name);
+                          setSelectedPinGroup(null);
+                          handleSelectCountry(c);
                         }}
                         className="text-[10px] font-mono font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
                       >
