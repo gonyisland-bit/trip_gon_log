@@ -2739,14 +2739,32 @@ function App() {
                   trips={trips}
                   plans={plans}
                   onNavigate={navigateTo}
-                  onAddTimelineItemToTrip={(tripId, newItem) => {
+                  onAddTimelineItemToTrip={async (tripId, newItem) => {
+                    const date = newItem.date || '2025.04.12';
                     setTimelineData(prev => {
                       const updated = { ...prev };
-                      const date = newItem.date || '2025.04.12';
                       if (!updated[date]) updated[date] = [];
                       updated[date] = [...updated[date], newItem];
                       return updated;
                     });
+
+                    // Persist to Firestore
+                    try {
+                      const uid = 'public';
+                      const { originDate: _, ...cleanItem } = newItem as any;
+                      await setDoc(doc(db, 'users', uid, 'timeline', String(newItem.id)), cleanForFirestore({ ...cleanItem, tripId }));
+                    } catch (e) {
+                      console.warn('Failed to persist timeline item to Firestore:', e);
+                    }
+
+                    // Local storage fallback
+                    try {
+                      const raw = localStorage.getItem('timeline_data') || '{}';
+                      const parsed = JSON.parse(raw);
+                      if (!parsed[date]) parsed[date] = [];
+                      parsed[date].push(newItem);
+                      localStorage.setItem('timeline_data', JSON.stringify(parsed));
+                    } catch (_) {}
                   }}
                   isLoggedIn={isLoggedIn}
                   isAdmin={isAdmin}

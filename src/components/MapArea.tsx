@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { MapPin, Plus, Minus, Store, ShoppingBag, Train, Loader2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Menu, Lock, Unlock } from 'lucide-react';
-import { Trip, TimelineItem, TransitItem } from '../types';
+import { MapPin, Plus, Minus, Store, ShoppingBag, Train, Loader2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Menu, Lock, Unlock, Bookmark } from 'lucide-react';
+import { Trip, TimelineItem, TransitItem, SpotPocketItem } from '../types';
+import { getSavedPockets } from '../utils/pocketStorage';
 
 const dayColors = [
   '#dc2626', // Day 1: Red
@@ -27,6 +28,7 @@ interface MapAreaProps {
   isCinematicMode?: boolean;
   hoveredItemId?: number | null;
   onItemHover?: (id: number | null) => void;
+  onAddSpotToTimeline?: (spot: SpotPocketItem) => void;
 }
 
 export function MapArea({
@@ -43,6 +45,7 @@ export function MapArea({
   isCinematicMode = false,
   hoveredItemId = null,
   onItemHover,
+  onAddSpotToTimeline,
 }: MapAreaProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -54,6 +57,8 @@ export function MapArea({
   const [mapReady, setMapReady] = useState(false);
   const [isInteractive, setIsInteractive] = useState(true);
   const [isMapMenuOpen, setIsMapMenuOpen] = useState(false);
+  const [showPocketPins, setShowPocketPins] = useState<boolean>(true);
+  const pocketMarkersRef = useRef<{ [id: string]: any }>({});
 
   const lastTabRef = useRef<string | undefined>(undefined);
   const lastExpandedItemIdRef = useRef<number | null>(null);
@@ -69,6 +74,82 @@ export function MapArea({
   const travelerMarkerRef = useRef<any>(null);
   const travelerAnimRef = useRef<number | null>(null);
   const lastActiveSpotCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
+
+  // ─── Pocket Ghost Pins Layer Effect ───
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+
+    // Clean up previous ghost pins
+    Object.values(pocketMarkersRef.current).forEach((m: any) => {
+      try { map.removeLayer(m); } catch (_) {}
+    });
+    pocketMarkersRef.current = {};
+
+    if (!showPocketPins) return;
+
+    const L = (window as any).L;
+    if (!L) return;
+
+    const allPockets = getSavedPockets();
+    const spotsWithCoords = allPockets.filter(s => typeof s.lat === 'number' && typeof s.lng === 'number');
+
+    spotsWithCoords.forEach(spot => {
+      const lat = spot.lat!;
+      const lng = spot.lng!;
+
+      const htmlContent = `
+        <div class="pin-wrapper" style="opacity: 0.9; cursor: pointer;">
+          <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+            <div style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px dashed #dc2626; background: rgba(220, 38, 38, 0.22); box-shadow: 0 0 8px rgba(220,38,38,0.35); display: flex; align-items: center; justify-content: center;">
+              <div style="width: 5px; height: 5px; border-radius: 50%; background: #dc2626;"></div>
+            </div>
+          </div>
+          <div class="pin-label" style="border: 1px dashed rgba(220, 38, 38, 0.8); background: rgba(17, 17, 17, 0.9); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 5px; white-space: nowrap;">
+            <span style="color: #ef4444; font-weight: 900; margin-right: 3px; font-family: monospace;">POCKET</span>${spot.title}
+          </div>
+        </div>
+      `;
+
+      const icon = L.divIcon({
+        className: 'custom-ghost-pocket-pin',
+        html: htmlContent,
+        iconSize: [140, 50],
+        iconAnchor: [70, 8],
+      });
+
+      const marker = L.marker([lat, lng], { icon, zIndexOffset: 500 }).addTo(map);
+
+      const popupHtml = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-width: 190px; padding: 4px;">
+          <div style="font-size: 9px; font-weight: 900; color: #dc2626; font-family: monospace; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">
+            ${(spot.category || 'SPOT').toUpperCase()} · POCKET SPOT
+          </div>
+          <div style="font-size: 13px; font-weight: 800; color: #111; margin-bottom: 4px; line-height: 1.2;">
+            ${spot.title}
+          </div>
+          ${spot.memo ? `<div style="font-size: 11px; color: #555; margin-bottom: 8px; line-height: 1.35; max-height: 60px; overflow-y: auto;">${spot.memo}</div>` : ''}
+          <button id="ghost-pin-add-${spot.id}" style="width: 100%; padding: 6px 8px; background: #000; color: #fff; font-size: 10px; font-weight: 800; border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; font-family: monospace;">
+            + ADD TO TIMELINE
+          </button>
+        </div>
+      `;
+
+      marker.bindPopup(popupHtml, { closeButton: true, offset: [0, -6] });
+
+      marker.on('popupopen', () => {
+        const btn = document.getElementById(`ghost-pin-add-${spot.id}`);
+        if (btn) {
+          btn.onclick = () => {
+            onAddSpotToTimeline?.(spot);
+            marker.closePopup();
+          };
+        }
+      });
+
+      pocketMarkersRef.current[spot.id] = marker;
+    });
+  }, [mapReady, showPocketPins, onAddSpotToTimeline]);
 
   useEffect(() => {
     if (!isCinematicMode) {
@@ -1392,21 +1473,37 @@ export function MapArea({
         </div>
       )}
 
-      {/* ── Compact Map Tools Mini Menu (Hamburger) ── */}
+      {/* ── Compact Map Tools Controls (Pocket Pins + Hamburger) ── */}
       <div className="absolute top-3 right-3 z-30 flex flex-col items-end gap-1.5 pointer-events-auto select-none">
-        <button
-          type="button"
-          onClick={() => setIsMapMenuOpen(prev => !prev)}
-          className={`p-1.5 rounded shadow-sm border transition-all cursor-pointer flex items-center justify-center ${
-            isMapMenuOpen 
-              ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
-              : 'bg-[#F9F8F6]/90 dark:bg-[#111111]/90 backdrop-blur-md text-black/70 dark:text-white/70 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white hover:bg-[#F9F8F6] dark:hover:bg-[#111111]'
-          }`}
-          title="지도 도구 메뉴"
-          aria-label="Toggle map tools menu"
-        >
-          <Menu className="w-3.5 h-3.5" />
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setShowPocketPins(prev => !prev)}
+            className={`h-7 px-2.5 rounded shadow-sm border transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider ${
+              showPocketPins
+                ? 'bg-black text-white dark:bg-white dark:text-black border-black/20 dark:border-white/20 shadow-xs'
+                : 'bg-[#F9F8F6]/90 dark:bg-[#111111]/90 backdrop-blur-md text-black/50 dark:text-white/50 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
+            }`}
+            title="포켓 스팟 고스트 핀 지도 표시 On/Off"
+          >
+            <Bookmark className={`w-3 h-3 ${showPocketPins ? 'text-red-500 fill-red-500' : 'text-black/40 dark:text-white/40'}`} />
+            <span>POCKET</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsMapMenuOpen(prev => !prev)}
+            className={`w-7 h-7 rounded shadow-sm border transition-all cursor-pointer flex items-center justify-center ${
+              isMapMenuOpen 
+                ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
+                : 'bg-[#F9F8F6]/90 dark:bg-[#111111]/90 backdrop-blur-md text-black/70 dark:text-white/70 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white hover:bg-[#F9F8F6] dark:hover:bg-[#111111]'
+            }`}
+            title="지도 도구 메뉴"
+            aria-label="Toggle map tools menu"
+          >
+            <Menu className="w-3.5 h-3.5" />
+          </button>
+        </div>
 
         {isMapMenuOpen && (
           <div className="flex flex-col gap-1 p-1 bg-[#F9F8F6]/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/15 dark:border-white/15 rounded shadow-lg animate-in fade-in slide-in-from-top-1 duration-150">

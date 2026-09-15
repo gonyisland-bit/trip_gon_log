@@ -8,6 +8,7 @@ import { SpotPocketItem, PocketCategory, Trip, Plan, TimelineItem } from '../typ
 import { getSavedPockets, savePockets, detectPlatform } from '../utils/pocketStorage';
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { PocketScheduleModal } from '../components/PocketScheduleModal';
 
 interface PocketHubPageProps {
   trips: Trip[];
@@ -57,8 +58,9 @@ export function PocketHubPage({
   // Delete Confirm Modal
   const [spotToDelete, setSpotToDelete] = useState<SpotPocketItem | null>(null);
 
-  // Use in Trip Popover
+  // Use in Trip Popover & Schedule Modal
   const [spotToUseInTrip, setSpotToUseInTrip] = useState<SpotPocketItem | null>(null);
+  const [scheduleTargetTrip, setScheduleTargetTrip] = useState<Trip | null>(null);
   const [actionSuccessToast, setActionSuccessToast] = useState<string | null>(null);
 
   // Load from local/cloud on mount
@@ -160,41 +162,74 @@ export function PocketHubPage({
     setSpotToDelete(null);
   };
 
-  // Use in Trip (copy to timeline)
-  const handleAssignToTrip = (targetTrip: Trip) => {
-    if (!spotToUseInTrip) return;
+  // Helper to reliably extract valid YYYY.MM.DD dates from a trip's date string
+  const getTripValidDates = (dateStr?: string): string[] => {
+    if (!dateStr) return ['2025.04.12'];
+    const cleaned = dateStr.replace(/~/g, '-');
+    const parts = cleaned.split('-').map(s => s.trim().replace(/\//g, '.'));
+    if (parts.length >= 2) {
+      const sMatch = parts[0].match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})$/);
+      const eMatch = parts[1].match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})$/);
+      if (sMatch && eMatch) {
+        const sDate = new Date(parseInt(sMatch[1]), parseInt(sMatch[2]) - 1, parseInt(sMatch[3]));
+        const eDate = new Date(parseInt(eMatch[1]), parseInt(eMatch[2]) - 1, parseInt(eMatch[3]));
+        const list: string[] = [];
+        const cur = new Date(sDate);
+        while (cur <= eDate && list.length < 30) {
+          const y = cur.getFullYear();
+          const m = String(cur.getMonth() + 1).padStart(2, '0');
+          const d = String(cur.getDate()).padStart(2, '0');
+          list.push(`${y}.${m}.${d}`);
+          cur.setDate(cur.getDate() + 1);
+        }
+        if (list.length > 0) return list;
+      }
+    }
+    if (parts[0] && parts[0].match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})$/)) {
+      return [parts[0]];
+    }
+    return ['2025.04.12'];
+  };
 
-    // Build timeline item
+  // Step 1: When user clicks trip in "USE IN TRIP" list, open the Schedule Picker modal
+  const handleSelectTripForSpot = (targetTrip: Trip) => {
+    setScheduleTargetTrip(targetTrip);
+  };
+
+  // Step 2: Confirm selected date and time slot from modal
+  const handleConfirmSchedule = (chosenDate: string, chosenTime: string) => {
+    if (!spotToUseInTrip || !scheduleTargetTrip) return;
+
     const newItem: TimelineItem = {
       id: Date.now(),
-      time: '12:00 PM',
+      time: chosenTime,
       type: spotToUseInTrip.category === 'food' || spotToUseInTrip.category === 'cafe' ? 'restaurant' : 'activity',
       place: spotToUseInTrip.title,
       cost: '-',
       memo: spotToUseInTrip.memo || '',
       lat: spotToUseInTrip.lat,
       lng: spotToUseInTrip.lng,
-      date: targetTrip.date?.split('-')[0]?.trim() || '2025.04.12',
-      tripId: targetTrip.id,
+      date: chosenDate,
+      tripId: scheduleTargetTrip.id,
       link: spotToUseInTrip.sourceUrl || ''
     };
 
     if (onAddTimelineItemToTrip) {
-      onAddTimelineItemToTrip(targetTrip.id, newItem);
+      onAddTimelineItemToTrip(scheduleTargetTrip.id, newItem);
     } else {
-      // Fallback: save to localStorage timelineData
       try {
         const raw = localStorage.getItem('timeline_data') || '{}';
         const parsed = JSON.parse(raw);
-        const tripDate = targetTrip.date?.split('-')[0]?.trim() || '2025.04.12';
-        if (!parsed[tripDate]) parsed[tripDate] = [];
-        parsed[tripDate].push(newItem);
+        if (!parsed[chosenDate]) parsed[chosenDate] = [];
+        parsed[chosenDate].push(newItem);
         localStorage.setItem('timeline_data', JSON.stringify(parsed));
       } catch (_) {}
     }
 
-    setActionSuccessToast(`'${targetTrip.title}' 여정에 추가되었습니다`);
-    setTimeout(() => setActionSuccessToast(null), 3000);
+    setActionSuccessToast(`'${scheduleTargetTrip.title}' 타임라인(${chosenDate} ${chosenTime})에 추가 완료`);
+    setTimeout(() => setActionSuccessToast(null), 3500);
+
+    setScheduleTargetTrip(null);
     setSpotToUseInTrip(null);
   };
 
@@ -474,7 +509,7 @@ export function PocketHubPage({
                 allAvailableTrips.map(trip => (
                   <button
                     key={trip.id}
-                    onClick={() => handleAssignToTrip(trip)}
+                    onClick={() => handleSelectTripForSpot(trip)}
                     className="w-full text-left p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between group cursor-pointer"
                   >
                     <div>
@@ -501,6 +536,18 @@ export function PocketHubPage({
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── SCHEDULE SLOT PICKER MODAL ── */}
+      {scheduleTargetTrip && spotToUseInTrip && (
+        <PocketScheduleModal
+          isOpen={Boolean(scheduleTargetTrip)}
+          spot={spotToUseInTrip}
+          trip={scheduleTargetTrip}
+          availableDates={getTripValidDates(scheduleTargetTrip.date)}
+          onClose={() => setScheduleTargetTrip(null)}
+          onConfirm={handleConfirmSchedule}
+        />
       )}
 
       {/* ── CREATE NEW SPOT MODAL ── */}

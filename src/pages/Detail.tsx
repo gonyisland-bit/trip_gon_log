@@ -19,7 +19,7 @@ import { Lightbox, LightboxImageMeta } from '../components/Lightbox';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { Footer } from '../components/Footer';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { SpotPocketView } from '../components/SpotPocketView';
+import { FloatingPocketWidget } from '../components/FloatingPocketWidget';
 import { getSavedPockets, findNearbySpots } from '../utils/pocketStorage';
 import { 
   Trip, 
@@ -775,6 +775,7 @@ export function JourneyDetailPage({
 
   // ── 300m Hotspot Radar State ──
   const [nearbySpotAlert, setNearbySpotAlert] = useState<{ spot: SpotPocketItem; distance: number } | null>(null);
+  const [isPocketWidgetOpen, setIsPocketWidgetOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (!isSwitcherOpen) return;
@@ -1875,17 +1876,19 @@ export function JourneyDetailPage({
     }
   }, [trip?.id, baseTimeline]);
 
-  const handleDirectAddFromPocket = (spot: SpotPocketItem) => {
-    const targetDate = selectedDate === 'ALL' ? (allTripDates[0] || trip?.date?.split('-')[0]?.trim() || '2025.04.12') : selectedDate;
+  const handleDirectAddFromPocket = (spot: SpotPocketItem, targetDateParam?: string, targetTimeParam?: string) => {
+    const targetDate = targetDateParam || (selectedDate === 'ALL' ? (allTripDates[0] || trip?.date?.split('-')[0]?.trim() || '2025.04.12') : selectedDate);
+    const newId = Date.now();
     const newItem: TimelineItem = {
-      id: Date.now(),
-      time: '12:00 PM',
+      id: newId,
+      time: targetTimeParam || '12:00 PM',
       type: spot.category === 'food' || spot.category === 'cafe' ? 'restaurant' : 'activity',
       place: spot.title,
       cost: '-',
-      memo: spot.memo || '',
+      memo: spot.memo ? `${spot.memo}${spot.sourceUrl ? `\n참고: ${spot.sourceUrl}` : ''}` : (spot.sourceUrl ? `참고: ${spot.sourceUrl}` : ''),
       lat: spot.lat,
       lng: spot.lng,
+      location: spot.address || spot.city || spot.title,
       date: targetDate,
       tripId: trip?.id,
       link: spot.sourceUrl || ''
@@ -1894,7 +1897,14 @@ export function JourneyDetailPage({
     setDraftTimeline(prev => [...prev, newItem]);
     setIsEditing(true);
     setActiveTab('timeline');
-    setExpandedItemId(newItem.id);
+    setExpandedItemId(newId);
+    setIsPocketWidgetOpen(false);
+
+    setTimeout(() => {
+      if (itemRefs.current[newId]) {
+        itemRefs.current[newId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 250);
   };
 
   // Auto-clear day section flash highlight
@@ -3836,6 +3846,7 @@ export function JourneyDetailPage({
               isCinematicMode={isCinematicMode}
               hoveredItemId={hoveredItemId}
               onItemHover={setHoveredItemId}
+              onAddSpotToTimeline={handleDirectAddFromPocket}
             />
           </ErrorBoundary>
 
@@ -4012,8 +4023,7 @@ export function JourneyDetailPage({
             { id: 'flights', label: 'FLIGHT' }, 
             { id: 'stays', label: 'STAY' }, 
             { id: 'transit', label: 'TRANS' }, 
-            { id: 'gallery', label: 'PHOTO' },
-            { id: 'pocket', label: 'POCKET' }
+            { id: 'gallery', label: 'PHOTO' }
           ].map(tab => (
             <button 
               key={tab.id} 
@@ -4771,6 +4781,38 @@ export function JourneyDetailPage({
                             ) : null}
                           </div>
                         </div>
+
+                        {/* Swiss Minimal GAP FILL Bar (Between items of the same date) */}
+                        {(() => {
+                          const nextItem = currentTimeline[idx + 1];
+                          if (!nextItem || nextItem.date !== item.date) return null;
+                          if (collapsedDays.includes(item.date || '') && selectedDate === 'ALL') return null;
+
+                          const curMin = parseTimeToMinutes(item.time);
+                          const nextMin = parseTimeToMinutes(nextItem.time);
+                          const diffMin = nextMin - curMin;
+
+                          if (diffMin < 150) return null; // 2.5시간 이상 빈틈
+
+                          const gapHours = (diffMin / 60).toFixed(1).replace(/\.0$/, '');
+                          const midMin = Math.round(curMin + diffMin / 2);
+                          const midTimeStr = minutesToTimeStr(midMin);
+
+                          return (
+                            <div className="w-full px-4 md:px-6 py-2 flex items-center justify-center">
+                              <button
+                                type="button"
+                                onClick={() => setIsPocketWidgetOpen(true)}
+                                className="w-full py-2 px-3 border border-dashed border-black/20 dark:border-white/20 hover:border-red-500 hover:text-red-500 hover:bg-red-500/5 transition-all text-[10px] md:text-[11px] font-mono font-bold uppercase tracking-widest text-black/50 dark:text-white/50 flex items-center justify-center gap-2 cursor-pointer group select-none"
+                                title={`${gapHours}시간의 빈틈이 있습니다. 포켓 위젯을 열어 스팟을 채워보세요.`}
+                              >
+                                <Plus className="w-3 h-3 group-hover:scale-110 transition-transform text-red-500 shrink-0" />
+                                <span>GAP FILL ({gapHours}h)</span>
+                                <span className="text-[9px] opacity-70 font-normal">· {midTimeStr}</span>
+                              </button>
+                            </div>
+                          );
+                        })()}
                       </div>
                     );
                   })
@@ -5580,32 +5622,24 @@ export function JourneyDetailPage({
           )}
         </div>
 
-        {/* SPOT POCKET TAB */}
-        <div className={activeTab === 'pocket' ? 'contents' : 'hidden'}>
-          {visitedTabs.has('pocket') && (
-            <SpotPocketView
-              trip={tripToUse!}
-              selectedDate={selectedDate}
-              allTripDates={allTripDates}
-              onAddTimelineItem={(newItem) => {
-                recordHistory();
-                setDraftTimeline(prev => [...prev, newItem]);
-                setIsEditing(true);
-              }}
-              isLoggedIn={isLoggedIn}
-              isAdmin={isAdmin}
-              isDarkMode={isDarkMode}
-            />
-          )}
-        </div>
-
           {/* Footer inside Detail scroll container */}
-          {activeTab !== 'settlement' && activeTab !== 'gallery' && activeTab !== 'pocket' && (
+          {activeTab !== 'settlement' && activeTab !== 'gallery' && (
             <div className="w-full shrink-0">
               <Footer className="mt-12" />
             </div>
           )}
         </div>
+        {/* Floating Pocket Widget (Timeline Context) */}
+        {activeTab === 'timeline' && tripToUse && (
+          <FloatingPocketWidget
+            trip={tripToUse}
+            selectedDate={selectedDate}
+            allTripDates={allTripDates}
+            isOpen={isPocketWidgetOpen}
+            onToggle={() => setIsPocketWidgetOpen(!isPocketWidgetOpen)}
+            onAddSpotToTimeline={(spot) => handleDirectAddFromPocket(spot)}
+          />
+        )}
 
         {/* Floating Smart Day Quick Jump Bar */}
         {activeTab === 'timeline' && allTripDates.length >= 2 && (
