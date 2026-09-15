@@ -146,75 +146,60 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
       <div className="absolute inset-0" onClick={onClose} />
 
       {/* Modal Container */}
-      <div className="relative w-full max-w-md bg-[#F9F8F6] dark:bg-[#111111] border border-black/20 dark:border-white/20 p-6 md:p-8 shadow-2xl flex flex-col z-10 transition-colors duration-300 text-black dark:text-white my-auto shrink-0">
+      <div className="relative w-full max-w-md bg-white dark:bg-[#111111] border border-black/20 dark:border-white/20 p-6 md:p-8 shadow-2xl flex flex-col z-10 transition-colors duration-300 text-black dark:text-white my-auto shrink-0 animate-in fade-in zoom-in-95 duration-150">
         
         {/* Close Button */}
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 p-1 hover:opacity-60 transition-opacity cursor-pointer"
+          className="absolute top-5 right-5 p-1 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
 
-        {/* Logo / Header */}
-        <div className="text-center mb-6">
-          <h2 className="text-2xl md:text-3xl font-black tracking-tighter uppercase mb-1 font-sans">
-            Tripgon log
+        {/* Header - Swiss Minimal */}
+        <div className="border-b border-black/15 dark:border-white/15 pb-4 mb-5">
+          <span className="text-[10px] font-mono tracking-widest text-red-500 uppercase block mb-1">
+            {isSignUp ? 'USER REGISTRATION' : 'AUTHENTICATION'}
+          </span>
+          <h2 className="text-2xl font-black uppercase tracking-tight">
+            {isSignUp ? 'CREATE ACCOUNT' : 'SIGN IN'}
           </h2>
-          <p className="text-[10px] md:text-xs text-black/50 dark:text-white/50 uppercase tracking-widest font-mono">
-            {isSignUp ? 'Create your personal account' : 'Log in to edit your journeys'}
+          <p className="text-[11px] font-mono text-black/50 dark:text-white/50 mt-1">
+            {isSignUp 
+              ? '필수 정보를 입력하여 새로운 유저 계정을 생성하세요.' 
+              : '여정 편집 및 관리를 위해 등록된 계정으로 로그인하세요.'}
           </p>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex border-b border-black/10 dark:border-white/10 mb-5 text-xs font-bold uppercase tracking-widest">
-          <button 
-            type="button"
-            onClick={() => { setIsSignUp(false); setError(''); }}
-            className={`flex-1 pb-3 text-center transition-colors cursor-pointer ${!isSignUp ? 'border-b-2 border-black dark:border-white text-black dark:text-white' : 'text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'}`}
-          >
-            Log In
-          </button>
-          <button 
-            type="button"
-            onClick={() => { setIsSignUp(true); setError(''); }}
-            className={`flex-1 pb-3 text-center transition-colors cursor-pointer ${isSignUp ? 'border-b-2 border-black dark:border-white text-black dark:text-white' : 'text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'}`}
-          >
-            Sign Up
-          </button>
         </div>
 
         {/* Error message */}
         {error && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs font-medium tracking-wide">
+          <div className="mb-4 p-3 border border-red-500/30 bg-red-500/5 text-red-600 dark:text-red-400 text-xs font-mono leading-relaxed">
             {error}
           </div>
         )}
 
         {/* Form */}
-        <form onSubmit={handleFormSubmit} className="flex flex-col gap-3.5">
-          {isSignUp && (
+        <form onSubmit={handleFormSubmit} className="space-y-4">
+          {/* Sign Up Mode: Additional Profile Fields */}
+          {isSignUp ? (
             <>
-              {/* Last Name & First Name (1 Row) */}
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest text-black/60 dark:text-white/60">
+              {/* Last Name & First Name (2 Columns) */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
                     성 (LAST NAME) *
                   </label>
-                  <div className="relative">
-                    <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black/30 dark:text-white/30" />
-                    <input 
-                      type="text"
-                      required
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      placeholder="김 / Hong"
-                      className="w-full pl-8 pr-3 py-2 text-xs md:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none"
-                    />
-                  </div>
+                  <input 
+                    type="text"
+                    required
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="김 / Hong"
+                    className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
+                  />
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest text-black/60 dark:text-white/60">
+                <div>
+                  <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
                     이름 (FIRST NAME) *
                   </label>
                   <input 
@@ -223,90 +208,142 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     placeholder="길동 / Gildong"
-                    className="w-full px-3 py-2 text-xs md:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none"
+                    className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
                   />
                 </div>
               </div>
 
-              {/* Birthdate & Phone (1 Row) */}
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest text-black/60 dark:text-white/60">
+              {/* Birthdate & Phone (2 Columns) */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
                     생년월일 (BIRTHDAY)
                   </label>
-                  <div className="relative">
-                    <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black/30 dark:text-white/30" />
-                    <input 
-                      type="text"
-                      value={birthdate}
-                      onChange={(e) => setBirthdate(e.target.value)}
-                      placeholder="YYYY-MM-DD"
-                      className="w-full pl-8 pr-3 py-2 text-xs md:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none"
-                    />
-                  </div>
+                  <input 
+                    type="text"
+                    value={birthdate}
+                    onChange={(e) => setBirthdate(e.target.value)}
+                    placeholder="YYYY-MM-DD"
+                    className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
+                  />
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest text-black/60 dark:text-white/60">
+                <div>
+                  <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
                     전화번호 (PHONE)
                   </label>
-                  <div className="relative">
-                    <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black/30 dark:text-white/30" />
-                    <input 
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="010-0000-0000"
-                      className="w-full pl-8 pr-3 py-2 text-xs md:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none"
-                    />
-                  </div>
+                  <input 
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="010-0000-0000"
+                    className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
+                  />
                 </div>
+              </div>
+
+              {/* Email Address */}
+              <div>
+                <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
+                  이메일 (EMAIL) *
+                </label>
+                <input 
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
+                />
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
+                  비밀번호 (PASSWORD) *
+                </label>
+                <input 
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="•••••• (6자 이상)"
+                  className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
+                />
+              </div>
+
+              <button 
+                type="submit"
+                disabled={loading}
+                className="w-full h-10 mt-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors disabled:opacity-50 flex items-center justify-center rounded-none cursor-pointer"
+              >
+                {loading ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}
+              </button>
+
+              {/* Back to Sign In Link */}
+              <div className="pt-3 border-t border-black/15 dark:border-white/15 text-center">
+                <button
+                  type="button"
+                  onClick={() => { setIsSignUp(false); setError(''); }}
+                  className="text-xs font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                >
+                  ← BACK TO SIGN IN
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Sign In Mode: Email & Password Only */}
+              <div>
+                <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
+                  이메일 (EMAIL) *
+                </label>
+                <input 
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
+                  비밀번호 (PASSWORD) *
+                </label>
+                <input 
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
+                />
+              </div>
+
+              <button 
+                type="submit"
+                disabled={loading}
+                className="w-full h-10 mt-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors disabled:opacity-50 flex items-center justify-center rounded-none cursor-pointer"
+              >
+                {loading ? 'SIGNING IN...' : 'SIGN IN'}
+              </button>
+
+              {/* Switch to Sign Up */}
+              <div className="pt-4 border-t border-black/15 dark:border-white/15 flex flex-col items-center gap-1 text-center">
+                <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                  계정이 아직 없으신가요?
+                </span>
+                <button
+                  type="button"
+                  onClick={() => { setIsSignUp(true); setError(''); }}
+                  className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white hover:text-red-600 dark:hover:text-red-500 transition-colors cursor-pointer"
+                >
+                  [CREATE AN ACCOUNT]
+                </button>
               </div>
             </>
           )}
-
-          {/* Email Address */}
-          <div className="flex flex-col gap-1">
-            <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest text-black/60 dark:text-white/60">
-              이메일 주소 (EMAIL) *
-            </label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30 dark:text-white/30" />
-              <input 
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="email@example.com"
-                className="w-full pl-10 pr-4 py-2 text-xs md:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none"
-              />
-            </div>
-          </div>
-
-          {/* Password */}
-          <div className="flex flex-col gap-1">
-            <label className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest text-black/60 dark:text-white/60">
-              비밀번호 (PASSWORD) *
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30 dark:text-white/30" />
-              <input 
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="•••••• (6자 이상)"
-                className="w-full pl-10 pr-4 py-2 text-xs md:text-sm bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white outline-none transition-colors rounded-none"
-              />
-            </div>
-          </div>
-
-          <button 
-            type="submit"
-            disabled={loading}
-            className="mt-3 py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-bold uppercase tracking-widest hover:opacity-85 active:opacity-95 transition-opacity disabled:opacity-50 flex items-center justify-center rounded-none cursor-pointer"
-          >
-            {loading ? '처리 중...' : isSignUp ? 'CREATE' : 'LOG IN'}
-          </button>
         </form>
       </div>
 

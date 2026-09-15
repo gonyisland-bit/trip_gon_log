@@ -343,6 +343,7 @@ export function ManageHubPage({
   // Landing Hero Image (Guest Mode) State
   const [localLandingHeroImage, setLocalLandingHeroImage] = useState<string>(landingHeroImage);
   const [isUploadingLandingHero, setIsUploadingLandingHero] = useState<boolean>(false);
+  const [isDraggingLandingHero, setIsDraggingLandingHero] = useState<boolean>(false);
 
   useEffect(() => {
     setLocalLandingHeroImage(landingHeroImage);
@@ -4056,40 +4057,126 @@ export function ManageHubPage({
                       {/* Image Preview & Upload Container */}
                       <div className="flex flex-col gap-2">
                         {localLandingHeroImage ? (
-                          <div className="relative w-full aspect-[16/9] max-h-60 overflow-hidden border border-black/20 dark:border-white/20 bg-black">
+                          <div 
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              setIsDraggingLandingHero(true);
+                            }}
+                            onDragLeave={() => setIsDraggingLandingHero(false)}
+                            onDrop={async (e) => {
+                              e.preventDefault();
+                              setIsDraggingLandingHero(false);
+                              const file = e.dataTransfer.files?.[0];
+                              if (file) await handleLandingHeroUpload(file);
+                            }}
+                            className={`relative w-full aspect-[16/9] max-h-64 overflow-hidden border transition-all group bg-black ${
+                              isDraggingLandingHero 
+                                ? 'border-red-500 ring-2 ring-red-500' 
+                                : 'border-black/20 dark:border-white/20'
+                            }`}
+                          >
                             <img
                               src={getEffectiveImageUrl(localLandingHeroImage)}
                               alt="Landing Hero Preview"
                               className="w-full h-full object-cover"
                             />
-                            <button
-                              type="button"
-                              onClick={() => setLocalLandingHeroImage('')}
-                              className="absolute top-2 right-2 p-1.5 bg-black/70 hover:bg-black text-white cursor-pointer"
-                              title="이미지 제거"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                            <span className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/80 text-white font-mono text-[9px] font-bold uppercase">
-                              PREVIEW: OBJECT-COVER
+
+                            {/* Dragging Overlay */}
+                            {isDraggingLandingHero && (
+                              <div className="absolute inset-0 bg-red-600/30 backdrop-blur-xs flex flex-col items-center justify-center gap-2 text-white z-20 pointer-events-none">
+                                <Upload className="w-8 h-8 animate-bounce" />
+                                <span className="text-xs font-mono font-bold uppercase tracking-widest bg-black px-3 py-1">
+                                  DROP IMAGE TO REPLACE
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Uploading Spinner */}
+                            {isUploadingLandingHero && (
+                              <div className="absolute inset-0 bg-black/70 backdrop-blur-xs flex flex-col items-center justify-center gap-2 text-white z-20">
+                                <Loader2 className="w-6 h-6 animate-spin" />
+                                <span className="text-xs font-mono font-bold uppercase tracking-wider">
+                                  UPLOADING NEW HERO IMAGE...
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Hover Actions: Change (File Picker) & Remove */}
+                            {!isDraggingLandingHero && !isUploadingLandingHero && (
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 z-10">
+                                <label className="h-8 px-3.5 bg-white text-black text-[11px] font-mono uppercase font-bold flex items-center gap-1.5 cursor-pointer hover:bg-white/90 shadow-sm">
+                                  <Upload className="w-3.5 h-3.5" />
+                                  CHANGE IMAGE
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={async (e) => {
+                                      const f = e.target.files?.[0];
+                                      if (f) await handleLandingHeroUpload(f);
+                                    }}
+                                  />
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => setLocalLandingHeroImage('')}
+                                  className="h-8 px-3.5 bg-red-600 text-white text-[11px] font-mono uppercase font-bold flex items-center gap-1.5 cursor-pointer hover:bg-red-700 shadow-sm"
+                                  title="이미지 제거"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  REMOVE
+                                </button>
+                              </div>
+                            )}
+
+                            <span className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/80 text-white font-mono text-[9px] font-bold uppercase z-10">
+                              PREVIEW: OBJECT-COVER (DRAG & DROP TO REPLACE)
                             </span>
                           </div>
                         ) : (
-                          <label className="relative w-full aspect-[16/9] max-h-48 border border-dashed border-black/30 dark:border-white/30 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-black dark:hover:border-white hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors p-4 text-center">
-                            <Upload className="w-5 h-5 text-black/40 dark:text-white/40" />
-                            <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
-                              {isUploadingLandingHero ? '업로드 중...' : '클릭하거나 이미지를 드래그하여 업로드'}
-                            </span>
-                            <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
-                              권장 비율: 16:9 와이드 고화질 (PNG, JPG, WEBP)
-                            </span>
+                          <label 
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              setIsDraggingLandingHero(true);
+                            }}
+                            onDragLeave={() => setIsDraggingLandingHero(false)}
+                            onDrop={async (e) => {
+                              e.preventDefault();
+                              setIsDraggingLandingHero(false);
+                              const file = e.dataTransfer.files?.[0];
+                              if (file) await handleLandingHeroUpload(file);
+                            }}
+                            className={`relative w-full aspect-[16/9] max-h-48 border border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors p-4 text-center ${
+                              isDraggingLandingHero
+                                ? 'border-red-500 bg-red-500/10'
+                                : 'border-black/30 dark:border-white/30 hover:border-black dark:hover:border-white hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
+                            }`}
+                          >
+                            {isUploadingLandingHero ? (
+                              <div className="flex flex-col items-center justify-center gap-2">
+                                <Loader2 className="w-6 h-6 animate-spin text-black dark:text-white" />
+                                <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                                  UPLOADING HERO IMAGE...
+                                </span>
+                              </div>
+                            ) : (
+                              <>
+                                <Upload className="w-5 h-5 text-black/40 dark:text-white/40" />
+                                <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                                  클릭하거나 이미지를 드래그하여 업로드
+                                </span>
+                                <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                                  권장 비율: 16:9 와이드 고화질 (PNG, JPG, WEBP) · 드래그 앤 드롭 지원
+                                </span>
+                              </>
+                            )}
                             <input
                               type="file"
                               accept="image/*"
                               disabled={isUploadingLandingHero}
-                              onChange={e => {
+                              onChange={async e => {
                                 const f = e.target.files?.[0];
-                                if (f) handleLandingHeroUpload(f);
+                                if (f) await handleLandingHeroUpload(f);
                               }}
                               className="hidden"
                             />

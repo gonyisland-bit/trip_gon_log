@@ -64,8 +64,10 @@ export function PocketHubPage({
   const [newAddress, setNewAddress] = useState<string>('');
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState<boolean>(false);
   const [isDraggingThumbnail, setIsDraggingThumbnail] = useState<boolean>(false);
+  const [draggingCardId, setDraggingCardId] = useState<string | null>(null);
+  const [uploadingCardId, setUploadingCardId] = useState<string | null>(null);
 
-  // Handle direct file upload (drag & drop, file picker, or paste)
+  // Handle direct file upload (drag & drop, file picker, or paste) in Modal
   const handleUploadThumbnailFile = async (file: File) => {
     if (!file || !file.type.startsWith('image/')) return;
     try {
@@ -81,6 +83,32 @@ export function PocketHubPage({
     } finally {
       setIsUploadingThumbnail(false);
       setIsDraggingThumbnail(false);
+    }
+  };
+
+  // Handle card direct thumbnail drop on the pocket gallery grid
+  const handleCardThumbnailDrop = async (spotId: string, file: File) => {
+    if (!file || !file.type.startsWith('image/')) return;
+    try {
+      setUploadingCardId(spotId);
+      const compressed = await compressImage(file, 1600, 1200, 0.85);
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const storagePath = `pockets/${Date.now()}_${safeName}`;
+      const url = await uploadFileToR2(compressed, storagePath);
+
+      const updated = spots.map(s => s.id === spotId ? { ...s, thumbnailUrl: url } : s);
+      setSpots(updated);
+      await savePockets(updated);
+
+      const targetSpot = spots.find(s => s.id === spotId);
+      setActionSuccessToast(`'${targetSpot?.title || '스팟'}' 썸네일 이미지 교체 완료`);
+      setTimeout(() => setActionSuccessToast(null), 3000);
+    } catch (err) {
+      console.error('Failed to replace card thumbnail:', err);
+      alert('카드 썸네일 교체에 실패했습니다.');
+    } finally {
+      setUploadingCardId(null);
+      setDraggingCardId(null);
     }
   };
 
@@ -526,8 +554,25 @@ export function PocketHubPage({
                     key={spot.id}
                     className="group flex flex-col border border-black/15 dark:border-white/15 bg-white dark:bg-[#111111] hover:border-black/50 dark:hover:border-white/50 transition-all duration-200 overflow-hidden shadow-2xs hover:shadow-md"
                   >
-                    {/* Card Visual / Thumbnail */}
-                    <div className="relative aspect-[16/10] bg-black/5 dark:bg-white/5 overflow-hidden">
+                    {/* Card Visual / Thumbnail with Drag & Drop Replacement */}
+                    <div 
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setDraggingCardId(spot.id);
+                      }}
+                      onDragLeave={() => {
+                        if (draggingCardId === spot.id) setDraggingCardId(null);
+                      }}
+                      onDrop={async (e) => {
+                        e.preventDefault();
+                        setDraggingCardId(null);
+                        const file = e.dataTransfer.files?.[0];
+                        if (file) await handleCardThumbnailDrop(spot.id, file);
+                      }}
+                      className={`relative aspect-[16/10] bg-black/5 dark:bg-white/5 overflow-hidden transition-all ${
+                        draggingCardId === spot.id ? 'ring-2 ring-red-500' : ''
+                      }`}
+                    >
                       {spot.thumbnailUrl ? (
                         <img
                           src={spot.thumbnailUrl}
@@ -542,6 +587,26 @@ export function PocketHubPage({
                         <div className="w-full h-full flex flex-col items-center justify-center text-black/20 dark:text-white/20">
                           <Icon className="w-8 h-8 sm:w-10 sm:h-10 mb-1" />
                           <span className="text-[9px] sm:text-[10px] font-mono tracking-widest uppercase">{meta.label}</span>
+                        </div>
+                      )}
+
+                      {/* Dragging Hover Overlay */}
+                      {draggingCardId === spot.id && (
+                        <div className="absolute inset-0 bg-red-600/30 backdrop-blur-xs flex flex-col items-center justify-center gap-1 text-white z-30 pointer-events-none">
+                          <Upload className="w-6 h-6 animate-bounce" />
+                          <span className="text-[9px] font-mono font-bold uppercase tracking-wider bg-black px-2 py-0.5">
+                            DROP TO REPLACE
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Uploading Spinner Overlay */}
+                      {uploadingCardId === spot.id && (
+                        <div className="absolute inset-0 bg-black/75 backdrop-blur-xs flex flex-col items-center justify-center gap-1 text-white z-30">
+                          <Loader2 className="w-6 h-6 animate-spin text-white" />
+                          <span className="text-[9px] font-mono font-bold uppercase tracking-wider">
+                            UPLOADING...
+                          </span>
                         </div>
                       )}
 
