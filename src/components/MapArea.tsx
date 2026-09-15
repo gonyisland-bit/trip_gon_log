@@ -646,22 +646,20 @@ export function MapArea({
               const travelerIcon = L.divIcon({
                 className: 'traveler-icon-container',
                 html: `
-                  <div style="width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; position: relative; pointer-events: none; transform: translate(-50%, -100%) translateY(-6px);">
-                    <!-- Traffic Light Glowing Pulse Ring -->
-                    <span style="position: absolute; width: 44px; height: 44px; border-radius: 50%; background-color: rgba(16, 185, 129, 0.3); animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></span>
-                    <!-- High-Contrast Traffic Light Badge -->
-                    <div style="width: 36px; height: 36px; border-radius: 50%; background-color: #059669; border: 2.5px solid #FFFFFF; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; position: relative; z-index: 2;">
-                      <!-- Traffic Light Pedestrian Walking Symbol -->
-                      <svg viewBox="0 0 24 24" width="22" height="22" fill="#FFFFFF">
-                        <circle cx="12" cy="4" r="2.2" />
-                        <path d="M15.5 8.5L14.2 7.3C13.8 6.9 13.2 6.5 12.4 6.5C11.6 6.5 11 6.9 10.5 7.4L7.5 10.5C7.1 10.9 7.1 11.5 7.5 11.9C7.9 12.3 8.5 12.3 8.9 11.9L10.5 10.3V14.2L8.2 16.5C7.8 16.9 7.8 17.5 8.2 17.9C8.6 18.3 9.2 18.3 9.6 17.9L12.2 15.3C12.4 15.1 12.5 14.8 12.5 14.5V9.8L13.8 11.1L15.2 14.8C15.4 15.3 15.9 15.6 16.4 15.6C16.6 15.6 16.8 15.5 17 15.4C17.6 15.2 17.9 14.6 17.7 14L16.2 10.1C16.1 9.5 15.8 9 15.5 8.5Z" />
-                        <path d="M12.5 14.5L14.5 19.5C14.7 20 15.3 20.3 15.8 20.1C16.3 19.9 16.6 19.3 16.4 18.8L14.2 13.3L12.5 14.5Z" />
-                      </svg>
-                    </div>
+                  <div style="width: 28px; height: 38px; display: flex; align-items: flex-end; justify-content: center; position: relative; pointer-events: none; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.6));">
+                    <!-- Crisp Traffic Light Walking Person Silhouette SVG -->
+                    <svg viewBox="0 0 24 24" width="28" height="38" style="overflow: visible;">
+                      <!-- Head -->
+                      <circle cx="12" cy="3.5" r="2.4" fill="#10B981" stroke="#FFFFFF" stroke-width="1.2" />
+                      <!-- Torso & Arms -->
+                      <path d="M15.8 8.2L14.4 7C13.9 6.6 13.2 6.2 12.3 6.2C11.5 6.2 10.8 6.6 10.3 7.2L7.2 10.4C6.8 10.8 6.8 11.5 7.2 11.9C7.6 12.3 8.3 12.3 8.7 11.9L10.3 10.2V14.2L7.9 16.6C7.5 17 7.5 17.7 7.9 18.1C8.3 18.5 9 18.5 9.4 18.1L12.2 15.3C12.4 15.1 12.5 14.8 12.5 14.4V9.6L13.8 11L15.3 14.8C15.5 15.3 16 15.6 16.5 15.6C16.7 15.6 16.9 15.5 17.1 15.4C17.7 15.2 18 14.6 17.8 14L16.2 9.9C16.1 9.3 15.8 8.7 15.8 8.2Z" fill="#10B981" stroke="#FFFFFF" stroke-width="1.2" stroke-linejoin="round" />
+                      <!-- Legs: perfectly standing/walking on the bottom anchor -->
+                      <path d="M12.5 14.4L14.6 19.6C14.8 20.1 15.4 20.4 16 20.2C16.5 20 16.8 19.4 16.6 18.8L14.3 13.2L12.5 14.4Z" fill="#10B981" stroke="#FFFFFF" stroke-width="1.2" stroke-linejoin="round" />
+                    </svg>
                   </div>
                 `,
-                iconSize: [42, 42],
-                iconAnchor: [21, 42]
+                iconSize: [28, 38],
+                iconAnchor: [14, 38] // 발바닥 중앙이 정확한 핀/라인 좌표점
               });
               if (!travelerMarkerRef.current) {
                 travelerMarkerRef.current = L.marker([prevCoords.lat, prevCoords.lng], {

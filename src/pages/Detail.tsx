@@ -3750,21 +3750,21 @@ export function JourneyDetailPage({
             />
           </ErrorBoundary>
 
-          {/* Floating Morphing Player (Circular FAB <-> Expanded Stadium Pill) */}
+          {/* Floating Morphing Player (Swiss Minimal Floating Widget <-> Expanded Editorial Bar) */}
           {cinematicItems.length > 0 && (
             <div
               onMouseEnter={() => setIsPlayFabIdle(false)}
               onMouseLeave={resetPlayFabIdleTimer}
               onTouchStart={() => { setIsPlayFabIdle(false); resetPlayFabIdleTimer(); }}
-              className={`absolute bottom-3 md:bottom-8 lg:bottom-10 left-1/2 -translate-x-1/2 z-30 rounded-full shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden pointer-events-auto flex items-center ${
-                !isCinematicMode && isPlayFabIdle ? 'opacity-40 hover:opacity-100' : 'opacity-100'
+              className={`absolute bottom-3 md:bottom-8 lg:bottom-10 left-1/2 -translate-x-1/2 z-30 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden pointer-events-auto flex items-center ${
+                !isCinematicMode && isPlayFabIdle ? 'opacity-50 hover:opacity-100' : 'opacity-100'
               } ${
                 isCinematicMode
-                  ? 'w-[calc(100%-1.5rem)] max-w-[480px] h-13 sm:h-14 bg-black/90 backdrop-blur-md border border-white/20 text-white px-3 py-1.5 sm:px-4 sm:py-2 justify-between gap-2.5'
-                  : 'w-8 h-8 sm:w-8.5 sm:h-8.5 bg-red-600 hover:bg-red-700 border border-white/30 text-white p-0 hover:scale-105 active:scale-95 cursor-pointer justify-center group'
+                  ? 'w-[calc(100%-1.5rem)] max-w-[480px] h-13 sm:h-14 bg-white/95 dark:bg-[#141414]/95 backdrop-blur-md border border-black/15 dark:border-white/20 text-black dark:text-white px-3 py-1.5 sm:px-4 sm:py-2 justify-between gap-2.5 rounded-xl sm:rounded-full shadow-2xl'
+                  : 'h-9 px-3.5 bg-white/95 dark:bg-[#141414]/95 backdrop-blur-md border border-black/15 dark:border-white/15 text-black dark:text-white rounded-full shadow-xl hover:scale-105 active:scale-95 cursor-pointer justify-center group'
               }`}
             >
-              {/* Collapsed State: Circular FAB Content */}
+              {/* Collapsed State: Swiss Minimal Widget */}
               {!isCinematicMode ? (
                 <button
                   onClick={() => {
@@ -3778,21 +3778,26 @@ export function JourneyDetailPage({
                     setIsCinematicMode(true);
                     setIsCinematicPaused(false);
                   }}
-                  className="w-full h-full flex items-center justify-center cursor-pointer transition-opacity duration-300"
+                  className="w-full h-full flex items-center gap-2 cursor-pointer select-none"
                   title="시네마틱 플레이로그 시작 (Space)"
                   aria-label="Play Log"
                 >
-                  <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current ml-0.5" />
-                  <span className="hidden group-hover:md:inline-block absolute bottom-full mb-2 px-2.5 py-1 bg-black/85 backdrop-blur-md text-white text-[9.5px] font-bold rounded-full whitespace-nowrap uppercase tracking-wider shadow-lg border border-white/10">
-                    Play Log (Space)
+                  <div className="w-4 h-4 rounded-full bg-red-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                    <Play className="w-2.5 h-2.5 fill-current ml-0.2" />
+                  </div>
+                  <span className="text-[10.5px] font-mono font-black tracking-widest uppercase text-black dark:text-white">
+                    PLAY LOG
+                  </span>
+                  <span className="text-[8px] font-mono font-bold text-black/35 dark:text-white/35 pl-1 border-l border-black/10 dark:border-white/10 hidden sm:inline">
+                    SPACE
                   </span>
                 </button>
               ) : (
-                /* Expanded State: Stadium Pill Content (Swiss Minimal Style) */
+                /* Expanded State: Editorial Widget Bar */
                 currentCinematicItem && (
                   <div className="w-full h-full flex items-center justify-between gap-2.5 transition-opacity duration-300 animate-in fade-in">
                     {/* Swiss Precision Progress Bar along the bottom of the pill */}
-                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white/15">
+                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black/10 dark:bg-white/15">
                       <div
                         className="h-full bg-red-600 transition-all duration-75"
                         style={{ width: `${cinematicProgress}%` }}
@@ -3805,24 +3810,24 @@ export function JourneyDetailPage({
                         <img
                           src={getEffectiveImageUrl(currentCinematicItem.img)}
                           alt={currentCinematicItem.place}
-                          className="w-7 h-7 sm:w-8 sm:h-8 object-cover rounded-full shrink-0 border border-white/20 shadow-sm"
+                          className="w-7 h-7 sm:w-8 sm:h-8 object-cover rounded-full shrink-0 border border-black/10 dark:border-white/20 shadow-sm"
                         />
                       )}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="bg-neutral-800 border border-white/15 text-white px-1.5 py-0.5 text-[8px] font-mono font-bold uppercase rounded-sm tracking-wider shrink-0">
+                          <span className="bg-neutral-100 dark:bg-neutral-800 border border-black/10 dark:border-white/15 text-black dark:text-white px-1.5 py-0.5 text-[8px] font-mono font-bold uppercase rounded-sm tracking-wider shrink-0">
                             DAY {allTripDates.indexOf(currentCinematicItem.dateKey) + 1}
                           </span>
                           {currentCinematicItem.time && (
-                            <span className="text-[8.5px] font-mono text-white/90 font-bold shrink-0">
+                            <span className="text-[8.5px] font-mono text-black/80 dark:text-white/90 font-bold shrink-0">
                               {currentCinematicItem.time}
                             </span>
                           )}
-                          <span className="text-[8px] font-mono text-white/40 shrink-0">
+                          <span className="text-[8px] font-mono text-black/40 dark:text-white/40 shrink-0">
                             {String(cinematicIndex + 1).padStart(2, '0')}/{String(cinematicItems.length).padStart(2, '0')}
                           </span>
                         </div>
-                        <h4 className="text-xs font-bold text-white tracking-tight truncate uppercase font-sans mt-0.5">
+                        <h4 className="text-xs font-bold text-black dark:text-white tracking-tight truncate uppercase font-sans mt-0.5">
                           {currentCinematicItem.place || 'Spot'}
                         </h4>
                       </div>
@@ -3832,7 +3837,7 @@ export function JourneyDetailPage({
                     <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={() => setCinematicSpeed(s => s === 3800 ? 2200 : (s === 2200 ? 5500 : 3800))}
-                        className="px-1.5 py-0.5 bg-white/10 hover:bg-white/20 rounded-sm text-white/80 text-[8px] font-mono font-bold transition-colors cursor-pointer"
+                        className="px-1.5 py-0.5 bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 rounded-sm text-black/80 dark:text-white/80 text-[8px] font-mono font-bold transition-colors cursor-pointer"
                         title="속도 조절"
                       >
                         {cinematicSpeed === 3800 ? '1.0X' : (cinematicSpeed === 2200 ? '1.5X' : '0.7X')}
@@ -3843,7 +3848,7 @@ export function JourneyDetailPage({
                           setCinematicIndex(prev => (prev - 1 + cinematicItems.length) % cinematicItems.length);
                           setCinematicProgress(0);
                         }}
-                        className="p-1 sm:p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+                        className="p-1 sm:p-1.5 text-black/60 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors cursor-pointer"
                         title="이전 스팟 (←)"
                       >
                         <SkipBack className="w-3.5 h-3.5" />
@@ -3851,7 +3856,7 @@ export function JourneyDetailPage({
 
                       <button
                         onClick={() => setIsCinematicPaused(p => !p)}
-                        className="p-1.5 bg-white text-black hover:bg-neutral-200 rounded-full shadow transition-all active:scale-95 cursor-pointer"
+                        className="p-1.5 bg-black text-white dark:bg-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 rounded-full shadow transition-all active:scale-95 cursor-pointer"
                         title={isCinematicPaused ? '재생 (Space)' : '일시정지 (Space)'}
                       >
                         {isCinematicPaused ? <Play className="w-3 h-3 fill-current ml-0.5" /> : <Pause className="w-3 h-3 fill-current" />}
@@ -3862,7 +3867,7 @@ export function JourneyDetailPage({
                           setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
                           setCinematicProgress(0);
                         }}
-                        className="p-1 sm:p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+                        className="p-1 sm:p-1.5 text-black/60 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors cursor-pointer"
                         title="다음 스팟 (→)"
                       >
                         <SkipForward className="w-3.5 h-3.5" />
@@ -3870,7 +3875,7 @@ export function JourneyDetailPage({
 
                       <button
                         onClick={() => setIsCinematicMode(false)}
-                        className="p-1 sm:p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-colors ml-0.5 cursor-pointer"
+                        className="p-1 sm:p-1.5 text-black/40 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors ml-0.5 cursor-pointer"
                         title="종료 (축소 / Esc)"
                       >
                         <CloseIcon className="w-3.5 h-3.5" />
@@ -4425,22 +4430,6 @@ export function JourneyDetailPage({
                                   })()}
                                 </div>
                                 <div className="flex items-center gap-1.5 mt-1.5 h-6">
-                                  {/* 활성화(isActive) 시: 재생 버튼이 항상 1순위로 가장 왼쪽에 위치하여 일관된 위치 제공 */}
-                                  {!isEditing && isActive && (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handlePlayFromItem(item.id);
-                                      }}
-                                      className="w-5 h-5 rounded-full bg-red-600 hover:bg-red-700 active:scale-90 text-white shadow-sm flex items-center justify-center transition-all animate-in fade-in zoom-in-75 cursor-pointer shrink-0"
-                                      title="여기서부터 시네마틱 재생 (Play Log)"
-                                      aria-label="Play Log"
-                                    >
-                                      <Play className="w-2.5 h-2.5 fill-current ml-0.5" />
-                                    </button>
-                                  )}
-
                                   {/* 장소 좌표가 있는 경우: 지도 표시 토글 핀 아이콘 */}
                                   {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) && (
                                     <button
