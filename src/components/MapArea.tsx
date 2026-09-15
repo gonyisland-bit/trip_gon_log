@@ -646,20 +646,18 @@ export function MapArea({
               const travelerIcon = L.divIcon({
                 className: 'traveler-icon-container',
                 html: `
-                  <div style="width: 28px; height: 38px; display: flex; align-items: flex-end; justify-content: center; position: relative; pointer-events: none; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.6));">
-                    <!-- Crisp Traffic Light Walking Person Silhouette SVG -->
-                    <svg viewBox="0 0 24 24" width="28" height="38" style="overflow: visible;">
-                      <!-- Head -->
-                      <circle cx="12" cy="3.5" r="2.4" fill="#10B981" stroke="#FFFFFF" stroke-width="1.2" />
-                      <!-- Torso & Arms -->
-                      <path d="M15.8 8.2L14.4 7C13.9 6.6 13.2 6.2 12.3 6.2C11.5 6.2 10.8 6.6 10.3 7.2L7.2 10.4C6.8 10.8 6.8 11.5 7.2 11.9C7.6 12.3 8.3 12.3 8.7 11.9L10.3 10.2V14.2L7.9 16.6C7.5 17 7.5 17.7 7.9 18.1C8.3 18.5 9 18.5 9.4 18.1L12.2 15.3C12.4 15.1 12.5 14.8 12.5 14.4V9.6L13.8 11L15.3 14.8C15.5 15.3 16 15.6 16.5 15.6C16.7 15.6 16.9 15.5 17.1 15.4C17.7 15.2 18 14.6 17.8 14L16.2 9.9C16.1 9.3 15.8 8.7 15.8 8.2Z" fill="#10B981" stroke="#FFFFFF" stroke-width="1.2" stroke-linejoin="round" />
-                      <!-- Legs: perfectly standing/walking on the bottom anchor -->
-                      <path d="M12.5 14.4L14.6 19.6C14.8 20.1 15.4 20.4 16 20.2C16.5 20 16.8 19.4 16.6 18.8L14.3 13.2L12.5 14.4Z" fill="#10B981" stroke="#FFFFFF" stroke-width="1.2" stroke-linejoin="round" />
+                  <div style="width: 36px; height: 46px; display: flex; align-items: flex-end; justify-content: center; position: relative; pointer-events: none; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.65)) drop-shadow(0 1px 3px rgba(0,0,0,0.9));">
+                    <!-- High-Visibility Dynamic Striding Walking Silhouette SVG -->
+                    <svg viewBox="0 0 24 24" width="36" height="46" style="overflow: visible;">
+                      <!-- Head with crisp white outline -->
+                      <circle cx="13.5" cy="3.6" r="2.5" fill="#10B981" stroke="#FFFFFF" stroke-width="1.4" />
+                      <!-- Dynamic Striding Body & Arms (Walking in Motion) -->
+                      <path d="M9.8 8.9L7 23h2.2l1.8-8 2.1 2v6h2.2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2.2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2.2V9.6l1.6-.7z" fill="#10B981" stroke="#FFFFFF" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
                     </svg>
                   </div>
                 `,
-                iconSize: [28, 38],
-                iconAnchor: [14, 38] // 발바닥 중앙이 정확한 핀/라인 좌표점
+                iconSize: [36, 46],
+                iconAnchor: [18, 46] // 발바닥 중앙이 정확한 핀/라인 좌표점
               });
               if (!travelerMarkerRef.current) {
                 travelerMarkerRef.current = L.marker([prevCoords.lat, prevCoords.lng], {

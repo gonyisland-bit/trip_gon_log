@@ -2420,7 +2420,7 @@ function App() {
 
       <div 
         style={appGradientStyle}
-        className={`min-h-screen ${appGradientStyle ? 'bg-transparent' : 'bg-white dark:bg-[#141414]'} text-black dark:text-white font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 w-full overflow-x-hidden flex flex-col ${(currentView === 'detail' || currentView === 'map') ? 'h-screen overflow-hidden' : ''}`}
+        className={`min-h-screen ${appGradientStyle ? 'bg-transparent' : 'bg-white dark:bg-[#141414]'} text-black dark:text-white font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 w-full overflow-x-hidden flex flex-col ${(currentView === 'detail' || currentView === 'map') ? 'h-screen h-[100dvh] overflow-hidden overscroll-none' : ''}`}
       >
         
         {/* Firebase Error/Status Banners */}
@@ -2767,8 +2767,8 @@ function App() {
           )}
         </div>
         
-        {/* Footer: Hidden on JourneyDetail; rendered with mt-0 on ArchiveHub and MapHub */}
-        {currentView !== 'detail' && <Footer className={(currentView === 'map' || currentView === 'archive') ? 'mt-0' : 'mt-12'} />}
+        {/* Footer: Hidden on JourneyDetail and MapHub; rendered with mt-0 on ArchiveHub */}
+        {currentView !== 'detail' && currentView !== 'map' && <Footer className={currentView === 'archive' ? 'mt-0' : 'mt-12'} />}
 
         {/* Modals with Suspense */}
         <Suspense fallback={null}>

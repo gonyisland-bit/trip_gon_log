@@ -2215,14 +2215,14 @@ export function MapHubPage({
             ? 75000 // Taiwan, Maldives, Nepal, etc.
             : Math.max(110000, (10.5 - country.zoom) * 85000);
 
-      highlightLayerRef.current = L.circle(country.center, {
+      const circleOptions = {
         radius: radiusMeters,
         color: '#DC2626',
         weight: 2,
         dashArray: '6, 6',
         fillColor: '#DC2626',
         fillOpacity: 0.12,
-      }).addTo(map);
+      };
 
       // Selected country pulse pin
       const selectHtml = `
@@ -2238,7 +2238,22 @@ export function MapHubPage({
         iconSize: [40, 40],
         iconAnchor: [20, 20],
       });
-      selectPinRef.current = L.marker(country.center, { icon: selectIcon, zIndexOffset: 1200 }).addTo(map);
+
+      const circles: any[] = [L.circle(country.center, circleOptions)];
+      const markers: any[] = [L.marker(country.center, { icon: selectIcon, zIndexOffset: 1200 })];
+
+      // World wrap replication: Americas/Atlantic/Pacific
+      if (country.center[1] < 60) {
+        circles.push(L.circle([country.center[0], country.center[1] + 360], circleOptions));
+        markers.push(L.marker([country.center[0], country.center[1] + 360], { icon: selectIcon, zIndexOffset: 1200 }));
+      }
+      if (country.center[1] > 0) {
+        circles.push(L.circle([country.center[0], country.center[1] - 360], circleOptions));
+        markers.push(L.marker([country.center[0], country.center[1] - 360], { icon: selectIcon, zIndexOffset: 1200 }));
+      }
+
+      highlightLayerRef.current = L.layerGroup(circles).addTo(map);
+      selectPinRef.current = L.layerGroup(markers).addTo(map);
     }
 
     // 대한민국인 경우 비행 없이 즉시 선택
@@ -2336,6 +2351,11 @@ export function MapHubPage({
     const L = (window as any).L;
     if (!L || isFlyingToCountryRef.current) return;
 
+    // Normalize longitude to [-180, 180] for accurate geometric matching across world copies
+    let normLng = latlng.lng;
+    while (normLng > 180) normLng -= 360;
+    while (normLng < -180) normLng += 360;
+
     // Helper: geometric distance match within country influence radius
     const matchByDistance = () => {
       let closestCountry: CountryInfo | null = null;
@@ -2343,7 +2363,7 @@ export function MapHubPage({
 
       for (const country of COUNTRIES_DATA) {
         const cLatLng = L.latLng(country.center[0], country.center[1]);
-        const dist = cLatLng.distanceTo(L.latLng(latlng.lat, latlng.lng));
+        const dist = cLatLng.distanceTo(L.latLng(latlng.lat, normLng));
 
         const maxRadius = country.zoom >= 11
           ? 45000
@@ -2372,7 +2392,7 @@ export function MapHubPage({
     if ((window as any).google && (window as any).google.maps && (window as any).google.maps.Geocoder) {
       try {
         const geocoder = new (window as any).google.maps.Geocoder();
-        geocoder.geocode({ location: { lat: latlng.lat, lng: latlng.lng } }, (results: any[], status: string) => {
+        geocoder.geocode({ location: { lat: latlng.lat, lng: normLng } }, (results: any[], status: string) => {
           if (status === 'OK' && results && results.length > 0) {
             for (const result of results) {
               const countryComp = result.address_components?.find((c: any) => c.types?.includes('country'));
@@ -2413,10 +2433,10 @@ export function MapHubPage({
       minZoom: 2.3,
       maxZoom: 18,
       zoomControl: false,
-      maxBounds: [[-85, -540], [85, 540]],
-      maxBoundsViscosity: 0.8,
+      maxBounds: [[-62, -180], [82, 360]],
+      maxBoundsViscosity: 1.0,
       bounceAtZoomLimits: false,
-      worldCopyJump: true,
+      worldCopyJump: false,
     });
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -2576,18 +2596,23 @@ export function MapHubPage({
         iconAnchor: [13, 34],
       });
 
-      const marker = L.marker([group.lat, group.lng], { icon }).addTo(map);
+      const addPinMarkerAt = (lat: number, lng: number) => {
+        const marker = L.marker([lat, lng], { icon }).addTo(map);
+        marker.on('click', () => {
+          const c = findCountryForGroup(group.country, group.city);
+          if (c) {
+            handleSelectCountry(c);
+          } else {
+            setSelectedPinGroup(group);
+          }
+        });
+        markersRef.current.push(marker);
+      };
 
-      marker.on('click', () => {
-        const c = findCountryForGroup(group.country, group.city);
-        if (c) {
-          handleSelectCountry(c);
-        } else {
-          setSelectedPinGroup(group);
-        }
-      });
-
-      markersRef.current.push(marker);
+      addPinMarkerAt(group.lat, group.lng);
+      // World wrap replication: Americas/Atlantic/Pacific
+      if (group.lng < 60) addPinMarkerAt(group.lat, group.lng + 360);
+      if (group.lng > 0) addPinMarkerAt(group.lat, group.lng - 360);
     });
   }, [pinGroups, showVisitedPins, showPinLabels, isDarkMode]);
 
@@ -2632,12 +2657,17 @@ export function MapHubPage({
         iconAnchor: [13, 34],
       });
 
-      const marker = L.marker(country.center, { icon, zIndexOffset: 600 }).addTo(map);
-      marker.on('click', () => {
-        handleSelectCountry(country);
-      });
+      const addYellowMarkerAt = (lat: number, lng: number) => {
+        const marker = L.marker([lat, lng], { icon, zIndexOffset: 600 }).addTo(map);
+        marker.on('click', () => {
+          handleSelectCountry(country);
+        });
+        yellowMarkersRef.current.push(marker);
+      };
 
-      yellowMarkersRef.current.push(marker);
+      addYellowMarkerAt(country.center[0], country.center[1]);
+      if (country.center[1] < 60) addYellowMarkerAt(country.center[0], country.center[1] + 360);
+      if (country.center[1] > 0) addYellowMarkerAt(country.center[0], country.center[1] - 360);
     });
   }, [favoriteCountries, showWishlistPins, showPinLabels, isDarkMode]);
 
@@ -2671,13 +2701,18 @@ export function MapHubPage({
         iconAnchor: [12, 12],
       });
 
-      const dotMarker = L.marker(country.center, { icon, zIndexOffset: 300 }).addTo(map);
-      dotMarker.on('click', (e: any) => {
-        if (e && e.originalEvent) e.originalEvent.stopPropagation();
-        handleSelectCountry(country);
-      });
+      const addCountryDotAt = (lat: number, lng: number) => {
+        const dotMarker = L.marker([lat, lng], { icon, zIndexOffset: 300 }).addTo(map);
+        dotMarker.on('click', (e: any) => {
+          if (e && e.originalEvent) e.originalEvent.stopPropagation();
+          handleSelectCountry(country);
+        });
+        countryDotsRef.current.push(dotMarker);
+      };
 
-      countryDotsRef.current.push(dotMarker);
+      addCountryDotAt(country.center[0], country.center[1]);
+      if (country.center[1] < 60) addCountryDotAt(country.center[0], country.center[1] + 360);
+      if (country.center[1] > 0) addCountryDotAt(country.center[0], country.center[1] - 360);
     });
   }, [isDarkMode]);
 
