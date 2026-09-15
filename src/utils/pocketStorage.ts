@@ -1,6 +1,6 @@
-﻿import { SpotPocketItem, SpotPocketPlatform } from '../types';
+import { SpotPocketItem, SpotPocketPlatform } from '../types';
 import { db } from '../firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 
 const LOCAL_STORAGE_KEY = 'trip_spot_pockets';
 
@@ -81,13 +81,43 @@ export function getSavedPockets(): SpotPocketItem[] {
   }
 }
 
-export async function savePockets(items: SpotPocketItem[]): Promise<void> {
+/**
+ * Real-time listener for Firestore pocket items.
+ * Ensures instant multi-device synchronization across different PCs and mobile devices.
+ */
+export function subscribePockets(callback: (items: SpotPocketItem[]) => void): () => void {
   try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
+    const docRef = doc(db, 'users', 'public', 'settings', 'pockets');
+    return onSnapshot(docRef, (snap) => {
+      if (snap.exists() && Array.isArray(snap.data()?.items)) {
+        const cloudItems: SpotPocketItem[] = snap.data()?.items;
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cloudItems));
+        callback(cloudItems);
+      } else {
+        // If Firestore document does not exist yet, seed with initial pockets
+        const initial = getSavedPockets();
+        setDoc(docRef, { items: initial, updatedAt: Date.now() }, { merge: true }).catch(() => {});
+        callback(initial);
+      }
+    }, (err) => {
+      console.warn('[pocketStorage] Real-time listener error, falling back to local cache:', err);
+      callback(getSavedPockets());
+    });
+  } catch (err) {
+    console.warn('[pocketStorage] Failed to initialize Firestore listener:', err);
+    callback(getSavedPockets());
+    return () => {};
+  }
+}
+
+export async function savePockets(items: SpotPocketItem[]): Promise<void> {
+  // Always update local cache immediately for zero-latency UI response
+  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
+  try {
     const docRef = doc(db, 'users', 'public', 'settings', 'pockets');
     await setDoc(docRef, { items, updatedAt: Date.now() }, { merge: true });
   } catch (err) {
-    console.warn('[pocketStorage] Failed to sync with Firestore, saved to localStorage only:', err);
+    console.error('[pocketStorage] Failed to save pockets to Firestore server:', err);
   }
 }
 

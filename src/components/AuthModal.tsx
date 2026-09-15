@@ -156,15 +156,15 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
           <X className="w-5 h-5" />
         </button>
 
-        {/* Header - Swiss Minimal */}
+        {/* Header - Swiss Minimal with Inter font */}
         <div className="border-b border-black/15 dark:border-white/15 pb-4 mb-5">
-          <span className="text-[10px] font-mono tracking-widest text-red-500 uppercase block mb-1">
+          <span className="text-[10px] font-mono font-bold tracking-widest text-red-600 dark:text-red-500 uppercase block mb-1">
             {isSignUp ? 'USER REGISTRATION' : 'AUTHENTICATION'}
           </span>
-          <h2 className="text-2xl font-black uppercase tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-inter font-black uppercase tracking-tight text-black dark:text-white">
             {isSignUp ? 'CREATE ACCOUNT' : 'SIGN IN'}
           </h2>
-          <p className="text-[11px] font-mono text-black/50 dark:text-white/50 mt-1">
+          <p className="text-xs font-mono text-black/50 dark:text-white/50 mt-1">
             {isSignUp 
               ? '필수 정보를 입력하여 새로운 유저 계정을 생성하세요.' 
               : '여정 편집 및 관리를 위해 등록된 계정으로 로그인하세요.'}
@@ -186,7 +186,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
               {/* Last Name & First Name (2 Columns) */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
+                  <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
                     성 (LAST NAME) *
                   </label>
                   <input 
@@ -199,7 +199,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
+                  <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
                     이름 (FIRST NAME) *
                   </label>
                   <input 
@@ -216,7 +216,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
               {/* Birthdate & Phone (2 Columns) */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
+                  <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
                     생년월일 (BIRTHDAY)
                   </label>
                   <input 
@@ -228,7 +228,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
+                  <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
                     전화번호 (PHONE)
                   </label>
                   <input 
@@ -243,7 +243,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
 
               {/* Email Address */}
               <div>
-                <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
+                <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
                   이메일 (EMAIL) *
                 </label>
                 <input 
@@ -258,7 +258,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
 
               {/* Password */}
               <div>
-                <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
+                <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
                   비밀번호 (PASSWORD) *
                 </label>
                 <input 
@@ -274,7 +274,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
               <button 
                 type="submit"
                 disabled={loading}
-                className="w-full h-10 mt-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors disabled:opacity-50 flex items-center justify-center rounded-none cursor-pointer"
+                className="w-full h-11 mt-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors disabled:opacity-50 flex items-center justify-center rounded-none cursor-pointer"
               >
                 {loading ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}
               </button>
@@ -294,7 +294,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
             <>
               {/* Sign In Mode: Email & Password Only */}
               <div>
-                <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
+                <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
                   이메일 (EMAIL) *
                 </label>
                 <input 
@@ -308,7 +308,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
               </div>
 
               <div>
-                <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
+                <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
                   비밀번호 (PASSWORD) *
                 </label>
                 <input 
@@ -324,14 +324,14 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
               <button 
                 type="submit"
                 disabled={loading}
-                className="w-full h-10 mt-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors disabled:opacity-50 flex items-center justify-center rounded-none cursor-pointer"
+                className="w-full h-11 mt-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors disabled:opacity-50 flex items-center justify-center rounded-none cursor-pointer"
               >
                 {loading ? 'SIGNING IN...' : 'SIGN IN'}
               </button>
 
               {/* Switch to Sign Up */}
-              <div className="pt-4 border-t border-black/15 dark:border-white/15 flex flex-col items-center gap-1 text-center">
-                <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+              <div className="pt-4 border-t border-black/15 dark:border-white/15 flex flex-col items-center gap-1.5 text-center">
+                <span className="text-[11px] font-mono text-black/50 dark:text-white/50">
                   계정이 아직 없으신가요?
                 </span>
                 <button

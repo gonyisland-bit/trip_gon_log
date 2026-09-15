@@ -6,7 +6,7 @@ import {
   Upload, Image as ImageIcon, Loader2
 } from 'lucide-react';
 import { SpotPocketItem, PocketCategory, Trip, Plan, TimelineItem } from '../types';
-import { getSavedPockets, savePockets, detectPlatform } from '../utils/pocketStorage';
+import { getSavedPockets, savePockets, detectPlatform, subscribePockets } from '../utils/pocketStorage';
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { PocketScheduleModal } from '../components/PocketScheduleModal';
@@ -142,9 +142,12 @@ export function PocketHubPage({
   const [scheduleTargetTrip, setScheduleTargetTrip] = useState<Trip | null>(null);
   const [actionSuccessToast, setActionSuccessToast] = useState<string | null>(null);
 
-  // Load from local/cloud on mount
+  // Real-time sync with Firestore server on mount (multi-device synchronization)
   useEffect(() => {
-    setSpots(getSavedPockets());
+    const unsub = subscribePockets((cloudSpots) => {
+      setSpots(cloudSpots);
+    });
+    return () => unsub();
   }, []);
 
   // Close card menu when clicking outside
