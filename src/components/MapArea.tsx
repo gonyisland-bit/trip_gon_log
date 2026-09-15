@@ -643,21 +643,37 @@ export function MapArea({
 
             const L = (window as any).L;
             if (L) {
+              const isHeadingWest = nextCoords.lng < prevCoords.lng;
               const travelerIcon = L.divIcon({
                 className: 'traveler-icon-container',
                 html: `
-                  <div style="width: 36px; height: 46px; display: flex; align-items: flex-end; justify-content: center; position: relative; pointer-events: none; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.65)) drop-shadow(0 1px 3px rgba(0,0,0,0.9));">
-                    <!-- High-Visibility Dynamic Striding Walking Silhouette SVG -->
-                    <svg viewBox="0 0 24 24" width="36" height="46" style="overflow: visible;">
-                      <!-- Head with crisp white outline -->
-                      <circle cx="13.5" cy="3.6" r="2.5" fill="#10B981" stroke="#FFFFFF" stroke-width="1.4" />
-                      <!-- Dynamic Striding Body & Arms (Walking in Motion) -->
-                      <path d="M9.8 8.9L7 23h2.2l1.8-8 2.1 2v6h2.2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2.2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2.2V9.6l1.6-.7z" fill="#10B981" stroke="#FFFFFF" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
-                    </svg>
+                  <div style="width: 40px; height: 46px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; pointer-events: none;">
+                    <style>
+                      @keyframes walkerBobbing {
+                        0%, 100% { transform: translateY(0px) ${isHeadingWest ? 'scaleX(-1)' : 'scaleX(1)'} rotate(0deg); }
+                        25% { transform: translateY(-4px) ${isHeadingWest ? 'scaleX(-1)' : 'scaleX(1)'} rotate(2.5deg); }
+                        50% { transform: translateY(0px) ${isHeadingWest ? 'scaleX(-1)' : 'scaleX(1)'} rotate(0deg); }
+                        75% { transform: translateY(-4px) ${isHeadingWest ? 'scaleX(-1)' : 'scaleX(1)'} rotate(-2.5deg); }
+                      }
+                      @keyframes walkerShadowPulse {
+                        0%, 50%, 100% { transform: scale(1); opacity: 0.5; }
+                        25%, 75% { transform: scale(0.75); opacity: 0.25; }
+                      }
+                    </style>
+                    <!-- Exact Walker Silhouette from Image 1 with Cadence Bobbing & Directional Flip -->
+                    <div style="animation: walkerBobbing 0.44s ease-in-out infinite; transform-origin: bottom center;">
+                      <img 
+                        src="/walker.png" 
+                        alt="Walker" 
+                        style="width: 38px; height: 38px; object-fit: contain; display: block; filter: drop-shadow(0 0 1.5px #FFFFFF) drop-shadow(0 0 2.5px #FFFFFF) drop-shadow(0 4px 8px rgba(0,0,0,0.6));" 
+                      />
+                    </div>
+                    <!-- Dynamic Footstep Ground Contact Shadow -->
+                    <div style="width: 22px; height: 4px; background: rgba(0,0,0,0.45); border-radius: 50%; filter: blur(0.8px); animation: walkerShadowPulse 0.44s ease-in-out infinite; margin-top: -2px;"></div>
                   </div>
                 `,
-                iconSize: [36, 46],
-                iconAnchor: [18, 46] // 발바닥 중앙이 정확한 핀/라인 좌표점
+                iconSize: [40, 46],
+                iconAnchor: [20, 46] // 발바닥 중앙이 정확한 핀/라인 좌표점
               });
               if (!travelerMarkerRef.current) {
                 travelerMarkerRef.current = L.marker([prevCoords.lat, prevCoords.lng], {
