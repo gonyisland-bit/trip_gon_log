@@ -1228,29 +1228,36 @@ export function EditTripModal({
 
           {/* Status Badge Option */}
           <div className="flex flex-col gap-1.5 mt-4">
-            <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
-              Status Badge (상태 뱃지)
-            </label>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="flex items-center justify-between">
+              <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
+                Status Badge (상태 뱃지: NEW · EDITING · PLAN)
+              </label>
+              <span className="text-[9px] font-mono text-black/40 dark:text-white/40">
+                {statusBadge ? '클릭 시 해제(일반 상태)' : '지정 시 뱃지 노출'}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
               {([
-                { id: '', label: 'LOG', activeBg: 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' },
                 { id: 'NEW', label: 'NEW', activeBg: 'bg-red-600 text-white border-red-600' },
                 { id: 'EDITING', label: 'EDITING', activeBg: 'bg-amber-600 text-white border-amber-600' },
                 { id: 'PLAN', label: 'PLAN', activeBg: 'bg-blue-600 text-white border-blue-600' },
-              ] as const).map((badgeOpt) => (
-                <button
-                  key={badgeOpt.id}
-                  type="button"
-                  onClick={() => setStatusBadge(badgeOpt.id)}
-                  className={`py-2 text-[9px] font-black uppercase tracking-widest border transition-all ${
-                    statusBadge === badgeOpt.id
-                      ? `${badgeOpt.activeBg} shadow-xs font-black`
-                      : 'bg-transparent border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/30 dark:hover:border-white/30'
-                  }`}
-                >
-                  {badgeOpt.label}
-                </button>
-              ))}
+              ] as const).map((badgeOpt) => {
+                const isActive = statusBadge === badgeOpt.id;
+                return (
+                  <button
+                    key={badgeOpt.id}
+                    type="button"
+                    onClick={() => setStatusBadge(isActive ? '' : badgeOpt.id)}
+                    className={`py-2 text-[9px] font-black uppercase tracking-widest border transition-all ${
+                      isActive
+                        ? `${badgeOpt.activeBg} shadow-xs font-black`
+                        : 'bg-transparent border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/30 dark:hover:border-white/30'
+                    }`}
+                  >
+                    {badgeOpt.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

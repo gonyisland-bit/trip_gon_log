@@ -2476,8 +2476,8 @@ export function JourneyDetailPage({
 
     setExpandedItemId(prevId => prevId === targetId ? null : targetId);
 
-    // Sync cinematic player spot if cinematic mode is active
-    if (isCinematicMode && cinematicItems.length > 0) {
+    // Sync cinematic player spot
+    if (cinematicItems.length > 0) {
       const targetIdx = cinematicItems.findIndex(i => i.id === targetId);
       if (targetIdx !== -1) {
         setCinematicIndex(targetIdx);
@@ -3756,15 +3756,15 @@ export function JourneyDetailPage({
               onMouseEnter={() => setIsPlayFabIdle(false)}
               onMouseLeave={resetPlayFabIdleTimer}
               onTouchStart={() => { setIsPlayFabIdle(false); resetPlayFabIdleTimer(); }}
-              className={`absolute bottom-3 md:bottom-6 lg:bottom-8 left-1/2 -translate-x-1/2 z-30 transition-[width,max-width,padding] duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] pointer-events-auto flex items-center h-11 sm:h-12 bg-white/95 dark:bg-[#141414]/95 backdrop-blur-md border border-black/15 dark:border-white/20 text-black dark:text-white rounded-full shadow-2xl overflow-hidden ${
-                !isCinematicMode && isPlayFabIdle ? 'opacity-50 hover:opacity-100' : 'opacity-100'
+              className={`absolute bottom-3 md:bottom-6 lg:bottom-8 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] pointer-events-auto flex items-center bg-white/95 dark:bg-[#141414]/95 backdrop-blur-md border border-black/15 dark:border-white/20 text-black dark:text-white rounded-full shadow-xl overflow-hidden ${
+                !isCinematicMode && isPlayFabIdle ? 'opacity-40 hover:opacity-100' : 'opacity-100'
               } ${
                 isCinematicMode
-                  ? 'w-[calc(100%-1.5rem)] max-w-[580px] px-2.5 sm:px-4 justify-between gap-1.5 sm:gap-2.5'
-                  : 'w-32 sm:w-36 px-3 justify-center hover:scale-105 active:scale-95 cursor-pointer group'
+                  ? 'h-10 sm:h-11 w-[calc(100%-1.5rem)] max-w-[500px] px-3 sm:px-4 justify-between gap-1.5 sm:gap-2.5'
+                  : 'h-8 sm:h-9 w-auto px-3 sm:px-3.5 justify-center hover:scale-105 active:scale-95 cursor-pointer group'
               }`}
             >
-              {/* Collapsed State: Swiss Minimal Floating Pill */}
+              {/* Collapsed State: Swiss Minimal Minimized Pill */}
               {!isCinematicMode ? (
                 <button
                   onClick={() => {
@@ -3778,38 +3778,32 @@ export function JourneyDetailPage({
                     setIsCinematicMode(true);
                     setIsCinematicPaused(false);
                   }}
-                  className="w-full h-full flex items-center justify-center gap-2 cursor-pointer select-none"
-                  title="시네마틱 플레이로그 시작 (Space)"
+                  className="w-full h-full flex items-center justify-center gap-1.5 cursor-pointer select-none"
+                  title="플레이로그 시작 (Space)"
                   aria-label="Play Log"
                 >
-                  <div className="w-4 h-4 rounded-full bg-red-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                    <Play className="w-2.5 h-2.5 fill-current ml-0.2" />
-                  </div>
-                  <span className="text-[10px] sm:text-[10.5px] font-mono font-black tracking-widest uppercase text-black dark:text-white">
+                  <Play className="w-2.5 h-2.5 fill-current text-black dark:text-white" />
+                  <span className="text-[9px] sm:text-[9.5px] font-mono font-bold tracking-widest uppercase text-black dark:text-white">
                     PLAY LOG
                   </span>
                 </button>
               ) : (
-                /* Expanded State: App Progress Bar Line Widget (Image 2 style in 1-Row) */
+                /* Expanded State: Current Selected Spot in 1-Row (No Dep > Eta) */
                 currentCinematicItem && (() => {
-                  const nextCinematicItem = cinematicItems.length > 1 
-                    ? cinematicItems[(cinematicIndex + 1) % cinematicItems.length] 
-                    : null;
-
                   return (
-                    <div className="w-full h-full flex items-center justify-between gap-1.5 sm:gap-3 transition-opacity duration-300 select-none animate-in fade-in">
-                      {/* 1. Left Origin Spot: Bold Name + Mini DEP Tag */}
-                      <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 max-w-[85px] sm:max-w-[125px] shrink-0">
-                        <span className="text-[11px] sm:text-xs font-black tracking-tight text-black dark:text-white uppercase truncate font-sans">
+                    <div className="w-full h-full flex items-center justify-between gap-1.5 sm:gap-2.5 transition-opacity duration-300 select-none animate-in fade-in">
+                      {/* 1. Current Spot: Bold Name + Mini Step Index (Only Single Current Spot) */}
+                      <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 max-w-[140px] sm:max-w-[190px] shrink-0">
+                        <span className="text-xs sm:text-[13px] font-black tracking-tight text-black dark:text-white uppercase truncate font-sans">
                           {currentCinematicItem.place || 'Spot'}
                         </span>
-                        <span className="hidden sm:inline-block px-1 py-0.5 bg-black/5 dark:bg-white/10 rounded-xs text-[7px] font-mono font-bold text-black/60 dark:text-white/60 shrink-0">
-                          DEP
+                        <span className="px-1.5 py-0.5 bg-black/5 dark:bg-white/10 rounded-xs text-[8px] font-mono font-bold text-black/60 dark:text-white/60 shrink-0">
+                          {String(cinematicIndex + 1).padStart(2, '0')}/{String(cinematicItems.length).padStart(2, '0')}
                         </span>
                       </div>
 
-                      {/* 2. Center Flight/Progress Track (Image 2 exact style, slim 1-row) */}
-                      <div className="flex-1 flex items-center gap-1.5 sm:gap-2 min-w-[90px] max-w-[210px]">
+                      {/* 2. Center Progress Track (Image 2 style with walker knob) */}
+                      <div className="flex-1 flex items-center min-w-[70px] max-w-[170px] mx-1">
                         <div className="relative w-full h-2.5 sm:h-3 flex items-center">
                           {/* Diagonal Candy Stripe Track (///////) */}
                           <div 
@@ -3835,24 +3829,10 @@ export function JourneyDetailPage({
                             </div>
                           </div>
                         </div>
-                        {/* Step Index (e.g. 01/05) */}
-                        <span className="text-[8px] sm:text-[8.5px] font-mono font-bold text-black/50 dark:text-white/50 shrink-0">
-                          {String(cinematicIndex + 1).padStart(2, '0')}/{String(cinematicItems.length).padStart(2, '0')}
-                        </span>
                       </div>
 
-                      {/* 3. Right Destination Spot: Bold Name + Mini ETA Tag */}
-                      <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 max-w-[85px] sm:max-w-[125px] shrink-0 justify-end text-right">
-                        <span className="hidden sm:inline-block px-1 py-0.5 bg-black/5 dark:bg-white/10 rounded-xs text-[7px] font-mono font-bold text-black/60 dark:text-white/60 shrink-0">
-                          ETA
-                        </span>
-                        <span className="text-[11px] sm:text-xs font-black tracking-tight text-black dark:text-white uppercase truncate font-sans">
-                          {nextCinematicItem ? (nextCinematicItem.place || 'Next') : 'FINISH'}
-                        </span>
-                      </div>
-
-                      {/* 4. Swiss Minimal Divider & Compact Controls */}
-                      <div className="flex items-center gap-0.5 sm:gap-1 shrink-0 pl-1 sm:pl-2 border-l border-black/10 dark:border-white/10">
+                      {/* 3. Swiss Minimal Divider & Compact Controls */}
+                      <div className="flex items-center gap-0.5 sm:gap-1 shrink-0 pl-1 sm:pl-1.5 border-l border-black/10 dark:border-white/10">
                         <button
                           onClick={() => setCinematicSpeed(s => s === 3800 ? 2200 : (s === 2200 ? 5500 : 3800))}
                           className="px-1.5 py-0.5 bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 rounded-xs text-[7.5px] sm:text-[8px] font-mono font-bold text-black/75 dark:text-white/75 transition-colors cursor-pointer"
@@ -4338,6 +4318,13 @@ export function JourneyDetailPage({
                             onClick={() => {
                               if (expandedItemId !== item.id) {
                                 setExpandedItemId(item.id);
+                                if (cinematicItems.length > 0) {
+                                  const targetIdx = cinematicItems.findIndex(i => i.id === item.id);
+                                  if (targetIdx !== -1) {
+                                    setCinematicIndex(targetIdx);
+                                    setCinematicProgress(0);
+                                  }
+                                }
                               } else if (!isEditing) {
                                 setExpandedItemId(null);
                               }

@@ -739,6 +739,41 @@ export function MapArea({
             }
           } else {
             map.setView(latLng, Math.max(map.getZoom(), targetZoom), { animate: true });
+
+            // 플레이로그 모드 활성화 시 이동 중이 아니더라도 지정된 현재 위치에 즉시 사람 마커 등장
+            if (isCinematicMode) {
+              const L = (window as any).L;
+              if (L) {
+                const standingIcon = L.divIcon({
+                  className: 'traveler-icon-container',
+                  html: `
+                    <div style="width: 40px; height: 46px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; pointer-events: none;">
+                      <div>
+                        <img 
+                          src="/walker.png" 
+                          alt="Walker" 
+                          style="width: 38px; height: 38px; object-fit: contain; display: block; filter: drop-shadow(0 0 1.5px #FFFFFF) drop-shadow(0 0 2.5px #FFFFFF) drop-shadow(0 4px 8px rgba(0,0,0,0.6));" 
+                        />
+                      </div>
+                      <div style="width: 22px; height: 4px; background: rgba(0,0,0,0.45); border-radius: 50%; filter: blur(0.8px); margin-top: -2px;"></div>
+                    </div>
+                  `,
+                  iconSize: [40, 46],
+                  iconAnchor: [20, 46]
+                });
+
+                if (!travelerMarkerRef.current) {
+                  travelerMarkerRef.current = L.marker([latLng.lat, latLng.lng], {
+                    icon: standingIcon,
+                    zIndexOffset: 250000,
+                  }).addTo(map);
+                } else {
+                  travelerMarkerRef.current.setIcon(standingIcon);
+                  travelerMarkerRef.current.setLatLng([latLng.lat, latLng.lng]);
+                  travelerMarkerRef.current.setZIndexOffset(250000);
+                }
+              }
+            }
           }
 
           lastActiveSpotCoordsRef.current = { lat: latLng.lat, lng: latLng.lng };

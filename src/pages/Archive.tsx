@@ -1194,11 +1194,19 @@ export function ArchiveHubPage({
                                 <span className="text-[10px] sm:text-[11px] font-bold tracking-wider text-black/50 dark:text-white/50 uppercase truncate">
                                   {line3CountryCity}
                                 </span>
-                                {isPlan && (
-                                  <span className="text-[9px] font-mono font-black text-red-600 dark:text-red-400 border border-red-600/40 dark:border-red-400/40 px-1.5 py-0.2 tracking-wider shrink-0 leading-none">
+                                {trip.statusBadge === 'NEW' ? (
+                                  <span className="px-1.5 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-red-600 text-white rounded-none leading-none shrink-0">
+                                    NEW
+                                  </span>
+                                ) : trip.statusBadge === 'EDITING' ? (
+                                  <span className="px-1.5 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-amber-600 text-white rounded-none leading-none shrink-0">
+                                    EDITING
+                                  </span>
+                                ) : (trip.statusBadge === 'PLAN' || isPlan) ? (
+                                  <span className="px-1.5 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-blue-600 text-white rounded-none leading-none shrink-0">
                                     PLAN
                                   </span>
-                                )}
+                                ) : null}
                               </div>
                             </div>
 
@@ -1214,12 +1222,11 @@ export function ArchiveHubPage({
                               </p>
                             )}
 
-                            {/* Bottom Metadata Bar: Specific Date + LOG Action */}
+                            {/* Bottom Metadata Bar: Specific Date + Arrow Action */}
                             <div className="pt-2 mt-2 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-[10.5px] sm:text-xs font-mono text-black/60 dark:text-white/60 tracking-wider">
                               <span className="truncate mr-2">{dateRangeOnly || trip.date}</span>
                               <span className="font-bold text-black dark:text-white uppercase group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors flex items-center gap-1 shrink-0 group-hover:translate-x-0.5">
-                                <span>LOG</span>
-                                <span className="text-[10px]">→</span>
+                                <span className="text-xs">→</span>
                               </span>
                             </div>
                           </div>
