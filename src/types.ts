@@ -43,7 +43,7 @@ export interface Trip {
   gallery?: (string | GalleryImageMeta)[];
   deletedAt?: number | null; // Soft-delete timestamp (null = active)
   displayOrder?: number;
-  statusBadge?: 'NEW' | 'EDITING' | '';
+  statusBadge?: 'NEW' | 'EDITING' | 'PLAN' | '';
   isPlan?: boolean;
   weatherData?: {
     [date: string]: {

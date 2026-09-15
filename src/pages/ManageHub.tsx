@@ -805,7 +805,7 @@ export function ManageHubPage({
   const [editVideoUrl, setEditVideoUrl] = useState('');
   const [editHeroImg, setEditHeroImg] = useState('');
   const [editHeroVideoUrl, setEditHeroVideoUrl] = useState('');
-  const [editStatusBadge, setEditStatusBadge] = useState<'' | 'NEW' | 'EDITING'>('');
+  const [editStatusBadge, setEditStatusBadge] = useState<'' | 'NEW' | 'EDITING' | 'PLAN'>('');
   const [archiveMediaTab, setArchiveMediaTab] = useState<'main' | 'hero'>('main');
   const [homeJourneyLimit, setHomeJourneyLimit] = useState<number>(() => {
     return parseInt(localStorage.getItem('home_journey_limit') || '4', 10);
@@ -1713,7 +1713,7 @@ export function ManageHubPage({
         setEditVideoUrl(selectedJourney.videoUrl || '');
         setEditHeroImg(selectedJourney.heroImg || '');
         setEditHeroVideoUrl(selectedJourney.heroVideoUrl || '');
-        setEditStatusBadge(selectedJourney.statusBadge || '');
+        setEditStatusBadge(selectedJourney.statusBadge || ((selectedJourney as any).isPlan || selectedJourney.tags?.includes('Plan') ? 'PLAN' : ''));
       }
     }
 
@@ -1814,8 +1814,8 @@ export function ManageHubPage({
       setEditImg(selectedJourney.img || '');
       setEditVideoUrl(selectedJourney.videoUrl || '');
       setEditHeroImg(selectedJourney.heroImg || '');
-      setEditHeroVideoUrl(selectedJourney.heroVideoUrl || '');
-      setEditStatusBadge(selectedJourney.statusBadge || '');
+      const isPlan = (selectedJourney as any).isPlan || selectedJourney.tags?.includes('Plan') || selectedJourney.title?.includes('(Plan)');
+      setEditStatusBadge(selectedJourney.statusBadge || (isPlan ? 'PLAN' : ''));
       setTripSaveSuccess(false);
 
       if (!savedArchiveSnapshotRef.current[selectedJourney.id]) {
@@ -4254,70 +4254,54 @@ export function ManageHubPage({
                       />
                     </div>
 
-                    {/* Journey Type (LOG vs PLAN) */}
-                    <div className="flex flex-col gap-1">
+                    {/* Unified Status Badge & Classification (LOG, NEW, EDITING, PLAN) */}
+                    <div className="sm:col-span-2 flex flex-col gap-1.5">
                       <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60">
-                        Type (여정 유형 구분)
+                        Status (상태 구분: LOG · NEW · EDITING · PLAN)
                       </label>
-                      <div className="flex items-center gap-1.5 h-[35px]">
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            if (isSelectedPlan && selectedJourney) {
-                              await onMoveToArchive(selectedJourney as Plan);
-                              setEditTags(prev => prev.filter(t => t !== 'Plan' && t !== 'Archived'));
-                              setEditTitle(prev => prev.replace(/\s*\(Plan\)$/i, '').trim());
-                            }
-                          }}
-                          disabled={!isSelectedPlan}
-                          className={`flex-1 h-full text-xs font-black uppercase tracking-wider transition-all border flex items-center justify-center gap-1.5 cursor-pointer ${
-                            !isSelectedPlan
-                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
-                              : 'bg-transparent text-black/50 dark:text-white/50 border-black/20 dark:border-white/20 hover:text-black dark:hover:text-white'
-                          }`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${!isSelectedPlan ? 'bg-red-500' : 'bg-transparent'}`} />
-                          <span>LOG (기록)</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            if (!isSelectedPlan && selectedJourney) {
-                              await onMoveToPlans(selectedJourney);
-                              setEditTags(prev => {
-                                const next = prev.filter(t => t !== 'Archived');
-                                return next.includes('Plan') ? next : [...next, 'Plan'];
-                              });
-                              setEditTitle(prev => prev.endsWith(' (Plan)') ? prev : `${prev} (Plan)`);
-                            }
-                          }}
-                          disabled={isSelectedPlan}
-                          className={`flex-1 h-full text-xs font-black uppercase tracking-wider transition-all border flex items-center justify-center gap-1.5 cursor-pointer ${
-                            isSelectedPlan
-                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
-                              : 'bg-transparent text-black/50 dark:text-white/50 border-black/20 dark:border-white/20 hover:text-black dark:hover:text-white'
-                          }`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${isSelectedPlan ? 'bg-blue-500' : 'bg-transparent'}`} />
-                          <span>PLAN (계획)</span>
-                        </button>
-                      </div>
-                    </div>
+                      <div className="grid grid-cols-4 gap-1.5 h-[35px]">
+                        {([
+                          { id: '', label: 'LOG (기록)', activeBg: 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' },
+                          { id: 'NEW', label: 'NEW (신규)', activeBg: 'bg-red-600 text-white border-red-600' },
+                          { id: 'EDITING', label: 'EDITING (작성중)', activeBg: 'bg-amber-600 text-white border-amber-600' },
+                          { id: 'PLAN', label: 'PLAN (계획)', activeBg: 'bg-blue-600 text-white border-blue-600' },
+                        ] as const).map(opt => {
+                          const isActive = editStatusBadge === opt.id || (opt.id === 'PLAN' && isSelectedPlan && !editStatusBadge) || (opt.id === '' && !editStatusBadge && !isSelectedPlan);
 
-                    {/* Status Badge */}
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60">
-                        Status Badge (상태 뱃지)
-                      </label>
-                      <select
-                        value={editStatusBadge}
-                        onChange={e => setEditStatusBadge(e.target.value as any)}
-                        className="px-3 py-2 text-xs font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white cursor-pointer h-[35px]"
-                      >
-                        <option value="">None (없음)</option>
-                        <option value="NEW">NEW (신규)</option>
-                        <option value="EDITING">EDITING (작성중)</option>
-                      </select>
+                          return (
+                            <button
+                              key={opt.id}
+                              type="button"
+                              onClick={async () => {
+                                setEditStatusBadge(opt.id as any);
+                                if (opt.id === 'PLAN') {
+                                  if (!isSelectedPlan && selectedJourney) {
+                                    await onMoveToPlans(selectedJourney);
+                                    setEditTags(prev => {
+                                      const next = prev.filter(t => t !== 'Archived');
+                                      return next.includes('Plan') ? next : [...next, 'Plan'];
+                                    });
+                                    setEditTitle(prev => prev.endsWith(' (Plan)') ? prev : `${prev} (Plan)`);
+                                  }
+                                } else {
+                                  if (isSelectedPlan && selectedJourney) {
+                                    await onMoveToArchive(selectedJourney as Plan);
+                                    setEditTags(prev => prev.filter(t => t !== 'Plan' && t !== 'Archived'));
+                                    setEditTitle(prev => prev.replace(/\s*\(Plan\)$/i, '').trim());
+                                  }
+                                }
+                              }}
+                              className={`h-full text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all border flex items-center justify-center cursor-pointer ${
+                                isActive
+                                  ? `${opt.activeBg} shadow-xs font-black`
+                                  : 'bg-transparent text-black/50 dark:text-white/50 border-black/20 dark:border-white/20 hover:text-black dark:hover:text-white hover:border-black/40 dark:hover:border-white/40'
+                              }`}
+                            >
+                              {opt.label}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
 
                     {/* Tags */}
@@ -4834,12 +4818,20 @@ export function ManageHubPage({
                           <h4 className="text-xs font-black font-sans uppercase tracking-tight text-black dark:text-white truncate">
                             {journey.title.replace(' (Plan)', '')}
                           </h4>
-                          {isPlan ? (
-                            <span className="px-1 py-0.2 bg-blue-600 text-white font-mono text-[8px] font-black uppercase shrink-0">
+                          {journey.statusBadge === 'NEW' ? (
+                            <span className="px-1.5 py-0.5 bg-red-600 text-white font-mono text-[8px] font-black uppercase shrink-0">
+                              NEW
+                            </span>
+                          ) : journey.statusBadge === 'EDITING' ? (
+                            <span className="px-1.5 py-0.5 bg-amber-600 text-white font-mono text-[8px] font-black uppercase shrink-0">
+                              EDITING
+                            </span>
+                          ) : (journey.statusBadge === 'PLAN' || isPlan) ? (
+                            <span className="px-1.5 py-0.5 bg-blue-600 text-white font-mono text-[8px] font-black uppercase shrink-0">
                               PLAN
                             </span>
                           ) : (
-                            <span className="px-1 py-0.2 bg-black text-white dark:bg-white dark:text-black font-mono text-[8px] font-black uppercase shrink-0">
+                            <span className="px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black/60 dark:text-white/60 font-mono text-[8px] font-bold uppercase shrink-0">
                               LOG
                             </span>
                           )}

@@ -1088,8 +1088,8 @@ export function ArchiveHubPage({
                                   {month && <span className="opacity-30">/</span>}
                                   {month && <span className="font-bold text-red-600 dark:text-red-500 uppercase tracking-tight">{month}</span>}
                                 </div>
-                                {isPlan ? (
-                                  <span className="px-2 py-0.5 text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider font-mono bg-black text-white dark:bg-white dark:text-black border border-black/20 dark:border-white/20 rounded-none leading-none">
+                                {isPlan || trip.statusBadge === 'PLAN' ? (
+                                  <span className="px-2 py-0.5 text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider font-mono bg-blue-600 text-white rounded-none leading-none">
                                     PLAN
                                   </span>
                                 ) : trip.statusBadge ? (

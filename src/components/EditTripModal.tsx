@@ -106,7 +106,7 @@ export function EditTripModal({
   const [tagInput, setTagInput] = useState('');
   const [members, setMembers] = useState<string[]>([]);
   const [memberInput, setMemberInput] = useState('');
-  const [statusBadge, setStatusBadge] = useState<'NEW' | 'EDITING' | ''>('');
+  const [statusBadge, setStatusBadge] = useState<'NEW' | 'EDITING' | 'PLAN' | ''>('');
   const [country, setCountry] = useState('');
   const [isVideoDragActive, setIsVideoDragActive] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -138,8 +138,8 @@ export function EditTripModal({
       setTags(trip.tags || []);
       setTagInput('');
       setMembers(trip.members || []);
-      setMemberInput('');
-      setStatusBadge(trip.statusBadge || '');
+      const isPlan = (trip as any).isPlan || trip.tags?.includes('Plan') || trip.title?.includes('(Plan)');
+      setStatusBadge(trip.statusBadge || (isPlan ? 'PLAN' : ''));
       setShowUnsavedConfirm(false);
       setCoverTab('main');
     }
@@ -276,7 +276,17 @@ export function EditTripModal({
     const firstLat = locations[0]?.lat ?? lat ?? trip.lat;
     const firstLng = locations[0]?.lng ?? lng ?? trip.lng;
 
+    const finalTags = statusBadge === 'PLAN'
+      ? (tags.includes('Plan') ? tags : [...tags, 'Plan'])
+      : tags.filter(t => t !== 'Plan');
+
     try {
+      if (statusBadge === 'PLAN' && !isPlanJourney && onMoveToPlans) {
+        await onMoveToPlans(trip as any);
+      } else if (statusBadge !== 'PLAN' && isPlanJourney && onMoveToArchive) {
+        await onMoveToArchive(trip as any);
+      }
+
       await onSave(trip.id, {
         title,
         date,
@@ -289,7 +299,7 @@ export function EditTripModal({
         img: imgUrl,
         heroImg: heroImgUrl,
         heroVideoUrl,
-        tags,
+        tags: finalTags,
         members,
         statusBadge,
       });
@@ -1219,21 +1229,26 @@ export function EditTripModal({
           {/* Status Badge Option */}
           <div className="flex flex-col gap-1.5 mt-4">
             <label className="text-[9px] uppercase font-black tracking-widest opacity-60 text-black dark:text-white">
-              Status Badge (영문 상태 뱃지)
+              Status Badge (상태 뱃지)
             </label>
-            <div className="flex gap-2">
-              {(['', 'NEW', 'EDITING'] as const).map((badgeOpt) => (
+            <div className="grid grid-cols-4 gap-2">
+              {([
+                { id: '', label: 'LOG', activeBg: 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' },
+                { id: 'NEW', label: 'NEW', activeBg: 'bg-red-600 text-white border-red-600' },
+                { id: 'EDITING', label: 'EDITING', activeBg: 'bg-amber-600 text-white border-amber-600' },
+                { id: 'PLAN', label: 'PLAN', activeBg: 'bg-blue-600 text-white border-blue-600' },
+              ] as const).map((badgeOpt) => (
                 <button
-                  key={badgeOpt}
+                  key={badgeOpt.id}
                   type="button"
-                  onClick={() => setStatusBadge(badgeOpt)}
-                  className={`flex-grow py-2 text-[9px] font-black uppercase tracking-widest border transition-all ${
-                    statusBadge === badgeOpt
-                      ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white shadow-xs'
+                  onClick={() => setStatusBadge(badgeOpt.id)}
+                  className={`py-2 text-[9px] font-black uppercase tracking-widest border transition-all ${
+                    statusBadge === badgeOpt.id
+                      ? `${badgeOpt.activeBg} shadow-xs font-black`
                       : 'bg-transparent border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/30 dark:hover:border-white/30'
                   }`}
                 >
-                  {badgeOpt || 'NONE'}
+                  {badgeOpt.label}
                 </button>
               ))}
             </div>

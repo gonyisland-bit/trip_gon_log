@@ -706,6 +706,29 @@ export function MapArea({
                 if (progress < 1) {
                   travelerAnimRef.current = requestAnimationFrame(step);
                 } else {
+                  // 목적지 도착 완료: 제자리 보행 바운스를 멈추고 깔끔한 정지 실루엣으로 전환
+                  if (travelerMarkerRef.current) {
+                    const standingIcon = L.divIcon({
+                      className: 'traveler-icon-container',
+                      html: `
+                        <div style="width: 40px; height: 46px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; pointer-events: none;">
+                          <!-- Stationary standing silhouette at destination spot -->
+                          <div style="transform: ${isHeadingWest ? 'scaleX(-1)' : 'scaleX(1)'}; transform-origin: bottom center;">
+                            <img 
+                              src="/walker.png" 
+                              alt="Walker" 
+                              style="width: 38px; height: 38px; object-fit: contain; display: block; filter: drop-shadow(0 0 1.5px #FFFFFF) drop-shadow(0 0 2.5px #FFFFFF) drop-shadow(0 4px 8px rgba(0,0,0,0.6));" 
+                            />
+                          </div>
+                          <!-- Static Footstep Ground Shadow -->
+                          <div style="width: 22px; height: 4px; background: rgba(0,0,0,0.45); border-radius: 50%; filter: blur(0.8px); margin-top: -2px;"></div>
+                        </div>
+                      `,
+                      iconSize: [40, 46],
+                      iconAnchor: [20, 46]
+                    });
+                    travelerMarkerRef.current.setIcon(standingIcon);
+                  }
                   map.setView([nextCoords.lat, nextCoords.lng], Math.max(map.getZoom(), targetZoom), { animate: true });
                 }
               };
