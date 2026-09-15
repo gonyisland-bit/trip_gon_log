@@ -53,6 +53,7 @@ import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc, deleteField, se
 import { db } from '../firebase';
 import { Trip, Plan, MagazineMoment, MagazineSection, MagazineItem, MagazineHubConfig, ArchiveHubConfig, TimelineData, TimelineItem, TrashedMagazineSection } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { getEffectiveImageUrl, uploadFileToR2, deleteFileFromR2 } from '../utils/storageHelper';
 import { compressImage } from '../utils/imageHelper';
 import { inspectAndPrepareVideo } from '../utils/videoHelper';
@@ -807,6 +808,72 @@ export function ManageHubPage({
   const [editHeroVideoUrl, setEditHeroVideoUrl] = useState('');
   const [editStatusBadge, setEditStatusBadge] = useState<'' | 'NEW' | 'EDITING' | 'PLAN'>('');
   const [archiveMediaTab, setArchiveMediaTab] = useState<'main' | 'hero'>('main');
+  const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
+  const countryDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target as Node)) {
+        setIsCountryDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const matchedCountries = useMemo(() => {
+    if (!editCountry.trim()) return [];
+    const q = editCountry.trim().toLowerCase();
+    return WORLD_COUNTRIES.filter(c => 
+      c.nameKo.toLowerCase().includes(q) || 
+      c.nameEn.toLowerCase().includes(q) || 
+      c.code.toLowerCase() === q ||
+      c.aliases?.some(a => a.toLowerCase().includes(q))
+    ).slice(0, 8);
+  }, [editCountry]);
+
+  const parsedDateInputs = useMemo(() => {
+    if (!editDate) return { start: '', end: '' };
+    const parts = editDate.split(/[-~]/).map(p => p.trim());
+    const toIso = (s: string) => {
+      if (!s) return '';
+      const clean = s.replace(/\./g, '-').trim();
+      const m = clean.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+      if (m) {
+        return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+      }
+      return '';
+    };
+    return {
+      start: toIso(parts[0]),
+      end: parts.length > 1 ? toIso(parts[1]) : ''
+    };
+  }, [editDate]);
+
+  const handleStartDateChange = (newStartIso: string) => {
+    const startDot = newStartIso ? newStartIso.replace(/-/g, '.') : '';
+    const endDot = parsedDateInputs.end ? parsedDateInputs.end.replace(/-/g, '.') : '';
+    if (startDot && endDot) {
+      setEditDate(`${startDot} - ${endDot}`);
+    } else if (startDot) {
+      setEditDate(startDot);
+    } else {
+      setEditDate(endDot);
+    }
+  };
+
+  const handleEndDateChange = (newEndIso: string) => {
+    const startDot = parsedDateInputs.start ? parsedDateInputs.start.replace(/-/g, '.') : '';
+    const endDot = newEndIso ? newEndIso.replace(/-/g, '.') : '';
+    if (startDot && endDot) {
+      setEditDate(`${startDot} - ${endDot}`);
+    } else if (endDot) {
+      setEditDate(endDot);
+    } else {
+      setEditDate(startDot);
+    }
+  };
+
   const [homeJourneyLimit, setHomeJourneyLimit] = useState<number>(() => {
     return parseInt(localStorage.getItem('home_journey_limit') || '4', 10);
   });
@@ -4199,7 +4266,7 @@ export function ManageHubPage({
 
                   {/* Form Fields */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Title */}
+                    {/* Row 1: Title (여정 제목 - 전체 폭) */}
                     <div className="sm:col-span-2 flex flex-col gap-1">
                       <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60">
                         Title (여정 제목)
@@ -4208,67 +4275,55 @@ export function ManageHubPage({
                         type="text"
                         value={editTitle}
                         onChange={e => setEditTitle(e.target.value)}
-                        className="px-3 py-2 text-xs font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
+                        className="px-3 py-2 text-xs font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white h-[35px]"
                       />
                     </div>
 
-                    {/* Date */}
+                    {/* Row 2 - Left: Date Range with Calendar Pickers */}
                     <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60">
-                        Date Range (일정 기간)
-                      </label>
-                      <input
-                        type="text"
-                        value={editDate}
-                        onChange={e => setEditDate(e.target.value)}
-                        placeholder="YYYY.MM.DD - YYYY.MM.DD"
-                        className="px-3 py-2 text-xs font-mono font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
-                      />
-                    </div>
-
-                    {/* Location */}
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60">
-                        Location / Cities (장소 / 도시)
-                      </label>
-                      <input
-                        type="text"
-                        value={editLocation}
-                        onChange={e => setEditLocation(e.target.value)}
-                        placeholder="e.g. Tokyo, Osaka, Kyoto"
-                        className="px-3 py-2 text-xs font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
-                      />
-                    </div>
-
-                    {/* Country */}
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60">
-                        Country (국가명)
-                      </label>
-                      <input
-                        type="text"
-                        value={editCountry}
-                        onChange={e => setEditCountry(e.target.value)}
-                        placeholder="e.g. JAPAN"
-                        className="px-3 py-2 text-xs font-bold uppercase bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
-                      />
-                    </div>
-
-                    {/* Unified Status Badge & Classification (NEW, EDITING, PLAN) */}
-                    <div className="sm:col-span-2 flex flex-col gap-1.5">
                       <div className="flex items-center justify-between">
-                        <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60">
-                          Status Badge (상태 뱃지: NEW · EDITING · PLAN)
+                        <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60 flex items-center gap-1">
+                          <Calendar className="w-3 h-3 text-black/50 dark:text-white/50" />
+                          <span>Date Range (일정 기간 - 달력)</span>
                         </label>
                         <span className="text-[9px] font-mono text-black/40 dark:text-white/40">
-                          {editStatusBadge ? '클릭 시 해제(일반 상태)' : '지정 시 뱃지 노출'}
+                          {editDate || '날짜 미지정'}
                         </span>
                       </div>
-                      <div className="grid grid-cols-3 gap-2 h-[35px]">
+                      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1.5 h-[35px] bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 px-2.5">
+                        <input
+                          type="date"
+                          value={parsedDateInputs.start}
+                          onChange={e => handleStartDateChange(e.target.value)}
+                          className="w-full text-[11px] font-mono font-bold bg-transparent outline-none cursor-pointer text-black dark:text-white border-0 p-0"
+                          title="시작 날짜 선택"
+                        />
+                        <span className="text-black/30 dark:text-white/30 font-mono text-xs select-none">~</span>
+                        <input
+                          type="date"
+                          value={parsedDateInputs.end}
+                          onChange={e => handleEndDateChange(e.target.value)}
+                          className="w-full text-[11px] font-mono font-bold bg-transparent outline-none cursor-pointer text-black dark:text-white border-0 p-0"
+                          title="종료 날짜 선택"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Row 2 - Right: Status Badge (NEW, EDITING, PLAN 3-toggle) */}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60">
+                          Status Badge (상태 뱃지)
+                        </label>
+                        <span className="text-[9px] font-mono text-black/40 dark:text-white/40">
+                          {editStatusBadge ? '클릭 시 해제(일반)' : '미지정 (일반)'}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1.5 h-[35px]">
                         {([
-                          { id: 'NEW', label: 'NEW (신규)', activeBg: 'bg-red-600 text-white border-red-600' },
-                          { id: 'EDITING', label: 'EDITING (작성중)', activeBg: 'bg-amber-600 text-white border-amber-600' },
-                          { id: 'PLAN', label: 'PLAN (계획)', activeBg: 'bg-blue-600 text-white border-blue-600' },
+                          { id: 'NEW', label: 'NEW', activeBg: 'bg-red-600 text-white border-red-600' },
+                          { id: 'EDITING', label: 'EDITING', activeBg: 'bg-amber-600 text-white border-amber-600' },
+                          { id: 'PLAN', label: 'PLAN', activeBg: 'bg-blue-600 text-white border-blue-600' },
                         ] as const).map(opt => {
                           const isCurrentPlan = opt.id === 'PLAN' && (editStatusBadge === 'PLAN' || isSelectedPlan);
                           const isActive = opt.id === 'PLAN' ? isCurrentPlan : editStatusBadge === opt.id;
@@ -4279,7 +4334,6 @@ export function ManageHubPage({
                               type="button"
                               onClick={async () => {
                                 if (isActive) {
-                                  // 클릭 시 해제 -> 일반 상태('')
                                   setEditStatusBadge('');
                                   if (opt.id === 'PLAN' && isSelectedPlan && selectedJourney) {
                                     await onMoveToArchive(selectedJourney as Plan);
@@ -4287,7 +4341,6 @@ export function ManageHubPage({
                                     setEditTitle(prev => prev.replace(/\s*\(Plan\)$/i, '').trim());
                                   }
                                 } else {
-                                  // 신규 활성화
                                   setEditStatusBadge(opt.id as any);
                                   if (opt.id === 'PLAN') {
                                     if (!isSelectedPlan && selectedJourney) {
@@ -4318,6 +4371,65 @@ export function ManageHubPage({
                           );
                         })}
                       </div>
+                    </div>
+
+                    {/* Row 3 - Left: Country (국가명 자동검색) */}
+                    <div ref={countryDropdownRef} className="relative flex flex-col gap-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60 flex items-center gap-1">
+                        <Globe className="w-3 h-3 text-black/50 dark:text-white/50" />
+                        <span>Country (국가명 - 자동검색)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={editCountry}
+                        onChange={e => {
+                          setEditCountry(e.target.value.toUpperCase());
+                          setIsCountryDropdownOpen(true);
+                        }}
+                        onFocus={() => setIsCountryDropdownOpen(true)}
+                        placeholder="e.g. JAPAN, USA, FRANCE"
+                        className="px-3 py-2 text-xs font-bold uppercase bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white h-[35px]"
+                      />
+
+                      {/* Country Autocomplete Dropdown */}
+                      {isCountryDropdownOpen && matchedCountries.length > 0 && (
+                        <div className="absolute top-[calc(100%+2px)] left-0 right-0 z-40 bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 shadow-xl max-h-48 overflow-y-auto">
+                          {matchedCountries.map(c => (
+                            <button
+                              key={c.code}
+                              type="button"
+                              onClick={() => {
+                                setEditCountry(c.nameEn.toUpperCase());
+                                setIsCountryDropdownOpen(false);
+                              }}
+                              className="w-full px-3 py-2 text-left hover:bg-black/5 dark:hover:bg-white/10 flex items-center justify-between text-xs font-bold border-b border-black/5 dark:border-white/5 last:border-b-0 cursor-pointer"
+                            >
+                              <span className="text-black dark:text-white font-sans">{c.nameKo} ({c.nameEn})</span>
+                              <span className="text-[9px] font-mono font-bold text-black/40 dark:text-white/40">{c.code}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Row 3 - Right: Location / Cities (Google Places 자동검색) */}
+                    <div className="relative flex flex-col gap-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-black/60 dark:text-white/60 flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-black/50 dark:text-white/50" />
+                        <span>Location / Cities (장소 / 도시 - 자동검색)</span>
+                      </label>
+                      <PlaceAutocompleteInput
+                        value={editLocation}
+                        onChange={val => setEditLocation(val)}
+                        onSelectPlace={(placeName, _coords, _address, countryName) => {
+                          setEditLocation(placeName);
+                          if (countryName && !editCountry) {
+                            setEditCountry(countryName.toUpperCase());
+                          }
+                        }}
+                        placeholder="e.g. Tokyo, Osaka, Kyoto"
+                        className="px-3 py-2 text-xs font-bold bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white h-[35px] w-full"
+                      />
                     </div>
 
                     {/* Tags */}
