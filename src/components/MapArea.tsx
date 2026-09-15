@@ -265,7 +265,55 @@ export function MapArea({
     const coords: [number, number][] = valid.map(p => [Number(p.lat), Number(p.lng)]);
 
     if (!isSummaryMode) {
-      if (activeTab === 'transit') {
+      if (activeTab === 'flights') {
+        const flightPolylines: any[] = [];
+        const flightDepartPoints = mapPoints.filter(p => typeof p.id === 'number' && p.id % 10 === 0);
+
+        flightDepartPoints.forEach(pDepart => {
+          const flightId = Math.floor(pDepart.id / 10);
+          const pArrive = mapPoints.find(item => item.id === pDepart.id + 1);
+
+          if (pDepart.lat && pDepart.lng && pArrive && pArrive.lat && pArrive.lng) {
+            const startLat = Number(pDepart.lat);
+            const startLng = Number(pDepart.lng);
+            const endLat = Number(pArrive.lat);
+            const endLng = Number(pArrive.lng);
+
+            // Great-circle Arc control point calculation identical to flight motion
+            const midLat = (startLat + endLat) / 2;
+            const midLng = (startLng + endLng) / 2;
+            const perpLat = -(endLng - startLng) * 0.18;
+            const perpLng = (endLat - startLat) * 0.18;
+            const ctrlLat = midLat + perpLat;
+            const ctrlLng = midLng + perpLng;
+
+            // Generate Arc curve points
+            const arcPoints: [number, number][] = [];
+            const steps = 36;
+            for (let i = 0; i <= steps; i++) {
+              const t = i / steps;
+              const inv = 1 - t;
+              const curLat = inv * inv * startLat + 2 * inv * t * ctrlLat + t * t * endLat;
+              const curLng = inv * inv * startLng + 2 * inv * t * ctrlLng + t * t * endLng;
+              arcPoints.push([curLat, curLng]);
+            }
+
+            const isActiveFlight = expandedItemId !== null && flightId === expandedItemId;
+            const poly = L.polyline(arcPoints, {
+              color: '#ef4444',
+              weight: isActiveFlight ? 4.5 : 2.5,
+              dashArray: '5, 6',
+              opacity: isActiveFlight ? 0.95 : 0.65
+            });
+            flightPolylines.push(poly);
+          }
+        });
+
+        if (flightPolylines.length > 0) {
+          const fGroup = L.featureGroup(flightPolylines).addTo(map);
+          polylineRef.current = fGroup;
+        }
+      } else if (activeTab === 'transit') {
         const transitGroups: { [transitId: number]: { depart?: [number, number]; arrive?: [number, number] } } = {};
         valid.forEach((p: any) => {
           if (p.transitId) {
@@ -1018,7 +1066,7 @@ export function MapArea({
           return L.divIcon({
             className: 'custom-animated-vehicle-icon',
             html: `
-              <div class="animated-vehicle-wrapper" style="transform: rotate(${rot}deg) scale(${scaleVal}); width: ${width}px; height: ${height}px; display: flex; align-items: center; justify-content: center; transition: transform 0.05s linear;">
+              <div class="animated-vehicle-wrapper" style="transform: rotate(${rot}deg) scale(${scaleVal}); width: ${width}px; height: ${height}px; display: flex; align-items: center; justify-content: center; position: relative; z-index: 500000; pointer-events: none; transition: transform 0.05s linear;">
                 <img src="${src}" style="width: ${width}px; height: ${height}px; object-fit: contain; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.45));" />
               </div>
             `,
@@ -1030,7 +1078,7 @@ export function MapArea({
         const initialIcon = updateVehicleIcon(angle, isFlight ? 0.9 : 1);
         const animMarker = L.marker([startLat, startLng], { 
           icon: initialIcon, 
-          zIndexOffset: 3000 // 핀 마커(스팟) 위에 배치하되 메인 UI 표기 방해 방지
+          zIndexOffset: 500000 // 활성 스팟 마커(100,000) 위로 확실하게 올라오도록 최상위 z-index 부여
         }).addTo(map);
         if (animMarker.bringToFront) animMarker.bringToFront();
         animMarkerRef.current = animMarker;
@@ -1069,6 +1117,7 @@ export function MapArea({
 
           animMarker.setLatLng([curLat, curLng]);
           animMarker.setIcon(updateVehicleIcon(curAngle, curScale));
+          animMarker.setZIndexOffset(500000);
 
           if (rawProgress < 1) {
             animFrameIdRef.current = requestAnimationFrame(animate);
@@ -1076,6 +1125,7 @@ export function MapArea({
             // 1회 완결: 목적지 착륙/정차 후 종료 (무한 루프 방지)
             animMarker.setLatLng([endLat, endLng]);
             animMarker.setIcon(updateVehicleIcon(curAngle, 1.0));
+            animMarker.setZIndexOffset(500000);
             animFrameIdRef.current = null;
           }
         };

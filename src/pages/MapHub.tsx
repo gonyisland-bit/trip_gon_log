@@ -1529,12 +1529,16 @@ export function MapHubPage({
   const flightAnimRef = useRef<number | null>(null);
   const flightPlaneMarkerRef = useRef<any>(null);
   const flightTrailPolylineRef = useRef<any>(null);
+  const flightPreTimeoutRef = useRef<any>(null);
 
   // Clean up flight animation on unmount
   useEffect(() => {
     return () => {
       if (flightAnimRef.current !== null) {
         cancelAnimationFrame(flightAnimRef.current);
+      }
+      if (flightPreTimeoutRef.current !== null) {
+        clearTimeout(flightPreTimeoutRef.current);
       }
     };
   }, []);
@@ -1980,10 +1984,14 @@ export function MapHubPage({
       return;
     }
 
-    // Stop existing flight animation if running
+    // Stop existing flight animation and timeouts if running
     if (flightAnimRef.current !== null) {
       cancelAnimationFrame(flightAnimRef.current);
       flightAnimRef.current = null;
+    }
+    if (flightPreTimeoutRef.current !== null) {
+      clearTimeout(flightPreTimeoutRef.current);
+      flightPreTimeoutRef.current = null;
     }
     if (flightPlaneMarkerRef.current) {
       try { map.removeLayer(flightPlaneMarkerRef.current); } catch (_) {}
@@ -2036,100 +2044,121 @@ export function MapHubPage({
       });
     };
 
-    // Calculate initial bearing
-    const initialAngle = Math.atan2(endLng - startLng, endLat - startLat) * 180 / Math.PI;
+    // 1단계: 출발지(한국)와 목적지 사이만큼 지도를 먼저 자연스럽고 빠르게 확대/조정
+    const bounds = L.latLngBounds([startLat, startLng], [endLat, endLng]);
+    const isMobile = window.innerWidth < 640;
+    map.fitBounds(bounds, {
+      padding: isMobile ? [50, 50] : [80, 80],
+      maxZoom: 5.5,
+      animate: true,
+      duration: 0.5,
+    });
 
-    // Flight trail polyline (subtle dashed flight path)
-    const trailLine = L.polyline([], {
-      color: '#DC2626',
-      weight: 2.2,
-      opacity: 0.7,
-      dashArray: '5, 7',
-      lineCap: 'round',
-    }).addTo(map);
-    flightTrailPolylineRef.current = trailLine;
+    // 지도 맞춤 후 비행기 모션 시작
+    flightPreTimeoutRef.current = setTimeout(() => {
+      flightPreTimeoutRef.current = null;
+      if (!mapRef.current) return;
 
-    // Plane marker with zIndexOffset 2500 (above spot pins, safely below UI & popups)
-    const planeMarker = L.marker([startLat, startLng], {
-      icon: createAirplaneIcon(initialAngle, 0.8),
-      zIndexOffset: 2500,
-    }).addTo(map);
-    if (planeMarker.bringToFront) planeMarker.bringToFront();
-    flightPlaneMarkerRef.current = planeMarker;
+      const startZoom = mapRef.current.getZoom();
+      const destZoom = targetCountry.zoom;
 
-    // Pan map to Korea start
-    map.setView([startLat, startLng], Math.min(map.getZoom(), 4.5), { animate: false });
+      // Calculate initial bearing
+      const initialAngle = Math.atan2(endLng - startLng, endLat - startLat) * 180 / Math.PI;
 
-    // Smooth duration between 1800ms ~ 2300ms
-    const duration = Math.min(2300, Math.max(1800, dist * 22));
-    let startTime: number | null = null;
-    const trailPoints: [number, number][] = [];
+      // Flight trail polyline (subtle dashed flight path)
+      const trailLine = L.polyline([], {
+        color: '#DC2626',
+        weight: 2.2,
+        opacity: 0.7,
+        dashArray: '5, 7',
+        lineCap: 'round',
+      }).addTo(mapRef.current);
+      flightTrailPolylineRef.current = trailLine;
 
-    // EaseInOutCubic: gradual takeoff, cruise, gradual landing
-    const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      // Plane marker with zIndexOffset 500000 (above spot pins)
+      const planeMarker = L.marker([startLat, startLng], {
+        icon: createAirplaneIcon(initialAngle, 0.8),
+        zIndexOffset: 500000,
+      }).addTo(mapRef.current);
+      if (planeMarker.bringToFront) planeMarker.bringToFront();
+      flightPlaneMarkerRef.current = planeMarker;
 
-    const animateFlight = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
-      const elapsed = timestamp - startTime;
-      const rawProgress = Math.min(1, elapsed / duration);
-      const ease = easeInOutCubic(rawProgress);
+      // Smooth duration between 2000ms ~ 2600ms
+      const duration = Math.min(2600, Math.max(2000, dist * 24));
+      let startTime: number | null = null;
+      const trailPoints: [number, number][] = [];
 
-      const inv = 1 - ease;
-      const curLat = inv * inv * startLat + 2 * inv * ease * ctrlLat + ease * ease * endLat;
-      const curLng = inv * inv * startLng + 2 * inv * ease * ctrlLng + ease * ease * endLng;
+      // EaseInOutCubic: gradual takeoff, cruise, gradual landing
+      const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
-      // Tangent bearing
-      const dLat = 2 * inv * (ctrlLat - startLat) + 2 * ease * (endLat - ctrlLat);
-      const dLng = 2 * inv * (ctrlLng - startLng) + 2 * ease * (endLng - ctrlLng);
-      const curAngle = Math.atan2(dLng, dLat) * 180 / Math.PI;
+      const animateFlight = (timestamp: number) => {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        const rawProgress = Math.min(1, elapsed / duration);
+        const ease = easeInOutCubic(rawProgress);
 
-      // Elevation Scale: Takeoff (0.8) -> Cruise (1.2) -> Landing (0.85)
-      const curScale = 0.8 + Math.sin(ease * Math.PI) * 0.4;
+        const inv = 1 - ease;
+        const curLat = inv * inv * startLat + 2 * inv * ease * ctrlLat + ease * ease * endLat;
+        const curLng = inv * inv * startLng + 2 * inv * ease * ctrlLng + ease * ease * endLng;
 
-      planeMarker.setLatLng([curLat, curLng]);
-      planeMarker.setIcon(createAirplaneIcon(curAngle, curScale));
+        // Tangent bearing
+        const dLat = 2 * inv * (ctrlLat - startLat) + 2 * ease * (endLat - ctrlLat);
+        const dLng = 2 * inv * (ctrlLng - startLng) + 2 * ease * (endLng - ctrlLng);
+        const curAngle = Math.atan2(dLng, dLat) * 180 / Math.PI;
 
-      // Append to flight trail
-      trailPoints.push([curLat, curLng]);
-      trailLine.setLatLngs(trailPoints);
+        // Elevation Scale: Takeoff (0.8) -> Cruise (1.2) -> Landing (0.85)
+        const curScale = 0.8 + Math.sin(ease * Math.PI) * 0.4;
 
-      // Map camera follows plane smoothly
-      map.panTo([curLat, curLng], { animate: false });
+        planeMarker.setLatLng([curLat, curLng]);
+        planeMarker.setIcon(createAirplaneIcon(curAngle, curScale));
 
-      if (rawProgress < 1) {
-        flightAnimRef.current = requestAnimationFrame(animateFlight);
-      } else {
-        // Touchdown & Landing
-        flightAnimRef.current = null;
+        // Append to flight trail
+        trailPoints.push([curLat, curLng]);
+        trailLine.setLatLngs(trailPoints);
 
-        // Smooth zoom to destination country zoom level
-        const isMobile = window.innerWidth < 640;
-        let targetCenter = targetCountry.center;
-        if (isMobile) {
-          const targetPoint = map.project(targetCountry.center, targetCountry.zoom).add([0, window.innerHeight * 0.22]);
-          targetCenter = map.unproject(targetPoint, targetCountry.zoom);
+        // 2단계: 목적지 도착 전에 서서히 확대가 미리 진행되어 착륙 시점에 확대가 자연스럽게 완료
+        // 비행 20% 이후부터 착륙(100%)까지 지도가 startZoom에서 destZoom으로 점진적 확대
+        const zoomT = Math.min(1, Math.max(0, (ease - 0.2) / 0.8));
+        const smoothZoomT = zoomT * zoomT * (3 - 2 * zoomT); // 부드러운 스무스스텝 보간
+        const curZoom = startZoom + (destZoom - startZoom) * smoothZoomT;
+
+        let curCenterLat = curLat;
+        let curCenterLng = curLng;
+        if (isMobile && smoothZoomT > 0) {
+          // 모바일 하단 시트를 고려하여 착륙에 가까워질수록 중심을 미세하게 남쪽으로 보정
+          const latOffset = 0.012 * Math.pow(2, Math.max(0, 6 - curZoom)) * smoothZoomT;
+          curCenterLat = curLat - latOffset;
         }
-        map.flyTo(targetCenter, targetCountry.zoom, { duration: 0.8 });
 
-        // Clean up plane and trail after landing, then display modal
-        setTimeout(() => {
-          if (flightPlaneMarkerRef.current && mapRef.current) {
-            try { mapRef.current.removeLayer(flightPlaneMarkerRef.current); } catch (_) {}
-            flightPlaneMarkerRef.current = null;
-          }
-          if (flightTrailPolylineRef.current && mapRef.current) {
-            try { mapRef.current.removeLayer(flightTrailPolylineRef.current); } catch (_) {}
-            flightTrailPolylineRef.current = null;
-          }
+        // 비행기와 함께 지도가 부드럽게 이동 및 선제 확대 진행
+        mapRef.current?.setView([curCenterLat, curCenterLng], curZoom, { animate: false });
 
-          setIsFlyingToCountry(false);
-          setSelectedCountry(targetCountry);
-          setSearchQuery(targetCountry.name);
-        }, 350);
-      }
-    };
+        if (rawProgress < 1) {
+          flightAnimRef.current = requestAnimationFrame(animateFlight);
+        } else {
+          // Touchdown & Landing (이미 destZoom에 도달하여 추가 줌 없이 완벽하게 착륙)
+          flightAnimRef.current = null;
 
-    flightAnimRef.current = requestAnimationFrame(animateFlight);
+          // Clean up plane and trail after landing, then display modal
+          setTimeout(() => {
+            if (flightPlaneMarkerRef.current && mapRef.current) {
+              try { mapRef.current.removeLayer(flightPlaneMarkerRef.current); } catch (_) {}
+              flightPlaneMarkerRef.current = null;
+            }
+            if (flightTrailPolylineRef.current && mapRef.current) {
+              try { mapRef.current.removeLayer(flightTrailPolylineRef.current); } catch (_) {}
+              flightTrailPolylineRef.current = null;
+            }
+
+            setIsFlyingToCountry(false);
+            setSelectedCountry(targetCountry);
+            setSearchQuery(targetCountry.name);
+          }, 250);
+        }
+      };
+
+      flightAnimRef.current = requestAnimationFrame(animateFlight);
+    }, 450);
   };
 
   // Country selection handler: highlights country area and flies airplane from Korea
@@ -2202,6 +2231,10 @@ export function MapHubPage({
     if (flightAnimRef.current !== null) {
       cancelAnimationFrame(flightAnimRef.current);
       flightAnimRef.current = null;
+    }
+    if (flightPreTimeoutRef.current !== null) {
+      clearTimeout(flightPreTimeoutRef.current);
+      flightPreTimeoutRef.current = null;
     }
     if (flightPlaneMarkerRef.current && mapRef.current) {
       try { mapRef.current.removeLayer(flightPlaneMarkerRef.current); } catch (_) {}
