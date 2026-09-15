@@ -82,7 +82,8 @@ import {
   MagazineItem,
   MagazineHubConfig,
   ArchiveHubConfig,
-  TrashedMagazineSection
+  TrashedMagazineSection,
+  UserProfile
 } from './types';
 import { auth, db } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -130,7 +131,8 @@ function applyJourneyOrder<T extends { id: number; displayOrder?: number }>(item
   return [...items].sort((a, b) => (a.displayOrder ?? a.id) - (b.displayOrder ?? b.id));
 }
 
-const ADMIN_EMAILS = ['gonyisland@google.com'];
+const SUPER_ADMIN_EMAIL = 'gonyisland@naver.com';
+const ADMIN_EMAILS = ['gonyisland@naver.com', 'gonyisland@google.com'];
 
 function getInitialNavigationState(): { view: string; tripId: number | null; isShare: boolean } {
   try {
@@ -316,6 +318,8 @@ function App() {
   const [homeGradientEnabled, setHomeGradientEnabled] = useState<boolean>(() => localStorage.getItem('home_gradient_enabled') === 'true');
   const [homeGradientFrom, setHomeGradientFrom] = useState<string>(() => localStorage.getItem('home_gradient_from') || '#F7F2EB');
   const [homeGradientTo, setHomeGradientTo] = useState<string>(() => localStorage.getItem('home_gradient_to') || '#E7DEC8');
+  const [landingHeroImage, setLandingHeroImage] = useState<string>(() => localStorage.getItem('landing_hero_image') || '');
+  const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [searchFocusItemId, setSearchFocusItemId] = useState<number | null>(null);
   const [searchFocusTab, setSearchFocusTab] = useState<string | null>(null);
@@ -451,9 +455,65 @@ function App() {
   };
 
   const currentUserEmail = auth.currentUser?.email?.toLowerCase() || '';
+  const isSuperAdmin = currentUserEmail === SUPER_ADMIN_EMAIL;
   const isGuest = currentUserEmail.startsWith('guest') || currentUserEmail.includes('guest') || Boolean(auth.currentUser?.isAnonymous);
-  // Guest accounts can only edit journeys, while admin accounts (including other admin accounts) have full hub management rights
-  const isAdmin = isLoggedIn && !isGuest;
+  
+  // Super Admin or users with admin role have full management rights
+  const isAdmin = isLoggedIn && (isSuperAdmin || currentUserProfile?.role === 'admin' || ADMIN_EMAILS.includes(currentUserEmail));
+
+  // Sync current user's profile from Firestore users collection
+  useEffect(() => {
+    if (!auth.currentUser) {
+      setCurrentUserProfile(null);
+      return;
+    }
+    const currentUid = auth.currentUser.uid;
+    const unsub = onSnapshot(doc(db, 'users', currentUid), (snapshot) => {
+      if (snapshot.exists()) {
+        setCurrentUserProfile(snapshot.data() as UserProfile);
+      } else if (isSuperAdmin) {
+        // Auto initialize super admin profile in Firestore if not yet exists
+        const adminProfile: UserProfile = {
+          uid: currentUid,
+          email: SUPER_ADMIN_EMAIL,
+          lastName: 'SUPER',
+          firstName: 'ADMIN',
+          birthdate: '',
+          phone: '',
+          role: 'admin',
+          permissions: { canCreate: true, canEdit: true, canDelete: true },
+          createdAt: Date.now(),
+        };
+        setDoc(doc(db, 'users', currentUid), adminProfile, { merge: true });
+        setCurrentUserProfile(adminProfile);
+      }
+    }, (err) => {
+      console.warn('Failed to listen to user profile:', err);
+    });
+    return () => unsub();
+  }, [isSuperAdmin, isLoggedIn]);
+
+  // Trip permission helpers: Super Admin/Admin has all rights; users can edit/delete their own trips, or trips they are delegated to
+  const canEditTrip = useCallback((trip?: Trip) => {
+    if (!isLoggedIn || !trip) return false;
+    if (isSuperAdmin || currentUserProfile?.role === 'admin' || ADMIN_EMAILS.includes(currentUserEmail)) return true;
+    const uid = auth.currentUser?.uid;
+    // Trip creator can edit
+    if (trip.ownerId && uid && trip.ownerId === uid) return true;
+    // Specifically allowed editors can edit
+    if (trip.allowedEditors && (trip.allowedEditors.includes(uid || '') || trip.allowedEditors.includes(currentUserEmail))) return true;
+    // If user has global canEdit permission
+    return Boolean(currentUserProfile?.permissions?.canEdit);
+  }, [isLoggedIn, isSuperAdmin, currentUserProfile, currentUserEmail]);
+
+  const canDeleteTrip = useCallback((trip?: Trip) => {
+    if (!isLoggedIn || !trip) return false;
+    if (isSuperAdmin || currentUserProfile?.role === 'admin' || ADMIN_EMAILS.includes(currentUserEmail)) return true;
+    const uid = auth.currentUser?.uid;
+    // Trip creator can delete ONLY IF granted canDelete permission
+    if (trip.ownerId && uid && trip.ownerId === uid && currentUserProfile?.permissions?.canDelete) return true;
+    return false;
+  }, [isLoggedIn, isSuperAdmin, currentUserProfile, currentUserEmail]);
 
   // Global shortcuts: Ctrl+K (Search), Ctrl+, (Settings), Ctrl+Shift+L (Night Mode), F (Fullscreen)
   useEffect(() => {
@@ -825,6 +885,10 @@ function App() {
         if (data.homeMagazineLimit !== undefined) {
           setHomeMagazineLimit(data.homeMagazineLimit);
           localStorage.setItem('home_magazine_limit', String(data.homeMagazineLimit));
+        }
+        if (data.landingHeroImage !== undefined) {
+          setLandingHeroImage(data.landingHeroImage);
+          localStorage.setItem('landing_hero_image', data.landingHeroImage);
         }
         if (data.magazineHubConfig && typeof data.magazineHubConfig === 'object') {
           setMagazineHubConfig(data.magazineHubConfig);
@@ -1396,7 +1460,8 @@ function App() {
     gradientToParam?: string,
     homeMagazineSectionIdParam?: string,
     homeMagazineLimitParam?: number,
-    magazineSectionsParam?: MagazineSection[]
+    magazineSectionsParam?: MagazineSection[],
+    landingHeroImageParam?: string
   ) => {
     if (!isLoggedIn) return;
     try {
@@ -1415,6 +1480,9 @@ function App() {
         homeGradientTo: gradientToParam !== undefined ? gradientToParam : homeGradientTo,
       };
 
+      if (landingHeroImageParam !== undefined) {
+        dataToSave.landingHeroImage = landingHeroImageParam;
+      }
       if (magazineMomentsParam !== undefined) {
         dataToSave.magazineMoments = cleanForFirestore(magazineMomentsParam);
       }
@@ -1433,6 +1501,10 @@ function App() {
       setHomeTitle(title);
       setHomeSubtitle(subtitle);
       setHeroJourneyIds(heroIds);
+      if (landingHeroImageParam !== undefined) {
+        setLandingHeroImage(landingHeroImageParam);
+        localStorage.setItem('landing_hero_image', landingHeroImageParam);
+      }
       if (autoSlide !== undefined) setHeroAutoSlide(autoSlide);
       if (heroMediaTypeParam !== undefined) setHeroMediaType(heroMediaTypeParam);
       if (showMarquee !== undefined) {
@@ -1736,7 +1808,10 @@ function App() {
       members: members || [],
       statusBadge: statusBadge || '',
       country: country || '',
-      displayOrder: newDisplayOrder
+      displayOrder: newDisplayOrder,
+      ownerId: user.uid,
+      ownerEmail: user.email || '',
+      allowedEditors: []
     };
 
     // Prepend to localStorage journey_order immediately so UI renders it at the top
@@ -2465,8 +2540,8 @@ function App() {
           isHomeGradientActive={isHomeGradientActive}
         />
 
-        {/* Marquee Banner - Only on Home View (Swiss Minimal Journal Ticker) */}
-        {currentView === 'home' && marqueeShow && (
+        {/* Marquee Banner - Only on Home View when logged in (Swiss Minimal Journal Ticker) */}
+        {currentView === 'home' && isLoggedIn && marqueeShow && (
           <div className="w-full bg-black/[0.025] dark:bg-white/[0.035] border-y border-black/10 dark:border-white/10 backdrop-blur-xs py-1.5 overflow-hidden flex items-center shrink-0 transition-colors duration-300 select-none text-black dark:text-white">
             <div 
               className="animate-marquee hover:[animation-play-state:paused] text-xs sm:text-[12.5px] font-mono font-bold tracking-wider uppercase flex items-center" 
@@ -2589,6 +2664,10 @@ function App() {
                   }}
                   isLoggedIn={isLoggedIn}
                   isDarkMode={isDarkMode}
+                  landingHeroImage={landingHeroImage}
+                  canEditTrip={canEditTrip}
+                  canDeleteTrip={canDeleteTrip}
+                  onOpenAuthModal={(mode) => { setAuthModalMode(mode || 'login'); setIsAuthModalOpen(true); }}
                   homeGradientEnabled={homeGradientEnabled}
                   homeGradientFrom={homeGradientFrom}
                   homeGradientTo={homeGradientTo}
@@ -2685,6 +2764,9 @@ function App() {
                   homeGradientTo={homeGradientTo}
                   homeMagazineSectionId={homeMagazineSectionId}
                   homeMagazineLimit={homeMagazineLimit}
+                  landingHeroImage={landingHeroImage}
+                  currentUserProfile={currentUserProfile}
+                  isSuperAdmin={isSuperAdmin}
                   onSaveAllHomeSettings={handleSaveSettings}
                   magazineMoments={magazineMoments}
                   magazineSections={magazineSections}

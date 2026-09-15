@@ -47,11 +47,15 @@ import {
   Volume2,
   VolumeX,
   Pause,
-  Edit
+  Edit,
+  Users,
+  UserCheck,
+  Shield,
+  KeyRound
 } from 'lucide-react';
-import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc, deleteField, setDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc, deleteField, setDoc, onSnapshot, QuerySnapshot, DocumentData } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Trip, Plan, MagazineMoment, MagazineSection, MagazineItem, MagazineHubConfig, ArchiveHubConfig, TimelineData, TimelineItem, TrashedMagazineSection } from '../types';
+import { Trip, Plan, MagazineMoment, MagazineSection, MagazineItem, MagazineHubConfig, ArchiveHubConfig, TimelineData, TimelineItem, TrashedMagazineSection, UserProfile, UserPermissions } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { getEffectiveImageUrl, uploadFileToR2, deleteFileFromR2 } from '../utils/storageHelper';
@@ -126,8 +130,12 @@ interface ManageHubPageProps {
     gradientToParam?: string,
     homeMagazineSectionIdParam?: string,
     homeMagazineLimitParam?: number,
-    magazineSectionsParam?: MagazineSection[]
+    magazineSectionsParam?: MagazineSection[],
+    landingHeroImageParam?: string
   ) => Promise<void>;
+  landingHeroImage?: string;
+  currentUserProfile?: UserProfile | null;
+  isSuperAdmin?: boolean;
   // Magazine Highlights & Sections
   magazineMoments?: MagazineMoment[];
   magazineSections?: MagazineSection[];
@@ -179,6 +187,9 @@ export function ManageHubPage({
   homeGradientTo,
   homeMagazineSectionId = 'main',
   homeMagazineLimit = 6,
+  landingHeroImage = '',
+  currentUserProfile,
+  isSuperAdmin = false,
   onSaveAllHomeSettings,
   trashedJourneys,
   trashedSections = [],
@@ -290,10 +301,10 @@ export function ManageHubPage({
     }
   };
 
-  // Top-level mode tabs ordered: 'HOME' | 'ARCHIVE' | 'MAGAZINE' | 'MAP' | 'BGM' | 'PRESETS' | 'TRASH'
-  const [activeMode, setActiveMode] = useState<'HOME' | 'ARCHIVE' | 'MAGAZINE' | 'MAP' | 'BGM' | 'PRESETS' | 'TRASH'>(() => {
+  // Top-level mode tabs ordered: 'HOME' | 'ARCHIVE' | 'MAGAZINE' | 'MAP' | 'BGM' | 'PRESETS' | 'USERS' | 'TRASH'
+  const [activeMode, setActiveMode] = useState<'HOME' | 'ARCHIVE' | 'MAGAZINE' | 'MAP' | 'BGM' | 'PRESETS' | 'USERS' | 'TRASH'>(() => {
     const fromSession = sessionStorage.getItem('initialManageTab');
-    if (fromSession && ['HOME', 'ARCHIVE', 'MAGAZINE', 'MAP', 'BGM', 'PRESETS', 'TRASH'].includes(fromSession)) {
+    if (fromSession && ['HOME', 'ARCHIVE', 'MAGAZINE', 'MAP', 'BGM', 'PRESETS', 'USERS', 'TRASH'].includes(fromSession)) {
       sessionStorage.removeItem('initialManageTab');
       return fromSession as any;
     }
@@ -328,6 +339,124 @@ export function ManageHubPage({
     window.addEventListener('tripPresetsChanged', handlePresetsChanged);
     return () => window.removeEventListener('tripPresetsChanged', handlePresetsChanged);
   }, []);
+
+  // Landing Hero Image (Guest Mode) State
+  const [localLandingHeroImage, setLocalLandingHeroImage] = useState<string>(landingHeroImage);
+  const [isUploadingLandingHero, setIsUploadingLandingHero] = useState<boolean>(false);
+
+  useEffect(() => {
+    setLocalLandingHeroImage(landingHeroImage);
+  }, [landingHeroImage]);
+
+  const handleLandingHeroUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 업로드 가능합니다.');
+      return;
+    }
+    setIsUploadingLandingHero(true);
+    try {
+      const compressed = await compressImage(file, 2560, 1600, 0.85);
+      const path = `hero/landing_${Date.now()}_${file.name}`;
+      const url = await uploadFileToR2(compressed, path);
+      setLocalLandingHeroImage(url);
+    } catch (err) {
+      console.error('Failed to upload landing hero:', err);
+      alert('랜딩 히어로 이미지 업로드에 실패했습니다.');
+    } finally {
+      setIsUploadingLandingHero(false);
+    }
+  };
+
+  // USERS Management State
+  const [usersList, setUsersList] = useState<UserProfile[]>([]);
+  const [userSearchQuery, setUserSearchQuery] = useState<string>('');
+  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
+  const [isUserEditModalOpen, setIsUserEditModalOpen] = useState<boolean>(false);
+  const [delegatingUser, setDelegatingUser] = useState<UserProfile | null>(null);
+  const [isDelegatingModalOpen, setIsDelegatingModalOpen] = useState<boolean>(false);
+  const [userActionToast, setUserActionToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (activeMode !== 'USERS' || !isLoggedIn) return;
+    const unsub = onSnapshot(collection(db, 'users'), (snapshot: QuerySnapshot<DocumentData>) => {
+      const list: UserProfile[] = [];
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.email) {
+          list.push({
+            uid: docSnap.id,
+            email: data.email,
+            lastName: data.lastName || '',
+            firstName: data.firstName || '',
+            birthdate: data.birthdate || '',
+            phone: data.phone || '',
+            role: data.role || (data.email === 'gonyisland@naver.com' ? 'admin' : 'user'),
+            permissions: data.permissions || { canCreate: true, canEdit: false, canDelete: false },
+            createdAt: data.createdAt || 0,
+          });
+        }
+      });
+      list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      setUsersList(list);
+    }, (err: Error) => {
+      console.warn('Failed to listen to users:', err);
+    });
+    return () => unsub();
+  }, [activeMode, isLoggedIn]);
+
+  const handleToggleUserPermission = async (user: UserProfile, permKey: keyof UserPermissions) => {
+    const currentVal = user.permissions?.[permKey] ?? false;
+    const newVal = !currentVal;
+    
+    // Local state immediate update
+    setUsersList(prev => prev.map(u => u.uid === user.uid ? {
+      ...u,
+      permissions: {
+        ...u.permissions,
+        [permKey]: newVal,
+      }
+    } : u));
+
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        [`permissions.${permKey}`]: newVal,
+      });
+      setUserActionToast(`[${user.lastName} ${user.firstName}] ${permKey.replace('can', '')} 권한이 ${newVal ? '활성화' : '비활성화'}되었습니다.`);
+      setTimeout(() => setUserActionToast(null), 2500);
+    } catch (err) {
+      console.error('Failed to update permission:', err);
+      alert('권한 변경 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleSaveUserEdit = async (updated: Partial<UserProfile>) => {
+    if (!editingUser) return;
+    try {
+      await updateDoc(doc(db, 'users', editingUser.uid), updated);
+      setUsersList(prev => prev.map(u => u.uid === editingUser.uid ? { ...u, ...updated } : u));
+      setIsUserEditModalOpen(false);
+      setEditingUser(null);
+      setUserActionToast('유저 정보가 수정되었습니다.');
+      setTimeout(() => setUserActionToast(null), 2500);
+    } catch (err) {
+      console.error('Failed to update user:', err);
+      alert('유저 정보 수정에 실패했습니다.');
+    }
+  };
+
+  const handleToggleTripAllowedEditor = async (tripId: number, targetUser: UserProfile) => {
+    const trip = trips.find(t => t.id === tripId) || plans.find(p => p.id === tripId);
+    if (!trip) return;
+    const currentEditors = trip.allowedEditors || [];
+    const hasAccess = currentEditors.includes(targetUser.uid) || currentEditors.includes(targetUser.email);
+    const newEditors = hasAccess
+      ? currentEditors.filter(id => id !== targetUser.uid && id !== targetUser.email)
+      : [...currentEditors, targetUser.uid];
+
+    await onSaveTrip(tripId, { allowedEditors: newEditors });
+    setUserActionToast(`[${trip.title}] 여정 편집 권한이 ${!hasAccess ? '부여' : '회수'}되었습니다.`);
+    setTimeout(() => setUserActionToast(null), 2500);
+  };
 
   // BGM Playlist Management State
   const [bgmTracks, setBgmTracks] = useState<BgmTrack[]>(() => getStoredBgmTracks());
@@ -2072,7 +2201,9 @@ export function ManageHubPage({
         gradientFrom,
         gradientTo,
         homeMagSectionId,
-        homeMagLimit
+        homeMagLimit,
+        sectionsList,
+        localLandingHeroImage
       );
       savedHomeSnapshotRef.current = {
         title,
@@ -3394,6 +3525,7 @@ export function ManageHubPage({
             { id: 'MAP', label: 'MAP' },
             { id: 'BGM', label: 'BGM' },
             { id: 'PRESETS', label: 'PRESETS' },
+            { id: 'USERS', label: 'USERS' },
             { id: 'TRASH', label: 'TRASH' },
           ] as const).map(tab => (
             <button
@@ -3895,6 +4027,85 @@ export function ManageHubPage({
                             );
                           })
                         )}
+                      </div>
+                    </div>
+
+                    {/* Guest Landing Hero Image Configuration (New Feature: Completely independent of Journey Hero) */}
+                    <div className="flex flex-col gap-2.5 pt-4 border-t border-black/10 dark:border-white/10">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white flex items-center gap-2">
+                            <span>GUEST LANDING HERO IMAGE (초기화면용 히어로 이미지)</span>
+                            <span className="text-[9px] px-1.5 py-0.2 bg-red-600 text-white font-mono uppercase">NEW</span>
+                          </label>
+                          <p className="text-[10px] font-mono text-black/50 dark:text-white/50 mt-0.5">
+                            로그인이 안 된 방문자에게 첫 화면으로 가득 차게 보여줄 전용 감성 히어로 이미지입니다.
+                          </p>
+                        </div>
+                        {localLandingHeroImage && (
+                          <button
+                            type="button"
+                            onClick={() => setLocalLandingHeroImage('')}
+                            className="text-[10px] font-mono text-red-600 hover:underline cursor-pointer"
+                          >
+                            초기화 (RESET)
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Image Preview & Upload Container */}
+                      <div className="flex flex-col gap-2">
+                        {localLandingHeroImage ? (
+                          <div className="relative w-full aspect-[16/9] max-h-60 overflow-hidden border border-black/20 dark:border-white/20 bg-black">
+                            <img
+                              src={getEffectiveImageUrl(localLandingHeroImage)}
+                              alt="Landing Hero Preview"
+                              className="w-full h-full object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setLocalLandingHeroImage('')}
+                              className="absolute top-2 right-2 p-1.5 bg-black/70 hover:bg-black text-white cursor-pointer"
+                              title="이미지 제거"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                            <span className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/80 text-white font-mono text-[9px] font-bold uppercase">
+                              PREVIEW: OBJECT-COVER
+                            </span>
+                          </div>
+                        ) : (
+                          <label className="relative w-full aspect-[16/9] max-h-48 border border-dashed border-black/30 dark:border-white/30 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-black dark:hover:border-white hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors p-4 text-center">
+                            <Upload className="w-5 h-5 text-black/40 dark:text-white/40" />
+                            <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
+                              {isUploadingLandingHero ? '업로드 중...' : '클릭하거나 이미지를 드래그하여 업로드'}
+                            </span>
+                            <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                              권장 비율: 16:9 와이드 고화질 (PNG, JPG, WEBP)
+                            </span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              disabled={isUploadingLandingHero}
+                              onChange={e => {
+                                const f = e.target.files?.[0];
+                                if (f) handleLandingHeroUpload(f);
+                              }}
+                              className="hidden"
+                            />
+                          </label>
+                        )}
+
+                        {/* Direct URL Input */}
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="url"
+                            value={localLandingHeroImage}
+                            onChange={e => setLocalLandingHeroImage(e.target.value)}
+                            placeholder="또는 이미지 직접 URL 입력 (https://...)"
+                            className="flex-1 px-3 py-1.5 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -7103,8 +7314,384 @@ export function ManageHubPage({
             )}
           </div>
         )}
+        {/* ─────────────────────────────────────────────────────────────────── */}
+        {/* MODE: USERS (Registered Users & Role/Permission Management)        */}
+        {/* ─────────────────────────────────────────────────────────────────── */}
+        {activeMode === 'USERS' && (
+          <div
+            onScroll={handleContainerScroll}
+            className="w-full max-w-5xl mx-auto p-4 sm:p-8 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200"
+          >
+            {/* Header */}
+            <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                  REGISTERED USERS & PERMISSIONS MANAGEMENT
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black uppercase font-bold">
+                  TOTAL: {usersList.length}
+                </span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                USERS
+              </h2>
+              <p className="text-xs text-black/60 dark:text-white/60 font-mono">
+                [가입 유저 목록 조회, 개인정보 수정, 생성/편집/삭제 권한 개별 토글 및 특정 여정 편집 위임 관리]
+              </p>
+            </div>
+
+            {/* Action Toast */}
+            {userActionToast && (
+              <div className="p-3 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                <Check className="w-4 h-4 text-green-400 dark:text-green-600" />
+                <span>{userActionToast}</span>
+              </div>
+            )}
+
+            {/* Search Bar */}
+            <div className="flex items-center gap-3">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
+                <input
+                  type="text"
+                  value={userSearchQuery}
+                  onChange={e => setUserSearchQuery(e.target.value)}
+                  placeholder="유저 검색 (이름, 이메일, 전화번호)..."
+                  className="w-full pl-9 pr-4 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
+                />
+              </div>
+              {userSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setUserSearchQuery('')}
+                  className="px-3 py-2 border border-black/20 dark:border-white/20 text-xs font-mono uppercase hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+                >
+                  CLEAR
+                </button>
+              )}
+            </div>
+
+            {/* Users List Table / Cards */}
+            <div className="flex flex-col border border-black/20 dark:border-white/20 divide-y divide-black/10 dark:divide-white/10 bg-white dark:bg-[#161616]">
+              {usersList
+                .filter(u => {
+                  if (!userSearchQuery.trim()) return true;
+                  const q = userSearchQuery.toLowerCase();
+                  const name = `${u.lastName} ${u.firstName}`.toLowerCase();
+                  return name.includes(q) || u.email.toLowerCase().includes(q) || (u.phone && u.phone.includes(q));
+                })
+                .map((user) => {
+                  const isSuper = user.email.toLowerCase() === 'gonyisland@naver.com';
+                  const fullName = `${user.lastName} ${user.firstName}`.trim() || '미등록';
+                  const joinDate = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-';
+
+                  return (
+                    <div key={user.uid} className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-black/[0.01] dark:hover:bg-white/[0.01] transition-colors">
+                      {/* Left: User Details */}
+                      <div className="flex flex-col gap-1.5 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm sm:text-base font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                            {fullName}
+                          </span>
+                          <span className="text-xs font-mono text-black/60 dark:text-white/60">
+                            ({user.email})
+                          </span>
+                          {isSuper ? (
+                            <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-red-600 text-white leading-none">
+                              SUPER ADMIN
+                            </span>
+                          ) : user.role === 'admin' ? (
+                            <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-black text-white dark:bg-white dark:text-black leading-none">
+                              ADMIN
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 leading-none">
+                              USER
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-3 text-[11px] font-mono text-black/50 dark:text-white/50 flex-wrap">
+                          {user.phone && <span>전화: {user.phone}</span>}
+                          {user.birthdate && <span>생일: {user.birthdate}</span>}
+                          <span>가입일: {joinDate}</span>
+                        </div>
+                      </div>
+
+                      {/* Right: Permission Toggles & Actions */}
+                      <div className="flex items-center gap-3 flex-wrap shrink-0">
+                        {/* 3 Permission Toggles: Create / Edit / Delete */}
+                        <div className="flex items-center gap-1 border border-black/15 dark:border-white/15 p-1 bg-black/[0.02] dark:bg-white/[0.02]">
+                          {/* Create Permission Toggle */}
+                          <button
+                            type="button"
+                            disabled={isSuper}
+                            onClick={() => handleToggleUserPermission(user, 'canCreate')}
+                            className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:cursor-not-allowed ${
+                              user.permissions?.canCreate
+                                ? 'bg-black text-white dark:bg-white dark:text-black font-black'
+                                : 'text-black/40 dark:text-white/40 hover:text-black'
+                            }`}
+                            title="여정 생성(추가) 권한 토글"
+                          >
+                            추가 {user.permissions?.canCreate ? 'ON' : 'OFF'}
+                          </button>
+
+                          {/* Edit Permission Toggle */}
+                          <button
+                            type="button"
+                            disabled={isSuper}
+                            onClick={() => handleToggleUserPermission(user, 'canEdit')}
+                            className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:cursor-not-allowed ${
+                              user.permissions?.canEdit
+                                ? 'bg-black text-white dark:bg-white dark:text-black font-black'
+                                : 'text-black/40 dark:text-white/40 hover:text-black'
+                            }`}
+                            title="전체 여정 편집 권한 토글 (OFF일 때는 본인 여정 및 위임된 여정만 수정 가능)"
+                          >
+                            편집 {user.permissions?.canEdit ? 'ON' : 'OFF'}
+                          </button>
+
+                          {/* Delete Permission Toggle */}
+                          <button
+                            type="button"
+                            disabled={isSuper}
+                            onClick={() => handleToggleUserPermission(user, 'canDelete')}
+                            className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:cursor-not-allowed ${
+                              user.permissions?.canDelete
+                                ? 'bg-red-600 text-white font-black'
+                                : 'text-black/40 dark:text-white/40 hover:text-black'
+                            }`}
+                            title="여정 삭제 권한 토글"
+                          >
+                            삭제 {user.permissions?.canDelete ? 'ON' : 'OFF'}
+                          </button>
+                        </div>
+
+                        {/* Delegate Trip Access Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDelegatingUser(user);
+                            setIsDelegatingModalOpen(true);
+                          }}
+                          className="px-2.5 py-1.5 border border-black/20 dark:border-white/20 text-[10px] font-mono font-bold uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
+                          title="특정 여정 편집 권한 위임"
+                        >
+                          여정 위임
+                        </button>
+
+                        {/* Edit Info Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingUser(user);
+                            setIsUserEditModalOpen(true);
+                          }}
+                          className="p-1.5 border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black transition-colors cursor-pointer"
+                          title="유저 정보 수정"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+              {usersList.length === 0 && (
+                <div className="py-12 text-center text-xs font-mono text-black/40 dark:text-white/40">
+                  가입된 유저가 없습니다.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
       </div>
+
+      {/* User Info Edit Modal */}
+      {isUserEditModalOpen && editingUser && (
+        <div 
+          className="fixed inset-0 z-[650] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150" 
+          onClick={() => { setIsUserEditModalOpen(false); setEditingUser(null); }}
+        >
+          <div 
+            className="w-full max-w-md bg-white dark:bg-[#161616] border border-black dark:border-white p-6 shadow-2xl flex flex-col gap-4" 
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
+              <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                EDIT USER PROFILE
+              </h3>
+              <button 
+                type="button" 
+                onClick={() => { setIsUserEditModalOpen(false); setEditingUser(null); }} 
+                className="p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">성 (LAST NAME)</label>
+                  <input 
+                    type="text" 
+                    value={editingUser.lastName}
+                    onChange={e => setEditingUser({ ...editingUser, lastName: e.target.value })}
+                    className="w-full px-3 py-2 bg-black/[0.02] dark:bg-white/[0.02] border border-black/20 dark:border-white/20 outline-none text-xs font-sans"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">이름 (FIRST NAME)</label>
+                  <input 
+                    type="text" 
+                    value={editingUser.firstName}
+                    onChange={e => setEditingUser({ ...editingUser, firstName: e.target.value })}
+                    className="w-full px-3 py-2 bg-black/[0.02] dark:bg-white/[0.02] border border-black/20 dark:border-white/20 outline-none text-xs font-sans"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">이메일 (EMAIL - 읽기 전용)</label>
+                <input 
+                  type="email" 
+                  disabled
+                  value={editingUser.email}
+                  className="w-full px-3 py-2 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 outline-none text-xs font-mono opacity-60 cursor-not-allowed"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">생년월일 (BIRTHDAY)</label>
+                  <input 
+                    type="text" 
+                    value={editingUser.birthdate}
+                    onChange={e => setEditingUser({ ...editingUser, birthdate: e.target.value })}
+                    placeholder="YYYY-MM-DD"
+                    className="w-full px-3 py-2 bg-black/[0.02] dark:bg-white/[0.02] border border-black/20 dark:border-white/20 outline-none text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">전화번호 (PHONE)</label>
+                  <input 
+                    type="tel" 
+                    value={editingUser.phone}
+                    onChange={e => setEditingUser({ ...editingUser, phone: e.target.value })}
+                    placeholder="010-0000-0000"
+                    className="w-full px-3 py-2 bg-black/[0.02] dark:bg-white/[0.02] border border-black/20 dark:border-white/20 outline-none text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-3 border-t border-black/10 dark:border-white/10">
+                <button 
+                  type="button"
+                  onClick={() => { setIsUserEditModalOpen(false); setEditingUser(null); }}
+                  className="flex-1 py-2.5 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                >
+                  CANCEL
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => handleSaveUserEdit({
+                    lastName: editingUser.lastName,
+                    firstName: editingUser.firstName,
+                    birthdate: editingUser.birthdate,
+                    phone: editingUser.phone,
+                  })}
+                  className="flex-1 py-2.5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:opacity-85 transition-opacity cursor-pointer"
+                >
+                  SAVE
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* User Trip Delegation Modal */}
+      {isDelegatingModalOpen && delegatingUser && (
+        <div 
+          className="fixed inset-0 z-[650] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150" 
+          onClick={() => { setIsDelegatingModalOpen(false); setDelegatingUser(null); }}
+        >
+          <div 
+            className="w-full max-w-lg bg-white dark:bg-[#161616] border border-black dark:border-white p-6 shadow-2xl flex flex-col gap-4 max-h-[85vh]" 
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
+              <div>
+                <span className="text-[9px] font-mono font-black uppercase text-red-600 dark:text-red-500">
+                  DELEGATE TRIP EDIT ACCESS
+                </span>
+                <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                  [{delegatingUser.lastName} {delegatingUser.firstName}] 여정 편집 권한 위임
+                </h3>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => { setIsDelegatingModalOpen(false); setDelegatingUser(null); }} 
+                className="p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs font-mono text-black/60 dark:text-white/60">
+              선택한 여정에 대해 이 유저에게 직접 편집 권한을 부여하거나 회수할 수 있습니다.
+            </p>
+
+            <div className="flex-1 overflow-y-auto space-y-2 max-h-72 border border-black/15 dark:border-white/15 p-2 bg-black/[0.01] dark:bg-white/[0.01]">
+              {[...trips, ...plans].map((trip) => {
+                const currentEditors = trip.allowedEditors || [];
+                const hasAccess = currentEditors.includes(delegatingUser.uid) || currentEditors.includes(delegatingUser.email);
+
+                return (
+                  <div 
+                    key={trip.id}
+                    onClick={() => handleToggleTripAllowedEditor(trip.id, delegatingUser)}
+                    className={`p-3 border flex items-center justify-between cursor-pointer transition-colors ${
+                      hasAccess 
+                        ? 'border-black dark:border-white bg-black/5 dark:bg-white/10' 
+                        : 'border-black/10 dark:border-white/10 hover:border-black/30'
+                    }`}
+                  >
+                    <div className="min-w-0 pr-3">
+                      <div className="text-xs font-black uppercase text-black dark:text-white truncate">
+                        {trip.title}
+                      </div>
+                      <div className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                        {trip.date} · {trip.locationStr || trip.country}
+                      </div>
+                    </div>
+                    <span className={`px-2 py-1 text-[10px] font-mono font-black uppercase shrink-0 ${
+                      hasAccess
+                        ? 'bg-black text-white dark:bg-white dark:text-black'
+                        : 'border border-black/20 dark:border-white/20 text-black/40 dark:text-white/40'
+                    }`}>
+                      {hasAccess ? 'ALLOWED (허용됨)' : 'DENIED (권한없음)'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-end pt-3 border-t border-black/10 dark:border-white/10">
+              <button 
+                type="button"
+                onClick={() => { setIsDelegatingModalOpen(false); setDelegatingUser(null); }}
+                className="px-5 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:opacity-85 transition-opacity cursor-pointer"
+              >
+                DONE (완료)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 3. Floating Bottom-Left Action Bar: Save & View Mode Buttons */}
       <div className="fixed bottom-6 left-6 z-[600] flex items-center gap-3 animate-in fade-in slide-in-from-bottom-3 duration-200">

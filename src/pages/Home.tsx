@@ -35,6 +35,10 @@ interface HomePageProps {
   homeMagazineSectionId?: string;
   homeMagazineLimit?: number;
   timelineData?: TimelineData;
+  landingHeroImage?: string;
+  canEditTrip?: (trip?: Trip) => boolean;
+  canDeleteTrip?: (trip?: Trip) => boolean;
+  onOpenAuthModal?: (mode?: 'login' | 'signup') => void;
 }
 
 function parseDateParts(dateStr: string, defaultYear?: number): Date | null {
@@ -825,6 +829,10 @@ export function HomePage({
   homeMagazineSectionId = 'main',
   homeMagazineLimit = 6,
   timelineData,
+  landingHeroImage = '',
+  canEditTrip,
+  canDeleteTrip,
+  onOpenAuthModal,
 }: HomePageProps) {
   const [activeFilter, setActiveFilter] = useState('All');
   const [isTagAccordionOpen, setIsTagAccordionOpen] = useState(false);
@@ -1100,7 +1108,56 @@ export function HomePage({
       className="animate-in fade-in duration-700 w-full transition-all"
     >
 
-      {/* ===== Hero Section: 3-Column Swiss Editorial Layout (Matching Reference) ===== */}
+      {/* ===== Hero Section: Guest Fullscreen Landing Hero or Swiss Editorial Hero ===== */}
+      {!isLoggedIn ? (
+        <section className="relative w-full h-[78vh] min-h-[540px] max-h-[900px] overflow-hidden border-b border-black/15 dark:border-white/15 select-none bg-black">
+          {/* Landing Background Image filling the whole frame without margins */}
+          <img
+            src={getEffectiveImageUrl(landingHeroImage || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2000&auto=format&fit=crop')}
+            alt="Landing Hero"
+            className="absolute inset-0 w-full h-full object-cover brightness-[0.82] dark:brightness-[0.7] transition-transform duration-1000 scale-100 hover:scale-105"
+          />
+          {/* Swiss Subtle Dark Vignette Overlay for Typography */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/40" />
+
+          {/* Minimal Swiss Typographic Content */}
+          <div className="relative z-10 w-full h-full max-w-[1920px] mx-auto px-6 sm:px-10 md:px-16 lg:px-24 flex flex-col justify-between py-12 md:py-20 text-white">
+            <div className="flex flex-col gap-2">
+              <span className="text-[11px] font-mono tracking-[0.3em] uppercase opacity-75">
+                CURATED TRAVEL ARCHIVE & EDITORIAL JOURNAL
+              </span>
+              <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter leading-none font-sans drop-shadow-md">
+                TRIPGON LOG
+              </h1>
+            </div>
+
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+              <div className="max-w-md">
+                <p className="text-xs sm:text-sm font-medium leading-relaxed opacity-85 break-keep">
+                  발걸음이 머물렀던 전 세계의 도시와 찬란했던 순간의 기록. 나만의 여행 포켓과 감성 타임라인을 기록해 보세요.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => onOpenAuthModal ? onOpenAuthModal('login') : onNavigate('archive')}
+                  className="px-6 py-3 bg-white text-black hover:bg-white/90 text-xs font-mono font-bold uppercase tracking-widest transition-all cursor-pointer shadow-lg"
+                >
+                  LOG IN TO BEGIN
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onOpenAuthModal ? onOpenAuthModal('signup') : onNavigate('archive')}
+                  className="px-6 py-3 border border-white text-white hover:bg-white/10 text-xs font-mono font-bold uppercase tracking-widest transition-all cursor-pointer"
+                >
+                  SIGN UP
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : (
       <section className={`relative w-full border-b border-black/15 dark:border-white/15 ${gradientEnabled && !isDarkMode ? 'bg-transparent' : 'bg-[#FBFBFA] dark:bg-[#141414]'} overflow-hidden transition-colors`}>
         {currentHero ? (
           (() => {
@@ -1246,6 +1303,7 @@ export function HomePage({
           })()
         ) : null}
       </section>
+      )}
 
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* 01. TRIP (통합 여정 목록 섹션)                                       */}

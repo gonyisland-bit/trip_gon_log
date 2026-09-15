@@ -54,6 +54,9 @@ export interface Trip {
   members?: string[];
   customExpenses?: CustomExpenseItem[];
   pocketSpots?: SpotPocketItem[];
+  ownerId?: string;
+  ownerEmail?: string;
+  allowedEditors?: string[];
 }
 
 export interface CustomExpenseItem {
@@ -256,5 +259,23 @@ export interface CalendarCustomEvent {
   category: 'work' | 'family' | 'personal' | 'blocked';
   color?: string;
   memo?: string;
+  createdAt: number;
+}
+
+export interface UserPermissions {
+  canCreate: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+}
+
+export interface UserProfile {
+  uid: string;
+  email: string;
+  lastName: string;
+  firstName: string;
+  birthdate: string;
+  phone: string;
+  role: 'admin' | 'user';
+  permissions: UserPermissions;
   createdAt: number;
 }

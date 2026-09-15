@@ -2,13 +2,16 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Bookmark, MapPin, Plus, ExternalLink, Trash2, Edit3, Compass, 
   Search, Check, X, ArrowUpRight, ChevronRight, Layers, Sparkles,
-  Utensils, Coffee, Camera, ShoppingBag, Lightbulb, Map, MoreVertical, Star
+  Utensils, Coffee, Camera, ShoppingBag, Lightbulb, Map, MoreVertical, Star,
+  Upload, Image as ImageIcon, Loader2
 } from 'lucide-react';
 import { SpotPocketItem, PocketCategory, Trip, Plan, TimelineItem } from '../types';
 import { getSavedPockets, savePockets, detectPlatform } from '../utils/pocketStorage';
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { PocketScheduleModal } from '../components/PocketScheduleModal';
+import { compressImage } from '../utils/imageHelper';
+import { uploadFileToR2 } from '../utils/storageHelper';
 
 interface PocketHubPageProps {
   trips: Trip[];
@@ -59,6 +62,49 @@ export function PocketHubPage({
   const [newLat, setNewLat] = useState<number | undefined>();
   const [newLng, setNewLng] = useState<number | undefined>();
   const [newAddress, setNewAddress] = useState<string>('');
+  const [isUploadingThumbnail, setIsUploadingThumbnail] = useState<boolean>(false);
+  const [isDraggingThumbnail, setIsDraggingThumbnail] = useState<boolean>(false);
+
+  // Handle direct file upload (drag & drop, file picker, or paste)
+  const handleUploadThumbnailFile = async (file: File) => {
+    if (!file || !file.type.startsWith('image/')) return;
+    try {
+      setIsUploadingThumbnail(true);
+      const compressed = await compressImage(file, 1600, 1200, 0.85);
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const storagePath = `pockets/${Date.now()}_${safeName}`;
+      const url = await uploadFileToR2(compressed, storagePath);
+      setNewThumbnailUrl(url);
+    } catch (err) {
+      console.error('Failed to upload pocket thumbnail:', err);
+      alert('이미지 업로드에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsUploadingThumbnail(false);
+      setIsDraggingThumbnail(false);
+    }
+  };
+
+  // Clipboard paste listener when modal is open
+  useEffect(() => {
+    if (!isAddModalOpen) return;
+    const handlePaste = (e: ClipboardEvent) => {
+      // If user is focused on an input/textarea and pasting plain text, don't hijack unless it's an image file
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          if (file) {
+            e.preventDefault();
+            handleUploadThumbnailFile(file);
+            break;
+          }
+        }
+      }
+    };
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [isAddModalOpen]);
 
   // Delete Confirm Modal
   const [spotToDelete, setSpotToDelete] = useState<SpotPocketItem | null>(null);
@@ -170,6 +216,8 @@ export function PocketHubPage({
     setNewLat(undefined);
     setNewLng(undefined);
     setNewAddress('');
+    setIsUploadingThumbnail(false);
+    setIsDraggingThumbnail(false);
     setIsAddModalOpen(false);
   };
 
@@ -721,8 +769,8 @@ export function PocketHubPage({
 
       {/* ── CREATE OR EDIT SPOT MODAL (Swiss Minimal) ── */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#111111] border border-black/20 dark:border-white/20 w-full max-w-lg p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-[#111111] border border-black/20 dark:border-white/20 w-full max-w-lg p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 my-auto">
             <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-3 mb-5">
               <div>
                 <span className="text-[10px] font-mono tracking-widest text-red-500 uppercase">
@@ -741,10 +789,10 @@ export function PocketHubPage({
               </button>
             </div>
 
-            <form onSubmit={handleSaveSpot} className="space-y-4">
+            <form onSubmit={handleSaveSpot} className="space-y-5">
               {/* Title / Spot Name or Tip Title */}
               <div>
-                <label className="block text-[10px] font-mono uppercase tracking-wider text-black/60 dark:text-white/60 mb-1">
+                <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
                   제목 (장소명 또는 꿀팁 제목) *
                 </label>
                 <PlaceAutocompleteInput
@@ -759,7 +807,7 @@ export function PocketHubPage({
                     if (cityName) setNewCity(cityName);
                   }}
                   placeholder="장소 검색 또는 직접 꿀팁 제목 입력 (예: 시부야 환전 꿀팁)"
-                  className="w-full h-9 px-3 bg-white dark:bg-black border border-black/20 dark:border-white/20 text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none"
+                  className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
                 />
                 <p className="text-[9.5px] font-mono text-black/40 dark:text-white/40 mt-1">
                   구글 장소 자동완성을 사용하거나, 꿀팁인 경우 제목을 직접 입력하세요.
@@ -768,7 +816,7 @@ export function PocketHubPage({
 
               {/* Category selector */}
               <div>
-                <label className="block text-[10px] font-mono uppercase tracking-wider text-black/60 dark:text-white/60 mb-1">
+                <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1.5">
                   카테고리
                 </label>
                 <div className="grid grid-cols-5 gap-1.5">
@@ -793,9 +841,9 @@ export function PocketHubPage({
               </div>
 
               {/* Country & City */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-mono uppercase tracking-wider text-black/60 dark:text-white/60 mb-1">
+                  <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
                     국가 (Country)
                   </label>
                   <input
@@ -803,11 +851,11 @@ export function PocketHubPage({
                     value={newCountry}
                     onChange={e => setNewCountry(e.target.value)}
                     placeholder="예: Japan, France"
-                    className="w-full h-8 px-3 bg-white dark:bg-black border border-black/20 dark:border-white/20 text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none"
+                    className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-mono uppercase tracking-wider text-black/60 dark:text-white/60 mb-1">
+                  <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
                     도시/지역 (City)
                   </label>
                   <input
@@ -815,28 +863,28 @@ export function PocketHubPage({
                     value={newCity}
                     onChange={e => setNewCity(e.target.value)}
                     placeholder="예: Tokyo, Paris"
-                    className="w-full h-8 px-3 bg-white dark:bg-black border border-black/20 dark:border-white/20 text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none"
+                    className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
                   />
                 </div>
               </div>
 
               {/* Memo & Tips */}
               <div>
-                <label className="block text-[10px] font-mono uppercase tracking-wider text-black/60 dark:text-white/60 mb-1">
+                <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
                   핵심 꿀팁 / 할인 / 웨이팅 정보
                 </label>
                 <textarea
                   value={newMemo}
                   onChange={e => setNewMemo(e.target.value)}
-                  rows={3}
+                  rows={2}
                   placeholder="예: 3시 이후 웨이팅 없음. 바닐라 라떼 & 크루아상 추천. 인스타 예약 필수."
-                  className="w-full p-2.5 bg-white dark:bg-black border border-black/20 dark:border-white/20 text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none resize-none leading-relaxed"
+                  className="w-full px-0 py-1.5 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none resize-none leading-relaxed transition-colors"
                 />
               </div>
 
               {/* Source SNS URL */}
               <div>
-                <label className="block text-[10px] font-mono uppercase tracking-wider text-black/60 dark:text-white/60 mb-1">
+                <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
                   SNS 원본 링크 (인스타, 유튜브, 블로그, 구글맵)
                 </label>
                 <input
@@ -844,22 +892,112 @@ export function PocketHubPage({
                   value={newSourceUrl}
                   onChange={e => setNewSourceUrl(e.target.value)}
                   placeholder="https://www.instagram.com/p/..."
-                  className="w-full h-8 px-3 bg-white dark:bg-black border border-black/20 dark:border-white/20 text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none"
+                  className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
                 />
               </div>
 
-              {/* Thumbnail URL (Optional) */}
+              {/* Thumbnail Image Uploader (Swiss Minimal, Drag&Drop, Paste, URL) */}
               <div>
-                <label className="block text-[10px] font-mono uppercase tracking-wider text-black/60 dark:text-white/60 mb-1">
-                  썸네일 이미지 URL (선택)
-                </label>
-                <input
-                  type="url"
-                  value={newThumbnailUrl}
-                  onChange={e => setNewThumbnailUrl(e.target.value)}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full h-8 px-3 bg-white dark:bg-black border border-black/20 dark:border-white/20 text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none"
-                />
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70">
+                    썸네일 이미지 (선택)
+                  </label>
+                  <span className="text-[9px] font-mono text-black/40 dark:text-white/40">
+                    드래그&드롭 · 붙여넣기(Ctrl+V) 지원
+                  </span>
+                </div>
+
+                {newThumbnailUrl ? (
+                  <div className="relative aspect-[16/10] w-full overflow-hidden border border-black/20 dark:border-white/20 group bg-black/5 dark:bg-white/5">
+                    <img
+                      src={newThumbnailUrl}
+                      alt="Thumbnail preview"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <label className="h-7 px-3 bg-white text-black text-[10px] font-mono uppercase font-bold flex items-center gap-1 cursor-pointer hover:bg-white/90">
+                        <Upload className="w-3.5 h-3.5" />
+                        CHANGE
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async e => {
+                            const file = e.target.files?.[0];
+                            if (file) await handleUploadThumbnailFile(file);
+                          }}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setNewThumbnailUrl('')}
+                        className="h-7 px-3 bg-red-600 text-white text-[10px] font-mono uppercase font-bold flex items-center gap-1 cursor-pointer hover:bg-red-700"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        REMOVE
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label
+                      onDragOver={e => {
+                        e.preventDefault();
+                        setIsDraggingThumbnail(true);
+                      }}
+                      onDragLeave={() => setIsDraggingThumbnail(false)}
+                      onDrop={async e => {
+                        e.preventDefault();
+                        const file = e.dataTransfer.files?.[0];
+                        if (file) await handleUploadThumbnailFile(file);
+                      }}
+                      className={`block border border-dashed transition-all p-4 text-center cursor-pointer ${
+                        isDraggingThumbnail
+                          ? 'border-red-500 bg-red-500/5'
+                          : 'border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white'
+                      }`}
+                    >
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async e => {
+                          const file = e.target.files?.[0];
+                          if (file) await handleUploadThumbnailFile(file);
+                        }}
+                      />
+                      {isUploadingThumbnail ? (
+                        <div className="flex flex-col items-center justify-center py-2 gap-1.5">
+                          <Loader2 className="w-5 h-5 animate-spin text-black dark:text-white" />
+                          <span className="text-[10px] font-mono uppercase tracking-wider text-black/60 dark:text-white/60">
+                            UPLOADING IMAGE...
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-2 gap-1">
+                          <Upload className="w-4 h-4 text-black/50 dark:text-white/50" />
+                          <span className="text-[10.5px] font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                            CLICK OR DRAG IMAGE HERE
+                          </span>
+                          <span className="text-[9px] font-mono text-black/40 dark:text-white/40">
+                            또는 이미지를 클립보드에 복사 후 Ctrl+V 붙여넣기
+                          </span>
+                        </div>
+                      )}
+                    </label>
+
+                    {/* URL direct input */}
+                    <div className="mt-2">
+                      <input
+                        type="url"
+                        value={newThumbnailUrl}
+                        onChange={e => setNewThumbnailUrl(e.target.value)}
+                        placeholder="또는 이미지 URL 직접 입력 (https://...)"
+                        className="w-full h-7 px-0 bg-transparent border-b border-black/15 dark:border-white/15 text-[11px] font-mono focus:border-black dark:focus:border-white focus:outline-none placeholder:text-black/30 dark:placeholder:text-white/30"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons */}
