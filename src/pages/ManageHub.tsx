@@ -3596,6 +3596,13 @@ export function ManageHubPage({
   );
 
   const getReturnView = () => {
+    try {
+      const savedLast = sessionStorage.getItem('lastNonManageView');
+      if (savedLast && ['home', 'archive', 'magazine', 'calendar', 'map', 'pocket', 'detail'].includes(savedLast)) {
+        return savedLast;
+      }
+    } catch (_) {}
+
     switch (activeMode) {
       case 'MAGAZINE':
         return 'magazine';

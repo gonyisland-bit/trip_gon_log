@@ -1205,6 +1205,14 @@ function App() {
     if (view !== 'manage' && currentView === 'manage') setIsManageDirty(false);
     if (view !== 'detail' && currentView === 'detail') setIsDetailEditing(false);
 
+    // Entering manage: automatically record previous non-manage view for seamless return
+    if (view === 'manage' && currentView !== 'manage') {
+      try {
+        sessionStorage.setItem('lastNonManageView', currentView);
+        sessionStorage.setItem('initialManageTab', currentView.toUpperCase());
+      } catch (_) {}
+    }
+
     // Close any residual save complete modal upon navigation
     setShowSaveCompleteModal(false);
 

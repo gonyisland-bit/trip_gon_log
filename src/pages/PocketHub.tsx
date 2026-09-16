@@ -777,14 +777,30 @@ export function PocketHubPage({
               </p>
             </div>
 
-            <div className="flex items-center gap-2.5 shrink-0 pb-1">
+            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 pb-1">
+              {/* Swiss Minimal Grip Toggle: Moved to top action row to maximize toolbar whitespace */}
+              {isAdmin && sortMode === 'custom' && (
+                <button
+                  type="button"
+                  onClick={() => setIsReorderMode(prev => !prev)}
+                  className={`h-10 w-10 flex items-center justify-center border transition-colors cursor-pointer shrink-0 ${
+                    isReorderMode
+                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                      : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white'
+                  }`}
+                  title={isReorderMode ? "피드 순서 편집 활성 (종료하려면 클릭)" : "피드 순서 편집 (관리자)"}
+                >
+                  <GripVertical className="w-4 h-4" />
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={() => {
                   setIsSelectionMode(prev => !prev);
                   if (isSelectionMode) setSelectedSpotIds(new Set());
                 }}
-                className={`h-10 px-4 text-xs font-mono font-bold tracking-widest uppercase flex items-center gap-2 border transition-colors cursor-pointer ${
+                className={`h-10 px-3 sm:px-4 text-xs font-mono font-bold tracking-widest uppercase flex items-center gap-1.5 sm:gap-2 border transition-colors cursor-pointer ${
                   isSelectionMode
                     ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
                     : 'border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white'
@@ -800,7 +816,7 @@ export function PocketHubPage({
               </button>
               <button
                 onClick={() => setIsAddModalOpen(true)}
-                className="h-10 px-5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold tracking-widest uppercase flex items-center gap-2 hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer"
+                className="h-10 px-3.5 sm:px-5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold tracking-widest uppercase flex items-center gap-1.5 sm:gap-2 hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>KEEP SPOT</span>
@@ -813,18 +829,19 @@ export function PocketHubPage({
         <div className="mb-6 space-y-2">
           {/* 1-Row compact bar */}
           <div className="flex items-center gap-2 flex-wrap">
-            {/* FILTER toggle button */}
+            {/* FILTER toggle button: Mobile icon-only optimization */}
             <button
               type="button"
               onClick={() => setIsFilterOpen(prev => !prev)}
-              className={`h-8 px-3 flex items-center gap-1.5 text-[11px] font-mono font-bold tracking-widest uppercase border transition-colors cursor-pointer shrink-0 ${
+              className={`h-8 px-2.5 sm:px-3 flex items-center gap-1.5 text-[11px] font-mono font-bold tracking-widest uppercase border transition-colors cursor-pointer shrink-0 ${
                 isFilterOpen || activeFilterCount > 0
                   ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
                   : 'border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white'
               }`}
+              title="필터"
             >
               <SlidersHorizontal className="w-3 h-3" />
-              <span>FILTER</span>
+              <span className="hidden sm:inline">FILTER</span>
               {activeFilterCount > 0 && (
                 <span className="ml-0.5 bg-red-600 text-white text-[9px] font-black px-1 py-0.5 leading-none">{activeFilterCount}</span>
               )}
@@ -871,12 +888,12 @@ export function PocketHubPage({
             {/* Spacer */}
             <div className="flex-1" />
 
-            {/* Sort dropdown */}
+            {/* Sort dropdown - Mobile compact width */}
             <div ref={sortRef} className="relative shrink-0">
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setIsSortOpen(prev => !prev); }}
-                className={`h-8 px-3 flex items-center gap-1.5 text-[11px] font-mono font-bold tracking-widest uppercase border transition-colors cursor-pointer ${
+                className={`h-8 px-2 sm:px-3 flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[11px] font-mono font-bold tracking-wider sm:tracking-widest uppercase border transition-colors cursor-pointer ${
                   isSortOpen
                     ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
                     : 'border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white'
@@ -909,31 +926,15 @@ export function PocketHubPage({
               )}
             </div>
 
-            {/* Swiss Minimal Square Order Toggle Button (Admin-only in CUSTOM mode) */}
-            {isAdmin && sortMode === 'custom' && (
-              <button
-                type="button"
-                onClick={() => setIsReorderMode(prev => !prev)}
-                className={`h-8 w-8 flex items-center justify-center border transition-colors cursor-pointer shrink-0 ${
-                  isReorderMode
-                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
-                    : 'border-black/20 dark:border-white/20 text-black/50 dark:text-white/50 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white'
-                }`}
-                title={isReorderMode ? "피드 순서 편집 활성 (종료하려면 클릭)" : "피드 순서 편집 (관리자)"}
-              >
-                <GripVertical className="w-3.5 h-3.5" />
-              </button>
-            )}
-
-            {/* Search Input */}
-            <div className="relative shrink-0 w-44 sm:w-56">
+            {/* Search Input - Mobile compact width */}
+            <div className="relative shrink-0 w-32 sm:w-44 md:w-56">
               <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="장소명, 지역 검색..."
-                className="w-full h-8 pl-8 pr-3 bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15 text-[11px] font-mono placeholder:text-black/30 dark:placeholder:text-white/30 focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                placeholder="장소, 지역 검색..."
+                className="w-full h-8 pl-8 pr-2.5 bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15 text-[10.5px] sm:text-[11px] font-mono placeholder:text-black/30 dark:placeholder:text-white/30 focus:outline-none focus:border-black dark:focus:border-white transition-colors"
               />
             </div>
           </div>
