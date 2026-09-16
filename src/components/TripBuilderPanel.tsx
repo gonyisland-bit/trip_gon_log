@@ -352,81 +352,82 @@ export function TripBuilderPanel({
     };
 
     return (
-      <div className="border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] overflow-hidden transition-all">
+      <div className="rounded-xl border border-black/5 dark:border-white/5 bg-neutral-100 dark:bg-neutral-800/90 overflow-hidden transition-all">
         {/* Accordion Header */}
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full px-3 py-2.5 flex items-center justify-between gap-2 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors cursor-pointer text-left"
+          className="w-full px-3.5 py-3 flex items-center justify-between gap-2 hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-colors cursor-pointer text-left"
         >
-          <div className="flex items-center gap-2 min-w-0">
-            <Bookmark className="w-3.5 h-3.5 text-red-500 shrink-0" />
-            <div className="min-w-0">
-              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-black dark:text-white">
-                MATCHING POCKETS ({relevantPocketSpots.length})
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Bookmark className="w-4 h-4 text-red-500 shrink-0" />
+            <div className="min-w-0 flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wide text-black dark:text-white">
+                MATCHING POCKETS
               </span>
-              <span className="hidden sm:inline text-[9.5px] font-mono text-black/50 dark:text-white/50 ml-2">
-                [보관된 장소를 여정에 추가]
+              <span className="text-[11px] font-mono text-black/50 dark:text-white/50">
+                ({relevantPocketSpots.length}개 보관 장소)
               </span>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {selectedCount > 0 && (
-              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 bg-red-600 text-white uppercase tracking-wider">
-                {selectedCount} SELECTED
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-600 text-white shadow-2xs">
+                {selectedCount}개 선택됨
               </span>
             )}
-            <ChevronDown className={`w-3.5 h-3.5 text-black/40 dark:text-white/40 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-4 h-4 text-black/40 dark:text-white/40 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
           </div>
         </button>
 
         {/* Accordion Body */}
         {isOpen && (
-          <div className="p-3 border-t border-black/10 dark:border-white/10 space-y-2 bg-black/[0.01] dark:bg-white/[0.01]">
-            <div className="flex items-center justify-between text-[10px] font-mono">
+          <div className="p-3 border-t border-black/5 dark:border-white/5 space-y-2.5 bg-white/70 dark:bg-[#181818]/70">
+            <div className="flex items-center justify-between text-xs font-mono px-0.5">
               <span className="text-black/50 dark:text-white/50">
-                선택한 장소는 1일차 추천 타임라인에 자동 배치됩니다.
+                선택한 장소는 1일차 추천 일정에 자동 배치됩니다.
               </span>
               <button
                 type="button"
                 onClick={handleToggleAll}
-                className="text-red-600 dark:text-red-400 font-bold hover:underline cursor-pointer shrink-0 ml-2"
+                className="text-xs text-red-600 dark:text-red-400 font-bold hover:underline cursor-pointer shrink-0 ml-2"
               >
                 {allSelected ? '전체 해제' : '전체 선택'}
               </button>
             </div>
 
-            <div className="max-h-60 overflow-y-auto space-y-1.5 pr-0.5">
+            <div className="max-h-64 overflow-y-auto space-y-2 pr-0.5">
               {relevantPocketSpots.map(spot => {
                 const isChecked = selectedPocketIds.has(spot.id);
                 const catMeta = {
-                  food: { bg: 'bg-red-500/10 dark:bg-red-500/20', text: 'text-red-600 dark:text-red-400', border: 'border-l-red-500', label: 'FOOD' },
-                  cafe: { bg: 'bg-amber-500/10 dark:bg-amber-500/20', text: 'text-amber-600 dark:text-amber-400', border: 'border-l-amber-500', label: 'CAFE' },
-                  spot: { bg: 'bg-blue-500/10 dark:bg-blue-500/20', text: 'text-blue-600 dark:text-blue-400', border: 'border-l-blue-500', label: 'SPOT' },
-                  shopping: { bg: 'bg-purple-500/10 dark:bg-purple-500/20', text: 'text-purple-600 dark:text-purple-400', border: 'border-l-purple-500', label: 'SHOPPING' },
-                  tip: { bg: 'bg-emerald-500/10 dark:bg-emerald-500/20', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-l-emerald-500', label: 'TIP' },
-                }[spot.category] || { bg: 'bg-blue-500/10', text: 'text-blue-600', border: 'border-l-blue-500', label: 'SPOT' };
+                  food: { bg: 'bg-red-500/10 text-red-600 dark:text-red-400', label: 'FOOD', icon: Utensils },
+                  cafe: { bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400', label: 'CAFE', icon: ShoppingBag },
+                  spot: { bg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400', label: 'SPOT', icon: MapPin },
+                  shopping: { bg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400', label: 'SHOPPING', icon: ShoppingBag },
+                  tip: { bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400', label: 'TIP', icon: Sparkles },
+                }[spot.category] || { bg: 'bg-blue-500/10 text-blue-600', label: 'SPOT', icon: MapPin };
 
+                const CatIcon = catMeta.icon;
                 const locationText = [spot.city, spot.country].filter(Boolean).join(' · ');
 
                 return (
                   <div
                     key={spot.id}
                     onClick={() => handleTogglePocketCheck(spot.id)}
-                    className={`p-2.5 border border-l-[3px] ${catMeta.border} flex items-center justify-between gap-3 cursor-pointer transition-all ${
+                    className={`p-3 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all ${
                       isChecked 
-                        ? 'bg-black/[0.04] dark:bg-white/[0.08] border-black dark:border-white shadow-xs' 
-                        : 'bg-white dark:bg-[#181818] border-black/15 dark:border-white/15 hover:border-black/40 dark:hover:border-white/40'
+                        ? 'bg-neutral-100 dark:bg-neutral-800/95 border-black/30 dark:border-white/30 shadow-xs' 
+                        : 'bg-white dark:bg-[#202020] border-black/5 dark:border-white/5 hover:border-black/20 dark:hover:border-white/20'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                      {/* Custom Checkbox */}
-                      <div className={`w-4 h-4 border flex items-center justify-center shrink-0 transition-colors ${
+                      {/* Modern Soft Checkbox */}
+                      <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-colors ${
                         isChecked
-                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                          : 'border-black/30 dark:border-white/30 bg-white dark:bg-[#121212]'
+                          ? 'bg-neutral-900 text-white dark:bg-white dark:text-black'
+                          : 'border border-black/20 dark:border-white/20 bg-neutral-50 dark:bg-neutral-800'
                       }`}>
-                        {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                        {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                       </div>
 
                       {/* Pocket Thumbnail Preview */}
@@ -434,38 +435,39 @@ export function TripBuilderPanel({
                         <img
                           src={spot.thumbnailUrl}
                           alt=""
-                          className="w-10 h-10 aspect-square object-cover border border-black/10 dark:border-white/10 shrink-0 bg-black/5"
+                          className="w-12 h-12 rounded-lg object-cover shadow-2xs shrink-0 bg-neutral-100 dark:bg-neutral-800"
                         />
                       ) : (
-                        <div className="w-10 h-10 aspect-square border border-black/10 dark:border-white/10 shrink-0 bg-black/5 dark:bg-white/5 flex items-center justify-center text-[9px] font-mono text-black/40 dark:text-white/40">
-                          {catMeta.label}
+                        <div className="w-12 h-12 rounded-lg shrink-0 bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-black/30 dark:text-white/30">
+                          <CatIcon className="w-5 h-5" />
                         </div>
                       )}
 
                       {/* Meta Information & Title */}
-                      <div className="min-w-0 flex-1 space-y-0.5">
+                      <div className="min-w-0 flex-1 space-y-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className={`text-[8.5px] font-mono font-bold px-1.5 py-0.2 uppercase ${catMeta.bg} ${catMeta.text}`}>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase flex items-center gap-1 ${catMeta.bg}`}>
+                            <CatIcon className="w-2.5 h-2.5" />
                             {catMeta.label}
                           </span>
                           {spot.platform && spot.platform !== 'web' && (
-                            <span className="text-[8px] font-mono uppercase px-1 py-0.2 bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60">
+                            <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded-md bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60">
                               {spot.platform}
                             </span>
                           )}
                           {locationText && (
-                            <span className="text-[9px] font-mono text-black/40 dark:text-white/40 truncate">
+                            <span className="text-xs font-mono text-black/50 dark:text-white/50 truncate">
                               {locationText}
                             </span>
                           )}
                         </div>
 
-                        <div className="text-xs font-bold text-black dark:text-white truncate font-sans">
+                        <div className="text-sm font-bold text-black dark:text-white truncate font-sans">
                           {spot.title}
                         </div>
 
                         {spot.memo && (
-                          <div className="text-[9.5px] font-mono text-black/60 dark:text-white/60 truncate">
+                          <div className="text-xs font-mono text-black/60 dark:text-white/60 truncate">
                             {spot.memo}
                           </div>
                         )}
@@ -1967,6 +1969,59 @@ export function TripBuilderPanel({
                     })}
                   </div>
 
+                  {/* Climate & Season Insight for Selected Month / Area */}
+                  {(() => {
+                    const activeMonth = targetMonth === 0 ? autoBestMonth : targetMonth;
+                    const climateMetric = getClimateMiniMetric(
+                      smartCity?.nameKo, 
+                      smartCountry?.nameKo || country, 
+                      activeMonth
+                    );
+                    const isBest = activeBestMonths.includes(activeMonth);
+                    const bestSeasonText = smartCity?.bestSeason || smartCountry?.bestSeason;
+
+                    return (
+                      <div className="rounded-xl bg-neutral-100 dark:bg-neutral-800/80 p-3 space-y-1.5 border border-black/5 dark:border-white/5 transition-all">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
+                            <span className="text-xs font-bold text-black dark:text-white">
+                              {activeMonth}월 여행 시즌 리포트
+                            </span>
+                            {targetMonth === 0 && (
+                              <span className="text-[10px] font-mono font-bold uppercase text-orange-600 dark:text-orange-400 bg-orange-500/10 px-1.5 py-0.2 rounded-md">
+                                AUTO 추천
+                              </span>
+                            )}
+                          </div>
+                          {isBest ? (
+                            <span className="text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                              <Check className="w-3 h-3 stroke-[2.5]" />
+                              최적 시즌
+                            </span>
+                          ) : (
+                            <span className="text-[10.5px] font-mono text-black/50 dark:text-white/50">
+                              시즌 참고
+                            </span>
+                          )}
+                        </div>
+
+                        {climateMetric && (
+                          <div className="text-xs font-mono text-black/80 dark:text-white/80 leading-relaxed">
+                            {climateMetric}
+                          </div>
+                        )}
+
+                        {bestSeasonText && (
+                          <div className="text-[11px] text-black/50 dark:text-white/50 pt-0.5 flex items-center gap-1">
+                            <Calendar className="w-3 h-3 shrink-0 text-black/40 dark:text-white/40" />
+                            <span>추천 방문 시기: {bestSeasonText}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   {/* Duration Stepper & Quick Chips */}
                   <div className="flex items-center gap-1.5 pt-1">
                     <div className="flex items-center bg-neutral-100 dark:bg-neutral-800/90 rounded-xl px-1 py-1 shrink-0">
@@ -2434,23 +2489,27 @@ export function TripBuilderPanel({
 
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <label className={labelCls}>START DATE *</label>
+                <label className={fieldLabelCls}>
+                  START DATE <span className="text-red-500 font-bold">*</span>
+                </label>
                 <input
                   type="date"
                   required
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 outline-none"
+                  className={softInputCls}
                 />
               </div>
               <div className="space-y-1">
-                <label className={labelCls}>END DATE *</label>
+                <label className={fieldLabelCls}>
+                  END DATE <span className="text-red-500 font-bold">*</span>
+                </label>
                 <input
                   type="date"
                   required
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 outline-none"
+                  className={softInputCls}
                 />
               </div>
             </div>
@@ -2463,7 +2522,7 @@ export function TripBuilderPanel({
               const climateMetric = getClimateMiniMetric(smartCity?.nameKo, smartCountry?.nameKo || country, m);
               if (!climateMetric) return null;
               return (
-                <div className="text-[10px] font-mono text-black/70 dark:text-white/70 bg-black/[0.03] dark:bg-white/[0.03] px-2.5 py-1.5 border-l-2 border-black/30 dark:border-white/30 flex items-center justify-between">
+                <div className="rounded-xl bg-neutral-100 dark:bg-neutral-800/80 p-3 text-xs font-mono text-black/80 dark:text-white/80 flex items-center justify-between border border-black/5 dark:border-white/5">
                   <span className="font-bold text-black/50 dark:text-white/50">{m}월 현지 기후</span>
                   <span className="font-semibold text-black dark:text-white">{climateMetric}</span>
                 </div>
@@ -2476,8 +2535,8 @@ export function TripBuilderPanel({
             {/* Locations (방문 희망 스팟) */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className={labelCls}>LOCATIONS (일정에 넣을 세부 스팟)</label>
-                <span className="text-[9.5px] font-mono text-black/40 dark:text-white/40">
+                <label className={fieldLabelCls}>LOCATIONS (일정에 넣을 세부 스팟)</label>
+                <span className="text-xs font-mono text-black/40 dark:text-white/40">
                   타임라인에 자동 배치
                 </span>
               </div>
@@ -2492,7 +2551,7 @@ export function TripBuilderPanel({
                     }
                   }}
                   placeholder="예: 도쿄타워, 시부야 스카이, 센소지 등 검색..."
-                  className={inputCls}
+                  className={softInputCls}
                 />
               </div>
 
@@ -2503,11 +2562,11 @@ export function TripBuilderPanel({
                 const recommendedSpots = [...(targetCityObj.iconicSpots || []), ...(targetCityObj.hiddenGems || [])].slice(0, 5);
                 if (recommendedSpots.length === 0) return null;
                 return (
-                  <div className="space-y-1 pt-1">
-                    <div className="text-[9.5px] font-mono text-black/50 dark:text-white/50 flex items-center justify-between">
-                      <span>{targetCityObj.nameKo} 대표 명소 추천 (클릭하여 스팟에 추가)</span>
+                  <div className="space-y-1.5 pt-1">
+                    <div className="text-xs font-mono text-black/50 dark:text-white/50 flex items-center justify-between">
+                      <span>{targetCityObj.nameKo} 대표 명소 추천 (클릭하여 추가)</span>
                     </div>
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1.5">
                       {recommendedSpots.map(spot => {
                         const isAlreadyAdded = locations.some(l => l.name === spot);
                         return (
@@ -2520,13 +2579,13 @@ export function TripBuilderPanel({
                               }
                             }}
                             disabled={isAlreadyAdded}
-                            className={`px-2 py-0.5 text-[10px] font-mono border transition-all cursor-pointer flex items-center gap-1 ${
+                            className={`px-3 py-1.5 text-xs rounded-xl font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
                               isAlreadyAdded
-                                ? 'border-black/10 dark:border-white/10 text-black/30 dark:text-white/30 line-through bg-black/[0.02]'
-                                : 'border-black/20 dark:border-white/20 text-black/75 dark:text-white/75 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white bg-white dark:bg-[#1a1a1a]'
+                                ? 'bg-neutral-100 dark:bg-neutral-800/40 text-black/30 dark:text-white/30 line-through'
+                                : 'bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-black dark:text-white shadow-2xs'
                             }`}
                           >
-                            <Plus className="w-2.5 h-2.5" />
+                            <Plus className="w-3 h-3" />
                             <span>{spot}</span>
                           </button>
                         );
@@ -2541,22 +2600,22 @@ export function TripBuilderPanel({
 
               {/* Added Locations Chips */}
               {locations.length > 0 && (
-                <div className="space-y-1 mt-1.5">
-                  <div className="flex flex-wrap gap-1">
+                <div className="space-y-1.5 mt-2">
+                  <div className="flex flex-wrap gap-1.5">
                     {locations.map((loc, idx) => (
-                      <span key={idx} className="inline-flex items-center gap-1 text-[10px] font-mono font-bold bg-black/5 dark:bg-white/10 px-2 py-0.5 border border-black/10 dark:border-white/10">
+                      <span key={idx} className="inline-flex items-center gap-1.5 text-xs font-bold bg-neutral-200 dark:bg-neutral-700 text-black dark:text-white px-3 py-1.5 rounded-xl shadow-2xs">
                         <span>{loc.name}</span>
                         <button
                           type="button"
                           onClick={() => setLocations(prev => prev.filter((_, i) => i !== idx))}
-                          className="text-black/40 dark:text-white/40 hover:text-red-500 cursor-pointer"
+                          className="text-black/40 dark:text-white/40 hover:text-red-500 cursor-pointer text-sm font-bold"
                         >
                           &times;
                         </button>
                       </span>
                     ))}
                   </div>
-                  <p className="text-[9.5px] font-mono text-black/40 dark:text-white/40">
+                  <p className="text-[11px] font-mono text-black/40 dark:text-white/40">
                     * 위 장소들은 트립 생성 시 일자별 추천 타임라인(1일차, 2일차...)에 자동 분배됩니다.
                   </p>
                 </div>
@@ -2565,9 +2624,8 @@ export function TripBuilderPanel({
 
             {/* Tags */}
             <div className="space-y-1">
-              <label className={labelCls}>TAGS</label>
+              <label className={fieldLabelCls}>TAGS</label>
               <div className="relative">
-                <Tag className={iconCls} />
                 <input
                   type="text"
                   value={tagInput}
@@ -2583,18 +2641,18 @@ export function TripBuilderPanel({
                     }
                   }}
                   placeholder="태그 입력 후 Enter..."
-                  className={inputCls}
+                  className={softInputCls}
                 />
               </div>
               {tags.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-1.5">
+                <div className="flex flex-wrap gap-1.5 mt-2">
                   {tags.map((t, idx) => (
-                    <span key={idx} className="inline-flex items-center gap-1 text-[10px] font-mono bg-black text-white dark:bg-white dark:text-black px-2 py-0.5">
+                    <span key={idx} className="inline-flex items-center gap-1.5 text-xs font-bold bg-neutral-900 text-white dark:bg-white dark:text-black px-3 py-1 rounded-xl shadow-2xs">
                       <span>#{t}</span>
                       <button
                         type="button"
                         onClick={() => setTags(prev => prev.filter((_, i) => i !== idx))}
-                        className="opacity-60 hover:opacity-100"
+                        className="opacity-60 hover:opacity-100 cursor-pointer text-sm font-bold"
                       >
                         &times;
                       </button>

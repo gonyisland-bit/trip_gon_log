@@ -696,7 +696,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     continentKo: '중동',
   },
 
-  // ─── AMERICAS ─────────────────────────────────────────────────────────────
+  // ─── AMERICAS (Normalized to East Pacific Longitude Coordinates) ───────────
   {
     code: 'US',
     name: 'UNITED STATES',
@@ -705,7 +705,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '$',
     rateToKRW: 1380,
     cities: ['NEW YORK', 'LOS ANGELES', 'SAN FRANCISCO', 'LAS VEGAS', 'HONOLULU', 'SEATTLE', 'CHICAGO'],
-    center: [38.9072, -77.0369], // Washington, D.C.
+    center: [38.9072, 282.9631], // Washington, D.C. (-77.0369 + 360)
     zoom: 4,
     continent: 'North America',
     continentKo: '북미',
@@ -718,7 +718,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'C$',
     rateToKRW: 1010,
     cities: ['VANCOUVER', 'TORONTO', 'MONTREAL', 'QUEBEC', 'BANFF', 'CALGARY'],
-    center: [45.4215, -75.6972], // Ottawa
+    center: [45.4215, 284.3028], // Ottawa (-75.6972 + 360)
     zoom: 3.5,
     continent: 'North America',
     continentKo: '북미',
@@ -731,7 +731,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '$',
     rateToKRW: 72.0,
     cities: ['CANCUN', 'MEXICO CITY', 'PLAYA DEL CARMEN', 'TULUM', 'OAXACA'],
-    center: [19.4326, -99.1332], // Mexico City
+    center: [19.4326, 260.8668], // Mexico City (-99.1332 + 360)
     zoom: 4.5,
     continent: 'North America',
     continentKo: '중남미',
@@ -744,7 +744,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '$',
     rateToKRW: 57.0,
     cities: ['HAVANA', 'VARADERO', 'TRINIDAD', 'VINALES'],
-    center: [23.1136, -82.3666], // Havana
+    center: [23.1136, 277.6334], // Havana (-82.3666 + 360)
     zoom: 6.5,
     continent: 'North America',
     continentKo: '중남미',
@@ -757,7 +757,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'S/.',
     rateToKRW: 365.0,
     cities: ['LIMA', 'CUSCO', 'MACHU PICCHU', 'AREQUIPA', 'PUNO'],
-    center: [-12.0464, -77.0428], // Lima
+    center: [-12.0464, 282.9572], // Lima (-77.0428 + 360)
     zoom: 5,
     continent: 'South America',
     continentKo: '남미',
@@ -770,7 +770,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'R$',
     rateToKRW: 245.0,
     cities: ['RIO DE JANEIRO', 'SAO PAULO', 'SALVADOR', 'IGUACU'],
-    center: [-15.7975, -47.8919], // Brasilia
+    center: [-15.7975, 312.1081], // Brasilia (-47.8919 + 360)
     zoom: 4,
     continent: 'South America',
     continentKo: '남미',
@@ -783,7 +783,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '$',
     rateToKRW: 1.4,
     cities: ['BUENOS AIRES', 'BARILOCHE', 'USHUAIA', 'EL CALAFATE', 'IGUAZU'],
-    center: [-34.6037, -58.3816], // Buenos Aires
+    center: [-34.6037, 301.6184], // Buenos Aires (-58.3816 + 360)
     zoom: 4,
     continent: 'South America',
     continentKo: '남미',
@@ -796,7 +796,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '$',
     rateToKRW: 1.45,
     cities: ['SANTIAGO', 'SAN PEDRO DE ATACAMA', 'TORRES DEL PAINE', 'EASTER ISLAND'],
-    center: [-33.4489, -70.6693], // Santiago
+    center: [-33.4489, 289.3307], // Santiago (-70.6693 + 360)
     zoom: 4,
     continent: 'South America',
     continentKo: '남미',
@@ -809,7 +809,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '$',
     rateToKRW: 0.33,
     cities: ['BOGOTA', 'MEDELLIN', 'CARTAGENA', 'CALI'],
-    center: [4.7110, -74.0721], // Bogota
+    center: [4.7110, 285.9279], // Bogota (-74.0721 + 360)
     zoom: 5.5,
     continent: 'South America',
     continentKo: '남미',
@@ -1088,26 +1088,26 @@ const KNOWN_CITY_COORDS: { [key: string]: [number, number] } = {
   도하: [25.2854, 51.5310],
   riyadh: [24.7136, 46.6753],
   리야드: [24.7136, 46.6753],
-  mexicocity: [19.4326, -99.1332],
-  멕시코시티: [19.4326, -99.1332],
-  lima: [-12.0464, -77.0428],
-  리마: [-12.0464, -77.0428],
-  cusco: [-13.5319, -71.9675],
-  쿠스코: [-13.5319, -71.9675],
-  machupicchu: [-13.1631, -72.5450],
-  마추픽추: [-13.1631, -72.5450],
-  riodejaneiro: [-22.9068, -43.1729],
-  리우데자네이루: [-22.9068, -43.1729],
-  saopaulo: [-23.5505, -46.6333],
-  상파울루: [-23.5505, -46.6333],
-  buenosaires: [-34.6037, -58.3816],
-  부에노스아이레스: [-34.6037, -58.3816],
-  santiago: [-33.4489, -70.6693],
-  산티아고: [-33.4489, -70.6693],
-  bogota: [4.7110, -74.0721],
-  보고타: [4.7110, -74.0721],
-  havana: [23.1136, -82.3666],
-  아바나: [23.1136, -82.3666],
+  mexicocity: [19.4326, 260.8668],
+  멕시코시티: [19.4326, 260.8668],
+  lima: [-12.0464, 282.9572],
+  리마: [-12.0464, 282.9572],
+  cusco: [-13.5319, 288.0325],
+  쿠스코: [-13.5319, 288.0325],
+  machupicchu: [-13.1631, 287.4550],
+  마추픽추: [-13.1631, 287.4550],
+  riodejaneiro: [-22.9068, 316.8271],
+  리우데자네이루: [-22.9068, 316.8271],
+  saopaulo: [-23.5505, 313.3667],
+  상파울루: [-23.5505, 313.3667],
+  buenosaires: [-34.6037, 301.6184],
+  부에노스아이레스: [-34.6037, 301.6184],
+  santiago: [-33.4489, 289.3307],
+  산티아고: [-33.4489, 289.3307],
+  bogota: [4.7110, 285.9279],
+  보고타: [4.7110, 285.9279],
+  havana: [23.1136, 277.6334],
+  아바나: [23.1136, 277.6334],
   nadi: [-17.8065, 177.4150],
   난디: [-17.8065, 177.4150],
   suva: [-18.1416, 178.4419],
@@ -1118,18 +1118,18 @@ const KNOWN_CITY_COORDS: { [key: string]: [number, number] } = {
   카파도키아: [38.6431, 34.8289],
   reykjavik: [64.1466, -21.9426],
   레이캬비크: [64.1466, -21.9426],
-  newyork: [40.7128, -74.0060],
-  뉴욕: [40.7128, -74.0060],
-  losangeles: [34.0522, -118.2437],
-  로스앤젤레스: [34.0522, -118.2437],
-  sanfrancisco: [37.7749, -122.4194],
-  샌프란시스코: [37.7749, -122.4194],
-  lasvegas: [36.1699, -115.1398],
-  라스베이거스: [36.1699, -115.1398],
-  honolulu: [21.3069, -157.8583],
-  호놀룰루: [21.3069, -157.8583],
-  hawaii: [21.3069, -157.8583],
-  하와이: [21.3069, -157.8583],
+  newyork: [40.7128, 285.9940],
+  뉴욕: [40.7128, 285.9940],
+  losangeles: [34.0522, 241.7563],
+  로스앤젤레스: [34.0522, 241.7563],
+  sanfrancisco: [37.7749, 237.5806],
+  샌프란시스코: [37.7749, 237.5806],
+  lasvegas: [36.1699, 244.8602],
+  라스베이거스: [36.1699, 244.8602],
+  honolulu: [21.3069, 202.1417],
+  호놀룰루: [21.3069, 202.1417],
+  hawaii: [21.3069, 202.1417],
+  하와이: [21.3069, 202.1417],
   guam: [13.4443, 144.7937],
   괌: [13.4443, 144.7937],
   tumon: [13.5137, 144.8058],
@@ -1138,12 +1138,12 @@ const KNOWN_CITY_COORDS: { [key: string]: [number, number] } = {
   사이판: [15.1850, 145.7467],
   garapan: [15.2078, 145.7198],
   가라판: [15.2078, 145.7198],
-  vancouver: [49.2827, -123.1207],
-  밴쿠버: [49.2827, -123.1207],
-  toronto: [43.6532, -79.3832],
-  토론토: [43.6532, -79.3832],
-  banff: [51.1784, -115.5708],
-  밴프: [51.1784, -115.5708],
+  vancouver: [49.2827, 236.8793],
+  밴쿠버: [49.2827, 236.8793],
+  toronto: [43.6532, 280.6168],
+  토론토: [43.6532, 280.6168],
+  banff: [51.1784, 244.4292],
+  밴프: [51.1784, 244.4292],
   sydney: [-33.8688, 151.2093],
   시드니: [-33.8688, 151.2093],
   melbourne: [-37.8136, 144.9631],
@@ -2039,15 +2039,18 @@ export function MapHubPage({
       setSelectedCountry(targetCountry);
       setSearchQuery(targetCountry.name);
       const isMobile = window.innerWidth < 640;
-      let targetCenter: [number, number] = targetCountry.center;
+      let targetCenterLat = targetCountry.center[0];
+      let targetCenterLng = targetCountry.center[1];
+      if (targetCenterLng < -35) targetCenterLng += 360;
+      let targetCenter: [number, number] = [targetCenterLat, targetCenterLng];
       if (isMobile) {
-        const targetPoint = map.project(targetCountry.center, targetCountry.zoom).add([0, window.innerHeight * 0.22]);
+        const targetPoint = map.project(targetCenter, targetCountry.zoom).add([0, window.innerHeight * 0.22]);
         targetCenter = [map.unproject(targetPoint, targetCountry.zoom).lat, map.unproject(targetPoint, targetCountry.zoom).lng];
       }
       try { map.setMaxBounds(null); } catch (_) {}
       map.flyTo(targetCenter, targetCountry.zoom, { duration: 0.9 });
       setTimeout(() => {
-        try { mapRef.current?.setMaxBounds([[-62, -45], [82, 385]]); } catch (_) {}
+        try { mapRef.current?.setMaxBounds([[-62, -35], [82, 385]]); } catch (_) {}
       }, 950);
       return;
     }
@@ -2076,12 +2079,13 @@ export function MapHubPage({
     const startLat = 37.4602;
     const startLng = 126.4407;
     const endLat = targetCountry.center[0];
-    const rawEndLng = targetCountry.center[1];
+    let rawEndLng = targetCountry.center[1];
+    if (rawEndLng < -35) rawEndLng += 360;
 
     // 날짜변경선(태평양) 최단 경로 계산: 미국/미주 대륙 등은 동쪽(태평양)으로 비행
     let deltaLng = rawEndLng - startLng;
-    if (deltaLng > 180) deltaLng -= 360;
-    else if (deltaLng < -180) deltaLng += 360;
+    while (deltaLng < -100) deltaLng += 360;
+    while (deltaLng > 260) deltaLng -= 360;
     const effectiveEndLng = startLng + deltaLng;
 
     // Great-circle Arc control point calculation (subtle curvature)
@@ -2236,7 +2240,7 @@ export function MapHubPage({
 
           // 지도 드래그 및 줌 다시 활성화 및 바운드 복원
           try {
-            mapRef.current?.setMaxBounds([[-62, -45], [82, 385]]);
+            mapRef.current?.setMaxBounds([[-62, -35], [82, 385]]);
             mapRef.current?.dragging?.enable();
             mapRef.current?.scrollWheelZoom?.enable();
           } catch (_) {}
@@ -2323,16 +2327,19 @@ export function MapHubPage({
       setSearchQuery(country.name);
       if (map) {
         const isMobile = window.innerWidth < 640;
-        let targetCenter: [number, number] = country.center;
+        let targetCenterLat = country.center[0];
+        let targetCenterLng = country.center[1];
+        if (targetCenterLng < -35) targetCenterLng += 360;
+        let targetCenter: [number, number] = [targetCenterLat, targetCenterLng];
         if (isMobile) {
-          const targetPoint = map.project(country.center, country.zoom).add([0, window.innerHeight * 0.22]);
+          const targetPoint = map.project(targetCenter, country.zoom).add([0, window.innerHeight * 0.22]);
           targetCenter = [map.unproject(targetPoint, country.zoom).lat, map.unproject(targetPoint, country.zoom).lng];
         }
         try { map.setMaxBounds(null); } catch (_) {}
         map.flyTo(targetCenter, country.zoom, { duration: 0.9 });
         setTimeout(() => {
           try {
-            mapRef.current?.setMaxBounds([[-62, -45], [82, 385]]);
+            mapRef.current?.setMaxBounds([[-62, -35], [82, 385]]);
           } catch (_) {}
         }, 950);
       }
@@ -2435,8 +2442,15 @@ export function MapHubPage({
       let minDistance = Infinity;
 
       for (const country of COUNTRIES_DATA) {
-        const cLatLng = L.latLng(country.center[0], country.center[1]);
-        const dist = cLatLng.distanceTo(L.latLng(latlng.lat, normLng));
+        let effLng = country.center[1];
+        let diffLng = Math.abs(latlng.lng - effLng);
+        while (diffLng > 180) {
+          if (effLng < latlng.lng) effLng += 360;
+          else effLng -= 360;
+          diffLng = Math.abs(latlng.lng - effLng);
+        }
+        const cLatLng = L.latLng(country.center[0], effLng);
+        const dist = cLatLng.distanceTo(L.latLng(latlng.lat, latlng.lng));
 
         const maxRadius = country.zoom >= 11
           ? 45000
@@ -2503,11 +2517,11 @@ export function MapHubPage({
     const map = L.map(mapContainerRef.current, {
       center: [36.0, 127.5], // Centered on South Korea
       zoom: 3.2,
-      minZoom: 2.3,
+      minZoom: 2.6, // 좌측 이전 세계 잔상 및 뷰포트 초과 튕김 방지
       maxZoom: 18,
       zoomControl: false,
-      maxBounds: [[-62, -45], [82, 385]], // 좌측 유럽 대륙부터 우측 남미/미주 대륙 전체를 커버하는 최적 바운드
-      maxBoundsViscosity: 0.8,
+      maxBounds: [[-62, -35], [82, 385]], // 좌측 대서양(-35도)부터 우측 남미/미주 대륙 전체를 커버하는 최적 바운드
+      maxBoundsViscosity: 0.85,
       bounceAtZoomLimits: false,
       worldCopyJump: false,
     });
