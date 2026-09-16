@@ -666,7 +666,7 @@ export function PocketHubPage({
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0A0A0A] text-black dark:text-white flex flex-col font-sans">
+    <div className="min-h-screen bg-transparent text-black dark:text-white flex flex-col font-sans">
       {/* Toast Notification */}
       {actionSuccessToast && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-black text-white dark:bg-white dark:text-black px-4 py-2 text-xs font-mono tracking-widest uppercase shadow-2xl flex items-center gap-2 border border-black/20 dark:border-white/20 animate-in fade-in slide-in-from-top-4 duration-200">

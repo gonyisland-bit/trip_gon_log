@@ -4404,12 +4404,12 @@ export function JourneyDetailPage({
                           ref={el => { itemRefs.current[item.id] = el; }} 
                           onMouseEnter={() => setHoveredItemId(item.id)}
                           onMouseLeave={() => setHoveredItemId(null)}
-                          className={`flex flex-col border-b border-black/15 dark:border-white/15 transition-all w-full ${
+                          className={`flex flex-col transition-all w-full ${
                             flashedItemId === item.id ? 'timeline-flash-highlight' : ''
                           } ${
                             isActive 
-                              ? 'bg-black/[0.04] dark:bg-white/[0.08]' 
-                              : (hoveredItemId === item.id ? 'bg-black/[0.02] dark:bg-white/[0.03]' : '')
+                              ? 'bg-black/[0.05] dark:bg-white/[0.08] ring-1 ring-inset ring-black/20 dark:ring-white/25 border-b-black/30 dark:border-b-white/30 shadow-xs' 
+                              : (hoveredItemId === item.id ? 'bg-black/[0.02] dark:bg-white/[0.03] border-b border-black/15 dark:border-white/15' : 'border-b border-black/15 dark:border-white/15')
                           } ${collapsedDays.includes(item.date || '') && selectedDate === 'ALL' ? 'hidden' : ''}`}
                           draggable={isEditing}
                           onDragStart={(e) => {

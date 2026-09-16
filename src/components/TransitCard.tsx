@@ -193,7 +193,7 @@ export function TransitCard({
         !isEditMode ? 'cursor-pointer hover:bg-black/[0.01] dark:hover:bg-white/[0.01]' : ''
       } ${
         isActive 
-          ? 'border-black/30 dark:border-white/30 bg-black/[0.04] dark:bg-white/[0.06]' 
+          ? 'bg-black/[0.05] dark:bg-white/[0.08] ring-1 ring-inset ring-black/20 dark:ring-white/25 border-b-black/30 dark:border-b-white/30 shadow-xs' 
           : 'border-black/15 dark:border-white/15 bg-white dark:bg-[#0A0A0A]'
       }`}
     >
