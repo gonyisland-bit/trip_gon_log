@@ -21,7 +21,9 @@ import {
   ArrowLeft,
   ChevronRight,
   ChevronDown,
-  Bookmark
+  Bookmark,
+  AlertTriangle,
+  ThermometerSun
 } from 'lucide-react';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { 
@@ -1409,37 +1411,50 @@ export function TripBuilderPanel({
 
   const renderSeasonAnalysisBlock = (analysis: any) => {
     if (!analysis) return null;
-    const badgeLabel = analysis.isWarning ? '주의 시즌' : analysis.isBestSeason ? '최적 시즌' : '시즌 참고';
-    const badgeCls = analysis.isWarning
-      ? 'bg-red-600 text-white'
-      : analysis.isBestSeason
-        ? 'bg-black text-white dark:bg-white dark:text-black'
-        : 'bg-black/10 dark:bg-white/10 text-black/70 dark:text-white/70';
+    const isWarn = Boolean(analysis.isWarning);
+    const isBest = Boolean(analysis.isBestSeason);
 
-    const containerCls = analysis.isWarning
-      ? 'border-red-600 text-red-700 dark:text-red-400 bg-red-500/5'
-      : analysis.isBestSeason
-        ? 'border-black dark:border-white text-black dark:text-white bg-black/5 dark:bg-white/5'
-        : 'border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 bg-black/[0.02] dark:bg-white/[0.02]';
+    const badgeLabel = isWarn ? '주의 시즌' : isBest ? '최적 시즌' : '시즌 참고';
+    const badgeCls = isWarn
+      ? 'bg-red-600 text-white font-black'
+      : isBest
+        ? 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-black font-black'
+        : 'bg-black/10 dark:bg-white/10 text-black/70 dark:text-white/70 font-bold';
+
+    const containerCls = isWarn
+      ? 'border-l-4 border-red-500 bg-red-500/10 dark:bg-red-500/15 border-y border-r border-red-500/20 text-red-700 dark:text-red-300'
+      : isBest
+        ? 'border-l-4 border-emerald-500 bg-emerald-500/[0.07] dark:bg-emerald-500/10 border-y border-r border-emerald-500/20 text-emerald-800 dark:text-emerald-300'
+        : 'border-l-4 border-neutral-400 dark:border-neutral-600 bg-neutral-100 dark:bg-neutral-800/80 border-y border-r border-black/5 dark:border-white/5 text-neutral-700 dark:text-neutral-300';
 
     return (
-      <div className={`border-l-4 pl-3 py-2 pr-2 text-xs font-sans ${containerCls} transition-all`}>
-        <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-          <span className={`text-[9.5px] font-bold px-1.5 py-0.5 uppercase tracking-wider ${badgeCls}`}>
+      <div className={`rounded-xl p-3 space-y-1.5 text-xs font-sans ${containerCls} transition-all`}>
+        <div className="flex items-center justify-between gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full shrink-0 ${isWarn ? 'bg-red-500' : isBest ? 'bg-emerald-500' : 'bg-neutral-400'}`} />
+            <span className="font-bold text-black dark:text-white">
+              {analysis.targetName ? `${analysis.targetName} · ` : ''}{analysis.startMonth}월 시즌 분석
+            </span>
+          </div>
+          <span className={`text-[10px] px-2 py-0.5 rounded-md flex items-center gap-1 uppercase tracking-wider ${badgeCls}`}>
+            {isWarn && <AlertTriangle className="w-3 h-3 stroke-[2.5]" />}
+            {isBest && <Check className="w-3 h-3 stroke-[2.5]" />}
             {badgeLabel}
           </span>
-          <span className="font-bold text-black dark:text-white">
-            {analysis.targetName ? `${analysis.targetName} · ` : ''}{analysis.startMonth}월 시즌 분석
-          </span>
         </div>
-        <p className="text-[11px] leading-relaxed">
-          {analysis.isWarning
-            ? `주의: ${analysis.avoidReason || '기상 악화 또는 극심한 인파 집중 우려'}`
-            : analysis.isBestSeason
-              ? '최적 여행 시기 — 온화한 날씨와 관광에 가장 이상적인 시기입니다.'
-              : `추천 시기: 해당 지역의 최적 시즌은 ${analysis.countryBest || '봄·가을'}입니다.`
-          }
-        </p>
+        {isWarn ? (
+          <p className="text-xs font-bold text-red-600 dark:text-red-400 leading-snug">
+            주의: {analysis.avoidReason || '기상 악화 또는 극심한 인파 집중 우려'}
+          </p>
+        ) : isBest ? (
+          <p className="text-xs font-medium text-emerald-700 dark:text-emerald-300 leading-snug">
+            최적 여행 시기 — 온화하고 쾌적한 날씨로 관광에 가장 이상적인 시기입니다.
+          </p>
+        ) : (
+          <p className="text-[11px] text-black/60 dark:text-white/60 leading-relaxed">
+            추천 시기: 해당 지역의 최적 시즌은 {analysis.countryBest || '봄·가을'}입니다.
+          </p>
+        )}
       </div>
     );
   };
@@ -2049,16 +2064,24 @@ export function TripBuilderPanel({
                       smartCountry?.nameKo || country, 
                       activeMonth
                     );
-                    const isBest = activeBestMonths.includes(activeMonth);
+                    const isWarning = Boolean(curatorSeasonRisk?.isWarning);
+                    const isBest = !isWarning && (activeBestMonths.includes(activeMonth) || Boolean(curatorSeasonRisk?.isBestSeason));
+                    const warningReason = curatorSeasonRisk?.avoidReason;
                     const bestSeasonText = (smartCity && smartCity.bestMonths && smartCity.bestMonths.length > 0)
                       ? smartCity.bestMonths.map(m => `${m}월`).join(', ')
                       : smartCountry?.bestSeason;
 
+                    const containerCls = isWarning
+                      ? 'border-l-4 border-red-500 bg-red-500/10 dark:bg-red-500/15 border-y border-r border-red-500/20 dark:border-red-500/30'
+                      : isBest
+                        ? 'border-l-4 border-emerald-500 bg-emerald-500/[0.07] dark:bg-emerald-500/10 border-y border-r border-emerald-500/20 dark:border-emerald-500/25'
+                        : 'border-l-4 border-neutral-400 dark:border-neutral-600 bg-neutral-100 dark:bg-neutral-800/80 border-y border-r border-black/5 dark:border-white/5';
+
                     return (
-                      <div className="rounded-xl bg-neutral-100 dark:bg-neutral-800/80 p-3 space-y-1.5 border border-black/5 dark:border-white/5 transition-all">
+                      <div className={`rounded-xl p-3 space-y-1.5 transition-all ${containerCls}`}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
+                            <span className={`w-2 h-2 rounded-full shrink-0 ${isWarning ? 'bg-red-500 animate-pulse' : isBest ? 'bg-emerald-500' : 'bg-orange-500'}`} />
                             <span className="text-xs font-bold text-black dark:text-white">
                               {activeMonth}월 여행 시즌 리포트
                             </span>
@@ -2068,24 +2091,46 @@ export function TripBuilderPanel({
                               </span>
                             )}
                           </div>
-                          {isBest ? (
-                            <span className="text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                          {isWarning ? (
+                            <span className="text-[10.5px] font-black text-white bg-red-600 px-2 py-0.5 rounded-md flex items-center gap-1">
+                              <AlertTriangle className="w-3 h-3 stroke-[2.5]" />
+                              주의 시즌
+                            </span>
+                          ) : isBest ? (
+                            <span className="text-[10.5px] font-black text-white bg-emerald-600 dark:bg-emerald-500 dark:text-black px-2 py-0.5 rounded-md flex items-center gap-1">
                               <Check className="w-3 h-3 stroke-[2.5]" />
                               최적 시즌
                             </span>
                           ) : (
-                            <span className="text-[10.5px] font-mono text-black/50 dark:text-white/50">
+                            <span className="text-[10.5px] font-mono font-bold text-black/60 dark:text-white/60 bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-md">
                               시즌 참고
                             </span>
                           )}
                         </div>
 
-                        {climateMetric && (
-                          <div className="text-xs font-mono text-black/80 dark:text-white/80 leading-relaxed">
-                            {climateMetric}
+                        {/* 시즌 상태별 안내 및 주의사항 강조 */}
+                        {isWarning && (
+                          <div className="text-xs font-bold text-red-600 dark:text-red-400 bg-red-500/10 p-2 rounded-lg border border-red-500/20 flex items-start gap-1.5 leading-snug">
+                            <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-red-600 dark:text-red-400" />
+                            <span>주의 사유: {warningReason || '기상 악화 및 인파 집중 우려'}</span>
                           </div>
                         )}
 
+                        {isBest && !isWarning && (
+                          <div className="text-xs font-medium text-emerald-700 dark:text-emerald-300 leading-snug">
+                            온화하고 쾌적한 최적의 날씨로 야외 활동 및 관광에 가장 이상적인 시기입니다.
+                          </div>
+                        )}
+
+                        {/* 기후 메트릭 (온도 및 강수 특징) */}
+                        {climateMetric && (
+                          <div className="text-xs font-mono text-black/80 dark:text-white/80 leading-relaxed flex items-center gap-1.5 pt-0.5">
+                            <ThermometerSun className={`w-3.5 h-3.5 shrink-0 ${isWarning ? 'text-red-500' : isBest ? 'text-emerald-500' : 'text-orange-500'}`} />
+                            <span>{climateMetric}</span>
+                          </div>
+                        )}
+
+                        {/* 추천 방문 시기 */}
                         {bestSeasonText && (
                           <div className="text-[11px] text-black/50 dark:text-white/50 pt-0.5 flex items-center gap-1">
                             <Calendar className="w-3 h-3 shrink-0 text-black/40 dark:text-white/40" />

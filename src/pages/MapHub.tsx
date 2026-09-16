@@ -2079,13 +2079,13 @@ export function MapHubPage({
     const startLat = 37.4602;
     const startLng = 126.4407;
     const endLat = targetCountry.center[0];
-    let rawEndLng = targetCountry.center[1];
-    if (rawEndLng < -35) rawEndLng += 360;
+    const rawEndLng = targetCountry.center[1];
 
-    // 날짜변경선(태평양) 최단 경로 계산: 미국/미주 대륙 등은 동쪽(태평양)으로 비행
+    // 한국(ICN, 126.4407°) 출발 기준 전 세계 100% 최단 거리 (Shortest Arc: -180° ~ 180°)
+    // 유럽/아프리카는 서쪽 직진, 미주/태평양은 동쪽 직진으로 언제나 최단거리 보장
     let deltaLng = rawEndLng - startLng;
-    while (deltaLng < -100) deltaLng += 360;
-    while (deltaLng > 260) deltaLng -= 360;
+    while (deltaLng > 180) deltaLng -= 360;
+    while (deltaLng < -180) deltaLng += 360;
     const effectiveEndLng = startLng + deltaLng;
 
     // Great-circle Arc control point calculation (subtle curvature)
@@ -2126,8 +2126,9 @@ export function MapHubPage({
     flightSessionIdRef.current++;
     const currentSessionId = flightSessionIdRef.current;
 
-    // 비행 중 우발적 드래그/휠 줌 잠금 (카메라 추종 안정화)
+    // 비행 중 우발적 드래그/휠 줌 잠금 및 맵 바운드 일시 해제 (비행/착륙 바운스 방지)
     try {
+      map.setMaxBounds(null);
       map.dragging.disable();
       map.scrollWheelZoom.disable();
     } catch (_) {}
@@ -2153,20 +2154,10 @@ export function MapHubPage({
     if (planeMarker.bringToFront) planeMarker.bringToFront();
     flightPlaneMarkerRef.current = planeMarker;
 
-    // 출발지와 도착지를 모두 포함하는 바운드 계산
-    // 아크 궤적(ctrlLat, ctrlLng)까지 고려하여 비행 경로가 완벽히 한눈에 들어오도록 핏
-    const flightBounds = L.latLngBounds([
-      [Math.min(startLat, endLat, ctrlLat), Math.min(startLng, effectiveEndLng, ctrlLng)],
-      [Math.max(startLat, endLat, ctrlLat), Math.max(startLng, effectiveEndLng, ctrlLng)]
-    ]);
-
-    // 비행 시작 전 출발과 도착 이동구간 전체가 보이는 상태로 지도 줌/화각 선반영 (떨림 및 카메라 덜컥거림 완전 방지)
+    // 비행 시작 전 비행기를 중심으로 안정적인 크루즈 줌 설정 (비행기 중심 추종 모션)
     const isMobile = window.innerWidth < 640;
-    map.fitBounds(flightBounds, {
-      padding: isMobile ? [40, 40] : [70, 70],
-      maxZoom: 5.2,
-      animate: false
-    });
+    const cruiseZoom = isMobile ? 3.6 : 4.2;
+    map.setView([startLat, startLng], cruiseZoom, { animate: false });
 
     // Smooth duration between 2000ms ~ 2800ms
     const duration = Math.min(2800, Math.max(2000, dist * 24));
@@ -2199,6 +2190,9 @@ export function MapHubPage({
 
       planeMarker.setLatLng([curLat, curLng]);
       planeMarker.setIcon(createAirplaneIcon(curAngle, curScale));
+
+      // 비행기를 항상 카메라 중심으로 이동 (부드러운 추종)
+      map.panTo([curLat, curLng], { animate: false });
 
       // Append to flight trail
       trailPoints.push([curLat, curLng]);
