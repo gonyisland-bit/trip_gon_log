@@ -335,43 +335,81 @@ export function TripBuilderPanel({
               </button>
             </div>
 
-            <div className="max-h-48 overflow-y-auto divide-y divide-black/10 dark:divide-white/10 border border-black/10 dark:border-white/10 bg-white dark:bg-[#181818]">
+            <div className="max-h-60 overflow-y-auto space-y-1.5 pr-0.5">
               {relevantPocketSpots.map(spot => {
                 const isChecked = selectedPocketIds.has(spot.id);
+                const catMeta = {
+                  food: { bg: 'bg-red-500/10 dark:bg-red-500/20', text: 'text-red-600 dark:text-red-400', border: 'border-l-red-500', label: 'FOOD' },
+                  cafe: { bg: 'bg-amber-500/10 dark:bg-amber-500/20', text: 'text-amber-600 dark:text-amber-400', border: 'border-l-amber-500', label: 'CAFE' },
+                  spot: { bg: 'bg-blue-500/10 dark:bg-blue-500/20', text: 'text-blue-600 dark:text-blue-400', border: 'border-l-blue-500', label: 'SPOT' },
+                  shopping: { bg: 'bg-purple-500/10 dark:bg-purple-500/20', text: 'text-purple-600 dark:text-purple-400', border: 'border-l-purple-500', label: 'SHOPPING' },
+                  tip: { bg: 'bg-emerald-500/10 dark:bg-emerald-500/20', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-l-emerald-500', label: 'TIP' },
+                }[spot.category] || { bg: 'bg-blue-500/10', text: 'text-blue-600', border: 'border-l-blue-500', label: 'SPOT' };
+
+                const locationText = [spot.city, spot.country].filter(Boolean).join(' · ');
+
                 return (
                   <div
                     key={spot.id}
                     onClick={() => handleTogglePocketCheck(spot.id)}
-                    className={`p-2 flex items-center justify-between gap-2.5 cursor-pointer transition-colors ${
-                      isChecked ? 'bg-black/5 dark:bg-white/10' : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
+                    className={`p-2.5 border border-l-[3px] ${catMeta.border} flex items-center justify-between gap-3 cursor-pointer transition-all ${
+                      isChecked 
+                        ? 'bg-black/[0.04] dark:bg-white/[0.08] border-black dark:border-white shadow-xs' 
+                        : 'bg-white dark:bg-[#181818] border-black/15 dark:border-white/15 hover:border-black/40 dark:hover:border-white/40'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className={`w-4 h-4 border flex items-center justify-center shrink-0 ${
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      {/* Custom Checkbox */}
+                      <div className={`w-4 h-4 border flex items-center justify-center shrink-0 transition-colors ${
                         isChecked
                           ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                          : 'border-black/30 dark:border-white/30 bg-white dark:bg-[#181818]'
+                          : 'border-black/30 dark:border-white/30 bg-white dark:bg-[#121212]'
                       }`}>
                         {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
                       </div>
-                      <div className="min-w-0">
+
+                      {/* Pocket Thumbnail Preview */}
+                      {spot.thumbnailUrl ? (
+                        <img
+                          src={spot.thumbnailUrl}
+                          alt=""
+                          className="w-10 h-10 aspect-square object-cover border border-black/10 dark:border-white/10 shrink-0 bg-black/5"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 aspect-square border border-black/10 dark:border-white/10 shrink-0 bg-black/5 dark:bg-white/5 flex items-center justify-center text-[9px] font-mono text-black/40 dark:text-white/40">
+                          {catMeta.label}
+                        </div>
+                      )}
+
+                      {/* Meta Information & Title */}
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`text-[8.5px] font-mono font-bold px-1.5 py-0.2 uppercase ${catMeta.bg} ${catMeta.text}`}>
+                            {catMeta.label}
+                          </span>
+                          {spot.platform && spot.platform !== 'web' && (
+                            <span className="text-[8px] font-mono uppercase px-1 py-0.2 bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60">
+                              {spot.platform}
+                            </span>
+                          )}
+                          {locationText && (
+                            <span className="text-[9px] font-mono text-black/40 dark:text-white/40 truncate">
+                              {locationText}
+                            </span>
+                          )}
+                        </div>
+
                         <div className="text-xs font-bold text-black dark:text-white truncate font-sans">
                           {spot.title}
                         </div>
-                        <div className="text-[9.5px] font-mono text-black/50 dark:text-white/50 truncate">
-                          <span className="font-bold text-black/70 dark:text-white/70">[{spot.category.toUpperCase()}]</span>
-                          {' '}{[spot.city, spot.country].filter(Boolean).join(' · ')}
-                          {spot.memo ? ` · ${spot.memo}` : ''}
-                        </div>
+
+                        {spot.memo && (
+                          <div className="text-[9.5px] font-mono text-black/60 dark:text-white/60 truncate">
+                            {spot.memo}
+                          </div>
+                        )}
                       </div>
                     </div>
-                    {spot.thumbnailUrl && (
-                      <img
-                        src={spot.thumbnailUrl}
-                        alt=""
-                        className="w-8 h-8 aspect-square object-cover border border-black/10 dark:border-white/10 shrink-0"
-                      />
-                    )}
                   </div>
                 );
               })}

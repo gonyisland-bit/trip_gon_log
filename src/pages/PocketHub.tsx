@@ -578,7 +578,7 @@ export function PocketHubPage({
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-5">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-2.5 sm:gap-4">
               {filteredSpots.slice(0, visibleCount).map(spot => {
                 const meta = CATEGORY_META[spot.category] || CATEGORY_META.spot;
                 const Icon = meta.icon;
@@ -643,11 +643,25 @@ export function PocketHubPage({
                         </button>
                       )}
 
-                      {/* Platform Badge Overlay */}
+                      {/* Platform Badge Overlay (Clickable link to original source if available) */}
                       {spot.platform && spot.platform !== 'web' && (
-                        <div className={`absolute top-2 ${isSelectionMode ? 'left-10' : 'left-9 sm:left-10'} px-1.5 sm:px-2 py-0.5 bg-black/80 backdrop-blur-sm text-white text-[8px] sm:text-[9px] font-mono tracking-widest uppercase border border-white/20`}>
-                          {spot.platform}
-                        </div>
+                        spot.sourceUrl ? (
+                          <a
+                            href={spot.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className={`absolute top-2 ${isSelectionMode ? 'left-10' : 'left-9 sm:left-10'} px-1.5 sm:px-2 py-0.5 bg-black/85 hover:bg-red-600 text-white text-[8px] sm:text-[9px] font-mono tracking-widest uppercase border border-white/20 transition-colors flex items-center gap-1 z-10 cursor-pointer`}
+                            title={`원본 ${spot.platform.toUpperCase()} 바로가기`}
+                          >
+                            <span>{spot.platform}</span>
+                            <ArrowUpRight className="w-2.5 h-2.5 opacity-70" />
+                          </a>
+                        ) : (
+                          <div className={`absolute top-2 ${isSelectionMode ? 'left-10' : 'left-9 sm:left-10'} px-1.5 sm:px-2 py-0.5 bg-black/80 backdrop-blur-sm text-white text-[8px] sm:text-[9px] font-mono tracking-widest uppercase border border-white/20`}>
+                            {spot.platform}
+                          </div>
+                        )
                       )}
 
                       {/* Category Chip Overlay */}
@@ -684,36 +698,45 @@ export function PocketHubPage({
                             {spot.address}
                           </p>
                         )}
-                      </div>
 
-                      {/* Action Bar */}
-                      <div className="pt-2 mt-2.5 border-t border-black/10 dark:border-white/10 flex items-center justify-between gap-1 sm:gap-2">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSpotToUseInTrip(spot);
-                          }}
-                          className="flex-1 h-6 sm:h-7 px-1.5 sm:px-2 bg-black text-white dark:bg-white dark:text-black text-[9px] sm:text-[10px] font-mono tracking-wider uppercase font-bold flex items-center justify-center gap-1 hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer"
-                          title="트립 타임라인에 바로 복사 추가"
-                        >
-                          <Plus className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
-                          <span className="hidden sm:inline">USE IN TRIP</span>
-                          <span className="sm:hidden">USE</span>
-                        </button>
-
+                        {/* Direct SNS Source Link Button (High-visibility & Easy touch) */}
                         {spot.sourceUrl && (
                           <a
                             href={spot.sourceUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="h-6 w-6 sm:h-7 sm:w-7 flex items-center justify-center border border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer shrink-0"
-                            title="원본 SNS 링크 열기"
+                            className="mt-2.5 w-full py-1.5 px-2 bg-black/[0.03] dark:bg-white/[0.05] hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black border border-black/15 dark:border-white/15 text-[9.5px] sm:text-[10px] font-mono font-bold uppercase tracking-wider flex items-center justify-between transition-all cursor-pointer group/link"
+                            title={`원본 ${spot.platform ? spot.platform.toUpperCase() : 'SNS'} 바로가기`}
                           >
-                            <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                            <span className="flex items-center gap-1.5 truncate">
+                              <ExternalLink className="w-3 h-3 text-red-500 group-hover/link:text-current shrink-0" />
+                              <span className="truncate">
+                                {spot.platform === 'instagram' ? 'INSTAGRAM 바로가기' :
+                                 spot.platform === 'youtube' ? 'YOUTUBE 영상보기' :
+                                 spot.platform === 'blog' ? 'BLOG 리뷰보기' :
+                                 spot.platform === 'maps' ? 'GOOGLE MAPS 보기' : '원본 SNS 바로가기'}
+                              </span>
+                            </span>
+                            <ArrowUpRight className="w-3 h-3 opacity-50 group-hover/link:opacity-100 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform shrink-0 ml-1" />
                           </a>
                         )}
+                      </div>
+
+                      {/* Action Bar */}
+                      <div className="pt-2 mt-2 border-t border-black/10 dark:border-white/10 flex items-center justify-between gap-1.5">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSpotToUseInTrip(spot);
+                          }}
+                          className="flex-1 h-7 px-2 bg-black text-white dark:bg-white dark:text-black text-[9.5px] sm:text-[10px] font-mono tracking-wider uppercase font-bold flex items-center justify-center gap-1 hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer"
+                          title="트립 타임라인에 바로 복사 추가"
+                        >
+                          <Plus className="w-3 h-3 shrink-0" />
+                          <span>USE IN TRIP</span>
+                        </button>
 
                         {/* Hamburger More Menu (Edit & Delete) */}
                         <div className="relative shrink-0">
