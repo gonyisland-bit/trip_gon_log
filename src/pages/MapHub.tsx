@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, X, ArrowRight, Calendar, Star, Plus, Tag, MapPin, Bookmark, Home as HomeIcon, List, Clock, LocateFixed } from 'lucide-react';
+import { Search, X, ArrowRight, Calendar, Star, Plus, Tag, MapPin, Bookmark, Home as HomeIcon, List, Clock, LocateFixed, Plane } from 'lucide-react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Trip, Plan } from '../types';
@@ -1653,6 +1653,15 @@ export function MapHubPage({
   const [showVisitedPins, setShowVisitedPins] = useState<boolean>(true);
   const [showWishlistPins, setShowWishlistPins] = useState<boolean>(true);
 
+  // Airplane flight animation toggle (persisted to localStorage)
+  const [isPlaneAnimEnabled, setIsPlaneAnimEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('map_airplane_anim_enabled') !== 'false';
+    } catch {
+      return true;
+    }
+  });
+
   const togglePinLabels = () => {
     setShowPinLabels(prev => !prev);
   };
@@ -1663,6 +1672,16 @@ export function MapHubPage({
 
   const toggleWishlistPins = () => {
     setShowWishlistPins(prev => !prev);
+  };
+
+  const togglePlaneAnim = () => {
+    setIsPlaneAnimEnabled(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('map_airplane_anim_enabled', String(next));
+      } catch (_) {}
+      return next;
+    });
   };
 
   const toggleFavoriteCountry = async (code: string) => {
@@ -2276,12 +2295,24 @@ export function MapHubPage({
       selectPinRef.current = L.layerGroup(markers).addTo(map);
     }
 
-    // 대한민국인 경우 비행 없이 즉시 선택
-    if (country.code === 'KR') {
+    // 대한민국이거나 비행기 애니메이션 OFF 상태인 경우 비행 없이 즉시 선택 및 착륙 이동
+    if (country.code === 'KR' || !isPlaneAnimEnabled) {
       setSelectedCountry(country);
       setSearchQuery(country.name);
       if (map) {
-        map.flyTo(country.center, country.zoom, { duration: 1.0 });
+        const isMobile = window.innerWidth < 640;
+        let targetCenter: [number, number] = country.center;
+        if (isMobile) {
+          const targetPoint = map.project(country.center, country.zoom).add([0, window.innerHeight * 0.22]);
+          targetCenter = [map.unproject(targetPoint, country.zoom).lat, map.unproject(targetPoint, country.zoom).lng];
+        }
+        try { map.setMaxBounds(null); } catch (_) {}
+        map.flyTo(targetCenter, country.zoom, { duration: 0.9 });
+        setTimeout(() => {
+          try {
+            mapRef.current?.setMaxBounds([[-62, -45], [82, 385]]);
+          } catch (_) {}
+        }, 950);
       }
       return;
     }
@@ -3154,7 +3185,21 @@ export function MapHubPage({
             <Bookmark className="w-3.5 h-3.5" />
           </button>
 
-          {/* 4. Reset to Global Home View Button */}
+          {/* 4. Airplane Flight Animation Toggle (Plane) */}
+          <button
+            type="button"
+            onClick={togglePlaneAnim}
+            className={`p-2 sm:px-2.5 sm:py-2 transition-colors cursor-pointer flex items-center justify-center ${
+              isPlaneAnimEnabled
+                ? 'bg-black text-white dark:bg-white dark:text-black'
+                : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
+            }`}
+            title={isPlaneAnimEnabled ? "비행기 비행 모션 켜짐 (클릭 시 끄기)" : "비행기 비행 모션 꺼짐 (즉시 확대 착륙)"}
+          >
+            <Plane className="w-3.5 h-3.5" />
+          </button>
+
+          {/* 5. Reset to Global Home View Button */}
           <button
             type="button"
             onClick={handleResetToDefaultView}

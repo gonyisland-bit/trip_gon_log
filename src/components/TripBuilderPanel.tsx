@@ -86,6 +86,65 @@ function buildAutoTitle(currentLocations: { name: string }[], newCityName: strin
   return allNames.join(' · ').toUpperCase() + ' TRIP';
 }
 
+export interface RoughTemplate {
+  id: string;
+  name: string;
+  countryEn: string;
+  countryKo: string;
+  cityNameKo: string;
+  nights: number;
+  theme: string;
+  description: string;
+  badge: string;
+}
+
+export const ROUGH_TEMPLATES: RoughTemplate[] = [
+  {
+    id: 'rough-jp-3d',
+    name: '일본 3일',
+    countryEn: 'JAPAN',
+    countryKo: '일본',
+    cityNameKo: '도쿄',
+    nights: 2, // 2박 3일
+    theme: 'shopping',
+    description: '도쿄/오사카 쇼핑, 미식 & 도심 명소 탐방',
+    badge: '2박 3일'
+  },
+  {
+    id: 'rough-sea-4d',
+    name: '동남아 4일',
+    countryEn: 'VIETNAM',
+    countryKo: '베트남',
+    cityNameKo: '다낭',
+    nights: 3, // 3박 4일
+    theme: 'nature',
+    description: '다낭/방콕/세부 에메랄드 비치 & 힐링 휴양',
+    badge: '3박 4일'
+  },
+  {
+    id: 'rough-eu-6d',
+    name: '유럽 6일',
+    countryEn: 'FRANCE',
+    countryKo: '프랑스',
+    cityNameKo: '파리',
+    nights: 5, // 5박 6일
+    theme: 'culture',
+    description: '파리/로마 명소 & 낭만 예술 건축 투어',
+    badge: '5박 6일'
+  },
+  {
+    id: 'rough-na-7d',
+    name: '북미 7일',
+    countryEn: 'UNITED STATES',
+    countryKo: '미국',
+    cityNameKo: '뉴욕',
+    nights: 6, // 6박 7일
+    theme: 'city',
+    description: '뉴욕/서부 대륙 랜드마크 & 로드트립',
+    badge: '6박 7일'
+  },
+];
+
 export function TripBuilderPanel({
   isOpen,
   onClose,
@@ -223,6 +282,8 @@ export function TripBuilderPanel({
   const [targetYear, setTargetYear] = useState<number>(() => new Date().getFullYear());
   const [targetMonth, setTargetMonth] = useState<number>(0); // 0: Auto Nearest Best, 1-12: Specific Month
   const [savedTemplateIds, setSavedTemplateIds] = useState<Set<string>>(new Set());
+  const [isTemplateDrawerOpen, setIsTemplateDrawerOpen] = useState<boolean>(false);
+  const [templateToastMessage, setTemplateToastMessage] = useState<string | null>(null);
 
   // Selected area's best months (for highlighting the best season range in month grid)
   const activeBestMonths = useMemo<number[]>(() => {
@@ -1060,6 +1121,99 @@ export function TripBuilderPanel({
     }
   };
 
+  const applyRoughTemplate = (tpl: RoughTemplate) => {
+    const matchedCountry = WORLD_COUNTRIES.find(c => c.nameEn.toUpperCase() === tpl.countryEn.toUpperCase()) || null;
+    const matchedCity = WORLD_CITIES.find(c => c.nameKo === tpl.cityNameKo || c.nameEn.toUpperCase() === tpl.cityNameKo.toUpperCase()) || null;
+
+    if (matchedCountry) {
+      setSmartCountry(matchedCountry);
+      setCountry(matchedCountry.nameEn);
+      setCountrySearchInput(`${matchedCountry.nameKo} (${matchedCountry.nameEn})`);
+      setBuilderCountrySearch(`${matchedCountry.nameKo} (${matchedCountry.nameEn})`);
+    }
+    if (matchedCity) {
+      setSmartCity(matchedCity);
+      setBuilderCitySearch(matchedCity.nameKo);
+    }
+    setSmartDurationDays(tpl.nights);
+    setSelectedTheme(tpl.theme);
+
+    onFocusLocationChange?.({
+      country: matchedCountry,
+      city: matchedCity,
+      locations: matchedCity ? [{ name: matchedCity.nameKo, lat: matchedCity.lat, lng: matchedCity.lng, country: matchedCity.countryEn }] : undefined
+    });
+
+    setIsTemplateDrawerOpen(false);
+    setTemplateToastMessage(`'${tpl.name}' 기본 설정이 큐레이터에 적용되었습니다.`);
+    setTimeout(() => setTemplateToastMessage(null), 3000);
+  };
+
+  const applyPresetToCurator = (preset: PresetTripPlan) => {
+    const matchedCountry = WORLD_COUNTRIES.find(c => c.nameEn.toUpperCase() === (preset.country || '').toUpperCase() || c.nameKo === preset.country) || null;
+    const matchedCity = WORLD_CITIES.find(c => c.nameKo === preset.city || c.nameEn.toUpperCase() === (preset.city || '').toUpperCase()) || null;
+
+    if (matchedCountry) {
+      setSmartCountry(matchedCountry);
+      setCountry(matchedCountry.nameEn);
+      setCountrySearchInput(`${matchedCountry.nameKo} (${matchedCountry.nameEn})`);
+      setBuilderCountrySearch(`${matchedCountry.nameKo} (${matchedCountry.nameEn})`);
+    }
+    if (matchedCity) {
+      setSmartCity(matchedCity);
+      setBuilderCitySearch(matchedCity.nameKo);
+    }
+    const nights = Math.max(1, (preset.durationDays || 3) - 1);
+    setSmartDurationDays(nights);
+    if (preset.theme) setSelectedTheme(preset.theme);
+
+    onFocusLocationChange?.({
+      country: matchedCountry,
+      city: matchedCity,
+      locations: matchedCity ? [{ name: matchedCity.nameKo, lat: matchedCity.lat, lng: matchedCity.lng, country: matchedCity.countryEn }] : undefined
+    });
+
+    setIsTemplateDrawerOpen(false);
+    setTemplateToastMessage(`'${preset.title}' 템플릿이 큐레이터에 적용되었습니다.`);
+    setTimeout(() => setTemplateToastMessage(null), 3000);
+  };
+
+  const handleSaveCurrentCriteriaAsTemplate = () => {
+    const finalCountry = smartCountry?.nameEn || smartCity?.countryEn || 'GLOBAL';
+    const finalCityKo = smartCity?.nameKo || smartCountry?.popularCities?.[0] || '도시';
+    const templateTitle = `${(smartCity?.nameKo || smartCountry?.nameKo || '추천')} ${smartDurationDays}박 ${smartDurationDays + 1}일`;
+
+    const cityObj = smartCity || WORLD_CITIES.find(c => c.countryEn === finalCountry);
+    const spots = cityObj ? [...cityObj.iconicSpots, ...cityObj.hiddenGems] : ['도심 랜드마크 탐방'];
+
+    const newCustomPreset: PresetTripPlan = {
+      id: `custom-template-${Date.now()}`,
+      title: templateTitle,
+      subtitle: `${finalCountry} · ${finalCityKo} ${smartDurationDays}박 ${smartDurationDays + 1}일 맞춤 템플릿`,
+      country: finalCountry.toUpperCase(),
+      city: finalCityKo,
+      durationDays: smartDurationDays + 1,
+      tags: [finalCountry, selectedTheme !== 'all' ? selectedTheme.toUpperCase() : 'TRAVEL', `${smartDurationDays}박${smartDurationDays + 1}일`],
+      coverImg: smartCountry?.coverImg || smartCity?.coverImg || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?q=80&w=1200&auto=format&fit=crop',
+      theme: selectedTheme !== 'all' ? selectedTheme : 'city',
+      highlights: spots.slice(0, 3),
+      isCustom: true,
+      schedule: Array.from({ length: smartDurationDays + 1 }).map((_, dIdx) => ({
+        dayOffset: dIdx,
+        items: [
+          { time: '10:00 AM', type: 'activity', place: spots[dIdx % spots.length] || `${finalCityKo} 명소`, memo: '추천 스팟 탐방' },
+          { time: '01:00 PM', type: 'dining', place: `${finalCityKo} 로컬 맛집`, memo: '시그니처 미식' },
+          { time: '04:00 PM', type: 'activity', place: spots[(dIdx + 1) % spots.length] || `${finalCityKo} 시내 산책`, memo: '자유 힐링 코스' }
+        ]
+      }))
+    };
+
+    saveCustomPreset(newCustomPreset);
+    setPresets(getSavedPresets());
+    setTemplateToastMessage(`'${templateTitle}'이(가) 나만의 템플릿으로 저장되었습니다.`);
+    setTimeout(() => setTemplateToastMessage(null), 3000);
+  };
+
   const handleSmartBuilderGenerate = () => {
     if (!smartCountry && !smartCity) {
       return setError('국가 또는 도시를 선택해 주세요.');
@@ -1210,13 +1364,13 @@ export function TripBuilderPanel({
   return (
     <aside className="w-full h-full flex flex-col bg-[#F9F8F6] dark:bg-[#121212] border-t lg:border-t-0 lg:border-l border-black/15 dark:border-white/15 text-black dark:text-white overflow-hidden font-sans select-none z-30 shadow-2xl">
       {/* Panel Header */}
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-black/10 dark:border-white/10 shrink-0 bg-white/70 dark:bg-[#161616]/70 backdrop-blur-xs">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-black uppercase font-mono tracking-wider text-black dark:text-white">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-black/10 dark:border-white/10 shrink-0 bg-white/80 dark:bg-[#161616]/80 backdrop-blur-md">
+        <div className="flex items-baseline gap-2">
+          <span className="text-xl sm:text-2xl font-black uppercase font-sans tracking-tight text-black dark:text-white">
             TRIP GUIDE
           </span>
-          <span className="text-[11px] font-sans text-black/50 dark:text-white/50">
-            여정 제작
+          <span className="text-[10px] font-mono uppercase font-bold text-black/40 dark:text-white/40 tracking-wider">
+            SYSTEM
           </span>
         </div>
         <button
@@ -1233,7 +1387,6 @@ export function TripBuilderPanel({
       <div className="flex border-b border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] shrink-0">
         {([
           { id: 'curator', label: 'CURATOR', icon: Compass },
-          { id: 'templates', label: 'TEMPLATES', icon: Layers },
           { id: 'custom', label: 'CUSTOM', icon: Sliders },
         ] as const).map(tab => {
           const Icon = tab.icon;
@@ -1243,7 +1396,7 @@ export function TripBuilderPanel({
               key={tab.id}
               type="button"
               onClick={() => setPanelTab(tab.id)}
-              className={`flex-1 py-2.5 px-2 flex items-center justify-center gap-1.5 text-xs font-mono font-bold tracking-wider uppercase border-b-2 transition-all cursor-pointer ${
+              className={`flex-1 py-3 px-3 flex items-center justify-center gap-2 text-xs font-mono font-bold tracking-wider uppercase border-b-2 transition-all cursor-pointer ${
                 active
                   ? 'border-black dark:border-white bg-white dark:bg-[#161616] text-black dark:text-white'
                   : 'border-transparent text-black/45 dark:text-white/45 hover:text-black dark:hover:text-white'
@@ -1442,12 +1595,60 @@ export function TripBuilderPanel({
           <div className="space-y-4">
             {builderStep === 'criteria' ? (
               <>
-                {/* Intro Guide */}
-                <div className="border-l-2 border-black/20 dark:border-white/20 pl-3 py-1">
-                  <p className="text-xs text-black/70 dark:text-white/70 leading-relaxed font-sans">
-                    원하시는 조건(테마, 시기, 기간 등)만 가볍게 선택해 보세요. 최적 시즌의 완성도 높은 3가지 여정을 큐레이션해 드립니다.
-                  </p>
+                {/* ─── APP WIDGET STYLE CRITERIA HERO CARD ─── */}
+                <div className="bg-black text-white dark:bg-[#1C1C1E] rounded-2xl p-4 sm:p-5 shadow-xl space-y-3.5 border border-black/10 dark:border-white/10">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono font-black uppercase tracking-widest text-white/50 dark:text-white/50">
+                      CURATOR CRITERIA
+                    </span>
+                    <span className="text-[11px] font-mono font-bold text-orange-400 bg-white/10 dark:bg-white/10 px-2.5 py-0.5 rounded-full">
+                      {smartDurationDays}박 {smartDurationDays + 1}일
+                    </span>
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl sm:text-2xl font-black font-sans uppercase tracking-tight truncate leading-tight text-white">
+                      {smartCity ? `${smartCity.nameKo} (${smartCity.nameEn})` : smartCountry ? `${smartCountry.nameKo} (${smartCountry.nameEn})` : 'GLOBAL EXPLORER'}
+                    </h3>
+                    <p className="text-xs font-mono text-white/70 mt-1 truncate">
+                      {selectedTheme !== 'all' ? `THEME: ${selectedTheme.toUpperCase()}` : 'ALL THEMES'} • {targetMonth === 0 ? 'AUTO SEASON' : `${targetYear}.${String(targetMonth).padStart(2, '0')}`}
+                    </p>
+                  </div>
+
+                  <div className="pt-2 flex items-center gap-2 border-t border-white/15">
+                    <button
+                      type="button"
+                      onClick={() => setIsTemplateDrawerOpen(true)}
+                      className="flex-1 py-2.5 px-3 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <Layers className="w-3.5 h-3.5" />
+                      <span>TEMPLATES</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveCurrentCriteriaAsTemplate}
+                      className="flex-1 py-2.5 px-3 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                      title="현재 설정을 나만의 템플릿으로 저장"
+                    >
+                      <Bookmark className="w-3.5 h-3.5" />
+                      <span>SAVE TEMPLATE</span>
+                    </button>
+                  </div>
                 </div>
+
+                {/* Toast Notification for Template actions */}
+                {templateToastMessage && (
+                  <div className="p-3 bg-black text-white dark:bg-white dark:text-black rounded-xl text-xs font-mono font-bold flex items-center justify-between shadow-lg">
+                    <span>{templateToastMessage}</span>
+                    <button
+                      type="button"
+                      onClick={() => setTemplateToastMessage(null)}
+                      className="p-1 opacity-70 hover:opacity-100 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
 
                 {/* Continent Filter */}
                 <div className="space-y-1">
@@ -1694,29 +1895,45 @@ export function TripBuilderPanel({
                     </span>
                   </div>
 
-                  {/* Year Selection & AUTO button */}
-                  <div className="flex items-center gap-1 mb-1.5">
-                    {[new Date().getFullYear(), new Date().getFullYear() + 1, new Date().getFullYear() + 2].map(yr => (
-                      <button
-                        key={yr}
-                        type="button"
-                        onClick={() => setTargetYear(yr)}
-                        className={`px-3 py-1 text-[10.5px] font-mono font-bold border transition-all cursor-pointer ${
-                          targetYear === yr
-                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                            : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/35'
-                        }`}
+                  {/* Year Selection (Dropdown + Direct Input) & AUTO button */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="flex-1 flex items-center border border-black/15 dark:border-white/15 bg-white dark:bg-[#1a1a1a] px-2.5 py-1.5 shadow-2xs">
+                      <select
+                        value={targetYear}
+                        onChange={(e) => setTargetYear(Number(e.target.value))}
+                        className="bg-transparent text-xs font-mono font-bold text-black dark:text-white outline-none cursor-pointer"
                       >
-                        {yr}년
-                      </button>
-                    ))}
+                        {Array.from({ length: 11 }).map((_, i) => {
+                          const yr = new Date().getFullYear() + i;
+                          return (
+                            <option key={yr} value={yr} className="bg-white dark:bg-[#202020] text-black dark:text-white">
+                              {yr}년
+                            </option>
+                          );
+                        })}
+                      </select>
+                      <span className="text-[11px] font-mono text-black/30 dark:text-white/30 mx-2">|</span>
+                      <input
+                        type="number"
+                        min={2020}
+                        max={2099}
+                        value={targetYear}
+                        onChange={(e) => {
+                          const v = parseInt(e.target.value, 10);
+                          if (!isNaN(v) && v >= 2000 && v <= 2099) setTargetYear(v);
+                        }}
+                        className="w-14 bg-transparent text-xs font-mono font-bold text-black dark:text-white outline-none text-right"
+                        placeholder="연도"
+                      />
+                      <span className="text-[10.5px] font-mono text-black/50 dark:text-white/50 ml-1">년</span>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setTargetMonth(0)}
-                      className={`ml-auto px-3 py-1 text-[10.5px] font-mono font-bold border transition-all cursor-pointer ${
+                      className={`px-3 py-2 text-xs font-mono font-bold border transition-all cursor-pointer ${
                         targetMonth === 0
-                          ? 'bg-red-600 text-white border-red-600'
-                          : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/35'
+                          ? 'bg-red-600 text-white border-red-600 shadow-xs'
+                          : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/35 bg-white dark:bg-[#1a1a1a]'
                       }`}
                       title="지역별 가장 가까운 최적 시즌 자동 배정"
                     >
@@ -1781,28 +1998,57 @@ export function TripBuilderPanel({
                 </div>
 
                 {/* 4. Duration */}
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className={labelCls}>4. DURATION (희망 여행 기간)</label>
-                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                    <span className="text-xs font-mono font-black text-black dark:text-white bg-black/5 dark:bg-white/10 px-2 py-0.5 border border-black/10 dark:border-white/10">
                       {smartDurationDays}박 {smartDurationDays + 1}일
                     </span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    {[3, 4, 5, 7, 10].map(days => (
+
+                  <div className="flex items-center gap-1.5">
+                    {/* Stepper (- / +) */}
+                    <div className="flex items-center border border-black/15 dark:border-white/15 bg-white dark:bg-[#1a1a1a] shrink-0">
                       <button
-                        key={days}
                         type="button"
-                        onClick={() => setSmartDurationDays(days)}
-                        className={`flex-1 py-2 text-xs font-mono font-bold border transition-all cursor-pointer ${
-                          smartDurationDays === days
-                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                            : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/40 dark:hover:border-white/40'
-                        }`}
+                        onClick={() => setSmartDurationDays(prev => Math.max(1, prev - 1))}
+                        disabled={smartDurationDays <= 1}
+                        className="px-2.5 py-1.5 text-xs font-mono font-bold hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 cursor-pointer"
+                        title="1박 감소"
                       >
-                        {days}D ({days}박)
+                        -
                       </button>
-                    ))}
+                      <span className="w-8 text-center text-xs font-mono font-bold">
+                        {smartDurationDays}박
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSmartDurationDays(prev => Math.min(30, prev + 1))}
+                        disabled={smartDurationDays >= 30}
+                        className="px-2.5 py-1.5 text-xs font-mono font-bold hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 cursor-pointer"
+                        title="1박 증가"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    {/* Quick Duration Chips (1박부터 7박까지) */}
+                    <div className="flex-1 grid grid-cols-4 sm:grid-cols-7 gap-1">
+                      {[1, 2, 3, 4, 5, 6, 7].map(nights => (
+                        <button
+                          key={nights}
+                          type="button"
+                          onClick={() => setSmartDurationDays(nights)}
+                          className={`py-1.5 text-[11px] font-mono font-bold border transition-all cursor-pointer text-center ${
+                            smartDurationDays === nights
+                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-2xs'
+                              : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/40 dark:hover:border-white/40 bg-white dark:bg-[#1a1a1a]'
+                          }`}
+                        >
+                          {nights}박
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
@@ -2394,6 +2640,160 @@ export function TripBuilderPanel({
           </form>
         )}
       </div>
+
+      {/* ─── INTEGRATED TEMPLATES DRAWER / MODAL ─── */}
+      {isTemplateDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-lg max-h-[85vh] bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col overflow-hidden text-black dark:text-white">
+            {/* Drawer Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-black/10 dark:border-white/10 shrink-0 bg-black/[0.02] dark:bg-white/[0.02]">
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-black dark:text-white" />
+                <span className="text-sm font-black uppercase font-mono tracking-wider">
+                  TEMPLATES LIBRARY
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsTemplateDrawerOpen(false)}
+                className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Drawer Content */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5 divide-y divide-black/10 dark:divide-white/10">
+              {/* 1. Rough Quick Templates */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-black uppercase tracking-wider text-black/70 dark:text-white/70">
+                    대중적 러프 템플릿 (QUICK START)
+                  </span>
+                  <span className="text-[10px] font-mono text-black/40 dark:text-white/40">4 PRESETS</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {ROUGH_TEMPLATES.map(tpl => (
+                    <div
+                      key={tpl.id}
+                      onClick={() => applyRoughTemplate(tpl)}
+                      className="p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white bg-black/[0.02] dark:bg-white/[0.02] hover:bg-black/5 dark:hover:bg-white/5 transition-all cursor-pointer space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black uppercase font-sans tracking-tight">
+                          {tpl.name}
+                        </span>
+                        <span className="text-[9.5px] font-mono font-bold px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black">
+                          {tpl.badge}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-black/60 dark:text-white/60 line-clamp-2 leading-relaxed font-sans">
+                        {tpl.description}
+                      </p>
+                      <div className="pt-1 flex items-center gap-1.5 text-[9.5px] font-mono text-black/40 dark:text-white/40">
+                        <span>{tpl.countryKo}</span>
+                        <span>•</span>
+                        <span className="uppercase">{tpl.theme}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 2. My Custom Saved Templates */}
+              {presets.some(p => p.isCustom) && (
+                <div className="pt-4 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono font-black uppercase tracking-wider text-black/70 dark:text-white/70">
+                      나만의 맞춤 템플릿 (SAVED TEMPLATES)
+                    </span>
+                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                      {presets.filter(p => p.isCustom).length} SAVED
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {presets.filter(p => p.isCustom).map(cp => (
+                      <div
+                        key={cp.id}
+                        className="p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white bg-white dark:bg-[#1a1a1a] transition-all flex items-center justify-between gap-3 group"
+                      >
+                        <div
+                          onClick={() => applyPresetToCurator(cp)}
+                          className="min-w-0 flex-1 cursor-pointer"
+                        >
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="text-xs font-bold font-sans text-black dark:text-white truncate">
+                              {cp.title}
+                            </span>
+                            <span className="text-[10px] font-mono font-bold text-orange-600 dark:text-orange-400 shrink-0">
+                              {cp.durationDays}D
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-black/60 dark:text-white/60 truncate">
+                            {cp.subtitle || cp.highlights?.[0] || '맞춤 저장된 여정'}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm(`'${cp.title}' 템플릿을 삭제하시겠습니까?`)) {
+                              deletePresetById(cp.id);
+                              setPresets(getSavedPresets());
+                            }
+                          }}
+                          className="p-1.5 text-black/30 dark:text-white/30 hover:text-red-600 transition-colors cursor-pointer shrink-0"
+                          title="템플릿 삭제"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 3. Global Curated Presets */}
+              <div className="pt-4 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-black uppercase tracking-wider text-black/70 dark:text-white/70">
+                    전 세계 추천 여정 (WORLD PRESETS)
+                  </span>
+                  <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                    {presets.filter(p => !p.isCustom).length} AVAILABLE
+                  </span>
+                </div>
+                <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                  {presets.filter(p => !p.isCustom).map(wp => (
+                    <div
+                      key={wp.id}
+                      onClick={() => applyPresetToCurator(wp)}
+                      className="p-2.5 border border-black/10 dark:border-white/10 hover:border-black dark:hover:border-white bg-white dark:bg-[#1a1a1a] transition-all cursor-pointer flex items-center justify-between gap-2"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-mono font-bold bg-black/5 dark:bg-white/10 px-1.5 py-0.5">
+                            {wp.country}
+                          </span>
+                          <span className="text-xs font-bold text-black dark:text-white truncate">
+                            {wp.title}
+                          </span>
+                        </div>
+                        <p className="text-[10.5px] text-black/50 dark:text-white/50 truncate mt-0.5">
+                          {wp.highlights?.[0] || wp.subtitle}
+                        </p>
+                      </div>
+                      <span className="text-[10.5px] font-mono font-bold text-orange-600 dark:text-orange-400 shrink-0">
+                        {wp.durationDays}D
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Confirmation Modal */}
       <ConfirmModal
