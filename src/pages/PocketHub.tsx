@@ -251,6 +251,14 @@ export function PocketHubPage({
   const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
   const [selectedSpotIds, setSelectedSpotIds] = useState<Set<string>>(new Set());
 
+  // Delete Confirm Modal
+  const [spotToDelete, setSpotToDelete] = useState<SpotPocketItem | null>(null);
+
+  // Use in Trip Popover & Schedule Modal
+  const [spotToUseInTrip, setSpotToUseInTrip] = useState<SpotPocketItem | null>(null);
+  const [scheduleTargetTrip, setScheduleTargetTrip] = useState<Trip | null>(null);
+  const [actionSuccessToast, setActionSuccessToast] = useState<string | null>(null);
+
   const handleToggleSelectSpot = (spotId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     setSelectedSpotIds(prev => {
@@ -352,13 +360,6 @@ export function PocketHubPage({
     return () => window.removeEventListener('paste', handlePaste);
   }, [isAddModalOpen]);
 
-  // Delete Confirm Modal
-  const [spotToDelete, setSpotToDelete] = useState<SpotPocketItem | null>(null);
-
-  // Use in Trip Popover & Schedule Modal
-  const [spotToUseInTrip, setSpotToUseInTrip] = useState<SpotPocketItem | null>(null);
-  const [scheduleTargetTrip, setScheduleTargetTrip] = useState<Trip | null>(null);
-  const [actionSuccessToast, setActionSuccessToast] = useState<string | null>(null);
 
   // Real-time sync with Firestore server on mount (multi-device synchronization)
   useEffect(() => {
