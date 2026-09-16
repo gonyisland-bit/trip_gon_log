@@ -308,33 +308,103 @@ export function TripBuilderPanel({
   }, [smartCity, smartCountry]);
 
   // ── Smart Pocket Spots for Selected Country/City ──
-  const [isCuratorPocketOpen, setIsCuratorPocketOpen] = useState(false);
-  const [isCustomPocketOpen, setIsCustomPocketOpen] = useState(false);
+  const [isCuratorPocketOpen, setIsCuratorPocketOpen] = useState(true);
+  const [isCustomPocketOpen, setIsCustomPocketOpen] = useState(true);
 
-  const relevantPocketSpots = useMemo(() => {
+  const { relevantPocketSpots, isAreaMatched, totalSavedCount } = useMemo(() => {
     const allPockets = savedPockets.length > 0 ? savedPockets : getSavedPockets();
-    const targetCountry = (smartCountry?.nameKo || smartCountry?.nameEn || country || '').toLowerCase().trim();
-    const targetCity = (smartCity?.nameKo || smartCity?.nameEn || locations[0]?.name || '').toLowerCase().trim();
+    const totalCount = allPockets.length;
+    if (totalCount === 0) {
+      return { relevantPocketSpots: [] as SpotPocketItem[], isAreaMatched: false, totalSavedCount: 0 };
+    }
 
-    return allPockets.filter(s => {
-      // Always include if explicitly selected from PocketHub
+    // 대상 국가/도시 정밀 키워드 추출 (한글, 영문, 별칭 모두 포함)
+    const targetCountryObj = smartCountry || (country ? findCountryByNameOrAlias(country) : null);
+    const targetCityObj = smartCity || (locations[0]?.name ? findCityByNameOrAlias(locations[0].name) : null);
+
+    const countryTokens = new Set<string>();
+    if (targetCountryObj) {
+      countryTokens.add(targetCountryObj.nameKo.toLowerCase());
+      countryTokens.add(targetCountryObj.nameEn.toLowerCase());
+      countryTokens.add(targetCountryObj.code.toLowerCase());
+      (targetCountryObj.aliases || []).forEach(a => countryTokens.add(a.toLowerCase()));
+    } else if (country) {
+      countryTokens.add(country.toLowerCase().trim());
+    }
+
+    const cityTokens = new Set<string>();
+    if (targetCityObj) {
+      cityTokens.add(targetCityObj.nameKo.toLowerCase());
+      cityTokens.add(targetCityObj.nameEn.toLowerCase());
+    }
+    locations.forEach(l => {
+      if (l.name) {
+        cityTokens.add(l.name.toLowerCase().trim());
+        const matched = findCityByNameOrAlias(l.name);
+        if (matched) {
+          cityTokens.add(matched.nameKo.toLowerCase());
+          cityTokens.add(matched.nameEn.toLowerCase());
+        }
+      }
+    });
+
+    const hasTargetFilter = countryTokens.size > 0 || cityTokens.size > 0;
+
+    // 1단계: 명시적 선택 또는 현재 국가/도시 매칭 필터링
+    const matchedSpots = allPockets.filter(s => {
       if (selectedPocketIds.has(s.id)) return true;
-      if (!targetCountry && !targetCity) return false;
+      if (!hasTargetFilter) return false;
 
-      const c = (s.country || '').toLowerCase().trim();
-      const city = (s.city || '').toLowerCase().trim();
-      const title = (s.title || '').toLowerCase().trim();
-      if (targetCountry && c && (targetCountry.includes(c) || c.includes(targetCountry))) return true;
-      if (targetCity && city && (targetCity.includes(city) || city.includes(targetCity))) return true;
-      if (targetCountry && city && targetCountry.includes(city)) return true;
-      if (targetCity && title && title.includes(targetCity)) return true;
+      const sCountry = (s.country || '').toLowerCase().trim();
+      const sCity = (s.city || '').toLowerCase().trim();
+      const sAddr = (s.address || '').toLowerCase().trim();
+      const sTitle = (s.title || '').toLowerCase().trim();
+
+      const spotCountryObj = findCountryByNameOrAlias(s.country || '');
+      const spotCityObj = findCityByNameOrAlias(s.city || '');
+
+      // 국가 일치 검사
+      if (countryTokens.size > 0) {
+        if (sCountry && countryTokens.has(sCountry)) return true;
+        if (spotCountryObj && (countryTokens.has(spotCountryObj.nameEn.toLowerCase()) || countryTokens.has(spotCountryObj.nameKo.toLowerCase()))) return true;
+        for (const tok of countryTokens) {
+          if (tok && (sCountry.includes(tok) || sAddr.includes(tok) || sTitle.includes(tok))) return true;
+        }
+      }
+
+      // 도시 일치 검사
+      if (cityTokens.size > 0) {
+        if (sCity && cityTokens.has(sCity)) return true;
+        if (spotCityObj && (cityTokens.has(spotCityObj.nameEn.toLowerCase()) || cityTokens.has(spotCityObj.nameKo.toLowerCase()))) return true;
+        for (const tok of cityTokens) {
+          if (tok && (sCity.includes(tok) || sAddr.includes(tok) || sTitle.includes(tok))) return true;
+        }
+      }
+
       return false;
     });
+
+    // 2단계: 지역 매칭된 스팟이 있으면 우선 반환, 없으면 전체 보관함(allPockets)을 폴백으로 제공하여 절대 사라지지 않음!
+    if (matchedSpots.length > 0) {
+      return { relevantPocketSpots: matchedSpots, isAreaMatched: true, totalSavedCount: totalCount };
+    }
+
+    return { relevantPocketSpots: allPockets, isAreaMatched: false, totalSavedCount: totalCount };
   }, [savedPockets, selectedPocketIds, smartCountry, country, smartCity, locations]);
 
   // Reusable Swiss Minimal Pocket Accordion Renderer
   const renderPocketAccordion = (isOpen: boolean, setIsOpen: (open: boolean) => void) => {
-    if (relevantPocketSpots.length === 0) return null;
+    if (totalSavedCount === 0) {
+      return (
+        <div className="rounded-xl border border-black/5 dark:border-white/5 bg-neutral-100 dark:bg-neutral-800/90 p-3.5 flex items-center justify-between text-xs transition-all">
+          <div className="flex items-center gap-2 text-black/60 dark:text-white/60 font-mono">
+            <Bookmark className="w-4 h-4 text-black/40 dark:text-white/40" />
+            <span>보관된 포켓 장소가 없습니다. 포켓 허브에서 장소를 스크랩해 보세요.</span>
+          </div>
+        </div>
+      );
+    }
+
     const allSelected = relevantPocketSpots.every(s => selectedPocketIds.has(s.id));
     const selectedCount = relevantPocketSpots.filter(s => selectedPocketIds.has(s.id)).length;
 
@@ -352,7 +422,7 @@ export function TripBuilderPanel({
     };
 
     return (
-      <div className="rounded-xl border border-black/5 dark:border-white/5 bg-neutral-100 dark:bg-neutral-800/90 overflow-hidden transition-all">
+      <div className="rounded-xl border border-black/5 dark:border-white/5 bg-neutral-100 dark:bg-neutral-800/90 overflow-hidden transition-all shadow-2xs">
         {/* Accordion Header */}
         <button
           type="button"
@@ -363,10 +433,10 @@ export function TripBuilderPanel({
             <Bookmark className="w-4 h-4 text-red-500 shrink-0" />
             <div className="min-w-0 flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wide text-black dark:text-white">
-                MATCHING POCKETS
+                {isAreaMatched ? 'MATCHING POCKETS' : 'SAVED POCKETS'}
               </span>
               <span className="text-[11px] font-mono text-black/50 dark:text-white/50">
-                ({relevantPocketSpots.length}개 보관 장소)
+                ({relevantPocketSpots.length}개 {isAreaMatched ? '지역 맞춤' : '보관 장소'})
               </span>
             </div>
           </div>
@@ -385,7 +455,9 @@ export function TripBuilderPanel({
           <div className="p-3 border-t border-black/5 dark:border-white/5 space-y-2.5 bg-white/70 dark:bg-[#181818]/70">
             <div className="flex items-center justify-between text-xs font-mono px-0.5">
               <span className="text-black/50 dark:text-white/50">
-                선택한 장소는 1일차 추천 일정에 자동 배치됩니다.
+                {isAreaMatched 
+                  ? '현재 선택 지역과 일치하는 장소입니다. 선택 시 1일차 일정에 자동 배치됩니다.' 
+                  : '보관함 전체 장소 목록입니다. 원하는 장소를 선택하여 일정에 추가하세요.'}
               </span>
               <button
                 type="button"
