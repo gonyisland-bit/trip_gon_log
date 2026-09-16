@@ -2175,6 +2175,8 @@ export function MapHubPage({
         }
 
         // 목적지에 다 와서 부드럽게 착륙 줌인 실행 (내장 flyTo로 깜박임 없이 자연스럽게 확대)
+        // 미국/남미 등 우측 지도 경계에서의 튕김(bounce) 방지를 위해 일시 해제 후 착륙 시 재설정
+        try { map.setMaxBounds(null); } catch (_) {}
         map.flyTo(targetCenter, targetCountry.zoom, { duration: 0.9 });
 
         // 착륙 줌인 완료 후 비행기 마커 정리 및 모달 오픈
@@ -2191,8 +2193,9 @@ export function MapHubPage({
             flightTrailPolylineRef.current = null;
           }
 
-          // 지도 드래그 및 줌 다시 활성화
+          // 지도 드래그 및 줌 다시 활성화 및 바운드 복원
           try {
+            mapRef.current?.setMaxBounds([[-62, -45], [82, 385]]);
             mapRef.current?.dragging?.enable();
             mapRef.current?.scrollWheelZoom?.enable();
           } catch (_) {}
@@ -2450,8 +2453,8 @@ export function MapHubPage({
       minZoom: 2.3,
       maxZoom: 18,
       zoomControl: false,
-      maxBounds: [[-62, -35], [82, 330]], // 좌측 유럽 대륙부터 우측 남미 대륙까지 커버하는 최적 바운드
-      maxBoundsViscosity: 1.0,
+      maxBounds: [[-62, -45], [82, 385]], // 좌측 유럽 대륙부터 우측 남미/미주 대륙 전체를 커버하는 최적 바운드
+      maxBoundsViscosity: 0.8,
       bounceAtZoomLimits: false,
       worldCopyJump: false,
     });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Plus, GripVertical, ChevronDown, ChevronUp, Tag, Search, X, LayoutGrid, StretchHorizontal, List, ArrowRight, ArrowUpDown, Compass, MapPin } from 'lucide-react';
+import { Plus, GripVertical, ChevronDown, ChevronUp, Tag, Search, X, LayoutGrid, StretchHorizontal, List, ArrowRight, ArrowUpDown, Compass, MapPin, ArrowUpRight } from 'lucide-react';
 import { Trip, Plan, ArchiveHubConfig } from '../types';
 import { JourneyCardMenu, getEnglishCityName } from './Home';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
@@ -1244,27 +1244,29 @@ export function ArchiveHubPage({
                             </div>
 
                             {/* 3. 하단 메타 & 알약 액션 바 */}
-                            <div className="pt-3.5 mt-3 border-t border-black/8 dark:border-white/10 flex items-center justify-between gap-2">
-                              {/* 좌측 알약 뱃지: 장소명 모바일 오버플로우 방지 */}
-                              <div className="flex-1 min-w-0 mr-1">
-                                <div className={`h-7 sm:h-8 px-2.5 sm:px-3 rounded-full inline-flex items-center gap-1 font-mono text-[10px] sm:text-[11px] font-bold max-w-full truncate ${
+                            <div className="pt-3 mt-3 border-t border-black/8 dark:border-white/10 flex items-center justify-between gap-1.5 sm:gap-2">
+                              {/* 좌측 알약 뱃지: 장소명 모바일 온전 표기 최적화 (생략 방지) */}
+                              <div className="flex-1 min-w-0 mr-0.5 sm:mr-1">
+                                <div className={`min-h-[26px] sm:min-h-[30px] px-2 sm:px-3 py-0.5 sm:py-1 rounded-full inline-flex items-center gap-1 font-mono text-[9.5px] sm:text-[11px] font-bold max-w-full leading-tight ${
                                   (trip.statusBadge === 'PLAN' || isPlan)
                                     ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
                                     : 'bg-black/5 dark:bg-white/10 text-black/80 dark:text-white/80'
                                 }`}>
-                                  <MapPin className="w-3 h-3 shrink-0 text-black/40 dark:text-white/40" />
-                                  <span className="truncate">{line3CountryCity || (durationBadge || 'JOURNEY')}</span>
+                                  <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0 text-black/40 dark:text-white/40" />
+                                  <span className="break-words line-clamp-1 sm:line-clamp-none sm:truncate">{line3CountryCity || (durationBadge || 'JOURNEY')}</span>
                                 </div>
                               </div>
 
-                              {/* 우측 알약 액션 버튼 */}
-                              <div className={`h-7 sm:h-8 px-3 sm:px-3.5 rounded-full font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors shadow-xs shrink-0 ${
+                              {/* 우측 알약 액션 버튼: 모바일에서 원형 아이콘 버튼으로 슬림화하여 좌측 공간 극대화 */}
+                              <div className={`h-7 w-7 sm:w-auto sm:h-8 sm:px-3.5 rounded-full font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-wider flex items-center justify-center sm:gap-1 transition-colors shadow-xs shrink-0 ${
                                 (trip.statusBadge === 'PLAN' || isPlan)
                                   ? 'bg-blue-600 hover:bg-blue-700 text-white'
                                   : 'bg-black dark:bg-white text-white dark:text-black group-hover:bg-red-600 dark:group-hover:bg-red-500 group-hover:text-white dark:group-hover:text-white'
-                              }`}>
-                                <span>{(trip.statusBadge === 'PLAN' || isPlan) ? 'PLAN' : 'LOG'}</span>
-                                <span className="text-xs">↗</span>
+                              }`}
+                              title={(trip.statusBadge === 'PLAN' || isPlan) ? "PLAN VIEW" : "TRIP LOG"}
+                              >
+                                <span className="hidden sm:inline">{(trip.statusBadge === 'PLAN' || isPlan) ? 'PLAN' : 'LOG'}</span>
+                                <ArrowUpRight className="w-3.5 h-3.5 sm:w-3 sm:h-3 stroke-[2.2]" />
                               </div>
                             </div>
                           </div>
