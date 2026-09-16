@@ -770,9 +770,9 @@ export function MagazineHubPage({
                         </h3>
 
                         {/* Subtitle / Description */}
-                        {sec.description && (
+                        {(sec.heroSubtitle || sec.subtitle) && (
                           <p className="mt-1.5 text-[11px] font-sans text-black/60 dark:text-white/65 leading-relaxed line-clamp-2">
-                            {sec.description}
+                            {sec.heroSubtitle || sec.subtitle}
                           </p>
                         )}
                       </div>
