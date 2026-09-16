@@ -319,6 +319,7 @@ export function ManageHubPage({
   });
 
   // PRESETS Management State
+  const [mapSubTab, setMapSubTab] = useState<'settings' | 'presets'>('settings');
   const [presetsList, setPresetsList] = useState<PresetTripPlan[]>(() => getSavedPresets());
   const [presetSearchQuery, setPresetSearchQuery] = useState<string>('');
   const [presetThemeFilter, setPresetThemeFilter] = useState<string>('all');
@@ -354,6 +355,8 @@ export function ManageHubPage({
   });
   const [isUploadingLandingHero, setIsUploadingLandingHero] = useState<boolean>(false);
   const [isDraggingLandingHero, setIsDraggingLandingHero] = useState<boolean>(false);
+  const [replacingLandingHeroIndex, setReplacingLandingHeroIndex] = useState<number | null>(null);
+  const [dragOverLandingHeroIndex, setDragOverLandingHeroIndex] = useState<number | null>(null);
   const [isHeroJourneysAccordionOpen, setIsHeroJourneysAccordionOpen] = useState<boolean>(false);
 
   useEffect(() => {
@@ -406,6 +409,45 @@ export function ManageHubPage({
       alert('게스트 랜딩 미디어 업로드에 실패했습니다.');
     } finally {
       setIsUploadingLandingHero(false);
+    }
+  };
+
+  const handleReplaceLandingHeroMedia = async (index: number, file: File) => {
+    const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/i.test(file.name);
+
+    if (!isImage && !isVideo) {
+      alert('이미지 또는 동영상 파일만 업로드 가능합니다.');
+      return;
+    }
+
+    setReplacingLandingHeroIndex(index);
+    try {
+      let fileToUpload: File | Blob = file;
+      if (isImage) {
+        fileToUpload = await compressImage(file, 2560, 1600, 0.85);
+      }
+      const ext = file.name.split('.').pop() || (isImage ? 'jpg' : 'mp4');
+      const path = `hero/landing_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+      const url = await uploadFileToR2(fileToUpload, path);
+      
+      const cleanTitle = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ').toUpperCase();
+      setLocalLandingHeroMedia(prev => prev.map((m, idx) => idx === index ? {
+        ...m,
+        url,
+        type: isVideo ? 'video' : 'image',
+        title: cleanTitle || m.title || (isVideo ? 'VIDEO SCENE' : 'PHOTO MOMENT')
+      } : m));
+
+      if (index === 0 && isImage) {
+        setLocalLandingHeroImage(url);
+      }
+    } catch (err) {
+      console.error('Failed to replace landing hero media:', err);
+      alert('게스트 랜딩 미디어 교체에 실패했습니다.');
+    } finally {
+      setReplacingLandingHeroIndex(null);
+      setDragOverLandingHeroIndex(null);
     }
   };
 
@@ -3593,7 +3635,7 @@ export function ManageHubPage({
           </div>
         </div>
 
-        {/* Mode Switcher: HOME / TRIP / MAGAZINE / MAP / BGM / PRESETS / TRASH */}
+        {/* Mode Switcher: HOME / TRIP / MAGAZINE / MAP / BGM / TRASH */}
         <div className="w-full md:w-auto max-w-full overflow-x-auto scrollbar-none flex items-center border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 p-0.5 rounded-none shrink-0">
           {([
             { id: 'HOME', label: 'HOME' },
@@ -3601,7 +3643,6 @@ export function ManageHubPage({
             { id: 'MAGAZINE', label: 'MAGAZINE' },
             { id: 'MAP', label: 'MAP' },
             { id: 'BGM', label: 'BGM' },
-            { id: 'PRESETS', label: 'PRESETS' },
             { id: 'USERS', label: 'USERS' },
             { id: 'TRASH', label: 'TRASH' },
           ] as const).map(tab => (
@@ -4174,9 +4215,147 @@ export function ManageHubPage({
                         </span>
                       </div>
 
-                      {/* Unified 4-Column Grid: Slot 0 is Dropzone, followed by registered media cards */}
+                      {/* Rolling Slot Grid: Registered media cards first, followed by a trailing + ADD MEDIA slot */}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-                        {/* Slot 0: + ADD MEDIA Dropzone Card */}
+                        {/* Registered Media Cards (Each card supports drag/drop and upload replacement) */}
+                        {localLandingHeroMedia.map((item, idx) => {
+                          const isBeingReplaced = replacingLandingHeroIndex === idx;
+                          const isCardDragOver = dragOverLandingHeroIndex === idx;
+
+                          return (
+                            <div
+                              key={item.id || `guest-item-${idx}`}
+                              onDragOver={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setDragOverLandingHeroIndex(idx);
+                              }}
+                              onDragLeave={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setDragOverLandingHeroIndex(null);
+                              }}
+                              onDrop={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setDragOverLandingHeroIndex(null);
+                                const files = e.dataTransfer.files;
+                                if (files && files.length > 0) {
+                                  await handleReplaceLandingHeroMedia(idx, files[0]);
+                                }
+                              }}
+                              className={`border bg-white dark:bg-[#161616] flex flex-col overflow-hidden group shadow-2xs transition-all ${
+                                isCardDragOver
+                                  ? 'border-red-500 ring-2 ring-red-500'
+                                  : 'border-black/15 dark:border-white/15'
+                              }`}
+                            >
+                              <div className="relative w-full aspect-[16/9] bg-black overflow-hidden">
+                                {isBeingReplaced ? (
+                                  <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 bg-black/80 text-white">
+                                    <Loader2 className="w-5 h-5 animate-spin text-white" />
+                                    <span className="text-[9.5px] font-mono font-bold tracking-wider">REPLACING...</span>
+                                  </div>
+                                ) : (
+                                  <>
+                                    {item.type === 'video' ? (
+                                      <video
+                                        src={item.url}
+                                        muted
+                                        playsInline
+                                        className="w-full h-full object-cover brightness-90"
+                                      />
+                                    ) : (
+                                      <img
+                                        src={getEffectiveImageUrl(item.url)}
+                                        alt={item.title || `Slide ${idx + 1}`}
+                                        className="w-full h-full object-cover brightness-90"
+                                      />
+                                    )}
+
+                                    {/* Drag-over drop overlay indicator */}
+                                    {isCardDragOver && (
+                                      <div className="absolute inset-0 bg-red-600/30 flex items-center justify-center text-white font-mono text-[10px] font-bold">
+                                        [드롭하여 교체]
+                                      </div>
+                                    )}
+
+                                    {/* Slot Number & Type Badge */}
+                                    <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-black/80 text-white font-mono text-[8.5px] font-bold uppercase tracking-wider flex items-center gap-1">
+                                      {item.type === 'video' ? <Film className="w-2.5 h-2.5 text-red-400" /> : <ImageIcon className="w-2.5 h-2.5 text-blue-400" />}
+                                      <span>#{idx + 1}</span>
+                                    </div>
+
+                                    {/* Action Buttons Overlay: Replace & Delete */}
+                                    <div className="absolute top-1.5 right-1.5 flex items-center gap-1">
+                                      <label
+                                        className="p-1 bg-black/80 hover:bg-black text-white hover:text-orange-400 transition-colors cursor-pointer flex items-center"
+                                        title="이 슬롯의 미디어 교체"
+                                      >
+                                        <RefreshCw className="w-3 h-3" />
+                                        <input
+                                          type="file"
+                                          accept="image/*,video/*"
+                                          disabled={isBeingReplaced}
+                                          onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                              await handleReplaceLandingHeroMedia(idx, file);
+                                            }
+                                          }}
+                                          className="hidden"
+                                        />
+                                      </label>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveLandingHeroMedia(item.id)}
+                                        className="p-1 bg-black/80 hover:bg-red-600 text-white transition-colors cursor-pointer"
+                                        title="미디어 삭제"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+
+                              <div className="p-2 flex items-center justify-between gap-1 border-t border-black/10 dark:border-white/10">
+                                <input
+                                  type="text"
+                                  value={item.title || ''}
+                                  onChange={e => {
+                                    const val = e.target.value;
+                                    setLocalLandingHeroMedia(prev => prev.map((m, i) => i === idx ? { ...m, title: val } : m));
+                                  }}
+                                  placeholder="제목"
+                                  className="flex-1 text-[10.5px] font-mono font-bold bg-transparent outline-none border-b border-transparent focus:border-black dark:focus:border-white text-black dark:text-white truncate"
+                                />
+                                <div className="flex items-center gap-0.5 shrink-0">
+                                  <button
+                                    type="button"
+                                    disabled={idx === 0}
+                                    onClick={() => handleMoveLandingHeroMedia(idx, 'up')}
+                                    className="p-1 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
+                                    title="앞으로 이동"
+                                  >
+                                    <ChevronUp className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={idx === localLandingHeroMedia.length - 1}
+                                    onClick={() => handleMoveLandingHeroMedia(idx, 'down')}
+                                    className="p-1 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
+                                    title="뒤로 이동"
+                                  >
+                                    <ChevronDown className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {/* Trailing Slot: + ADD MEDIA (Expands automatically to the right) */}
                         <label
                           onDragOver={(e) => {
                             e.preventDefault();
@@ -4233,76 +4412,6 @@ export function ManageHubPage({
                             className="hidden"
                           />
                         </label>
-
-                        {/* Registered Media Cards */}
-                        {localLandingHeroMedia.map((item, idx) => (
-                          <div
-                            key={item.id || `guest-item-${idx}`}
-                            className="border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616] flex flex-col overflow-hidden group shadow-2xs"
-                          >
-                            <div className="relative w-full aspect-[16/9] bg-black overflow-hidden">
-                              {item.type === 'video' ? (
-                                <video
-                                  src={item.url}
-                                  muted
-                                  playsInline
-                                  className="w-full h-full object-cover brightness-90"
-                                />
-                              ) : (
-                                <img
-                                  src={getEffectiveImageUrl(item.url)}
-                                  alt={item.title || `Slide ${idx + 1}`}
-                                  className="w-full h-full object-cover brightness-90"
-                                />
-                              )}
-                              <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-black/80 text-white font-mono text-[8.5px] font-bold uppercase tracking-wider flex items-center gap-1">
-                                {item.type === 'video' ? <Film className="w-2.5 h-2.5 text-red-400" /> : <ImageIcon className="w-2.5 h-2.5 text-blue-400" />}
-                                <span>#{idx + 1}</span>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveLandingHeroMedia(item.id)}
-                                className="absolute top-1.5 right-1.5 p-1 bg-black/80 hover:bg-red-600 text-white transition-colors cursor-pointer"
-                                title="미디어 삭제"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </div>
-
-                            <div className="p-2 flex items-center justify-between gap-1 border-t border-black/10 dark:border-white/10">
-                              <input
-                                type="text"
-                                value={item.title || ''}
-                                onChange={e => {
-                                  const val = e.target.value;
-                                  setLocalLandingHeroMedia(prev => prev.map((m, i) => i === idx ? { ...m, title: val } : m));
-                                }}
-                                placeholder="제목"
-                                className="flex-1 text-[10.5px] font-mono font-bold bg-transparent outline-none border-b border-transparent focus:border-black dark:focus:border-white text-black dark:text-white truncate"
-                              />
-                              <div className="flex items-center gap-0.5 shrink-0">
-                                <button
-                                  type="button"
-                                  disabled={idx === 0}
-                                  onClick={() => handleMoveLandingHeroMedia(idx, 'up')}
-                                  className="p-1 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
-                                  title="앞으로 이동"
-                                >
-                                  <ChevronUp className="w-3 h-3" />
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={idx === localLandingHeroMedia.length - 1}
-                                  onClick={() => handleMoveLandingHeroMedia(idx, 'down')}
-                                  className="p-1 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
-                                  title="뒤로 이동"
-                                >
-                                  <ChevronDown className="w-3 h-3" />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
                       </div>
                     </div>
                   </div>
@@ -6693,81 +6802,125 @@ export function ManageHubPage({
         {/* ─────────────────────────────────────────────────────────────────── */}
         {/* MODE: MAP (Map Tile Style & Defaults)                               */}
         {/* ─────────────────────────────────────────────────────────────────── */}
+        {/* ─────────────────────────────────────────────────────────────────── */}
+        {/* MODE: MAP (Map Tile Style & Defaults + Trip Presets Integration)   */}
+        {/* ─────────────────────────────────────────────────────────────────── */}
         {activeMode === 'MAP' && (
-          <div className="w-full max-w-2xl mx-auto p-6 sm:p-12 flex flex-col gap-8 animate-in fade-in duration-200">
-            <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
-              <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
-                WORLD MAP PREFERENCES
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
-                MAP SETTING
-              </h2>
-              <p className="text-xs text-black/60 dark:text-white/60 font-mono">
-                [전세계 지도 타일셋 스타일 및 표시 옵션 설정]
-              </p>
+          <div
+            onScroll={handleContainerScroll}
+            className={`w-full mx-auto p-4 sm:p-8 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200 ${
+              mapSubTab === 'presets' ? 'max-w-5xl' : 'max-w-2xl'
+            }`}
+          >
+            {/* Sub-Tab Navigation: MAP SETTINGS vs TRIP PRESETS */}
+            <div className="flex items-center gap-2 border-b border-black/15 dark:border-white/15 pb-3">
+              <button
+                type="button"
+                onClick={() => setMapSubTab('settings')}
+                className={`px-3.5 py-1.5 text-xs font-mono font-bold uppercase tracking-wider border transition-colors cursor-pointer ${
+                  mapSubTab === 'settings'
+                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                    : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                }`}
+              >
+                MAP SETTINGS
+              </button>
+              <button
+                type="button"
+                onClick={() => setMapSubTab('presets')}
+                className={`px-3.5 py-1.5 text-xs font-mono font-bold uppercase tracking-wider border transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  mapSubTab === 'presets'
+                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                    : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                }`}
+              >
+                <span>TRIP PRESETS</span>
+                <span className="text-[9px] px-1.5 py-0.2 bg-orange-600 text-white font-mono font-bold">
+                  {presetsList.length}
+                </span>
+                {isPresetsDirty && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                )}
+              </button>
             </div>
 
-            <div className="flex flex-col gap-6">
-              {/* Tile Style Selector */}
-              <div className="flex flex-col gap-3">
-                <label className="text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70">
-                  MAP TILESET (지도 그래픽 타일셋)
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div
-                    onClick={() => {
-                      setMapTileStyle('esri');
-                      localStorage.setItem('mapTileStyle', 'esri');
-                      window.dispatchEvent(new CustomEvent('mapTileStyleChanged', { detail: 'esri' }));
-                    }}
-                    className={`p-4 border cursor-pointer transition-all ${
-                      mapTileStyle === 'esri'
-                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-md'
-                        : 'bg-white dark:bg-[#141414] border-black/20 dark:border-white/20 hover:border-black'
-                    }`}
-                  >
-                    <span className="text-xs font-black uppercase tracking-wider block mb-1">
-                      ESRI WORLD GRAY CANVAS
-                    </span>
-                    <p className="text-[11px] opacity-70 leading-relaxed">
-                      완전 무료, 워터마크 일체 없음, 스위스 미니멀 모노톤 스타일에 완벽 최적화
-                    </p>
+            {mapSubTab === 'settings' && (
+              <div className="flex flex-col gap-8 animate-in fade-in duration-150">
+                <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
+                  <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                    WORLD MAP PREFERENCES
+                  </span>
+                  <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                    MAP SETTING
+                  </h2>
+                  <p className="text-xs text-black/60 dark:text-white/60 font-mono">
+                    [전세계 지도 타일셋 스타일 및 표시 옵션 설정]
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-6">
+                  {/* Tile Style Selector */}
+                  <div className="flex flex-col gap-3">
+                    <label className="text-xs font-black uppercase tracking-wider text-black/70 dark:text-white/70">
+                      MAP TILESET (지도 그래픽 타일셋)
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div
+                        onClick={() => {
+                          setMapTileStyle('esri');
+                          localStorage.setItem('mapTileStyle', 'esri');
+                          window.dispatchEvent(new CustomEvent('mapTileStyleChanged', { detail: 'esri' }));
+                        }}
+                        className={`p-4 border cursor-pointer transition-all ${
+                          mapTileStyle === 'esri'
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-md'
+                            : 'bg-white dark:bg-[#141414] border-black/20 dark:border-white/20 hover:border-black'
+                        }`}
+                      >
+                        <span className="text-xs font-black uppercase tracking-wider block mb-1">
+                          ESRI WORLD GRAY CANVAS
+                        </span>
+                        <p className="text-[11px] opacity-70 leading-relaxed">
+                          완전 무료, 워터마크 일체 없음, 스위스 미니멀 모노톤 스타일에 완벽 최적화
+                        </p>
+                      </div>
+
+                      <div
+                        onClick={() => {
+                          setMapTileStyle('google');
+                          localStorage.setItem('mapTileStyle', 'google');
+                          window.dispatchEvent(new CustomEvent('mapTileStyleChanged', { detail: 'google' }));
+                        }}
+                        className={`p-4 border cursor-pointer transition-all ${
+                          mapTileStyle === 'google'
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-md'
+                            : 'bg-white dark:bg-[#141414] border-black/20 dark:border-white/20 hover:border-black'
+                        }`}
+                      >
+                        <span className="text-xs font-black uppercase tracking-wider block mb-1">
+                          GOOGLE MAPS TILES
+                        </span>
+                        <p className="text-[11px] opacity-70 leading-relaxed">
+                          구글 지도 타일, 한국어 지명 상세 표기, 다크모드 필터 지원
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
-                  <div
-                    onClick={() => {
-                      setMapTileStyle('google');
-                      localStorage.setItem('mapTileStyle', 'google');
-                      window.dispatchEvent(new CustomEvent('mapTileStyleChanged', { detail: 'google' }));
-                    }}
-                    className={`p-4 border cursor-pointer transition-all ${
-                      mapTileStyle === 'google'
-                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-md'
-                        : 'bg-white dark:bg-[#141414] border-black/20 dark:border-white/20 hover:border-black'
-                    }`}
-                  >
-                    <span className="text-xs font-black uppercase tracking-wider block mb-1">
-                      GOOGLE MAPS TILES
-                    </span>
-                    <p className="text-[11px] opacity-70 leading-relaxed">
-                      구글 지도 타일, 한국어 지명 상세 표기, 다크모드 필터 지원
-                    </p>
+                  {/* Save Button */}
+                  <div className="pt-4 border-t border-black/15 dark:border-white/15 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleSaveMapSettings}
+                      className="px-6 py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-widest font-sans flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>SAVE MAP SETTINGS</span>
+                    </button>
                   </div>
                 </div>
               </div>
-
-              {/* Save Button */}
-              <div className="pt-4 border-t border-black/15 dark:border-white/15 flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleSaveMapSettings}
-                  className="px-6 py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-widest font-sans flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>SAVE MAP SETTINGS</span>
-                </button>
-              </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -7011,11 +7164,43 @@ export function ManageHubPage({
         {/* ─────────────────────────────────────────────────────────────────── */}
         {/* MODE: PRESETS (Trip Preset Templates & Itinerary Recommendation)   */}
         {/* ─────────────────────────────────────────────────────────────────── */}
-        {activeMode === 'PRESETS' && (
+        {((activeMode === 'MAP' && mapSubTab === 'presets') || activeMode === 'PRESETS') && (
           <div
             onScroll={handleContainerScroll}
             className="w-full max-w-5xl mx-auto p-4 sm:p-8 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200"
           >
+            {/* Sub-Tab Navigation: MAP SETTINGS vs TRIP PRESETS */}
+            <div className="flex items-center gap-2 border-b border-black/15 dark:border-white/15 pb-3">
+              <button
+                type="button"
+                onClick={() => setMapSubTab('settings')}
+                className={`px-3.5 py-1.5 text-xs font-mono font-bold uppercase tracking-wider border transition-colors cursor-pointer ${
+                  mapSubTab === 'settings'
+                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                    : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                }`}
+              >
+                MAP SETTINGS
+              </button>
+              <button
+                type="button"
+                onClick={() => setMapSubTab('presets')}
+                className={`px-3.5 py-1.5 text-xs font-mono font-bold uppercase tracking-wider border transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  mapSubTab === 'presets'
+                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                    : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                }`}
+              >
+                <span>TRIP PRESETS</span>
+                <span className="text-[9px] px-1.5 py-0.2 bg-orange-600 text-white font-mono font-bold">
+                  {presetsList.length}
+                </span>
+                {isPresetsDirty && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                )}
+              </button>
+            </div>
+
             <div className="flex flex-col gap-6">
               {/* Header Title */}
               <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">

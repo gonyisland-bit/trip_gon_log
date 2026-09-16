@@ -82,6 +82,29 @@ export function getSavedPockets(): SpotPocketItem[] {
 }
 
 /**
+ * Recursively removes all undefined values from an object or array to prevent
+ * Firestore 'Unsupported field value: undefined' errors.
+ */
+export function sanitizeForFirestore<T>(data: T): T {
+  if (data === null || data === undefined) {
+    return null as unknown as T;
+  }
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeForFirestore(item)) as unknown as T;
+  }
+  if (typeof data === 'object') {
+    const cleaned: Record<string, any> = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== undefined) {
+        cleaned[key] = sanitizeForFirestore(value);
+      }
+    }
+    return cleaned as T;
+  }
+  return data;
+}
+
+/**
  * Real-time listener for Firestore pocket items.
  * Ensures instant multi-device synchronization across different PCs and mobile devices.
  */
@@ -96,7 +119,10 @@ export function subscribePockets(callback: (items: SpotPocketItem[]) => void): (
       } else {
         // If Firestore document does not exist yet, seed with initial pockets
         const initial = getSavedPockets();
-        setDoc(docRef, { items: initial, updatedAt: Date.now() }, { merge: true }).catch(() => {});
+        const safeItems = sanitizeForFirestore(initial);
+        setDoc(docRef, { items: safeItems, updatedAt: Date.now() }, { merge: true }).catch((err) => {
+          console.warn('[pocketStorage] Seed error:', err);
+        });
         callback(initial);
       }
     }, (err) => {
@@ -115,7 +141,8 @@ export async function savePockets(items: SpotPocketItem[]): Promise<void> {
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
   try {
     const docRef = doc(db, 'users', 'public', 'settings', 'pockets');
-    await setDoc(docRef, { items, updatedAt: Date.now() }, { merge: true });
+    const safeItems = sanitizeForFirestore(items);
+    await setDoc(docRef, { items: safeItems, updatedAt: Date.now() }, { merge: true });
   } catch (err) {
     console.error('[pocketStorage] Failed to save pockets to Firestore server:', err);
   }

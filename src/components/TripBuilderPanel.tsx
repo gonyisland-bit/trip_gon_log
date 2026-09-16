@@ -20,6 +20,7 @@ import {
   RefreshCw,
   ArrowLeft,
   ChevronRight,
+  ChevronDown,
   Bookmark
 } from 'lucide-react';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
@@ -246,14 +247,16 @@ export function TripBuilderPanel({
   }, [smartCity, smartCountry]);
 
   // ── Smart Pocket Spots for Selected Country/City ──
-  const [isPocketDrawerOpen, setIsPocketDrawerOpen] = useState(false);
+  const [isCuratorPocketOpen, setIsCuratorPocketOpen] = useState(false);
+  const [isCustomPocketOpen, setIsCustomPocketOpen] = useState(false);
+
   const relevantPocketSpots = useMemo(() => {
     const allPockets = savedPockets.length > 0 ? savedPockets : getSavedPockets();
     const targetCountry = (smartCountry?.nameKo || smartCountry?.nameEn || country || '').toLowerCase().trim();
     const targetCity = (smartCity?.nameKo || smartCity?.nameEn || locations[0]?.name || '').toLowerCase().trim();
 
     return allPockets.filter(s => {
-      // Always include if explicitly selected
+      // Always include if explicitly selected from PocketHub
       if (selectedPocketIds.has(s.id)) return true;
       if (!targetCountry && !targetCity) return false;
 
@@ -267,6 +270,117 @@ export function TripBuilderPanel({
       return false;
     });
   }, [savedPockets, selectedPocketIds, smartCountry, country, smartCity, locations]);
+
+  // Reusable Swiss Minimal Pocket Accordion Renderer
+  const renderPocketAccordion = (isOpen: boolean, setIsOpen: (open: boolean) => void) => {
+    if (relevantPocketSpots.length === 0) return null;
+    const allSelected = relevantPocketSpots.every(s => selectedPocketIds.has(s.id));
+    const selectedCount = relevantPocketSpots.filter(s => selectedPocketIds.has(s.id)).length;
+
+    const handleToggleAll = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setSelectedPocketIds(prev => {
+        const next = new Set(prev);
+        if (allSelected) {
+          relevantPocketSpots.forEach(s => next.delete(s.id));
+        } else {
+          relevantPocketSpots.forEach(s => next.add(s.id));
+        }
+        return next;
+      });
+    };
+
+    return (
+      <div className="border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] overflow-hidden transition-all">
+        {/* Accordion Header */}
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full px-3 py-2.5 flex items-center justify-between gap-2 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors cursor-pointer text-left"
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <Bookmark className="w-3.5 h-3.5 text-red-500 shrink-0" />
+            <div className="min-w-0">
+              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                MATCHING POCKETS ({relevantPocketSpots.length})
+              </span>
+              <span className="hidden sm:inline text-[9.5px] font-mono text-black/50 dark:text-white/50 ml-2">
+                [보관된 장소를 여정에 추가]
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {selectedCount > 0 && (
+              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 bg-red-600 text-white uppercase tracking-wider">
+                {selectedCount} SELECTED
+              </span>
+            )}
+            <ChevronDown className={`w-3.5 h-3.5 text-black/40 dark:text-white/40 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+          </div>
+        </button>
+
+        {/* Accordion Body */}
+        {isOpen && (
+          <div className="p-3 border-t border-black/10 dark:border-white/10 space-y-2 bg-black/[0.01] dark:bg-white/[0.01]">
+            <div className="flex items-center justify-between text-[10px] font-mono">
+              <span className="text-black/50 dark:text-white/50">
+                선택한 장소는 1일차 추천 타임라인에 자동 배치됩니다.
+              </span>
+              <button
+                type="button"
+                onClick={handleToggleAll}
+                className="text-red-600 dark:text-red-400 font-bold hover:underline cursor-pointer shrink-0 ml-2"
+              >
+                {allSelected ? '전체 해제' : '전체 선택'}
+              </button>
+            </div>
+
+            <div className="max-h-48 overflow-y-auto divide-y divide-black/10 dark:divide-white/10 border border-black/10 dark:border-white/10 bg-white dark:bg-[#181818]">
+              {relevantPocketSpots.map(spot => {
+                const isChecked = selectedPocketIds.has(spot.id);
+                return (
+                  <div
+                    key={spot.id}
+                    onClick={() => handleTogglePocketCheck(spot.id)}
+                    className={`p-2 flex items-center justify-between gap-2.5 cursor-pointer transition-colors ${
+                      isChecked ? 'bg-black/5 dark:bg-white/10' : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className={`w-4 h-4 border flex items-center justify-center shrink-0 ${
+                        isChecked
+                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                          : 'border-black/30 dark:border-white/30 bg-white dark:bg-[#181818]'
+                      }`}>
+                        {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-black dark:text-white truncate font-sans">
+                          {spot.title}
+                        </div>
+                        <div className="text-[9.5px] font-mono text-black/50 dark:text-white/50 truncate">
+                          <span className="font-bold text-black/70 dark:text-white/70">[{spot.category.toUpperCase()}]</span>
+                          {' '}{[spot.city, spot.country].filter(Boolean).join(' · ')}
+                          {spot.memo ? ` · ${spot.memo}` : ''}
+                        </div>
+                      </div>
+                    </div>
+                    {spot.thumbnailUrl && (
+                      <img
+                        src={spot.thumbnailUrl}
+                        alt=""
+                        className="w-8 h-8 aspect-square object-cover border border-black/10 dark:border-white/10 shrink-0"
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // Nearest best month for currently selected city or country
   const autoBestMonth = useMemo(() => {
@@ -851,6 +965,27 @@ export function TripBuilderPanel({
         type: item.type
       }))
     }));
+    // 선택된 포켓들을 1일차 타임라인에 적절한 시간대로 자동 배치
+    const selectedPocketsList = (savedPockets.length > 0 ? savedPockets : getSavedPockets())
+      .filter(p => selectedPocketIds.has(p.id));
+    if (selectedPocketsList.length > 0 && timelineItems.length > 0) {
+      const defaultTimeSlots = ['10:00 AM', '01:00 PM', '04:00 PM', '07:00 PM', '09:00 PM'];
+      const pocketTimelineItems = selectedPocketsList.map((p, idx) => ({
+        id: Date.now() + 5000 + idx,
+        time: defaultTimeSlots[idx % defaultTimeSlots.length],
+        title: p.title,
+        location: [p.city, p.country].filter(Boolean).join(' · ') || p.title,
+        memo: p.memo || (p.address ? `주소: ${p.address}` : '보관된 포켓 장소'),
+        category: p.category === 'food' || p.category === 'cafe' ? '식사' : p.category === 'shopping' ? '쇼핑' : '관광',
+        type: (p.category === 'food' || p.category === 'cafe' ? 'dining' : p.category === 'shopping' ? 'shopping' : 'activity') as any,
+        cost: '-',
+        img: p.thumbnailUrl || ''
+      }));
+      timelineItems[0].items = [
+        ...pocketTimelineItems,
+        ...timelineItems[0].items.filter(it => !pocketTimelineItems.some(pi => pi.title === it.title))
+      ];
+    }
 
     setConfirmModalState({
       isOpen: true,
@@ -1509,6 +1644,9 @@ export function TripBuilderPanel({
                   </div>
                 </div>
 
+                {/* Matching Pockets Accordion for Curator Tab */}
+                {renderPocketAccordion(isCuratorPocketOpen, setIsCuratorPocketOpen)}
+
                 {/* 3. Departure Timing (Year & Month) */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
@@ -1674,6 +1812,9 @@ export function TripBuilderPanel({
                 <p className="text-xs text-black/60 dark:text-white/60 font-sans leading-relaxed">
                   카드를 클릭하면 좌측 지도가 해당 여정의 위치로 이동합니다. 마음에 드는 옵션을 선택하여 여정을 생성하세요.
                 </p>
+
+                {/* Matching Pockets Accordion for Proposals View */}
+                {renderPocketAccordion(isCuratorPocketOpen, setIsCuratorPocketOpen)}
 
                 {/* Proposals Card List */}
                 <div className="space-y-3">
@@ -2138,63 +2279,7 @@ export function TripBuilderPanel({
               })()}
 
               {/* ── Saved Matching Pocket Spots for this Destination ── */}
-              {relevantPocketSpots.length > 0 && (
-                <div className="space-y-2 pt-2 border-t border-black/10 dark:border-white/10">
-                  <div className="flex items-center justify-between text-[10.5px] font-mono">
-                    <span className="text-red-500 font-bold flex items-center gap-1.5 uppercase tracking-wider">
-                      <Bookmark className="w-3.5 h-3.5 text-red-500" />
-                      <span>MATCHING POCKETS ({relevantPocketSpots.length})</span>
-                    </span>
-                    <span className="text-[9.5px] text-black/50 dark:text-white/50">
-                      {selectedPocketIds.size}개 선택됨 (1일차 일정 자동 포함)
-                    </span>
-                  </div>
-                  <p className="text-[9.5px] text-black/50 dark:text-white/50 font-mono leading-tight">
-                    선택된 포켓들은 생성 시 적절한 시간대(10:00, 13:00, 16:00...)의 타임라인 일정으로 자동 등록됩니다.
-                  </p>
-
-                  <div className="max-h-48 overflow-y-auto border border-black/15 dark:border-white/15 divide-y divide-black/10 dark:divide-white/10 bg-black/[0.01] dark:bg-white/[0.01]">
-                    {relevantPocketSpots.map(spot => {
-                      const isChecked = selectedPocketIds.has(spot.id);
-                      return (
-                        <div
-                          key={spot.id}
-                          onClick={() => handleTogglePocketCheck(spot.id)}
-                          className={`p-2 flex items-center justify-between gap-2.5 cursor-pointer transition-colors ${
-                            isChecked ? 'bg-black/5 dark:bg-white/10' : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className={`w-4 h-4 border flex items-center justify-center shrink-0 ${
-                              isChecked
-                                ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                                : 'border-black/30 dark:border-white/30 bg-white dark:bg-[#181818]'
-                            }`}>
-                              {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="text-xs font-bold text-black dark:text-white truncate font-sans">
-                                {spot.title}
-                              </div>
-                              <div className="text-[9.5px] font-mono text-black/50 dark:text-white/50 truncate">
-                                {spot.category.toUpperCase()} · {[spot.city, spot.country].filter(Boolean).join(' · ')}
-                                {spot.memo ? ` · ${spot.memo}` : ''}
-                              </div>
-                            </div>
-                          </div>
-                          {spot.thumbnailUrl && (
-                            <img
-                              src={spot.thumbnailUrl}
-                              alt=""
-                              className="w-7 h-7 aspect-square object-cover border border-black/10 dark:border-white/10 shrink-0"
-                            />
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+              {renderPocketAccordion(isCustomPocketOpen, setIsCustomPocketOpen)}
 
               {/* Added Locations Chips */}
               {locations.length > 0 && (
