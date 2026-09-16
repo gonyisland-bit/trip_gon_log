@@ -139,7 +139,7 @@ export const ROUGH_TEMPLATES: RoughTemplate[] = [
     countryKo: '미국',
     cityNameKo: '뉴욕',
     nights: 6, // 6박 7일
-    theme: 'city',
+    theme: 'activity',
     description: '뉴욕/서부 대륙 랜드마크 & 로드트립',
     badge: '6박 7일'
   },
@@ -1186,6 +1186,13 @@ export function TripBuilderPanel({
     const cityObj = smartCity || WORLD_CITIES.find(c => c.countryEn === finalCountry);
     const spots = cityObj ? [...cityObj.iconicSpots, ...cityObj.hiddenGems] : ['도심 랜드마크 탐방'];
 
+    const validThemes: ('shopping' | 'food' | 'activity' | 'nature' | 'art' | 'culture')[] = [
+      'shopping', 'food', 'activity', 'nature', 'art', 'culture'
+    ];
+    const themeValue: 'shopping' | 'food' | 'activity' | 'nature' | 'art' | 'culture' = validThemes.includes(selectedTheme as any)
+      ? (selectedTheme as any)
+      : 'activity';
+
     const newCustomPreset: PresetTripPlan = {
       id: `custom-template-${Date.now()}`,
       title: templateTitle,
@@ -1194,8 +1201,8 @@ export function TripBuilderPanel({
       city: finalCityKo,
       durationDays: smartDurationDays + 1,
       tags: [finalCountry, selectedTheme !== 'all' ? selectedTheme.toUpperCase() : 'TRAVEL', `${smartDurationDays}박${smartDurationDays + 1}일`],
-      coverImg: smartCountry?.coverImg || smartCity?.coverImg || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?q=80&w=1200&auto=format&fit=crop',
-      theme: selectedTheme !== 'all' ? selectedTheme : 'city',
+      coverImg: smartCity?.coverImage || cityObj?.coverImage || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?q=80&w=1200&auto=format&fit=crop',
+      theme: themeValue,
       highlights: spots.slice(0, 3),
       isCustom: true,
       schedule: Array.from({ length: smartDurationDays + 1 }).map((_, dIdx) => ({
