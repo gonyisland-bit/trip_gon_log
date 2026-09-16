@@ -297,7 +297,7 @@ export function FlightCard({
       className={`border-b font-sans text-black dark:text-white relative transition-all duration-300 cursor-pointer w-full group/ticket ${
         isActive 
           ? 'bg-black/[0.05] dark:bg-white/[0.08] ring-1 ring-inset ring-black/20 dark:ring-white/25 border-b-black/30 dark:border-b-white/30 shadow-xs' 
-          : 'border-b-black/15 dark:border-b-white/15 bg-white dark:bg-[#0A0A0A]'
+          : 'border-b-black/15 dark:border-b-white/15 bg-white dark:bg-[#0A0A0A] hover:bg-black/[0.015] dark:hover:bg-white/[0.015]'
       }`}
     >
       {/* Header bar */}
