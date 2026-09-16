@@ -59,7 +59,8 @@ export function PocketHubPage({
   const [isSortOpen, setIsSortOpen] = useState<boolean>(false);
   const sortRef = useRef<HTMLDivElement>(null);
 
-  // Drag-reorder state (admin-only)
+  // Drag-reorder state (admin-only, requires explicit reorder toggle)
+  const [isReorderMode, setIsReorderMode] = useState<boolean>(false);
   const [draggingSpotId, setDraggingSpotId] = useState<string | null>(null);
   const [dragOverSpotId, setDragOverSpotId] = useState<string | null>(null);
 
@@ -202,6 +203,11 @@ export function PocketHubPage({
     return () => window.removeEventListener('click', handleDocumentClick);
   }, [isSortOpen]);
 
+  // Auto-exit reorder mode when sort mode changes away from CUSTOM
+  useEffect(() => {
+    if (sortMode !== 'custom') setIsReorderMode(false);
+  }, [sortMode]);
+
   const allAvailableTrips = useMemo(() => {
     return [...trips, ...plans];
   }, [trips, plans]);
@@ -280,17 +286,16 @@ export function PocketHubPage({
     }
   }, [filteredSpots, sortMode]);
 
-  // Is drag-reorder mode active? (admin + custom sort + no filters)
-  const isDragMode = isAdmin && sortMode === 'custom' && activeFilterCount === 0 && !searchQuery.trim();
+  // Is drag-reorder mode active? (admin + explicit reorder toggle + custom sort + no filters)
+  const isDragMode = isAdmin && isReorderMode && sortMode === 'custom' && activeFilterCount === 0 && !searchQuery.trim();
 
-  // Grouped spots by country · city (used when not in drag mode)
+  // Grouped spots by country (top-level grouping — avoids sub-district fragmentation)
   const groupedSpots = useMemo(() => {
     const groups: { key: string; label: string; items: SpotPocketItem[] }[] = [];
     const record: Record<string, SpotPocketItem[]> = {};
     sortedSpots.forEach(s => {
       const country = (s.country || '').trim();
-      const city = (s.city || '').trim();
-      const key = country && city ? `${country} · ${city}` : country || city || 'UNCATEGORIZED';
+      const key = country || 'UNCATEGORIZED';
       if (!record[key]) record[key] = [];
       record[key].push(s);
     });
@@ -819,11 +824,27 @@ export function PocketHubPage({
             </div>
           )}
 
-          {/* Drag mode hint (admin + custom sort only) */}
-          {isDragMode && (
-            <div className="flex items-center gap-1.5 text-[10px] font-mono text-black/40 dark:text-white/40 uppercase tracking-wider">
-              <GripVertical className="w-3 h-3" />
-              <span>드래그하거나 메뉴에서 ↑↓으로 순서를 변경합니다 — 관리자 전용</span>
+          {/* Admin-only: reorder toggle (visible only when admin + CUSTOM sort) */}
+          {isAdmin && sortMode === 'custom' && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsReorderMode(prev => !prev)}
+                className={`h-8 px-3 flex items-center gap-1.5 text-[11px] font-mono font-bold tracking-widest uppercase border transition-colors cursor-pointer ${
+                  isReorderMode
+                    ? 'bg-red-600 text-white border-red-600'
+                    : 'border-black/20 dark:border-white/20 text-black/50 dark:text-white/50 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white'
+                }`}
+                title="피드 순서 편집 (관리자 전용)"
+              >
+                <GripVertical className="w-3.5 h-3.5" />
+                <span>{isReorderMode ? 'ORDER ON' : 'ORDER'}</span>
+              </button>
+              {isDragMode && (
+                <span className="text-[10px] font-mono text-black/40 dark:text-white/40 uppercase tracking-wider">
+                  드래그 또는 ↑↓ 메뉴로 순서 변경
+                </span>
+              )}
             </div>
           )}
         </div>
