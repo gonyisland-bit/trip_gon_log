@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Bookmark, MapPin, Plus, ExternalLink, Trash2, Edit3, Compass, 
   Search, Check, X, ArrowUpRight, ChevronRight, Layers, Sparkles,
   Utensils, Coffee, Camera, ShoppingBag, Lightbulb, Map, MoreVertical, Star,
-  Upload, Image as ImageIcon, Loader2
+  Upload, Image as ImageIcon, Loader2,
+  SlidersHorizontal, ArrowUpDown, ChevronDown, GripVertical, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { SpotPocketItem, PocketCategory, Trip, Plan, TimelineItem } from '../types';
 import { getSavedPockets, savePockets, detectPlatform, subscribePockets } from '../utils/pocketStorage';
@@ -43,10 +44,25 @@ export function PocketHubPage({
   isDarkMode
 }: PocketHubPageProps) {
   const [spots, setSpots] = useState<SpotPocketItem[]>(() => getSavedPockets());
-  const [selectedRegion, setSelectedRegion] = useState<string>('ALL');
+
+  // Filter state — 2-level country → city hierarchy
+  const [selectedCountry, setSelectedCountry] = useState<string>('ALL');
+  const [selectedCity, setSelectedCity] = useState<string>('ALL');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isFavoriteFilter, setIsFavoriteFilter] = useState<boolean>(false);
+  const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
+
+  // Sort state
+  type SortMode = 'custom' | 'newest' | 'oldest' | 'title' | 'category';
+  const [sortMode, setSortMode] = useState<SortMode>('custom');
+  const [isSortOpen, setIsSortOpen] = useState<boolean>(false);
+  const sortRef = useRef<HTMLDivElement>(null);
+
+  // Drag-reorder state (admin-only)
+  const [draggingSpotId, setDraggingSpotId] = useState<string | null>(null);
+  const [dragOverSpotId, setDragOverSpotId] = useState<string | null>(null);
+
   const [visibleCount, setVisibleCount] = useState<number>(40);
   
   // New or Edit Spot Modal state
@@ -174,46 +190,67 @@ export function PocketHubPage({
     return () => window.removeEventListener('click', handleDocumentClick);
   }, [activeMenuSpotId]);
 
+  // Close sort dropdown when clicking outside
+  useEffect(() => {
+    if (!isSortOpen) return;
+    const handleDocumentClick = (e: MouseEvent) => {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) {
+        setIsSortOpen(false);
+      }
+    };
+    window.addEventListener('click', handleDocumentClick);
+    return () => window.removeEventListener('click', handleDocumentClick);
+  }, [isSortOpen]);
+
   const allAvailableTrips = useMemo(() => {
     return [...trips, ...plans];
   }, [trips, plans]);
 
-  // Unique Region Chips (Country · City)
-  const regionOptions = useMemo(() => {
+  // Country options from all spots
+  const countryOptions = useMemo(() => {
     const counts: Record<string, number> = {};
     spots.forEach(s => {
-      const country = (s.country || '').trim();
-      const city = (s.city || '').trim();
-      const key = country && city ? `${country} · ${city}` : (country || city || '기타');
-      counts[key] = (counts[key] || 0) + 1;
+      const c = (s.country || '').trim();
+      if (c) counts[c] = (counts[c] || 0) + 1;
     });
-    return Object.entries(counts).map(([region, count]) => ({ region, count }));
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([country, count]) => ({ country, count }));
   }, [spots]);
+
+  // City options for the selected country
+  const cityOptions = useMemo(() => {
+    if (selectedCountry === 'ALL') return [];
+    const counts: Record<string, number> = {};
+    spots.filter(s => (s.country || '').trim() === selectedCountry).forEach(s => {
+      const c = (s.city || '').trim();
+      if (c) counts[c] = (counts[c] || 0) + 1;
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([city, count]) => ({ city, count }));
+  }, [spots, selectedCountry]);
 
   // Favorite count
   const favoriteCount = useMemo(() => {
     return spots.filter(s => s.isFavorite).length;
   }, [spots]);
 
+  // Active filter count (for badge)
+  const activeFilterCount = useMemo(() => {
+    let n = 0;
+    if (selectedCountry !== 'ALL') n++;
+    if (selectedCity !== 'ALL') n++;
+    if (selectedCategory !== 'ALL') n++;
+    if (isFavoriteFilter) n++;
+    return n;
+  }, [selectedCountry, selectedCity, selectedCategory, isFavoriteFilter]);
+
   // Filtered spots
   const filteredSpots = useMemo(() => {
     return spots.filter(s => {
-      // Favorite filter
-      if (isFavoriteFilter && !s.isFavorite) {
-        return false;
+      if (isFavoriteFilter && !s.isFavorite) return false;
+      if (selectedCountry !== 'ALL') {
+        if ((s.country || '').trim() !== selectedCountry) return false;
+        if (selectedCity !== 'ALL' && (s.city || '').trim() !== selectedCity) return false;
       }
-      // Region filter
-      if (selectedRegion !== 'ALL') {
-        const country = (s.country || '').trim();
-        const city = (s.city || '').trim();
-        const key = country && city ? `${country} · ${city}` : (country || city || '기타');
-        if (key !== selectedRegion) return false;
-      }
-      // Category filter
-      if (selectedCategory !== 'ALL' && s.category !== selectedCategory) {
-        return false;
-      }
-      // Search query
+      if (selectedCategory !== 'ALL' && s.category !== selectedCategory) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchTitle = s.title.toLowerCase().includes(q);
@@ -223,7 +260,93 @@ export function PocketHubPage({
       }
       return true;
     });
-  }, [spots, isFavoriteFilter, selectedRegion, selectedCategory, searchQuery]);
+  }, [spots, isFavoriteFilter, selectedCountry, selectedCity, selectedCategory, searchQuery]);
+
+  // Sorted spots
+  const sortedSpots = useMemo(() => {
+    const copy = [...filteredSpots];
+    switch (sortMode) {
+      case 'newest':   return copy.sort((a, b) => b.createdAt - a.createdAt);
+      case 'oldest':   return copy.sort((a, b) => a.createdAt - b.createdAt);
+      case 'title':    return copy.sort((a, b) => a.title.localeCompare(b.title));
+      case 'category': return copy.sort((a, b) => a.category.localeCompare(b.category));
+      case 'custom':
+      default:
+        return copy.sort((a, b) => {
+          const ao = a.order ?? a.createdAt;
+          const bo = b.order ?? b.createdAt;
+          return ao - bo;
+        });
+    }
+  }, [filteredSpots, sortMode]);
+
+  // Is drag-reorder mode active? (admin + custom sort + no filters)
+  const isDragMode = isAdmin && sortMode === 'custom' && activeFilterCount === 0 && !searchQuery.trim();
+
+  // Grouped spots by country · city (used when not in drag mode)
+  const groupedSpots = useMemo(() => {
+    const groups: { key: string; label: string; items: SpotPocketItem[] }[] = [];
+    const record: Record<string, SpotPocketItem[]> = {};
+    sortedSpots.forEach(s => {
+      const country = (s.country || '').trim();
+      const city = (s.city || '').trim();
+      const key = country && city ? `${country} · ${city}` : country || city || 'UNCATEGORIZED';
+      if (!record[key]) record[key] = [];
+      record[key].push(s);
+    });
+    Object.entries(record).forEach(([key, items]) => groups.push({ key, label: key.toUpperCase(), items }));
+    return groups;
+  }, [sortedSpots]);
+
+  // Sort labels
+  const SORT_LABELS: Record<string, string> = {
+    custom: 'CUSTOM',
+    newest: 'NEWEST',
+    oldest: 'OLDEST',
+    title: 'A-Z',
+    category: 'CATEGORY',
+  };
+
+  // Admin-only: reorder spots by drag result
+  const handleDrop = async (targetId: string) => {
+    if (!draggingSpotId || draggingSpotId === targetId) {
+      setDraggingSpotId(null);
+      setDragOverSpotId(null);
+      return;
+    }
+    const currentOrder = sortedSpots.map(s => s.id);
+    const fromIdx = currentOrder.indexOf(draggingSpotId);
+    const toIdx = currentOrder.indexOf(targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
+    const reordered = [...currentOrder];
+    reordered.splice(fromIdx, 1);
+    reordered.splice(toIdx, 0, draggingSpotId);
+    const orderRecord: Record<string, number> = {};
+    reordered.forEach((id, idx) => { orderRecord[id] = idx; });
+    const updated = spots.map(s => s.id in orderRecord ? { ...s, order: orderRecord[s.id] } : s);
+    setSpots(updated);
+    setDraggingSpotId(null);
+    setDragOverSpotId(null);
+    await savePockets(updated);
+  };
+
+  // Admin-only: move spot up/down in custom order
+  const handleMoveSpot = async (spotId: string, direction: 'up' | 'down') => {
+    const currentOrder = sortedSpots.map(s => s.id);
+    const idx = currentOrder.indexOf(spotId);
+    if (idx === -1) return;
+    const newIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (newIdx < 0 || newIdx >= currentOrder.length) return;
+    const reordered = [...currentOrder];
+    reordered.splice(idx, 1);
+    reordered.splice(newIdx, 0, spotId);
+    const orderRecord: Record<string, number> = {};
+    reordered.forEach((id, i) => { orderRecord[id] = i; });
+    const updated = spots.map(s => s.id in orderRecord ? { ...s, order: orderRecord[s.id] } : s);
+    setSpots(updated);
+    setActiveMenuSpotId(null);
+    await savePockets(updated);
+  };
 
   // Toggle Favorite
   const handleToggleFavorite = async (spotId: string, e?: React.MouseEvent) => {
@@ -470,103 +593,243 @@ export function PocketHubPage({
           </div>
         </div>
 
-        {/* Filter Controls Bar */}
-        <div className="space-y-4 mb-8">
-          {/* 1. Region Chips (Country · City) & Favorites */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none">
-            {/* Favorite Filter Chip */}
+        {/* ── Filter & Sort Bar ── */}
+        <div className="mb-6 space-y-2">
+          {/* 1-Row compact bar */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* FILTER toggle button */}
             <button
               type="button"
-              onClick={() => setIsFavoriteFilter(prev => !prev)}
-              className={`px-3 py-1 text-xs font-mono uppercase tracking-wider border transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
-                isFavoriteFilter
-                  ? 'bg-amber-500 text-white border-amber-500 font-bold shadow-xs'
-                  : 'border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:border-black/40'
+              onClick={() => setIsFilterOpen(prev => !prev)}
+              className={`h-8 px-3 flex items-center gap-1.5 text-[11px] font-mono font-bold tracking-widest uppercase border transition-colors cursor-pointer shrink-0 ${
+                isFilterOpen || activeFilterCount > 0
+                  ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
+                  : 'border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white'
               }`}
             >
-              <Star className={`w-3 h-3 ${isFavoriteFilter ? 'fill-white text-white' : 'text-amber-500 fill-amber-500'}`} />
-              <span>FAVORITES ({favoriteCount})</span>
+              <SlidersHorizontal className="w-3 h-3" />
+              <span>FILTER</span>
+              {activeFilterCount > 0 && (
+                <span className="ml-0.5 bg-red-600 text-white text-[9px] font-black px-1 py-0.5 leading-none">{activeFilterCount}</span>
+              )}
             </button>
 
-            <span className="text-[10px] font-mono tracking-widest text-black/40 dark:text-white/40 uppercase whitespace-nowrap mx-1">
-              REGION:
-            </span>
-            <button
-              onClick={() => setSelectedRegion('ALL')}
-              className={`px-3 py-1 text-xs font-mono uppercase tracking-wider border transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
-                selectedRegion === 'ALL'
-                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold'
-                  : 'border-black/15 dark:border-white/15 hover:border-black/40 dark:hover:border-white/40 text-black/70 dark:text-white/70'
-              }`}
-            >
-              ALL ({spots.length})
-            </button>
-            {regionOptions.map(({ region, count }) => (
+            {/* Active filter chips */}
+            {selectedCountry !== 'ALL' && (
               <button
-                key={region}
-                onClick={() => setSelectedRegion(region)}
-                className={`px-3 py-1 text-xs font-mono uppercase tracking-wider border transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
-                  selectedRegion === region
-                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold'
-                    : 'border-black/15 dark:border-white/15 hover:border-black/40 dark:hover:border-white/40 text-black/70 dark:text-white/70'
-                }`}
+                onClick={() => { setSelectedCountry('ALL'); setSelectedCity('ALL'); }}
+                className="h-8 px-2.5 flex items-center gap-1.5 text-[11px] font-mono font-bold tracking-wider uppercase border border-black dark:border-white bg-black/5 dark:bg-white/5 cursor-pointer hover:bg-red-500/10 hover:border-red-500 transition-colors"
               >
-                {region} ({count})
+                <span>{selectedCountry}{selectedCity !== 'ALL' ? ` · ${selectedCity}` : ''}</span>
+                <X className="w-2.5 h-2.5" />
               </button>
-            ))}
-          </div>
-
-          {/* 2. Category Chips & Search Bar */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2 border-t border-black/10 dark:border-white/10">
-            {/* Category Chips */}
-            <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
+            )}
+            {selectedCategory !== 'ALL' && (
               <button
                 onClick={() => setSelectedCategory('ALL')}
-                className={`px-2.5 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors cursor-pointer shrink-0 ${
-                  selectedCategory === 'ALL'
-                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold'
-                    : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60'
+                className="h-8 px-2.5 flex items-center gap-1.5 text-[11px] font-mono font-bold tracking-wider uppercase border border-black dark:border-white bg-black/5 dark:bg-white/5 cursor-pointer hover:bg-red-500/10 hover:border-red-500 transition-colors"
+              >
+                <span>{selectedCategory}</span>
+                <X className="w-2.5 h-2.5" />
+              </button>
+            )}
+            {isFavoriteFilter && (
+              <button
+                onClick={() => setIsFavoriteFilter(false)}
+                className="h-8 px-2.5 flex items-center gap-1.5 text-[11px] font-mono font-bold tracking-wider uppercase border border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-400 cursor-pointer hover:bg-red-500/10 hover:border-red-500 transition-colors"
+              >
+                <Star className="w-2.5 h-2.5 fill-current" />
+                <span>FAVORITES</span>
+                <X className="w-2.5 h-2.5" />
+              </button>
+            )}
+            {activeFilterCount > 0 && (
+              <button
+                onClick={() => { setSelectedCountry('ALL'); setSelectedCity('ALL'); setSelectedCategory('ALL'); setIsFavoriteFilter(false); }}
+                className="h-8 px-2 text-[10px] font-mono uppercase tracking-wider text-black/40 dark:text-white/40 hover:text-red-500 cursor-pointer transition-colors"
+              >
+                RESET
+              </button>
+            )}
+
+            {/* Spacer */}
+            <div className="flex-1" />
+
+            {/* Sort dropdown */}
+            <div ref={sortRef} className="relative shrink-0">
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setIsSortOpen(prev => !prev); }}
+                className={`h-8 px-3 flex items-center gap-1.5 text-[11px] font-mono font-bold tracking-widest uppercase border transition-colors cursor-pointer ${
+                  isSortOpen
+                    ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
+                    : 'border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white'
                 }`}
               >
-                ALL
+                <ArrowUpDown className="w-3 h-3" />
+                <span>{SORT_LABELS[sortMode]}</span>
+                <ChevronDown className={`w-3 h-3 transition-transform ${isSortOpen ? 'rotate-180' : ''}`} />
               </button>
-              {(Object.keys(CATEGORY_META) as PocketCategory[]).map(cat => {
-                const meta = CATEGORY_META[cat];
-                const Icon = meta.icon;
-                const isSelected = selectedCategory === cat;
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`px-2.5 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors flex items-center gap-1.5 cursor-pointer shrink-0 ${
-                      isSelected
-                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold'
-                        : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-                    }`}
-                  >
-                    <Icon className="w-3 h-3" style={{ color: isSelected ? undefined : meta.color }} />
-                    <span>{meta.label}</span>
-                  </button>
-                );
-              })}
+              {isSortOpen && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute right-0 top-full mt-1 z-30 w-36 bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 shadow-xl py-1 font-mono text-[11px] animate-in fade-in zoom-in-95 duration-100"
+                >
+                  {(['custom', 'newest', 'oldest', 'title', 'category'] as const).map(mode => (
+                    <button
+                      key={mode}
+                      onClick={() => { setSortMode(mode); setIsSortOpen(false); }}
+                      className={`w-full px-3 py-2 text-left flex items-center gap-2 uppercase tracking-wider cursor-pointer transition-colors ${
+                        sortMode === mode
+                          ? 'bg-black text-white dark:bg-white dark:text-black font-bold'
+                          : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white'
+                      }`}
+                    >
+                      {sortMode === mode && <Check className="w-3 h-3 shrink-0" />}
+                      <span className={sortMode === mode ? '' : 'ml-5'}>{SORT_LABELS[mode]}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Search Input */}
-            <div className="relative w-full sm:w-64">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
+            <div className="relative shrink-0 w-44 sm:w-56">
+              <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="장소명, 꿀팁, 지역 검색..."
-                className="w-full h-8 pl-9 pr-3 bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15 text-xs font-mono placeholder:text-black/30 dark:placeholder:text-white/30 focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                placeholder="장소명, 지역 검색..."
+                className="w-full h-8 pl-8 pr-3 bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15 text-[11px] font-mono placeholder:text-black/30 dark:placeholder:text-white/30 focus:outline-none focus:border-black dark:focus:border-white transition-colors"
               />
             </div>
           </div>
+
+          {/* Slide-open Filter Panel */}
+          {isFilterOpen && (
+            <div className="border border-black/15 dark:border-white/15 p-3 sm:p-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-150 bg-black/[0.015] dark:bg-white/[0.015]">
+              {/* COUNTRY */}
+              <div className="flex items-start gap-2 flex-wrap">
+                <span className="text-[9px] font-mono tracking-widest text-black/40 dark:text-white/40 uppercase pt-1.5 shrink-0 w-16">COUNTRY</span>
+                <div className="flex flex-wrap gap-1.5 flex-1">
+                  <button
+                    onClick={() => { setSelectedCountry('ALL'); setSelectedCity('ALL'); }}
+                    className={`px-2 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors cursor-pointer ${
+                      selectedCountry === 'ALL'
+                        ? 'bg-black text-white dark:bg-white dark:text-black border-transparent font-bold'
+                        : 'border-black/15 dark:border-white/15 hover:border-black/40 text-black/70 dark:text-white/70'
+                    }`}
+                  >ALL</button>
+                  {countryOptions.map(({ country, count }) => (
+                    <button
+                      key={country}
+                      onClick={() => { setSelectedCountry(country); setSelectedCity('ALL'); }}
+                      className={`px-2 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors cursor-pointer ${
+                        selectedCountry === country
+                          ? 'bg-black text-white dark:bg-white dark:text-black border-transparent font-bold'
+                          : 'border-black/15 dark:border-white/15 hover:border-black/40 text-black/70 dark:text-white/70'
+                      }`}
+                    >{country} ({count})</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* CITY (only when country selected) */}
+              {selectedCountry !== 'ALL' && cityOptions.length > 0 && (
+                <div className="flex items-start gap-2 flex-wrap">
+                  <span className="text-[9px] font-mono tracking-widest text-black/40 dark:text-white/40 uppercase pt-1.5 shrink-0 w-16">CITY</span>
+                  <div className="flex flex-wrap gap-1.5 flex-1">
+                    <button
+                      onClick={() => setSelectedCity('ALL')}
+                      className={`px-2 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors cursor-pointer ${
+                        selectedCity === 'ALL'
+                          ? 'bg-black text-white dark:bg-white dark:text-black border-transparent font-bold'
+                          : 'border-black/15 dark:border-white/15 hover:border-black/40 text-black/70 dark:text-white/70'
+                      }`}
+                    >ALL</button>
+                    {cityOptions.map(({ city, count }) => (
+                      <button
+                        key={city}
+                        onClick={() => setSelectedCity(city)}
+                        className={`px-2 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors cursor-pointer ${
+                          selectedCity === city
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-transparent font-bold'
+                            : 'border-black/15 dark:border-white/15 hover:border-black/40 text-black/70 dark:text-white/70'
+                        }`}
+                      >{city} ({count})</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* CATEGORY */}
+              <div className="flex items-start gap-2 flex-wrap">
+                <span className="text-[9px] font-mono tracking-widest text-black/40 dark:text-white/40 uppercase pt-1.5 shrink-0 w-16">CATEGORY</span>
+                <div className="flex flex-wrap gap-1.5 flex-1">
+                  <button
+                    onClick={() => setSelectedCategory('ALL')}
+                    className={`px-2 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors cursor-pointer ${
+                      selectedCategory === 'ALL'
+                        ? 'bg-black text-white dark:bg-white dark:text-black border-transparent font-bold'
+                        : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60'
+                    }`}
+                  >ALL</button>
+                  {(Object.keys(CATEGORY_META) as PocketCategory[]).map(cat => {
+                    const meta = CATEGORY_META[cat];
+                    const CatIcon = meta.icon;
+                    const isSelected = selectedCategory === cat;
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => setSelectedCategory(cat)}
+                        className={`px-2 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors flex items-center gap-1 cursor-pointer ${
+                          isSelected
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-transparent font-bold'
+                            : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                        }`}
+                      >
+                        <CatIcon className="w-2.5 h-2.5" style={{ color: isSelected ? undefined : meta.color }} />
+                        <span>{meta.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* FAVORITES + RESET */}
+              <div className="flex items-center justify-between pt-1 border-t border-black/10 dark:border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setIsFavoriteFilter(prev => !prev)}
+                  className={`flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider cursor-pointer transition-colors ${
+                    isFavoriteFilter ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                  }`}
+                >
+                  <Star className={`w-3 h-3 ${isFavoriteFilter ? 'fill-amber-500 text-amber-500' : ''}`} />
+                  <span>FAVORITES ({favoriteCount})</span>
+                </button>
+                <button
+                  onClick={() => { setSelectedCountry('ALL'); setSelectedCity('ALL'); setSelectedCategory('ALL'); setIsFavoriteFilter(false); }}
+                  className="text-[10px] font-mono uppercase tracking-wider text-black/40 dark:text-white/40 hover:text-red-500 cursor-pointer transition-colors"
+                >
+                  RESET ALL
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Drag mode hint (admin + custom sort only) */}
+          {isDragMode && (
+            <div className="flex items-center gap-1.5 text-[10px] font-mono text-black/40 dark:text-white/40 uppercase tracking-wider">
+              <GripVertical className="w-3 h-3" />
+              <span>드래그하거나 메뉴에서 ↑↓으로 순서를 변경합니다 — 관리자 전용</span>
+            </div>
+          )}
         </div>
 
-        {/* Gallery Grid (Mobile 2-column: grid-cols-2) */}
-        {filteredSpots.length === 0 ? (
+        {/* Gallery — Grouped by country·city or flat drag mode */}
+        {sortedSpots.length === 0 ? (
           <div className="flex-grow flex flex-col items-center justify-center py-24 border border-dashed border-black/20 dark:border-white/20 text-center">
             <Bookmark className="w-8 h-8 text-black/20 dark:text-white/20 mb-3" />
             <p className="text-sm font-mono text-black/50 dark:text-white/50 uppercase tracking-widest">
@@ -578,27 +841,43 @@ export function PocketHubPage({
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-2.5 sm:gap-4">
-              {filteredSpots.slice(0, visibleCount).map(spot => {
+            {/* Helper to render a single card */}
+            {(() => {
+              const renderCard = (spot: SpotPocketItem) => {
                 const meta = CATEGORY_META[spot.category] || CATEGORY_META.spot;
                 const Icon = meta.icon;
                 const locationLabel = [spot.country, spot.city].filter(Boolean).join(' · ') || 'LOCATION';
                 const isSelected = selectedSpotIds.has(spot.id);
+                const isDraggingThis = draggingSpotId === spot.id;
+                const isDragOver = dragOverSpotId === spot.id;
 
                 return (
                   <div
                     key={spot.id}
-                    onClick={() => {
-                      if (isSelectionMode) handleToggleSelectSpot(spot.id);
-                    }}
+                    draggable={isDragMode}
+                    onDragStart={isDragMode ? () => setDraggingSpotId(spot.id) : undefined}
+                    onDragOver={isDragMode ? (e) => { e.preventDefault(); setDragOverSpotId(spot.id); } : undefined}
+                    onDragLeave={isDragMode ? () => setDragOverSpotId(null) : undefined}
+                    onDrop={isDragMode ? (e) => { e.preventDefault(); handleDrop(spot.id); } : undefined}
+                    onDragEnd={isDragMode ? () => { setDraggingSpotId(null); setDragOverSpotId(null); } : undefined}
+                    onClick={() => { if (isSelectionMode) handleToggleSelectSpot(spot.id); }}
                     className={`group flex flex-col border bg-white dark:bg-[#111111] transition-all duration-200 overflow-hidden shadow-2xs hover:shadow-md ${
-                      isSelectionMode ? 'cursor-pointer' : ''
+                      isSelectionMode ? 'cursor-pointer' : isDragMode ? 'cursor-grab active:cursor-grabbing' : ''
                     } ${
-                      isSelected
-                        ? 'border-red-600 ring-2 ring-red-600'
-                        : 'border-black/15 dark:border-white/15 hover:border-black/50 dark:hover:border-white/50'
+                      isDraggingThis ? 'opacity-40 scale-[0.98]' : ''
+                    } ${
+                      isDragOver ? 'ring-2 ring-red-500 border-red-500' :
+                      isSelected ? 'border-red-600 ring-2 ring-red-600' :
+                      'border-black/15 dark:border-white/15 hover:border-black/50 dark:hover:border-white/50'
                     }`}
                   >
+                    {/* Drag Handle (admin + custom sort mode only) */}
+                    {isDragMode && (
+                      <div className="flex items-center justify-center h-5 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/10 dark:border-white/10 cursor-grab text-black/20 dark:text-white/20 hover:text-black/50 dark:hover:text-white/50 transition-colors">
+                        <GripVertical className="w-3 h-3" />
+                      </div>
+                    )}
+
                     {/* Card Visual / Thumbnail (3:4 SNS Aspect Ratio) */}
                     <div className="relative aspect-[3/4] bg-black/5 dark:bg-white/5 overflow-hidden transition-all">
                       {spot.thumbnailUrl ? (
@@ -643,7 +922,7 @@ export function PocketHubPage({
                         </button>
                       )}
 
-                      {/* Platform Badge Overlay (Clickable link to original source if available) */}
+                      {/* Platform Badge Overlay */}
                       {spot.platform && spot.platform !== 'web' && (
                         spot.sourceUrl ? (
                           <a
@@ -731,7 +1010,7 @@ export function PocketHubPage({
                           </a>
                         )}
 
-                        {/* Hamburger More Menu (Edit & Delete) */}
+                        {/* Hamburger More Menu (Edit & Delete + admin ↑↓) */}
                         <div className="relative shrink-0">
                           <button
                             type="button"
@@ -744,16 +1023,38 @@ export function PocketHubPage({
                                 ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
                                 : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                             }`}
-                            title="스팟 메뉴 (수정/삭제)"
+                            title="스팟 메뉴"
                           >
                             <MoreVertical className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                           </button>
 
                           {activeMenuSpotId === spot.id && (
-                            <div 
+                            <div
                               onClick={(e) => e.stopPropagation()}
-                              className="absolute right-0 bottom-full mb-1 z-30 w-28 bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 shadow-xl py-1 animate-in fade-in zoom-in-95 duration-100 font-mono text-[10px] sm:text-[11px]"
+                              className={`absolute right-0 bottom-full mb-1 z-30 bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 shadow-xl py-1 animate-in fade-in zoom-in-95 duration-100 font-mono text-[10px] sm:text-[11px] ${isDragMode ? 'w-32' : 'w-28'}`}
                             >
+                              {/* Admin-only: move up / down */}
+                              {isDragMode && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleMoveSpot(spot.id, 'up')}
+                                    className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer font-bold"
+                                  >
+                                    <ArrowUp className="w-3 h-3 text-black/50 dark:text-white/50" />
+                                    <span>위로</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleMoveSpot(spot.id, 'down')}
+                                    className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer font-bold"
+                                  >
+                                    <ArrowDown className="w-3 h-3 text-black/50 dark:text-white/50" />
+                                    <span>아래로</span>
+                                  </button>
+                                  <div className="my-1 border-t border-black/10 dark:border-white/10" />
+                                </>
+                              )}
                               <button
                                 type="button"
                                 onClick={() => handleOpenEditSpot(spot)}
@@ -780,51 +1081,81 @@ export function PocketHubPage({
                     </div>
                   </div>
                 );
-              })}
-            </div>
+              };
 
-            {/* Selection Mode Floating Action Bar */}
-            {isSelectionMode && selectedSpotIds.size > 0 && (
-              <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-black text-white dark:bg-white dark:text-black px-5 py-3 border border-black/20 dark:border-white/20 shadow-2xl flex items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-3 duration-200 max-w-lg w-[92vw]">
-                <div className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider truncate">
-                  <span className="w-2 h-2 bg-red-600 shrink-0 inline-block" />
-                  <span>SELECTED: {selectedSpotIds.size} SPOTS</span>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSpotIds(new Set())}
-                    className="px-3 py-1.5 text-[11px] font-mono uppercase tracking-wider border border-white/20 dark:border-black/20 hover:border-white dark:hover:border-black transition-colors cursor-pointer"
-                  >
-                    DESELECT
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCreateTripFromSelectedPockets}
-                    className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-mono font-bold uppercase tracking-widest transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>CREATE TRIP</span>
-                  </button>
-                </div>
-              </div>
-            )}
+              return (
+                <>
+                  {isDragMode ? (
+                    /* Flat drag grid (admin + custom + no filter) */
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-2.5 sm:gap-4">
+                      {sortedSpots.slice(0, visibleCount).map(renderCard)}
+                    </div>
+                  ) : (
+                    /* Grouped sections by country·city */
+                    <div className="space-y-10">
+                      {groupedSpots.map(group => (
+                        <div key={group.key}>
+                          {/* Section header */}
+                          <div className="flex items-center gap-3 mb-4">
+                            <span className="text-[11px] font-mono font-black tracking-widest uppercase text-black dark:text-white">
+                              {group.label}
+                            </span>
+                            <span className="text-[10px] font-mono text-black/40 dark:text-white/40">{group.items.length}</span>
+                            <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-2.5 sm:gap-4">
+                            {group.items.slice(0, visibleCount).map(renderCard)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
-            {/* Pagination: 40 items per batch */}
-            {visibleCount < filteredSpots.length && (
-              <div className="flex justify-center mt-10">
-                <button
-                  type="button"
-                  onClick={() => setVisibleCount(prev => prev + 40)}
-                  className="h-10 px-6 border border-black dark:border-white text-xs font-mono font-black uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer flex items-center gap-2"
-                >
-                  <span>LOAD MORE (+40)</span>
-                  <span className="text-black/40 dark:text-white/40 font-normal">
-                    ({visibleCount} / {filteredSpots.length})
-                  </span>
-                </button>
-              </div>
-            )}
+                  {/* Selection Mode Floating Action Bar */}
+                  {isSelectionMode && selectedSpotIds.size > 0 && (
+                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-black text-white dark:bg-white dark:text-black px-5 py-3 border border-black/20 dark:border-white/20 shadow-2xl flex items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-3 duration-200 max-w-lg w-[92vw]">
+                      <div className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider truncate">
+                        <span className="w-2 h-2 bg-red-600 shrink-0 inline-block" />
+                        <span>SELECTED: {selectedSpotIds.size} SPOTS</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedSpotIds(new Set())}
+                          className="px-3 py-1.5 text-[11px] font-mono uppercase tracking-wider border border-white/20 dark:border-black/20 hover:border-white dark:hover:border-black transition-colors cursor-pointer"
+                        >
+                          DESELECT
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCreateTripFromSelectedPockets}
+                          className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-mono font-bold uppercase tracking-widest transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>CREATE TRIP</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pagination: 40 items per batch */}
+                  {visibleCount < sortedSpots.length && (
+                    <div className="flex justify-center mt-10">
+                      <button
+                        type="button"
+                        onClick={() => setVisibleCount(prev => prev + 40)}
+                        className="h-10 px-6 border border-black dark:border-white text-xs font-mono font-black uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer flex items-center gap-2"
+                      >
+                        <span>LOAD MORE (+40)</span>
+                        <span className="text-black/40 dark:text-white/40 font-normal">
+                          ({visibleCount} / {sortedSpots.length})
+                        </span>
+                      </button>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </>
         )}
       </div>

@@ -192,6 +192,7 @@ export interface SpotPocketItem {
   address?: string;
   isFavorite?: boolean;
   createdAt: number;
+  order?: number;
 }
 
 export interface MagazineMoment {
