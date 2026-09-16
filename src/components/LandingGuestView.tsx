@@ -132,24 +132,6 @@ export function LandingGuestView({
             TRAVEL LOG & VISUAL JOURNAL
           </span>
         </div>
-
-        {/* Direct Action in Header */}
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => onOpenAuthModal('login')}
-            className="px-4 sm:px-5 py-2 text-[10px] sm:text-xs font-mono font-black uppercase tracking-widest text-white/90 hover:text-white border border-white/30 hover:border-white transition-all cursor-pointer bg-black/30 backdrop-blur-xs"
-          >
-            SIGN IN
-          </button>
-          <button
-            type="button"
-            onClick={() => onOpenAuthModal('signup')}
-            className="px-4 sm:px-5 py-2 text-[10px] sm:text-xs font-mono font-black uppercase tracking-widest bg-white text-black hover:bg-white/90 transition-all cursor-pointer shadow-lg"
-          >
-            CREATE ACCOUNT
-          </button>
-        </div>
       </header>
 
       {/* 3. Center/Lower Hero: 과감한 스케일의 Inter Black TRIPGON 타이포그래피 */}

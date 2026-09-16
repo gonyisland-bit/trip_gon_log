@@ -354,6 +354,7 @@ export function ManageHubPage({
   });
   const [isUploadingLandingHero, setIsUploadingLandingHero] = useState<boolean>(false);
   const [isDraggingLandingHero, setIsDraggingLandingHero] = useState<boolean>(false);
+  const [isHeroJourneysAccordionOpen, setIsHeroJourneysAccordionOpen] = useState<boolean>(false);
 
   useEffect(() => {
     setLocalLandingHeroImage(landingHeroImage);
@@ -3960,13 +3961,23 @@ export function ManageHubPage({
 
                   {/* Hero Journeys Selection */}
                   <div className="flex flex-col gap-3 pt-2 border-t border-black/10 dark:border-white/10">
-                    <div className="flex justify-between items-baseline">
-                      <label className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
-                        HERO JOURNEYS
-                      </label>
-                      <span className="text-xs font-mono font-bold text-red-600 dark:text-red-500">
-                        {selectedHeroIds.length} ITEMS
-                      </span>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                          HERO JOURNEYS
+                        </label>
+                        <span className="text-xs font-mono font-bold text-red-600 dark:text-red-500">
+                          {selectedHeroIds.length} ITEMS
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsHeroJourneysAccordionOpen(prev => !prev)}
+                        className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white transition-colors cursor-pointer flex items-center gap-1.5 text-black dark:text-white"
+                      >
+                        <span>{isHeroJourneysAccordionOpen ? 'COLLAPSE' : 'SELECT JOURNEYS'}</span>
+                        <ChevronDown className={`w-3 h-3 transition-transform ${isHeroJourneysAccordionOpen ? 'rotate-180' : ''}`} />
+                      </button>
                     </div>
 
                     {/* Selected Hero Slides Reorder List */}
@@ -4039,83 +4050,85 @@ export function ManageHubPage({
                       </div>
                     )}
 
-                    {/* Journeys Checklist Search & Selection */}
-                    <div className="flex flex-col gap-2">
-                      <div className="relative">
-                        <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
-                        <input
-                          type="text"
-                          value={heroSearchQuery}
-                          onChange={e => setHeroSearchQuery(e.target.value)}
-                          placeholder="여정 검색 (제목, 장소)..."
-                          className="w-full pl-8 pr-3 py-1.5 text-xs bg-white dark:bg-[#161616] border border-black/15 dark:border-white/15 outline-none rounded-none focus:border-black dark:focus:border-white"
-                        />
-                      </div>
+                    {/* Journeys Checklist Search & Selection (Accordion-controlled) */}
+                    {isHeroJourneysAccordionOpen && (
+                      <div className="flex flex-col gap-2 pt-1">
+                        <div className="relative">
+                          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
+                          <input
+                            type="text"
+                            value={heroSearchQuery}
+                            onChange={e => setHeroSearchQuery(e.target.value)}
+                            placeholder="여정 검색 (제목, 장소)..."
+                            className="w-full pl-8 pr-3 py-1.5 text-xs bg-white dark:bg-[#161616] border border-black/15 dark:border-white/15 outline-none rounded-none focus:border-black dark:focus:border-white"
+                          />
+                        </div>
 
-                      <div className="max-h-60 overflow-y-auto border border-black/15 dark:border-white/15 divide-y divide-black/10 dark:divide-white/10 bg-white dark:bg-[#161616]">
-                        {filteredHeroCandidates.length === 0 ? (
-                          <div className="p-4 text-center text-xs font-mono text-black/40 dark:text-white/40">
-                            검색 결과가 없습니다.
-                          </div>
-                        ) : (
-                          filteredHeroCandidates.map(journey => {
-                            const isSelected = selectedHeroIds.includes(journey.id);
-                            return (
-                              <div
-                                key={journey.id}
-                                onClick={() => handleToggleHero(journey.id)}
-                                className={`p-2 flex items-center justify-between gap-3 cursor-pointer transition-colors ${
-                                  isSelected
-                                    ? 'bg-black/5 dark:bg-white/10'
-                                    : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
-                                }`}
-                              >
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                  <div className={`w-4 h-4 rounded-none border flex items-center justify-center shrink-0 ${
+                        <div className="max-h-60 overflow-y-auto border border-black/15 dark:border-white/15 divide-y divide-black/10 dark:divide-white/10 bg-white dark:bg-[#161616]">
+                          {filteredHeroCandidates.length === 0 ? (
+                            <div className="p-4 text-center text-xs font-mono text-black/40 dark:text-white/40">
+                              검색 결과가 없습니다.
+                            </div>
+                          ) : (
+                            filteredHeroCandidates.map(journey => {
+                              const isSelected = selectedHeroIds.includes(journey.id);
+                              return (
+                                <div
+                                  key={journey.id}
+                                  onClick={() => handleToggleHero(journey.id)}
+                                  className={`p-2 flex items-center justify-between gap-3 cursor-pointer transition-colors ${
                                     isSelected
-                                      ? 'bg-black dark:bg-white border-black dark:border-white text-white dark:text-black'
-                                      : 'border-black/30 dark:border-white/30'
-                                  }`}>
-                                    {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
-                                  </div>
-                                  <div className="w-7 h-7 aspect-square border border-black/10 dark:border-white/10 shrink-0 overflow-hidden bg-black/10">
-                                    <img
-                                      src={getEffectiveImageUrl(journey.img)}
-                                      alt={journey.title}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <div className="text-xs font-bold truncate text-black dark:text-white font-sans">
-                                      {journey.title}
+                                      ? 'bg-black/5 dark:bg-white/10'
+                                      : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className={`w-4 h-4 rounded-none border flex items-center justify-center shrink-0 ${
+                                      isSelected
+                                        ? 'bg-black dark:bg-white border-black dark:border-white text-white dark:text-black'
+                                        : 'border-black/30 dark:border-white/30'
+                                    }`}>
+                                      {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                                     </div>
-                                    <div className="text-[10px] font-mono text-black/50 dark:text-white/50">
-                                      {journey.locationStr} · {journey.date}
+                                    <div className="w-7 h-7 aspect-square border border-black/10 dark:border-white/10 shrink-0 overflow-hidden bg-black/10">
+                                      <img
+                                        src={getEffectiveImageUrl(journey.img)}
+                                        alt={journey.title}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <div className="text-xs font-bold truncate text-black dark:text-white font-sans">
+                                        {journey.title}
+                                      </div>
+                                      <div className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                                        {journey.locationStr} · {journey.date}
+                                      </div>
                                     </div>
                                   </div>
+                                  {isSelected && (
+                                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black shrink-0">
+                                      SLIDE #{selectedHeroIds.indexOf(journey.id) + 1}
+                                    </span>
+                                  )}
                                 </div>
-                                {isSelected && (
-                                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black shrink-0">
-                                    SLIDE #{selectedHeroIds.indexOf(journey.id) + 1}
-                                  </span>
-                                )}
-                              </div>
-                            );
-                          })
-                        )}
+                              );
+                            })
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
-                    {/* Guest Landing Hero Media Configuration (Multi-media: Images & Videos for Cinematic Slideshow) */}
+                    {/* Guest Landing Hero Media Configuration (Compact Swiss Minimal Layout) */}
                     <div className="flex flex-col gap-3 pt-5 border-t border-black/10 dark:border-white/10">
                       <div className="flex items-center justify-between">
                         <div>
                           <label className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white flex items-center gap-2">
-                            <span>GUEST LANDING MEDIA SLIDESHOW (비로그인 게스트 랜딩 미디어)</span>
+                            <span>GUEST LANDING HERO</span>
                             <span className="text-[9px] px-1.5 py-0.2 bg-red-600 text-white font-mono uppercase font-bold">SLIDESHOW</span>
                           </label>
                           <p className="text-[10px] font-mono text-black/50 dark:text-white/50 mt-0.5">
-                            로그인 전 방문자에게 풀스크린으로 연속 재생되는 이미지 및 동영상 미디어 목록입니다. (순서 변경 및 다중 등록 가능)
+                            비로그인 방문자에게 풀스크린으로 재생되는 미디어입니다. (이미지/동영상 복수 등록 및 순서 변경 가능)
                           </p>
                         </div>
                         {localLandingHeroMedia.length > 0 && (
@@ -4132,69 +4145,11 @@ export function ManageHubPage({
                         )}
                       </div>
 
-                      {/* Dropzone for Multi-Media */}
-                      <label 
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          setIsDraggingLandingHero(true);
-                        }}
-                        onDragLeave={() => setIsDraggingLandingHero(false)}
-                        onDrop={async (e) => {
-                          e.preventDefault();
-                          setIsDraggingLandingHero(false);
-                          const files = e.dataTransfer.files;
-                          if (files && files.length > 0) {
-                            for (let i = 0; i < files.length; i++) {
-                              await handleLandingHeroUpload(files[i]);
-                            }
-                          }
-                        }}
-                        className={`relative w-full border border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors p-6 text-center ${
-                          isDraggingLandingHero
-                            ? 'border-red-500 bg-red-500/10'
-                            : 'border-black/30 dark:border-white/30 hover:border-black dark:hover:border-white hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
-                        }`}
-                      >
-                        {isUploadingLandingHero ? (
-                          <div className="flex flex-col items-center justify-center gap-2">
-                            <Loader2 className="w-6 h-6 animate-spin text-black dark:text-white" />
-                            <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
-                              UPLOADING MEDIA...
-                            </span>
-                          </div>
-                        ) : (
-                          <>
-                            <Upload className="w-5 h-5 text-black/40 dark:text-white/40" />
-                            <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/80 dark:text-white/80">
-                              클릭하거나 이미지/동영상(MP4, WEBM)을 드래그하여 추가
-                            </span>
-                            <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
-                              권장 해상도: 16:9 와이드 고화질 (이미지/동영상 복수 등록 가능)
-                            </span>
-                          </>
-                        )}
-                        <input
-                          type="file"
-                          accept="image/*,video/*"
-                          multiple
-                          disabled={isUploadingLandingHero}
-                          onChange={async e => {
-                            const files = e.target.files;
-                            if (files && files.length > 0) {
-                              for (let i = 0; i < files.length; i++) {
-                                await handleLandingHeroUpload(files[i]);
-                              }
-                            }
-                          }}
-                          className="hidden"
-                        />
-                      </label>
-
-                      {/* URL Direct Add Input */}
+                      {/* URL Direct Add Input - Compact 1-line */}
                       <div className="flex items-center gap-2">
                         <input
                           type="url"
-                          placeholder="또는 미디어 직접 URL 추가 (https://... 이미지 또는 MP4 영상)"
+                          placeholder="미디어 URL 직접 추가 (https://... 이미지 또는 MP4 영상)"
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
@@ -4212,97 +4167,143 @@ export function ManageHubPage({
                               inputEl.value = '';
                             }
                           }}
-                          className="flex-1 px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
+                          className="flex-1 px-3 py-1.5 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
                         />
                         <span className="text-[10px] font-mono text-black/40 dark:text-white/40 shrink-0">
-                          [ENTER 키로 추가]
+                          [ENTER로 추가]
                         </span>
                       </div>
 
-                      {/* Media List Carousel / Grid */}
-                      {localLandingHeroMedia.length > 0 ? (
-                        <div className="flex flex-col gap-2 pt-2">
-                          <span className="text-[10px] font-mono font-bold uppercase text-black/60 dark:text-white/60">
-                            REGISTERED SLIDES ({localLandingHeroMedia.length} ITEMS)
-                          </span>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {localLandingHeroMedia.map((item, idx) => (
-                              <div
-                                key={item.id || `guest-item-${idx}`}
-                                className="border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616] flex flex-col overflow-hidden group shadow-xs"
-                              >
-                                <div className="relative w-full aspect-[16/9] bg-black overflow-hidden">
-                                  {item.type === 'video' ? (
-                                    <video
-                                      src={item.url}
-                                      muted
-                                      playsInline
-                                      className="w-full h-full object-cover brightness-90"
-                                    />
-                                  ) : (
-                                    <img
-                                      src={getEffectiveImageUrl(item.url)}
-                                      alt={item.title || `Slide ${idx + 1}`}
-                                      className="w-full h-full object-cover brightness-90"
-                                    />
-                                  )}
-                                  <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-black/80 text-white font-mono text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">
-                                    {item.type === 'video' ? <Film className="w-2.5 h-2.5 text-red-400" /> : <ImageIcon className="w-2.5 h-2.5 text-blue-400" />}
-                                    <span>SLIDE #{idx + 1}</span>
-                                  </div>
-                                </div>
+                      {/* Unified 4-Column Grid: Slot 0 is Dropzone, followed by registered media cards */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                        {/* Slot 0: + ADD MEDIA Dropzone Card */}
+                        <label
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            setIsDraggingLandingHero(true);
+                          }}
+                          onDragLeave={() => setIsDraggingLandingHero(false)}
+                          onDrop={async (e) => {
+                            e.preventDefault();
+                            setIsDraggingLandingHero(false);
+                            const files = e.dataTransfer.files;
+                            if (files && files.length > 0) {
+                              for (let i = 0; i < files.length; i++) {
+                                await handleLandingHeroUpload(files[i]);
+                              }
+                            }
+                          }}
+                          className={`relative aspect-[16/9] border border-dashed flex flex-col items-center justify-center p-3 text-center cursor-pointer transition-all bg-black/[0.01] dark:bg-white/[0.01] ${
+                            isDraggingLandingHero
+                              ? 'border-red-500 bg-red-500/10'
+                              : 'border-black/30 dark:border-white/30 hover:border-black dark:hover:border-white hover:bg-black/[0.03] dark:hover:bg-white/[0.03]'
+                          }`}
+                        >
+                          {isUploadingLandingHero ? (
+                            <div className="flex flex-col items-center justify-center gap-1.5">
+                              <Loader2 className="w-5 h-5 animate-spin text-black dark:text-white" />
+                              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                                UPLOADING...
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center gap-1">
+                              <Upload className="w-4 h-4 text-black/50 dark:text-white/50" />
+                              <span className="text-[10.5px] font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                                + ADD MEDIA
+                              </span>
+                              <span className="text-[9px] font-mono text-black/40 dark:text-white/40">
+                                클릭 / 파일 드롭
+                              </span>
+                            </div>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*,video/*"
+                            multiple
+                            disabled={isUploadingLandingHero}
+                            onChange={async e => {
+                              const files = e.target.files;
+                              if (files && files.length > 0) {
+                                for (let i = 0; i < files.length; i++) {
+                                  await handleLandingHeroUpload(files[i]);
+                                }
+                              }
+                            }}
+                            className="hidden"
+                          />
+                        </label>
 
-                                <div className="p-2.5 flex items-center justify-between gap-2 border-t border-black/10 dark:border-white/10">
-                                  <input
-                                    type="text"
-                                    value={item.title || ''}
-                                    onChange={e => {
-                                      const val = e.target.value;
-                                      setLocalLandingHeroMedia(prev => prev.map((m, i) => i === idx ? { ...m, title: val } : m));
-                                    }}
-                                    placeholder="미디어 제목 (영문/한글)"
-                                    className="flex-1 text-[11px] font-mono font-bold bg-transparent outline-none border-b border-transparent focus:border-black dark:focus:border-white text-black dark:text-white truncate"
-                                  />
-                                  <div className="flex items-center gap-1 shrink-0">
-                                    <button
-                                      type="button"
-                                      disabled={idx === 0}
-                                      onClick={() => handleMoveLandingHeroMedia(idx, 'up')}
-                                      className="p-1 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
-                                      title="앞으로 이동"
-                                    >
-                                      <ChevronUp className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      disabled={idx === localLandingHeroMedia.length - 1}
-                                      onClick={() => handleMoveLandingHeroMedia(idx, 'down')}
-                                      className="p-1 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
-                                      title="뒤로 이동"
-                                    >
-                                      <ChevronDown className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRemoveLandingHeroMedia(item.id)}
-                                      className="p-1 text-red-600 hover:bg-red-500/10 cursor-pointer"
-                                      title="삭제"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
-                                </div>
+                        {/* Registered Media Cards */}
+                        {localLandingHeroMedia.map((item, idx) => (
+                          <div
+                            key={item.id || `guest-item-${idx}`}
+                            className="border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616] flex flex-col overflow-hidden group shadow-2xs"
+                          >
+                            <div className="relative w-full aspect-[16/9] bg-black overflow-hidden">
+                              {item.type === 'video' ? (
+                                <video
+                                  src={item.url}
+                                  muted
+                                  playsInline
+                                  className="w-full h-full object-cover brightness-90"
+                                />
+                              ) : (
+                                <img
+                                  src={getEffectiveImageUrl(item.url)}
+                                  alt={item.title || `Slide ${idx + 1}`}
+                                  className="w-full h-full object-cover brightness-90"
+                                />
+                              )}
+                              <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-black/80 text-white font-mono text-[8.5px] font-bold uppercase tracking-wider flex items-center gap-1">
+                                {item.type === 'video' ? <Film className="w-2.5 h-2.5 text-red-400" /> : <ImageIcon className="w-2.5 h-2.5 text-blue-400" />}
+                                <span>#{idx + 1}</span>
                               </div>
-                            ))}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveLandingHeroMedia(item.id)}
+                                className="absolute top-1.5 right-1.5 p-1 bg-black/80 hover:bg-red-600 text-white transition-colors cursor-pointer"
+                                title="미디어 삭제"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+
+                            <div className="p-2 flex items-center justify-between gap-1 border-t border-black/10 dark:border-white/10">
+                              <input
+                                type="text"
+                                value={item.title || ''}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  setLocalLandingHeroMedia(prev => prev.map((m, i) => i === idx ? { ...m, title: val } : m));
+                                }}
+                                placeholder="제목"
+                                className="flex-1 text-[10.5px] font-mono font-bold bg-transparent outline-none border-b border-transparent focus:border-black dark:focus:border-white text-black dark:text-white truncate"
+                              />
+                              <div className="flex items-center gap-0.5 shrink-0">
+                                <button
+                                  type="button"
+                                  disabled={idx === 0}
+                                  onClick={() => handleMoveLandingHeroMedia(idx, 'up')}
+                                  className="p-1 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
+                                  title="앞으로 이동"
+                                >
+                                  <ChevronUp className="w-3 h-3" />
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={idx === localLandingHeroMedia.length - 1}
+                                  onClick={() => handleMoveLandingHeroMedia(idx, 'down')}
+                                  className="p-1 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
+                                  title="뒤로 이동"
+                                >
+                                  <ChevronDown className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      ) : (
-                        <div className="py-6 text-center border border-black/10 dark:border-white/10 bg-black/[0.01] dark:bg-white/[0.01]">
-                          <span className="text-xs font-mono text-black/40 dark:text-white/40">
-                            등록된 게스트 미디어가 없습니다. 미등록 시 기본 고화질 여행지 프리셋 4종이 자동 재생됩니다.
-                          </span>
-                        </div>
-                      )}
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </section>

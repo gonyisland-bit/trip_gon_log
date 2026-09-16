@@ -1490,7 +1490,7 @@ export function MapHubPage({
   const [builderTargetName, setBuilderTargetName] = useState<string>('');
   const [isMapDivergedFromBuilder, setIsMapDivergedFromBuilder] = useState<boolean>(false);
 
-  // Sync initial props
+  // Sync initial props & sessionStorage pockets
   useEffect(() => {
     if (initialBuilderOpen) {
       setIsBuilderOpen(true);
@@ -1498,6 +1498,18 @@ export function MapHubPage({
       if (initialBuilderCity) setBuilderCity(initialBuilderCity);
       if (initialBuilderDate) setBuilderDate(initialBuilderDate);
       setSelectedCountry(null);
+    } else {
+      try {
+        const storedPockets = sessionStorage.getItem('builder_selected_pockets');
+        const targetCountry = sessionStorage.getItem('builder_target_country');
+        const targetCity = sessionStorage.getItem('builder_target_city');
+        if (storedPockets) {
+          setIsBuilderOpen(true);
+          if (targetCountry) setBuilderCountry(targetCountry);
+          if (targetCity) setBuilderCity(targetCity);
+          setSelectedCountry(null);
+        }
+      } catch (_) {}
     }
   }, [initialBuilderOpen, initialBuilderCountry, initialBuilderCity, initialBuilderDate]);
 

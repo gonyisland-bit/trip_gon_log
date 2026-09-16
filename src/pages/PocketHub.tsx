@@ -18,6 +18,7 @@ interface PocketHubPageProps {
   plans: Plan[];
   onNavigate: (view: string, tripId?: number | null) => void;
   onAddTimelineItemToTrip?: (tripId: number, item: TimelineItem) => void;
+  onCreateTripWithPockets?: (selectedPockets: SpotPocketItem[]) => void;
   isLoggedIn: boolean;
   isAdmin: boolean;
   isDarkMode: boolean;
@@ -36,6 +37,7 @@ export function PocketHubPage({
   plans,
   onNavigate,
   onAddTimelineItemToTrip,
+  onCreateTripWithPockets,
   isLoggedIn,
   isAdmin,
   isDarkMode
@@ -64,8 +66,48 @@ export function PocketHubPage({
   const [newAddress, setNewAddress] = useState<string>('');
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState<boolean>(false);
   const [isDraggingThumbnail, setIsDraggingThumbnail] = useState<boolean>(false);
-  const [draggingCardId, setDraggingCardId] = useState<string | null>(null);
-  const [uploadingCardId, setUploadingCardId] = useState<string | null>(null);
+
+  // Multi-selection state for creating trip with selected pockets
+  const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
+  const [selectedSpotIds, setSelectedSpotIds] = useState<Set<string>>(new Set());
+
+  const handleToggleSelectSpot = (spotId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setSelectedSpotIds(prev => {
+      const next = new Set(prev);
+      if (next.has(spotId)) {
+        next.delete(spotId);
+      } else {
+        next.add(spotId);
+      }
+      return next;
+    });
+  };
+
+  const handleCreateTripFromSelectedPockets = () => {
+    const selectedList = spots.filter(s => selectedSpotIds.has(s.id));
+    if (selectedList.length === 0) return;
+
+    try {
+      sessionStorage.setItem('builder_selected_pockets', JSON.stringify(selectedList));
+    } catch (_) {}
+
+    const firstCountry = selectedList.find(s => s.country)?.country || '';
+    const firstCity = selectedList.find(s => s.city)?.city || '';
+
+    if (firstCountry) {
+      try { sessionStorage.setItem('builder_target_country', firstCountry); } catch (_) {}
+    }
+    if (firstCity) {
+      try { sessionStorage.setItem('builder_target_city', firstCity); } catch (_) {}
+    }
+
+    if (onCreateTripWithPockets) {
+      onCreateTripWithPockets(selectedList);
+    } else {
+      onNavigate('map');
+    }
+  };
 
   // Handle direct file upload (drag & drop, file picker, or paste) in Modal
   const handleUploadThumbnailFile = async (file: File) => {
@@ -83,32 +125,6 @@ export function PocketHubPage({
     } finally {
       setIsUploadingThumbnail(false);
       setIsDraggingThumbnail(false);
-    }
-  };
-
-  // Handle card direct thumbnail drop on the pocket gallery grid
-  const handleCardThumbnailDrop = async (spotId: string, file: File) => {
-    if (!file || !file.type.startsWith('image/')) return;
-    try {
-      setUploadingCardId(spotId);
-      const compressed = await compressImage(file, 1600, 1200, 0.85);
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const storagePath = `pockets/${Date.now()}_${safeName}`;
-      const url = await uploadFileToR2(compressed, storagePath);
-
-      const updated = spots.map(s => s.id === spotId ? { ...s, thumbnailUrl: url } : s);
-      setSpots(updated);
-      await savePockets(updated);
-
-      const targetSpot = spots.find(s => s.id === spotId);
-      setActionSuccessToast(`'${targetSpot?.title || '스팟'}' 썸네일 이미지 교체 완료`);
-      setTimeout(() => setActionSuccessToast(null), 3000);
-    } catch (err) {
-      console.error('Failed to replace card thumbnail:', err);
-      alert('카드 썸네일 교체에 실패했습니다.');
-    } finally {
-      setUploadingCardId(null);
-      setDraggingCardId(null);
     }
   };
 
@@ -429,6 +445,22 @@ export function PocketHubPage({
 
           <div className="flex items-center gap-2.5">
             <button
+              type="button"
+              onClick={() => {
+                setIsSelectionMode(prev => !prev);
+                if (isSelectionMode) setSelectedSpotIds(new Set());
+              }}
+              className={`h-10 px-4 text-xs font-mono font-bold tracking-widest uppercase flex items-center gap-2 border transition-colors cursor-pointer ${
+                isSelectionMode
+                  ? 'bg-red-600 text-white border-red-600'
+                  : 'border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white'
+              }`}
+              title="포켓들을 복수로 선택하여 신규 여정 만들기"
+            >
+              <Layers className="w-4 h-4" />
+              <span>{isSelectionMode ? 'EXIT SELECT' : 'SELECT'}</span>
+            </button>
+            <button
               onClick={() => setIsAddModalOpen(true)}
               className="h-10 px-5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold tracking-widest uppercase flex items-center gap-2 hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer"
             >
@@ -551,31 +583,24 @@ export function PocketHubPage({
                 const meta = CATEGORY_META[spot.category] || CATEGORY_META.spot;
                 const Icon = meta.icon;
                 const locationLabel = [spot.country, spot.city].filter(Boolean).join(' · ') || 'LOCATION';
+                const isSelected = selectedSpotIds.has(spot.id);
 
                 return (
                   <div
                     key={spot.id}
-                    className="group flex flex-col border border-black/15 dark:border-white/15 bg-white dark:bg-[#111111] hover:border-black/50 dark:hover:border-white/50 transition-all duration-200 overflow-hidden shadow-2xs hover:shadow-md"
+                    onClick={() => {
+                      if (isSelectionMode) handleToggleSelectSpot(spot.id);
+                    }}
+                    className={`group flex flex-col border bg-white dark:bg-[#111111] transition-all duration-200 overflow-hidden shadow-2xs hover:shadow-md ${
+                      isSelectionMode ? 'cursor-pointer' : ''
+                    } ${
+                      isSelected
+                        ? 'border-red-600 ring-2 ring-red-600'
+                        : 'border-black/15 dark:border-white/15 hover:border-black/50 dark:hover:border-white/50'
+                    }`}
                   >
-                    {/* Card Visual / Thumbnail with Drag & Drop Replacement */}
-                    <div 
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        setDraggingCardId(spot.id);
-                      }}
-                      onDragLeave={() => {
-                        if (draggingCardId === spot.id) setDraggingCardId(null);
-                      }}
-                      onDrop={async (e) => {
-                        e.preventDefault();
-                        setDraggingCardId(null);
-                        const file = e.dataTransfer.files?.[0];
-                        if (file) await handleCardThumbnailDrop(spot.id, file);
-                      }}
-                      className={`relative aspect-[16/10] bg-black/5 dark:bg-white/5 overflow-hidden transition-all ${
-                        draggingCardId === spot.id ? 'ring-2 ring-red-500' : ''
-                      }`}
-                    >
+                    {/* Card Visual / Thumbnail (3:4 SNS Aspect Ratio) */}
+                    <div className="relative aspect-[3/4] bg-black/5 dark:bg-white/5 overflow-hidden transition-all">
                       {spot.thumbnailUrl ? (
                         <img
                           src={spot.thumbnailUrl}
@@ -588,44 +613,39 @@ export function PocketHubPage({
                         />
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center text-black/20 dark:text-white/20">
-                          <Icon className="w-8 h-8 sm:w-10 sm:h-10 mb-1" />
-                          <span className="text-[9px] sm:text-[10px] font-mono tracking-widest uppercase">{meta.label}</span>
+                          <Icon className="w-10 h-10 mb-1" />
+                          <span className="text-[10px] font-mono tracking-widest uppercase">{meta.label}</span>
                         </div>
                       )}
 
-                      {/* Dragging Hover Overlay */}
-                      {draggingCardId === spot.id && (
-                        <div className="absolute inset-0 bg-red-600/30 backdrop-blur-xs flex flex-col items-center justify-center gap-1 text-white z-30 pointer-events-none">
-                          <Upload className="w-6 h-6 animate-bounce" />
-                          <span className="text-[9px] font-mono font-bold uppercase tracking-wider bg-black px-2 py-0.5">
-                            DROP TO REPLACE
-                          </span>
-                        </div>
+                      {/* Selection Checkbox (Visible in Selection Mode) */}
+                      {isSelectionMode ? (
+                        <button
+                          type="button"
+                          onClick={(e) => handleToggleSelectSpot(spot.id, e)}
+                          className={`absolute top-2.5 left-2.5 w-6 h-6 border flex items-center justify-center transition-all z-20 cursor-pointer shadow-md ${
+                            isSelected
+                              ? 'bg-red-600 border-red-600 text-white'
+                              : 'bg-white/90 dark:bg-black/90 border-black/40 dark:border-white/40 text-transparent hover:border-red-600'
+                          }`}
+                        >
+                          <Check className={`w-4 h-4 stroke-[3] ${isSelected ? 'opacity-100' : 'opacity-0'}`} />
+                        </button>
+                      ) : (
+                        /* Favorite Star Button Overlay */
+                        <button
+                          type="button"
+                          onClick={(e) => handleToggleFavorite(spot.id, e)}
+                          className="absolute top-2 left-2 w-6 h-6 sm:w-7 sm:h-7 bg-black/70 backdrop-blur-sm flex items-center justify-center border border-white/20 hover:bg-black transition-colors cursor-pointer z-10"
+                          title={spot.isFavorite ? "즐겨찾기 해제" : "자주 쓰는 스팟 즐겨찾기"}
+                        >
+                          <Star className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${spot.isFavorite ? 'text-amber-400 fill-amber-400' : 'text-white/80'}`} />
+                        </button>
                       )}
-
-                      {/* Uploading Spinner Overlay */}
-                      {uploadingCardId === spot.id && (
-                        <div className="absolute inset-0 bg-black/75 backdrop-blur-xs flex flex-col items-center justify-center gap-1 text-white z-30">
-                          <Loader2 className="w-6 h-6 animate-spin text-white" />
-                          <span className="text-[9px] font-mono font-bold uppercase tracking-wider">
-                            UPLOADING...
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Favorite Star Button Overlay */}
-                      <button
-                        type="button"
-                        onClick={(e) => handleToggleFavorite(spot.id, e)}
-                        className="absolute top-2 left-2 w-6 h-6 sm:w-7 sm:h-7 bg-black/70 backdrop-blur-sm flex items-center justify-center border border-white/20 hover:bg-black transition-colors cursor-pointer z-10"
-                        title={spot.isFavorite ? "즐겨찾기 해제" : "자주 쓰는 스팟 즐겨찾기"}
-                      >
-                        <Star className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${spot.isFavorite ? 'text-amber-400 fill-amber-400' : 'text-white/80'}`} />
-                      </button>
 
                       {/* Platform Badge Overlay */}
                       {spot.platform && spot.platform !== 'web' && (
-                        <div className="absolute top-2 left-9 sm:left-10 px-1.5 sm:px-2 py-0.5 bg-black/80 backdrop-blur-sm text-white text-[8px] sm:text-[9px] font-mono tracking-widest uppercase border border-white/20">
+                        <div className={`absolute top-2 ${isSelectionMode ? 'left-10' : 'left-9 sm:left-10'} px-1.5 sm:px-2 py-0.5 bg-black/80 backdrop-blur-sm text-white text-[8px] sm:text-[9px] font-mono tracking-widest uppercase border border-white/20`}>
                           {spot.platform}
                         </div>
                       )}
@@ -638,7 +658,7 @@ export function PocketHubPage({
                     </div>
 
                     {/* Card Body */}
-                    <div className="p-2.5 sm:p-4 flex-grow flex flex-col justify-between">
+                    <div className="p-2.5 sm:p-3.5 flex-grow flex flex-col justify-between">
                       <div>
                         {/* Region Tag */}
                         <div className="flex items-center gap-1 text-[9px] sm:text-[10px] font-mono tracking-wider uppercase text-black/50 dark:text-white/50 mb-1">
@@ -647,31 +667,34 @@ export function PocketHubPage({
                         </div>
 
                         {/* Title */}
-                        <h3 className="text-xs sm:text-base font-bold tracking-tight text-black dark:text-white group-hover:text-red-500 transition-colors line-clamp-1">
+                        <h3 className="text-xs sm:text-sm font-bold tracking-tight text-black dark:text-white group-hover:text-red-500 transition-colors line-clamp-1">
                           {spot.title}
                         </h3>
 
                         {/* Memo / Tip Highlight */}
                         {spot.memo && (
-                          <div className="mt-1.5 sm:mt-2.5 p-1.5 sm:p-2.5 bg-black/[0.03] dark:bg-white/[0.03] border-l-2 border-red-500 text-[10px] sm:text-xs text-black/80 dark:text-white/80 font-mono leading-relaxed line-clamp-2 sm:line-clamp-3">
+                          <div className="mt-1.5 p-1.5 bg-black/[0.03] dark:bg-white/[0.03] border-l-2 border-red-500 text-[10px] sm:text-[11px] text-black/80 dark:text-white/80 font-mono leading-relaxed line-clamp-2">
                             {spot.memo}
                           </div>
                         )}
 
                         {/* Address preview */}
                         {spot.address && (
-                          <p className="mt-1.5 sm:mt-2 text-[9.5px] sm:text-[11px] text-black/40 dark:text-white/40 font-mono truncate">
+                          <p className="mt-1 text-[9px] sm:text-[10px] text-black/40 dark:text-white/40 font-mono truncate">
                             {spot.address}
                           </p>
                         )}
                       </div>
 
                       {/* Action Bar */}
-                      <div className="pt-2 sm:pt-4 mt-2 sm:mt-4 border-t border-black/10 dark:border-white/10 flex items-center justify-between gap-1 sm:gap-2">
+                      <div className="pt-2 mt-2.5 border-t border-black/10 dark:border-white/10 flex items-center justify-between gap-1 sm:gap-2">
                         <button
                           type="button"
-                          onClick={() => setSpotToUseInTrip(spot)}
-                          className="flex-1 h-6 sm:h-7 px-1.5 sm:px-2.5 bg-black text-white dark:bg-white dark:text-black text-[9px] sm:text-[10px] font-mono tracking-wider uppercase font-bold flex items-center justify-center gap-1 hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSpotToUseInTrip(spot);
+                          }}
+                          className="flex-1 h-6 sm:h-7 px-1.5 sm:px-2 bg-black text-white dark:bg-white dark:text-black text-[9px] sm:text-[10px] font-mono tracking-wider uppercase font-bold flex items-center justify-center gap-1 hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer"
                           title="트립 타임라인에 바로 복사 추가"
                         >
                           <Plus className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
@@ -684,6 +707,7 @@ export function PocketHubPage({
                             href={spot.sourceUrl}
                             target="_blank"
                             rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
                             className="h-6 w-6 sm:h-7 sm:w-7 flex items-center justify-center border border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer shrink-0"
                             title="원본 SNS 링크 열기"
                           >
@@ -742,6 +766,33 @@ export function PocketHubPage({
                 );
               })}
             </div>
+
+            {/* Selection Mode Floating Action Bar */}
+            {isSelectionMode && selectedSpotIds.size > 0 && (
+              <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-black text-white dark:bg-white dark:text-black px-5 py-3 border border-black/20 dark:border-white/20 shadow-2xl flex items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-3 duration-200 max-w-lg w-[92vw]">
+                <div className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider truncate">
+                  <span className="w-2 h-2 bg-red-600 shrink-0 inline-block" />
+                  <span>SELECTED: {selectedSpotIds.size} SPOTS</span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSpotIds(new Set())}
+                    className="px-3 py-1.5 text-[11px] font-mono uppercase tracking-wider border border-white/20 dark:border-black/20 hover:border-white dark:hover:border-black transition-colors cursor-pointer"
+                  >
+                    DESELECT
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCreateTripFromSelectedPockets}
+                    className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-mono font-bold uppercase tracking-widest transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>CREATE TRIP</span>
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Pagination: 40 items per batch */}
             {visibleCount < filteredSpots.length && (
@@ -976,7 +1027,7 @@ export function PocketHubPage({
                 </div>
 
                 {newThumbnailUrl ? (
-                  <div className="relative aspect-[16/10] w-full overflow-hidden border border-black/20 dark:border-white/20 group bg-black/5 dark:bg-white/5">
+                  <div className="relative aspect-[3/4] max-h-64 mx-auto overflow-hidden border border-black/20 dark:border-white/20 group bg-black/5 dark:bg-white/5">
                     <img
                       src={newThumbnailUrl}
                       alt="Thumbnail preview"
@@ -1081,7 +1132,7 @@ export function PocketHubPage({
                   type="submit"
                   className="h-9 px-5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer"
                 >
-                  {editingSpot ? 'UPDATE SPOT' : 'KEEP SPOT'}
+                  {editingSpot ? 'SAVE' : 'KEEP SPOT'}
                 </button>
               </div>
             </form>

@@ -2852,6 +2852,11 @@ function App() {
                   trips={trips}
                   plans={plans}
                   onNavigate={navigateTo}
+                  onCreateTripWithPockets={(selectedPockets) => {
+                    const firstCountry = selectedPockets.find(p => p.country)?.country || '';
+                    const firstCity = selectedPockets.find(p => p.city)?.city || '';
+                    handleCreateTripForCountry(firstCountry, firstCity);
+                  }}
                   onAddTimelineItemToTrip={async (tripId, newItem) => {
                     const date = newItem.date || '2025.04.12';
                     setTimelineData(prev => {

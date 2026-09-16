@@ -55,6 +55,7 @@ export interface TripBuilderPanelProps {
   initialCountry?: string;
   initialCity?: string;
   initialStartDate?: string;
+  initialSelectedPockets?: SpotPocketItem[];
   existingTags?: string[];
   onCreate: (
     title: string, 
@@ -91,6 +92,7 @@ export function TripBuilderPanel({
   initialCountry,
   initialCity,
   initialStartDate,
+  initialSelectedPockets,
   existingTags = [],
   onCreate,
   onFocusLocationChange,
@@ -116,6 +118,54 @@ export function TripBuilderPanel({
       setPresetStartDate(initialStartDate);
     }
   }, [initialStartDate]);
+
+  // Saved Pockets and Selected Pockets for trip creation
+  const [savedPockets, setSavedPockets] = useState<SpotPocketItem[]>(() => getSavedPockets());
+  const [selectedPocketIds, setSelectedPocketIds] = useState<Set<string>>(() => {
+    const ids = new Set<string>();
+    if (initialSelectedPockets && initialSelectedPockets.length > 0) {
+      initialSelectedPockets.forEach(p => ids.add(p.id));
+    }
+    try {
+      const stored = sessionStorage.getItem('builder_selected_pockets');
+      if (stored) {
+        const parsed: SpotPocketItem[] = JSON.parse(stored);
+        parsed.forEach(p => ids.add(p.id));
+      }
+    } catch (_) {}
+    return ids;
+  });
+
+  // Reload pockets when panel opens or external changes happen
+  useEffect(() => {
+    if (isOpen) {
+      const currentPockets = getSavedPockets();
+      setSavedPockets(currentPockets);
+      try {
+        const stored = sessionStorage.getItem('builder_selected_pockets');
+        if (stored) {
+          const parsed: SpotPocketItem[] = JSON.parse(stored);
+          setSelectedPocketIds(prev => {
+            const next = new Set(prev);
+            parsed.forEach(p => next.add(p.id));
+            return next;
+          });
+        }
+      } catch (_) {}
+    }
+  }, [isOpen]);
+
+  const handleTogglePocketCheck = (pocketId: string) => {
+    setSelectedPocketIds(prev => {
+      const next = new Set(prev);
+      if (next.has(pocketId)) {
+        next.delete(pocketId);
+      } else {
+        next.add(pocketId);
+      }
+      return next;
+    });
+  };
 
   // Confirm Modal for Trip Generation
   const [confirmModalState, setConfirmModalState] = useState<{
@@ -198,21 +248,25 @@ export function TripBuilderPanel({
   // ── Smart Pocket Spots for Selected Country/City ──
   const [isPocketDrawerOpen, setIsPocketDrawerOpen] = useState(false);
   const relevantPocketSpots = useMemo(() => {
-    const allPockets = getSavedPockets();
+    const allPockets = savedPockets.length > 0 ? savedPockets : getSavedPockets();
     const targetCountry = (smartCountry?.nameKo || smartCountry?.nameEn || country || '').toLowerCase().trim();
     const targetCity = (smartCity?.nameKo || smartCity?.nameEn || locations[0]?.name || '').toLowerCase().trim();
 
-    if (!targetCountry && !targetCity) return [];
-
     return allPockets.filter(s => {
+      // Always include if explicitly selected
+      if (selectedPocketIds.has(s.id)) return true;
+      if (!targetCountry && !targetCity) return false;
+
       const c = (s.country || '').toLowerCase().trim();
       const city = (s.city || '').toLowerCase().trim();
+      const title = (s.title || '').toLowerCase().trim();
       if (targetCountry && c && (targetCountry.includes(c) || c.includes(targetCountry))) return true;
       if (targetCity && city && (targetCity.includes(city) || city.includes(targetCity))) return true;
       if (targetCountry && city && targetCountry.includes(city)) return true;
+      if (targetCity && title && title.includes(targetCity)) return true;
       return false;
     });
-  }, [smartCountry, country, smartCity, locations]);
+  }, [savedPockets, selectedPocketIds, smartCountry, country, smartCity, locations]);
 
   // Nearest best month for currently selected city or country
   const autoBestMonth = useMemo(() => {
@@ -623,6 +677,28 @@ export function TripBuilderPanel({
       };
     });
 
+    // 선택된 포켓들을 1일차 타임라인에 적절한 시간대(10:00, 13:00, 16:00...)로 자동 배치
+    const selectedPocketsList = (savedPockets.length > 0 ? savedPockets : getSavedPockets())
+      .filter(p => selectedPocketIds.has(p.id));
+    if (selectedPocketsList.length > 0 && customTimelineItems.length > 0) {
+      const defaultTimeSlots = ['10:00 AM', '01:00 PM', '04:00 PM', '07:00 PM', '09:00 PM'];
+      const pocketTimelineItems = selectedPocketsList.map((p, idx) => ({
+        id: Date.now() + 5000 + idx,
+        time: defaultTimeSlots[idx % defaultTimeSlots.length],
+        title: p.title,
+        location: [p.city, p.country].filter(Boolean).join(' · ') || p.title,
+        memo: p.memo || (p.address ? `주소: ${p.address}` : '보관된 포켓 장소'),
+        category: p.category === 'food' || p.category === 'cafe' ? '식사' : p.category === 'shopping' ? '쇼핑' : '관광',
+        type: (p.category === 'food' || p.category === 'cafe' ? 'dining' : p.category === 'shopping' ? 'shopping' : 'activity') as any,
+        cost: '-',
+        img: p.thumbnailUrl || ''
+      }));
+      customTimelineItems[0].items = [
+        ...pocketTimelineItems,
+        ...customTimelineItems[0].items.filter(it => !pocketTimelineItems.some(pi => pi.title === it.title))
+      ];
+    }
+
     const finalLocations = locations.length > 0 
       ? locations 
       : (smartCity ? [{ name: smartCity.nameKo, lat: smartCity.lat, lng: smartCity.lng, country: smartCity.countryEn }] : []);
@@ -646,6 +722,11 @@ export function TripBuilderPanel({
           smartCity?.coverImage || '',
           customTimelineItems
         );
+        try {
+          sessionStorage.removeItem('builder_selected_pockets');
+          sessionStorage.removeItem('builder_target_country');
+          sessionStorage.removeItem('builder_target_city');
+        } catch (_) {}
         onClose();
       }
     });
@@ -2056,48 +2137,59 @@ export function TripBuilderPanel({
                 );
               })()}
 
-              {/* ── Saved Pocket Spots for this Destination ── */}
+              {/* ── Saved Matching Pocket Spots for this Destination ── */}
               {relevantPocketSpots.length > 0 && (
-                <div className="space-y-1.5 pt-1.5 border-t border-black/10 dark:border-white/10">
-                  <div className="flex items-center justify-between text-[9.5px] font-mono">
-                    <span className="text-red-500 font-bold flex items-center gap-1">
-                      <Bookmark className="w-3 h-3 text-red-500" />
-                      <span>포켓 보관함 ({relevantPocketSpots.length}개 스팟 발견)</span>
+                <div className="space-y-2 pt-2 border-t border-black/10 dark:border-white/10">
+                  <div className="flex items-center justify-between text-[10.5px] font-mono">
+                    <span className="text-red-500 font-bold flex items-center gap-1.5 uppercase tracking-wider">
+                      <Bookmark className="w-3.5 h-3.5 text-red-500" />
+                      <span>MATCHING POCKETS ({relevantPocketSpots.length})</span>
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => setIsPocketDrawerOpen(!isPocketDrawerOpen)}
-                      className="text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white underline cursor-pointer"
-                    >
-                      {isPocketDrawerOpen ? '접기 ▲' : '모두 보기 ▼'}
-                    </button>
+                    <span className="text-[9.5px] text-black/50 dark:text-white/50">
+                      {selectedPocketIds.size}개 선택됨 (1일차 일정 자동 포함)
+                    </span>
                   </div>
+                  <p className="text-[9.5px] text-black/50 dark:text-white/50 font-mono leading-tight">
+                    선택된 포켓들은 생성 시 적절한 시간대(10:00, 13:00, 16:00...)의 타임라인 일정으로 자동 등록됩니다.
+                  </p>
 
-                  <div className="flex flex-wrap gap-1">
-                    {(isPocketDrawerOpen ? relevantPocketSpots : relevantPocketSpots.slice(0, 4)).map(spot => {
-                      const isAlreadyAdded = locations.some(l => l.name === spot.title);
+                  <div className="max-h-48 overflow-y-auto border border-black/15 dark:border-white/15 divide-y divide-black/10 dark:divide-white/10 bg-black/[0.01] dark:bg-white/[0.01]">
+                    {relevantPocketSpots.map(spot => {
+                      const isChecked = selectedPocketIds.has(spot.id);
                       return (
-                        <button
+                        <div
                           key={spot.id}
-                          type="button"
-                          onClick={() => {
-                            if (!isAlreadyAdded) {
-                              const coords = (spot.lat && spot.lng) ? { lat: spot.lat, lng: spot.lng } : undefined;
-                              handleAddCityToLocations(spot.title, coords, spot.country);
-                            }
-                          }}
-                          disabled={isAlreadyAdded}
-                          title={spot.memo || spot.title}
-                          className={`px-2 py-1 text-[10px] font-mono border transition-all cursor-pointer flex items-center gap-1 ${
-                            isAlreadyAdded
-                              ? 'border-black/10 dark:border-white/10 text-black/30 dark:text-white/30 line-through bg-black/[0.02]'
-                              : 'border-red-500/40 text-black dark:text-white hover:border-red-500 bg-red-500/5 dark:bg-red-500/10'
+                          onClick={() => handleTogglePocketCheck(spot.id)}
+                          className={`p-2 flex items-center justify-between gap-2.5 cursor-pointer transition-colors ${
+                            isChecked ? 'bg-black/5 dark:bg-white/10' : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
                           }`}
                         >
-                          <Plus className="w-2.5 h-2.5 text-red-500" />
-                          <span className="font-bold">{spot.title}</span>
-                          {spot.memo && <span className="text-[9px] text-black/40 dark:text-white/40 truncate max-w-[120px]">· {spot.memo}</span>}
-                        </button>
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className={`w-4 h-4 border flex items-center justify-center shrink-0 ${
+                              isChecked
+                                ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                                : 'border-black/30 dark:border-white/30 bg-white dark:bg-[#181818]'
+                            }`}>
+                              {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-xs font-bold text-black dark:text-white truncate font-sans">
+                                {spot.title}
+                              </div>
+                              <div className="text-[9.5px] font-mono text-black/50 dark:text-white/50 truncate">
+                                {spot.category.toUpperCase()} · {[spot.city, spot.country].filter(Boolean).join(' · ')}
+                                {spot.memo ? ` · ${spot.memo}` : ''}
+                              </div>
+                            </div>
+                          </div>
+                          {spot.thumbnailUrl && (
+                            <img
+                              src={spot.thumbnailUrl}
+                              alt=""
+                              className="w-7 h-7 aspect-square object-cover border border-black/10 dark:border-white/10 shrink-0"
+                            />
+                          )}
+                        </div>
                       );
                     })}
                   </div>
