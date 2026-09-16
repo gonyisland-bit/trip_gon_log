@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Menu, Edit2, Trash2, GripVertical, Copy, ArrowUp, Tag, ChevronDown, ChevronUp, Search, X, LayoutGrid, StretchHorizontal, List, Calendar as CalendarIcon, CalendarDays, Compass } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Menu, Edit2, Trash2, GripVertical, Copy, ArrowUp, Tag, ChevronDown, ChevronUp, Search, X, LayoutGrid, StretchHorizontal, List, Calendar as CalendarIcon, CalendarDays, Compass, MapPin } from 'lucide-react';
 import { Trip, Plan, MagazineMoment, MagazineSection, TimelineData } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -1586,19 +1586,24 @@ export function HomePage({
                       isActive={isCardActive}
                     />
 
-                    {/* 좌측 상단 반투명 알약 뱃지 (Best Seller 위치) */}
-                    <div className={`absolute top-3 left-3 sm:top-3.5 sm:left-3.5 px-2.5 sm:px-3 py-1 backdrop-blur-md font-mono text-[9px] sm:text-[10px] font-bold tracking-wider uppercase rounded-full shadow-xs flex items-center gap-1.5 ${
-                      isItemPlan 
+                    {/* 좌측 상단 반투명 알약 뱃지: NEW, EDITING, PLAN 만 표기 (TRIP 넘버 제거, 빨간 점 제거) */}
+                    {(() => {
+                      const isPlanBadge = isItemPlan || trip.statusBadge === 'PLAN';
+                      const isNewBadge = trip.statusBadge === 'NEW';
+                      const isEditingBadge = trip.statusBadge === 'EDITING';
+                      if (!isPlanBadge && !isNewBadge && !isEditingBadge) return null;
+
+                      const badgeText = isPlanBadge ? 'PLAN' : (isNewBadge ? 'NEW' : 'EDITING');
+                      const badgeBg = isPlanBadge 
                         ? 'bg-blue-600/90 text-white' 
-                        : (trip.statusBadge === 'NEW' ? 'bg-red-600/90 text-white' : 'bg-white/95 dark:bg-black/85 text-black dark:text-white border border-black/10 dark:border-white/15')
-                    }`}>
-                      {isItemPlan ? (
-                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
-                      ) : (
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
-                      )}
-                      <span>{isItemPlan ? 'PLAN TRIP' : (trip.statusBadge ? trip.statusBadge : `TRIP ${issueNumber}`)}</span>
-                    </div>
+                        : (isNewBadge ? 'bg-red-600/90 text-white' : 'bg-amber-600/90 text-white');
+
+                      return (
+                        <div className={`absolute top-3 left-3 sm:top-3.5 sm:left-3.5 px-2.5 sm:px-3 py-1 backdrop-blur-md font-mono text-[9px] sm:text-[10px] font-bold tracking-wider uppercase rounded-full shadow-xs ${badgeBg}`}>
+                          <span>{badgeText}</span>
+                        </div>
+                      );
+                    })()}
 
                     {/* 우측 상단 원형 심볼 뱃지 (나이키 스우시 위치) */}
                     <div className="absolute top-3 right-3 sm:top-3.5 sm:right-3.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 text-black dark:text-white shadow-xs flex items-center justify-center font-mono text-[10px] sm:text-[11px] font-black group-hover:rotate-12 transition-transform duration-300">
@@ -1628,8 +1633,8 @@ export function HomePage({
                         {durationBadge && <span className="text-black/50 dark:text-white/50">{durationBadge}</span>}
                       </div>
 
-                      {/* 메인 타이틀: 볼드 헤드라인 */}
-                      <h3 className={`font-black tracking-tight text-black dark:text-white leading-snug break-keep line-clamp-1 transition-colors ${
+                      {/* 메인 타이틀: 2줄로 다 보이게 표기 (line-clamp-2) */}
+                      <h3 className={`font-black tracking-tight text-black dark:text-white leading-snug break-keep line-clamp-2 transition-colors ${
                         isItemPlan ? 'group-hover:text-blue-600 dark:group-hover:text-blue-400' : 'group-hover:text-red-600 dark:group-hover:text-red-400'
                       } ${isWide ? 'text-base sm:text-lg md:text-xl' : 'text-sm sm:text-base md:text-lg'}`}>
                         {trip.title}
@@ -1649,17 +1654,20 @@ export function HomePage({
 
                     {/* 3. 하단 메타 & 알약 액션 바 */}
                     <div className="pt-3.5 mt-3 border-t border-black/8 dark:border-white/10 flex items-center justify-between gap-2">
-                      {/* 좌측 알약 뱃지 */}
-                      <div className={`h-7 sm:h-8 px-2.5 sm:px-3 rounded-full flex items-center gap-1 font-mono text-[10px] sm:text-[11px] font-bold ${
-                        isItemPlan 
-                          ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
-                          : 'bg-black/5 dark:bg-white/10 text-black/80 dark:text-white/80'
-                      }`}>
-                        <span>📍 {line3CountryCity || (durationBadge || 'JOURNEY')}</span>
+                      {/* 좌측 알약 뱃지: 장소명 모바일 오버플로우 방지 */}
+                      <div className="flex-1 min-w-0 mr-1">
+                        <div className={`h-7 sm:h-8 px-2.5 sm:px-3 rounded-full inline-flex items-center gap-1 font-mono text-[10px] sm:text-[11px] font-bold max-w-full truncate ${
+                          isItemPlan 
+                            ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
+                            : 'bg-black/5 dark:bg-white/10 text-black/80 dark:text-white/80'
+                        }`}>
+                          <MapPin className="w-3 h-3 shrink-0 text-black/40 dark:text-white/40" />
+                          <span className="truncate">{line3CountryCity || (durationBadge || 'JOURNEY')}</span>
+                        </div>
                       </div>
 
                       {/* 우측 알약 액션 버튼 */}
-                      <div className={`h-7 sm:h-8 px-3 sm:px-3.5 rounded-full font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors shadow-xs ${
+                      <div className={`h-7 sm:h-8 px-3 sm:px-3.5 rounded-full font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors shadow-xs shrink-0 ${
                         isItemPlan
                           ? 'bg-blue-600 hover:bg-blue-700 text-white'
                           : 'bg-black dark:bg-white text-white dark:text-black group-hover:bg-red-600 dark:group-hover:bg-red-500 group-hover:text-white dark:group-hover:text-white'

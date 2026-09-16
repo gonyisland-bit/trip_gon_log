@@ -777,20 +777,20 @@ export function PocketHubPage({
               </p>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 pb-1">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 pb-1">
               {/* Swiss Minimal Grip Toggle: Moved to top action row to maximize toolbar whitespace */}
               {isAdmin && sortMode === 'custom' && (
                 <button
                   type="button"
                   onClick={() => setIsReorderMode(prev => !prev)}
-                  className={`h-10 w-10 flex items-center justify-center border transition-colors cursor-pointer shrink-0 ${
+                  className={`h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center border transition-colors cursor-pointer shrink-0 ${
                     isReorderMode
                       ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
                       : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white'
                   }`}
                   title={isReorderMode ? "피드 순서 편집 활성 (종료하려면 클릭)" : "피드 순서 편집 (관리자)"}
                 >
-                  <GripVertical className="w-4 h-4" />
+                  <GripVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
               )}
 
@@ -800,7 +800,7 @@ export function PocketHubPage({
                   setIsSelectionMode(prev => !prev);
                   if (isSelectionMode) setSelectedSpotIds(new Set());
                 }}
-                className={`h-10 px-3 sm:px-4 text-xs font-mono font-bold tracking-widest uppercase flex items-center gap-1.5 sm:gap-2 border transition-colors cursor-pointer ${
+                className={`h-9 sm:h-10 px-2.5 sm:px-4 text-[11px] sm:text-xs font-mono font-bold tracking-wider sm:tracking-widest uppercase flex items-center gap-1.5 sm:gap-2 border transition-colors cursor-pointer ${
                   isSelectionMode
                     ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
                     : 'border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white'
@@ -808,18 +808,19 @@ export function PocketHubPage({
                 title={isSelectionMode ? "선택 모드 해제 (ESC)" : "선택 모드 활성화"}
               >
                 {isSelectionMode ? (
-                  <CheckSquare className="w-4 h-4 text-red-500" />
+                  <CheckSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500" />
                 ) : (
-                  <Square className="w-4 h-4 text-black/60 dark:text-white/60" />
+                  <Square className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/60 dark:text-white/60" />
                 )}
                 <span>SELECT</span>
               </button>
               <button
                 onClick={() => setIsAddModalOpen(true)}
-                className="h-10 px-3.5 sm:px-5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold tracking-widest uppercase flex items-center gap-1.5 sm:gap-2 hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer"
+                className="h-9 sm:h-10 px-3 sm:px-5 bg-black text-white dark:bg-white dark:text-black text-[11px] sm:text-xs font-mono font-bold tracking-wider sm:tracking-widest uppercase flex items-center gap-1.5 sm:gap-2 hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer"
               >
-                <Plus className="w-4 h-4" />
-                <span>KEEP SPOT</span>
+                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">KEEP SPOT</span>
+                <span className="sm:hidden">SPOT</span>
               </button>
             </div>
           </div>
@@ -827,8 +828,8 @@ export function PocketHubPage({
 
         {/* ── Filter & Sort Bar ── */}
         <div className="mb-6 space-y-2">
-          {/* 1-Row compact bar */}
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* 1-Row compact bar: [FILTER] + [SEARCH flex-1] + [SORT] */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {/* FILTER toggle button: Mobile icon-only optimization */}
             <button
               type="button"
@@ -843,50 +844,31 @@ export function PocketHubPage({
               <SlidersHorizontal className="w-3 h-3" />
               <span className="hidden sm:inline">FILTER</span>
               {activeFilterCount > 0 && (
-                <span className="ml-0.5 bg-red-600 text-white text-[9px] font-black px-1 py-0.5 leading-none">{activeFilterCount}</span>
+                <span className="bg-red-600 text-white text-[9px] font-black px-1 py-0.5 leading-none">{activeFilterCount}</span>
               )}
             </button>
 
-            {/* Active filter chips */}
-            {selectedCountry !== 'ALL' && (
-              <button
-                onClick={() => { setSelectedCountry('ALL'); setSelectedCity('ALL'); }}
-                className="h-8 px-2.5 flex items-center gap-1.5 text-[11px] font-mono font-bold tracking-wider uppercase border border-black dark:border-white bg-black/5 dark:bg-white/5 cursor-pointer hover:bg-red-500/10 hover:border-red-500 transition-colors"
-              >
-                <span>{selectedCountry}{selectedCity !== 'ALL' ? ` · ${selectedCity}` : ''}</span>
-                <X className="w-2.5 h-2.5" />
-              </button>
-            )}
-            {selectedCategory !== 'ALL' && (
-              <button
-                onClick={() => setSelectedCategory('ALL')}
-                className="h-8 px-2.5 flex items-center gap-1.5 text-[11px] font-mono font-bold tracking-wider uppercase border border-black dark:border-white bg-black/5 dark:bg-white/5 cursor-pointer hover:bg-red-500/10 hover:border-red-500 transition-colors"
-              >
-                <span>{selectedCategory}</span>
-                <X className="w-2.5 h-2.5" />
-              </button>
-            )}
-            {isFavoriteFilter && (
-              <button
-                onClick={() => setIsFavoriteFilter(false)}
-                className="h-8 px-2.5 flex items-center gap-1.5 text-[11px] font-mono font-bold tracking-wider uppercase border border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-400 cursor-pointer hover:bg-red-500/10 hover:border-red-500 transition-colors"
-              >
-                <Star className="w-2.5 h-2.5 fill-current" />
-                <span>FAVORITES</span>
-                <X className="w-2.5 h-2.5" />
-              </button>
-            )}
-            {activeFilterCount > 0 && (
-              <button
-                onClick={() => { setSelectedCountry('ALL'); setSelectedCity('ALL'); setSelectedCategory('ALL'); setIsFavoriteFilter(false); }}
-                className="h-8 px-2 text-[10px] font-mono uppercase tracking-wider text-black/40 dark:text-white/40 hover:text-red-500 cursor-pointer transition-colors"
-              >
-                RESET
-              </button>
-            )}
-
-            {/* Spacer */}
-            <div className="flex-1" />
+            {/* Search Input: Flexible width filling remaining space */}
+            <div className="relative flex-1 min-w-0">
+              <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="장소, 지역 검색..."
+                className="w-full h-8 pl-7 sm:pl-8 pr-7 sm:pr-8 bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15 text-[10.5px] sm:text-[11px] font-mono placeholder:text-black/30 dark:placeholder:text-white/30 focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer"
+                  title="검색어 지우기"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
 
             {/* Sort dropdown - Mobile compact width */}
             <div ref={sortRef} className="relative shrink-0">
@@ -925,19 +907,47 @@ export function PocketHubPage({
                 </div>
               )}
             </div>
-
-            {/* Search Input - Mobile compact width */}
-            <div className="relative shrink-0 w-32 sm:w-44 md:w-56">
-              <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="장소, 지역 검색..."
-                className="w-full h-8 pl-8 pr-2.5 bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15 text-[10.5px] sm:text-[11px] font-mono placeholder:text-black/30 dark:placeholder:text-white/30 focus:outline-none focus:border-black dark:focus:border-white transition-colors"
-              />
-            </div>
           </div>
+
+          {/* Active filter chips: Clean horizontal rail */}
+          {activeFilterCount > 0 && (
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 animate-in fade-in duration-150">
+              {selectedCountry !== 'ALL' && (
+                <button
+                  onClick={() => { setSelectedCountry('ALL'); setSelectedCity('ALL'); }}
+                  className="h-7 px-2 flex items-center gap-1 text-[10px] sm:text-[11px] font-mono font-bold tracking-wider uppercase border border-black dark:border-white bg-black/5 dark:bg-white/5 cursor-pointer hover:bg-red-500/10 hover:border-red-500 transition-colors shrink-0"
+                >
+                  <span>{selectedCountry}{selectedCity !== 'ALL' ? ` · ${selectedCity}` : ''}</span>
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              )}
+              {selectedCategory !== 'ALL' && (
+                <button
+                  onClick={() => setSelectedCategory('ALL')}
+                  className="h-7 px-2 flex items-center gap-1 text-[10px] sm:text-[11px] font-mono font-bold tracking-wider uppercase border border-black dark:border-white bg-black/5 dark:bg-white/5 cursor-pointer hover:bg-red-500/10 hover:border-red-500 transition-colors shrink-0"
+                >
+                  <span>{selectedCategory}</span>
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              )}
+              {isFavoriteFilter && (
+                <button
+                  onClick={() => setIsFavoriteFilter(false)}
+                  className="h-7 px-2 flex items-center gap-1 text-[10px] sm:text-[11px] font-mono font-bold tracking-wider uppercase border border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-400 cursor-pointer hover:bg-red-500/10 hover:border-red-500 transition-colors shrink-0"
+                >
+                  <Star className="w-2.5 h-2.5 fill-current" />
+                  <span>FAVORITES</span>
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              )}
+              <button
+                onClick={() => { setSelectedCountry('ALL'); setSelectedCity('ALL'); setSelectedCategory('ALL'); setIsFavoriteFilter(false); }}
+                className="h-7 px-2 text-[10px] font-mono uppercase tracking-wider text-black/40 dark:text-white/40 hover:text-red-500 cursor-pointer transition-colors shrink-0"
+              >
+                RESET
+              </button>
+            </div>
+          )}
 
           {/* Slide-open Filter Panel */}
           {isFilterOpen && (

@@ -32,7 +32,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '¥',
     rateToKRW: 9.30,
     cities: ['TOKYO', 'OSAKA', 'KYOTO', 'FUKUOKA', 'SAPPORO', 'NAGOYA', 'OKINAWA', 'KOBE', 'NARA'],
-    center: [36.2048, 138.2529],
+    center: [35.6762, 139.6503], // Tokyo
     zoom: 5.5,
     continent: 'Asia',
     continentKo: '아시아',
@@ -45,7 +45,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '₩',
     rateToKRW: 1.0,
     cities: ['SEOUL', 'BUSAN', 'JEJU', 'GANGNEUNG', 'GYEONGJU', 'INCHEON', 'SOKCHO', 'JEONJU'],
-    center: [36.5, 127.8],
+    center: [37.5665, 126.9780], // Seoul
     zoom: 6.5,
     continent: 'Asia',
     continentKo: '아시아',
@@ -58,7 +58,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'NT$',
     rateToKRW: 43.2,
     cities: ['TAIPEI', 'KAOHSIUNG', 'TAICHUNG', 'TAINAN', 'HUALIEN', 'JIUFEN'],
-    center: [23.7, 121.0],
+    center: [25.0330, 121.5654], // Taipei
     zoom: 7,
     continent: 'Asia',
     continentKo: '아시아',
@@ -71,7 +71,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'HK$',
     rateToKRW: 177.4,
     cities: ['HONG KONG', 'KOWLOON', 'CENTRAL', 'TSIM SHA TSUI', 'LANTAU'],
-    center: [22.3193, 114.1694],
+    center: [22.2819, 114.1581], // Central
     zoom: 11,
     continent: 'Asia',
     continentKo: '아시아',
@@ -84,7 +84,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'MOP$',
     rateToKRW: 172.0,
     cities: ['MACAU', 'TAIPA', 'COTAI', 'COLOANE'],
-    center: [22.1987, 113.5439],
+    center: [22.1987, 113.5439], // Macau
     zoom: 12,
     continent: 'Asia',
     continentKo: '아시아',
@@ -97,7 +97,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '¥',
     rateToKRW: 191.5,
     cities: ['SHANGHAI', 'BEIJING', 'QINGDAO', 'ZHANGJIAJIE', 'CHENGDU', 'GUANGZHOU', 'XIAN'],
-    center: [35.8617, 104.1954],
+    center: [39.9042, 116.4074], // Beijing
     zoom: 4,
     continent: 'Asia',
     continentKo: '아시아',
@@ -110,7 +110,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '₮',
     rateToKRW: 0.4,
     cities: ['ULAANBAATAR', 'GOBI', 'TERELJ', 'KHUVSGUL'],
-    center: [46.8625, 103.8467],
+    center: [47.9212, 106.9186], // Ulaanbaatar
     zoom: 5,
     continent: 'Asia',
     continentKo: '아시아',
@@ -125,7 +125,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '₫',
     rateToKRW: 0.0546,
     cities: ['DA NANG', 'HANOI', 'HO CHI MINH', 'NHA TRANG', 'PHU QUOC', 'HOI AN', 'SAPA'],
-    center: [15.8, 108.0],
+    center: [21.0285, 105.8542], // Hanoi
     zoom: 5.5,
     continent: 'Asia',
     continentKo: '아시아',
@@ -138,7 +138,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '฿',
     rateToKRW: 38.4,
     cities: ['BANGKOK', 'CHIANG MAI', 'PHUKET', 'PATTAYA', 'KOH SAMUI', 'KRABI'],
-    center: [14.5, 101.0],
+    center: [13.7563, 100.5018], // Bangkok
     zoom: 5.5,
     continent: 'Asia',
     continentKo: '아시아',
@@ -151,7 +151,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '₱',
     rateToKRW: 24.5,
     cities: ['CEBU', 'BORACAY', 'BOHOL', 'MANILA', 'CORON', 'EL NIDO'],
-    center: [12.8797, 121.7740],
+    center: [14.5995, 120.9842], // Manila
     zoom: 5.5,
     continent: 'Asia',
     continentKo: '아시아',
@@ -164,7 +164,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'S$',
     rateToKRW: 1040,
     cities: ['SINGAPORE', 'SENTOSA', 'MARINA BAY'],
-    center: [1.3521, 103.8198],
+    center: [1.3521, 103.8198], // Singapore
     zoom: 11,
     continent: 'Asia',
     continentKo: '아시아',
@@ -177,7 +177,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'RM',
     rateToKRW: 295.0,
     cities: ['KUALA LUMPUR', 'KOTA KINABALU', 'PENANG', 'LANGKAWI', 'MALACCA'],
-    center: [4.2105, 101.9758],
+    center: [3.1390, 101.6869], // Kuala Lumpur
     zoom: 5.5,
     continent: 'Asia',
     continentKo: '아시아',
@@ -190,7 +190,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'Rp',
     rateToKRW: 0.088,
     cities: ['BALI', 'JAKARTA', 'YOGYAKARTA', 'LOMBOK', 'KOMODO'],
-    center: [-0.7893, 113.9213],
+    center: [-6.2088, 106.8456], // Jakarta
     zoom: 5,
     continent: 'Asia',
     continentKo: '아시아',
@@ -203,7 +203,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '₭',
     rateToKRW: 0.065,
     cities: ['VIENTIANE', 'LUANG PRABANG', 'VANG VIENG'],
-    center: [19.8563, 102.4955],
+    center: [17.9757, 102.6331], // Vientiane
     zoom: 6,
     continent: 'Asia',
     continentKo: '아시아',
@@ -216,7 +216,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '$',
     rateToKRW: 1380,
     cities: ['SIEM REAP', 'PHNOM PENH', 'KAMPOT'],
-    center: [12.5657, 104.9910],
+    center: [11.5564, 104.9282], // Phnom Penh
     zoom: 6.5,
     continent: 'Asia',
     continentKo: '아시아',
@@ -229,7 +229,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'Rf',
     rateToKRW: 90.0,
     cities: ['MALE', 'MAAFUSHI', 'ARI ATOLL'],
-    center: [3.2028, 73.2207],
+    center: [4.1755, 73.5093], // Male
     zoom: 7,
     continent: 'Asia',
     continentKo: '아시아',
@@ -242,7 +242,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '₹',
     rateToKRW: 16.5,
     cities: ['NEW DELHI', 'MUMBAI', 'JAIPUR', 'AGRA', 'GOA', 'VARANASI'],
-    center: [20.5937, 78.9629],
+    center: [28.6139, 77.2090], // New Delhi
     zoom: 4.5,
     continent: 'Asia',
     continentKo: '아시아',
@@ -255,7 +255,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '₨',
     rateToKRW: 10.2,
     cities: ['KATHMANDU', 'POKHARA', 'EVEREST'],
-    center: [28.3949, 84.1240],
+    center: [27.7172, 85.3240], // Kathmandu
     zoom: 7,
     continent: 'Asia',
     continentKo: '아시아',
@@ -270,7 +270,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '€',
     rateToKRW: 1480,
     cities: ['PARIS', 'NICE', 'LYON', 'MARSEILLE', 'BORDEAUX', 'STRASBOURG', 'COLMAR'],
-    center: [46.6, 2.3],
+    center: [48.8566, 2.3522], // Paris
     zoom: 5.5,
     continent: 'Europe',
     continentKo: '유럽',
@@ -283,7 +283,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '€',
     rateToKRW: 1480,
     cities: ['ROME', 'FLORENCE', 'VENICE', 'MILAN', 'NAPLES', 'AMALFI', 'POSITANO'],
-    center: [42.5, 12.5],
+    center: [41.9028, 12.4964], // Rome
     zoom: 5.5,
     continent: 'Europe',
     continentKo: '유럽',
@@ -296,7 +296,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '€',
     rateToKRW: 1480,
     cities: ['BARCELONA', 'MADRID', 'SEVILLE', 'GRANADA', 'VALENCIA', 'MALAGA', 'IBIZA'],
-    center: [40.4, -3.7],
+    center: [40.4168, -3.7038], // Madrid
     zoom: 5.5,
     continent: 'Europe',
     continentKo: '유럽',
@@ -309,7 +309,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '£',
     rateToKRW: 1750,
     cities: ['LONDON', 'EDINBURGH', 'MANCHESTER', 'OXFORD', 'CAMBRIDGE', 'LIVERPOOL'],
-    center: [54.5, -2.5],
+    center: [51.5074, -0.1278], // London
     zoom: 5.5,
     continent: 'Europe',
     continentKo: '유럽',
@@ -322,7 +322,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'CHF',
     rateToKRW: 1540,
     cities: ['ZURICH', 'INTERLAKEN', 'GENEVA', 'LUCERNE', 'ZERMATT', 'GRINDELWALD'],
-    center: [46.8, 8.2],
+    center: [46.9480, 7.4474], // Bern
     zoom: 7,
     continent: 'Europe',
     continentKo: '유럽',
@@ -335,7 +335,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '€',
     rateToKRW: 1480,
     cities: ['BERLIN', 'MUNICH', 'FRANKFURT', 'HAMBURG', 'COLOGNE', 'HEIDELBERG'],
-    center: [51.1, 10.4],
+    center: [52.5200, 13.4050], // Berlin
     zoom: 5.5,
     continent: 'Europe',
     continentKo: '유럽',
@@ -348,7 +348,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '€',
     rateToKRW: 1480,
     cities: ['VIENNA', 'SALZBURG', 'HALLSTATT', 'INNSBRUCK', 'GRAZ'],
-    center: [47.5162, 14.5501],
+    center: [48.2082, 16.3738], // Vienna
     zoom: 6.5,
     continent: 'Europe',
     continentKo: '유럽',
@@ -361,7 +361,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'Kč',
     rateToKRW: 58.0,
     cities: ['PRAGUE', 'CESKY KRUMLOV', 'BRNO', 'KARLOVY VARY'],
-    center: [49.8175, 15.4730],
+    center: [50.0755, 14.4378], // Prague
     zoom: 6.5,
     continent: 'Europe',
     continentKo: '유럽',
@@ -374,7 +374,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'Ft',
     rateToKRW: 3.7,
     cities: ['BUDAPEST', 'DEBRECEN', 'EGER', 'SZEGED'],
-    center: [47.1625, 19.5033],
+    center: [47.4979, 19.0402], // Budapest
     zoom: 6.5,
     continent: 'Europe',
     continentKo: '유럽',
@@ -387,7 +387,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '€',
     rateToKRW: 1480,
     cities: ['DUBROVNIK', 'ZAGREB', 'SPLIT', 'PLITVICE', 'HVAR', 'ZADAR'],
-    center: [45.1, 15.2],
+    center: [45.8150, 15.9819], // Zagreb
     zoom: 6,
     continent: 'Europe',
     continentKo: '유럽',
@@ -400,7 +400,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '€',
     rateToKRW: 1480,
     cities: ['LISBON', 'PORTO', 'SINTRA', 'FARO', 'COIMBRA', 'MADEIRA'],
-    center: [39.3999, -8.2245],
+    center: [38.7223, -9.1393], // Lisbon
     zoom: 6,
     continent: 'Europe',
     continentKo: '유럽',
@@ -413,7 +413,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '€',
     rateToKRW: 1480,
     cities: ['ATHENS', 'SANTORINI', 'MYKONOS', 'CRETE', 'ZAKYNTHOS'],
-    center: [39.0742, 21.8243],
+    center: [37.9838, 23.7275], // Athens
     zoom: 6,
     continent: 'Europe',
     continentKo: '유럽',
@@ -426,7 +426,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '€',
     rateToKRW: 1480,
     cities: ['AMSTERDAM', 'ROTTERDAM', 'UTRECHT', 'THE HAGUE', 'GIETHOORN'],
-    center: [52.1326, 5.2913],
+    center: [52.3676, 4.9041], // Amsterdam
     zoom: 7,
     continent: 'Europe',
     continentKo: '유럽',
@@ -439,7 +439,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '€',
     rateToKRW: 1480,
     cities: ['BRUSSELS', 'BRUGES', 'GHENT', 'ANTWERP'],
-    center: [50.5039, 4.4699],
+    center: [50.8503, 4.3517], // Brussels
     zoom: 7.5,
     continent: 'Europe',
     continentKo: '유럽',
@@ -452,7 +452,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'kr',
     rateToKRW: 200.0,
     cities: ['COPENHAGEN', 'AARHUS', 'ODENSE', 'BILLUND'],
-    center: [56.2639, 9.5018],
+    center: [55.6761, 12.5683], // Copenhagen
     zoom: 6.5,
     continent: 'Europe',
     continentKo: '유럽',
@@ -465,7 +465,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'kr',
     rateToKRW: 130.0,
     cities: ['OSLO', 'BERGEN', 'TROMSO', 'STAVANGER', 'FLAM'],
-    center: [60.4720, 8.4689],
+    center: [59.9139, 10.7522], // Oslo
     zoom: 5,
     continent: 'Europe',
     continentKo: '유럽',
@@ -478,7 +478,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'kr',
     rateToKRW: 130.0,
     cities: ['STOCKHOLM', 'GOTHENBURG', 'MALMO', 'UPPSALA'],
-    center: [60.1282, 18.6435],
+    center: [59.3293, 18.0686], // Stockholm
     zoom: 5,
     continent: 'Europe',
     continentKo: '유럽',
@@ -491,7 +491,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '€',
     rateToKRW: 1480,
     cities: ['HELSINKI', 'ROVANIEMI', 'TAMPERE', 'TURKU'],
-    center: [61.9241, 25.7482],
+    center: [60.1699, 24.9384], // Helsinki
     zoom: 5,
     continent: 'Europe',
     continentKo: '유럽',
@@ -504,7 +504,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'zł',
     rateToKRW: 345.0,
     cities: ['WARSAW', 'KRAKOW', 'GDANSK', 'WROCLAW'],
-    center: [51.9194, 19.1451],
+    center: [52.2297, 21.0122], // Warsaw
     zoom: 6,
     continent: 'Europe',
     continentKo: '유럽',
@@ -517,7 +517,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '€',
     rateToKRW: 1480,
     cities: ['DUBLIN', 'CORK', 'GALWAY', 'KILLARNEY'],
-    center: [53.1424, -7.6921],
+    center: [53.3498, -6.2603], // Dublin
     zoom: 6.5,
     continent: 'Europe',
     continentKo: '유럽',
@@ -530,7 +530,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'lei',
     rateToKRW: 295.0,
     cities: ['BUCHAREST', 'BRASOV', 'CLUJ-NAPOCA', 'SIBIU'],
-    center: [45.9432, 24.9668],
+    center: [44.4268, 26.1025], // Bucharest
     zoom: 6,
     continent: 'Europe',
     continentKo: '유럽',
@@ -543,7 +543,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '€',
     rateToKRW: 1480,
     cities: ['LJUBLJANA', 'BLED', 'PIRAN', 'POSTOJNA'],
-    center: [46.1512, 14.9955],
+    center: [46.0569, 14.5058], // Ljubljana
     zoom: 7.5,
     continent: 'Europe',
     continentKo: '유럽',
@@ -556,7 +556,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'kr',
     rateToKRW: 9.8,
     cities: ['REYKJAVIK', 'VIK', 'AKUREYRI', 'GOLDEN CIRCLE'],
-    center: [64.9631, -19.0208],
+    center: [64.1466, -21.9426], // Reykjavik
     zoom: 6,
     continent: 'Europe',
     continentKo: '유럽',
@@ -569,7 +569,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '₺',
     rateToKRW: 42.0,
     cities: ['ISTANBUL', 'CAPPADOCIA', 'ANTALYA', 'PAMUKKALE', 'IZMIR'],
-    center: [38.9637, 35.2433],
+    center: [39.9334, 32.8597], // Ankara
     zoom: 5.5,
     continent: 'Europe',
     continentKo: '유럽',
@@ -584,7 +584,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'E£',
     rateToKRW: 28.0,
     cities: ['CAIRO', 'GIZA', 'LUXOR', 'ASWAN', 'HURGHADA', 'ALEXANDRIA'],
-    center: [26.8206, 30.8025],
+    center: [30.0444, 31.2357], // Cairo
     zoom: 5.5,
     continent: 'Africa',
     continentKo: '아프리카',
@@ -597,7 +597,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'DH',
     rateToKRW: 138.0,
     cities: ['MARRAKECH', 'CASABLANCA', 'FES', 'CHEFCHAOUEN', 'RABAT'],
-    center: [31.7917, -7.0926],
+    center: [34.0209, -6.8416], // Rabat
     zoom: 5.5,
     continent: 'Africa',
     continentKo: '아프리카',
@@ -610,7 +610,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'R',
     rateToKRW: 75.0,
     cities: ['CAPE TOWN', 'JOHANNESBURG', 'DURBAN', 'KRUGER'],
-    center: [-30.5595, 22.9375],
+    center: [-25.7479, 28.2293], // Pretoria
     zoom: 5,
     continent: 'Africa',
     continentKo: '아프리카',
@@ -623,7 +623,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'KSh',
     rateToKRW: 10.5,
     cities: ['NAIROBI', 'MASAI MARA', 'MOMBASA'],
-    center: [-0.0236, 37.9062],
+    center: [-1.2921, 36.8219], // Nairobi
     zoom: 6,
     continent: 'Africa',
     continentKo: '아프리카',
@@ -636,7 +636,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'TSh',
     rateToKRW: 0.52,
     cities: ['ZANZIBAR', 'SERENGETI', 'DAR ES SALAAM', 'KILIMANJARO'],
-    center: [-6.3690, 34.8888],
+    center: [-6.1630, 35.7516], // Dodoma
     zoom: 6,
     continent: 'Africa',
     continentKo: '아프리카',
@@ -651,7 +651,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'AED',
     rateToKRW: 375.0,
     cities: ['DUBAI', 'ABU DHABI', 'SHARJAH'],
-    center: [23.4241, 53.8478],
+    center: [24.4539, 54.3773], // Abu Dhabi
     zoom: 7,
     continent: 'Middle East',
     continentKo: '중동',
@@ -664,7 +664,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'JD',
     rateToKRW: 1920.0,
     cities: ['AMMAN', 'PETRA', 'WADI RUM', 'DEAD SEA', 'AQABA'],
-    center: [30.5852, 36.2384],
+    center: [31.9454, 35.9284], // Amman
     zoom: 7,
     continent: 'Middle East',
     continentKo: '중동',
@@ -677,7 +677,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'QR',
     rateToKRW: 375.0,
     cities: ['DOHA', 'AL WAKRAH', 'LUSAIL'],
-    center: [25.3548, 51.1839],
+    center: [25.2854, 51.5310], // Doha
     zoom: 8.5,
     continent: 'Middle East',
     continentKo: '중동',
@@ -690,7 +690,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'SR',
     rateToKRW: 365.0,
     cities: ['RIYADH', 'JEDDAH', 'ALULA', 'MEDINA'],
-    center: [23.8859, 45.0792],
+    center: [24.7136, 46.6753], // Riyadh
     zoom: 5,
     continent: 'Middle East',
     continentKo: '중동',
@@ -705,7 +705,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '$',
     rateToKRW: 1380,
     cities: ['NEW YORK', 'LOS ANGELES', 'SAN FRANCISCO', 'LAS VEGAS', 'HONOLULU', 'SEATTLE', 'CHICAGO'],
-    center: [39.8, -98.5],
+    center: [38.9072, -77.0369], // Washington, D.C.
     zoom: 4,
     continent: 'North America',
     continentKo: '북미',
@@ -718,7 +718,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'C$',
     rateToKRW: 1010,
     cities: ['VANCOUVER', 'TORONTO', 'MONTREAL', 'QUEBEC', 'BANFF', 'CALGARY'],
-    center: [56.1, -106.3],
+    center: [45.4215, -75.6972], // Ottawa
     zoom: 3.5,
     continent: 'North America',
     continentKo: '북미',
@@ -731,7 +731,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '$',
     rateToKRW: 72.0,
     cities: ['CANCUN', 'MEXICO CITY', 'PLAYA DEL CARMEN', 'TULUM', 'OAXACA'],
-    center: [23.6345, -102.5528],
+    center: [19.4326, -99.1332], // Mexico City
     zoom: 4.5,
     continent: 'North America',
     continentKo: '중남미',
@@ -744,7 +744,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '$',
     rateToKRW: 57.0,
     cities: ['HAVANA', 'VARADERO', 'TRINIDAD', 'VINALES'],
-    center: [21.5218, -77.7812],
+    center: [23.1136, -82.3666], // Havana
     zoom: 6.5,
     continent: 'North America',
     continentKo: '중남미',
@@ -757,7 +757,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'S/.',
     rateToKRW: 365.0,
     cities: ['LIMA', 'CUSCO', 'MACHU PICCHU', 'AREQUIPA', 'PUNO'],
-    center: [-9.1900, -75.0152],
+    center: [-12.0464, -77.0428], // Lima
     zoom: 5,
     continent: 'South America',
     continentKo: '남미',
@@ -770,7 +770,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'R$',
     rateToKRW: 245.0,
     cities: ['RIO DE JANEIRO', 'SAO PAULO', 'SALVADOR', 'IGUACU'],
-    center: [-14.2350, -51.9253],
+    center: [-15.7975, -47.8919], // Brasilia
     zoom: 4,
     continent: 'South America',
     continentKo: '남미',
@@ -783,7 +783,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '$',
     rateToKRW: 1.4,
     cities: ['BUENOS AIRES', 'BARILOCHE', 'USHUAIA', 'EL CALAFATE', 'IGUAZU'],
-    center: [-38.4161, -63.6167],
+    center: [-34.6037, -58.3816], // Buenos Aires
     zoom: 4,
     continent: 'South America',
     continentKo: '남미',
@@ -796,7 +796,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '$',
     rateToKRW: 1.45,
     cities: ['SANTIAGO', 'SAN PEDRO DE ATACAMA', 'TORRES DEL PAINE', 'EASTER ISLAND'],
-    center: [-35.6751, -71.5430],
+    center: [-33.4489, -70.6693], // Santiago
     zoom: 4,
     continent: 'South America',
     continentKo: '남미',
@@ -809,7 +809,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '$',
     rateToKRW: 0.33,
     cities: ['BOGOTA', 'MEDELLIN', 'CARTAGENA', 'CALI'],
-    center: [4.5709, -74.2973],
+    center: [4.7110, -74.0721], // Bogota
     zoom: 5.5,
     continent: 'South America',
     continentKo: '남미',
@@ -824,7 +824,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'A$',
     rateToKRW: 900,
     cities: ['SYDNEY', 'MELBOURNE', 'BRISBANE', 'PERTH', 'GOLD COAST', 'CAIRNS'],
-    center: [-25.2, 133.7],
+    center: [-35.2809, 149.1300], // Canberra
     zoom: 4,
     continent: 'Oceania',
     continentKo: '오세아니아',
@@ -837,7 +837,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'NZ$',
     rateToKRW: 840,
     cities: ['AUCKLAND', 'QUEENSTOWN', 'CHRISTCHURCH', 'ROTORUA'],
-    center: [-40.9006, 174.8860],
+    center: [-41.2865, 174.7762], // Wellington
     zoom: 5,
     continent: 'Oceania',
     continentKo: '오세아니아',
@@ -850,7 +850,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: 'FJ$',
     rateToKRW: 610.0,
     cities: ['NADI', 'SUVA', 'MAMANUCA ISLANDS'],
-    center: [-17.7134, 178.0650],
+    center: [-18.1416, 178.4419], // Suva
     zoom: 7.5,
     continent: 'Oceania',
     continentKo: '오세아니아',
@@ -863,7 +863,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '$',
     rateToKRW: 1380,
     cities: ['TUMON', 'HAGATNA', 'TAMUNING'],
-    center: [13.4443, 144.7937],
+    center: [13.4757, 144.7489], // Hagatna
     zoom: 11,
     continent: 'Oceania',
     continentKo: '오세아니아',
@@ -876,7 +876,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currencySymbol: '$',
     rateToKRW: 1380,
     cities: ['GARAPAN', 'MARPI', 'SUSUPE'],
-    center: [15.1850, 145.7467],
+    center: [15.1850, 145.7467], // Saipan
     zoom: 11,
     continent: 'Oceania',
     continentKo: '오세아니아',

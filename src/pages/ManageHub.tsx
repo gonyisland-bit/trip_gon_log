@@ -3642,39 +3642,41 @@ export function ManageHubPage({
           </div>
         </div>
 
-        {/* Mode Switcher: HOME / TRIP / MAGAZINE / MAP / BGM / TRASH */}
-        <div className="w-full md:w-auto max-w-full overflow-x-auto scrollbar-none flex items-center border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 p-0.5 rounded-none shrink-0">
-          {([
-            { id: 'HOME', label: 'HOME' },
-            { id: 'ARCHIVE', label: 'TRIP' },
-            { id: 'MAGAZINE', label: 'MAGAZINE' },
-            { id: 'MAP', label: 'MAP' },
-            { id: 'BGM', label: 'BGM' },
-            { id: 'USERS', label: 'USERS' },
-            { id: 'TRASH', label: 'TRASH' },
-          ] as const).map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                if (activeMode === tab.id) return;
-                executeWithGuard(() => {
-                  setActiveMode(tab.id);
-                });
-              }}
-              className={`flex-1 md:flex-none px-2.5 sm:px-3.5 py-1.5 text-xs font-mono font-bold uppercase tracking-tight transition-colors cursor-pointer whitespace-nowrap text-center ${
-                activeMode === tab.id
-                  ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
-                  : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-              }`}
-            >
-              {tab.label}
-              {tab.id === 'TRASH' && (trashedJourneys.length + trashedSections.length) > 0 && (
-                <span className="ml-1 text-[9px] font-mono px-1 bg-red-600 text-white font-bold">
-                  {trashedJourneys.length + trashedSections.length}
-                </span>
-              )}
-            </button>
-          ))}
+        {/* Mode Switcher: HOME / TRIP / MAGAZINE / MAP / BGM / USERS / TRASH */}
+        <div className="w-full md:w-auto max-w-full overflow-x-auto scrollbar-none border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 p-0.5 rounded-none shrink-0">
+          <div className="flex items-center min-w-max md:min-w-0 pr-1 md:pr-0">
+            {([
+              { id: 'HOME', label: 'HOME' },
+              { id: 'ARCHIVE', label: 'TRIP' },
+              { id: 'MAGAZINE', label: 'MAGAZINE' },
+              { id: 'MAP', label: 'MAP' },
+              { id: 'BGM', label: 'BGM' },
+              { id: 'USERS', label: 'USERS' },
+              { id: 'TRASH', label: 'TRASH' },
+            ] as const).map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  if (activeMode === tab.id) return;
+                  executeWithGuard(() => {
+                    setActiveMode(tab.id);
+                  });
+                }}
+                className={`flex-1 md:flex-none px-2 sm:px-3.5 py-1 sm:py-1.5 text-[10.5px] sm:text-xs font-mono font-bold uppercase tracking-tight transition-colors cursor-pointer whitespace-nowrap text-center shrink-0 ${
+                  activeMode === tab.id
+                    ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                    : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                }`}
+              >
+                <span>{tab.label}</span>
+                {tab.id === 'TRASH' && (trashedJourneys.length + trashedSections.length) > 0 && (
+                  <span className="ml-1 text-[9px] font-mono px-1 py-0.5 bg-red-600 text-white font-bold leading-none inline-block">
+                    {trashedJourneys.length + trashedSections.length}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
