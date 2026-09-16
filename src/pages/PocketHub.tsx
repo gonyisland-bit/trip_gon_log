@@ -652,7 +652,7 @@ export function PocketHubPage({
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
                             className={`absolute top-2 ${isSelectionMode ? 'left-10' : 'left-9 sm:left-10'} px-1.5 sm:px-2 py-0.5 bg-black/85 hover:bg-red-600 text-white text-[8px] sm:text-[9px] font-mono tracking-widest uppercase border border-white/20 transition-colors flex items-center gap-1 z-10 cursor-pointer`}
-                            title={`원본 ${spot.platform.toUpperCase()} 바로가기`}
+                            title={spot.platform.toUpperCase()}
                           >
                             <span>{spot.platform}</span>
                             <ArrowUpRight className="w-2.5 h-2.5 opacity-70" />
@@ -698,32 +698,9 @@ export function PocketHubPage({
                             {spot.address}
                           </p>
                         )}
-
-                        {/* Direct SNS Source Link Button (High-visibility & Easy touch) */}
-                        {spot.sourceUrl && (
-                          <a
-                            href={spot.sourceUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="mt-2.5 w-full py-1.5 px-2 bg-black/[0.03] dark:bg-white/[0.05] hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black border border-black/15 dark:border-white/15 text-[9.5px] sm:text-[10px] font-mono font-bold uppercase tracking-wider flex items-center justify-between transition-all cursor-pointer group/link"
-                            title={`원본 ${spot.platform ? spot.platform.toUpperCase() : 'SNS'} 바로가기`}
-                          >
-                            <span className="flex items-center gap-1.5 truncate">
-                              <ExternalLink className="w-3 h-3 text-red-500 group-hover/link:text-current shrink-0" />
-                              <span className="truncate">
-                                {spot.platform === 'instagram' ? 'INSTAGRAM 바로가기' :
-                                 spot.platform === 'youtube' ? 'YOUTUBE 영상보기' :
-                                 spot.platform === 'blog' ? 'BLOG 리뷰보기' :
-                                 spot.platform === 'maps' ? 'GOOGLE MAPS 보기' : '원본 SNS 바로가기'}
-                              </span>
-                            </span>
-                            <ArrowUpRight className="w-3 h-3 opacity-50 group-hover/link:opacity-100 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform shrink-0 ml-1" />
-                          </a>
-                        )}
                       </div>
 
-                      {/* Action Bar */}
+                      {/* Action Bar (1-Row Swiss Minimal Integration) */}
                       <div className="pt-2 mt-2 border-t border-black/10 dark:border-white/10 flex items-center justify-between gap-1.5">
                         <button
                           type="button"
@@ -731,12 +708,28 @@ export function PocketHubPage({
                             e.stopPropagation();
                             setSpotToUseInTrip(spot);
                           }}
-                          className="flex-1 h-7 px-2 bg-black text-white dark:bg-white dark:text-black text-[9.5px] sm:text-[10px] font-mono tracking-wider uppercase font-bold flex items-center justify-center gap-1 hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer"
-                          title="트립 타임라인에 바로 복사 추가"
+                          className="flex-1 h-7 px-2 bg-black text-white dark:bg-white dark:text-black text-[9px] sm:text-[9.5px] font-mono tracking-wider uppercase font-bold flex items-center justify-center gap-1 hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer truncate"
+                          title="USE IN TRIP"
                         >
                           <Plus className="w-3 h-3 shrink-0" />
-                          <span>USE IN TRIP</span>
+                          <span className="truncate">USE IN TRIP</span>
                         </button>
+
+                        {/* Minimal SNS Direct Link */}
+                        {spot.sourceUrl && (
+                          <a
+                            href={spot.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="h-7 px-2 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 text-[9px] font-mono font-bold tracking-wider uppercase flex items-center gap-1 text-black/80 dark:text-white/80 transition-colors shrink-0 cursor-pointer"
+                            title={spot.platform ? spot.platform.toUpperCase() : 'ORIGINAL'}
+                          >
+                            <ExternalLink className="w-2.5 h-2.5 text-red-500 shrink-0" />
+                            <span className="max-w-[70px] truncate">{spot.platform || 'LINK'}</span>
+                            <ArrowUpRight className="w-2.5 h-2.5 opacity-60" />
+                          </a>
+                        )}
 
                         {/* Hamburger More Menu (Edit & Delete) */}
                         <div className="relative shrink-0">
