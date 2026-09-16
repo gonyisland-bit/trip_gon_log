@@ -235,7 +235,7 @@ export function StayCard({
       tabIndex={isEditMode ? 0 : undefined}
       className={`border-b font-sans text-black dark:text-white relative transition-all duration-300 cursor-pointer w-full outline-none ${
         isActive 
-          ? 'border-l-4 border-l-red-600 dark:border-l-red-500 bg-neutral-100/50 dark:bg-white/[0.04]' 
+          ? 'border-black/30 dark:border-white/30 bg-black/[0.04] dark:bg-white/[0.06]' 
           : 'border-black/15 dark:border-white/15 bg-white dark:bg-[#0A0A0A]'
       }`}
     >

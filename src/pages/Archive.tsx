@@ -1065,8 +1065,8 @@ export function ArchiveHubPage({
                             onTouchStart={preloadDetailPage}
                             className={`group flex flex-row items-stretch border-b border-black/15 dark:border-white/15 last:border-b-0 transition-colors cursor-pointer w-full select-none rounded-none ${
                               isCardActive 
-                                ? 'bg-neutral-100 dark:bg-white/[0.08] border-l-[3px] border-l-red-600 dark:border-l-red-500' 
-                                : 'border-l-[3px] border-l-transparent hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
+                                ? 'bg-black/[0.05] dark:bg-white/[0.08]' 
+                                : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
                             }`}
                           >
                             {/* Monospace Index Column: Compact & Slim */}

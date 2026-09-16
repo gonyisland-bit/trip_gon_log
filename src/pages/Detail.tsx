@@ -4408,8 +4408,8 @@ export function JourneyDetailPage({
                             flashedItemId === item.id ? 'timeline-flash-highlight' : ''
                           } ${
                             isActive 
-                              ? 'bg-neutral-100 dark:bg-white/[0.08] border-l-[5px] border-l-red-600 dark:border-l-red-500' 
-                              : (hoveredItemId === item.id ? 'bg-black/[0.03] dark:bg-white/[0.04] border-l-[5px] border-l-red-600/40 dark:border-l-red-500/40' : 'border-l-[5px] border-l-transparent')
+                              ? 'bg-black/[0.04] dark:bg-white/[0.08]' 
+                              : (hoveredItemId === item.id ? 'bg-black/[0.02] dark:bg-white/[0.03]' : '')
                           } ${collapsedDays.includes(item.date || '') && selectedDate === 'ALL' ? 'hidden' : ''}`}
                           draggable={isEditing}
                           onDragStart={(e) => {
@@ -4719,7 +4719,7 @@ export function JourneyDetailPage({
                             {/* Right Column: Full-Height 1:1 Edge-to-Edge Square Grid Thumbnail */}
                             {item.img ? (
                               <div 
-                                className={`w-24 sm:w-28 md:w-32 aspect-square self-stretch shrink-0 overflow-hidden border-l transition-all relative rounded-none ${isActive ? 'border-l-[2px] border-l-red-600 dark:border-l-red-500' : 'border-black/15 dark:border-white/15'}`}
+                                className={`w-24 sm:w-28 md:w-32 aspect-square self-stretch shrink-0 overflow-hidden border-l transition-all relative rounded-none ${isActive ? 'border-l-black/30 dark:border-l-white/30' : 'border-black/15 dark:border-white/15'}`}
                                 onClick={(e) => {
                                   if (!isEditing) {
                                     e.stopPropagation();
