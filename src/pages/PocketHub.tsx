@@ -4,6 +4,7 @@ import {
   Search, Check, X, ArrowUpRight, ChevronRight, Layers, Sparkles,
   Utensils, Coffee, Camera, ShoppingBag, Lightbulb, Map, MoreVertical, Star,
   Upload, Image as ImageIcon, Loader2, Heart, MessageSquare,
+  Globe, FileText,
   SlidersHorizontal, ArrowUpDown, ChevronDown, GripVertical, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { SpotPocketItem, PocketCategory, Trip, Plan, TimelineItem } from '../types';
@@ -32,6 +33,34 @@ const CATEGORY_META: Record<PocketCategory, { label: string; icon: React.Element
   spot: { label: 'SPOT', icon: Camera, color: '#2563eb' },
   shopping: { label: 'SHOPPING', icon: ShoppingBag, color: '#7c3aed' },
   tip: { label: 'TIP', icon: Lightbulb, color: '#059669' },
+};
+
+const renderPlatformIcon = (platform?: string) => {
+  const p = (platform || '').toLowerCase();
+  if (p.includes('insta')) {
+    return (
+      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+        <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+      </svg>
+    );
+  }
+  if (p.includes('youtu')) {
+    return (
+      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17" />
+        <polygon points="10 15 15 12 10 9 10 15" fill="currentColor" stroke="none" />
+      </svg>
+    );
+  }
+  if (p.includes('thread') || p.includes('blog') || p.includes('naver') || p.includes('tistory')) {
+    return <FileText className="w-3.5 h-3.5" />;
+  }
+  if (p.includes('map')) {
+    return <MapPin className="w-3.5 h-3.5" />;
+  }
+  return <Globe className="w-3.5 h-3.5" />;
 };
 
 const COUNTRY_NAME_MAP: Record<string, string> = {
@@ -1040,55 +1069,60 @@ export function PocketHubPage({
                         setSelectedSpotForModal(spot);
                       }
                     }}
-                    className={`group flex flex-col border bg-white dark:bg-[#121212] rounded-3xl transition-all duration-300 overflow-hidden shadow-xs hover:shadow-xl cursor-pointer ${
+                    className={`group flex flex-col border bg-white dark:bg-[#1C1C1E] rounded-3xl transition-all duration-300 overflow-hidden shadow-xs hover:shadow-2xl dark:shadow-[0_8px_30px_rgba(0,0,0,0.6)] cursor-pointer ${
                       isDragMode ? 'cursor-grab active:cursor-grabbing' : ''
                     } ${
                       isDraggingThis ? 'opacity-30 scale-[0.98]' : ''
                     } ${
                       isDragOver ? 'ring-2 ring-black dark:ring-white border-transparent' :
                       isSelected ? 'ring-2 ring-black dark:ring-white bg-black/[0.02] dark:bg-white/[0.04]' :
-                      'border-black/10 dark:border-white/10 hover:border-black/30 dark:hover:border-white/30'
+                      'border-black/10 dark:border-white/20 hover:border-black/30 dark:hover:border-white/40'
                     } ${
                       isDimmed ? 'opacity-35 hover:opacity-75 transition-opacity' : 'opacity-100'
                     }`}
                   >
                     {/* Drag Handle (admin + custom sort mode + order mode only) */}
                     {isDragMode && (
-                      <div className="flex items-center justify-center h-6 bg-black/[0.03] dark:bg-white/[0.03] border-b border-black/10 dark:border-white/10 cursor-grab text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors">
+                      <div className="flex items-center justify-center h-6 bg-black/[0.03] dark:bg-white/[0.04] border-b border-black/10 dark:border-white/10 cursor-grab text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors">
                         <GripVertical className="w-3.5 h-3.5" />
                       </div>
                     )}
 
-                    {/* Card Upper Header — Region, Category & Quick Actions */}
-                    <div className="p-3 sm:p-4 pb-2 flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        {/* Region & Category Meta Tag */}
-                        <div className="flex items-center gap-1.5 text-[9.5px] sm:text-[10px] font-mono tracking-wider uppercase text-black/50 dark:text-white/50 mb-1 font-bold">
-                          <MapPin className="w-2.5 h-2.5 text-red-500 shrink-0" />
-                          <span className="truncate">{locationLabel}</span>
-                          <span className="text-black/20 dark:text-white/20">·</span>
-                          <span className="inline-flex items-center gap-1 text-black/70 dark:text-white/70">
-                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: meta.color }} />
-                            <span>{meta.label}</span>
-                          </span>
+                    {/* Top Media Frame (Clean 4:3 Aspect Ratio) */}
+                    <div className="relative aspect-[4/3] w-full bg-black/5 dark:bg-white/5 overflow-hidden border-b border-black/10 dark:border-white/10">
+                      {spot.thumbnailUrl ? (
+                        <img
+                          src={spot.thumbnailUrl}
+                          alt={spot.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          loading="lazy"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-black/25 dark:text-white/25">
+                          <Icon className="w-10 h-10 mb-1" />
+                          <span className="text-[9px] font-mono tracking-widest uppercase font-normal">{meta.label}</span>
                         </div>
+                      )}
 
-                        {/* Main Spot Title (Hero Headline) */}
-                        <h3 className="text-sm sm:text-base font-black tracking-tight text-black dark:text-white leading-snug break-keep line-clamp-1 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
-                          {spot.title}
-                        </h3>
+                      {/* Category Chip Overlay (Top-Left) */}
+                      <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/95 dark:bg-black/85 backdrop-blur-md text-black dark:text-white text-[9px] sm:text-[9.5px] font-mono font-bold tracking-wider uppercase border border-black/10 dark:border-white/15 rounded-full flex items-center gap-1.5 shadow-xs">
+                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: meta.color }} />
+                        <span>{meta.label}</span>
                       </div>
 
-                      {/* Header Right Actions */}
-                      <div className="flex items-center gap-1 shrink-0 pt-0.5" onClick={(e) => e.stopPropagation()}>
+                      {/* Header Right Actions Overlay (Top-Right) */}
+                      <div className="absolute top-3 right-3 flex items-center gap-1 z-10" onClick={(e) => e.stopPropagation()}>
                         {isSelectionMode ? (
                           <button
                             type="button"
                             onClick={(e) => handleToggleSelectSpot(spot.id, e)}
-                            className={`w-6 h-6 rounded-md border flex items-center justify-center transition-all cursor-pointer shadow-xs ${
+                            className={`w-7 h-7 rounded-full border flex items-center justify-center transition-all cursor-pointer shadow-sm ${
                               isSelected
                                 ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                                : 'bg-white dark:bg-black border-black/20 dark:border-white/20 text-transparent hover:border-black dark:hover:border-white'
+                                : 'bg-white/90 dark:bg-black/90 border-black/20 dark:border-white/20 text-transparent hover:border-black dark:hover:border-white'
                             }`}
                           >
                             <Check className={`w-3.5 h-3.5 stroke-[3] ${isSelected ? 'opacity-100' : 'opacity-0'}`} />
@@ -1099,7 +1133,7 @@ export function PocketHubPage({
                             <button
                               type="button"
                               onClick={(e) => handleToggleFavorite(spot.id, e)}
-                              className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 text-black/40 dark:text-white/40 hover:text-amber-500 transition-colors cursor-pointer"
+                              className="w-7 h-7 rounded-full bg-white/90 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 flex items-center justify-center text-black/50 dark:text-white/60 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer shadow-xs"
                               title={spot.isFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
                             >
                               <Star className={`w-3.5 h-3.5 ${spot.isFavorite ? 'text-amber-400 fill-amber-400' : ''}`} />
@@ -1113,7 +1147,7 @@ export function PocketHubPage({
                                   e.stopPropagation();
                                   setActiveMenuSpotId(prev => prev === spot.id ? null : spot.id);
                                 }}
-                                className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                                className="w-7 h-7 rounded-full bg-white/90 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 flex items-center justify-center text-black/50 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer shadow-xs"
                                 title="옵션"
                               >
                                 <MoreVertical className="w-3.5 h-3.5" />
@@ -1122,7 +1156,7 @@ export function PocketHubPage({
                               {activeMenuSpotId === spot.id && (
                                 <div
                                   onClick={(e) => e.stopPropagation()}
-                                  className={`absolute right-0 top-full mt-1 z-30 bg-white dark:bg-[#181818] border border-black/15 dark:border-white/15 rounded-xl shadow-xl py-1 animate-in fade-in zoom-in-95 duration-100 font-mono text-[10.5px] ${isDragMode ? 'w-32' : 'w-28'}`}
+                                  className={`absolute right-0 top-full mt-1.5 z-30 bg-white dark:bg-[#222224] border border-black/15 dark:border-white/20 rounded-xl shadow-2xl py-1 animate-in fade-in zoom-in-95 duration-100 font-mono text-[10.5px] ${isDragMode ? 'w-32' : 'w-28'}`}
                                 >
                                   {isDragMode && (
                                     <>
@@ -1172,104 +1206,91 @@ export function PocketHubPage({
                       </div>
                     </div>
 
-                    {/* Media Frame (Clean 4:3 Aspect Ratio Frame) */}
-                    <div className="px-3 sm:px-4">
-                      <div className="relative aspect-[4/3] w-full rounded-2xl bg-black/5 dark:bg-white/5 overflow-hidden border border-black/5 dark:border-white/5">
-                        {spot.thumbnailUrl ? (
-                          <img
-                            src={spot.thumbnailUrl}
-                            alt={spot.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            loading="lazy"
-                            onError={(e) => {
-                              (e.currentTarget as HTMLElement).style.display = 'none';
-                            }}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-black/20 dark:text-white/20">
-                            <Icon className="w-10 h-10 mb-1" />
-                            <span className="text-[9px] font-mono tracking-widest uppercase font-normal">{meta.label}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* SNS Action Bar (Heart Likes, Detail Bubble, Add to Trip, Link) */}
-                    <div className="px-3 sm:px-4 pt-2.5 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center gap-1.5">
-                        {/* Likes Toggle Button */}
-                        <button
-                          type="button"
-                          onClick={() => handleToggleLike(spot.id)}
-                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10.5px] sm:text-[11px] font-mono font-bold transition-all cursor-pointer ${
-                            isLiked
-                              ? 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400'
-                              : 'border-black/10 dark:border-white/10 text-black/65 dark:text-white/65 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
-                          }`}
-                          title="좋아요 관심사 체크"
-                        >
-                          <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-red-600 text-red-600 dark:fill-red-400 dark:text-red-400' : ''}`} />
-                          <span>{spot.likes || 0}</span>
-                        </button>
-
-                        {/* Detail Modal Trigger Icon */}
-                        <button
-                          type="button"
-                          onClick={() => setSelectedSpotForModal(spot)}
-                          className="w-7 h-7 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30 transition-colors cursor-pointer"
-                          title="상세 스토리 및 미니맵 보기"
-                        >
-                          <MessageSquare className="w-3.5 h-3.5" />
-                        </button>
-
-                        {/* Add to Trip (USE IN TRIP) */}
-                        <button
-                          type="button"
-                          onClick={() => setSpotToUseInTrip(spot)}
-                          className="w-7 h-7 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30 transition-colors cursor-pointer"
-                          title="여정 타임라인에 추가"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
-                      {/* Source Link */}
-                      {spot.sourceUrl && (
-                        <a
-                          href={spot.sourceUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="h-6 px-2 flex items-center gap-1 rounded-full border border-black/10 dark:border-white/10 hover:border-black/30 dark:hover:border-white/30 text-[9px] font-mono tracking-wider uppercase text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
-                          title="출처 원본 게시물 바로가기"
-                        >
-                          <ArrowUpRight className="w-3 h-3 text-red-500 shrink-0" />
-                          <span className="max-w-[48px] truncate">{spot.platform || 'LINK'}</span>
-                        </a>
-                      )}
-                    </div>
-
-                    {/* Card Body — Editorial Note & Address */}
-                    <div className="p-3 sm:p-4 pt-2 flex-grow flex flex-col justify-between">
+                    {/* Card Body — Full-width Hero Title (No Truncation) & Editorial Meta */}
+                    <div className="p-3.5 sm:p-4 flex-grow flex flex-col justify-between">
                       <div>
-                        {/* Editorial Handle Tag */}
-                        {spot.platform && (
-                          <span className="text-[9.5px] font-mono font-semibold text-black/45 dark:text-white/45 block mb-1">
-                            @{spot.platform} · {meta.label.toLowerCase()}
-                          </span>
-                        )}
+                        {/* Region & Platform Meta Tag */}
+                        <div className="flex items-center gap-1.5 text-[9.5px] sm:text-[10px] font-mono font-bold uppercase tracking-wider text-black/45 dark:text-white/45 mb-1.5 truncate">
+                          <MapPin className="w-3 h-3 text-red-500 shrink-0" />
+                          <span>{locationLabel}</span>
+                          {spot.platform && (
+                            <>
+                              <span className="text-black/20 dark:text-white/20">·</span>
+                              <span className="text-black/60 dark:text-white/60 font-semibold">@{spot.platform}</span>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Main Spot Title (Hero Headline, Full Width, Wrap without truncation) */}
+                        <h3 className="text-sm sm:text-base font-black tracking-tight text-black dark:text-white leading-snug break-keep line-clamp-2 sm:line-clamp-3 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                          {spot.title}
+                        </h3>
 
                         {/* Memo */}
                         {spot.memo && (
-                          <p className="text-[11px] sm:text-[11.5px] font-sans text-black/65 dark:text-white/65 leading-relaxed line-clamp-2 font-normal break-words">
+                          <p className="mt-2 text-[11px] sm:text-[11.5px] font-sans text-black/60 dark:text-white/65 leading-relaxed line-clamp-2 font-normal break-words">
                             {spot.memo}
                           </p>
                         )}
 
                         {/* Address */}
                         {spot.address && (
-                          <p className="mt-1 text-[9px] sm:text-[9.5px] text-black/35 dark:text-white/35 font-mono truncate font-normal">
+                          <p className="mt-1.5 text-[9px] sm:text-[9.5px] text-black/35 dark:text-white/40 font-mono truncate font-normal">
                             {spot.address}
                           </p>
+                        )}
+                      </div>
+
+                      {/* SNS Action Bar (1-Row Toolbar) */}
+                      <div className="pt-3 mt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-1.5">
+                          {/* Likes Toggle Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleLike(spot.id)}
+                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10.5px] sm:text-[11px] font-mono font-bold transition-all cursor-pointer ${
+                              isLiked
+                                ? 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400'
+                                : 'border-black/10 dark:border-white/15 text-black/65 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
+                            }`}
+                            title="좋아요 관심사 체크"
+                          >
+                            <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-red-600 text-red-600 dark:fill-red-400 dark:text-red-400' : ''}`} />
+                            <span>{spot.likes || 0}</span>
+                          </button>
+
+                          {/* Detail Modal Trigger Icon */}
+                          <button
+                            type="button"
+                            onClick={() => setSelectedSpotForModal(spot)}
+                            className="w-7 h-7 rounded-full border border-black/10 dark:border-white/15 flex items-center justify-center text-black/60 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30 transition-colors cursor-pointer"
+                            title="상세 스토리 및 미니맵 보기"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Add to Trip (USE IN TRIP) */}
+                          <button
+                            type="button"
+                            onClick={() => setSpotToUseInTrip(spot)}
+                            className="w-7 h-7 rounded-full border border-black/10 dark:border-white/15 flex items-center justify-center text-black/60 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30 transition-colors cursor-pointer"
+                            title="여정 타임라인에 추가"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Platform Simple Icon Link (Clean, No text truncation!) */}
+                        {spot.sourceUrl && (
+                          <a
+                            href={spot.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-7 h-7 rounded-full border border-black/10 dark:border-white/15 flex items-center justify-center text-black/60 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30 transition-colors cursor-pointer"
+                            title={`${spot.platform || '원문 출처'} 바로가기`}
+                          >
+                            {renderPlatformIcon(spot.platform)}
+                          </a>
                         )}
                       </div>
                     </div>

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { 
   X, MapPin, Heart, Plus, ExternalLink, Edit3, Trash2, 
   Navigation, Utensils, Coffee, Camera, ShoppingBag, Lightbulb
@@ -36,6 +36,11 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
   isLiked,
   isAdmin = false,
 }) => {
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const leafletMapRef = useRef<any>(null);
+
+  const hasCoordinates = typeof spot?.lat === 'number' && typeof spot?.lng === 'number' && !isNaN(spot.lat) && !isNaN(spot.lng);
+
   // Lock body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
@@ -57,11 +62,75 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  // Initialize Google Maps Tiles via Leaflet (Identical to Trip Detail MapArea)
+  useEffect(() => {
+    if (!isOpen || !spot || !hasCoordinates || !mapContainerRef.current) return;
+    const L = (window as any).L;
+    if (!L) return;
+
+    if (leafletMapRef.current) {
+      try { leafletMapRef.current.remove(); } catch (_) {}
+      leafletMapRef.current = null;
+    }
+
+    try {
+      const isDark = document.documentElement.classList.contains('dark');
+      const map = L.map(mapContainerRef.current, {
+        center: [spot.lat!, spot.lng!],
+        zoom: 16,
+        zoomControl: false,
+        attributionControl: false,
+        dragging: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        touchZoom: false,
+      });
+
+      const tileUrl = 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko';
+      L.tileLayer(tileUrl, {
+        maxNativeZoom: 20,
+        maxZoom: 21,
+        className: isDark ? 'map-tile-dark' : 'map-tile-light',
+      }).addTo(map);
+
+      // Swiss Minimal Red Point Pin (Same as Trip Detail)
+      const pinHtml = `
+        <div style="display: flex; align-items: center; justify-content: center;">
+          <div style="width: 22px; height: 22px; border-radius: 50%; background: #dc2626; border: 2.5px solid #ffffff; box-shadow: 0 3px 10px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;">
+            <div style="width: 6px; height: 6px; border-radius: 50%; background: #ffffff;"></div>
+          </div>
+        </div>
+      `;
+      const icon = L.divIcon({
+        className: 'custom-trip-point-pin',
+        html: pinHtml,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+      });
+
+      L.marker([spot.lat!, spot.lng!], { icon }).addTo(map);
+      leafletMapRef.current = map;
+
+      const timer = setTimeout(() => {
+        try { map.invalidateSize(); } catch (_) {}
+      }, 250);
+
+      return () => {
+        clearTimeout(timer);
+        if (leafletMapRef.current) {
+          try { leafletMapRef.current.remove(); } catch (_) {}
+          leafletMapRef.current = null;
+        }
+      };
+    } catch (err) {
+      console.warn('[PocketDetailModal] Leaflet map init error:', err);
+    }
+  }, [isOpen, spot?.id, spot?.lat, spot?.lng, hasCoordinates]);
+
   if (!isOpen || !spot) return null;
 
   const meta = CATEGORY_META[spot.category] || CATEGORY_META.spot;
   const CategoryIcon = meta.icon;
-  const hasCoordinates = typeof spot.lat === 'number' && typeof spot.lng === 'number' && !isNaN(spot.lat) && !isNaN(spot.lng);
   
   // Google Maps Search URL
   const googleMapsUrl = hasCoordinates 
@@ -77,7 +146,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
       onClick={onClose}
     >
       <div 
-        className="relative w-full max-w-lg max-h-[92vh] flex flex-col bg-white dark:bg-[#121212] rounded-3xl overflow-hidden border border-black/15 dark:border-white/15 shadow-2xl animate-in zoom-in-95 duration-200 select-none"
+        className="relative w-full max-w-lg max-h-[92vh] flex flex-col bg-white dark:bg-[#1A1A1C] rounded-3xl overflow-hidden border border-black/15 dark:border-white/20 shadow-2xl animate-in zoom-in-95 duration-200 select-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Floating Close Button */}
@@ -134,23 +203,17 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
             </h2>
           </div>
 
-          {/* Mini Map Preview Section */}
-          <div className="rounded-2xl border border-black/10 dark:border-white/10 overflow-hidden bg-black/[0.02] dark:bg-white/[0.02]">
+          {/* Mini Map Preview Section (Google Maps Tiles via Leaflet) */}
+          <div className="rounded-2xl border border-black/10 dark:border-white/15 overflow-hidden bg-black/[0.02] dark:bg-white/[0.02]">
             {hasCoordinates ? (
-              <div className="relative w-full h-36 bg-neutral-200 dark:bg-neutral-800 overflow-hidden">
-                {/* OpenStreetMap Static / Tile Preview */}
-                <iframe
-                  title="Spot Mini Map"
-                  className="w-full h-full pointer-events-none border-0 filter grayscale contrast-125 dark:invert dark:opacity-80"
-                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${spot.lng! - 0.005}%2C${spot.lat! - 0.003}%2C${spot.lng! + 0.005}%2C${spot.lat! + 0.003}&layer=mapnik&marker=${spot.lat}%2C${spot.lng}`}
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-transparent" />
+              <div className="relative w-full h-44 sm:h-48 bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+                <div ref={mapContainerRef} className="w-full h-full" />
+                <div className="absolute inset-0 pointer-events-none" />
               </div>
             ) : null}
 
             {/* Address & Google Maps Navigation Button */}
-            <div className="p-3 sm:p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 bg-white dark:bg-[#161616]">
+            <div className="p-3 sm:p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 bg-white dark:bg-[#202022]">
               <div className="flex items-start gap-1.5 min-w-0">
                 <Navigation className="w-3.5 h-3.5 text-black/40 dark:text-white/40 shrink-0 mt-0.5" />
                 <p className="text-[11px] sm:text-xs font-sans text-black/70 dark:text-white/70 leading-relaxed break-keep line-clamp-2">
