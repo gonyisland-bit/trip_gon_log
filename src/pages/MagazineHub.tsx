@@ -708,75 +708,84 @@ export function MagazineHubPage({
               </span>
             </div>
 
-            {/* Magazine Cover Cards Grid (Responsive 1 -> 2 -> 3 Columns consistently on desktop) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 sm:gap-10 md:gap-12">
+            {/* Magazine Cover Cards Grid (Responsive 2 Cols on Mobile -> 4 Cols on Web) */}
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3.5 sm:gap-5 md:gap-6">
               {effectiveSections.map((sec, idx) => {
                 const coverImg = sec.heroImg || (sec.items && sec.items.find(it => it.img)?.img) || '';
                 const displayHeroTitle = sec.heroTitle || sec.title;
                 const formattedNumber = String(idx + 1).padStart(2, '0');
                 const itemCount = sec.items?.length || 0;
+                const locationLabel = sec.heroLocation || 'CURATED ARCHIVE';
 
                 return (
                   <article
                     key={sec.id}
                     onClick={() => handleOpenSection(sec.id)}
-                    className="group relative flex flex-col cursor-pointer transition-all duration-300 select-none"
+                    className="group relative flex flex-col border border-black/10 dark:border-white/20 bg-white dark:bg-[#1C1C1E] rounded-3xl transition-all duration-300 overflow-hidden shadow-xs hover:shadow-2xl hover:border-black/30 dark:hover:border-white/40 cursor-pointer select-none"
                   >
-                    {/* 1. Swiss Editorial Micro Header above photo */}
-                    <div className="flex items-center justify-between pb-2 text-[10px] sm:text-[11px] font-mono tracking-widest uppercase text-black/60 dark:text-white/60">
-                      <div className="flex items-center gap-1.5 font-bold">
-                        <span className="text-red-600 dark:text-red-400 font-black">NO. {formattedNumber}</span>
-                        <span className="opacity-30">/</span>
-                        <span>ISSUE</span>
-                      </div>
-                      <span className="text-[9.5px] font-semibold tracking-wider text-black/45 dark:text-white/45">
-                        {itemCount} {itemCount === 1 ? 'STORY' : 'STORIES'}
-                      </span>
-                    </div>
-
-                    {/* 2. Photo Frame: Strict 3:4 Vertical Editorial Aspect */}
-                    <div className="relative aspect-[3/4] w-full overflow-hidden bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15 shadow-xs group-hover:shadow-xl transition-all duration-500">
+                    {/* 1. Photo Frame: 4:3 Aspect Ratio (Nike & Pocket Card Minimal Frame) */}
+                    <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/5 dark:bg-white/5 border-b border-black/10 dark:border-white/10">
                       {coverImg ? (
                         <img
                           src={getEffectiveImageUrl(coverImg)}
                           alt={displayHeroTitle}
                           loading="lazy"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                         />
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900 text-white/40 p-4 text-center">
                           <Compass className="w-8 h-8 mb-2 stroke-1 opacity-50" />
-                          <span className="font-mono text-xs uppercase tracking-wider">NO COVER IMAGE</span>
+                          <span className="font-mono text-[10px] uppercase tracking-wider">NO COVER IMAGE</span>
                         </div>
                       )}
 
-                      {/* Subtle hover overlay with minimal top-right expand arrow */}
-                      <div className="absolute inset-0 bg-black/15 opacity-0 group-hover:opacity-100 transition-opacity flex items-start justify-end p-3">
-                        <div className="w-8 h-8 rounded-full bg-black/75 dark:bg-white/90 backdrop-blur-xs flex items-center justify-center text-white dark:text-black shadow-md transform group-hover:scale-100 scale-90 transition-transform">
-                          <ArrowUpRight className="w-4 h-4" />
-                        </div>
+                      {/* Top Left Tag Chip (Best Seller / Issue Chip Style) */}
+                      <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/95 dark:bg-black/85 backdrop-blur-md text-black dark:text-white text-[9px] sm:text-[9.5px] font-mono font-bold tracking-wider uppercase border border-black/10 dark:border-white/15 rounded-full flex items-center gap-1.5 shadow-xs">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
+                        <span>NO. {formattedNumber} ISSUE</span>
+                      </div>
+
+                      {/* Top Right Circular Badge (Nike Circular Emblem Style) */}
+                      <div 
+                        className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/95 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 flex items-center justify-center text-[10px] font-mono font-black text-black dark:text-white shadow-xs"
+                        title={`${itemCount} Stories`}
+                      >
+                        <span>{itemCount}</span>
                       </div>
                     </div>
 
-                    {/* 3. Swiss Modern Journal Typography beneath Photo */}
-                    <div className="pt-3 flex flex-col text-black dark:text-white">
-                      {/* Row 1: Location & Sub-category in Red Monospace */}
-                      <div className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-[0.18em] text-red-600 dark:text-red-400 truncate">
-                        {sec.heroLocation || 'CURATED TRAVEL ARCHIVE'}
+                    {/* 2. Card Body — Typography & Description */}
+                    <div className="p-3.5 sm:p-4 flex-grow flex flex-col justify-between">
+                      <div>
+                        {/* Region & Stories Meta Tag */}
+                        <div className="flex items-center gap-1.5 text-[9.5px] sm:text-[10px] font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-400 mb-1.5 truncate">
+                          <span>{locationLabel}</span>
+                          <span className="text-black/20 dark:text-white/20">·</span>
+                          <span className="text-black/55 dark:text-white/55 font-semibold">{itemCount} {itemCount === 1 ? 'STORY' : 'STORIES'}</span>
+                        </div>
+
+                        {/* Main Headline Title */}
+                        <h3 className="text-sm sm:text-base font-black tracking-tight text-black dark:text-white leading-snug break-keep line-clamp-2 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                          {displayHeroTitle}
+                        </h3>
+
+                        {/* Subtitle / Description */}
+                        {sec.description && (
+                          <p className="mt-1.5 text-[11px] font-sans text-black/60 dark:text-white/65 leading-relaxed line-clamp-2">
+                            {sec.description}
+                          </p>
+                        )}
                       </div>
 
-                      {/* Row 2: Main Headline Title (Bold & Snug, line-clamp-2) */}
-                      <h3 className="text-base sm:text-lg md:text-xl font-satoshi font-black uppercase tracking-tight leading-snug text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors line-clamp-2 mt-1">
-                        {displayHeroTitle}
-                      </h3>
-
-                      {/* Row 3: Editorial Rule + Date + Read Issue Action */}
-                      <div className="mt-2.5 pt-2 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-[10px] sm:text-[11px] font-mono text-black/50 dark:text-white/50 tracking-wider">
-                        <span>{sec.heroDate || 'VOL. 2026'}</span>
-                        <span className="font-bold text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 flex items-center gap-1 group-hover:translate-x-0.5 transition-all">
-                          <span>READ ISSUE</span>
-                          <span className="text-xs">↗</span>
+                      {/* 3. Bottom Action Bar (Date + Pill Button) */}
+                      <div className="pt-3 mt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between">
+                        <span className="text-[10px] font-mono font-semibold text-black/45 dark:text-white/45">
+                          {sec.heroDate || 'VOL. 2026'}
                         </span>
+                        <div className="h-7 px-3 bg-black dark:bg-white text-white dark:text-black rounded-full text-[10px] sm:text-[10.5px] font-mono font-bold uppercase tracking-wider flex items-center gap-1 group-hover:bg-red-600 dark:group-hover:bg-red-500 group-hover:text-white dark:group-hover:text-white transition-colors shadow-xs">
+                          <span>OPEN</span>
+                          <span className="text-xs">↗</span>
+                        </div>
                       </div>
                     </div>
                   </article>

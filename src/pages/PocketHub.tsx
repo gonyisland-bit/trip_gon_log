@@ -1166,69 +1166,6 @@ export function PocketHubPage({
                             >
                               <Star className={`w-3.5 h-3.5 ${spot.isFavorite ? 'text-amber-400 fill-amber-400' : ''}`} />
                             </button>
-
-                            {/* More Menu */}
-                            <div className="relative">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setActiveMenuSpotId(prev => prev === spot.id ? null : spot.id);
-                                }}
-                                className="w-7 h-7 rounded-full bg-white/90 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 flex items-center justify-center text-black/50 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer shadow-xs"
-                                title="옵션"
-                              >
-                                <MoreVertical className="w-3.5 h-3.5" />
-                              </button>
-
-                              {activeMenuSpotId === spot.id && (
-                                <div
-                                  onClick={(e) => e.stopPropagation()}
-                                  className={`absolute right-0 top-full mt-1.5 z-30 bg-white dark:bg-[#222224] border border-black/15 dark:border-white/20 rounded-xl shadow-2xl py-1 animate-in fade-in zoom-in-95 duration-100 font-mono text-[10.5px] ${isDragMode ? 'w-32' : 'w-28'}`}
-                                >
-                                  {isDragMode && (
-                                    <>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleMoveSpot(spot.id, 'up')}
-                                        className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer font-bold"
-                                      >
-                                        <ArrowUp className="w-3 h-3 text-black/50 dark:text-white/50" />
-                                        <span>위로</span>
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleMoveSpot(spot.id, 'down')}
-                                        className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer font-bold"
-                                      >
-                                        <ArrowDown className="w-3 h-3 text-black/50 dark:text-white/50" />
-                                        <span>아래로</span>
-                                      </button>
-                                      <div className="my-1 border-t border-black/10 dark:border-white/10" />
-                                    </>
-                                  )}
-                                  <button
-                                    type="button"
-                                    onClick={() => handleOpenEditSpot(spot)}
-                                    className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer font-bold"
-                                  >
-                                    <Edit3 className="w-3 h-3 text-blue-500" />
-                                    <span>수정</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setActiveMenuSpotId(null);
-                                      setSpotToDelete(spot);
-                                    }}
-                                    className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-red-500/10 text-red-500 cursor-pointer font-bold"
-                                  >
-                                    <Trash2 className="w-3 h-3 text-red-500" />
-                                    <span>삭제</span>
-                                  </button>
-                                </div>
-                              )}
-                            </div>
                           </>
                         )}
                       </div>
