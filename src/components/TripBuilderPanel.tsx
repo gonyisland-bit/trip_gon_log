@@ -1329,6 +1329,10 @@ export function TripBuilderPanel({
   const labelCls = 'text-[10.5px] font-mono uppercase font-bold tracking-wider text-black/60 dark:text-white/60 mb-1 block';
   const iconCls = 'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/40 dark:text-white/40 pointer-events-none';
 
+  // Soft Mobile Native Form Styles (Nou producte reference style)
+  const softInputCls = 'w-full px-4 py-3 text-sm bg-neutral-100 dark:bg-neutral-800/90 rounded-xl text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 font-medium border border-transparent focus:border-black/20 dark:focus:border-white/20 outline-none transition-all';
+  const fieldLabelCls = 'text-xs font-bold text-neutral-800 dark:text-neutral-200 flex items-center gap-1 mb-1.5 font-sans';
+
   const renderSeasonAnalysisBlock = (analysis: any) => {
     if (!analysis) return null;
     const badgeLabel = analysis.isWarning ? '주의 시즌' : analysis.isBestSeason ? '최적 시즌' : '시즌 참고';
@@ -1369,29 +1373,34 @@ export function TripBuilderPanel({
   if (!isOpen) return null;
 
   return (
-    <aside className="w-full h-full flex flex-col bg-[#F9F8F6] dark:bg-[#121212] border-t lg:border-t-0 lg:border-l border-black/15 dark:border-white/15 text-black dark:text-white overflow-hidden font-sans select-none z-30 shadow-2xl">
-      {/* Panel Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-black/10 dark:border-white/10 shrink-0 bg-white/80 dark:bg-[#161616]/80 backdrop-blur-md">
-        <div className="flex items-baseline gap-2">
-          <span className="text-xl sm:text-2xl font-black uppercase font-sans tracking-tight text-black dark:text-white">
-            TRIP GUIDE
-          </span>
-          <span className="text-[10px] font-mono uppercase font-bold text-black/40 dark:text-white/40 tracking-wider">
-            SYSTEM
-          </span>
+    <aside className="w-full h-full flex flex-col bg-white dark:bg-[#121212] border-t lg:border-t-0 lg:border-l border-black/10 dark:border-white/10 text-black dark:text-white overflow-hidden font-sans select-none z-30 shadow-2xl">
+      {/* Panel Header (Nou producte Reference Style) */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-black/5 dark:border-white/5 shrink-0 bg-white dark:bg-[#121212]">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 -ml-1 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white cursor-pointer transition-colors"
+            title="닫기"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h2 className="text-xl font-bold tracking-tight text-black dark:text-white font-sans">
+            Trip Guide
+          </h2>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="p-1 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
-          title="닫고 풀스크린 지도로 복원"
+          className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer"
+          title="닫기"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] shrink-0">
+      <div className="flex border-b border-black/5 dark:border-white/5 bg-neutral-50 dark:bg-[#181818] shrink-0">
         {([
           { id: 'curator', label: 'CURATOR', icon: Compass },
           { id: 'custom', label: 'CUSTOM', icon: Sliders },
@@ -1602,31 +1611,61 @@ export function TripBuilderPanel({
           <div className="space-y-4">
             {builderStep === 'criteria' ? (
               <>
-                {/* ─── APP WIDGET STYLE CRITERIA HERO CARD ─── */}
-                <div className="bg-black text-white dark:bg-[#1C1C1E] rounded-2xl p-4 sm:p-5 shadow-xl space-y-3.5 border border-black/10 dark:border-white/10">
+                {/* ─── SOFT ROUND HERO WIDGET (Nou producte reference style) ─── */}
+                <div className="rounded-2xl bg-neutral-100 dark:bg-neutral-800/70 p-5 border border-black/5 dark:border-white/5 flex flex-col justify-between min-h-[140px] relative overflow-hidden transition-all">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono font-black uppercase tracking-widest text-white/50 dark:text-white/50">
-                      CURATOR CRITERIA
+                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
+                      {smartCountry ? `${smartCountry.nameKo} · ${smartCountry.nameEn}` : 'GLOBAL TRIP'}
                     </span>
-                    <span className="text-[11px] font-mono font-bold text-orange-400 bg-white/10 dark:bg-white/10 px-2.5 py-0.5 rounded-full">
+                    <span className="text-xs font-mono font-bold text-orange-600 dark:text-orange-400 bg-white dark:bg-[#1f1f1f] px-2.5 py-0.5 rounded-full shadow-2xs">
                       {smartDurationDays}박 {smartDurationDays + 1}일
                     </span>
                   </div>
 
-                  <div>
-                    <h3 className="text-xl sm:text-2xl font-black font-sans uppercase tracking-tight truncate leading-tight text-white">
-                      {smartCity ? `${smartCity.nameKo} (${smartCity.nameEn})` : smartCountry ? `${smartCountry.nameKo} (${smartCountry.nameEn})` : 'GLOBAL EXPLORER'}
-                    </h3>
-                    <p className="text-xs font-mono text-white/70 mt-1 truncate">
-                      {selectedTheme !== 'all' ? `THEME: ${selectedTheme.toUpperCase()}` : 'ALL THEMES'} • {targetMonth === 0 ? 'AUTO SEASON' : `${targetYear}.${String(targetMonth).padStart(2, '0')}`}
-                    </p>
+                  {/* Visual & Title Center */}
+                  <div className="my-2.5">
+                    {smartCity || smartCountry ? (
+                      <div className="flex items-center gap-3">
+                        {smartCity?.coverImage && (
+                          <img
+                            src={smartCity.coverImage}
+                            alt={smartCity.nameKo}
+                            className="w-14 h-14 rounded-xl object-cover shadow-xs shrink-0"
+                          />
+                        )}
+                        <div className="min-w-0">
+                          <h3 className="text-lg font-bold text-black dark:text-white truncate">
+                            {smartCity ? `${smartCity.nameKo} (${smartCity.nameEn})` : smartCountry?.nameKo}
+                          </h3>
+                          <p className="text-xs text-black/60 dark:text-white/60 truncate mt-0.5">
+                            {selectedTheme !== 'all' ? `${themes.find(t => t.id === selectedTheme)?.label || selectedTheme} 테마` : '전체 테마 큐레이션'} • {targetMonth === 0 ? '자동 시즌' : `${targetYear}.${String(targetMonth).padStart(2, '0')}`}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => setIsTemplateDrawerOpen(true)}
+                        className="flex flex-col items-center justify-center py-2 text-center cursor-pointer hover:opacity-80 transition-opacity"
+                      >
+                        <div className="w-9 h-9 rounded-full bg-white dark:bg-neutral-700 shadow-2xs flex items-center justify-center text-black dark:text-white mb-1.5">
+                          <Plus className="w-4 h-4" />
+                        </div>
+                        <span className="text-xs font-bold text-black/70 dark:text-white/70">
+                          여정 템플릿 불러오기
+                        </span>
+                        <span className="text-[10.5px] font-mono text-black/40 dark:text-white/40 mt-0.5">
+                          일본 3일 · 동남아 4일 · 유럽 6일 등
+                        </span>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="pt-2 flex items-center gap-2 border-t border-white/15">
+                  {/* Bottom Quick Controls */}
+                  <div className="pt-2 flex items-center gap-2 border-t border-black/5 dark:border-white/5">
                     <button
                       type="button"
                       onClick={() => setIsTemplateDrawerOpen(true)}
-                      className="flex-1 py-2.5 px-3 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                      className="flex-1 py-2 px-3 rounded-xl bg-white hover:bg-neutral-50 dark:bg-neutral-700 dark:hover:bg-neutral-600 text-black dark:text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-all cursor-pointer"
                     >
                       <Layers className="w-3.5 h-3.5" />
                       <span>TEMPLATES</span>
@@ -1634,7 +1673,7 @@ export function TripBuilderPanel({
                     <button
                       type="button"
                       onClick={handleSaveCurrentCriteriaAsTemplate}
-                      className="flex-1 py-2.5 px-3 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                      className="flex-1 py-2 px-3 rounded-xl bg-white hover:bg-neutral-50 dark:bg-neutral-700 dark:hover:bg-neutral-600 text-black dark:text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-all cursor-pointer"
                       title="현재 설정을 나만의 템플릿으로 저장"
                     >
                       <Bookmark className="w-3.5 h-3.5" />
@@ -1645,7 +1684,7 @@ export function TripBuilderPanel({
 
                 {/* Toast Notification for Template actions */}
                 {templateToastMessage && (
-                  <div className="p-3 bg-black text-white dark:bg-white dark:text-black rounded-xl text-xs font-mono font-bold flex items-center justify-between shadow-lg">
+                  <div className="p-3 bg-neutral-900 text-white dark:bg-white dark:text-black rounded-xl text-xs font-medium flex items-center justify-between shadow-lg">
                     <span>{templateToastMessage}</span>
                     <button
                       type="button"
@@ -1657,80 +1696,26 @@ export function TripBuilderPanel({
                   </div>
                 )}
 
-                {/* Continent Filter */}
+                {/* 1. Trip Title Field (Nom * style) */}
                 <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <label className={labelCls}>CONTINENT (대륙 필터)</label>
-                    <span className="text-[9.5px] font-mono text-black/40 dark:text-white/40">
-                      {CONTINENTS.find(c => c.id === selectedContinent)?.labelEn}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {CONTINENTS.map(c => {
-                      const isSel = selectedContinent === c.id;
-                      return (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedContinent(c.id);
-                            if (c.id !== 'all' && smartCountry) {
-                              const allowed = CONTINENT_COUNTRY_MAP[c.id] || [];
-                              if (!allowed.includes(smartCountry.nameEn.toUpperCase())) {
-                                setSmartCountry(null);
-                                setSmartCity(null);
-                                setBuilderCountrySearch('');
-                                setBuilderCitySearch('');
-                                onFocusLocationChange?.({});
-                              }
-                            }
-                          }}
-                          className={`px-2 py-1 text-[10px] font-mono uppercase border transition-all cursor-pointer ${
-                            isSel
-                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold'
-                              : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/40'
-                          }`}
-                        >
-                          {c.labelEn}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <label className={fieldLabelCls}>
+                    Trip Title <span className="text-red-500 font-bold">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={title || (smartCity ? `${smartCity.nameKo} TRIP` : smartCountry ? `${smartCountry.nameKo} TRIP` : '')}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="여정 타이틀을 입력하세요..."
+                    className={softInputCls}
+                  />
                 </div>
 
-                {/* 1. Theme */}
+                {/* 2. Destination Field (Preu * style 2-column) */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <label className={labelCls}>1. THEME (여행 테마)</label>
-                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40">선택 사항</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {themes.map(t => {
-                      const IconComp = t.icon;
-                      const isSelected = selectedTheme === t.id;
-                      return (
-                        <button
-                          key={t.id}
-                          type="button"
-                          onClick={() => setSelectedTheme(t.id)}
-                          className={`px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider border flex items-center gap-1 transition-all cursor-pointer ${
-                            isSelected
-                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                              : 'border-black/15 dark:border-white/15 text-black/55 dark:text-white/55 hover:border-black/40 dark:hover:border-white/40'
-                          }`}
-                        >
-                          <IconComp className="w-2.5 h-2.5" />
-                          <span>{t.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 2. Region (Country & City) */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className={labelCls}>2. REGION (목적지 — 미선택 시 전 세계 자동 큐레이션)</label>
+                    <label className={fieldLabelCls}>
+                      Destination <span className="text-red-500 font-bold">*</span>
+                    </label>
                     {(smartCountry || smartCity) && (
                       <button
                         type="button"
@@ -1743,16 +1728,15 @@ export function TripBuilderPanel({
                           setCountrySearchInput('');
                           onFocusLocationChange?.({});
                         }}
-                        className="text-[10px] font-mono text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                        className="text-[11px] font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
                       >
-                        CLEAR
+                        초기화
                       </button>
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1 relative" ref={builderCountryRef}>
                       <div className="relative">
-                        <MapPin className={iconCls} />
                         <input
                           type="text"
                           value={builderCountrySearch}
@@ -1761,8 +1745,8 @@ export function TripBuilderPanel({
                             setIsBuilderCountryOpen(true);
                           }}
                           onFocus={() => setIsBuilderCountryOpen(true)}
-                          placeholder="국가 (전체 스크롤 가능)..."
-                          className={`${inputCls} pr-7`}
+                          placeholder="국가 검색..."
+                          className={`${softInputCls} pr-7`}
                         />
                         {builderCountrySearch && (
                           <button
@@ -1777,7 +1761,7 @@ export function TripBuilderPanel({
                               setCountrySearchInput('');
                               onFocusLocationChange?.({});
                             }}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
                             title="국가 선택 해제"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -1785,7 +1769,7 @@ export function TripBuilderPanel({
                         )}
                       </div>
                       {isBuilderCountryOpen && filteredBuilderCountries.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 mt-0.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 shadow-xl max-h-56 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5">
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1e1e1e] border border-black/10 dark:border-white/10 rounded-xl shadow-xl max-h-56 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5 p-1">
                           {filteredBuilderCountries.map(c => (
                             <button
                               key={c.code}
@@ -1800,9 +1784,9 @@ export function TripBuilderPanel({
                                 setBuilderCitySearch('');
                                 onFocusLocationChange?.({ country: c });
                               }}
-                              className="w-full text-left px-3 py-1.5 text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between cursor-pointer"
+                              className="w-full text-left px-3 py-2 rounded-lg text-xs hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors flex items-center justify-between cursor-pointer"
                             >
-                              <span className="font-bold text-black dark:text-white font-mono text-[11px]">
+                              <span className="font-bold text-black dark:text-white">
                                 {c.nameKo} ({c.nameEn})
                               </span>
                               <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
@@ -1816,7 +1800,6 @@ export function TripBuilderPanel({
 
                     <div className="space-y-1 relative" ref={builderCityRef}>
                       <div className="relative">
-                        <Building2 className={iconCls} />
                         <input
                           type="text"
                           value={builderCitySearch}
@@ -1826,7 +1809,7 @@ export function TripBuilderPanel({
                           }}
                           onFocus={() => setIsBuilderCityOpen(true)}
                           placeholder="도시 (선택 사항)..."
-                          className={`${inputCls} pr-7`}
+                          className={`${softInputCls} pr-7`}
                         />
                         {builderCitySearch && (
                           <button
@@ -1841,7 +1824,7 @@ export function TripBuilderPanel({
                                 onFocusLocationChange?.({});
                               }
                             }}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
                             title="도시 선택 해제"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -1849,7 +1832,7 @@ export function TripBuilderPanel({
                         )}
                       </div>
                       {isBuilderCityOpen && filteredBuilderCities.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 mt-0.5 bg-white dark:bg-[#1e1e1e] border border-black/20 dark:border-white/20 shadow-xl max-h-56 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5">
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1e1e1e] border border-black/10 dark:border-white/10 rounded-xl shadow-xl max-h-56 overflow-y-auto z-50 divide-y divide-black/5 dark:divide-white/5 p-1">
                           {filteredBuilderCities.map(city => (
                             <button
                               key={city.nameEn}
@@ -1874,9 +1857,9 @@ export function TripBuilderPanel({
                                   locations: [{ name: city.nameKo, lat: city.lat, lng: city.lng, country: city.countryEn }]
                                 });
                               }}
-                              className="w-full text-left px-3 py-1.5 text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between cursor-pointer"
+                              className="w-full text-left px-3 py-2 rounded-lg text-xs hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors flex items-center justify-between cursor-pointer"
                             >
-                              <span className="font-bold text-black dark:text-white font-mono text-[11px]">
+                              <span className="font-bold text-black dark:text-white">
                                 {city.nameKo} ({city.nameEn})
                               </span>
                               <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
@@ -1890,25 +1873,27 @@ export function TripBuilderPanel({
                   </div>
                 </div>
 
-                {/* Matching Pockets Accordion for Curator Tab */}
+                {/* Matching Pockets Accordion */}
                 {renderPocketAccordion(isCuratorPocketOpen, setIsCuratorPocketOpen)}
 
-                {/* 3. Departure Timing (Year & Month) */}
-                <div className="space-y-1.5">
+                {/* 3. Dates & Duration (Unitats disponibles * style) */}
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className={labelCls}>3. DEPARTURE PERIOD (출발 시기)</label>
-                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
-                      {targetMonth === 0 ? `AUTO (${autoBestMonth}M)` : `${targetYear}년 ${targetMonth}월`}
+                    <label className={fieldLabelCls}>
+                      Dates & Duration <span className="text-red-500 font-bold">*</span>
+                    </label>
+                    <span className="text-xs font-bold text-black dark:text-white bg-neutral-100 dark:bg-neutral-800 px-2.5 py-0.5 rounded-full">
+                      {smartDurationDays}박 {smartDurationDays + 1}일
                     </span>
                   </div>
 
-                  {/* Year Selection (Dropdown + Direct Input) & AUTO button */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="flex-1 flex items-center border border-black/15 dark:border-white/15 bg-white dark:bg-[#1a1a1a] px-2.5 py-1.5 shadow-2xs">
+                  {/* Year Dropdown & AUTO */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 flex items-center bg-neutral-100 dark:bg-neutral-800/90 rounded-xl px-3 py-2">
                       <select
                         value={targetYear}
                         onChange={(e) => setTargetYear(Number(e.target.value))}
-                        className="bg-transparent text-xs font-mono font-bold text-black dark:text-white outline-none cursor-pointer"
+                        className="bg-transparent text-xs font-bold text-black dark:text-white outline-none cursor-pointer"
                       >
                         {Array.from({ length: 11 }).map((_, i) => {
                           const yr = new Date().getFullYear() + i;
@@ -1919,7 +1904,7 @@ export function TripBuilderPanel({
                           );
                         })}
                       </select>
-                      <span className="text-[11px] font-mono text-black/30 dark:text-white/30 mx-2">|</span>
+                      <span className="text-xs text-black/20 dark:text-white/20 mx-2">|</span>
                       <input
                         type="number"
                         min={2020}
@@ -1929,26 +1914,27 @@ export function TripBuilderPanel({
                           const v = parseInt(e.target.value, 10);
                           if (!isNaN(v) && v >= 2000 && v <= 2099) setTargetYear(v);
                         }}
-                        className="w-14 bg-transparent text-xs font-mono font-bold text-black dark:text-white outline-none text-right"
+                        className="w-14 bg-transparent text-xs font-bold text-black dark:text-white outline-none text-right"
                         placeholder="연도"
                       />
-                      <span className="text-[10.5px] font-mono text-black/50 dark:text-white/50 ml-1">년</span>
+                      <span className="text-xs text-black/50 dark:text-white/50 ml-0.5">년</span>
                     </div>
+
                     <button
                       type="button"
                       onClick={() => setTargetMonth(0)}
-                      className={`px-3 py-2 text-xs font-mono font-bold border transition-all cursor-pointer ${
+                      className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                         targetMonth === 0
-                          ? 'bg-red-600 text-white border-red-600 shadow-xs'
-                          : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/35 bg-white dark:bg-[#1a1a1a]'
+                          ? 'bg-neutral-900 text-white dark:bg-white dark:text-black shadow-xs'
+                          : 'bg-neutral-100 dark:bg-neutral-800 text-black/60 dark:text-white/60 hover:bg-neutral-200 dark:hover:bg-neutral-700'
                       }`}
                       title="지역별 가장 가까운 최적 시즌 자동 배정"
                     >
-                      AUTO
+                      AUTO 시즌
                     </button>
                   </div>
 
-                  {/* Calendar Style Circular Month Buttons */}
+                  {/* Month Buttons */}
                   <div className="grid grid-cols-6 sm:grid-cols-12 gap-1.5 justify-items-center py-1">
                     {Array.from({ length: 12 }).map((_, mIdx) => {
                       const m = mIdx + 1;
@@ -1961,95 +1947,62 @@ export function TripBuilderPanel({
                           key={m}
                           type="button"
                           onClick={() => setTargetMonth(isSelected ? 0 : m)}
-                          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[11px] font-mono font-bold transition-all cursor-pointer relative ${
+                          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all cursor-pointer relative ${
                             isSelected
-                              ? 'bg-black text-white dark:bg-white dark:text-black font-black shadow-sm'
+                              ? 'bg-neutral-900 text-white dark:bg-white dark:text-black shadow-xs'
                               : isAutoBest
-                                ? 'bg-red-500/15 text-red-600 dark:text-red-400 ring-1.5 ring-red-500 font-black'
+                                ? 'bg-orange-500/20 text-orange-600 dark:text-orange-400 ring-1.5 ring-orange-500 font-bold'
                                 : isBestSeason
-                                  ? 'bg-orange-500/15 text-orange-600 dark:text-orange-400 font-extrabold ring-1 ring-orange-400/50 hover:bg-orange-500/25'
-                                  : 'text-black/50 dark:text-white/50 hover:bg-black/5 dark:hover:bg-white/10'
+                                  ? 'bg-neutral-200 dark:bg-neutral-700 text-black dark:text-white font-bold'
+                                  : 'text-black/50 dark:text-white/50 hover:bg-neutral-100 dark:hover:bg-neutral-800'
                           }`}
                           title={isAutoBest ? `AUTO 추천 월 (${m}월)` : isBestSeason ? `추천 최적 시즌 (${m}월)` : `${m}월`}
                         >
                           <span>{m}</span>
                           {isAutoBest && (
-                            <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-600 rounded-full ring-1 ring-white dark:ring-black" />
+                            <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-orange-500 rounded-full ring-1 ring-white dark:ring-black" />
                           )}
                         </button>
                       );
                     })}
                   </div>
 
-                  {/* Climate Metric & Season Warning */}
-                  {(() => {
-                    const activeM = targetMonth === 0 ? autoBestMonth : targetMonth;
-                    const climateMetric = getClimateMiniMetric(smartCity?.nameKo, smartCountry?.nameKo, activeM);
-                    return (
-                      <div className="space-y-1 pt-1">
-                        {climateMetric && (
-                          <div className="text-[10px] font-mono text-black/70 dark:text-white/70 bg-black/[0.03] dark:bg-white/[0.03] px-2.5 py-1.5 border-l-2 border-black/30 dark:border-white/30 flex items-center justify-between">
-                            <span className="font-bold text-black/50 dark:text-white/50">{activeM}월 현지 기후</span>
-                            <span className="font-semibold text-black dark:text-white">{climateMetric}</span>
-                          </div>
-                        )}
-                        {curatorSeasonRisk && curatorSeasonRisk.isWarning && (
-                          <div className="p-2 border-l-2 border-red-500 bg-red-500/10 text-red-600 dark:text-red-400 text-[10.5px] font-mono leading-tight">
-                            <span className="font-bold">[주의 시즌 알림] {curatorSeasonRisk.targetName} {curatorSeasonRisk.startMonth}월: </span>
-                            <span>{curatorSeasonRisk.avoidReason}</span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                {/* 4. Duration */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className={labelCls}>4. DURATION (희망 여행 기간)</label>
-                    <span className="text-xs font-mono font-black text-black dark:text-white bg-black/5 dark:bg-white/10 px-2 py-0.5 border border-black/10 dark:border-white/10">
-                      {smartDurationDays}박 {smartDurationDays + 1}일
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    {/* Stepper (- / +) */}
-                    <div className="flex items-center border border-black/15 dark:border-white/15 bg-white dark:bg-[#1a1a1a] shrink-0">
+                  {/* Duration Stepper & Quick Chips */}
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <div className="flex items-center bg-neutral-100 dark:bg-neutral-800/90 rounded-xl px-1 py-1 shrink-0">
                       <button
                         type="button"
                         onClick={() => setSmartDurationDays(prev => Math.max(1, prev - 1))}
                         disabled={smartDurationDays <= 1}
-                        className="px-2.5 py-1.5 text-xs font-mono font-bold hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 cursor-pointer"
+                        className="w-7 h-7 rounded-lg text-xs font-bold hover:bg-white dark:hover:bg-neutral-700 disabled:opacity-30 cursor-pointer flex items-center justify-center"
                         title="1박 감소"
                       >
                         -
                       </button>
-                      <span className="w-8 text-center text-xs font-mono font-bold">
+                      <span className="w-8 text-center text-xs font-bold">
                         {smartDurationDays}박
                       </span>
                       <button
                         type="button"
                         onClick={() => setSmartDurationDays(prev => Math.min(30, prev + 1))}
                         disabled={smartDurationDays >= 30}
-                        className="px-2.5 py-1.5 text-xs font-mono font-bold hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 cursor-pointer"
+                        className="w-7 h-7 rounded-lg text-xs font-bold hover:bg-white dark:hover:bg-neutral-700 disabled:opacity-30 cursor-pointer flex items-center justify-center"
                         title="1박 증가"
                       >
                         +
                       </button>
                     </div>
 
-                    {/* Quick Duration Chips (1박부터 7박까지) */}
                     <div className="flex-1 grid grid-cols-4 sm:grid-cols-7 gap-1">
                       {[1, 2, 3, 4, 5, 6, 7].map(nights => (
                         <button
                           key={nights}
                           type="button"
                           onClick={() => setSmartDurationDays(nights)}
-                          className={`py-1.5 text-[11px] font-mono font-bold border transition-all cursor-pointer text-center ${
+                          className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
                             smartDurationDays === nights
-                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-2xs'
-                              : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:border-black/40 dark:hover:border-white/40 bg-white dark:bg-[#1a1a1a]'
+                              ? 'bg-neutral-900 text-white dark:bg-white dark:text-black shadow-xs'
+                              : 'bg-neutral-100 dark:bg-neutral-800 text-black/60 dark:text-white/60 hover:bg-neutral-200 dark:hover:bg-neutral-700'
                           }`}
                         >
                           {nights}박
@@ -2059,19 +2012,44 @@ export function TripBuilderPanel({
                   </div>
                 </div>
 
-                {/* Action Submit */}
-                <div className="pt-2">
+                {/* 4. Theme Field (Categoría * style) */}
+                <div className="space-y-1.5">
+                  <label className={fieldLabelCls}>
+                    Theme <span className="text-red-500 font-bold">*</span>
+                  </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {themes.map(t => {
+                      const IconComp = t.icon;
+                      const isSelected = selectedTheme === t.id;
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => setSelectedTheme(t.id)}
+                          className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-neutral-900 text-white dark:bg-white dark:text-black shadow-xs'
+                              : 'bg-neutral-100 dark:bg-neutral-800 text-black/60 dark:text-white/60 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                          }`}
+                        >
+                          <IconComp className="w-3.5 h-3.5" />
+                          <span>{t.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Bottom Action Submit Button (Crear producte reference style) */}
+                <div className="pt-3">
                   <button
                     type="button"
                     onClick={() => handleProposeTrips()}
-                    className="w-full py-3.5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+                    className="w-full py-3.5 bg-neutral-900 hover:bg-black dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-black rounded-xl font-bold text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-orange-500 animate-pulse" />
-                    <span>CURATING</span>
+                    <Sparkles className="w-4 h-4 text-orange-400" />
+                    <span>CREATE TRIP</span>
                   </button>
-                  <p className="text-[10px] font-mono text-center text-black/40 dark:text-white/40 mt-1.5">
-                    선택하지 않은 항목은 해당 시즌 최고의 설정으로 자동 큐레이션됩니다.
-                  </p>
                 </div>
               </>
             ) : (
@@ -2275,34 +2253,25 @@ export function TripBuilderPanel({
 
             {/* Trip Title */}
             <div className="space-y-1">
-              <label className={labelCls}>TRIP TITLE *</label>
-              <div className="relative">
-                <Edit className={iconCls} />
-                <input
-                  type="text"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="예: 2026 도쿄 미식 탐방..."
-                  className={`${inputCls} pr-7`}
-                />
-                {title && (
-                  <button
-                    type="button"
-                    onClick={() => setTitle('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
-                    title="제목 지우기"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
+              <label className={fieldLabelCls}>
+                Trip Title <span className="text-red-500 font-bold">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="예: 2026 도쿄 미식 탐방..."
+                className={softInputCls}
+              />
             </div>
 
             {/* Region (Country & City) - Synced with Curator */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className={labelCls}>REGION (거점 국가 / 도시)</label>
+                <label className={fieldLabelCls}>
+                  Destination <span className="text-red-500 font-bold">*</span>
+                </label>
                 {(smartCountry || smartCity) && (
                   <button
                     type="button"
@@ -2315,16 +2284,15 @@ export function TripBuilderPanel({
                       setCountrySearchInput('');
                       onFocusLocationChange?.({});
                     }}
-                    className="text-[10px] font-mono text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                    className="text-[11px] font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
                   >
-                    CLEAR
+                    초기화
                   </button>
                 )}
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1 relative" ref={countryDropdownRef}>
                   <div className="relative">
-                    <MapPin className={iconCls} />
                     <input
                       type="text"
                       value={builderCountrySearch}
@@ -2334,7 +2302,7 @@ export function TripBuilderPanel({
                       }}
                       onFocus={() => setIsCountryDropdownOpen(true)}
                       placeholder="국가 검색..."
-                      className={`${inputCls} pr-7`}
+                      className={`${softInputCls} pr-7`}
                     />
                     {builderCountrySearch && (
                       <button
@@ -2388,7 +2356,6 @@ export function TripBuilderPanel({
 
                 <div className="space-y-1 relative" ref={builderCityRef}>
                   <div className="relative">
-                    <Building2 className={iconCls} />
                     <input
                       type="text"
                       value={builderCitySearch}
@@ -2398,7 +2365,7 @@ export function TripBuilderPanel({
                       }}
                       onFocus={() => setIsBuilderCityOpen(true)}
                       placeholder="도시 선택..."
-                      className={`${inputCls} pr-7`}
+                      className={`${softInputCls} pr-7`}
                     />
                     {builderCitySearch && (
                       <button
@@ -2639,7 +2606,7 @@ export function TripBuilderPanel({
 
             <button
               type="submit"
-              className="w-full py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-black uppercase tracking-widest hover:opacity-85 transition-opacity flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3.5 bg-neutral-900 hover:bg-black dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-black rounded-xl font-bold text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <Check className="w-4 h-4" />
               <span>CREATE TRIP</span>

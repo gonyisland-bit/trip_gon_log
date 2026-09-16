@@ -1661,6 +1661,10 @@ export function MapHubPage({
       return true;
     }
   });
+  const isPlaneAnimEnabledRef = useRef<boolean>(isPlaneAnimEnabled);
+  useEffect(() => {
+    isPlaneAnimEnabledRef.current = isPlaneAnimEnabled;
+  }, [isPlaneAnimEnabled]);
 
   const togglePinLabels = () => {
     setShowPinLabels(prev => !prev);
@@ -2027,6 +2031,24 @@ export function MapHubPage({
     if (!map || !L) {
       setSelectedCountry(targetCountry);
       setSearchQuery(targetCountry.name);
+      return;
+    }
+
+    // If airplane animation is disabled, skip trajectory and smoothly flyTo destination immediately
+    if (!isPlaneAnimEnabledRef.current) {
+      setSelectedCountry(targetCountry);
+      setSearchQuery(targetCountry.name);
+      const isMobile = window.innerWidth < 640;
+      let targetCenter: [number, number] = targetCountry.center;
+      if (isMobile) {
+        const targetPoint = map.project(targetCountry.center, targetCountry.zoom).add([0, window.innerHeight * 0.22]);
+        targetCenter = [map.unproject(targetPoint, targetCountry.zoom).lat, map.unproject(targetPoint, targetCountry.zoom).lng];
+      }
+      try { map.setMaxBounds(null); } catch (_) {}
+      map.flyTo(targetCenter, targetCountry.zoom, { duration: 0.9 });
+      setTimeout(() => {
+        try { mapRef.current?.setMaxBounds([[-62, -45], [82, 385]]); } catch (_) {}
+      }, 950);
       return;
     }
 
@@ -2652,7 +2674,7 @@ export function MapHubPage({
         marker.on('click', () => {
           const c = findCountryForGroup(group.country, group.city);
           if (c) {
-            handleSelectCountry(c);
+            handleSelectCountryRef.current(c);
           } else {
             setSelectedPinGroup(group);
           }
@@ -2711,7 +2733,7 @@ export function MapHubPage({
       const addYellowMarkerAt = (lat: number, lng: number) => {
         const marker = L.marker([lat, lng], { icon, zIndexOffset: 600 }).addTo(map);
         marker.on('click', () => {
-          handleSelectCountry(country);
+          handleSelectCountryRef.current(country);
         });
         yellowMarkersRef.current.push(marker);
       };
@@ -2756,7 +2778,7 @@ export function MapHubPage({
         const dotMarker = L.marker([lat, lng], { icon, zIndexOffset: 300 }).addTo(map);
         dotMarker.on('click', (e: any) => {
           if (e && e.originalEvent) e.originalEvent.stopPropagation();
-          handleSelectCountry(country);
+          handleSelectCountryRef.current(country);
         });
         countryDotsRef.current.push(dotMarker);
       };
