@@ -163,12 +163,15 @@ function getInitialNavigationState(): { view: string; tripId: number | null; isS
     if (path === '/calendar' || window.location.hash === '#calendar') {
       return { view: 'calendar', tripId: null, isShare: false };
     }
+    if (path === '/pocket' || window.location.hash === '#pocket') {
+      return { view: 'pocket', tripId: null, isShare: false };
+    }
     if (path === '/detail' || idParam) {
       return { view: 'detail', tripId: idParam ? Number(idParam) : null, isShare: false };
     }
 
     const lastView = sessionStorage.getItem('lastView') || localStorage.getItem('lastView');
-    if (lastView && ['home', 'archive', 'map', 'manage', 'magazine', 'calendar', 'detail'].includes(lastView)) {
+    if (lastView && ['home', 'archive', 'map', 'manage', 'magazine', 'calendar', 'detail', 'pocket'].includes(lastView)) {
       const lastTripId = sessionStorage.getItem('lastTripId') || localStorage.getItem('lastTripId');
       return {
         view: lastView,
@@ -1266,6 +1269,7 @@ function App() {
       else if (effectiveView === 'map') path = '/map';
       else if (effectiveView === 'manage') path = '/manage';
       else if (effectiveView === 'calendar') path = '/calendar';
+      else if (effectiveView === 'pocket') path = '/pocket';
       else if (effectiveView === 'detail') {
         const idToUse = tripId || activeTripId;
         const isShare = (effectiveView === 'detail' && (tripId === activeTripId || tripId === null || tripId === idToUse)) ? isShareMode : false;
