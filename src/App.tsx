@@ -2664,234 +2664,248 @@ function App() {
               )
             }>
               {currentView === 'home' && (
-                <HomePage 
-                  onNavigate={navigateTo} 
-                  trips={trips} 
-                  plans={plans} 
-                  handleMoveToArchive={handleMoveToArchive}
-                  onMoveToPlans={handleMoveToPlans}
-                  onCloneTrip={handleCloneJourney}
-                  onClonePlan={handleCloneJourney}
-                  homeTitle={homeTitle}
-                  homeSubtitle={homeSubtitle}
-                  heroJourneyIds={heroJourneyIds}
-                  heroAutoSlide={heroAutoSlide}
-                  heroMediaType={heroMediaType}
-                  heroSlideDuration={heroSlideDuration}
-                  onEditTrip={(id) => setEditingTripId(id)}
-                  onDeleteTrip={(id) => handleDeleteJourney(id)}
-                  onReorderTrips={async (orderedIds) => {
-                    if (!isLoggedIn) return;
-                    const batch = writeBatch(db);
-                    orderedIds.forEach((id, idx) => {
-                      batch.update(doc(db, 'users', 'public', 'trips', String(id)), { displayOrder: idx });
-                    });
-                    await batch.commit();
-                  }}
-                  onReorderPlans={async (orderedIds) => {
-                    if (!isLoggedIn) return;
-                    const batch = writeBatch(db);
-                    orderedIds.forEach((id, idx) => {
-                      batch.update(doc(db, 'users', 'public', 'plans', String(id)), { displayOrder: idx });
-                    });
-                    await batch.commit();
-                  }}
-                  isLoggedIn={isLoggedIn}
-                  isDarkMode={isDarkMode}
-                  landingHeroImage={landingHeroImage}
-                  canEditTrip={canEditTrip}
-                  canDeleteTrip={canDeleteTrip}
-                  onOpenAuthModal={(mode) => { setAuthModalMode(mode || 'login'); setIsAuthModalOpen(true); }}
-                  homeGradientEnabled={homeGradientEnabled}
-                  homeGradientFrom={homeGradientFrom}
-                  homeGradientTo={homeGradientTo}
-                  magazineMoments={magazineMoments}
-                  magazineSections={magazineSections}
-                  homeMagazineSectionId={homeMagazineSectionId}
-                  homeMagazineLimit={homeMagazineLimit}
-                  timelineData={timelineData}
-                />
+                <div className="w-full h-full animate-in fade-in duration-300">
+                  <HomePage 
+                    onNavigate={navigateTo} 
+                    trips={trips} 
+                    plans={plans} 
+                    handleMoveToArchive={handleMoveToArchive}
+                    onMoveToPlans={handleMoveToPlans}
+                    onCloneTrip={handleCloneJourney}
+                    onClonePlan={handleCloneJourney}
+                    homeTitle={homeTitle}
+                    homeSubtitle={homeSubtitle}
+                    heroJourneyIds={heroJourneyIds}
+                    heroAutoSlide={heroAutoSlide}
+                    heroMediaType={heroMediaType}
+                    heroSlideDuration={heroSlideDuration}
+                    onEditTrip={(id) => setEditingTripId(id)}
+                    onDeleteTrip={(id) => handleDeleteJourney(id)}
+                    onReorderTrips={async (orderedIds) => {
+                      if (!isLoggedIn) return;
+                      const batch = writeBatch(db);
+                      orderedIds.forEach((id, idx) => {
+                        batch.update(doc(db, 'users', 'public', 'trips', String(id)), { displayOrder: idx });
+                      });
+                      await batch.commit();
+                    }}
+                    onReorderPlans={async (orderedIds) => {
+                      if (!isLoggedIn) return;
+                      const batch = writeBatch(db);
+                      orderedIds.forEach((id, idx) => {
+                        batch.update(doc(db, 'users', 'public', 'plans', String(id)), { displayOrder: idx });
+                      });
+                      await batch.commit();
+                    }}
+                    isLoggedIn={isLoggedIn}
+                    isDarkMode={isDarkMode}
+                    landingHeroImage={landingHeroImage}
+                    canEditTrip={canEditTrip}
+                    canDeleteTrip={canDeleteTrip}
+                    onOpenAuthModal={(mode) => { setAuthModalMode(mode || 'login'); setIsAuthModalOpen(true); }}
+                    homeGradientEnabled={homeGradientEnabled}
+                    homeGradientFrom={homeGradientFrom}
+                    homeGradientTo={homeGradientTo}
+                    magazineMoments={magazineMoments}
+                    magazineSections={magazineSections}
+                    homeMagazineSectionId={homeMagazineSectionId}
+                    homeMagazineLimit={homeMagazineLimit}
+                    timelineData={timelineData}
+                  />
+                </div>
               )}
               {currentView === 'archive' && (
-                <ArchiveHubPage 
-                  trips={trips} 
-                  plans={plans} 
-                  onNavigate={navigateTo} 
-                  onAddArchive={handleAddArchive}
-                  isLoggedIn={isLoggedIn}
-                  onDeleteTrip={handleDeleteJourney}
-                  onEditTrip={(id) => setEditingTripId(id)}
-                  onCloneTrip={handleCloneJourney}
-                  onMoveToPlans={handleMoveToPlans}
-                  onMoveToArchive={handleMoveToArchive}
-                  onReorderTrips={async (orderedIds) => {
-                    if (!isLoggedIn) return;
-                    const batch = writeBatch(db);
-                    orderedIds.forEach((id, idx) => {
-                      batch.update(doc(db, 'users', 'public', 'trips', String(id)), { displayOrder: idx });
-                    });
-                    await batch.commit();
-                  }}
-                  initialTagFilter={selectedTagFilter}
-                  hubConfig={archiveHubConfig}
-                />
+                <div className="w-full h-full animate-in fade-in duration-300">
+                  <ArchiveHubPage 
+                    trips={trips} 
+                    plans={plans} 
+                    onNavigate={navigateTo} 
+                    onAddArchive={handleAddArchive}
+                    isLoggedIn={isLoggedIn}
+                    onDeleteTrip={handleDeleteJourney}
+                    onEditTrip={(id) => setEditingTripId(id)}
+                    onCloneTrip={handleCloneJourney}
+                    onMoveToPlans={handleMoveToPlans}
+                    onMoveToArchive={handleMoveToArchive}
+                    onReorderTrips={async (orderedIds) => {
+                      if (!isLoggedIn) return;
+                      const batch = writeBatch(db);
+                      orderedIds.forEach((id, idx) => {
+                        batch.update(doc(db, 'users', 'public', 'trips', String(id)), { displayOrder: idx });
+                      });
+                      await batch.commit();
+                    }}
+                    initialTagFilter={selectedTagFilter}
+                    hubConfig={archiveHubConfig}
+                  />
+                </div>
               )}
               {currentView === 'map' && (
-                <MapHubPage
-                  trips={trips}
-                  plans={plans}
-                  onNavigate={navigateTo}
-                  onCreateTripForCountry={handleCreateTripForCountry}
-                  isDarkMode={isDarkMode}
-                  isAdmin={isAdmin}
-                  onSaveTrip={handleCreateJourney}
-                  initialBuilderOpen={mapBuilderRequested}
-                  initialBuilderCountry={createCountryInitial}
-                  initialBuilderCity={createCityInitial}
-                  initialBuilderDate={createDateInitial}
-                />
+                <div className="w-full h-full flex flex-col flex-1 min-h-0 animate-in fade-in duration-300">
+                  <MapHubPage
+                    trips={trips}
+                    plans={plans}
+                    onNavigate={navigateTo}
+                    onCreateTripForCountry={handleCreateTripForCountry}
+                    isDarkMode={isDarkMode}
+                    isAdmin={isAdmin}
+                    onSaveTrip={handleCreateJourney}
+                    initialBuilderOpen={mapBuilderRequested}
+                    initialBuilderCountry={createCountryInitial}
+                    initialBuilderCity={createCityInitial}
+                    initialBuilderDate={createDateInitial}
+                  />
+                </div>
               )}
               {currentView === 'manage' && (
-                <ManageHubPage
-                  trips={trips}
-                  plans={plans}
-                  onNavigate={navigateTo}
-                  onSaveTrip={handleEditTripSave}
-                  onDeleteTrip={handleDeleteJourney}
-                  onCloneTrip={handleCloneJourney}
-                  onMoveToPlans={handleMoveToPlans}
-                  onMoveToArchive={handleMoveToArchive}
-                  onReorderTrips={async (orderedIds) => {
-                    try {
-                      localStorage.setItem('journey_order', JSON.stringify(orderedIds));
-                    } catch (_) {}
-
-                    const idMap = new Map(orderedIds.map((id, idx) => [id, idx]));
-                    setTrips(prev => [...prev].sort((a, b) => (idMap.get(a.id) ?? 9999) - (idMap.get(b.id) ?? 9999)));
-                    setPlans(prev => [...prev].sort((a, b) => (idMap.get(a.id) ?? 9999) - (idMap.get(b.id) ?? 9999)));
-
-                    if (isLoggedIn) {
+                <div className="w-full h-full animate-in fade-in duration-300">
+                  <ManageHubPage
+                    trips={trips}
+                    plans={plans}
+                    onNavigate={navigateTo}
+                    onSaveTrip={handleEditTripSave}
+                    onDeleteTrip={handleDeleteJourney}
+                    onCloneTrip={handleCloneJourney}
+                    onMoveToPlans={handleMoveToPlans}
+                    onMoveToArchive={handleMoveToArchive}
+                    onReorderTrips={async (orderedIds) => {
                       try {
-                        const batch = writeBatch(db);
-                        orderedIds.forEach((id, idx) => {
-                          const isPlan = plans.some(p => p.id === id);
-                          const col = isPlan ? 'plans' : 'trips';
-                          batch.update(doc(db, 'users', 'public', col, String(id)), { displayOrder: idx });
-                        });
-                        await batch.commit();
-                      } catch (e) {
-                        console.warn('Background Firestore order update skipped/failed:', e);
+                        localStorage.setItem('journey_order', JSON.stringify(orderedIds));
+                      } catch (_) {}
+
+                      const idMap = new Map(orderedIds.map((id, idx) => [id, idx]));
+                      setTrips(prev => [...prev].sort((a, b) => (idMap.get(a.id) ?? 9999) - (idMap.get(b.id) ?? 9999)));
+                      setPlans(prev => [...prev].sort((a, b) => (idMap.get(a.id) ?? 9999) - (idMap.get(b.id) ?? 9999)));
+
+                      if (isLoggedIn) {
+                        try {
+                          const batch = writeBatch(db);
+                          orderedIds.forEach((id, idx) => {
+                            const isPlan = plans.some(p => p.id === id);
+                            const col = isPlan ? 'plans' : 'trips';
+                            batch.update(doc(db, 'users', 'public', col, String(id)), { displayOrder: idx });
+                          });
+                          await batch.commit();
+                        } catch (e) {
+                          console.warn('Background Firestore order update skipped/failed:', e);
+                        }
                       }
-                    }
-                  }}
-                  homeTitle={homeTitle}
-                  homeSubtitle={homeSubtitle}
-                  heroJourneyIds={heroJourneyIds}
-                  heroAutoSlide={heroAutoSlide}
-                  heroMediaType={heroMediaType}
-                  heroSlideDuration={heroSlideDuration}
-                  marqueeShow={marqueeShow}
-                  marqueeMessage={marqueeMessage}
-                  marqueeSpeed={marqueeSpeed}
-                  homeGradientEnabled={homeGradientEnabled}
-                  homeGradientFrom={homeGradientFrom}
-                  homeGradientTo={homeGradientTo}
-                  homeMagazineSectionId={homeMagazineSectionId}
-                  homeMagazineLimit={homeMagazineLimit}
-                  landingHeroImage={landingHeroImage}
-                  landingHeroMedia={landingHeroMedia}
-                  currentUserProfile={currentUserProfile}
-                  isSuperAdmin={isSuperAdmin}
-                  onSaveAllHomeSettings={handleSaveSettings}
-                  magazineMoments={magazineMoments}
-                  magazineSections={magazineSections}
-                  magazineHubConfig={magazineHubConfig}
-                  onSaveMagazineHubConfig={handleSaveMagazineHubConfig}
-                  archiveHubConfig={archiveHubConfig}
-                  onSaveArchiveHubConfig={handleSaveArchiveHubConfig}
-                  timelineData={timelineData}
-                  onSaveMagazineMoments={handleSaveMagazineMoments}
-                  onSaveMagazineSections={handleSaveMagazineSections}
-                  onUpdateMagazineSections={handleUpdateMagazineSections}
-                  trashedJourneys={trashedJourneys}
-                  trashedSections={trashedSections}
-                  onRestoreJourney={handleRestoreJourney}
-                  onPermanentDeleteJourney={handlePermanentDeleteJourney}
-                  onDeleteMagazineSection={handleDeleteMagazineSection}
-                  onRestoreMagazineSection={handleRestoreMagazineSection}
-                  onPermanentDeleteMagazineSection={handlePermanentDeleteMagazineSection}
-                  onBatchPermanentDelete={handleBatchPermanentDelete}
-                  isLoggedIn={isLoggedIn}
-                  isDarkMode={isDarkMode}
-                  onDirtyChange={setIsManageDirty}
-                  saveRef={manageSaveRef}
-                  onSaveBgmSettings={handleSaveBgmSettings}
-                />
+                    }}
+                    homeTitle={homeTitle}
+                    homeSubtitle={homeSubtitle}
+                    heroJourneyIds={heroJourneyIds}
+                    heroAutoSlide={heroAutoSlide}
+                    heroMediaType={heroMediaType}
+                    heroSlideDuration={heroSlideDuration}
+                    marqueeShow={marqueeShow}
+                    marqueeMessage={marqueeMessage}
+                    marqueeSpeed={marqueeSpeed}
+                    homeGradientEnabled={homeGradientEnabled}
+                    homeGradientFrom={homeGradientFrom}
+                    homeGradientTo={homeGradientTo}
+                    homeMagazineSectionId={homeMagazineSectionId}
+                    homeMagazineLimit={homeMagazineLimit}
+                    landingHeroImage={landingHeroImage}
+                    landingHeroMedia={landingHeroMedia}
+                    currentUserProfile={currentUserProfile}
+                    isSuperAdmin={isSuperAdmin}
+                    onSaveAllHomeSettings={handleSaveSettings}
+                    magazineMoments={magazineMoments}
+                    magazineSections={magazineSections}
+                    magazineHubConfig={magazineHubConfig}
+                    onSaveMagazineHubConfig={handleSaveMagazineHubConfig}
+                    archiveHubConfig={archiveHubConfig}
+                    onSaveArchiveHubConfig={handleSaveArchiveHubConfig}
+                    timelineData={timelineData}
+                    onSaveMagazineMoments={handleSaveMagazineMoments}
+                    onSaveMagazineSections={handleSaveMagazineSections}
+                    onUpdateMagazineSections={handleUpdateMagazineSections}
+                    trashedJourneys={trashedJourneys}
+                    trashedSections={trashedSections}
+                    onRestoreJourney={handleRestoreJourney}
+                    onPermanentDeleteJourney={handlePermanentDeleteJourney}
+                    onDeleteMagazineSection={handleDeleteMagazineSection}
+                    onRestoreMagazineSection={handleRestoreMagazineSection}
+                    onPermanentDeleteMagazineSection={handlePermanentDeleteMagazineSection}
+                    onBatchPermanentDelete={handleBatchPermanentDelete}
+                    isLoggedIn={isLoggedIn}
+                    isDarkMode={isDarkMode}
+                    onDirtyChange={setIsManageDirty}
+                    saveRef={manageSaveRef}
+                    onSaveBgmSettings={handleSaveBgmSettings}
+                  />
+                </div>
               )}
               {currentView === 'magazine' && (
-                <MagazineHubPage
-                  sections={magazineSections}
-                  hubConfig={magazineHubConfig}
-                  trips={trips}
-                  plans={plans}
-                  timelineData={timelineData}
-                  onNavigate={navigateTo}
-                  isLoggedIn={isLoggedIn}
-                  isAdmin={isAdmin}
-                  isDarkMode={isDarkMode}
-                />
+                <div className="w-full h-full animate-in fade-in duration-300">
+                  <MagazineHubPage
+                    sections={magazineSections}
+                    hubConfig={magazineHubConfig}
+                    trips={trips}
+                    plans={plans}
+                    timelineData={timelineData}
+                    onNavigate={navigateTo}
+                    isLoggedIn={isLoggedIn}
+                    isAdmin={isAdmin}
+                    isDarkMode={isDarkMode}
+                  />
+                </div>
               )}
               {currentView === 'calendar' && (
-                <CalendarHubPage
-                  trips={trips}
-                  plans={plans}
-                  timelineData={timelineData}
-                  onNavigate={navigateTo}
-                  onCreateTrip={(dateStr) => handleCreateTripForCountry('', '', dateStr)}
-                  isDarkMode={isDarkMode}
-                />
+                <div className="w-full h-full animate-in fade-in duration-300">
+                  <CalendarHubPage
+                    trips={trips}
+                    plans={plans}
+                    timelineData={timelineData}
+                    onNavigate={navigateTo}
+                    onCreateTrip={(dateStr) => handleCreateTripForCountry('', '', dateStr)}
+                    isDarkMode={isDarkMode}
+                  />
+                </div>
               )}
               {currentView === 'pocket' && (
-                <PocketHubPage
-                  trips={trips}
-                  plans={plans}
-                  onNavigate={navigateTo}
-                  onCreateTripWithPockets={(selectedPockets) => {
-                    const firstCountry = selectedPockets.find(p => p.country)?.country || '';
-                    const firstCity = selectedPockets.find(p => p.city)?.city || '';
-                    handleCreateTripForCountry(firstCountry, firstCity);
-                  }}
-                  onAddTimelineItemToTrip={async (tripId, newItem) => {
-                    const date = newItem.date || '2025.04.12';
-                    setTimelineData(prev => {
-                      const updated = { ...prev };
-                      if (!updated[date]) updated[date] = [];
-                      updated[date] = [...updated[date], newItem];
-                      return updated;
-                    });
+                <div className="w-full h-full animate-in fade-in duration-300">
+                  <PocketHubPage
+                    trips={trips}
+                    plans={plans}
+                    onNavigate={navigateTo}
+                    onCreateTripWithPockets={(selectedPockets) => {
+                      const firstCountry = selectedPockets.find(p => p.country)?.country || '';
+                      const firstCity = selectedPockets.find(p => p.city)?.city || '';
+                      handleCreateTripForCountry(firstCountry, firstCity);
+                    }}
+                    onAddTimelineItemToTrip={async (tripId, newItem) => {
+                      const date = newItem.date || '2025.04.12';
+                      setTimelineData(prev => {
+                        const updated = { ...prev };
+                        if (!updated[date]) updated[date] = [];
+                        updated[date] = [...updated[date], newItem];
+                        return updated;
+                      });
 
-                    // Persist to Firestore
-                    try {
-                      const uid = 'public';
-                      const { originDate: _, ...cleanItem } = newItem as any;
-                      await setDoc(doc(db, 'users', uid, 'timeline', String(newItem.id)), cleanForFirestore({ ...cleanItem, tripId }));
-                    } catch (e) {
-                      console.warn('Failed to persist timeline item to Firestore:', e);
-                    }
+                      // Persist to Firestore
+                      try {
+                        const uid = 'public';
+                        const { originDate: _, ...cleanItem } = newItem as any;
+                        await setDoc(doc(db, 'users', uid, 'timeline', String(newItem.id)), cleanForFirestore({ ...cleanItem, tripId }));
+                      } catch (e) {
+                        console.warn('Failed to persist timeline item to Firestore:', e);
+                      }
 
-                    // Local storage fallback
-                    try {
-                      const raw = localStorage.getItem('timeline_data') || '{}';
-                      const parsed = JSON.parse(raw);
-                      if (!parsed[date]) parsed[date] = [];
-                      parsed[date].push(newItem);
-                      localStorage.setItem('timeline_data', JSON.stringify(parsed));
-                    } catch (_) {}
-                  }}
-                  isLoggedIn={isLoggedIn}
-                  isAdmin={isAdmin}
-                  isDarkMode={isDarkMode}
-                />
+                      // Local storage fallback
+                      try {
+                        const raw = localStorage.getItem('timeline_data') || '{}';
+                        const parsed = JSON.parse(raw);
+                        if (!parsed[date]) parsed[date] = [];
+                        parsed[date].push(newItem);
+                        localStorage.setItem('timeline_data', JSON.stringify(parsed));
+                      } catch (_) {}
+                    }}
+                    isLoggedIn={isLoggedIn}
+                    isAdmin={isAdmin}
+                    isDarkMode={isDarkMode}
+                  />
+                </div>
               )}
               {currentView === 'detail' && (
                 activeTrip ? (() => {

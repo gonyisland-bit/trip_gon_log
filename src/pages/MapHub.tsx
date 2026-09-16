@@ -2087,10 +2087,6 @@ export function MapHubPage({
       map.scrollWheelZoom.disable();
     } catch (_) {}
 
-    // 순항 줌(전경 뷰): 비행 중에는 줌을 고정하여 타일 깜박임 100% 제거
-    const currentMapZoom = map.getZoom();
-    const cruiseZoom = Math.min(Math.max(currentMapZoom, 3.2), 4.2);
-
     // Calculate initial bearing
     const initialAngle = Math.atan2(effectiveEndLng - startLng, endLat - startLat) * 180 / Math.PI;
 
@@ -2112,11 +2108,23 @@ export function MapHubPage({
     if (planeMarker.bringToFront) planeMarker.bringToFront();
     flightPlaneMarkerRef.current = planeMarker;
 
-    // 출발지(한국 인천)에 부드럽게 카메라 셋업 후 곧바로 이륙
-    map.setView([startLat, startLng], cruiseZoom, { animate: false });
+    // 출발지와 도착지를 모두 포함하는 바운드 계산
+    // 아크 궤적(ctrlLat, ctrlLng)까지 고려하여 비행 경로가 완벽히 한눈에 들어오도록 핏
+    const flightBounds = L.latLngBounds([
+      [Math.min(startLat, endLat, ctrlLat), Math.min(startLng, effectiveEndLng, ctrlLng)],
+      [Math.max(startLat, endLat, ctrlLat), Math.max(startLng, effectiveEndLng, ctrlLng)]
+    ]);
 
-    // Smooth duration between 1800ms ~ 2400ms
-    const duration = Math.min(2400, Math.max(1800, dist * 22));
+    // 비행 시작 전 출발과 도착 이동구간 전체가 보이는 상태로 지도 줌/화각 선반영 (떨림 및 카메라 덜컥거림 완전 방지)
+    const isMobile = window.innerWidth < 640;
+    map.fitBounds(flightBounds, {
+      padding: isMobile ? [40, 40] : [70, 70],
+      maxZoom: 5.2,
+      animate: false
+    });
+
+    // Smooth duration between 2000ms ~ 2800ms
+    const duration = Math.min(2800, Math.max(2000, dist * 24));
     let startTime: number | null = null;
     const trailPoints: [number, number][] = [];
 
@@ -2150,9 +2158,6 @@ export function MapHubPage({
       // Append to flight trail
       trailPoints.push([curLat, curLng]);
       trailLine.setLatLngs(trailPoints);
-
-      // 깜박임 없는 비행 추종: 줌 레벨을 고정한 채 카메라 중심만 부드럽게 추종
-      map.panTo([curLat, curLng], { animate: false });
 
       if (rawProgress < 1) {
         flightAnimRef.current = requestAnimationFrame(animateFlight);
@@ -2445,7 +2450,7 @@ export function MapHubPage({
       minZoom: 2.3,
       maxZoom: 18,
       zoomControl: false,
-      maxBounds: [[-62, -180], [82, 360]],
+      maxBounds: [[-62, -35], [82, 330]], // 좌측 유럽 대륙부터 우측 남미 대륙까지 커버하는 최적 바운드
       maxBoundsViscosity: 1.0,
       bounceAtZoomLimits: false,
       worldCopyJump: false,

@@ -132,10 +132,11 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
   const meta = CATEGORY_META[spot.category] || CATEGORY_META.spot;
   const CategoryIcon = meta.icon;
   
-  // Google Maps Search URL
-  const googleMapsUrl = hasCoordinates 
-    ? `https://www.google.com/maps/search/?api=1&query=${spot.lat},${spot.lng}`
-    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([spot.title, spot.address, spot.city].filter(Boolean).join(' '))}`;
+  // Google Maps Search URL (장소명 및 주소 기반 검색으로 통일)
+  const mapSearchTarget = (spot.address && spot.title)
+    ? `${spot.title} ${spot.address}`
+    : (spot.address || spot.title || [spot.city, spot.country].filter(Boolean).join(' '));
+  const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapSearchTarget)}`;
 
   // Location display
   const locationLabel = [spot.country, spot.city].filter(Boolean).join(' · ');

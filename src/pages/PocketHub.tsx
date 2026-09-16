@@ -4,7 +4,7 @@ import {
   Search, Check, X, ArrowUpRight, ChevronRight, Layers, Sparkles,
   Utensils, Coffee, Camera, ShoppingBag, Lightbulb, Map, MoreVertical, Star,
   Upload, Image as ImageIcon, Loader2, Heart, MessageSquare,
-  Globe, FileText,
+  Globe, FileText, CheckSquare, Square,
   SlidersHorizontal, ArrowUpDown, ChevronDown, GripVertical, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { SpotPocketItem, PocketCategory, Trip, Plan, TimelineItem } from '../types';
@@ -263,6 +263,29 @@ export function PocketHubPage({
       return next;
     });
   };
+
+  // ESC 키로 선택 해제 및 셀렉트 모드 종료 제어
+  useEffect(() => {
+    if (!isSelectionMode) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.key === 'Esc') {
+        // 모달이나 팝오버가 열려있지 않은 상태일 때만 반응
+        if (isAddModalOpen || selectedSpotForModal || spotToDelete || spotToUseInTrip) return;
+
+        if (selectedSpotIds.size > 0) {
+          e.preventDefault();
+          setSelectedSpotIds(new Set());
+        } else {
+          e.preventDefault();
+          setIsSelectionMode(false);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSelectionMode, selectedSpotIds.size, isAddModalOpen, selectedSpotForModal, spotToDelete, spotToUseInTrip]);
 
   const handleCreateTripFromSelectedPockets = () => {
     const selectedList = spots.filter(s => selectedSpotIds.has(s.id));
@@ -765,10 +788,14 @@ export function PocketHubPage({
                     ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
                     : 'border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white'
                 }`}
-                title="포켓들을 복수로 선택하여 신규 여정 만들기"
+                title={isSelectionMode ? "선택 모드 해제 (ESC)" : "선택 모드 활성화"}
               >
-                <Layers className="w-4 h-4" />
-                <span>{isSelectionMode ? 'EXIT SELECT' : 'SELECT'}</span>
+                {isSelectionMode ? (
+                  <CheckSquare className="w-4 h-4 text-red-500" />
+                ) : (
+                  <Square className="w-4 h-4 text-black/60 dark:text-white/60" />
+                )}
+                <span>SELECT</span>
               </button>
               <button
                 onClick={() => setIsAddModalOpen(true)}
@@ -1397,23 +1424,33 @@ export function PocketHubPage({
                   등록된 여정이 없습니다.
                 </p>
               ) : (
-                allAvailableTrips.map(trip => (
-                  <button
-                    key={trip.id}
-                    onClick={() => handleSelectTripForSpot(trip)}
-                    className="w-full text-left p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between group cursor-pointer"
-                  >
-                    <div>
-                      <div className="text-xs font-bold text-black dark:text-white group-hover:text-red-500 transition-colors">
-                        {trip.title}
+                allAvailableTrips.map(trip => {
+                  const isPlanItem = plans.some(p => p.id === trip.id) || trip.statusBadge === 'PLAN' || trip.isPlan;
+                  return (
+                    <button
+                      key={trip.id}
+                      onClick={() => handleSelectTripForSpot(trip)}
+                      className="w-full text-left p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between group cursor-pointer"
+                    >
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-black dark:text-white group-hover:text-red-500 transition-colors">
+                            {trip.title}
+                          </span>
+                          {isPlanItem && (
+                            <span className="px-1.5 py-0.2 text-[9px] font-mono font-bold tracking-widest uppercase border border-amber-600/50 text-amber-600 dark:border-amber-400/50 dark:text-amber-400">
+                              PLAN
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[10px] font-mono text-black/40 dark:text-white/40 mt-0.5">
+                          {trip.date || '일정 미지정'} · {trip.locationStr || '위치 미지정'}
+                        </div>
                       </div>
-                      <div className="text-[10px] font-mono text-black/40 dark:text-white/40">
-                        {trip.date || '일정 미지정'} · {trip.locationStr || '위치 미지정'}
-                      </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white group-hover:translate-x-0.5 transition-all" />
-                  </button>
-                ))
+                      <ChevronRight className="w-4 h-4 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+                    </button>
+                  );
+                })
               )}
             </div>
 
