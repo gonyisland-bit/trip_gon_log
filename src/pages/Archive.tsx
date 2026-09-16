@@ -1135,8 +1135,8 @@ export function ArchiveHubPage({
                   </div>
                 ) : (
                   <div className={cardViewMode === 'wide'
-                    ? "grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-12 sm:gap-y-16"
-                    : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-10 sm:gap-y-14 md:gap-y-16"
+                    ? "grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-8 gap-y-10 sm:gap-y-14 w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-6 sm:py-10"
+                    : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-5 md:gap-6 gap-y-8 sm:gap-y-12 md:gap-y-14 w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-6 sm:py-10"
                   }>
                     {group.items.map((trip, index) => {
                       const { issueNumber, topYearMonth, line2DateDays, line3CountryCity, editorialSubtitle } = getTripCardDisplayData(trip, index);
