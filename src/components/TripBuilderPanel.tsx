@@ -1978,7 +1978,9 @@ export function TripBuilderPanel({
                       activeMonth
                     );
                     const isBest = activeBestMonths.includes(activeMonth);
-                    const bestSeasonText = smartCity?.bestSeason || smartCountry?.bestSeason;
+                    const bestSeasonText = (smartCity && smartCity.bestMonths && smartCity.bestMonths.length > 0)
+                      ? smartCity.bestMonths.map(m => `${m}월`).join(', ')
+                      : smartCountry?.bestSeason;
 
                     return (
                       <div className="rounded-xl bg-neutral-100 dark:bg-neutral-800/80 p-3 space-y-1.5 border border-black/5 dark:border-white/5 transition-all">
