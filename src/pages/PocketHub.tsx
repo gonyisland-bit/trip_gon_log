@@ -3,14 +3,15 @@ import {
   Bookmark, MapPin, Plus, ExternalLink, Trash2, Edit3, Compass, 
   Search, Check, X, ArrowUpRight, ChevronRight, Layers, Sparkles,
   Utensils, Coffee, Camera, ShoppingBag, Lightbulb, Map, MoreVertical, Star,
-  Upload, Image as ImageIcon, Loader2,
+  Upload, Image as ImageIcon, Loader2, Heart, MessageSquare,
   SlidersHorizontal, ArrowUpDown, ChevronDown, GripVertical, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { SpotPocketItem, PocketCategory, Trip, Plan, TimelineItem } from '../types';
-import { getSavedPockets, savePockets, detectPlatform, subscribePockets } from '../utils/pocketStorage';
+import { getSavedPockets, savePockets, detectPlatform, subscribePockets, getOrCreateGuestId, toggleSpotLike } from '../utils/pocketStorage';
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { PocketScheduleModal } from '../components/PocketScheduleModal';
+import { PocketDetailModal } from '../components/PocketDetailModal';
 import { compressImage } from '../utils/imageHelper';
 import { uploadFileToR2 } from '../utils/storageHelper';
 
@@ -199,6 +200,23 @@ export function PocketHubPage({
   const [newAddress, setNewAddress] = useState<string>('');
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState<boolean>(false);
   const [isDraggingThumbnail, setIsDraggingThumbnail] = useState<boolean>(false);
+
+  // Detail Modal state
+  const [selectedSpotForModal, setSelectedSpotForModal] = useState<SpotPocketItem | null>(null);
+
+  // User/Guest identifier for Likes
+  const currentUserId = useMemo(() => {
+    return getOrCreateGuestId();
+  }, []);
+
+  const handleToggleLike = async (spotId: string) => {
+    const updated = await toggleSpotLike(spotId, currentUserId);
+    setSpots(updated);
+    if (selectedSpotForModal && selectedSpotForModal.id === spotId) {
+      const updatedItem = updated.find(s => s.id === spotId);
+      if (updatedItem) setSelectedSpotForModal(updatedItem);
+    }
+  };
 
   // Multi-selection state for creating trip with selected pockets
   const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
@@ -1004,6 +1022,7 @@ export function PocketHubPage({
                 const isDimmed = hasAnySelected && !isSelected;
                 const isDraggingThis = draggingSpotId === spot.id;
                 const isDragOver = dragOverSpotId === spot.id;
+                const isLiked = Array.isArray(spot.likedBy) && spot.likedBy.includes(currentUserId);
 
                 return (
                   <div
@@ -1014,205 +1033,244 @@ export function PocketHubPage({
                     onDragLeave={isDragMode ? () => setDragOverSpotId(null) : undefined}
                     onDrop={isDragMode ? (e) => { e.preventDefault(); handleDrop(spot.id); } : undefined}
                     onDragEnd={isDragMode ? () => { setDraggingSpotId(null); setDragOverSpotId(null); } : undefined}
-                    onClick={() => { if (isSelectionMode) handleToggleSelectSpot(spot.id); }}
-                    className={`group flex flex-col border bg-white dark:bg-[#111111] transition-all duration-200 overflow-hidden shadow-2xs hover:shadow-md ${
-                      isSelectionMode ? 'cursor-pointer' : isDragMode ? 'cursor-grab active:cursor-grabbing' : ''
+                    onClick={() => { 
+                      if (isSelectionMode) {
+                        handleToggleSelectSpot(spot.id);
+                      } else {
+                        setSelectedSpotForModal(spot);
+                      }
+                    }}
+                    className={`group flex flex-col border bg-white dark:bg-[#121212] rounded-3xl transition-all duration-300 overflow-hidden shadow-xs hover:shadow-xl cursor-pointer ${
+                      isDragMode ? 'cursor-grab active:cursor-grabbing' : ''
                     } ${
                       isDraggingThis ? 'opacity-30 scale-[0.98]' : ''
                     } ${
                       isDragOver ? 'ring-2 ring-black dark:ring-white border-transparent' :
                       isSelected ? 'ring-2 ring-black dark:ring-white bg-black/[0.02] dark:bg-white/[0.04]' :
-                      'border-black/10 dark:border-white/10 hover:border-black/40 dark:hover:border-white/40'
+                      'border-black/10 dark:border-white/10 hover:border-black/30 dark:hover:border-white/30'
                     } ${
                       isDimmed ? 'opacity-35 hover:opacity-75 transition-opacity' : 'opacity-100'
                     }`}
                   >
                     {/* Drag Handle (admin + custom sort mode + order mode only) */}
                     {isDragMode && (
-                      <div className="flex items-center justify-center h-5 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/10 dark:border-white/10 cursor-grab text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white transition-colors">
-                        <GripVertical className="w-3 h-3" />
+                      <div className="flex items-center justify-center h-6 bg-black/[0.03] dark:bg-white/[0.03] border-b border-black/10 dark:border-white/10 cursor-grab text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors">
+                        <GripVertical className="w-3.5 h-3.5" />
                       </div>
                     )}
 
-                    {/* Card Visual / Thumbnail (3:4 SNS Aspect Ratio) */}
-                    <div className="relative aspect-[3/4] bg-black/5 dark:bg-white/5 overflow-hidden transition-all">
-                      {spot.thumbnailUrl ? (
-                        <img
-                          src={spot.thumbnailUrl}
-                          alt={spot.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          loading="lazy"
-                          onError={(e) => {
-                            (e.currentTarget as HTMLElement).style.display = 'none';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-black/20 dark:text-white/20">
-                          <Icon className="w-10 h-10 mb-1" />
-                          <span className="text-[10px] font-mono tracking-widest uppercase font-normal">{meta.label}</span>
+                    {/* Card Upper Header — Region, Category & Quick Actions */}
+                    <div className="p-3 sm:p-4 pb-2 flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        {/* Region & Category Meta Tag */}
+                        <div className="flex items-center gap-1.5 text-[9.5px] sm:text-[10px] font-mono tracking-wider uppercase text-black/50 dark:text-white/50 mb-1 font-bold">
+                          <MapPin className="w-2.5 h-2.5 text-red-500 shrink-0" />
+                          <span className="truncate">{locationLabel}</span>
+                          <span className="text-black/20 dark:text-white/20">·</span>
+                          <span className="inline-flex items-center gap-1 text-black/70 dark:text-white/70">
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: meta.color }} />
+                            <span>{meta.label}</span>
+                          </span>
                         </div>
-                      )}
 
-                      {/* Selection Checkbox (Visible in Selection Mode) */}
-                      {isSelectionMode ? (
-                        <button
-                          type="button"
-                          onClick={(e) => handleToggleSelectSpot(spot.id, e)}
-                          className={`absolute top-2.5 left-2.5 w-6 h-6 border flex items-center justify-center transition-all z-20 cursor-pointer shadow-md ${
-                            isSelected
-                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                              : 'bg-white/90 dark:bg-black/90 border-black/30 dark:border-white/30 text-transparent hover:border-black dark:hover:border-white'
-                          }`}
-                        >
-                          <Check className={`w-3.5 h-3.5 stroke-[3] ${isSelected ? 'opacity-100' : 'opacity-0'}`} />
-                        </button>
-                      ) : (
-                        /* Favorite Star Button Overlay */
-                        <button
-                          type="button"
-                          onClick={(e) => handleToggleFavorite(spot.id, e)}
-                          className="absolute top-2 left-2 w-6 h-6 sm:w-7 sm:h-7 bg-black/60 backdrop-blur-sm flex items-center justify-center border border-white/20 hover:bg-black transition-colors cursor-pointer z-10"
-                          title={spot.isFavorite ? "즐겨찾기 해제" : "자주 쓰는 스팟 즐겨찾기"}
-                        >
-                          <Star className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${spot.isFavorite ? 'text-amber-400 fill-amber-400' : 'text-white/80'}`} />
-                        </button>
-                      )}
+                        {/* Main Spot Title (Hero Headline) */}
+                        <h3 className="text-sm sm:text-base font-black tracking-tight text-black dark:text-white leading-snug break-keep line-clamp-1 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                          {spot.title}
+                        </h3>
+                      </div>
 
-                      {/* Category Chip Overlay (Clean minimal) */}
-                      <div className="absolute top-2 right-2 px-1.5 sm:px-2 py-0.5 bg-white/90 dark:bg-black/90 backdrop-blur-sm text-black dark:text-white text-[8px] sm:text-[9px] font-mono tracking-wider uppercase border border-black/10 dark:border-white/10 flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: meta.color }} />
-                        <span className="font-normal">{meta.label}</span>
+                      {/* Header Right Actions */}
+                      <div className="flex items-center gap-1 shrink-0 pt-0.5" onClick={(e) => e.stopPropagation()}>
+                        {isSelectionMode ? (
+                          <button
+                            type="button"
+                            onClick={(e) => handleToggleSelectSpot(spot.id, e)}
+                            className={`w-6 h-6 rounded-md border flex items-center justify-center transition-all cursor-pointer shadow-xs ${
+                              isSelected
+                                ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                                : 'bg-white dark:bg-black border-black/20 dark:border-white/20 text-transparent hover:border-black dark:hover:border-white'
+                            }`}
+                          >
+                            <Check className={`w-3.5 h-3.5 stroke-[3] ${isSelected ? 'opacity-100' : 'opacity-0'}`} />
+                          </button>
+                        ) : (
+                          <>
+                            {/* Favorite Star Button */}
+                            <button
+                              type="button"
+                              onClick={(e) => handleToggleFavorite(spot.id, e)}
+                              className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 text-black/40 dark:text-white/40 hover:text-amber-500 transition-colors cursor-pointer"
+                              title={spot.isFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
+                            >
+                              <Star className={`w-3.5 h-3.5 ${spot.isFavorite ? 'text-amber-400 fill-amber-400' : ''}`} />
+                            </button>
+
+                            {/* More Menu */}
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveMenuSpotId(prev => prev === spot.id ? null : spot.id);
+                                }}
+                                className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                                title="옵션"
+                              >
+                                <MoreVertical className="w-3.5 h-3.5" />
+                              </button>
+
+                              {activeMenuSpotId === spot.id && (
+                                <div
+                                  onClick={(e) => e.stopPropagation()}
+                                  className={`absolute right-0 top-full mt-1 z-30 bg-white dark:bg-[#181818] border border-black/15 dark:border-white/15 rounded-xl shadow-xl py-1 animate-in fade-in zoom-in-95 duration-100 font-mono text-[10.5px] ${isDragMode ? 'w-32' : 'w-28'}`}
+                                >
+                                  {isDragMode && (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleMoveSpot(spot.id, 'up')}
+                                        className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer font-bold"
+                                      >
+                                        <ArrowUp className="w-3 h-3 text-black/50 dark:text-white/50" />
+                                        <span>위로</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleMoveSpot(spot.id, 'down')}
+                                        className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer font-bold"
+                                      >
+                                        <ArrowDown className="w-3 h-3 text-black/50 dark:text-white/50" />
+                                        <span>아래로</span>
+                                      </button>
+                                      <div className="my-1 border-t border-black/10 dark:border-white/10" />
+                                    </>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenEditSpot(spot)}
+                                    className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer font-bold"
+                                  >
+                                    <Edit3 className="w-3 h-3 text-blue-500" />
+                                    <span>수정</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveMenuSpotId(null);
+                                      setSpotToDelete(spot);
+                                    }}
+                                    className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-red-500/10 text-red-500 cursor-pointer font-bold"
+                                  >
+                                    <Trash2 className="w-3 h-3 text-red-500" />
+                                    <span>삭제</span>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
 
-                    {/* Card Body — App Feed Clean Hierarchy */}
-                    <div className="p-2.5 sm:p-3 flex-grow flex flex-col justify-between">
+                    {/* Media Frame (Clean 4:3 Aspect Ratio Frame) */}
+                    <div className="px-3 sm:px-4">
+                      <div className="relative aspect-[4/3] w-full rounded-2xl bg-black/5 dark:bg-white/5 overflow-hidden border border-black/5 dark:border-white/5">
+                        {spot.thumbnailUrl ? (
+                          <img
+                            src={spot.thumbnailUrl}
+                            alt={spot.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            loading="lazy"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLElement).style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-black/20 dark:text-white/20">
+                            <Icon className="w-10 h-10 mb-1" />
+                            <span className="text-[9px] font-mono tracking-widest uppercase font-normal">{meta.label}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* SNS Action Bar (Heart Likes, Detail Bubble, Add to Trip, Link) */}
+                    <div className="px-3 sm:px-4 pt-2.5 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-1.5">
+                        {/* Likes Toggle Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleLike(spot.id)}
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10.5px] sm:text-[11px] font-mono font-bold transition-all cursor-pointer ${
+                            isLiked
+                              ? 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400'
+                              : 'border-black/10 dark:border-white/10 text-black/65 dark:text-white/65 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
+                          }`}
+                          title="좋아요 관심사 체크"
+                        >
+                          <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-red-600 text-red-600 dark:fill-red-400 dark:text-red-400' : ''}`} />
+                          <span>{spot.likes || 0}</span>
+                        </button>
+
+                        {/* Detail Modal Trigger Icon */}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedSpotForModal(spot)}
+                          className="w-7 h-7 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30 transition-colors cursor-pointer"
+                          title="상세 스토리 및 미니맵 보기"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Add to Trip (USE IN TRIP) */}
+                        <button
+                          type="button"
+                          onClick={() => setSpotToUseInTrip(spot)}
+                          className="w-7 h-7 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30 transition-colors cursor-pointer"
+                          title="여정 타임라인에 추가"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Source Link */}
+                      {spot.sourceUrl && (
+                        <a
+                          href={spot.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="h-6 px-2 flex items-center gap-1 rounded-full border border-black/10 dark:border-white/10 hover:border-black/30 dark:hover:border-white/30 text-[9px] font-mono tracking-wider uppercase text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                          title="출처 원본 게시물 바로가기"
+                        >
+                          <ArrowUpRight className="w-3 h-3 text-red-500 shrink-0" />
+                          <span className="max-w-[48px] truncate">{spot.platform || 'LINK'}</span>
+                        </a>
+                      )}
+                    </div>
+
+                    {/* Card Body — Editorial Note & Address */}
+                    <div className="p-3 sm:p-4 pt-2 flex-grow flex flex-col justify-between">
                       <div>
-                        {/* Region Tag: Regular weight, light & clean */}
-                        <div className="flex items-center gap-1 text-[9px] sm:text-[10px] font-mono tracking-wider uppercase text-black/45 dark:text-white/45 mb-1 font-normal">
-                          <MapPin className="w-2.5 h-2.5 text-black/40 dark:text-white/40 shrink-0" />
-                          <span className="truncate">{locationLabel}</span>
-                        </div>
+                        {/* Editorial Handle Tag */}
+                        {spot.platform && (
+                          <span className="text-[9.5px] font-mono font-semibold text-black/45 dark:text-white/45 block mb-1">
+                            @{spot.platform} · {meta.label.toLowerCase()}
+                          </span>
+                        )}
 
-                        {/* Title: Only the title is bold and prominent */}
-                        <h3 className="text-xs sm:text-sm font-bold tracking-tight text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors line-clamp-1 leading-snug">
-                          {spot.title}
-                        </h3>
-
-                        {/* Memo: Natural typography without nested background boxes or thick borders */}
+                        {/* Memo */}
                         {spot.memo && (
-                          <p className="mt-1.5 text-[10.5px] sm:text-[11px] font-sans text-black/60 dark:text-white/60 leading-relaxed line-clamp-2 font-normal break-words">
+                          <p className="text-[11px] sm:text-[11.5px] font-sans text-black/65 dark:text-white/65 leading-relaxed line-clamp-2 font-normal break-words">
                             {spot.memo}
                           </p>
                         )}
 
-                        {/* Address: subtle single-line preview */}
+                        {/* Address */}
                         {spot.address && (
                           <p className="mt-1 text-[9px] sm:text-[9.5px] text-black/35 dark:text-white/35 font-mono truncate font-normal">
                             {spot.address}
                           </p>
                         )}
-                      </div>
-
-                      {/* Action Bar — Minimal 1-Row Icon Toolbar */}
-                      <div className="pt-2 mt-2 border-t border-black/10 dark:border-white/10 flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          {/* USE IN TRIP icon button */}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSpotToUseInTrip(spot);
-                            }}
-                            className="h-7 w-7 flex items-center justify-center border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer text-black/70 dark:text-white/70"
-                            title="여정 타임라인에 추가 (USE IN TRIP)"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                          </button>
-
-                          {/* Source direct link icon button */}
-                          {spot.sourceUrl && (
-                            <a
-                              href={spot.sourceUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="h-7 px-2 flex items-center gap-1 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 text-[9px] font-mono tracking-wider uppercase text-black/70 dark:text-white/70 transition-colors cursor-pointer"
-                              title="원본 게시물 바로가기"
-                            >
-                              <ArrowUpRight className="w-3 h-3 text-red-500 shrink-0" />
-                              <span className="max-w-[56px] truncate">{spot.platform || 'LINK'}</span>
-                            </a>
-                          )}
-                        </div>
-
-                        {/* Context Menu Button */}
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveMenuSpotId(prev => prev === spot.id ? null : spot.id);
-                            }}
-                            className={`h-7 w-7 flex items-center justify-center border transition-colors cursor-pointer ${
-                              activeMenuSpotId === spot.id
-                                ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
-                                : 'border-black/15 dark:border-white/15 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
-                            }`}
-                            title="메뉴"
-                          >
-                            <MoreVertical className="w-3.5 h-3.5" />
-                          </button>
-
-                          {activeMenuSpotId === spot.id && (
-                            <div
-                              onClick={(e) => e.stopPropagation()}
-                              className={`absolute right-0 bottom-full mb-1 z-30 bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 shadow-xl py-1 animate-in fade-in zoom-in-95 duration-100 font-mono text-[10px] sm:text-[11px] ${isDragMode ? 'w-32' : 'w-28'}`}
-                            >
-                              {/* Admin-only: move up / down */}
-                              {isDragMode && (
-                                <>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleMoveSpot(spot.id, 'up')}
-                                    className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer font-bold"
-                                  >
-                                    <ArrowUp className="w-3 h-3 text-black/50 dark:text-white/50" />
-                                    <span>위로</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleMoveSpot(spot.id, 'down')}
-                                    className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer font-bold"
-                                  >
-                                    <ArrowDown className="w-3 h-3 text-black/50 dark:text-white/50" />
-                                    <span>아래로</span>
-                                  </button>
-                                  <div className="my-1 border-t border-black/10 dark:border-white/10" />
-                                </>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => handleOpenEditSpot(spot)}
-                                className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer font-bold"
-                              >
-                                <Edit3 className="w-3 h-3 text-blue-500" />
-                                <span>수정</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setActiveMenuSpotId(null);
-                                  setSpotToDelete(spot);
-                                }}
-                                className="w-full px-3 py-1.5 text-left flex items-center gap-2 hover:bg-red-500/10 text-red-500 cursor-pointer font-bold"
-                              >
-                                <Trash2 className="w-3 h-3 text-red-500" />
-                                <span>삭제</span>
-                              </button>
-                            </div>
-                          )}
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -1615,6 +1673,19 @@ export function PocketHubPage({
           </div>
         </div>
       )}
+
+      {/* ── SPOT DETAIL EXPANDED MODAL ── */}
+      <PocketDetailModal
+        isOpen={Boolean(selectedSpotForModal)}
+        spot={selectedSpotForModal}
+        onClose={() => setSelectedSpotForModal(null)}
+        onToggleLike={handleToggleLike}
+        onUseInTrip={(spot) => setSpotToUseInTrip(spot)}
+        onEdit={(spot) => handleOpenEditSpot(spot)}
+        onDelete={(spot) => setSpotToDelete(spot)}
+        isLiked={Boolean(selectedSpotForModal && Array.isArray(selectedSpotForModal.likedBy) && selectedSpotForModal.likedBy.includes(currentUserId))}
+        isAdmin={isAdmin}
+      />
 
       {/* ── DELETE CONFIRM MODAL ── */}
       <ConfirmModal

@@ -207,3 +207,43 @@ export function findNearbySpots(
 
   return results.sort((a, b) => a.distance - b.distance);
 }
+
+export function getOrCreateGuestId(): string {
+  const GUEST_KEY = 'pocket_guest_id';
+  let guestId = localStorage.getItem(GUEST_KEY);
+  if (!guestId) {
+    guestId = 'guest_' + Math.random().toString(36).slice(2, 11) + '_' + Date.now();
+    localStorage.setItem(GUEST_KEY, guestId);
+  }
+  return guestId;
+}
+
+export async function toggleSpotLike(spotId: string, userKey: string): Promise<SpotPocketItem[]> {
+  const spots = getSavedPockets();
+  const updated = spots.map(s => {
+    if (s.id !== spotId) return s;
+    const likedBy = Array.isArray(s.likedBy) ? [...s.likedBy] : [];
+    const index = likedBy.indexOf(userKey);
+    const alreadyLiked = index !== -1;
+    let newLikedBy: string[];
+    let newLikes: number;
+
+    if (alreadyLiked) {
+      newLikedBy = likedBy.filter(k => k !== userKey);
+      newLikes = Math.max(0, (s.likes || 1) - 1);
+    } else {
+      newLikedBy = [...likedBy, userKey];
+      newLikes = (s.likes || 0) + 1;
+    }
+
+    return {
+      ...s,
+      likes: newLikes,
+      likedBy: newLikedBy
+    };
+  });
+
+  await savePockets(updated);
+  return updated;
+}
+

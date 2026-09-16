@@ -193,6 +193,8 @@ export interface SpotPocketItem {
   isFavorite?: boolean;
   createdAt: number;
   order?: number;
+  likes?: number;
+  likedBy?: string[];
 }
 
 export interface MagazineMoment {
