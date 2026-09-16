@@ -55,7 +55,7 @@ import {
 } from 'lucide-react';
 import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc, deleteField, setDoc, onSnapshot, QuerySnapshot, DocumentData } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Trip, Plan, MagazineMoment, MagazineSection, MagazineItem, MagazineHubConfig, ArchiveHubConfig, TimelineData, TimelineItem, TrashedMagazineSection, UserProfile, UserPermissions } from '../types';
+import { Trip, Plan, MagazineMoment, MagazineSection, MagazineItem, MagazineHubConfig, ArchiveHubConfig, TimelineData, TimelineItem, TrashedMagazineSection, UserProfile, UserPermissions, LandingHeroMediaItem } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { getEffectiveImageUrl, uploadFileToR2, deleteFileFromR2 } from '../utils/storageHelper';
@@ -131,9 +131,11 @@ interface ManageHubPageProps {
     homeMagazineSectionIdParam?: string,
     homeMagazineLimitParam?: number,
     magazineSectionsParam?: MagazineSection[],
-    landingHeroImageParam?: string
+    landingHeroImageParam?: string,
+    landingHeroMediaParam?: LandingHeroMediaItem[]
   ) => Promise<void>;
   landingHeroImage?: string;
+  landingHeroMedia?: LandingHeroMediaItem[];
   currentUserProfile?: UserProfile | null;
   isSuperAdmin?: boolean;
   // Magazine Highlights & Sections
@@ -188,6 +190,7 @@ export function ManageHubPage({
   homeMagazineSectionId = 'main',
   homeMagazineLimit = 6,
   landingHeroImage = '',
+  landingHeroMedia = [],
   currentUserProfile,
   isSuperAdmin = false,
   onSaveAllHomeSettings,
@@ -340,8 +343,15 @@ export function ManageHubPage({
     return () => window.removeEventListener('tripPresetsChanged', handlePresetsChanged);
   }, []);
 
-  // Landing Hero Image (Guest Mode) State
+  // Landing Hero Media (Guest Mode) State - Array of Images & Videos
   const [localLandingHeroImage, setLocalLandingHeroImage] = useState<string>(landingHeroImage);
+  const [localLandingHeroMedia, setLocalLandingHeroMedia] = useState<LandingHeroMediaItem[]>(() => {
+    if (landingHeroMedia && landingHeroMedia.length > 0) return landingHeroMedia;
+    if (landingHeroImage) {
+      return [{ id: 'hero-legacy', url: landingHeroImage, type: 'image', title: 'LANDING HERO' }];
+    }
+    return [];
+  });
   const [isUploadingLandingHero, setIsUploadingLandingHero] = useState<boolean>(false);
   const [isDraggingLandingHero, setIsDraggingLandingHero] = useState<boolean>(false);
 
@@ -349,23 +359,68 @@ export function ManageHubPage({
     setLocalLandingHeroImage(landingHeroImage);
   }, [landingHeroImage]);
 
+  useEffect(() => {
+    if (landingHeroMedia && landingHeroMedia.length > 0) {
+      setLocalLandingHeroMedia(landingHeroMedia);
+    } else if (landingHeroImage) {
+      setLocalLandingHeroMedia([{ id: 'hero-legacy', url: landingHeroImage, type: 'image', title: 'LANDING HERO' }]);
+    } else {
+      setLocalLandingHeroMedia([]);
+    }
+  }, [landingHeroMedia, landingHeroImage]);
+
   const handleLandingHeroUpload = async (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      alert('이미지 파일만 업로드 가능합니다.');
+    const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/i.test(file.name);
+
+    if (!isImage && !isVideo) {
+      alert('이미지 또는 동영상 파일만 업로드 가능합니다.');
       return;
     }
+
     setIsUploadingLandingHero(true);
     try {
-      const compressed = await compressImage(file, 2560, 1600, 0.85);
-      const path = `hero/landing_${Date.now()}_${file.name}`;
-      const url = await uploadFileToR2(compressed, path);
-      setLocalLandingHeroImage(url);
+      let fileToUpload: File | Blob = file;
+      if (isImage) {
+        fileToUpload = await compressImage(file, 2560, 1600, 0.85);
+      }
+      const ext = file.name.split('.').pop() || (isImage ? 'jpg' : 'mp4');
+      const path = `hero/landing_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+      const url = await uploadFileToR2(fileToUpload, path);
+      
+      const cleanTitle = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ').toUpperCase();
+      const newItem: LandingHeroMediaItem = {
+        id: `guest_media_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        url,
+        type: isVideo ? 'video' : 'image',
+        title: cleanTitle || (isVideo ? 'VIDEO SCENE' : 'PHOTO MOMENT')
+      };
+
+      setLocalLandingHeroMedia(prev => [...prev, newItem]);
+      if (isImage && !localLandingHeroImage) {
+        setLocalLandingHeroImage(url);
+      }
     } catch (err) {
-      console.error('Failed to upload landing hero:', err);
-      alert('랜딩 히어로 이미지 업로드에 실패했습니다.');
+      console.error('Failed to upload landing hero media:', err);
+      alert('게스트 랜딩 미디어 업로드에 실패했습니다.');
     } finally {
       setIsUploadingLandingHero(false);
     }
+  };
+
+  const handleRemoveLandingHeroMedia = (id: string) => {
+    setLocalLandingHeroMedia(prev => prev.filter(item => item.id !== id));
+  };
+
+  const handleMoveLandingHeroMedia = (idx: number, direction: 'up' | 'down') => {
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= localLandingHeroMedia.length) return;
+    setLocalLandingHeroMedia(prev => {
+      const copy = [...prev];
+      const [item] = copy.splice(idx, 1);
+      copy.splice(targetIdx, 0, item);
+      return copy;
+    });
   };
 
   // USERS Management State
@@ -1667,6 +1722,8 @@ export function ManageHubPage({
     gradientTo: homeGradientTo || '#E7DEC8',
     homeMagSectionId: homeMagazineSectionId || 'main',
     homeMagLimit: homeMagazineLimit || 6,
+    landingHeroImage: landingHeroImage || '',
+    landingHeroMedia: JSON.stringify(landingHeroMedia || []),
   });
 
   const savedArchiveSnapshotRef = useRef<Record<number, string>>({});
@@ -1721,6 +1778,7 @@ export function ManageHubPage({
       snapHeroIdsStr = '[]';
     }
     const currentHeroIdsStr = JSON.stringify(Array.isArray(selectedHeroIds) ? [...selectedHeroIds].sort() : []);
+    const currentLandingMediaStr = JSON.stringify(localLandingHeroMedia || []);
 
     return (
       (title || '').trim() !== (snap.title || '').trim() ||
@@ -1737,9 +1795,11 @@ export function ManageHubPage({
       gradientFrom !== snap.gradientFrom ||
       gradientTo !== snap.gradientTo ||
       homeMagSectionId !== snap.homeMagSectionId ||
-      homeMagLimit !== snap.homeMagLimit
+      homeMagLimit !== snap.homeMagLimit ||
+      (localLandingHeroImage || '').trim() !== (snap.landingHeroImage || '').trim() ||
+      currentLandingMediaStr !== (snap.landingHeroMedia || '[]')
     );
-  }, [title, subtitle, homeJourneyLimit, selectedHeroIds, autoSlide, slideDuration, mediaType, showMarquee, homeMarquee, homeSpeed, gradientEnabled, gradientFrom, gradientTo, homeMagSectionId, homeMagLimit, saveRevision]);
+  }, [title, subtitle, homeJourneyLimit, selectedHeroIds, autoSlide, slideDuration, mediaType, showMarquee, homeMarquee, homeSpeed, gradientEnabled, gradientFrom, gradientTo, homeMagSectionId, homeMagLimit, localLandingHeroImage, localLandingHeroMedia, saveRevision]);
 
   // Dirty tracking for currently selected journey in ARCHIVE mode
   const isArchiveDirty = useMemo(() => {
@@ -1831,6 +1891,8 @@ export function ManageHubPage({
       gradientTo,
       homeMagSectionId,
       homeMagLimit,
+      landingHeroImage: localLandingHeroImage,
+      landingHeroMedia: JSON.stringify(localLandingHeroMedia || []),
     };
     savedArchiveHubHeaderRef.current = {
       mainTitle: archiveHubMainTitle,
@@ -1887,6 +1949,12 @@ export function ManageHubPage({
     setHomeMagSectionId(homeSnap.homeMagSectionId);
     setHomeMagLimit(homeSnap.homeMagLimit);
     setHomeJourneyLimit(homeSnap.homeJourneyLimit);
+    setLocalLandingHeroImage(homeSnap.landingHeroImage || '');
+    try {
+      setLocalLandingHeroMedia(JSON.parse(homeSnap.landingHeroMedia || '[]'));
+    } catch (_) {
+      setLocalLandingHeroMedia([]);
+    }
 
     if (selectedJourney) {
       const snapStr = savedArchiveSnapshotRef.current[selectedJourney.id];
@@ -2204,7 +2272,8 @@ export function ManageHubPage({
         homeMagSectionId,
         homeMagLimit,
         sectionsList,
-        localLandingHeroImage
+        localLandingHeroImage,
+        localLandingHeroMedia
       );
       savedHomeSnapshotRef.current = {
         title,
@@ -2222,6 +2291,8 @@ export function ManageHubPage({
         gradientTo,
         homeMagSectionId,
         homeMagLimit,
+        landingHeroImage: localLandingHeroImage,
+        landingHeroMedia: JSON.stringify(localLandingHeroMedia || []),
       };
       syncAllSnapshotsToCurrent();
       setHomeSaveSuccess(true);
@@ -3233,7 +3304,9 @@ export function ManageHubPage({
         gradientTo,
         homeMagSectionId,
         homeMagLimit,
-        sectionsList
+        sectionsList,
+        localLandingHeroImage,
+        localLandingHeroMedia
       );
 
       // 2. Save Journey if currently editing one
@@ -3324,7 +3397,7 @@ export function ManageHubPage({
       }
       setPresetsSaveSuccess(true);
 
-      // 6. Update all snapshot refs to ensure isAnyDirty is 100% false immediately
+      // 8. Update all snapshot refs to ensure isAnyDirty is 100% false immediately
       savedHomeSnapshotRef.current = {
         title,
         subtitle,
@@ -3341,6 +3414,8 @@ export function ManageHubPage({
         gradientTo,
         homeMagSectionId,
         homeMagLimit,
+        landingHeroImage: localLandingHeroImage,
+        landingHeroMedia: JSON.stringify(localLandingHeroMedia || []),
       };
       savedSectionsJsonRef.current = JSON.stringify(sectionsList);
       if (selectedJourney) {
@@ -4031,172 +4106,207 @@ export function ManageHubPage({
                       </div>
                     </div>
 
-                    {/* Guest Landing Hero Image Configuration (New Feature: Completely independent of Journey Hero) */}
-                    <div className="flex flex-col gap-2.5 pt-4 border-t border-black/10 dark:border-white/10">
+                    {/* Guest Landing Hero Media Configuration (Multi-media: Images & Videos for Cinematic Slideshow) */}
+                    <div className="flex flex-col gap-3 pt-5 border-t border-black/10 dark:border-white/10">
                       <div className="flex items-center justify-between">
                         <div>
                           <label className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white flex items-center gap-2">
-                            <span>GUEST LANDING HERO IMAGE (초기화면용 히어로 이미지)</span>
-                            <span className="text-[9px] px-1.5 py-0.2 bg-red-600 text-white font-mono uppercase">NEW</span>
+                            <span>GUEST LANDING MEDIA SLIDESHOW (비로그인 게스트 랜딩 미디어)</span>
+                            <span className="text-[9px] px-1.5 py-0.2 bg-red-600 text-white font-mono uppercase font-bold">SLIDESHOW</span>
                           </label>
                           <p className="text-[10px] font-mono text-black/50 dark:text-white/50 mt-0.5">
-                            로그인이 안 된 방문자에게 첫 화면으로 가득 차게 보여줄 전용 감성 히어로 이미지입니다.
+                            로그인 전 방문자에게 풀스크린으로 연속 재생되는 이미지 및 동영상 미디어 목록입니다. (순서 변경 및 다중 등록 가능)
                           </p>
                         </div>
-                        {localLandingHeroImage && (
+                        {localLandingHeroMedia.length > 0 && (
                           <button
                             type="button"
-                            onClick={() => setLocalLandingHeroImage('')}
+                            onClick={() => {
+                              setLocalLandingHeroMedia([]);
+                              setLocalLandingHeroImage('');
+                            }}
                             className="text-[10px] font-mono text-red-600 hover:underline cursor-pointer"
                           >
-                            초기화 (RESET)
+                            전체 초기화 (RESET ALL)
                           </button>
                         )}
                       </div>
 
-                      {/* Image Preview & Upload Container */}
-                      <div className="flex flex-col gap-2">
-                        {localLandingHeroImage ? (
-                          <div 
-                            onDragOver={(e) => {
-                              e.preventDefault();
-                              setIsDraggingLandingHero(true);
-                            }}
-                            onDragLeave={() => setIsDraggingLandingHero(false)}
-                            onDrop={async (e) => {
-                              e.preventDefault();
-                              setIsDraggingLandingHero(false);
-                              const file = e.dataTransfer.files?.[0];
-                              if (file) await handleLandingHeroUpload(file);
-                            }}
-                            className={`relative w-full aspect-[16/9] max-h-64 overflow-hidden border transition-all group bg-black ${
-                              isDraggingLandingHero 
-                                ? 'border-red-500 ring-2 ring-red-500' 
-                                : 'border-black/20 dark:border-white/20'
-                            }`}
-                          >
-                            <img
-                              src={getEffectiveImageUrl(localLandingHeroImage)}
-                              alt="Landing Hero Preview"
-                              className="w-full h-full object-cover"
-                            />
-
-                            {/* Dragging Overlay */}
-                            {isDraggingLandingHero && (
-                              <div className="absolute inset-0 bg-red-600/30 backdrop-blur-xs flex flex-col items-center justify-center gap-2 text-white z-20 pointer-events-none">
-                                <Upload className="w-8 h-8 animate-bounce" />
-                                <span className="text-xs font-mono font-bold uppercase tracking-widest bg-black px-3 py-1">
-                                  DROP IMAGE TO REPLACE
-                                </span>
-                              </div>
-                            )}
-
-                            {/* Uploading Spinner */}
-                            {isUploadingLandingHero && (
-                              <div className="absolute inset-0 bg-black/70 backdrop-blur-xs flex flex-col items-center justify-center gap-2 text-white z-20">
-                                <Loader2 className="w-6 h-6 animate-spin" />
-                                <span className="text-xs font-mono font-bold uppercase tracking-wider">
-                                  UPLOADING NEW HERO IMAGE...
-                                </span>
-                              </div>
-                            )}
-
-                            {/* Hover Actions: Change (File Picker) & Remove */}
-                            {!isDraggingLandingHero && !isUploadingLandingHero && (
-                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 z-10">
-                                <label className="h-8 px-3.5 bg-white text-black text-[11px] font-mono uppercase font-bold flex items-center gap-1.5 cursor-pointer hover:bg-white/90 shadow-sm">
-                                  <Upload className="w-3.5 h-3.5" />
-                                  CHANGE IMAGE
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={async (e) => {
-                                      const f = e.target.files?.[0];
-                                      if (f) await handleLandingHeroUpload(f);
-                                    }}
-                                  />
-                                </label>
-                                <button
-                                  type="button"
-                                  onClick={() => setLocalLandingHeroImage('')}
-                                  className="h-8 px-3.5 bg-red-600 text-white text-[11px] font-mono uppercase font-bold flex items-center gap-1.5 cursor-pointer hover:bg-red-700 shadow-sm"
-                                  title="이미지 제거"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                  REMOVE
-                                </button>
-                              </div>
-                            )}
-
-                            <span className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/80 text-white font-mono text-[9px] font-bold uppercase z-10">
-                              PREVIEW: OBJECT-COVER (DRAG & DROP TO REPLACE)
+                      {/* Dropzone for Multi-Media */}
+                      <label 
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setIsDraggingLandingHero(true);
+                        }}
+                        onDragLeave={() => setIsDraggingLandingHero(false)}
+                        onDrop={async (e) => {
+                          e.preventDefault();
+                          setIsDraggingLandingHero(false);
+                          const files = e.dataTransfer.files;
+                          if (files && files.length > 0) {
+                            for (let i = 0; i < files.length; i++) {
+                              await handleLandingHeroUpload(files[i]);
+                            }
+                          }
+                        }}
+                        className={`relative w-full border border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors p-6 text-center ${
+                          isDraggingLandingHero
+                            ? 'border-red-500 bg-red-500/10'
+                            : 'border-black/30 dark:border-white/30 hover:border-black dark:hover:border-white hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
+                        }`}
+                      >
+                        {isUploadingLandingHero ? (
+                          <div className="flex flex-col items-center justify-center gap-2">
+                            <Loader2 className="w-6 h-6 animate-spin text-black dark:text-white" />
+                            <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                              UPLOADING MEDIA...
                             </span>
                           </div>
                         ) : (
-                          <label 
-                            onDragOver={(e) => {
-                              e.preventDefault();
-                              setIsDraggingLandingHero(true);
-                            }}
-                            onDragLeave={() => setIsDraggingLandingHero(false)}
-                            onDrop={async (e) => {
-                              e.preventDefault();
-                              setIsDraggingLandingHero(false);
-                              const file = e.dataTransfer.files?.[0];
-                              if (file) await handleLandingHeroUpload(file);
-                            }}
-                            className={`relative w-full aspect-[16/9] max-h-48 border border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors p-4 text-center ${
-                              isDraggingLandingHero
-                                ? 'border-red-500 bg-red-500/10'
-                                : 'border-black/30 dark:border-white/30 hover:border-black dark:hover:border-white hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
-                            }`}
-                          >
-                            {isUploadingLandingHero ? (
-                              <div className="flex flex-col items-center justify-center gap-2">
-                                <Loader2 className="w-6 h-6 animate-spin text-black dark:text-white" />
-                                <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
-                                  UPLOADING HERO IMAGE...
-                                </span>
-                              </div>
-                            ) : (
-                              <>
-                                <Upload className="w-5 h-5 text-black/40 dark:text-white/40" />
-                                <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70">
-                                  클릭하거나 이미지를 드래그하여 업로드
-                                </span>
-                                <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
-                                  권장 비율: 16:9 와이드 고화질 (PNG, JPG, WEBP) · 드래그 앤 드롭 지원
-                                </span>
-                              </>
-                            )}
-                            <input
-                              type="file"
-                              accept="image/*"
-                              disabled={isUploadingLandingHero}
-                              onChange={async e => {
-                                const f = e.target.files?.[0];
-                                if (f) await handleLandingHeroUpload(f);
-                              }}
-                              className="hidden"
-                            />
-                          </label>
+                          <>
+                            <Upload className="w-5 h-5 text-black/40 dark:text-white/40" />
+                            <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/80 dark:text-white/80">
+                              클릭하거나 이미지/동영상(MP4, WEBM)을 드래그하여 추가
+                            </span>
+                            <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                              권장 해상도: 16:9 와이드 고화질 (이미지/동영상 복수 등록 가능)
+                            </span>
+                          </>
                         )}
+                        <input
+                          type="file"
+                          accept="image/*,video/*"
+                          multiple
+                          disabled={isUploadingLandingHero}
+                          onChange={async e => {
+                            const files = e.target.files;
+                            if (files && files.length > 0) {
+                              for (let i = 0; i < files.length; i++) {
+                                await handleLandingHeroUpload(files[i]);
+                              }
+                            }
+                          }}
+                          className="hidden"
+                        />
+                      </label>
 
-                        {/* Direct URL Input */}
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="url"
-                            value={localLandingHeroImage}
-                            onChange={e => setLocalLandingHeroImage(e.target.value)}
-                            placeholder="또는 이미지 직접 URL 입력 (https://...)"
-                            className="flex-1 px-3 py-1.5 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
-                          />
-                        </div>
+                      {/* URL Direct Add Input */}
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="url"
+                          placeholder="또는 미디어 직접 URL 추가 (https://... 이미지 또는 MP4 영상)"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const inputEl = e.currentTarget;
+                              const url = inputEl.value.trim();
+                              if (!url) return;
+                              const isVideo = /\.(mp4|webm|mov|m4v)(\?.*)?$/i.test(url);
+                              const newItem: LandingHeroMediaItem = {
+                                id: `media_${Date.now()}`,
+                                url,
+                                type: isVideo ? 'video' : 'image',
+                                title: isVideo ? 'WEB VIDEO SCENE' : 'WEB IMAGE SCENE'
+                              };
+                              setLocalLandingHeroMedia(prev => [...prev, newItem]);
+                              inputEl.value = '';
+                            }
+                          }}
+                          className="flex-1 px-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
+                        />
+                        <span className="text-[10px] font-mono text-black/40 dark:text-white/40 shrink-0">
+                          [ENTER 키로 추가]
+                        </span>
                       </div>
+
+                      {/* Media List Carousel / Grid */}
+                      {localLandingHeroMedia.length > 0 ? (
+                        <div className="flex flex-col gap-2 pt-2">
+                          <span className="text-[10px] font-mono font-bold uppercase text-black/60 dark:text-white/60">
+                            REGISTERED SLIDES ({localLandingHeroMedia.length} ITEMS)
+                          </span>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {localLandingHeroMedia.map((item, idx) => (
+                              <div
+                                key={item.id || `guest-item-${idx}`}
+                                className="border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616] flex flex-col overflow-hidden group shadow-xs"
+                              >
+                                <div className="relative w-full aspect-[16/9] bg-black overflow-hidden">
+                                  {item.type === 'video' ? (
+                                    <video
+                                      src={item.url}
+                                      muted
+                                      playsInline
+                                      className="w-full h-full object-cover brightness-90"
+                                    />
+                                  ) : (
+                                    <img
+                                      src={getEffectiveImageUrl(item.url)}
+                                      alt={item.title || `Slide ${idx + 1}`}
+                                      className="w-full h-full object-cover brightness-90"
+                                    />
+                                  )}
+                                  <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-black/80 text-white font-mono text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">
+                                    {item.type === 'video' ? <Film className="w-2.5 h-2.5 text-red-400" /> : <ImageIcon className="w-2.5 h-2.5 text-blue-400" />}
+                                    <span>SLIDE #{idx + 1}</span>
+                                  </div>
+                                </div>
+
+                                <div className="p-2.5 flex items-center justify-between gap-2 border-t border-black/10 dark:border-white/10">
+                                  <input
+                                    type="text"
+                                    value={item.title || ''}
+                                    onChange={e => {
+                                      const val = e.target.value;
+                                      setLocalLandingHeroMedia(prev => prev.map((m, i) => i === idx ? { ...m, title: val } : m));
+                                    }}
+                                    placeholder="미디어 제목 (영문/한글)"
+                                    className="flex-1 text-[11px] font-mono font-bold bg-transparent outline-none border-b border-transparent focus:border-black dark:focus:border-white text-black dark:text-white truncate"
+                                  />
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                      type="button"
+                                      disabled={idx === 0}
+                                      onClick={() => handleMoveLandingHeroMedia(idx, 'up')}
+                                      className="p-1 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
+                                      title="앞으로 이동"
+                                    >
+                                      <ChevronUp className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={idx === localLandingHeroMedia.length - 1}
+                                      onClick={() => handleMoveLandingHeroMedia(idx, 'down')}
+                                      className="p-1 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
+                                      title="뒤로 이동"
+                                    >
+                                      <ChevronDown className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveLandingHeroMedia(item.id)}
+                                      className="p-1 text-red-600 hover:bg-red-500/10 cursor-pointer"
+                                      title="삭제"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="py-6 text-center border border-black/10 dark:border-white/10 bg-black/[0.01] dark:bg-white/[0.01]">
+                          <span className="text-xs font-mono text-black/40 dark:text-white/40">
+                            등록된 게스트 미디어가 없습니다. 미등록 시 기본 고화질 여행지 프리셋 4종이 자동 재생됩니다.
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </section>
+
 
                 {/* ═══════════════════════════════════════════════════════════════ */}
                 {/* SECTION: TRIP (여정 표시 설정 - 구 ARCHIVE)                    */}

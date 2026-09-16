@@ -47,6 +47,7 @@ const SettingsModal = lazyWithRetry(() => import('./components/SettingsModal').t
 const SearchModal = lazyWithRetry(() => import('./components/SearchModal').then(m => ({ default: m.SearchModal })));
 const EditTripModal = lazyWithRetry(() => import('./components/EditTripModal').then(m => ({ default: m.EditTripModal })));
 const ConfirmModal = lazyWithRetry(() => import('./components/ConfirmModal').then(m => ({ default: m.ConfirmModal })));
+const LandingGuestView = lazyWithRetry(() => import('./components/LandingGuestView').then(m => ({ default: m.LandingGuestView })));
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { fetchCoordinates } from './utils/googleMapsHelper';
 import { 
@@ -83,7 +84,8 @@ import {
   MagazineHubConfig,
   ArchiveHubConfig,
   TrashedMagazineSection,
-  UserProfile
+  UserProfile,
+  LandingHeroMediaItem
 } from './types';
 import { auth, db } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -319,6 +321,14 @@ function App() {
   const [homeGradientFrom, setHomeGradientFrom] = useState<string>(() => localStorage.getItem('home_gradient_from') || '#F7F2EB');
   const [homeGradientTo, setHomeGradientTo] = useState<string>(() => localStorage.getItem('home_gradient_to') || '#E7DEC8');
   const [landingHeroImage, setLandingHeroImage] = useState<string>(() => localStorage.getItem('landing_hero_image') || '');
+  const [landingHeroMedia, setLandingHeroMedia] = useState<LandingHeroMediaItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('landing_hero_media');
+      return saved ? JSON.parse(saved) : [];
+    } catch (_) {
+      return [];
+    }
+  });
   const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [searchFocusItemId, setSearchFocusItemId] = useState<number | null>(null);
@@ -889,6 +899,21 @@ function App() {
         if (data.landingHeroImage !== undefined) {
           setLandingHeroImage(data.landingHeroImage);
           localStorage.setItem('landing_hero_image', data.landingHeroImage);
+        }
+        if (Array.isArray(data.landingHeroMedia)) {
+          setLandingHeroMedia(data.landingHeroMedia);
+          try {
+            localStorage.setItem('landing_hero_media', JSON.stringify(data.landingHeroMedia));
+          } catch (_) {}
+        } else if (data.landingHeroImage) {
+          // Fallback migration from single image
+          const fallbackMedia: LandingHeroMediaItem[] = [{
+            id: 'legacy-hero',
+            url: data.landingHeroImage,
+            type: 'image',
+            title: 'FEATURED MOMENT'
+          }];
+          setLandingHeroMedia(fallbackMedia);
         }
         if (data.magazineHubConfig && typeof data.magazineHubConfig === 'object') {
           setMagazineHubConfig(data.magazineHubConfig);
@@ -1461,7 +1486,8 @@ function App() {
     homeMagazineSectionIdParam?: string,
     homeMagazineLimitParam?: number,
     magazineSectionsParam?: MagazineSection[],
-    landingHeroImageParam?: string
+    landingHeroImageParam?: string,
+    landingHeroMediaParam?: LandingHeroMediaItem[]
   ) => {
     if (!isLoggedIn) return;
     try {
@@ -1482,6 +1508,9 @@ function App() {
 
       if (landingHeroImageParam !== undefined) {
         dataToSave.landingHeroImage = landingHeroImageParam;
+      }
+      if (landingHeroMediaParam !== undefined) {
+        dataToSave.landingHeroMedia = cleanForFirestore(landingHeroMediaParam);
       }
       if (magazineMomentsParam !== undefined) {
         dataToSave.magazineMoments = cleanForFirestore(magazineMomentsParam);
@@ -1504,6 +1533,12 @@ function App() {
       if (landingHeroImageParam !== undefined) {
         setLandingHeroImage(landingHeroImageParam);
         localStorage.setItem('landing_hero_image', landingHeroImageParam);
+      }
+      if (landingHeroMediaParam !== undefined) {
+        setLandingHeroMedia(landingHeroMediaParam);
+        try {
+          localStorage.setItem('landing_hero_media', JSON.stringify(landingHeroMediaParam));
+        } catch (_) {}
       }
       if (autoSlide !== undefined) setHeroAutoSlide(autoSlide);
       if (heroMediaTypeParam !== undefined) setHeroMediaType(heroMediaTypeParam);
@@ -2523,22 +2558,24 @@ function App() {
           </div>
         )}
 
-        {/* Global Navigation */}
-        <Navigation 
-          currentView={currentView}
-          navigateTo={navigateTo}
-          isLoggedIn={isLoggedIn}
-          setIsLoggedIn={setIsLoggedIn}
-          isDarkMode={isDarkMode}
-          setIsDarkMode={setIsDarkMode}
-          showSettings={showSettings}
-          setShowSettings={setShowSettings}
-          openAuthModal={(mode) => { setAuthModalMode(mode); setIsAuthModalOpen(true); }}
-          openSettingModal={() => setIsManageModalOpen(true)}
-          onSearchClick={() => setIsSearchOpen(true)}
-          isAdmin={isAdmin}
-          isHomeGradientActive={isHomeGradientActive}
-        />
+        {/* Global Navigation - Only rendered when logged in or in share mode */}
+        {(isLoggedIn || isShareMode) && (
+          <Navigation 
+            currentView={currentView}
+            navigateTo={navigateTo}
+            isLoggedIn={isLoggedIn}
+            setIsLoggedIn={setIsLoggedIn}
+            isDarkMode={isDarkMode}
+            setIsDarkMode={setIsDarkMode}
+            showSettings={showSettings}
+            setShowSettings={setShowSettings}
+            openAuthModal={(mode) => { setAuthModalMode(mode); setIsAuthModalOpen(true); }}
+            openSettingModal={() => setIsManageModalOpen(true)}
+            onSearchClick={() => setIsSearchOpen(true)}
+            isAdmin={isAdmin}
+            isHomeGradientActive={isHomeGradientActive}
+          />
+        )}
 
         {/* Marquee Banner - Only on Home View when logged in (Swiss Minimal Journal Ticker) */}
         {currentView === 'home' && isLoggedIn && marqueeShow && (
@@ -2601,23 +2638,16 @@ function App() {
               <div className="w-7 h-7 border-2 border-black/20 dark:border-white/20 border-t-black dark:border-t-white rounded-full animate-spin" />
             </div>
           ) : !isLoggedIn && !isShareMode ? (
-            <div className="min-h-[60vh] md:min-h-[70vh] flex flex-col items-center justify-center p-8 bg-[#F4F3EF] dark:bg-[#0E0E0E] transition-colors text-center w-full">
-              <div className="max-w-md flex flex-col items-center gap-5">
-                <h2 className="text-xl md:text-2xl font-black tracking-widest uppercase text-black dark:text-white">
-                  Access Restricted
-                </h2>
-                <p className="text-xs md:text-sm text-black/60 dark:text-white/60 font-medium leading-relaxed break-keep">
-                  TRIPGON LOG 서비스는 로그인 후 이용 가능합니다.<br />
-                  여정을 기록하고 탐색하려면 로그인해 주세요.
-                </p>
-                <button
-                  onClick={() => { setAuthModalMode('login'); setIsAuthModalOpen(true); }}
-                  className="px-6 py-2.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] md:text-xs font-black uppercase tracking-widest rounded-sm transition-all shadow-md cursor-pointer mt-2"
-                >
-                  Sign In to Account
-                </button>
+            <Suspense fallback={
+              <div className="w-full h-screen bg-black flex items-center justify-center">
+                <div className="w-7 h-7 border-2 border-white/20 border-t-white rounded-full animate-spin" />
               </div>
-            </div>
+            }>
+              <LandingGuestView 
+                mediaList={landingHeroMedia}
+                onOpenAuthModal={(mode) => { setAuthModalMode(mode); setIsAuthModalOpen(true); }}
+              />
+            </Suspense>
           ) : (
             <Suspense fallback={
               currentView === 'detail' ? (
@@ -2765,6 +2795,7 @@ function App() {
                   homeMagazineSectionId={homeMagazineSectionId}
                   homeMagazineLimit={homeMagazineLimit}
                   landingHeroImage={landingHeroImage}
+                  landingHeroMedia={landingHeroMedia}
                   currentUserProfile={currentUserProfile}
                   isSuperAdmin={isSuperAdmin}
                   onSaveAllHomeSettings={handleSaveSettings}
@@ -2899,8 +2930,10 @@ function App() {
           )}
         </div>
         
-        {/* Footer: Hidden on JourneyDetail and MapHub; rendered with mt-0 on ArchiveHub */}
-        {currentView !== 'detail' && currentView !== 'map' && <Footer className={currentView === 'archive' ? 'mt-0' : 'mt-12'} />}
+        {/* Footer: Hidden on JourneyDetail, MapHub, and Guest Landing View */}
+        {(isLoggedIn || isShareMode) && currentView !== 'detail' && currentView !== 'map' && (
+          <Footer className={currentView === 'archive' ? 'mt-0' : 'mt-12'} />
+        )}
 
         {/* Modals with Suspense */}
         <Suspense fallback={null}>
@@ -2999,8 +3032,8 @@ function App() {
           />
         </Suspense>
 
-        {/* Global Floating Scroll To Top Navigator */}
-        {currentView !== 'detail' && currentView !== 'map' && <ScrollToTop />}
+        {/* Global Floating Scroll To Top Navigator (Hidden on Detail, Map, and Guest Landing View) */}
+        {(isLoggedIn || isShareMode) && currentView !== 'detail' && currentView !== 'map' && <ScrollToTop />}
       </div>
     </div>
   );

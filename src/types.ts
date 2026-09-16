@@ -262,6 +262,13 @@ export interface CalendarCustomEvent {
   createdAt: number;
 }
 
+export interface LandingHeroMediaItem {
+  id: string;
+  url: string;
+  type: 'image' | 'video';
+  title?: string;
+}
+
 export interface UserPermissions {
   canCreate: boolean;
   canEdit: boolean;
@@ -279,3 +286,4 @@ export interface UserProfile {
   permissions: UserPermissions;
   createdAt: number;
 }
+
