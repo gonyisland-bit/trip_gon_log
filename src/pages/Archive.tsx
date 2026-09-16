@@ -1135,8 +1135,8 @@ export function ArchiveHubPage({
                   </div>
                 ) : (
                   <div className={cardViewMode === 'wide'
-                    ? "grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8"
-                    : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6"
+                    ? "grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-12 sm:gap-y-16"
+                    : "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-10 sm:gap-y-14 md:gap-y-16"
                   }>
                     {group.items.map((trip, index) => {
                       const { issueNumber, topYearMonth, line2DateDays, line3CountryCity, editorialSubtitle } = getTripCardDisplayData(trip, index);
@@ -1159,7 +1159,7 @@ export function ArchiveHubPage({
                           onClick={() => onNavigate('detail', trip.id)}
                           onMouseEnter={preloadDetailPage}
                           onTouchStart={preloadDetailPage}
-                          className={`group bg-white dark:bg-[#1A1A1A] rounded-[32px] p-3.5 sm:p-4 shadow-[0_14px_36px_-10px_rgba(0,0,0,0.07)] hover:shadow-[0_22px_48px_-10px_rgba(0,0,0,0.14)] border border-neutral-100 dark:border-neutral-800 transition-all duration-300 flex flex-col cursor-pointer select-none ${
+                          className={`group relative flex flex-col border border-black/10 dark:border-white/15 bg-white dark:bg-[#1A1A1C] rounded-[28px] sm:rounded-[32px] overflow-hidden shadow-xs hover:shadow-2xl hover:border-black/30 dark:hover:border-white/35 transition-all duration-300 cursor-pointer select-none ${
                             isCardActive ? 'ring-2 ring-red-600/50 dark:ring-red-500/50' : ''
                           }`}
                           draggable={isLoggedIn && sortBy === 'user'}
@@ -1168,8 +1168,8 @@ export function ArchiveHubPage({
                           onDrop={handleTripDrop}
                           onDragEnd={() => setDraggedTripId(null)}
                         >
-                          {/* 1. Photo Frame: rounded-[24px] & Aspect Ratio */}
-                          <div className={`relative ${isWide ? 'aspect-[16/10]' : 'aspect-[4/5]'} w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800 rounded-[24px] shrink-0`}>
+                          {/* 1. Flush Photo Frame: 상단 32px 곡률에 꽉 차는 일체형 프레임 (이중 라운드 박스 없음) */}
+                          <div className={`relative ${isWide ? 'aspect-[16/10]' : 'aspect-[4/5]'} w-full overflow-hidden bg-black/5 dark:bg-white/5 border-b border-black/10 dark:border-white/10 shrink-0`}>
                             <CardMedia
                               img={trip.img}
                               title={trip.title}
@@ -1178,84 +1178,85 @@ export function ArchiveHubPage({
                             />
 
                             {/* 좌측 상단 반투명 알약 뱃지 (Best Seller 위치) */}
-                            <div className={`absolute top-3.5 left-3.5 px-3.5 py-1.5 backdrop-blur-md text-white font-mono text-[11px] font-bold tracking-wider uppercase rounded-full shadow-xs flex items-center gap-1.5 ${
+                            <div className={`absolute top-3 left-3 sm:top-3.5 sm:left-3.5 px-2.5 sm:px-3 py-1 backdrop-blur-md font-mono text-[9px] sm:text-[10px] font-bold tracking-wider uppercase rounded-full shadow-xs flex items-center gap-1.5 ${
                               (trip.statusBadge === 'PLAN' || isPlan)
-                                ? 'bg-blue-600/85' 
-                                : (trip.statusBadge === 'NEW' ? 'bg-red-600/85' : 'bg-black/50 dark:bg-black/70')
+                                ? 'bg-blue-600/90 text-white' 
+                                : (trip.statusBadge === 'NEW' ? 'bg-red-600/90 text-white' : 'bg-white/95 dark:bg-black/85 text-black dark:text-white border border-black/10 dark:border-white/15')
                             }`}>
                               {(trip.statusBadge === 'PLAN' || isPlan) ? (
-                                <span>PLAN TRIP</span>
-                              ) : trip.statusBadge ? (
-                                <span>{trip.statusBadge}</span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
                               ) : (
-                                <span>TRIP {issueNumber}</span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
                               )}
+                              <span>{(trip.statusBadge === 'PLAN' || isPlan) ? 'PLAN TRIP' : (trip.statusBadge ? trip.statusBadge : `TRIP ${issueNumber}`)}</span>
                             </div>
 
                             {/* 우측 상단 원형 심볼 뱃지 (나이키 스우시 위치) */}
-                            <div className="absolute top-3.5 right-3.5 w-8.5 h-8.5 rounded-full bg-white dark:bg-[#242424] text-black dark:text-white shadow-md flex items-center justify-center font-mono text-[11px] font-black group-hover:rotate-12 transition-transform duration-300">
+                            <div className="absolute top-3 right-3 sm:top-3.5 sm:right-3.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 text-black dark:text-white shadow-xs flex items-center justify-center font-mono text-[10px] sm:text-[11px] font-black group-hover:rotate-12 transition-transform duration-300">
                               {trip.country ? (
                                 trip.country.slice(0, 2).toUpperCase()
                               ) : (
-                                <Compass className="w-4 h-4" />
+                                <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                               )}
                             </div>
 
                             {/* 하단 중앙 4개 도트 인디케이터 */}
-                            <div className="absolute bottom-3 inset-x-0 flex justify-center items-center gap-1.5 pointer-events-none">
-                              <span className="w-4 h-1 rounded-full bg-white shadow-xs"></span>
-                              <span className="w-1.5 h-1.5 rounded-full bg-white/60"></span>
-                              <span className="w-1.5 h-1.5 rounded-full bg-white/60"></span>
-                              <span className="w-1.5 h-1.5 rounded-full bg-white/60"></span>
+                            <div className="absolute bottom-2.5 inset-x-0 flex justify-center items-center gap-1 pointer-events-none">
+                              <span className="w-3.5 h-1 rounded-full bg-white shadow-xs"></span>
+                              <span className="w-1 h-1 rounded-full bg-white/60"></span>
+                              <span className="w-1 h-1 rounded-full bg-white/60"></span>
                             </div>
                           </div>
 
-                          {/* 2. 텍스트 영역 (구분선 없이 자연스러운 여백 & 볼드 계층) */}
-                          <div className="pt-4 px-1 pb-1 flex-1 flex flex-col justify-between">
+                          {/* 2. Card Body: Typography & Description (매거진 스타일 일체화) */}
+                          <div className="p-3.5 sm:p-5 flex-1 flex flex-col justify-between">
                             <div>
-                              {/* 메인 타이틀: 굵고 단단한 볼드 산세리프 */}
-                              <h3 className={`font-black tracking-tight text-neutral-900 dark:text-white leading-tight group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors line-clamp-1 ${
-                                isWide ? 'text-[20px] sm:text-[22px]' : 'text-[18px] sm:text-[20px]'
+                              {/* Region & Duration Meta Tag */}
+                              <div className={`flex items-center justify-between text-[9.5px] sm:text-[10.5px] font-mono font-bold uppercase tracking-wider mb-1 truncate ${
+                                (trip.statusBadge === 'PLAN' || isPlan) ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'
                               }`}>
+                                <span>{dateRangeOnly || trip.date}</span>
+                                {durationBadge && <span className="text-black/50 dark:text-white/50">{durationBadge}</span>}
+                              </div>
+
+                              {/* 메인 타이틀: 볼드 헤드라인 */}
+                              <h3 className={`font-black tracking-tight text-black dark:text-white leading-snug break-keep line-clamp-1 transition-colors ${
+                                (trip.statusBadge === 'PLAN' || isPlan) ? 'group-hover:text-blue-600 dark:group-hover:text-blue-400' : 'group-hover:text-red-600 dark:group-hover:text-red-400'
+                              } ${isWide ? 'text-base sm:text-lg md:text-xl' : 'text-sm sm:text-base md:text-lg'}`}>
                                 {trip.title}
                               </h3>
 
-                              {/* 서브타이틀: 여정 일정 & 기간 */}
-                              <p className="text-[13px] sm:text-[14px] font-medium text-neutral-400 dark:text-neutral-400 mt-1 truncate font-mono">
-                                {dateRangeOnly || trip.date}{durationBadge ? ` · ${durationBadge}` : ''}
-                              </p>
-
-                              {/* 설명: 에디토리얼 한 줄/두 줄 요약 */}
+                              {/* 에디토리얼 서브타이틀 / 설명 */}
                               {editorialSubtitle ? (
-                                <p className="text-xs sm:text-[13px] font-normal text-neutral-500 dark:text-neutral-400 mt-1.5 line-clamp-2 leading-relaxed font-['Noto_Sans_KR',sans-serif]">
+                                <p className="mt-1 text-[11px] sm:text-[12px] font-['Noto_Sans_KR',sans-serif] text-black/60 dark:text-white/65 leading-relaxed line-clamp-2">
                                   {editorialSubtitle}
                                 </p>
                               ) : line3CountryCity ? (
-                                <p className="text-xs sm:text-[13px] font-normal text-neutral-500 dark:text-neutral-400 mt-1.5 line-clamp-1 leading-relaxed">
+                                <p className="mt-1 text-[11px] sm:text-[12px] text-black/60 dark:text-white/65 leading-relaxed line-clamp-1">
                                   {line3CountryCity}
                                 </p>
                               ) : null}
                             </div>
 
-                            {/* 3. 하단 메타 & 액션 바 (구분선 Divider 완전 배제) */}
-                            <div className="pt-5 mt-2 flex items-center justify-between gap-2.5">
-                              {/* 좌측 알약 뱃지 ($156 위치) */}
-                              <div className={`h-9 px-3.5 rounded-full flex items-center gap-1.5 font-mono text-[12px] sm:text-[13px] font-bold ${
+                            {/* 3. 하단 메타 & 알약 액션 바 */}
+                            <div className="pt-3.5 mt-3 border-t border-black/8 dark:border-white/10 flex items-center justify-between gap-2">
+                              {/* 좌측 알약 뱃지 */}
+                              <div className={`h-7 sm:h-8 px-2.5 sm:px-3 rounded-full flex items-center gap-1 font-mono text-[10px] sm:text-[11px] font-bold ${
                                 (trip.statusBadge === 'PLAN' || isPlan)
-                                  ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400' 
-                                  : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200'
+                                  ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
+                                  : 'bg-black/5 dark:bg-white/10 text-black/80 dark:text-white/80'
                               }`}>
-                                <span>{line3CountryCity || (durationBadge || 'JOURNEY')}</span>
+                                <span>📍 {line3CountryCity || (durationBadge || 'JOURNEY')}</span>
                               </div>
 
-                              {/* 우측 알약 액션 버튼 (Buy Now ↗ 위치) */}
-                              <div className={`h-9 px-4 rounded-full font-mono text-[12px] sm:text-[13px] font-bold flex items-center gap-1.5 transition-all shadow-xs group-hover:translate-x-0.5 ${
+                              {/* 우측 알약 액션 버튼 */}
+                              <div className={`h-7 sm:h-8 px-3 sm:px-3.5 rounded-full font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors shadow-xs ${
                                 (trip.statusBadge === 'PLAN' || isPlan)
-                                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                  : 'bg-neutral-950 dark:bg-white text-white dark:text-black group-hover:bg-red-600 dark:group-hover:bg-red-500 dark:group-hover:text-white'
+                                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                  : 'bg-black dark:bg-white text-white dark:text-black group-hover:bg-red-600 dark:group-hover:bg-red-500 group-hover:text-white dark:group-hover:text-white'
                               }`}>
                                 <span>{(trip.statusBadge === 'PLAN' || isPlan) ? 'PLAN' : 'LOG'}</span>
-                                <span className="text-xs font-sans">↗</span>
+                                <span className="text-xs">↗</span>
                               </div>
                             </div>
                           </div>
