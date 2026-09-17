@@ -147,8 +147,8 @@ export function LandingGuestView({
             </span>
           </div>
 
-          <h1 className="text-6xl sm:text-8xl md:text-9xl lg:text-[140px] xl:text-[160px] font-black uppercase tracking-tighter leading-none font-sans drop-shadow-2xl text-white">
-            TRIPGON
+          <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-[130px] xl:text-[150px] font-black tracking-tight leading-none font-['Inter',sans-serif] drop-shadow-2xl text-white">
+            Tripgon log
           </h1>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end pt-2">

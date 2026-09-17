@@ -763,7 +763,7 @@ export function MagazineHubPage({
               <div className="flex flex-wrap items-center justify-between md:justify-end gap-2.5">
                 {/* Location Filter Dropdown Button */}
                 <div className="relative inline-block text-left">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
                     <button 
                       type="button"
                       onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}
@@ -775,7 +775,7 @@ export function MagazineHubPage({
                       title="FILTER (LOCATION)"
                     >
                       <Tag className="w-3.5 h-3.5" />
-                      <span>FILTER</span>
+                      <span className="hidden sm:inline">FILTER</span>
                       {magLocationFilter !== 'All' && (
                         <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
                       )}
@@ -810,7 +810,7 @@ export function MagazineHubPage({
                           value={magSearchQuery}
                           onChange={(e) => setMagSearchQuery(e.target.value)}
                           placeholder="매거진 검색..."
-                          className="w-28 sm:w-44 pl-2.5 pr-6 py-1.5 text-xs bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 font-sans font-medium outline-none text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 rounded-none"
+                          className="w-24 sm:w-44 pl-2.5 pr-6 py-1.5 text-xs bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 font-sans font-medium outline-none text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 rounded-none"
                         />
                         {magSearchQuery && (
                           <button

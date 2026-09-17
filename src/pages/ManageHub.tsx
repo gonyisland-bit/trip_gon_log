@@ -3673,7 +3673,7 @@ export function ManageHubPage({
                     setActiveMode(tab.id);
                   });
                 }}
-                className={`flex-1 md:flex-none px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10.5px] sm:text-xs font-mono font-bold uppercase tracking-tight transition-colors cursor-pointer whitespace-nowrap text-center shrink-0 ${
+                className={`flex-1 md:flex-none px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10.5px] sm:text-xs font-mono font-bold uppercase tracking-tight cursor-pointer whitespace-nowrap text-center shrink-0 ${
                   activeMode === tab.id
                     ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
                     : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'

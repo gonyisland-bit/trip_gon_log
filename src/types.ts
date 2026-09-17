@@ -176,6 +176,16 @@ export type TabType = 'summary' | 'timeline' | 'flights' | 'stays' | 'transit' |
 export type PocketCategory = 'food' | 'cafe' | 'spot' | 'shopping' | 'tip';
 export type SpotPocketPlatform = 'instagram' | 'youtube' | 'blog' | 'maps' | 'web';
 
+export interface PocketComment {
+  id: string;
+  text: string;
+  createdAt: number;
+  updatedAt?: number;
+  authorId: string;
+  authorName: string;
+  authorEmail?: string;
+}
+
 export interface SpotPocketItem {
   id: string;
   tripId?: number | null;
@@ -195,6 +205,7 @@ export interface SpotPocketItem {
   order?: number;
   likes?: number;
   likedBy?: string[];
+  comments?: PocketComment[];
 }
 
 export interface MagazineMoment {

@@ -1126,8 +1126,8 @@ export function HomePage({
               <span className="text-[11px] font-mono tracking-[0.3em] uppercase opacity-75">
                 CURATED TRAVEL ARCHIVE & EDITORIAL JOURNAL
               </span>
-              <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter leading-none font-sans drop-shadow-md">
-                TRIPGON LOG
+              <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-none font-['Inter',sans-serif] drop-shadow-md">
+                Tripgon log
               </h1>
             </div>
 

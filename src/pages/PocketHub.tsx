@@ -8,14 +8,16 @@ import {
   SlidersHorizontal, ArrowUpDown, ChevronDown, GripVertical, ArrowUp, ArrowDown,
   Tag
 } from 'lucide-react';
-import { SpotPocketItem, PocketCategory, Trip, Plan, TimelineItem } from '../types';
+import { SpotPocketItem, PocketCategory, Trip, Plan, TimelineItem, PocketComment } from '../types';
 import { getSavedPockets, savePockets, detectPlatform, subscribePockets, getOrCreateGuestId, toggleSpotLike } from '../utils/pocketStorage';
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { PocketScheduleModal } from '../components/PocketScheduleModal';
 import { PocketDetailModal } from '../components/PocketDetailModal';
+import { PocketCommentModal } from '../components/PocketCommentModal';
 import { compressImage } from '../utils/imageHelper';
 import { uploadFileToR2 } from '../utils/storageHelper';
+import { auth } from '../firebase';
 
 interface PocketHubPageProps {
   trips: Trip[];
@@ -26,6 +28,7 @@ interface PocketHubPageProps {
   isLoggedIn: boolean;
   isAdmin: boolean;
   isDarkMode: boolean;
+  onOpenAuthModal?: () => void;
 }
 
 const CATEGORY_META: Record<PocketCategory, { label: string; icon: React.ElementType; color: string }> = {
@@ -188,7 +191,8 @@ export function PocketHubPage({
   onCreateTripWithPockets,
   isLoggedIn,
   isAdmin,
-  isDarkMode
+  isDarkMode,
+  onOpenAuthModal,
 }: PocketHubPageProps) {
   const [spots, setSpots] = useState<SpotPocketItem[]>(() => getSavedPockets());
 
@@ -235,6 +239,9 @@ export function PocketHubPage({
   // Detail Modal state
   const [selectedSpotForModal, setSelectedSpotForModal] = useState<SpotPocketItem | null>(null);
 
+  // Comment Modal state
+  const [selectedSpotForCommentModal, setSelectedSpotForCommentModal] = useState<SpotPocketItem | null>(null);
+
   // User/Guest identifier for Likes
   const currentUserId = useMemo(() => {
     return getOrCreateGuestId();
@@ -246,6 +253,18 @@ export function PocketHubPage({
     if (selectedSpotForModal && selectedSpotForModal.id === spotId) {
       const updatedItem = updated.find(s => s.id === spotId);
       if (updatedItem) setSelectedSpotForModal(updatedItem);
+    }
+  };
+
+  const handleSaveSpotComments = async (spotId: string, comments: PocketComment[]) => {
+    const updated = spots.map(s => s.id === spotId ? { ...s, comments } : s);
+    setSpots(updated);
+    await savePockets(updated);
+    if (selectedSpotForModal && selectedSpotForModal.id === spotId) {
+      setSelectedSpotForModal(prev => prev ? { ...prev, comments } : null);
+    }
+    if (selectedSpotForCommentModal && selectedSpotForCommentModal.id === spotId) {
+      setSelectedSpotForCommentModal(prev => prev ? { ...prev, comments } : null);
     }
   };
 
@@ -789,7 +808,7 @@ export function PocketHubPage({
         {/* Right: Search, Filter, Sort & Action buttons */}
         <div className="flex flex-wrap items-center justify-between md:justify-end gap-2.5 w-full md:w-auto">
           {/* Left Group on Mobile: FILTER + SEARCH close together (Trip Hub Standard) */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {/* FILTER toggle button (Unified to Trip Tag icon standard) */}
             <button
               type="button"
@@ -802,7 +821,7 @@ export function PocketHubPage({
               title="필터"
             >
               <Tag className="w-3.5 h-3.5" />
-              <span>FILTER</span>
+              <span className="hidden sm:inline">FILTER</span>
               {activeFilterCount > 0 && (
                 <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
               )}
@@ -837,7 +856,7 @@ export function PocketHubPage({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="장소, 지역 검색..."
-                  className="w-28 sm:w-44 pl-2.5 pr-6 py-1.5 text-xs bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 font-sans font-medium outline-none text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 rounded-none"
+                  className="w-24 sm:w-44 pl-2.5 pr-6 py-1.5 text-xs bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 font-sans font-medium outline-none text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 rounded-none"
                 />
                 {searchQuery && (
                   <button
@@ -1245,14 +1264,21 @@ export function PocketHubPage({
                             <span>{spot.likes || 0}</span>
                           </button>
 
-                          {/* Detail Modal Trigger Icon */}
+                          {/* Comment Modal Trigger with Count Badge */}
                           <button
                             type="button"
-                            onClick={() => setSelectedSpotForModal(spot)}
-                            className="w-7 h-7 rounded-full border border-black/10 dark:border-white/15 flex items-center justify-center text-black/60 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30 transition-colors cursor-pointer"
-                            title="상세 스토리 및 미니맵 보기"
+                            onClick={() => setSelectedSpotForCommentModal(spot)}
+                            className={`flex items-center gap-1.5 px-2 py-1 rounded-full border text-[10.5px] sm:text-[11px] font-mono font-bold transition-all cursor-pointer ${
+                              spot.comments && spot.comments.length > 0
+                                ? 'bg-black/5 dark:bg-white/5 border-black/20 dark:border-white/20 text-black dark:text-white shadow-xs'
+                                : 'w-7 h-7 !p-0 justify-center border-black/10 dark:border-white/15 text-black/60 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
+                            }`}
+                            title={`댓글 ${spot.comments?.length || 0}개 (클릭하여 보기/작성)`}
                           >
                             <MessageSquare className="w-3.5 h-3.5" />
+                            {spot.comments && spot.comments.length > 0 && (
+                              <span>{spot.comments.length}</span>
+                            )}
                           </button>
 
                           {/* Add to Trip (USE IN TRIP) */}
@@ -1702,6 +1728,23 @@ export function PocketHubPage({
         onDelete={(spot) => setSpotToDelete(spot)}
         isLiked={Boolean(selectedSpotForModal && Array.isArray(selectedSpotForModal.likedBy) && selectedSpotForModal.likedBy.includes(currentUserId))}
         isAdmin={isAdmin}
+        onOpenCommentModal={(spot) => setSelectedSpotForCommentModal(spot)}
+        onSaveComments={handleSaveSpotComments}
+        isLoggedIn={isLoggedIn}
+        currentUser={auth.currentUser}
+        onOpenAuthModal={onOpenAuthModal}
+      />
+
+      {/* ── SPOT COMMENT MODAL ── */}
+      <PocketCommentModal
+        isOpen={Boolean(selectedSpotForCommentModal)}
+        spot={selectedSpotForCommentModal}
+        onClose={() => setSelectedSpotForCommentModal(null)}
+        onSaveComments={handleSaveSpotComments}
+        isLoggedIn={isLoggedIn}
+        isAdmin={isAdmin}
+        currentUser={auth.currentUser}
+        onOpenAuthModal={onOpenAuthModal}
       />
 
       {/* ── DELETE CONFIRM MODAL ── */}
