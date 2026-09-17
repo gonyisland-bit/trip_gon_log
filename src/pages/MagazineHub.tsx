@@ -21,7 +21,12 @@ import {
   Sparkles,
   BookOpen,
   Layers,
-  ArrowUpRight
+  ArrowUpRight,
+  Tag,
+  Search,
+  ArrowUpDown,
+  Check,
+  X
 } from 'lucide-react';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { Lightbox } from '../components/Lightbox';
@@ -119,6 +124,48 @@ export function MagazineHubPage({
 
   // Accordion drawer state for magazine issues showcase in Section view
   const [isAccordionOpen, setIsAccordionOpen] = useState(false);
+
+  // Magazine Hub Filter & Search & Sort states (Trip standard pattern)
+  const [magSearchQuery, setMagSearchQuery] = useState('');
+  const [isSearchInputOpen, setIsSearchInputOpen] = useState(false);
+  const [magLocationFilter, setMagLocationFilter] = useState('All');
+  const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
+  const [magSortBy, setMagSortBy] = useState<'user' | 'newest' | 'oldest' | 'title'>('user');
+
+  // Available Locations for filter dropdown
+  const availableLocations = useMemo(() => {
+    const locSet = new Set<string>();
+    effectiveSections.forEach(s => {
+      const loc = (s.heroLocation || '').trim();
+      if (loc) locSet.add(loc);
+    });
+    return Array.from(locSet).sort();
+  }, [effectiveSections]);
+
+  // Filtered & Sorted sections
+  const filteredSections = useMemo(() => {
+    let list = effectiveSections.filter(sec => {
+      if (magSearchQuery.trim()) {
+        const q = magSearchQuery.toLowerCase().trim();
+        const matchesTitle = (sec.title || '').toLowerCase().includes(q);
+        const matchesHero = (sec.heroTitle || '').toLowerCase().includes(q);
+        const matchesLoc = (sec.heroLocation || '').toLowerCase().includes(q);
+        const matchesItems = sec.items && sec.items.some(it => (it.caption || '').toLowerCase().includes(q) || (it.location || '').toLowerCase().includes(q));
+        if (!matchesTitle && !matchesHero && !matchesLoc && !matchesItems) return false;
+      }
+      if (magLocationFilter !== 'All') {
+        if (sec.heroLocation !== magLocationFilter) return false;
+      }
+      return true;
+    });
+
+    if (magSortBy === 'title') {
+      list = [...list].sort((a, b) => (a.heroTitle || a.title).localeCompare(b.heroTitle || b.title));
+    } else if (magSortBy === 'newest') {
+      list = [...list].reverse();
+    }
+    return list;
+  }, [effectiveSections, magSearchQuery, magLocationFilter, magSortBy]);
 
   // Lightbox state for high-res photo viewing
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -694,24 +741,187 @@ export function MagazineHubPage({
             </div>
           </section>
 
-          {/* Controls Bar — Standard 2nd Line (Trip Standard Height py-4) */}
-          <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-4 border-b border-black/10 dark:border-white/10 flex items-center justify-between gap-4 transition-colors">
+          {/* Controls Bar — Standard 2nd Line (Trip Standard Height py-4 & Standard Controls) */}
+          <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-4 border-b border-black/10 dark:border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
+            {/* Left: Section Sub-label (Pure Inter, No red icon) */}
             <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-red-600 dark:text-red-400" />
               <span className="text-xs sm:text-sm font-['Inter',sans-serif] font-bold uppercase tracking-wider text-black dark:text-white">
-                ALL ISSUES ({effectiveSections.length})
+                ALL ISSUES ({filteredSections.length})
               </span>
             </div>
-            <span className="text-[11px] font-mono text-black/40 dark:text-white/40 hidden sm:inline uppercase tracking-wider">
-              SELECT AN ISSUE TO OPEN FULL EDITORIAL
-            </span>
+
+            {/* Right: Active Filter, Search, and Controls Layout (Trip Standard Style) */}
+            <div className="flex flex-col gap-2 w-full md:w-auto relative z-20">
+              <div className="flex flex-wrap items-center justify-between md:justify-end gap-2.5">
+                {/* Location Filter Dropdown Button */}
+                <div className="relative inline-block text-left">
+                  <div className="flex items-center gap-2">
+                    <button 
+                      type="button"
+                      onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}
+                      className={`text-[10px] sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-none transition-all flex items-center gap-1.5 cursor-pointer relative ${
+                        magLocationFilter !== 'All'
+                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                          : 'border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5 text-black dark:text-white'
+                      }`}
+                      title="FILTER (LOCATION)"
+                    >
+                      <Tag className="w-3.5 h-3.5" />
+                      <span>FILTER</span>
+                      {magLocationFilter !== 'All' && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
+                      )}
+                    </button>
+
+                    {/* Separated Search Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSearchInputOpen(v => !v);
+                        if (isSearchInputOpen) setMagSearchQuery('');
+                      }}
+                      className={`p-2 border transition-colors flex items-center justify-center rounded-none cursor-pointer relative ${
+                        isSearchInputOpen || magSearchQuery
+                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                          : 'border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-transparent text-black dark:text-white'
+                      }`}
+                      title="매거진 검색"
+                    >
+                      <Search className="w-3.5 h-3.5" />
+                      {magSearchQuery && (
+                        <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-600" />
+                      )}
+                    </button>
+
+                    {/* Inline Search Input */}
+                    {isSearchInputOpen && (
+                      <div className="relative flex items-center animate-in fade-in slide-in-from-left-2 duration-150">
+                        <input
+                          type="text"
+                          autoFocus
+                          value={magSearchQuery}
+                          onChange={(e) => setMagSearchQuery(e.target.value)}
+                          placeholder="매거진 검색..."
+                          className="w-28 sm:w-44 pl-2.5 pr-6 py-1.5 text-xs bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 font-sans font-medium outline-none text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 rounded-none"
+                        />
+                        {magSearchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setMagSearchQuery('')}
+                            className="absolute right-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white p-0.5 cursor-pointer"
+                            title="검색어 지우기"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Active Filter Chips */}
+                    {(magLocationFilter !== 'All' || magSearchQuery) && (
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {magSearchQuery && (
+                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black dark:text-white flex items-center gap-1">
+                            "{magSearchQuery}"
+                            <X className="w-3 h-3 cursor-pointer hover:text-red-500" onClick={() => setMagSearchQuery('')} />
+                          </span>
+                        )}
+                        {magLocationFilter !== 'All' && (
+                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black/10 dark:bg-white/10 text-black dark:text-white flex items-center gap-1">
+                            {magLocationFilter}
+                            <X className="w-3 h-3 cursor-pointer hover:text-red-500" onClick={() => setMagLocationFilter('All')} />
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMagLocationFilter('All');
+                            setMagSearchQuery('');
+                          }}
+                          className="text-[9px] px-1.5 py-0.5 uppercase font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                        >
+                          RESET
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Filter Dropdown Popover */}
+                  {isTagDropdownOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setIsTagDropdownOpen(false)} />
+                      <div className="absolute left-0 mt-1.5 w-64 bg-[#F9F8F6] dark:bg-[#181818] border border-black/15 dark:border-white/15 shadow-2xl z-20 rounded-none p-3 flex flex-col gap-2.5 animate-in fade-in slide-in-from-top-1 duration-150 text-black dark:text-white">
+                        <span className="text-[9px] font-mono font-black uppercase tracking-wider text-black/50 dark:text-white/50">
+                          LOCATION (지역)
+                        </span>
+                        <div className="flex flex-wrap gap-1 max-h-40 overflow-y-auto">
+                          <button
+                            type="button"
+                            onClick={() => { setMagLocationFilter('All'); setIsTagDropdownOpen(false); }}
+                            className={`text-[10px] px-2 py-0.5 uppercase font-mono font-bold border transition-colors cursor-pointer ${
+                              magLocationFilter === 'All' ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-black/15 dark:border-white/15 hover:bg-black/5'
+                            }`}
+                          >
+                            All ({effectiveSections.length})
+                          </button>
+                          {availableLocations.map(loc => {
+                            const count = effectiveSections.filter(s => s.heroLocation === loc).length;
+                            return (
+                              <button
+                                key={loc}
+                                type="button"
+                                onClick={() => { setMagLocationFilter(loc === magLocationFilter ? 'All' : loc); setIsTagDropdownOpen(false); }}
+                                className={`text-[10px] px-2 py-0.5 uppercase font-mono font-bold border transition-colors cursor-pointer ${
+                                  magLocationFilter === loc ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-black/15 dark:border-white/15 hover:bg-black/5'
+                                }`}
+                              >
+                                {loc} ({count})
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Sort Dropdown (Trip Standard Style) */}
+                <div className="flex items-center gap-1.5">
+                  <ArrowUpDown className="w-3.5 h-3.5 text-black/60 dark:text-white/60 shrink-0" />
+                  <select
+                    value={magSortBy}
+                    onChange={(e) => setMagSortBy(e.target.value as any)}
+                    className="bg-transparent text-[10px] sm:text-xs font-black uppercase tracking-widest border border-black/20 dark:border-white/20 px-2.5 py-1.5 focus:outline-none focus:border-black dark:focus:border-white transition-colors cursor-pointer rounded-none font-sans"
+                  >
+                    <option value="user" className="bg-[#F9F8F6] dark:bg-[#111111]">USER</option>
+                    <option value="newest" className="bg-[#F9F8F6] dark:bg-[#111111]">NEWEST</option>
+                    <option value="title" className="bg-[#F9F8F6] dark:bg-[#111111]">TITLE</option>
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* 1-2. Magazine Issues Directory Grid (Matching Trip Standard Padding py-6 sm:py-10) */}
           <section className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-6 sm:py-10">
-            {/* Magazine Cover Cards Grid (Responsive 2 Cols on Mobile -> 4 Cols on Web) */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3.5 sm:gap-5 md:gap-6">
-              {effectiveSections.map((sec, idx) => {
+            {filteredSections.length === 0 ? (
+              <div className="py-20 text-center border border-dashed border-black/15 dark:border-white/15 flex flex-col items-center justify-center gap-2">
+                <BookOpen className="w-8 h-8 text-black/20 dark:text-white/20 mb-1" />
+                <p className="text-sm font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50">
+                  검색 조건과 일치하는 매거진 이슈가 없습니다.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => { setMagSearchQuery(''); setMagLocationFilter('All'); }}
+                  className="mt-2 text-xs font-mono font-bold uppercase text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                >
+                  RESET FILTER
+                </button>
+              </div>
+            ) : (
+              /* Magazine Cover Cards Grid (Responsive 2 Cols on Mobile -> 4 Cols on Web) */
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3.5 sm:gap-5 md:gap-6">
+                {filteredSections.map((sec, idx) => {
                 const coverImg = sec.heroImg || (sec.items && sec.items.find(it => it.img)?.img) || '';
                 const displayHeroTitle = sec.heroTitle || sec.title;
                 const formattedNumber = String(idx + 1).padStart(2, '0');
@@ -793,7 +1003,8 @@ export function MagazineHubPage({
                 );
               })}
             </div>
-          </section>
+          )}
+        </section>
 
           {/* 1-3. Lower Selected Magazine Preview Section (Curated Preview Spread) */}
           {(() => {

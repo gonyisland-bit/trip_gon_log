@@ -77,8 +77,9 @@
 - **표준 메인 컨테이너**:
   `w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12`
 - **고정 폭 래퍼(`max-w-7xl` 등) 배제**: 데스크톱 와이드 화면(1440px~1920px)에서 허브 간 이동 시 레이아웃이 쪼그라들거나 양옆에 불필요한 공백이 생기지 않도록 `max-w-7xl` 등 임의의 축소 래퍼 사용을 엄격히 금지합니다.
-- **반응형 피드 그리드 (포켓/갤러리)**: 풀-와이드 화면 확장 시 카드가 지나치게 비대해지는 것을 방지하고 최적의 정보 밀도를 유지하기 위해 반응형 2~6열 그리드를 적용합니다.
-  - `grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-5`
+- **전 허브 카드 피드 4열 표준 그리드 (웹 기준 1줄 4개 배열)**:
+  Trip, Magazine, Pocket 등 모든 허브의 카드 피드는 일관된 리듬과 모노크롬 비례를 위해 **모바일 2열 / 데스크톱 4열 표준 그리드**로 통일합니다.
+  - `grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3.5 sm:gap-5 md:gap-6`
 
 ### 전체 허브 2단 가로줄 및 툴바 표준화 (Trip 기준 규격)
 모든 허브 페이지(Trip, Magazine, Pocket)는 일관된 시각적 그리드와 높이 표준을 위해 **Trip 허브 기준 2단 전폭 가로줄 및 툴바 규격**을 동일하게 적용합니다.
@@ -89,9 +90,13 @@
   `w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-4 border-b border-black/10 dark:border-white/10`
   - 두 가로줄 사이의 상하 여백 높이를 **`py-4` 표준 높이**로 전 허브에 일치시킵니다.
   - 내부 패딩 박스 안에 갇혀 있는 좌우 여백 있는 가로줄(`mb-8 border-b` 등) 및 과도한 상단 공백은 전면 폐기하고 전폭 가로줄로 통일합니다.
-- **서브 라벨(`ALL ~`) Inter 폰트 통일**:
-  `ALL TRIPS`, `ALL ISSUES`, `ALL SPOTS` 등 툴바 좌측 카운터 라벨은 디자인 지침 폰트인 **`Inter`**(`font-['Inter',sans-serif] font-bold text-xs sm:text-sm uppercase tracking-wider text-black dark:text-white`)로 단일화합니다.
-- **툴바 버튼 스타일 일원화 (Trip 기준)**:
+- **서브 라벨(`ALL ~`) Inter 폰트 및 장식 아이콘 완전 배제**:
+  `ALL TRIPS`, `ALL ISSUES`, `ALL SPOTS` 등 툴바 좌측 카운터 라벨은 디자인 지침 폰트인 **`Inter`**(`font-['Inter',sans-serif] font-bold text-xs sm:text-sm uppercase tracking-wider text-black dark:text-white`)로 단일화하며, 라벨 앞의 불필요한 장식용 컬러 아이콘(예: 빨간 Layers 아이콘 등)을 일체 배제합니다.
+- **허브 툴바 기능·아이콘 동일화 대원칙 (Trip 기준)**:
+  허브 간 같은 기능을 가진 컴포넌트는 명칭뿐만 아니라 **아이콘까지 완전히 동일한 Lucide 아이콘**을 사용합니다.
+  - **필터 (FILTER)**: 반드시 `<Tag className="w-3.5 h-3.5" />` 사용 (SlidersHorizontal 등 다른 아이콘 사용 금지)
+  - **검색 (SEARCH)**: 반드시 `<Search className="w-3.5 h-3.5" />` 사용
+  - **정렬 (SORT)**: 반드시 `<ArrowUpDown className="w-3.5 h-3.5" />` 사용
   - 기본 상태: `border border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5 text-black dark:text-white`
   - 활성/선택 상태: `bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs`
   - 폰트 및 패딩: `text-[10px] sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider rounded-none`

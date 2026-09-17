@@ -5,7 +5,8 @@ import {
   Utensils, Coffee, Camera, ShoppingBag, Lightbulb, Map, MoreVertical, Star,
   Upload, Image as ImageIcon, Loader2, Heart, MessageSquare,
   Globe, FileText, CheckSquare, Square,
-  SlidersHorizontal, ArrowUpDown, ChevronDown, GripVertical, ArrowUp, ArrowDown
+  SlidersHorizontal, ArrowUpDown, ChevronDown, GripVertical, ArrowUp, ArrowDown,
+  Tag
 } from 'lucide-react';
 import { SpotPocketItem, PocketCategory, Trip, Plan, TimelineItem } from '../types';
 import { getSavedPockets, savePockets, detectPlatform, subscribePockets, getOrCreateGuestId, toggleSpotLike } from '../utils/pocketStorage';
@@ -786,7 +787,7 @@ export function PocketHubPage({
 
         {/* Right: Search, Filter, Sort & Action buttons */}
         <div className="flex flex-wrap items-center justify-between md:justify-end gap-2 w-full md:w-auto">
-          {/* FILTER toggle button */}
+          {/* FILTER toggle button (Unified to Trip Tag icon standard) */}
           <button
             type="button"
             onClick={() => setIsFilterOpen(prev => !prev)}
@@ -797,7 +798,7 @@ export function PocketHubPage({
             }`}
             title="필터"
           >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <Tag className="w-3.5 h-3.5" />
             <span>FILTER</span>
             {activeFilterCount > 0 && (
               <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
@@ -1309,7 +1310,7 @@ export function PocketHubPage({
                           <span className="text-[10px] font-mono text-black/40 dark:text-white/40">{group.items.length}</span>
                           <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-5">
+                        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3.5 sm:gap-5 md:gap-6">
                           {group.items.slice(0, visibleCount).map(renderCard)}
                         </div>
                       </div>
