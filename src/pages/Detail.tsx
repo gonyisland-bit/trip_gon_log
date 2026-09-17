@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo, useTransition, useCallback } from 'react';
 import { 
-  Clock, Plane, Bed, Train, Bus, Car, User, Edit2, Trash2, 
+  Clock, Plane, Ship, Bed, Train, Bus, Car, User, Edit2, Trash2, 
   Image as ImageIcon, ChevronUp, ChevronDown, MapPin, Plus, Loader2, Search, ArrowLeft,
   ExternalLink, MapPinOff, Maximize2, Star, ChevronLeft, ChevronRight, ArrowUp, ArrowDown,
   Sun, Cloud, Cloudy, CloudRain, Snowflake, CloudLightning, ArrowRight, Calculator, FileText, Share2, GripVertical,
@@ -4507,43 +4507,55 @@ export function JourneyDetailPage({
                                   ))}
                                 </select>
 
-                                {/* Vehicle type selection pills: [도보 | 차량 | 열차] */}
-                                <div className="flex items-center justify-between gap-1 w-full py-0.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => updateTimelineItem(item.id, 'vehicleType', null)}
-                                    className={`flex-1 py-0.5 text-[8.5px] font-mono font-bold flex items-center justify-center border transition-colors cursor-pointer ${
-                                      !item.vehicleType
-                                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                                        : 'bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
-                                    }`}
-                                    title="도보 이동 (기본값)"
-                                  >
-                                    도보
-                                  </button>
+                                {/* Vehicle type selection: 4종 아이콘 토글 그리드 (기본 해제 = 도보) */}
+                                <div className="grid grid-cols-4 gap-1 w-full py-0.5">
                                   <button
                                     type="button"
                                     onClick={() => updateTimelineItem(item.id, 'vehicleType', item.vehicleType === 'car' ? null : 'car')}
-                                    className={`flex-1 py-0.5 text-[8.5px] font-mono font-bold flex items-center justify-center border transition-colors cursor-pointer ${
+                                    className={`py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
                                       item.vehicleType === 'car'
-                                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
                                         : 'bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
                                     }`}
-                                    title="차량으로 이동"
+                                    title={item.vehicleType === 'car' ? "차량 선택 해제 (기본 도보)" : "차량으로 이동"}
                                   >
                                     <Car className="w-3 h-3" />
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => updateTimelineItem(item.id, 'vehicleType', item.vehicleType === 'train' ? null : 'train')}
-                                    className={`flex-1 py-0.5 text-[8.5px] font-mono font-bold flex items-center justify-center border transition-colors cursor-pointer ${
+                                    className={`py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
                                       item.vehicleType === 'train'
-                                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
                                         : 'bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
                                     }`}
-                                    title="열차로 이동"
+                                    title={item.vehicleType === 'train' ? "열차 선택 해제 (기본 도보)" : "열차로 이동"}
                                   >
                                     <Train className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateTimelineItem(item.id, 'vehicleType', item.vehicleType === 'ship' ? null : 'ship')}
+                                    className={`py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
+                                      item.vehicleType === 'ship'
+                                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                                        : 'bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
+                                    }`}
+                                    title={item.vehicleType === 'ship' ? "선박 선택 해제 (기본 도보)" : "선박으로 이동"}
+                                  >
+                                    <Ship className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateTimelineItem(item.id, 'vehicleType', item.vehicleType === 'flight' ? null : 'flight')}
+                                    className={`py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
+                                      item.vehicleType === 'flight'
+                                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                                        : 'bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
+                                    }`}
+                                    title={item.vehicleType === 'flight' ? "항공 선택 해제 (기본 도보)" : "항공으로 이동"}
+                                  >
+                                    <Plane className="w-3 h-3" />
                                   </button>
                                 </div>
 
@@ -4599,6 +4611,16 @@ export function JourneyDetailPage({
                                   {item.vehicleType === 'train' && (
                                     <span className="flex items-center gap-0.5 px-1 py-0.5 rounded bg-black/5 dark:bg-white/10 text-[9px] font-mono font-bold text-black/70 dark:text-white/70" title="다음 스팟까지 열차 이동">
                                       <Train className="w-3 h-3" />
+                                    </span>
+                                  )}
+                                  {item.vehicleType === 'ship' && (
+                                    <span className="flex items-center gap-0.5 px-1 py-0.5 rounded bg-black/5 dark:bg-white/10 text-[9px] font-mono font-bold text-black/70 dark:text-white/70" title="다음 스팟까지 선박 이동">
+                                      <Ship className="w-3 h-3" />
+                                    </span>
+                                  )}
+                                  {item.vehicleType === 'flight' && (
+                                    <span className="flex items-center gap-0.5 px-1 py-0.5 rounded bg-black/5 dark:bg-white/10 text-[9px] font-mono font-bold text-black/70 dark:text-white/70" title="다음 스팟까지 항공 이동">
+                                      <Plane className="w-3 h-3" />
                                     </span>
                                   )}
 

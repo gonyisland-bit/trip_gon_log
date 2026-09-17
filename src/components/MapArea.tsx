@@ -27,13 +27,21 @@ interface MapAreaProps {
   transits?: TransitItem[];
   isCinematicMode?: boolean;
   cinematicSpeed?: number;
-  cinematicVehicleType?: 'car' | 'train' | null;
+  cinematicVehicleType?: 'car' | 'train' | 'ship' | 'flight' | null;
   hoveredItemId?: number | null;
   onItemHover?: (id: number | null) => void;
   onAddSpotToTimeline?: (spot: SpotPocketItem) => void;
 }
 
-const getTravelerHtml = (vehicleType: 'car' | 'train' | null | undefined, isWest: boolean, isMoving: boolean) => {
+const getVehicleDimensions = (type: 'car' | 'train' | 'ship' | 'flight' | null | undefined): { iconSize: [number, number]; iconAnchor: [number, number] } => {
+  if (type === 'train') return { iconSize: [52, 32], iconAnchor: [26, 32] };
+  if (type === 'car') return { iconSize: [48, 32], iconAnchor: [24, 32] };
+  if (type === 'ship') return { iconSize: [50, 32], iconAnchor: [25, 32] };
+  if (type === 'flight') return { iconSize: [48, 30], iconAnchor: [24, 30] };
+  return { iconSize: [40, 46], iconAnchor: [20, 46] }; // walker
+};
+
+const getTravelerHtml = (vehicleType: 'car' | 'train' | 'ship' | 'flight' | null | undefined, isWest: boolean, isMoving: boolean) => {
   const flipStyle = isWest ? 'scaleX(-1)' : 'scaleX(1)';
   
   if (vehicleType === 'car') {
@@ -87,6 +95,57 @@ const getTravelerHtml = (vehicleType: 'car' | 'train' | null | undefined, isWest
           </svg>
         </div>
         <div style="width: 42px; height: 4px; background: rgba(0,0,0,0.45); border-radius: 50%; filter: blur(0.8px); margin-top: -2px;"></div>
+      </div>
+    `;
+  }
+
+  if (vehicleType === 'ship') {
+    return `
+      <div style="width: 50px; height: 32px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; pointer-events: none;">
+        <style>
+          @keyframes shipRolling {
+            0%, 100% { transform: translateY(0px) ${flipStyle} rotate(0deg); }
+            50% { transform: translateY(-1.5px) ${flipStyle} rotate(1.5deg); }
+          }
+        </style>
+        <div style="${isMoving ? 'animation: shipRolling 0.28s ease-in-out infinite;' : `transform: ${flipStyle};`} transform-origin: center center;">
+          <svg viewBox="0 0 50 28" width="46" height="26" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block; filter: drop-shadow(0 0 1.5px #FFFFFF) drop-shadow(0 0 2.5px #FFFFFF) drop-shadow(0 4px 8px rgba(0,0,0,0.6));">
+            <path d="M19 6V2.5H23V6H19Z" fill="#18181B" />
+            <rect x="19" y="3.5" width="4" height="1" fill="#E11D48" />
+            <path d="M13 13V7.5C13 6.8 13.8 6.2 14.5 6.2H32.5C33.2 6.2 34 6.8 34.5 7.5L37.5 13H13Z" fill="#18181B" />
+            <rect x="16" y="8" width="3.2" height="2.2" rx="0.5" fill="#FFFFFF" fill-opacity="0.9" />
+            <rect x="21" y="8" width="3.2" height="2.2" rx="0.5" fill="#FFFFFF" fill-opacity="0.9" />
+            <rect x="26" y="8" width="3.2" height="2.2" rx="0.5" fill="#FFFFFF" fill-opacity="0.9" />
+            <path d="M31 8H33.5L35.5 11H31V8Z" fill="#FFFFFF" fill-opacity="0.9" />
+            <path d="M3.5 13.5C4 16.5 6.8 19.8 11.5 19.8H36.5C41.8 19.8 45.2 16.8 47 13H4C3.8 13.2 3.6 13.3 3.5 13.5Z" fill="#18181B" />
+            <line x1="7" y1="15.5" x2="43" y2="15.5" stroke="#FFFFFF" stroke-width="0.8" stroke-dasharray="2 1.5" stroke-opacity="0.75" />
+          </svg>
+        </div>
+        <div style="width: 44px; height: 4px; background: rgba(0,0,0,0.45); border-radius: 50%; filter: blur(0.8px); margin-top: -2px;"></div>
+      </div>
+    `;
+  }
+
+  if (vehicleType === 'flight') {
+    return `
+      <div style="width: 48px; height: 30px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; pointer-events: none;">
+        <style>
+          @keyframes planeGliding {
+            0%, 100% { transform: translateY(0px) ${flipStyle}; }
+            50% { transform: translateY(-1.5px) ${flipStyle}; }
+          }
+        </style>
+        <div style="${isMoving ? 'animation: planeGliding 0.35s ease-in-out infinite;' : `transform: ${flipStyle};`} transform-origin: center center;">
+          <svg viewBox="0 0 48 26" width="44" height="24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block; filter: drop-shadow(0 0 1.5px #FFFFFF) drop-shadow(0 0 2.5px #FFFFFF) drop-shadow(0 4px 8px rgba(0,0,0,0.6));">
+            <path d="M4 7.5L8.5 13H13L7.5 5.5C7 4.8 6 4.8 5.5 5.5L4 7.5Z" fill="#18181B" />
+            <path d="M10 12.5H35C40.5 12.5 44.5 13.5 45.8 14.5C44.5 15.5 40.5 16.5 35 16.5H11C8.5 16.5 5.5 15.8 4.5 14.5C5.5 13.2 8.5 12.5 10 12.5Z" fill="#18181B" />
+            <path d="M21 14.5L16.5 20.5C16 21 15 21 14.5 20.5L14 20L18.5 14.5H21Z" fill="#18181B" />
+            <rect x="20.5" y="17.5" width="6.5" height="2.2" rx="1" fill="#18181B" stroke="#FFFFFF" stroke-width="0.8" />
+            <path d="M39 13.2C41.5 13.2 43.2 13.8 43.8 14.2H38V13.2H39Z" fill="#FFFFFF" fill-opacity="0.95" />
+            <line x1="16" y1="13.8" x2="36" y2="13.8" stroke="#FFFFFF" stroke-width="1.2" stroke-dasharray="2 1" stroke-opacity="0.85" />
+          </svg>
+        </div>
+        <div style="width: 38px; height: 4px; background: rgba(0,0,0,0.35); border-radius: 50%; filter: blur(1.2px); margin-top: -1px;"></div>
       </div>
     `;
   }
@@ -875,8 +934,7 @@ export function MapArea({
             const L = (window as any).L;
             if (L) {
               const isHeadingWest = nextCoords.lng < prevCoords.lng;
-              const iconSize: [number, number] = cinematicVehicleType === 'train' ? [52, 32] : (cinematicVehicleType === 'car' ? [48, 32] : [40, 46]);
-              const iconAnchor: [number, number] = cinematicVehicleType === 'train' ? [26, 32] : (cinematicVehicleType === 'car' ? [24, 32] : [20, 46]);
+              const { iconSize, iconAnchor } = getVehicleDimensions(cinematicVehicleType);
 
               const travelerIcon = L.divIcon({
                 className: 'traveler-icon-container',
@@ -940,8 +998,7 @@ export function MapArea({
             if (isCinematicMode) {
               const L = (window as any).L;
               if (L) {
-                const iconSize: [number, number] = cinematicVehicleType === 'train' ? [52, 32] : (cinematicVehicleType === 'car' ? [48, 32] : [40, 46]);
-                const iconAnchor: [number, number] = cinematicVehicleType === 'train' ? [26, 32] : (cinematicVehicleType === 'car' ? [24, 32] : [20, 46]);
+                const { iconSize, iconAnchor } = getVehicleDimensions(cinematicVehicleType);
                 const standingIcon = L.divIcon({
                   className: 'traveler-icon-container',
                   html: getTravelerHtml(cinematicVehicleType, false, false),
