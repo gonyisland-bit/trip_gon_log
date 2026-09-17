@@ -157,22 +157,21 @@ export function LandingGuestView({
               나만의 스마트 포켓과 시네마틱 타임라인을 기록해 보세요.
             </p>
 
-            {/* Main Action Buttons */}
+            {/* Main Action Buttons: Swiss Minimal Monochrome SIGN IN & JOIN */}
             <div className="md:col-span-5 lg:col-span-6 flex flex-wrap items-center md:justify-end gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => onOpenAuthModal('login')}
-                className="px-7 sm:px-8 py-3.5 sm:py-4 bg-white text-black hover:bg-white/90 text-xs sm:text-sm font-mono font-black uppercase tracking-widest transition-all cursor-pointer shadow-2xl flex items-center gap-2"
+                className="px-7 sm:px-8 py-3.5 sm:py-4 bg-white text-black hover:bg-black hover:text-white border border-white text-xs sm:text-sm font-mono font-black uppercase tracking-widest transition-all cursor-pointer shadow-xl rounded-none"
               >
-                <span>SIGN IN TO ARCHIVE</span>
-                <span>→</span>
+                SIGN IN
               </button>
               <button
                 type="button"
                 onClick={() => onOpenAuthModal('signup')}
-                className="px-6 sm:px-7 py-3.5 sm:py-4 border border-white/50 text-white hover:border-white hover:bg-white/10 text-xs sm:text-sm font-mono font-black uppercase tracking-widest transition-all cursor-pointer backdrop-blur-xs"
+                className="px-7 sm:px-8 py-3.5 sm:py-4 border border-white/60 text-white hover:border-white hover:bg-white hover:text-black text-xs sm:text-sm font-mono font-black uppercase tracking-widest transition-all cursor-pointer backdrop-blur-xs rounded-none"
               >
-                JOIN AS NEW MEMBER
+                JOIN
               </button>
             </div>
           </div>

@@ -1142,16 +1142,16 @@ export function HomePage({
                 <button
                   type="button"
                   onClick={() => onOpenAuthModal ? onOpenAuthModal('login') : onNavigate('archive')}
-                  className="px-6 py-3 bg-white text-black hover:bg-white/90 text-xs font-mono font-bold uppercase tracking-widest transition-all cursor-pointer shadow-lg"
+                  className="px-7 sm:px-8 py-3 sm:py-3.5 bg-white text-black hover:bg-black hover:text-white border border-white text-xs sm:text-sm font-mono font-black uppercase tracking-widest transition-all cursor-pointer shadow-xl rounded-none"
                 >
-                  LOG IN TO BEGIN
+                  SIGN IN
                 </button>
                 <button
                   type="button"
                   onClick={() => onOpenAuthModal ? onOpenAuthModal('signup') : onNavigate('archive')}
-                  className="px-6 py-3 border border-white text-white hover:bg-white/10 text-xs font-mono font-bold uppercase tracking-widest transition-all cursor-pointer"
+                  className="px-7 sm:px-8 py-3 sm:py-3.5 border border-white/60 text-white hover:border-white hover:bg-white hover:text-black text-xs sm:text-sm font-mono font-black uppercase tracking-widest transition-all cursor-pointer backdrop-blur-xs rounded-none"
                 >
-                  SIGN UP
+                  JOIN
                 </button>
               </div>
             </div>

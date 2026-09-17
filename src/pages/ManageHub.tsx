@@ -3650,14 +3650,9 @@ export function ManageHubPage({
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <div className="flex items-baseline gap-2">
-            <h1 className="text-base sm:text-lg font-black uppercase tracking-tight font-sans">
-              MANAGEMENT HUB
-            </h1>
-            <span className="text-[10px] font-mono text-black/40 dark:text-white/40 hidden sm:inline">
-              [수정·관리 센터]
-            </span>
-          </div>
+          <h1 className="text-base sm:text-lg font-black uppercase tracking-tight font-sans">
+            MANAGEMENT HUB
+          </h1>
         </div>
 
         {/* Mode Switcher: Centered on desktop, scrollable on mobile */}
@@ -6642,7 +6637,7 @@ export function ManageHubPage({
         {activeMode === 'UTIL' && (
           <div
             onScroll={handleContainerScroll}
-            className="w-full max-w-5xl mx-auto p-4 sm:p-8 flex flex-col gap-8 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200"
+            className="w-full max-w-5xl mx-auto px-4 sm:px-8 pt-4 sm:pt-6 pb-32 flex flex-col gap-8 overflow-y-auto h-full flex-1 animate-in fade-in duration-200"
           >
             {/* Header Title */}
             <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
@@ -6664,39 +6659,41 @@ export function ManageHubPage({
               </p>
             </div>
 
-            {/* Swiss Minimal Sub-Nav Bar */}
-            <div className="flex items-center gap-1.5 border-b border-black/15 dark:border-white/15 pb-3 overflow-x-auto scrollbar-none">
-              {([
-                { id: 'all', label: 'ALL' },
-                { id: 'display', label: 'DISPLAY & MARQUEE' },
-                { id: 'bgm', label: 'BGM' },
-                { id: 'map', label: 'MAP' },
-                { id: 'presets', label: 'PRESETS', count: presetsList.length, isDirty: isPresetsDirty },
-                { id: 'trash', label: 'TRASH & DB', count: trashedJourneys.length + trashedSections.length, alert: (trashedJourneys.length + trashedSections.length) > 0 },
-              ] as const).map(tab => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setUtilSubTab(tab.id)}
-                  className={`px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider border transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
-                    utilSubTab === tab.id
-                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                      : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white bg-black/[0.02] dark:bg-white/[0.02]'
-                  }`}
-                >
-                  <span>{tab.label}</span>
-                  {'count' in tab && typeof tab.count === 'number' && (
-                    <span className={`text-[9px] px-1.5 py-0.2 font-mono font-bold ${
-                      'alert' in tab && (tab as any).alert ? 'bg-red-600 text-white' : 'bg-orange-600 text-white'
-                    }`}>
-                      {tab.count}
-                    </span>
-                  )}
-                  {'isDirty' in tab && tab.isDirty && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                  )}
-                </button>
-              ))}
+            {/* Swiss Minimal Sub-Nav Bar (Sticky with background backdrop so it stays accessible when scrolling long content) */}
+            <div className="sticky top-0 z-20 bg-[#FAF9F6] dark:bg-[#141414] py-2.5 -mx-4 sm:-mx-8 px-4 sm:px-8 border-b border-black/15 dark:border-white/15">
+              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none w-full">
+                {([
+                  { id: 'all', label: 'ALL' },
+                  { id: 'display', label: 'DISPLAY & MARQUEE' },
+                  { id: 'bgm', label: 'BGM' },
+                  { id: 'map', label: 'MAP' },
+                  { id: 'presets', label: 'PRESETS', count: presetsList.length, isDirty: isPresetsDirty },
+                  { id: 'trash', label: 'TRASH & DB', count: trashedJourneys.length + trashedSections.length, alert: (trashedJourneys.length + trashedSections.length) > 0 },
+                ] as const).map(tab => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setUtilSubTab(tab.id)}
+                    className={`px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider border transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                      utilSubTab === tab.id
+                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                        : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white bg-black/[0.02] dark:bg-white/[0.02]'
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                    {'count' in tab && typeof tab.count === 'number' && (
+                      <span className={`text-[9px] px-1.5 py-0.2 font-mono font-bold ${
+                        'alert' in tab && (tab as any).alert ? 'bg-red-600 text-white' : 'bg-orange-600 text-white'
+                      }`}>
+                        {tab.count}
+                      </span>
+                    )}
+                    {'isDirty' in tab && tab.isDirty && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* 1. DISPLAY & MARQUEE (홈 화면 그라데이션 & 마퀴 설정 - 최상단) */}
