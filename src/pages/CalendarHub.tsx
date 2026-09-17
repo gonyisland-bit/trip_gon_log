@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Calendar as CalendarIcon, 
+  ChevronLeft, ChevronRight, ChevronDown, ChevronUp, 
   MapPin, Clock, ArrowRight, Plane, Sparkles, Compass, 
   CheckCircle2, ArrowUpRight, Plus, Eye, Briefcase, Heart, 
   User, AlertCircle, Trash2, Edit3, X, Tag, FileText, Check,
@@ -1502,21 +1502,30 @@ export function CalendarHubPage({
       {/* Top Banner & Swiss Minimal Typography Header                  */}
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="w-full max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-4 sm:pb-6">
-        <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4 sm:gap-6">
-          {/* Left: Giant Typography Year & Month + < TODAY > Navigation */}
-          <div className="w-full xl:w-auto">
-            <div className="flex items-center gap-3 mb-1 text-red-600 dark:text-red-500 font-bold text-xs sm:text-sm tracking-[0.25em] uppercase font-mono">
-              <CalendarIcon className="w-4 h-4" />
-              <span>
-                CALENDAR SCHEDULE · {viewMode === 'year' ? `${currentYear} ANNUAL` : `${MONTH_TABS[currentMonth].num} ${MONTH_TABS[currentMonth].short}`}
-              </span>
-            </div>
+        {/* Top Metadata Barcode & Category Tag (다른 허브 표준 디자인 양식 통일) */}
+        <div className="flex items-center justify-between text-xs font-mono tracking-widest uppercase text-black/60 dark:text-white/60 mb-4 sm:mb-6">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <span className="bg-black text-white dark:bg-white dark:text-black font-black px-2 py-0.5 text-[10px]">
+              CALENDAR
+            </span>
+            <span className="font-bold text-red-600 dark:text-red-400">
+              {viewMode === 'year' ? 'ANNUAL OVERVIEW' : 'SCHEDULE & TIMELINE'}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="hidden sm:inline">VOL. {currentYear}</span>
+            <span>{trips.length + plans.length} JOURNEYS RECORDED</span>
+          </div>
+        </div>
 
-            <div className="flex items-center gap-2.5 sm:gap-6 flex-nowrap whitespace-nowrap select-none">
+        <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4 sm:gap-6">
+          {/* Left: Giant Typography Year & Month + Dropdown Selectors */}
+          <div className="w-full xl:w-auto">
+            <div className="flex items-end gap-2.5 sm:gap-6 flex-nowrap whitespace-nowrap select-none">
               {/* 1. Year Display & Scrollable Dropdown Selector */}
               <div className="relative" ref={yearDropdownRef}>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 leading-tight">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 leading-tight mb-1">
                     YEAR
                   </span>
                   <button
@@ -1525,11 +1534,13 @@ export function CalendarHubPage({
                       setIsYearDropdownOpen(prev => !prev);
                       setIsMonthDropdownOpen(false);
                     }}
-                    className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1 leading-none h-9 sm:h-14 lg:h-16 group text-black dark:text-white"
+                    className="flex items-baseline gap-1.5 sm:gap-2 cursor-pointer hover:opacity-80 transition-opacity group text-black dark:text-white"
                     title="클릭하여 연도 선택"
                   >
-                    <span className="group-hover:underline decoration-red-600 decoration-2 underline-offset-4">{currentYear}</span>
-                    <ChevronDown className={`w-4 h-4 sm:w-6 sm:h-6 text-black/30 dark:text-white/30 group-hover:text-red-600 transition-transform duration-200 ${isYearDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
+                    <span className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter leading-none group-hover:underline decoration-red-600 decoration-2 underline-offset-4">
+                      {currentYear}
+                    </span>
+                    <ChevronDown className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/30 dark:text-white/30 group-hover:text-red-600 transition-transform duration-200 self-center sm:self-auto sm:mb-1 ${isYearDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
                   </button>
                 </div>
 
@@ -1562,13 +1573,15 @@ export function CalendarHubPage({
               </div>
 
               {/* Swiss Minimal Divider */}
-              <span className="text-3xl sm:text-5xl font-light text-black/20 dark:text-white/20 select-none shrink-0">/</span>
+              <span className="self-baseline text-2xl sm:text-4xl lg:text-5xl font-light text-black/20 dark:text-white/20 select-none shrink-0 px-0.5 sm:px-1">
+                /
+              </span>
 
               {/* 2. Month Big Number & Scrollable Dropdown Selector */}
               {viewMode === 'month' ? (
                 <div className="relative" ref={monthDropdownRef}>
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 leading-tight">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 leading-tight mb-1">
                       MONTH
                     </span>
                     <button
@@ -1577,17 +1590,17 @@ export function CalendarHubPage({
                         setIsMonthDropdownOpen(prev => !prev);
                         setIsYearDropdownOpen(false);
                       }}
-                      className="flex items-baseline gap-2 sm:gap-2.5 cursor-pointer hover:opacity-80 transition-opacity group h-9 sm:h-14 lg:h-16 text-black dark:text-white"
+                      className="flex items-baseline gap-1.5 sm:gap-2 cursor-pointer hover:opacity-80 transition-opacity group text-black dark:text-white"
                       title="클릭하여 월 선택"
                     >
                       <span className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter leading-none group-hover:underline decoration-red-600 decoration-2 underline-offset-4">
                         {String(currentMonth + 1).padStart(2, '0')}
                       </span>
-                      <div className="flex items-center gap-1 justify-end pb-0.5 sm:pb-1">
-                        <span className="text-base sm:text-lg md:text-xl font-black font-['Inter',sans-serif] tracking-wider uppercase text-red-600 dark:text-red-500 leading-none">
+                      <div className="flex items-baseline gap-1 sm:gap-1.5">
+                        <span className="text-base sm:text-xl md:text-2xl font-black font-satoshi tracking-wider uppercase text-red-600 dark:text-red-500 leading-none">
                           {MONTH_NAMES[currentMonth]}
                         </span>
-                        <ChevronDown className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/30 dark:text-white/30 group-hover:text-red-600 transition-transform duration-200 ${isMonthDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
+                        <ChevronDown className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/30 dark:text-white/30 group-hover:text-red-600 transition-transform duration-200 self-center sm:self-auto sm:mb-1 ${isMonthDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
                       </div>
                     </button>
                   </div>
@@ -1623,11 +1636,11 @@ export function CalendarHubPage({
                   )}
                 </div>
               ) : (
-                <div className="flex flex-col justify-end h-9 sm:h-14 lg:h-16">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 leading-tight">
+                <div className="flex flex-col justify-end">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 leading-tight mb-1">
                     VIEW
                   </span>
-                  <span className="text-2xl sm:text-4xl font-black font-satoshi tracking-tight leading-none uppercase text-black/80 dark:text-white/80">
+                  <span className="text-2xl sm:text-4xl lg:text-5xl font-black font-satoshi tracking-tight leading-none uppercase text-black/80 dark:text-white/80">
                     ANNUAL 12M
                   </span>
                 </div>
