@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, MapPin, Heart, Plus, ExternalLink, Edit3, Trash2, 
   Navigation, Utensils, Coffee, Camera, ShoppingBag, Lightbulb,
@@ -16,7 +17,6 @@ interface PocketDetailModalProps {
   onDelete?: (spot: SpotPocketItem) => void;
   isLiked: boolean;
   isAdmin?: boolean;
-  onOpenCommentModal?: (spot: SpotPocketItem) => void;
   onSaveComments?: (spotId: string, comments: PocketComment[]) => void;
   isLoggedIn?: boolean;
   currentUser?: { uid?: string; displayName?: string | null; email?: string | null } | null;
@@ -41,7 +41,6 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
   onDelete,
   isLiked,
   isAdmin = false,
-  onOpenCommentModal,
   onSaveComments,
   isLoggedIn = false,
   currentUser,
@@ -50,6 +49,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const leafletMapRef = useRef<any>(null);
   const [quickCommentText, setQuickCommentText] = useState('');
+  const [isCommentsExpanded, setIsCommentsExpanded] = useState<boolean>(true);
 
   const hasCoordinates = typeof spot?.lat === 'number' && typeof spot?.lng === 'number' && !isNaN(spot.lat) && !isNaN(spot.lng);
 
@@ -153,9 +153,9 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
   // Location display
   const locationLabel = [spot.country, spot.city].filter(Boolean).join(' · ');
 
-  return (
+  return createPortal(
     <div 
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 bg-black/60 dark:bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-black/60 dark:bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div 
@@ -181,16 +181,18 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center text-black/25 dark:text-white/25">
-              <CategoryIcon className="w-12 h-12 mb-2" />
-              <span className="text-xs font-mono tracking-widest uppercase font-bold">{meta.label}</span>
+            <div className="w-full h-full flex flex-col items-center justify-center text-black/30 dark:text-white/30">
+              <Camera className="w-12 h-12 mb-2" />
+              <span className="text-xs font-mono font-bold tracking-wider uppercase">NO PREVIEW IMAGE</span>
             </div>
           )}
 
-          {/* Category Chip Overlay */}
-          <div className="absolute top-3.5 left-3.5 px-2.5 py-1 bg-white/95 dark:bg-black/90 backdrop-blur-md text-black dark:text-white text-[9.5px] sm:text-[10px] font-mono font-bold tracking-wider uppercase border border-black/10 dark:border-white/10 rounded-full flex items-center gap-1.5 shadow-xs">
-            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: meta.color }} />
-            <span>{meta.label}</span>
+          {/* Top-Left Category Badge */}
+          <div className="absolute top-3.5 left-3.5 z-20 flex items-center gap-2">
+            <span className="px-3 py-1 rounded-full bg-white/95 dark:bg-black/90 backdrop-blur-md border border-black/10 dark:border-white/15 text-[10px] font-mono font-bold tracking-wider uppercase flex items-center gap-1.5 shadow-sm text-black dark:text-white">
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: meta.color }} />
+              <span>{meta.label}</span>
+            </span>
           </div>
 
           {/* Platform Tag Overlay (if exists) */}
@@ -201,39 +203,60 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
           )}
         </div>
 
-        {/* Scrollable Content Body */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-black dark:text-white">
-          {/* Main Title & Region */}
+        {/* Modal Scrollable Body */}
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
+          {/* Title & Region */}
           <div>
-            {locationLabel && (
-              <div className="flex items-center gap-1.5 text-[10.5px] sm:text-xs font-mono tracking-wider uppercase text-black/50 dark:text-white/50 mb-1.5">
-                <MapPin className="w-3 h-3 text-red-500 shrink-0" />
-                <span>{locationLabel}</span>
-              </div>
-            )}
-            <h2 className="text-xl sm:text-2xl font-black tracking-tight font-sans text-black dark:text-white leading-snug break-keep">
+            <div className="flex items-center gap-1.5 text-[11px] font-mono text-black/50 dark:text-white/50 mb-1">
+              <MapPin className="w-3.5 h-3.5 text-red-600 shrink-0" />
+              <span>{locationLabel}</span>
+            </div>
+            <h2 className="text-lg sm:text-xl font-black text-black dark:text-white leading-tight break-words font-sans">
               {spot.title}
             </h2>
           </div>
 
-          {/* Mini Map Preview Section (Google Maps Tiles via Leaflet) */}
-          <div className="rounded-2xl border border-black/10 dark:border-white/15 overflow-hidden bg-black/[0.02] dark:bg-white/[0.02]">
-            {hasCoordinates ? (
-              <div className="relative w-full h-44 sm:h-48 bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
-                <div ref={mapContainerRef} className="w-full h-full" />
-                <div className="absolute inset-0 pointer-events-none" />
+          {/* Mini Interactive Map with Google Maps Tiles (Leaflet) */}
+          {hasCoordinates ? (
+            <div className="rounded-2xl overflow-hidden border border-black/15 dark:border-white/15 relative">
+              <div 
+                ref={mapContainerRef} 
+                className="w-full h-44 sm:h-52 bg-black/5 dark:bg-white/5" 
+              />
+              
+              {/* Overlay with Google Maps Navigation Trigger */}
+              <div className="absolute bottom-2.5 right-2.5 z-[1000]">
+                <a
+                  href={googleMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/80 hover:bg-black text-white dark:bg-white/90 dark:hover:bg-white dark:text-black backdrop-blur-md text-[11px] font-mono font-bold tracking-wider uppercase shadow-md transition-all cursor-pointer"
+                  title="Google 지도에서 길찾기 및 위치 확인"
+                >
+                  <Navigation className="w-3 h-3 text-red-500" />
+                  <span>GOOGLE MAPS</span>
+                  <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                </a>
               </div>
-            ) : null}
+            </div>
+          ) : null}
 
-            {/* Address & Google Maps Navigation Button */}
-            <div className="p-3 sm:p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 bg-white dark:bg-[#202022]">
-              <div className="flex items-start gap-1.5 min-w-0">
-                <Navigation className="w-3.5 h-3.5 text-black/40 dark:text-white/40 shrink-0 mt-0.5" />
-                <p className="text-[11px] sm:text-xs font-sans text-black/70 dark:text-white/70 leading-relaxed break-keep line-clamp-2">
-                  {spot.address || '주소 정보 없음'}
+          {/* Detailed Address Block */}
+          <div className="p-3 bg-black/[0.03] dark:bg-white/[0.03] rounded-2xl border border-black/10 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+            <div className="flex items-start gap-2 min-w-0">
+              <MapPin className="w-4 h-4 text-black/40 dark:text-white/40 shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-black/40 dark:text-white/40 block font-bold">
+                  LOCATION & ADDRESS
+                </span>
+                <p className="text-black/80 dark:text-white/80 font-mono text-[11.5px] truncate select-all">
+                  {spot.address || '주소 정보가 등록되지 않았습니다.'}
                 </p>
               </div>
+            </div>
 
+            {/* Quick Open in Google Maps */}
+            <div className="shrink-0 flex items-center gap-1.5 self-end sm:self-center">
               <a
                 href={googleMapsUrl}
                 target="_blank"
@@ -258,144 +281,137 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
             </div>
           )}
 
-          {/* Comments Section (View & Quick Add) */}
+          {/* Comments Section (Accordion Toggle) */}
           <div className="pt-3 border-t border-black/10 dark:border-white/10">
-            <div className="flex items-center justify-between mb-2">
+            <div 
+              onClick={() => setIsCommentsExpanded(prev => !prev)}
+              className="flex items-center justify-between py-1 cursor-pointer select-none group"
+            >
               <div className="flex items-center gap-1.5">
-                <MessageSquare className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
-                <span className="text-[10px] font-mono tracking-widest uppercase text-black/60 dark:text-white/60 font-bold">
+                <MessageSquare className={`w-3.5 h-3.5 transition-colors ${isCommentsExpanded ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60'}`} />
+                <span className="text-[10px] font-mono tracking-widest uppercase text-black/70 dark:text-white/70 font-bold group-hover:text-black dark:group-hover:text-white transition-colors">
                   COMMENTS ({spot.comments?.length || 0})
                 </span>
               </div>
-              {onOpenCommentModal && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    onOpenCommentModal(spot);
-                  }}
-                  className="text-[11px] font-mono font-bold text-black/70 hover:text-black dark:text-white/70 dark:hover:text-white flex items-center gap-1 cursor-pointer hover:underline"
-                >
-                  <span>상세 댓글 모달 열기</span>
-                  <span>→</span>
-                </button>
-              )}
+              <span className="text-[10px] font-mono text-black/40 dark:text-white/40 group-hover:text-black/70 dark:group-hover:text-white/70">
+                {isCommentsExpanded ? '접기 ▲' : '펼치기 ▼'}
+              </span>
             </div>
 
-            {/* Comments List Preview */}
-            {(!spot.comments || spot.comments.length === 0) ? (
-              <p className="text-[11px] font-mono text-black/40 dark:text-white/40 py-2">
-                등록된 댓글이 없습니다.
-              </p>
-            ) : (
-              <div className="space-y-2 mb-3 max-h-48 overflow-y-auto pr-1">
-                {spot.comments.map((c) => {
-                  const canManage = isAdmin || (isLoggedIn && currentUser && (
-                    (c.authorId && c.authorId === currentUser.uid) ||
-                    (c.authorEmail && currentUser.email && c.authorEmail.toLowerCase() === currentUser.email.toLowerCase())
-                  ));
+            {isCommentsExpanded && (
+              <div className="mt-2 space-y-2.5 animate-in fade-in duration-150">
+                {/* Comments List (Only rendered when comments exist) */}
+                {spot.comments && spot.comments.length > 0 && (
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {spot.comments.map((c) => {
+                      const canManage = isAdmin || (isLoggedIn && currentUser && (
+                        (c.authorId && c.authorId === currentUser.uid) ||
+                        (c.authorEmail && currentUser.email && c.authorEmail.toLowerCase() === currentUser.email.toLowerCase())
+                      ));
 
-                  return (
-                    <div key={c.id} className="p-2 bg-black/[0.03] dark:bg-white/[0.03] border border-black/10 dark:border-white/10 rounded group">
-                      <div className="flex items-center justify-between text-[10px] font-mono mb-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-black dark:text-white">{c.authorName}</span>
-                          {currentUser?.uid && c.authorId === currentUser.uid && (
-                            <span className="px-1 py-0.2 text-[8px] bg-black text-white dark:bg-white dark:text-black font-bold">YOU</span>
-                          )}
-                          <span className="text-black/40 dark:text-white/40">
-                            {new Date(c.createdAt).toLocaleDateString()}
-                          </span>
+                      return (
+                        <div key={c.id} className="p-2 bg-black/[0.03] dark:bg-white/[0.03] border border-black/10 dark:border-white/10 rounded group">
+                          <div className="flex items-center justify-between text-[10px] font-mono mb-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-black dark:text-white">{c.authorName}</span>
+                              {currentUser?.uid && c.authorId === currentUser.uid && (
+                                <span className="px-1 py-0.2 text-[8px] bg-black text-white dark:bg-white dark:text-black font-bold">YOU</span>
+                              )}
+                              <span className="text-black/40 dark:text-white/40">
+                                {new Date(c.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                            {canManage && onSaveComments && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (window.confirm('댓글을 삭제하시겠습니까?')) {
+                                    const updated = (spot.comments || []).filter(item => item.id !== c.id);
+                                    onSaveComments(spot.id, updated);
+                                  }
+                                }}
+                                className="text-red-500/70 hover:text-red-600 p-0.5 transition-colors cursor-pointer"
+                                title="댓글 삭제"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                          <p className="text-xs text-black/80 dark:text-white/80 font-sans break-words whitespace-pre-wrap">
+                            {c.text}
+                          </p>
                         </div>
-                        {canManage && onSaveComments && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (window.confirm('댓글을 삭제하시겠습니까?')) {
-                                const updated = (spot.comments || []).filter(item => item.id !== c.id);
-                                onSaveComments(spot.id, updated);
-                              }
-                            }}
-                            className="text-red-500/70 hover:text-red-600 p-0.5 transition-colors cursor-pointer"
-                            title="댓글 삭제"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        )}
-                      </div>
-                      <p className="text-xs text-black/80 dark:text-white/80 font-sans break-words whitespace-pre-wrap">
-                        {c.text}
-                      </p>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Quick Comment Input */}
+                {isLoggedIn && onSaveComments ? (
+                  <div className="flex items-center gap-2 pt-1">
+                    <input
+                      type="text"
+                      value={quickCommentText}
+                      onChange={(e) => setQuickCommentText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (!quickCommentText.trim()) return;
+                          const authorDisplayName = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'USER';
+                          const newComment: PocketComment = {
+                            id: `comment-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+                            text: quickCommentText.trim(),
+                            createdAt: Date.now(),
+                            authorId: currentUser?.uid || 'anonymous',
+                            authorName: authorDisplayName,
+                            authorEmail: currentUser?.email || undefined,
+                          };
+                          onSaveComments(spot.id, [...(spot.comments || []), newComment]);
+                          setQuickCommentText('');
+                        }
+                      }}
+                      placeholder="댓글 입력 후 Enter..."
+                      className="flex-1 px-2.5 py-1.5 text-xs bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 text-black dark:text-white font-sans outline-none rounded focus:border-black dark:focus:border-white"
+                    />
+                    <button
+                      type="button"
+                      disabled={!quickCommentText.trim()}
+                      onClick={() => {
+                        if (!quickCommentText.trim()) return;
+                        const authorDisplayName = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'USER';
+                        const newComment: PocketComment = {
+                          id: `comment-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+                          text: quickCommentText.trim(),
+                          createdAt: Date.now(),
+                          authorId: currentUser?.uid || 'anonymous',
+                          authorName: authorDisplayName,
+                          authorEmail: currentUser?.email || undefined,
+                        };
+                        onSaveComments(spot.id, [...(spot.comments || []), newComment]);
+                        setQuickCommentText('');
+                      }}
+                      className="px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed text-[11px] font-mono font-bold uppercase rounded cursor-pointer"
+                    >
+                      <Send className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : !isLoggedIn && onOpenAuthModal ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenAuthModal();
+                    }}
+                    className="w-full py-2 text-center text-xs font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white border border-dashed border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white transition-colors cursor-pointer"
+                  >
+                    댓글을 작성하려면 로그인하세요 →
+                  </button>
+                ) : null}
               </div>
             )}
-
-            {/* Quick Comment Input */}
-            {isLoggedIn && onSaveComments ? (
-              <div className="flex items-center gap-2 mt-2">
-                <input
-                  type="text"
-                  value={quickCommentText}
-                  onChange={(e) => setQuickCommentText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      if (!quickCommentText.trim()) return;
-                      const authorDisplayName = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'USER';
-                      const newComment: PocketComment = {
-                        id: `comment-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-                        text: quickCommentText.trim(),
-                        createdAt: Date.now(),
-                        authorId: currentUser?.uid || 'anonymous',
-                        authorName: authorDisplayName,
-                        authorEmail: currentUser?.email || undefined,
-                      };
-                      onSaveComments(spot.id, [...(spot.comments || []), newComment]);
-                      setQuickCommentText('');
-                    }
-                  }}
-                  placeholder="댓글 입력 후 Enter..."
-                  className="flex-1 px-2.5 py-1.5 text-xs bg-white dark:bg-[#1a1a1a] border border-black/20 dark:border-white/20 text-black dark:text-white font-sans outline-none rounded focus:border-black dark:focus:border-white"
-                />
-                <button
-                  type="button"
-                  disabled={!quickCommentText.trim()}
-                  onClick={() => {
-                    if (!quickCommentText.trim()) return;
-                    const authorDisplayName = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'USER';
-                    const newComment: PocketComment = {
-                      id: `comment-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-                      text: quickCommentText.trim(),
-                      createdAt: Date.now(),
-                      authorId: currentUser?.uid || 'anonymous',
-                      authorName: authorDisplayName,
-                      authorEmail: currentUser?.email || undefined,
-                    };
-                    onSaveComments(spot.id, [...(spot.comments || []), newComment]);
-                    setQuickCommentText('');
-                  }}
-                  className="px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed text-[11px] font-mono font-bold uppercase rounded cursor-pointer"
-                >
-                  <Send className="w-3 h-3" />
-                </button>
-              </div>
-            ) : !isLoggedIn && onOpenAuthModal ? (
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onOpenAuthModal();
-                }}
-                className="w-full py-2 text-center text-xs font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white border border-dashed border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white transition-colors cursor-pointer"
-              >
-                댓글을 작성하려면 로그인하세요 →
-              </button>
-            ) : null}
           </div>
 
-          {/* Admin Edit / Delete Actions */}
+          {/* Admin Edit / Delete Actions (Icon only) */}
           {isAdmin && (
             <div className="pt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-end gap-2 text-xs font-mono">
               {onEdit && (
@@ -405,10 +421,10 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
                     onClose();
                     onEdit(spot);
                   }}
-                  className="px-2.5 py-1.5 flex items-center gap-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded transition-colors cursor-pointer"
+                  className="p-1.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded transition-colors cursor-pointer"
+                  title="스팟 수정"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
-                  <span>수정</span>
                 </button>
               )}
               {onDelete && (
@@ -418,86 +434,86 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
                     onClose();
                     onDelete(spot);
                   }}
-                  className="px-2.5 py-1.5 flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 rounded transition-colors cursor-pointer"
+                  className="p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 rounded transition-colors cursor-pointer"
+                  title="스팟 삭제"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  <span>삭제</span>
                 </button>
               )}
             </div>
           )}
         </div>
 
-        {/* Bottom Fixed Action Bar */}
-        <div className="p-3 sm:p-4 bg-black/[0.02] dark:bg-white/[0.02] border-t border-black/10 dark:border-white/10 flex items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-2">
+        {/* Bottom Fixed Action Bar (Guaranteed 1-Row Layout on Mobile) */}
+        <div className="p-2.5 sm:p-4 bg-black/[0.02] dark:bg-white/[0.02] border-t border-black/10 dark:border-white/10 flex items-center justify-between gap-1.5 sm:gap-3 shrink-0 flex-nowrap">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {/* Heart / Likes Button */}
             <button
               type="button"
               onClick={() => onToggleLike(spot.id)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border transition-all cursor-pointer shrink-0 ${
                 isLiked
                   ? 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400'
                   : 'bg-white dark:bg-[#1a1a1a] border-black/10 dark:border-white/10 text-black/70 dark:text-white/70 hover:border-black/30 dark:hover:border-white/30'
               }`}
               title="좋아요 관심사 체크"
             >
-              <Heart className={`w-4 h-4 ${isLiked ? 'fill-red-600 text-red-600 dark:fill-red-400 dark:text-red-400' : ''}`} />
-              <span className="text-xs font-mono font-bold tracking-tight">
+              <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isLiked ? 'fill-red-600 text-red-600 dark:fill-red-400 dark:text-red-400' : ''}`} />
+              <span className="text-[11px] sm:text-xs font-mono font-bold tracking-tight">
                 {spot.likes || 0}
               </span>
             </button>
 
-            {/* Comments Modal Trigger */}
+            {/* Comments Accordion Toggle Button */}
             <button
               type="button"
-              onClick={() => {
-                if (onOpenCommentModal) {
-                  onClose();
-                  onOpenCommentModal(spot);
-                }
-              }}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#1a1a1a] text-black/70 dark:text-white/70 hover:border-black/30 dark:hover:border-white/30 transition-all cursor-pointer"
-              title="댓글 열기"
+              onClick={() => setIsCommentsExpanded(prev => !prev)}
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border transition-all cursor-pointer shrink-0 ${
+                isCommentsExpanded
+                  ? 'bg-black/10 dark:bg-white/15 border-black/30 dark:border-white/30 text-black dark:text-white shadow-xs'
+                  : 'bg-white dark:bg-[#1a1a1a] border-black/10 dark:border-white/10 text-black/70 dark:text-white/70 hover:border-black/30 dark:hover:border-white/30'
+              }`}
+              title={isCommentsExpanded ? "댓글 접기" : "댓글 펼치기"}
             >
-              <MessageSquare className="w-4 h-4" />
-              <span className="text-xs font-mono font-bold tracking-tight">
+              <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="text-[11px] sm:text-xs font-mono font-bold tracking-tight">
                 {spot.comments?.length || 0}
               </span>
             </button>
           </div>
 
           {/* Right Main CTA Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {/* Original Source Link */}
             {spot.sourceUrl && (
               <a
                 href={spot.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-3 py-2 rounded-xl border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white bg-white dark:bg-[#1a1a1a] text-black/80 dark:text-white/80 hover:text-black dark:hover:text-white text-[11px] font-mono font-bold tracking-wider uppercase transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                className="px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white bg-white dark:bg-[#1a1a1a] text-black/80 dark:text-white/80 hover:text-black dark:hover:text-white text-[10.5px] sm:text-[11px] font-mono font-bold tracking-wider uppercase transition-colors inline-flex items-center gap-1 cursor-pointer shrink-0"
                 title="출처 원본 게시물 보기"
               >
-                <span>ORIGINAL</span>
+                <span className="hidden sm:inline">ORIGINAL</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
             )}
 
-            {/* USE IN TRIP Button */}
+            {/* ADD TRIP Button */}
             <button
               type="button"
               onClick={() => {
                 onClose();
                 onUseInTrip(spot);
               }}
-              className="px-4 py-2 rounded-xl bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 text-xs font-mono font-bold tracking-wider uppercase transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-sm"
+              className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 text-xs font-mono font-bold tracking-wider uppercase transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-sm shrink-0 whitespace-nowrap"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>USE IN TRIP</span>
+              <span>ADD TRIP</span>
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

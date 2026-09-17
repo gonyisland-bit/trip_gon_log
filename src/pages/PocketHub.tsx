@@ -14,7 +14,6 @@ import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { PocketScheduleModal } from '../components/PocketScheduleModal';
 import { PocketDetailModal } from '../components/PocketDetailModal';
-import { PocketCommentModal } from '../components/PocketCommentModal';
 import { compressImage } from '../utils/imageHelper';
 import { uploadFileToR2 } from '../utils/storageHelper';
 import { auth } from '../firebase';
@@ -239,9 +238,6 @@ export function PocketHubPage({
   // Detail Modal state
   const [selectedSpotForModal, setSelectedSpotForModal] = useState<SpotPocketItem | null>(null);
 
-  // Comment Modal state
-  const [selectedSpotForCommentModal, setSelectedSpotForCommentModal] = useState<SpotPocketItem | null>(null);
-
   // User/Guest identifier for Likes
   const currentUserId = useMemo(() => {
     return getOrCreateGuestId();
@@ -262,9 +258,6 @@ export function PocketHubPage({
     await savePockets(updated);
     if (selectedSpotForModal && selectedSpotForModal.id === spotId) {
       setSelectedSpotForModal(prev => prev ? { ...prev, comments } : null);
-    }
-    if (selectedSpotForCommentModal && selectedSpotForCommentModal.id === spotId) {
-      setSelectedSpotForCommentModal(prev => prev ? { ...prev, comments } : null);
     }
   };
 
@@ -1264,10 +1257,10 @@ export function PocketHubPage({
                             <span>{spot.likes || 0}</span>
                           </button>
 
-                          {/* Comment Modal Trigger with Count Badge */}
+                          {/* Comment Trigger with Count Badge: Opens Detail Modal */}
                           <button
                             type="button"
-                            onClick={() => setSelectedSpotForCommentModal(spot)}
+                            onClick={() => setSelectedSpotForModal(spot)}
                             className={`flex items-center gap-1.5 px-2 py-1 rounded-full border text-[10.5px] sm:text-[11px] font-mono font-bold transition-all cursor-pointer ${
                               spot.comments && spot.comments.length > 0
                                 ? 'bg-black/5 dark:bg-white/5 border-black/20 dark:border-white/20 text-black dark:text-white shadow-xs'
@@ -1728,21 +1721,8 @@ export function PocketHubPage({
         onDelete={(spot) => setSpotToDelete(spot)}
         isLiked={Boolean(selectedSpotForModal && Array.isArray(selectedSpotForModal.likedBy) && selectedSpotForModal.likedBy.includes(currentUserId))}
         isAdmin={isAdmin}
-        onOpenCommentModal={(spot) => setSelectedSpotForCommentModal(spot)}
         onSaveComments={handleSaveSpotComments}
         isLoggedIn={isLoggedIn}
-        currentUser={auth.currentUser}
-        onOpenAuthModal={onOpenAuthModal}
-      />
-
-      {/* ── SPOT COMMENT MODAL ── */}
-      <PocketCommentModal
-        isOpen={Boolean(selectedSpotForCommentModal)}
-        spot={selectedSpotForCommentModal}
-        onClose={() => setSelectedSpotForCommentModal(null)}
-        onSaveComments={handleSaveSpotComments}
-        isLoggedIn={isLoggedIn}
-        isAdmin={isAdmin}
         currentUser={auth.currentUser}
         onOpenAuthModal={onOpenAuthModal}
       />
