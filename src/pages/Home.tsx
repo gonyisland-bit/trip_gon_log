@@ -2314,83 +2314,51 @@ export function HomePage({
               </button>
             </div>
 
-            {/* Swiss Responsive Layout: Compact 2-Column on md/lg, 3-Tier harmonious spacing */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 xl:gap-10 items-start">
-              {/* Left Column (md:col-span-6 lg:col-span-7 xl:col-span-7): Month Display + Schedules Feed */}
-              <div className="md:col-span-6 lg:col-span-7 xl:col-span-7 flex flex-col justify-between gap-6">
-                {/* Giant Month Number + Horizontal Month Name & Year */}
-                <div className="flex items-center gap-4 sm:gap-5">
-                  <div 
-                    onClick={() => onNavigate('calendar')}
-                    className="cursor-pointer group flex items-baseline gap-3.5"
-                    title="달력 허브로 이동"
-                  >
-                    <span className="text-7xl sm:text-8xl lg:text-9xl font-black font-satoshi tracking-tighter leading-none text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
-                      {String(month + 1).padStart(2, '0')}
+            {/* Swiss Responsive 3-Column Layout: 1. Month/Year -> 2. Large Calendar -> 3. Schedule Feed */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 xl:gap-10 items-start">
+              {/* 1. Month/Year Display Column (lg:col-span-3 xl:col-span-3) */}
+              <div className="lg:col-span-3 xl:col-span-3 flex flex-col justify-start gap-4">
+                <div 
+                  onClick={() => onNavigate('calendar')}
+                  className="cursor-pointer group flex flex-col items-start select-none"
+                  title="달력 허브로 이동"
+                >
+                  <span className="text-7xl sm:text-8xl lg:text-9xl font-black font-satoshi tracking-tighter leading-none text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
+                    {String(month + 1).padStart(2, '0')}
+                  </span>
+                  <div className="mt-3 flex flex-col">
+                    <span className="text-2xl sm:text-3xl font-black font-satoshi tracking-tight uppercase text-black dark:text-white leading-tight">
+                      {MONTH_NAMES_EN[month]}
                     </span>
-                    <div className="flex flex-col justify-center">
-                      <span className="text-xl sm:text-2xl lg:text-3xl font-black font-satoshi tracking-tight uppercase text-black dark:text-white leading-tight">
-                        {MONTH_NAMES_EN[month]}
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-base sm:text-lg font-bold font-mono text-black/40 dark:text-white/40">
+                        {year}
                       </span>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-sm sm:text-base font-bold font-mono text-black/40 dark:text-white/40">
-                          {year}
-                        </span>
-                        <span className="text-xs sm:text-sm font-bold font-mono text-red-600 dark:text-red-500 uppercase">
-                          · {dateNum} {dayOfWeekStr}
-                        </span>
-                      </div>
+                      <span className="text-xs sm:text-sm font-bold font-mono text-red-600 dark:text-red-500 uppercase">
+                        · {dateNum} {dayOfWeekStr}
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* 1-Line Simple Schedules Feed */}
-                <div className="flex flex-col justify-center border-t border-black/10 dark:border-white/10 pt-4">
-                  <div className="text-[10px] font-mono font-black uppercase tracking-widest text-black/40 dark:text-white/40 mb-2.5">
-                    MONTHLY SCHEDULES ({monthSchedules.length})
+                {/* Micro Guide Label */}
+                <div className="mt-2 pt-4 border-t border-black/10 dark:border-white/10 flex flex-wrap items-center gap-3 text-xs font-mono text-black/50 dark:text-white/50">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#FF4500]" />
+                    <span className="text-[11px] font-bold">여정 등록일</span>
                   </div>
-
-                  {monthSchedules.length === 0 ? (
-                    <div className="text-xs font-mono text-black/40 dark:text-white/40 py-2">
-                      NO SCHEDULES RECORDED THIS MONTH
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto pr-1 divide-y divide-black/5 dark:divide-white/5">
-                      {monthSchedules.map((item) => {
-                        const sFormatted = item.start ? `${parseInt(item.start.split('-')[1], 10)}/${parseInt(item.start.split('-')[2], 10)}` : '';
-                        const eFormatted = item.end && item.end !== item.start ? `${parseInt(item.end.split('-')[1], 10)}/${parseInt(item.end.split('-')[2], 10)}` : sFormatted;
-                        const dateRangeStr = sFormatted === eFormatted ? sFormatted : `${sFormatted} - ${eFormatted}`;
-
-                        return (
-                          <div
-                            key={`home-sched-${item.id}`}
-                            onClick={() => handleCellClick(item.start)}
-                            className="pt-1.5 flex items-center justify-between gap-2 text-xs font-mono cursor-pointer group hover:text-red-600 transition-colors"
-                          >
-                            <div className="flex items-center gap-2 truncate">
-                              <span className="text-black/50 dark:text-white/50 font-bold shrink-0">
-                                {dateRangeStr}
-                              </span>
-                              <span className="font-sans font-bold text-black dark:text-white group-hover:text-red-600 truncate">
-                                {item.title}
-                              </span>
-                            </div>
-                            <span className="text-[10.5px] font-bold font-mono text-red-600 dark:text-red-400 shrink-0">
-                              {item.days === 1 ? '1 DAY' : `${item.days} DAYS`}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-black dark:bg-white" />
+                    <span className="text-[11px] font-bold">오늘</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Right Column (md:col-span-6 lg:col-span-5 xl:col-span-5): Circular Dot Grid */}
-              <div className="md:col-span-6 lg:col-span-5 xl:col-span-5 flex flex-col items-center md:items-end justify-center w-full border-t md:border-t-0 md:border-l border-black/10 dark:border-white/10 pt-6 md:pt-0 md:pl-6 lg:pl-8">
-                <div className="w-full max-w-[320px] sm:max-w-[340px] mx-auto md:mr-0">
+              {/* 2. Large Circular Calendar Grid Column (lg:col-span-5 xl:col-span-5) */}
+              <div className="lg:col-span-5 xl:col-span-5 flex flex-col items-center justify-center w-full border-t lg:border-t-0 lg:border-l border-black/10 dark:border-white/10 pt-6 lg:pt-0 lg:pl-8">
+                <div className="w-full max-w-[420px] mx-auto">
                   {/* Weekday Headers */}
-                  <div className="grid grid-cols-7 gap-2 sm:gap-2.5 mb-2 text-center text-xs font-black font-mono select-none text-black/40 dark:text-white/40">
+                  <div className="grid grid-cols-7 gap-2 sm:gap-3 mb-3 text-center text-xs sm:text-sm font-black font-mono select-none text-black/40 dark:text-white/40">
                     <div>M</div>
                     <div>T</div>
                     <div>W</div>
@@ -2400,14 +2368,14 @@ export function HomePage({
                     <div className="text-red-500">S</div>
                   </div>
 
-                  {/* Circular Dot Grid */}
-                  <div className="grid grid-cols-7 gap-2 sm:gap-2.5">
+                  {/* Circular Dot Grid (Larger responsive circles) */}
+                  <div className="grid grid-cols-7 gap-2 sm:gap-3">
                     {cells.map((cell) => {
                       if (!cell.isCurrentMonth) {
                         return (
                           <div
                             key={cell.key}
-                            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-black/5 dark:border-white/5 opacity-25 flex items-center justify-center pointer-events-none mx-auto"
+                            className="w-9 h-9 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full border border-black/5 dark:border-white/5 opacity-25 flex items-center justify-center pointer-events-none mx-auto"
                           />
                         );
                       }
@@ -2416,11 +2384,11 @@ export function HomePage({
                       const isHoliday = cell.isHoliday;
                       const isSat = !isSun && new Date(cell.dateStr).getDay() === 6;
 
-                      let btnStyle = 'w-8 h-8 sm:w-9 sm:h-9 rounded-full flex flex-col items-center justify-center font-mono transition-all duration-150 cursor-pointer relative mx-auto ';
-                      let numStyle = 'text-[11px] sm:text-xs font-bold leading-none ';
+                      let btnStyle = 'w-9 h-9 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full flex flex-col items-center justify-center font-mono transition-all duration-150 cursor-pointer relative mx-auto ';
+                      let numStyle = 'text-xs sm:text-sm md:text-base font-black leading-none ';
 
                       if (cell.isToday) {
-                        btnStyle += 'bg-black text-white dark:bg-white dark:text-black font-black shadow-xs';
+                        btnStyle += 'bg-black text-white dark:bg-white dark:text-black font-black shadow-xs scale-105';
                         numStyle += 'text-white dark:text-black';
                       } else if (cell.hasTrip) {
                         btnStyle += 'bg-[#FF4500] hover:bg-[#E03E00] text-white font-black shadow-xs';
@@ -2448,13 +2416,63 @@ export function HomePage({
                             {cell.dayNum}
                           </span>
                           {cell.isHoliday && !cell.hasTrip && !cell.isToday && (
-                            <span className="w-1 h-1 rounded-full bg-red-500 absolute bottom-0.5 left-1/2 -translate-x-1/2 pointer-events-none" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 absolute bottom-1 left-1/2 -translate-x-1/2 pointer-events-none" />
                           )}
                         </button>
                       );
                     })}
                   </div>
                 </div>
+              </div>
+
+              {/* 3. Monthly Schedules Feed Column (lg:col-span-4 xl:col-span-4) */}
+              <div className="lg:col-span-4 xl:col-span-4 flex flex-col justify-start w-full border-t lg:border-t-0 lg:border-l border-black/10 dark:border-white/10 pt-6 lg:pt-0 lg:pl-8">
+                <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-3">
+                  <span className="text-[10px] font-mono font-black uppercase tracking-widest text-black/40 dark:text-white/40">
+                    MONTHLY SCHEDULES ({monthSchedules.length})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('calendar')}
+                    className="text-[10.5px] font-mono font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                  >
+                    VIEW ALL
+                  </button>
+                </div>
+
+                {monthSchedules.length === 0 ? (
+                  <div className="text-xs font-mono text-black/40 dark:text-white/40 py-8 text-center">
+                    NO SCHEDULES RECORDED THIS MONTH
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1 divide-y divide-black/5 dark:divide-white/5">
+                    {monthSchedules.map((item) => {
+                      const sFormatted = item.start ? `${parseInt(item.start.split('-')[1], 10)}/${parseInt(item.start.split('-')[2], 10)}` : '';
+                      const eFormatted = item.end && item.end !== item.start ? `${parseInt(item.end.split('-')[1], 10)}/${parseInt(item.end.split('-')[2], 10)}` : sFormatted;
+                      const dateRangeStr = sFormatted === eFormatted ? sFormatted : `${sFormatted} - ${eFormatted}`;
+
+                      return (
+                        <div
+                          key={`home-sched-${item.id}`}
+                          onClick={() => handleCellClick(item.start)}
+                          className="pt-2 flex items-center justify-between gap-2 text-xs font-mono cursor-pointer group hover:text-red-600 transition-colors"
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <span className="text-black/50 dark:text-white/50 font-bold shrink-0">
+                              {dateRangeStr}
+                            </span>
+                            <span className="font-sans font-bold text-black dark:text-white group-hover:text-red-600 truncate">
+                              {item.title}
+                            </span>
+                          </div>
+                          <span className="text-[10.5px] font-bold font-mono text-red-600 dark:text-red-400 shrink-0">
+                            {item.days === 1 ? '1 DAY' : `${item.days} DAYS`}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </section>

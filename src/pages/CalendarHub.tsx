@@ -12,7 +12,7 @@ import { getKoreanHolidays, getHolidayInfo, KoreanHoliday } from '../utils/korea
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { db, auth } from '../firebase';
 import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
-import { fetchCityWeather, getWeatherMeta, CityWeatherData, DailyForecastItem } from '../utils/weatherApi';
+import { fetchCityWeather, getWeatherMeta, getSimulatedWeatherForDate, CityWeatherData, DailyForecastItem } from '../utils/weatherApi';
 
 const CALENDAR_WEATHER_CITIES = [
   { name: '서울', nameEn: 'SEOUL', country: 'KR', lat: 37.5665, lng: 126.9780, timezone: 'Asia/Seoul' },
@@ -1344,7 +1344,7 @@ export function CalendarHubPage({
       {/* ───────────────────────────────────────────────────────────── */}
       {/* Top Banner & Swiss Minimal Typography Header                  */}
       {/* ───────────────────────────────────────────────────────────── */}
-      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 pt-8 sm:pt-12 pb-6 border-b border-black/10 dark:border-white/10">
+      <div className="w-full max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-6 border-b border-black/10 dark:border-white/10">
         <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4 sm:gap-6">
           {/* Left: Giant Typography Year & Month + < TODAY > Navigation */}
           <div className="w-full xl:w-auto">
@@ -1696,7 +1696,7 @@ export function CalendarHubPage({
       }`}>
         {viewMode === 'month' ? (
           /* ──────────────── MONTH VIEW (Pure Circular Swiss Minimal) ──────────────── */
-          <div className="w-full max-w-4xl lg:max-w-5xl mx-auto px-2 sm:px-6 mt-3 sm:mt-5">
+          <div className="w-full max-w-5xl xl:max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 mt-3 sm:mt-5">
             {/* Edit Mode Control & Multi-Select Indicator Bar (Fixed height slot prevents calendar layout shift) */}
             {isEditMode && (
               <div className="h-9 sm:h-10 flex items-center justify-between pb-2 px-1 text-xs sm:text-sm font-mono font-bold select-none">
@@ -1807,16 +1807,16 @@ export function CalendarHubPage({
                     data-calendar-date={cell.dateStr}
                     className="relative flex items-center justify-center h-14 sm:h-16 md:h-20 lg:h-22 w-full"
                   >
-                    {/* Multi-day Trip Capsule Ribbon spanning across columns in row (상하/좌우 여백 황금비율 최적화) */}
+                    {/* Multi-day Trip Capsule Ribbon (원형 버튼 높이와 100% 일치시켜 경계면 침범 방지) */}
                     {hasTrip && cell.isCurrentMonth && (
                       <div
-                        className={`absolute top-2 bottom-2 sm:top-2.5 sm:bottom-2.5 md:top-3 md:bottom-3 lg:top-3.5 lg:bottom-3.5 z-0 ${
+                        className={`absolute top-1/2 -translate-y-1/2 h-10 sm:h-12 md:h-14 lg:h-16 z-0 ${
                           !prevInRowHasSameTrip && !nextInRowHasSameTrip
-                            ? 'inset-x-1.5 sm:inset-x-2 md:inset-x-2.5 lg:inset-x-3 rounded-full'
+                            ? 'inset-x-1 sm:inset-x-1.5 md:inset-x-2 rounded-full'
                             : !prevInRowHasSameTrip && nextInRowHasSameTrip
-                              ? 'left-1.5 sm:left-2 md:left-2.5 lg:left-3 right-0 rounded-l-full'
+                              ? 'left-1 sm:left-1.5 md:left-2 right-0 rounded-l-full'
                               : prevInRowHasSameTrip && !nextInRowHasSameTrip
-                                ? 'left-0 right-1.5 sm:right-2 md:right-2.5 lg:right-3 rounded-r-full'
+                                ? 'left-0 right-1 sm:right-1.5 md:right-2 rounded-r-full'
                                 : 'left-0 right-0 rounded-none'
                         } ${isPlan ? 'bg-amber-500' : 'bg-[#FF4500] dark:bg-[#FF4500]'}`}
                       />
@@ -1843,11 +1843,10 @@ export function CalendarHubPage({
                       className={circleClasses}
                       title={cell.holiday ? `${cell.dateStr} (${cell.holiday.name})` : cell.dateStr}
                     >
-                      {/* Weather Mode 3-Tier Layout (사용자 피드백: 날씨 아이콘 중앙에 크게, 최저/최고온도 알약 하단에) */}
-                      {isWeatherMode && cell.isCurrentMonth && cityWeatherData?.forecast ? (() => {
-                        const exact = cityWeatherData.forecast.find(f => f.date === cell.dateStr);
-                        const dayIdx = (cell.dayNum - 1) % cityWeatherData.forecast.length;
-                        const weatherItem = exact || cityWeatherData.forecast[dayIdx];
+                      {/* Weather Mode 3-Tier Layout (실시간 예보는 Open-Meteo 사용, 14일 이후/타월은 실제 기후 통계 시뮬레이터 연동) */}
+                      {isWeatherMode && cell.isCurrentMonth ? (() => {
+                        const exact = cityWeatherData?.forecast?.find(f => f.date === cell.dateStr);
+                        const weatherItem = exact || getSimulatedWeatherForDate(selectedWeatherCity.nameEn, cell.dateStr);
 
                         if (!weatherItem) {
                           return <span className={textClasses}>{cell.dayNum}</span>;
@@ -1872,7 +1871,6 @@ export function CalendarHubPage({
                               {weatherItem.tempMin}°/{weatherItem.tempMax}°
                             </span>
                           </div>
-                        );
                       })() : (
                         <>
                           <span className={textClasses}>{cell.dayNum}</span>

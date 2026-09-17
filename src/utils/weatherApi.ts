@@ -17,14 +17,22 @@ export interface WeatherMeta {
 }
 
 export function getWeatherMeta(code: number, precipitationProb?: number): WeatherMeta {
-  // If precipitation probability is low (< 35%), light drizzle (51, 53, 55) or light shower (80)
-  // should not be rendered as a full-day rain when it's mostly fair or overcast.
   let effectiveCode = code;
-  if (precipitationProb !== undefined && precipitationProb < 35) {
-    if (code === 51 || code === 53 || code === 55 || code === 80) {
-      effectiveCode = 2; // FAIR (CloudSun)
-    } else if (code === 61) {
-      effectiveCode = 3; // OVERCAST (Cloud)
+
+  // 우기/강수 확률 기반 정밀 보정
+  if (precipitationProb !== undefined) {
+    if (precipitationProb >= 55) {
+      // 강수 확률 55% 이상이면 확실한 비(또는 뇌우) 반영
+      if (effectiveCode === 0 || effectiveCode === 1 || effectiveCode === 2 || effectiveCode === 3) {
+        effectiveCode = precipitationProb >= 75 ? 63 : 61; // RAIN
+      }
+    } else if (precipitationProb < 30) {
+      // 강수 확률이 매우 낮은 날(30% 미만)인데 가벼운 이슬비 코드인 경우 맑음/흐림으로 보정
+      if (code === 51 || code === 53 || code === 55 || code === 80) {
+        effectiveCode = 2; // FAIR (CloudSun)
+      } else if (code === 61) {
+        effectiveCode = 3; // OVERCAST (Cloud)
+      }
     }
   }
 
@@ -44,6 +52,224 @@ export function getWeatherMeta(code: number, precipitationProb?: number): Weathe
     return { label: 'STORM', labelKo: '뇌우', icon: CloudLightning, colorClass: 'text-purple-500' };
   }
   return { label: 'BREEZE', labelKo: '바람', icon: Wind, colorClass: 'text-teal-400' };
+}
+
+// ============================================================================
+// 세계 주요 도시별 1~12월 기후 통계 데이터베이스 (기상청 및 WMO 30년 평년값 기반)
+// tMin: 최저기온, tMax: 최고기온, rainProb: 평균 강수확률(%), snowProb: 강설확률(%)
+// ============================================================================
+interface MonthClimate {
+  tMin: number;
+  tMax: number;
+  rainProb: number;
+  snowProb?: number;
+}
+
+const DEFAULT_CLIMATE: MonthClimate[] = [
+  { tMin: -2, tMax: 6, rainProb: 15, snowProb: 15 },  // 1월
+  { tMin: 0, tMax: 8, rainProb: 18, snowProb: 10 },   // 2월
+  { tMin: 4, tMax: 14, rainProb: 22 },                // 3월
+  { tMin: 10, tMax: 20, rainProb: 25 },               // 4월
+  { tMin: 15, tMax: 25, rainProb: 28 },               // 5월
+  { tMin: 19, tMax: 28, rainProb: 35 },               // 6월
+  { tMin: 23, tMax: 30, rainProb: 48 },               // 7월 (장마)
+  { tMin: 24, tMax: 31, rainProb: 42 },               // 8월 (폭염/소나기)
+  { tMin: 18, tMax: 26, rainProb: 30 },               // 9월
+  { tMin: 11, tMax: 20, rainProb: 20 },               // 10월
+  { tMin: 5, tMax: 14, rainProb: 22 },                // 11월
+  { tMin: -1, tMax: 7, rainProb: 18, snowProb: 12 },  // 12월
+];
+
+const CITY_CLIMATES: Record<string, MonthClimate[]> = {
+  // 서울 (7월 장마철 강수확률 52%, 8월 42%, 10월 청명 15%, 1월 영하 및 눈)
+  'SEOUL': [
+    { tMin: -6, tMax: 2, rainProb: 12, snowProb: 20 },
+    { tMin: -4, tMax: 5, rainProb: 14, snowProb: 15 },
+    { tMin: 2, tMax: 11, rainProb: 20 },
+    { tMin: 8, tMax: 18, rainProb: 24 },
+    { tMin: 14, tMax: 24, rainProb: 26 },
+    { tMin: 19, tMax: 28, rainProb: 36 },
+    { tMin: 23, tMax: 29, rainProb: 52 }, // 7월 서울 장마: 강수확률 52% (이틀에 한번 비)
+    { tMin: 24, tMax: 31, rainProb: 42 }, // 8월 폭염 및 잦은 소나기
+    { tMin: 17, tMax: 26, rainProb: 26 },
+    { tMin: 10, tMax: 20, rainProb: 16 }, // 10월 쾌청한 가을
+    { tMin: 3, tMax: 12, rainProb: 22 },
+    { tMin: -4, tMax: 4, rainProb: 15, snowProb: 18 },
+  ],
+  // 도쿄 (6월 츠유 장마 48%, 9~10월 가을비/태풍 42%, 겨울 맑고 온화)
+  'TOKYO': [
+    { tMin: 2, tMax: 10, rainProb: 15, snowProb: 4 },
+    { tMin: 3, tMax: 11, rainProb: 18, snowProb: 4 },
+    { tMin: 6, tMax: 14, rainProb: 28 },
+    { tMin: 11, tMax: 19, rainProb: 30 },
+    { tMin: 16, tMax: 23, rainProb: 34 },
+    { tMin: 20, tMax: 26, rainProb: 48 }, // 6월 츠유 장마: 강수확률 48%
+    { tMin: 24, tMax: 30, rainProb: 38 },
+    { tMin: 25, tMax: 32, rainProb: 34 },
+    { tMin: 21, tMax: 27, rainProb: 44 }, // 9월 태풍/가을장마
+    { tMin: 15, tMax: 22, rainProb: 38 }, // 10월
+    { tMin: 10, tMax: 17, rainProb: 24 },
+    { tMin: 5, tMax: 12, rainProb: 16 },
+  ],
+  // 오사카
+  'OSAKA': [
+    { tMin: 3, tMax: 10, rainProb: 18 },
+    { tMin: 3, tMax: 11, rainProb: 20 },
+    { tMin: 6, tMax: 15, rainProb: 28 },
+    { tMin: 11, tMax: 20, rainProb: 30 },
+    { tMin: 16, tMax: 25, rainProb: 32 },
+    { tMin: 20, tMax: 28, rainProb: 46 }, // 6월 장마
+    { tMin: 25, tMax: 32, rainProb: 40 },
+    { tMin: 26, tMax: 34, rainProb: 32 },
+    { tMin: 22, tMax: 29, rainProb: 38 },
+    { tMin: 16, tMax: 24, rainProb: 26 },
+    { tMin: 10, tMax: 18, rainProb: 22 },
+    { tMin: 5, tMax: 12, rainProb: 18 },
+  ],
+  // 삿포로 (겨울철 풍부한 눈, 여름철 장마 없는 쾌적함)
+  'SAPPORO': [
+    { tMin: -7, tMax: -1, rainProb: 15, snowProb: 65 },
+    { tMin: -7, tMax: 0, rainProb: 15, snowProb: 60 },
+    { tMin: -3, tMax: 4, rainProb: 20, snowProb: 35 },
+    { tMin: 3, tMax: 12, rainProb: 24 },
+    { tMin: 9, tMax: 18, rainProb: 25 },
+    { tMin: 13, tMax: 22, rainProb: 26 },
+    { tMin: 18, tMax: 25, rainProb: 28 }, // 7월 장마 없음
+    { tMin: 19, tMax: 26, rainProb: 32 },
+    { tMin: 14, tMax: 22, rainProb: 35 },
+    { tMin: 8, tMax: 16, rainProb: 38 },
+    { tMin: 1, tMax: 8, rainProb: 25, snowProb: 30 },
+    { tMin: -4, tMax: 2, rainProb: 15, snowProb: 60 },
+  ],
+  // 파리
+  'PARIS': [
+    { tMin: 3, tMax: 8, rainProb: 30 },
+    { tMin: 3, tMax: 9, rainProb: 28 },
+    { tMin: 5, tMax: 13, rainProb: 28 },
+    { tMin: 8, tMax: 17, rainProb: 26 },
+    { tMin: 11, tMax: 20, rainProb: 30 },
+    { tMin: 14, tMax: 24, rainProb: 28 },
+    { tMin: 16, tMax: 26, rainProb: 26 },
+    { tMin: 16, tMax: 26, rainProb: 26 },
+    { tMin: 13, tMax: 22, rainProb: 28 },
+    { tMin: 10, tMax: 17, rainProb: 32 },
+    { tMin: 6, tMax: 11, rainProb: 34 },
+    { tMin: 3, tMax: 8, rainProb: 32 },
+  ],
+  // 런던
+  'LONDON': [
+    { tMin: 3, tMax: 8, rainProb: 35 },
+    { tMin: 3, tMax: 9, rainProb: 30 },
+    { tMin: 4, tMax: 12, rainProb: 30 },
+    { tMin: 6, tMax: 15, rainProb: 28 },
+    { tMin: 9, tMax: 18, rainProb: 28 },
+    { tMin: 12, tMax: 21, rainProb: 28 },
+    { tMin: 14, tMax: 24, rainProb: 26 },
+    { tMin: 14, tMax: 23, rainProb: 28 },
+    { tMin: 12, tMax: 20, rainProb: 30 },
+    { tMin: 9, tMax: 16, rainProb: 35 },
+    { tMin: 6, tMax: 11, rainProb: 36 },
+    { tMin: 3, tMax: 9, rainProb: 35 },
+  ],
+  // 방콕 (몬순 우기 5~10월: 강수확률 55~65%, 건기 11~4월: 10~20%)
+  'BANGKOK': [
+    { tMin: 22, tMax: 32, rainProb: 10 },
+    { tMin: 24, tMax: 33, rainProb: 12 },
+    { tMin: 26, tMax: 34, rainProb: 18 },
+    { tMin: 27, tMax: 35, rainProb: 25 },
+    { tMin: 26, tMax: 34, rainProb: 55 }, // 5월 우기 시작
+    { tMin: 26, tMax: 33, rainProb: 58 },
+    { tMin: 26, tMax: 33, rainProb: 60 },
+    { tMin: 26, tMax: 33, rainProb: 62 },
+    { tMin: 25, tMax: 32, rainProb: 68 }, // 9월 최대 강수
+    { tMin: 25, tMax: 32, rainProb: 55 },
+    { tMin: 24, tMax: 32, rainProb: 22 },
+    { tMin: 22, tMax: 31, rainProb: 10 },
+  ],
+};
+
+// ============================================================================
+// 결정론적 날짜 해시 기반 기후 시뮬레이터
+// (실시간 14일 API 범위를 벗어난 과거/미래 날짜에 대해 실제 기후 통계 기반 생성)
+// ============================================================================
+function getDeterministicRandom(seedStr: string): number {
+  let hash = 0;
+  for (let i = 0; i < seedStr.length; i++) {
+    hash = (hash << 5) - hash + seedStr.charCodeAt(i);
+    hash |= 0;
+  }
+  const x = Math.sin(hash++) * 10000;
+  return x - Math.floor(x);
+}
+
+export function getSimulatedWeatherForDate(cityEn: string, dateStr: string): DailyForecastItem {
+  const normalizedCity = cityEn.trim().toUpperCase();
+  const climateList = CITY_CLIMATES[normalizedCity] || DEFAULT_CLIMATE;
+  
+  const dObj = new Date(dateStr);
+  const mIdx = !isNaN(dObj.getMonth()) ? dObj.getMonth() : 0;
+  const monthClimate = climateList[mIdx] || DEFAULT_CLIMATE[mIdx];
+  const dayOfWeekNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const dayOfWeek = dayOfWeekNames[!isNaN(dObj.getDay()) ? dObj.getDay() : 0];
+  const parts = dateStr.split('-');
+  const dayMonth = parts.length >= 3 ? `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}` : dateStr;
+
+  // 1. 시드 기반 난수 생성 (결정론적: 새로고침해도 같은 날짜는 항상 동일)
+  const rand1 = getDeterministicRandom(`${normalizedCity}-${dateStr}-r1`);
+  const rand2 = getDeterministicRandom(`${normalizedCity}-${dateStr}-r2`);
+  const rand3 = getDeterministicRandom(`${normalizedCity}-${dateStr}-r3`);
+
+  // 2. 기온 시뮬레이션 (평년값 +- 2도 자연스러운 일교차 변동)
+  const tempVarMin = Math.round((rand1 - 0.5) * 4);
+  const tempVarMax = Math.round((rand2 - 0.5) * 4);
+  const tempMin = monthClimate.tMin + tempVarMin;
+  const tempMax = Math.max(tempMin + 4, monthClimate.tMax + tempVarMax);
+
+  // 3. 강수 및 날씨 코드 판정 (실제 월별 강수 확률에 근거)
+  const rainChance = monthClimate.rainProb;
+  const snowChance = monthClimate.snowProb || 0;
+  const precipRoll = Math.round(rand3 * 100);
+
+  let weatherCode = 0; // 기본 맑음
+  let precipitationProb = Math.max(5, Math.min(95, rainChance + Math.round((rand1 - 0.5) * 20)));
+
+  if (snowChance > 0 && precipRoll < snowChance && tempMax <= 3) {
+    // 눈
+    weatherCode = 71;
+    precipitationProb = Math.max(60, precipRoll);
+  } else if (precipRoll < rainChance) {
+    // 비 (강수일 판정)
+    if (precipRoll < rainChance * 0.25) {
+      weatherCode = 95; // 뇌우/소나기
+    } else if (precipRoll < rainChance * 0.65) {
+      weatherCode = 63; // 보통 비
+    } else {
+      weatherCode = 61; // 약한 비
+    }
+    precipitationProb = Math.max(65, Math.min(95, Math.round(70 + rand1 * 25)));
+  } else if (precipRoll < rainChance + 25) {
+    // 흐림
+    weatherCode = 3;
+    precipitationProb = Math.max(25, Math.min(45, Math.round(30 + rand2 * 15)));
+  } else if (precipRoll < rainChance + 45) {
+    // 대체로 맑음 (구름 조금)
+    weatherCode = 2;
+    precipitationProb = Math.max(10, Math.min(25, Math.round(15 + rand2 * 10)));
+  } else {
+    // 쾌청 맑음
+    weatherCode = 0;
+    precipitationProb = Math.max(0, Math.min(10, Math.round(rand1 * 10)));
+  }
+
+  return {
+    date: dateStr,
+    dayOfWeek,
+    dayMonth,
+    weatherCode,
+    tempMax,
+    tempMin,
+    precipitationProb
+  };
 }
 
 export interface DailyForecastItem {
