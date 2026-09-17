@@ -1916,6 +1916,20 @@ export function ManageHubPage({
 
   const [saveRevision, setSaveRevision] = useState(0);
 
+  // Dirty tracking for HOME Bottom Widgets
+  const isHomeWidgetsDirty = useMemo(() => {
+    if (!savedHomeWidgetsSnapshotRef.current) return false;
+    const currentStr = JSON.stringify({
+      showCalendarArchive: widgetShowCalendar,
+      showLiveWeather: widgetShowWeather,
+      widgetOrder,
+      showExchangeRates: widgetShowExchange,
+      showUpcomingDDay: widgetShowDDay,
+      cities: widgetCities
+    });
+    return currentStr !== savedHomeWidgetsSnapshotRef.current;
+  }, [widgetShowCalendar, widgetShowWeather, widgetOrder, widgetShowExchange, widgetShowDDay, widgetCities, saveRevision]);
+
   // Dirty tracking for HOME configuration
   const isHomeDirty = useMemo(() => {
     const snap = savedHomeSnapshotRef.current;
@@ -1952,20 +1966,6 @@ export function ManageHubPage({
       isHomeWidgetsDirty
     );
   }, [title, subtitle, homeJourneyLimit, selectedHeroIds, autoSlide, slideDuration, mediaType, showMarquee, homeMarquee, homeSpeed, gradientEnabled, gradientFrom, gradientTo, homeMagSectionId, homeMagLimit, localLandingHeroImage, localLandingHeroMedia, isHomeWidgetsDirty, saveRevision]);
-
-  // Dirty tracking for HOME Bottom Widgets
-  const isHomeWidgetsDirty = useMemo(() => {
-    if (!savedHomeWidgetsSnapshotRef.current) return false;
-    const currentStr = JSON.stringify({
-      showCalendarArchive: widgetShowCalendar,
-      showLiveWeather: widgetShowWeather,
-      widgetOrder,
-      showExchangeRates: widgetShowExchange,
-      showUpcomingDDay: widgetShowDDay,
-      cities: widgetCities
-    });
-    return currentStr !== savedHomeWidgetsSnapshotRef.current;
-  }, [widgetShowCalendar, widgetShowWeather, widgetOrder, widgetShowExchange, widgetShowDDay, widgetCities, saveRevision]);
 
   // Dirty tracking for currently selected journey in ARCHIVE mode
   const isArchiveDirty = useMemo(() => {
