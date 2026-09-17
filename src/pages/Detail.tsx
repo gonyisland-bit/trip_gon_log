@@ -3867,15 +3867,13 @@ export function JourneyDetailPage({
               onMouseEnter={() => setIsPlayFabIdle(false)}
               onMouseLeave={resetPlayFabIdleTimer}
               onTouchStart={() => { setIsPlayFabIdle(false); resetPlayFabIdleTimer(); }}
-              className={`absolute bottom-3 md:bottom-6 lg:bottom-8 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] pointer-events-auto flex items-center rounded-full overflow-hidden opacity-100 ${
+              className={`absolute bottom-3 md:bottom-6 lg:bottom-8 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-auto flex items-center rounded-full overflow-hidden opacity-100 bg-[#18181B] text-white border border-white/15 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur-md ${
                 isCinematicMode
-                  ? 'h-10 sm:h-11 w-[calc(100%-1.5rem)] max-w-[500px] px-3 sm:px-4 justify-between gap-1.5 sm:gap-2.5 bg-white/95 dark:bg-[#141414]/95 backdrop-blur-md border border-black/15 dark:border-white/20 text-black dark:text-white shadow-xl'
-                  : isPlayFabIdle
-                    ? 'h-8 sm:h-9 w-auto px-3.5 sm:px-4 justify-center bg-white/65 dark:bg-black/55 backdrop-blur-xl border border-black/15 dark:border-white/20 text-black/80 dark:text-white/85 shadow-[0_4px_24px_rgba(0,0,0,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] hover:bg-white/95 dark:hover:bg-[#141414]/95 hover:text-black dark:hover:text-white hover:scale-105 active:scale-95 cursor-pointer group'
-                    : 'h-8 sm:h-9 w-auto px-3.5 sm:px-4 justify-center bg-white/95 dark:bg-[#141414]/95 backdrop-blur-md border border-black/20 dark:border-white/25 text-black dark:text-white shadow-xl hover:scale-105 active:scale-95 cursor-pointer group'
+                  ? 'h-9.5 sm:h-10 w-[calc(100%-1.5rem)] max-w-[500px] px-2 sm:px-2.5 justify-between'
+                  : 'h-9.5 sm:h-10 w-auto px-1.5 sm:px-2 justify-center hover:scale-105 active:scale-95 cursor-pointer group'
               }`}
             >
-              {/* Collapsed State: Swiss Minimal Minimized Pill */}
+              {/* Collapsed State: Dark Capsule with Left White Symbol and Right Spot Badge */}
               {!isCinematicMode ? (
                 <button
                   onClick={() => {
@@ -3889,64 +3887,80 @@ export function JourneyDetailPage({
                     setIsCinematicMode(true);
                     setIsCinematicPaused(false);
                   }}
-                  className="w-full h-full flex items-center justify-center gap-1.5 cursor-pointer select-none"
+                  className="w-full h-full flex items-center gap-2 sm:gap-2.5 px-0.5 cursor-pointer select-none"
                   title="플레이로그 시작 (Space)"
                   aria-label="Play Log"
                 >
-                  <Play className="w-2.5 h-2.5 fill-current" />
-                  <span className="text-[9px] sm:text-[9.5px] font-mono font-bold tracking-widest uppercase">
-                    PLAY LOG
+                  {/* Left: White Circular Symbol Badge */}
+                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white text-black flex items-center justify-center shadow-xs shrink-0 group-hover:scale-105 transition-transform">
+                    <Play className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-black text-black ml-0.5" />
+                  </div>
+
+                  {/* Middle: Clean Sans-Serif Title */}
+                  <span className="text-xs sm:text-[12.5px] font-sans font-bold tracking-tight text-white whitespace-nowrap">
+                    Play Log
                   </span>
+
+                  {/* Right: Independent Capsule Badge */}
+                  <div className="px-2 py-0.5 rounded-full bg-white/15 text-white/85 group-hover:bg-white group-hover:text-black transition-colors font-mono text-[9px] font-bold tracking-wider shrink-0">
+                    {cinematicItems.length} SPOTS
+                  </div>
                 </button>
               ) : (
-                /* Expanded State: Current Selected Spot in 1-Row (No Dep > Eta) */
+                /* Expanded State: Left White Toggle Circle + Middle Track + Right White Capsule Controller */
                 currentCinematicItem && (() => {
                   return (
-                    <div className="w-full h-full flex items-center justify-between gap-1.5 sm:gap-2.5 transition-opacity duration-300 select-none animate-in fade-in">
-                      {/* 1. Current Spot: Bold Name + Mini Step Index (Only Single Current Spot) */}
-                      <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 max-w-[140px] sm:max-w-[190px] shrink-0">
-                        <span className="text-xs sm:text-[13px] font-black tracking-tight text-black dark:text-white uppercase truncate font-sans">
+                    <div className="w-full h-full flex items-center justify-between gap-1.5 sm:gap-2 select-none animate-in fade-in duration-200">
+                      {/* 1. Left: White Circular Toggle (Pause / Play) */}
+                      <button
+                        onClick={() => setIsCinematicPaused(p => !p)}
+                        className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white text-black flex items-center justify-center shadow-xs shrink-0 cursor-pointer active:scale-95 transition-transform hover:bg-neutral-200"
+                        title={isCinematicPaused ? '재생 (Space)' : '일시정지 (Space)'}
+                      >
+                        {isCinematicPaused ? (
+                          <Play className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-black text-black ml-0.5" />
+                        ) : (
+                          <Pause className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-black text-black" />
+                        )}
+                      </button>
+
+                      {/* 2. Middle: Spot Name + Progress Track + Counter */}
+                      <div className="flex-1 flex items-center gap-1.5 sm:gap-2 min-w-0 mx-0.5">
+                        <span className="text-xs sm:text-[12.5px] font-bold text-white tracking-tight truncate max-w-[110px] sm:max-w-[160px] font-sans">
                           {currentCinematicItem.place || 'Spot'}
                         </span>
-                        <span className="px-1.5 py-0.5 bg-black/5 dark:bg-white/10 rounded-xs text-[8px] font-mono font-bold text-black/60 dark:text-white/60 shrink-0">
-                          {String(cinematicIndex + 1).padStart(2, '0')}/{String(cinematicItems.length).padStart(2, '0')}
-                        </span>
-                      </div>
 
-                      {/* 2. Center Progress Track (Image 2 style with walker knob) */}
-                      <div className="flex-1 flex items-center min-w-[70px] max-w-[170px] mx-1">
-                        <div className="relative w-full h-2.5 sm:h-3 flex items-center">
-                          {/* Diagonal Candy Stripe Track (///////) */}
+                        <div className="flex-1 min-w-[45px] relative h-2 sm:h-2.5 flex items-center">
                           <div 
-                            className="absolute inset-0 rounded-full overflow-hidden opacity-85"
+                            className="absolute inset-0 rounded-full overflow-hidden opacity-40 bg-white/20"
                             style={{
-                              background: isDarkMode 
-                                ? 'repeating-linear-gradient(-45deg, rgba(255,255,255,0.06), rgba(255,255,255,0.06) 2.5px, rgba(255,255,255,0.18) 2.5px, rgba(255,255,255,0.18) 5px)' 
-                                : 'repeating-linear-gradient(-45deg, rgba(0,0,0,0.05), rgba(0,0,0,0.05) 2.5px, rgba(0,0,0,0.14) 2.5px, rgba(0,0,0,0.14) 5px)'
+                              background: 'repeating-linear-gradient(-45deg, rgba(255,255,255,0.15), rgba(255,255,255,0.15) 2.5px, rgba(255,255,255,0.3) 2.5px, rgba(255,255,255,0.3) 5px)' 
                             }}
                           />
-                          {/* Solid Completed Fill */}
                           <div 
-                            className="absolute top-0 bottom-0 left-0 bg-black dark:bg-white rounded-l-full transition-all duration-75"
+                            className="absolute top-0 bottom-0 left-0 bg-white rounded-l-full transition-all duration-75"
                             style={{ width: `${Math.max(4, cinematicProgress)}%` }}
                           />
-                          {/* Mini Playhead Knob */}
                           <div 
                             className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 transition-all duration-75 flex items-center justify-center pointer-events-none"
                             style={{ left: `${Math.max(4, Math.min(96, cinematicProgress))}%` }}
                           >
-                            <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-black dark:bg-white border border-white dark:border-[#141414] shadow-xs flex items-center justify-center">
-                              <img src="/walker.png" alt="Walker" className="w-2 h-2 sm:w-2.5 sm:h-2.5 object-contain invert dark:invert-0" />
+                            <div className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-white border border-neutral-900 shadow-xs flex items-center justify-center">
+                              <img src="/walker.png" alt="Walker" className="w-2 h-2 object-contain" />
                             </div>
                           </div>
                         </div>
+
+                        <span className="text-[8px] sm:text-[9px] font-mono font-bold text-white/60 shrink-0">
+                          {String(cinematicIndex + 1).padStart(2, '0')}/{String(cinematicItems.length).padStart(2, '0')}
+                        </span>
                       </div>
 
-                      {/* 3. Swiss Minimal Divider & Compact Controls */}
-                      <div className="flex items-center gap-0.5 sm:gap-1 shrink-0 pl-1 sm:pl-1.5 border-l border-black/10 dark:border-white/10">
+                      {/* 3. Right: Independent White Capsule Controller (Reference Style Capsule) */}
+                      <div className="bg-white text-black rounded-full px-2 py-0.5 sm:px-2.5 sm:py-1 flex items-center gap-1 sm:gap-1.5 shadow-sm shrink-0">
                         <button
                           onClick={() => setCinematicSpeed(s => s === 3800 ? 2200 : (s === 2200 ? 5500 : 3800))}
-                          className="px-1.5 py-0.5 bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 rounded-xs text-[7.5px] sm:text-[8px] font-mono font-bold text-black/75 dark:text-white/75 transition-colors cursor-pointer"
+                          className="px-1 py-0.5 bg-black/10 hover:bg-black/20 rounded-xs text-[7.5px] sm:text-[8px] font-mono font-bold text-black transition-colors cursor-pointer"
                           title="재생 속도"
                         >
                           {cinematicSpeed === 3800 ? '1.0X' : (cinematicSpeed === 2200 ? '1.5X' : '0.7X')}
@@ -3957,18 +3971,10 @@ export function JourneyDetailPage({
                             setCinematicIndex(prev => (prev - 1 + cinematicItems.length) % cinematicItems.length);
                             setCinematicProgress(0);
                           }}
-                          className="p-1 text-black/60 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                          className="p-1 text-black/70 hover:text-black transition-colors cursor-pointer"
                           title="이전 스팟 (←)"
                         >
                           <SkipBack className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                        </button>
-
-                        <button
-                          onClick={() => setIsCinematicPaused(p => !p)}
-                          className="w-5 h-5 sm:w-6 sm:h-6 bg-black text-white dark:bg-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 rounded-full flex items-center justify-center shadow-xs transition-all active:scale-95 cursor-pointer shrink-0"
-                          title={isCinematicPaused ? '재생 (Space)' : '일시정지 (Space)'}
-                        >
-                          {isCinematicPaused ? <Play className="w-2.5 h-2.5 fill-current ml-0.2" /> : <Pause className="w-2.5 h-2.5 fill-current" />}
                         </button>
 
                         <button
@@ -3976,7 +3982,7 @@ export function JourneyDetailPage({
                             setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
                             setCinematicProgress(0);
                           }}
-                          className="p-1 text-black/60 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                          className="p-1 text-black/70 hover:text-black transition-colors cursor-pointer"
                           title="다음 스팟 (→)"
                         >
                           <SkipForward className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
@@ -3984,7 +3990,7 @@ export function JourneyDetailPage({
 
                         <button
                           onClick={() => setIsCinematicMode(false)}
-                          className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                          className="p-1 text-black/40 hover:text-black transition-colors cursor-pointer ml-0.5"
                           title="종료 (Esc)"
                         >
                           <CloseIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />

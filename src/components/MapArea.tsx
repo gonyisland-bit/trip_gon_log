@@ -99,14 +99,37 @@ export function MapArea({
       const lng = spot.lng!;
 
       const htmlContent = `
-        <div class="pin-wrapper" style="opacity: 0.9; cursor: pointer;">
-          <div style="position: relative; display: flex; align-items: center; justify-content: center;">
-            <div style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px dashed #dc2626; background: rgba(220, 38, 38, 0.22); box-shadow: 0 0 8px rgba(220,38,38,0.35); display: flex; align-items: center; justify-content: center;">
-              <div style="width: 5px; height: 5px; border-radius: 50%; background: #dc2626;"></div>
-            </div>
+        <div class="pocket-pin-wrapper" style="cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
+          <style>
+            @keyframes pocketPulseAnim {
+              0% { transform: scale(0.85); opacity: 0.8; }
+              50% { transform: scale(1.65); opacity: 0; }
+              100% { transform: scale(0.85); opacity: 0; }
+            }
+            .pocket-pin-wrapper:hover .pocket-pin-core {
+              transform: translateY(-2px) scale(1.12);
+              box-shadow: 0 6px 18px rgba(37,99,235,0.6);
+            }
+            .pocket-pin-wrapper:hover .pocket-pin-label {
+              border-color: rgba(59,130,246,0.9);
+              transform: translateY(-1px);
+            }
+          </style>
+
+          <!-- Pulse Wave -->
+          <div style="position: absolute; top: 0; left: 50%; margin-left: -14px; width: 28px; height: 28px; border-radius: 50%; background: rgba(37,99,235,0.3); animation: pocketPulseAnim 2.2s infinite ease-out; pointer-events: none;"></div>
+
+          <!-- Solid Cobalt Blue Bookmark Pin -->
+          <div class="pocket-pin-core" style="position: relative; z-index: 2; width: 22px; height: 22px; border-radius: 50%; background: #2563EB; border: 1.5px solid #ffffff; box-shadow: 0 3px 10px rgba(37,99,235,0.45), 0 1px 3px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+            <svg viewBox="0 0 24 24" width="10" height="10" stroke="white" stroke-width="2.5" fill="white">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+            </svg>
           </div>
-          <div class="pin-label" style="border: 1px dashed rgba(220, 38, 38, 0.8); background: rgba(17, 17, 17, 0.9); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 5px; white-space: nowrap;">
-            <span style="color: #ef4444; font-weight: 900; margin-right: 3px; font-family: monospace;">POCKET</span>${spot.title}
+
+          <!-- Clean Glassmorphism Solid Label -->
+          <div class="pocket-pin-label" style="position: relative; z-index: 2; margin-top: 3px; background: rgba(15, 23, 42, 0.94); backdrop-filter: blur(4px); border: 1px solid rgba(59, 130, 246, 0.45); border-radius: 4px; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); display: flex; align-items: center;">
+            <span style="background: #2563eb; color: #fff; font-size: 7.5px; font-weight: 900; padding: 1px 3.5px; border-radius: 2px; margin-right: 4px; font-family: monospace; letter-spacing: 0.05em;">POCKET</span>
+            <span style="color: #f8fafc; font-weight: 700;">${spot.title}</span>
           </div>
         </div>
       `;
@@ -114,22 +137,22 @@ export function MapArea({
       const icon = L.divIcon({
         className: 'custom-ghost-pocket-pin',
         html: htmlContent,
-        iconSize: [140, 50],
-        iconAnchor: [70, 8],
+        iconSize: [140, 52],
+        iconAnchor: [70, 11],
       });
 
       const marker = L.marker([lat, lng], { icon, zIndexOffset: 500 }).addTo(map);
 
       const popupHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-width: 190px; padding: 4px;">
-          <div style="font-size: 9px; font-weight: 900; color: #dc2626; font-family: monospace; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">
+          <div style="font-size: 9px; font-weight: 900; color: #2563eb; font-family: monospace; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">
             ${(spot.category || 'SPOT').toUpperCase()} · POCKET SPOT
           </div>
           <div style="font-size: 13px; font-weight: 800; color: #111; margin-bottom: 4px; line-height: 1.2;">
             ${spot.title}
           </div>
           ${spot.memo ? `<div style="font-size: 11px; color: #555; margin-bottom: 8px; line-height: 1.35; max-height: 60px; overflow-y: auto;">${spot.memo}</div>` : ''}
-          <button id="ghost-pin-add-${spot.id}" style="width: 100%; padding: 6px 8px; background: #000; color: #fff; font-size: 10px; font-weight: 800; border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; font-family: monospace;">
+          <button id="ghost-pin-add-${spot.id}" style="width: 100%; padding: 6px 8px; background: #2563eb; color: #fff; font-size: 10px; font-weight: 800; border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; font-family: monospace; border-radius: 2px; transition: background 0.15s;">
             + ADD TO TIMELINE
           </button>
         </div>
