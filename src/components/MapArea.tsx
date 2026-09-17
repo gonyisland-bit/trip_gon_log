@@ -26,10 +26,97 @@ interface MapAreaProps {
   transitFocusType?: 'depart' | 'arrive' | 'boarding' | null;
   transits?: TransitItem[];
   isCinematicMode?: boolean;
+  cinematicSpeed?: number;
+  cinematicVehicleType?: 'car' | 'train' | null;
   hoveredItemId?: number | null;
   onItemHover?: (id: number | null) => void;
   onAddSpotToTimeline?: (spot: SpotPocketItem) => void;
 }
+
+const getTravelerHtml = (vehicleType: 'car' | 'train' | null | undefined, isWest: boolean, isMoving: boolean) => {
+  const flipStyle = isWest ? 'scaleX(-1)' : 'scaleX(1)';
+  
+  if (vehicleType === 'car') {
+    return `
+      <div style="width: 48px; height: 32px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; pointer-events: none;">
+        <style>
+          @keyframes carSuspension {
+            0%, 100% { transform: translateY(0px) ${flipStyle}; }
+            50% { transform: translateY(-1.5px) ${flipStyle}; }
+          }
+        </style>
+        <div style="${isMoving ? 'animation: carSuspension 0.22s ease-in-out infinite;' : `transform: ${flipStyle};`} transform-origin: center center;">
+          <svg viewBox="0 0 48 28" width="44" height="26" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block; filter: drop-shadow(0 0 1.5px #FFFFFF) drop-shadow(0 0 2.5px #FFFFFF) drop-shadow(0 4px 8px rgba(0,0,0,0.6));">
+            <path d="M5 19C5 18 6 15 8 13.5C10 12 14 11 16 7.5C17.5 5 21 4.5 28 4.5C35 4.5 37 7.5 40 10.5C43 13 45 15.5 45 18C45 20 44 20.5 42 20.5C41 18 39 16 36.5 16C34 16 32 18 31 20.5H19C18 18 16 16 13.5 16C11 16 9 18 8 20.5C6 20.5 5 20 5 19Z" fill="#18181B" />
+            <path d="M17.5 8C19 6 22 5.5 27 5.5V11H13.5C14.8 9.5 16.2 8.5 17.5 8Z" fill="#FFFFFF" fill-opacity="0.9" />
+            <path d="M29 5.5C34 5.5 35.5 7.5 38 10.5C38.5 11 36 11 30.5 11V5.5H29Z" fill="#FFFFFF" fill-opacity="0.9" />
+            <circle cx="13.5" cy="20.5" r="4.2" fill="#18181B" stroke="#FFFFFF" stroke-width="1.2" />
+            <circle cx="13.5" cy="20.5" r="1.8" fill="#FFFFFF" />
+            <circle cx="36.5" cy="20.5" r="4.2" fill="#18181B" stroke="#FFFFFF" stroke-width="1.2" />
+            <circle cx="36.5" cy="20.5" r="1.8" fill="#FFFFFF" />
+            <path d="M44 14.5L46 16.5H44V14.5Z" fill="#FACC15" />
+          </svg>
+        </div>
+        <div style="width: 36px; height: 4px; background: rgba(0,0,0,0.45); border-radius: 50%; filter: blur(0.8px); margin-top: -2px;"></div>
+      </div>
+    `;
+  }
+  
+  if (vehicleType === 'train') {
+    return `
+      <div style="width: 52px; height: 32px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; pointer-events: none;">
+        <style>
+          @keyframes trainSuspension {
+            0%, 100% { transform: translateY(0px) ${flipStyle}; }
+            50% { transform: translateY(-1.2px) ${flipStyle}; }
+          }
+        </style>
+        <div style="${isMoving ? 'animation: trainSuspension 0.2s ease-in-out infinite;' : `transform: ${flipStyle};`} transform-origin: center center;">
+          <svg viewBox="0 0 52 28" width="48" height="26" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block; filter: drop-shadow(0 0 1.5px #FFFFFF) drop-shadow(0 0 2.5px #FFFFFF) drop-shadow(0 4px 8px rgba(0,0,0,0.6));">
+            <path d="M4 8C4 6 5.5 5 8 5H41C46 5 49 9 51 15C52 18 51 19.5 48 20H7C5 20 4 19 4 17V8Z" fill="#18181B" />
+            <path d="M42.5 7.5C45.5 8 47.5 11 49 14.5H40V7.5H42.5Z" fill="#FFFFFF" fill-opacity="0.9" />
+            <rect x="8" y="8" width="5.5" height="4" rx="0.8" fill="#FFFFFF" fill-opacity="0.85" />
+            <rect x="16" y="8" width="5.5" height="4" rx="0.8" fill="#FFFFFF" fill-opacity="0.85" />
+            <rect x="24" y="8" width="5.5" height="4" rx="0.8" fill="#FFFFFF" fill-opacity="0.85" />
+            <rect x="32" y="8" width="5.5" height="4" rx="0.8" fill="#FFFFFF" fill-opacity="0.85" />
+            <rect x="4" y="14" width="46" height="1.8" fill="#E11D48" />
+            <circle cx="12" cy="21" r="3.2" fill="#18181B" stroke="#FFFFFF" stroke-width="1" />
+            <circle cx="20" cy="21" r="3.2" fill="#18181B" stroke="#FFFFFF" stroke-width="1" />
+            <circle cx="34" cy="21" r="3.2" fill="#18181B" stroke="#FFFFFF" stroke-width="1" />
+            <circle cx="42" cy="21" r="3.2" fill="#18181B" stroke="#FFFFFF" stroke-width="1" />
+          </svg>
+        </div>
+        <div style="width: 42px; height: 4px; background: rgba(0,0,0,0.45); border-radius: 50%; filter: blur(0.8px); margin-top: -2px;"></div>
+      </div>
+    `;
+  }
+
+  // Default: Walker (사람 걷기)
+  return `
+    <div style="width: 40px; height: 46px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; pointer-events: none;">
+      <style>
+        @keyframes walkerBobbing {
+          0%, 100% { transform: translateY(0px) ${flipStyle} rotate(0deg); }
+          25% { transform: translateY(-4px) ${flipStyle} rotate(2.5deg); }
+          50% { transform: translateY(0px) ${flipStyle} rotate(0deg); }
+          75% { transform: translateY(-4px) ${flipStyle} rotate(-2.5deg); }
+        }
+        @keyframes walkerShadowPulse {
+          0%, 50%, 100% { transform: scale(1); opacity: 0.5; }
+          25%, 75% { transform: scale(0.75); opacity: 0.25; }
+        }
+      </style>
+      <div style="${isMoving ? 'animation: walkerBobbing 0.44s ease-in-out infinite;' : `transform: ${flipStyle};`} transform-origin: bottom center;">
+        <img 
+          src="/walker.png" 
+          alt="Walker" 
+          style="width: 38px; height: 38px; object-fit: contain; display: block; filter: drop-shadow(0 0 1.5px #FFFFFF) drop-shadow(0 0 2.5px #FFFFFF) drop-shadow(0 4px 8px rgba(0,0,0,0.6));" 
+        />
+      </div>
+      <div style="width: 22px; height: 4px; background: rgba(0,0,0,0.45); border-radius: 50%; filter: blur(0.8px); ${isMoving ? 'animation: walkerShadowPulse 0.44s ease-in-out infinite;' : ''} margin-top: -2px;"></div>
+    </div>
+  `;
+};
 
 export function MapArea({
   trip,
@@ -43,6 +130,8 @@ export function MapArea({
   transitFocusType,
   transits = [],
   isCinematicMode = false,
+  cinematicSpeed = 3600,
+  cinematicVehicleType = null,
   hoveredItemId = null,
   onItemHover,
   onAddSpotToTimeline,
@@ -74,6 +163,17 @@ export function MapArea({
   const travelerMarkerRef = useRef<any>(null);
   const travelerAnimRef = useRef<number | null>(null);
   const lastActiveSpotCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
+
+  // ─── Close open popup on Escape key ───
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && mapRef.current) {
+        mapRef.current.closePopup();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   // ─── Pocket Ghost Pins Layer Effect ───
   useEffect(() => {
@@ -108,7 +208,17 @@ export function MapArea({
             }
             .pocket-pin-wrapper:hover .pocket-pin-core {
               transform: translateY(-2px) scale(1.12);
-              box-shadow: 0 6px 18px rgba(37,99,235,0.6);
+              box-shadow: 0 6px 18px rgba(82,82,91,0.5);
+            }
+            .pocket-pulse-wave {
+              opacity: 0;
+              pointer-events: none;
+              transition: opacity 0.2s ease-out;
+            }
+            .pocket-pin-wrapper:hover .pocket-pulse-wave,
+            .pocket-pin-wrapper.active-pocket-pin .pocket-pulse-wave {
+              opacity: 1;
+              animation: pocketPulseAnim 2.0s infinite ease-out;
             }
             .pocket-pin-label {
               opacity: 0;
@@ -126,11 +236,11 @@ export function MapArea({
             }
           </style>
 
-          <!-- Pulse Wave -->
-          <div style="position: absolute; top: 0; left: 50%; margin-left: -14px; width: 28px; height: 28px; border-radius: 50%; background: rgba(37,99,235,0.3); animation: pocketPulseAnim 2.2s infinite ease-out; pointer-events: none;"></div>
+          <!-- Pulse Wave (Only on hover / click) -->
+          <div class="pocket-pulse-wave" style="position: absolute; top: 0; left: 50%; margin-left: -14px; width: 28px; height: 28px; border-radius: 50%; background: rgba(82,82,91,0.35); pointer-events: none;"></div>
 
-          <!-- Solid Cobalt Blue Bookmark Pin -->
-          <div class="pocket-pin-core" style="position: relative; z-index: 2; width: 22px; height: 22px; border-radius: 50%; background: #2563EB; border: 1.5px solid #ffffff; box-shadow: 0 3px 10px rgba(37,99,235,0.45), 0 1px 3px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+          <!-- Solid Refined Gray Bookmark Pin -->
+          <div class="pocket-pin-core" style="position: relative; z-index: 2; width: 22px; height: 22px; border-radius: 50%; background: #52525B; border: 1.5px solid #ffffff; box-shadow: 0 3px 10px rgba(82,82,91,0.45), 0 1px 3px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
             <svg viewBox="0 0 24 24" width="10" height="10" stroke="white" stroke-width="2.5" fill="white">
               <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
             </svg>
@@ -138,7 +248,7 @@ export function MapArea({
 
           <!-- Clean Swiss Minimal Gray Label (Hidden by default, shown on hover/click) -->
           <div class="pocket-pin-label" style="position: absolute; top: 25px; left: 50%; z-index: 10; background: rgba(244, 244, 246, 0.96); backdrop-filter: blur(8px); border: 1px solid rgba(212, 212, 216, 0.95); border-radius: 4px; color: #18181b; font-size: 10px; font-weight: 700; padding: 2.5px 7px; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.06); display: flex; align-items: center;">
-            <span style="background: #e4e4e7; color: #2563eb; font-size: 7.5px; font-weight: 900; padding: 1px 4px; border-radius: 2px; margin-right: 4px; font-family: monospace; letter-spacing: 0.05em; border: 0.5px solid rgba(37,99,235,0.25);">POCKET</span>
+            <span style="background: #e4e4e7; color: #52525b; font-size: 7.5px; font-weight: 900; padding: 1px 4px; border-radius: 2px; margin-right: 4px; font-family: monospace; letter-spacing: 0.05em; border: 0.5px solid rgba(82,82,91,0.25);">POCKET</span>
             <span style="color: #18181b; font-weight: 700;">${spot.title}</span>
           </div>
         </div>
@@ -155,20 +265,20 @@ export function MapArea({
 
       const popupHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-width: 190px; padding: 4px;">
-          <div style="font-size: 9px; font-weight: 900; color: #2563eb; font-family: monospace; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">
+          <div style="font-size: 9px; font-weight: 900; color: #52525b; font-family: monospace; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">
             ${(spot.category || 'SPOT').toUpperCase()} · POCKET SPOT
           </div>
           <div style="font-size: 13px; font-weight: 800; color: #111; margin-bottom: 4px; line-height: 1.2;">
             ${spot.title}
           </div>
           ${spot.memo ? `<div style="font-size: 11px; color: #555; margin-bottom: 8px; line-height: 1.35; max-height: 60px; overflow-y: auto;">${spot.memo}</div>` : ''}
-          <button id="ghost-pin-add-${spot.id}" style="width: 100%; padding: 6px 8px; background: #2563eb; color: #fff; font-size: 10px; font-weight: 800; border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; font-family: monospace; border-radius: 2px; transition: background 0.15s;">
+          <button id="ghost-pin-add-${spot.id}" style="width: 100%; padding: 6px 8px; background: #52525b; color: #fff; font-size: 10px; font-weight: 800; border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; font-family: monospace; border-radius: 2px; transition: background 0.15s;">
             + ADD TO TIMELINE
           </button>
         </div>
       `;
 
-      marker.bindPopup(popupHtml, { closeButton: true, offset: [0, -6] });
+      marker.bindPopup(popupHtml, { closeButton: true, closeOnEscapeKey: true, offset: [0, -6] });
 
       marker.on('popupopen', () => {
         const el = marker.getElement();
@@ -765,36 +875,14 @@ export function MapArea({
             const L = (window as any).L;
             if (L) {
               const isHeadingWest = nextCoords.lng < prevCoords.lng;
+              const iconSize: [number, number] = cinematicVehicleType === 'train' ? [52, 32] : (cinematicVehicleType === 'car' ? [48, 32] : [40, 46]);
+              const iconAnchor: [number, number] = cinematicVehicleType === 'train' ? [26, 32] : (cinematicVehicleType === 'car' ? [24, 32] : [20, 46]);
+
               const travelerIcon = L.divIcon({
                 className: 'traveler-icon-container',
-                html: `
-                  <div style="width: 40px; height: 46px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; pointer-events: none;">
-                    <style>
-                      @keyframes walkerBobbing {
-                        0%, 100% { transform: translateY(0px) ${isHeadingWest ? 'scaleX(-1)' : 'scaleX(1)'} rotate(0deg); }
-                        25% { transform: translateY(-4px) ${isHeadingWest ? 'scaleX(-1)' : 'scaleX(1)'} rotate(2.5deg); }
-                        50% { transform: translateY(0px) ${isHeadingWest ? 'scaleX(-1)' : 'scaleX(1)'} rotate(0deg); }
-                        75% { transform: translateY(-4px) ${isHeadingWest ? 'scaleX(-1)' : 'scaleX(1)'} rotate(-2.5deg); }
-                      }
-                      @keyframes walkerShadowPulse {
-                        0%, 50%, 100% { transform: scale(1); opacity: 0.5; }
-                        25%, 75% { transform: scale(0.75); opacity: 0.25; }
-                      }
-                    </style>
-                    <!-- Exact Walker Silhouette from Image 1 with Cadence Bobbing & Directional Flip -->
-                    <div style="animation: walkerBobbing 0.44s ease-in-out infinite; transform-origin: bottom center;">
-                      <img 
-                        src="/walker.png" 
-                        alt="Walker" 
-                        style="width: 38px; height: 38px; object-fit: contain; display: block; filter: drop-shadow(0 0 1.5px #FFFFFF) drop-shadow(0 0 2.5px #FFFFFF) drop-shadow(0 4px 8px rgba(0,0,0,0.6));" 
-                      />
-                    </div>
-                    <!-- Dynamic Footstep Ground Contact Shadow -->
-                    <div style="width: 22px; height: 4px; background: rgba(0,0,0,0.45); border-radius: 50%; filter: blur(0.8px); animation: walkerShadowPulse 0.44s ease-in-out infinite; margin-top: -2px;"></div>
-                  </div>
-                `,
-                iconSize: [40, 46],
-                iconAnchor: [20, 46] // 발바닥 중앙이 정확한 핀/라인 좌표점
+                html: getTravelerHtml(cinematicVehicleType, isHeadingWest, true),
+                iconSize,
+                iconAnchor
               });
               if (!travelerMarkerRef.current) {
                 travelerMarkerRef.current = L.marker([prevCoords.lat, prevCoords.lng], {
@@ -808,7 +896,7 @@ export function MapArea({
               }
 
               const startTime = performance.now();
-              const animDuration = 1600; // 1.6s smooth walk
+              const animDuration = 1600 * ((cinematicSpeed || 3600) / 3600); // Equal baseline 1X speed for both walker and vehicles
 
               const step = (now: number) => {
                 const elapsed = now - startTime;
@@ -827,26 +915,13 @@ export function MapArea({
                 if (progress < 1) {
                   travelerAnimRef.current = requestAnimationFrame(step);
                 } else {
-                  // 목적지 도착 완료: 제자리 보행 바운스를 멈추고 깔끔한 정지 실루엣으로 전환
+                  // 목적지 도착 완료: 제자리 정지 실루엣으로 전환
                   if (travelerMarkerRef.current) {
                     const standingIcon = L.divIcon({
                       className: 'traveler-icon-container',
-                      html: `
-                        <div style="width: 40px; height: 46px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; pointer-events: none;">
-                          <!-- Stationary standing silhouette at destination spot -->
-                          <div style="transform: ${isHeadingWest ? 'scaleX(-1)' : 'scaleX(1)'}; transform-origin: bottom center;">
-                            <img 
-                              src="/walker.png" 
-                              alt="Walker" 
-                              style="width: 38px; height: 38px; object-fit: contain; display: block; filter: drop-shadow(0 0 1.5px #FFFFFF) drop-shadow(0 0 2.5px #FFFFFF) drop-shadow(0 4px 8px rgba(0,0,0,0.6));" 
-                            />
-                          </div>
-                          <!-- Static Footstep Ground Shadow -->
-                          <div style="width: 22px; height: 4px; background: rgba(0,0,0,0.45); border-radius: 50%; filter: blur(0.8px); margin-top: -2px;"></div>
-                        </div>
-                      `,
-                      iconSize: [40, 46],
-                      iconAnchor: [20, 46]
+                      html: getTravelerHtml(cinematicVehicleType, isHeadingWest, false),
+                      iconSize,
+                      iconAnchor
                     });
                     travelerMarkerRef.current.setIcon(standingIcon);
                   }
@@ -861,26 +936,17 @@ export function MapArea({
           } else {
             map.setView(latLng, Math.max(map.getZoom(), targetZoom), { animate: true });
 
-            // 플레이로그 모드 활성화 시 이동 중이 아니더라도 지정된 현재 위치에 즉시 사람 마커 등장
+            // 플레이로그 모드 활성화 시 이동 중이 아니더라도 지정된 현재 위치에 마커 등장
             if (isCinematicMode) {
               const L = (window as any).L;
               if (L) {
+                const iconSize: [number, number] = cinematicVehicleType === 'train' ? [52, 32] : (cinematicVehicleType === 'car' ? [48, 32] : [40, 46]);
+                const iconAnchor: [number, number] = cinematicVehicleType === 'train' ? [26, 32] : (cinematicVehicleType === 'car' ? [24, 32] : [20, 46]);
                 const standingIcon = L.divIcon({
                   className: 'traveler-icon-container',
-                  html: `
-                    <div style="width: 40px; height: 46px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; pointer-events: none;">
-                      <div>
-                        <img 
-                          src="/walker.png" 
-                          alt="Walker" 
-                          style="width: 38px; height: 38px; object-fit: contain; display: block; filter: drop-shadow(0 0 1.5px #FFFFFF) drop-shadow(0 0 2.5px #FFFFFF) drop-shadow(0 4px 8px rgba(0,0,0,0.6));" 
-                        />
-                      </div>
-                      <div style="width: 22px; height: 4px; background: rgba(0,0,0,0.45); border-radius: 50%; filter: blur(0.8px); margin-top: -2px;"></div>
-                    </div>
-                  `,
-                  iconSize: [40, 46],
-                  iconAnchor: [20, 46]
+                  html: getTravelerHtml(cinematicVehicleType, false, false),
+                  iconSize,
+                  iconAnchor
                 });
 
                 if (!travelerMarkerRef.current) {
@@ -928,7 +994,7 @@ export function MapArea({
       }
     }
 
-  }, [mapPoints, expandedItemId, isDarkMode, mapReady, isInteractive, activeTab, transitFocusType, transits, selectedDate, isCinematicMode, hoveredItemId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mapPoints, expandedItemId, isDarkMode, mapReady, isInteractive, activeTab, transitFocusType, transits, selectedDate, isCinematicMode, hoveredItemId, cinematicSpeed, cinematicVehicleType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Effect 3b: Google Places POIs Fetcher ──────────────────────────────────
   useEffect(() => {
@@ -1519,7 +1585,7 @@ export function MapArea({
           <button
             type="button"
             onClick={() => setShowPocketPins(prev => !prev)}
-            className={`h-7 px-2.5 rounded shadow-sm border transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider ${
+            className={`h-7 px-2 sm:px-2.5 rounded shadow-sm border transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider ${
               showPocketPins
                 ? 'bg-black text-white dark:bg-white dark:text-black border-black/20 dark:border-white/20 shadow-xs'
                 : 'bg-[#F9F8F6]/90 dark:bg-[#111111]/90 backdrop-blur-md text-black/50 dark:text-white/50 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
@@ -1527,7 +1593,7 @@ export function MapArea({
             title="포켓 스팟 고스트 핀 지도 표시 On/Off"
           >
             <Bookmark className={`w-3 h-3 ${showPocketPins ? 'text-red-500 fill-red-500' : 'text-black/40 dark:text-white/40'}`} />
-            <span>POCKET</span>
+            <span className="hidden sm:inline">POCKET</span>
           </button>
 
           <button

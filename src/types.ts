@@ -93,6 +93,7 @@ export interface TimelineItem {
   originDate?: string;
   paidBy?: string;
   currency?: string;
+  vehicleType?: 'car' | 'train' | null;
 }
 
 export interface TimelineData {

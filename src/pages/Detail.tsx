@@ -1033,7 +1033,7 @@ export function JourneyDetailPage({
   const [isCinematicMode, setIsCinematicMode] = useState(false);
   const [cinematicIndex, setCinematicIndex] = useState(0);
   const [isCinematicPaused, setIsCinematicPaused] = useState(false);
-  const [cinematicSpeed, setCinematicSpeed] = useState<number>(3800); // ms per step
+  const [cinematicSpeed, setCinematicSpeed] = useState<number>(3600); // ms per step (default 1X = 3600ms)
   const [cinematicProgress, setCinematicProgress] = useState(0);
   const [isMobilePlayCollapsed, setIsMobilePlayCollapsed] = useState(true);
 
@@ -3855,6 +3855,8 @@ export function JourneyDetailPage({
               transitFocusType={transitFocusType}
               transits={isEditing ? draftTransits : transits}
               isCinematicMode={isCinematicMode}
+              cinematicSpeed={cinematicSpeed}
+              cinematicVehicleType={cinematicIndex > 0 ? cinematicItems[cinematicIndex - 1]?.vehicleType : null}
               hoveredItemId={hoveredItemId}
               onItemHover={setHoveredItemId}
               onAddSpotToTimeline={handleDirectAddFromPocket}
@@ -3867,10 +3869,10 @@ export function JourneyDetailPage({
               onMouseEnter={() => setIsPlayFabIdle(false)}
               onMouseLeave={resetPlayFabIdleTimer}
               onTouchStart={() => { setIsPlayFabIdle(false); resetPlayFabIdleTimer(); }}
-              className={`absolute bottom-3 md:bottom-6 lg:bottom-8 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-auto flex items-center rounded-full overflow-hidden opacity-100 bg-[#18181B] text-white border border-white/15 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur-md ${
+              className={`absolute bottom-3 md:bottom-6 lg:bottom-8 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-auto flex items-center rounded-full overflow-hidden opacity-100 bg-[#2E2E33] text-white border border-white/20 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur-md p-1 ${
                 isCinematicMode
-                  ? 'h-9.5 sm:h-10 w-[calc(100%-1.5rem)] max-w-[500px] p-1 justify-between'
-                  : 'h-9.5 sm:h-10 w-auto p-1 justify-center hover:scale-105 active:scale-95 cursor-pointer group'
+                  ? 'h-9.5 sm:h-10 w-[calc(100%-1.5rem)] max-w-[480px] justify-between'
+                  : 'h-9.5 sm:h-10 w-[120px] sm:w-[126px] justify-center hover:scale-105 active:scale-95 cursor-pointer group'
               }`}
             >
               {/* Collapsed State: Monochromatic Solid Capsule with Flush Concentric Play Button & 'Playlog' */}
@@ -3891,8 +3893,8 @@ export function JourneyDetailPage({
                   title="플레이로그 시작 (Space)"
                   aria-label="Playlog"
                 >
-                  {/* Left: White Circular Play Button (Perfect concentric 4px inset) */}
-                  <div className="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-full bg-white text-black flex items-center justify-center shadow-xs shrink-0 group-hover:bg-neutral-100 transition-colors">
+                  {/* Left: White Circular Play Button (Aspect-square and exact concentric inset) */}
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 aspect-square shrink-0 rounded-full bg-white text-black flex items-center justify-center shadow-xs group-hover:bg-neutral-100 transition-colors">
                     <Play className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-black text-black ml-0.5" />
                   </div>
 
@@ -3906,10 +3908,10 @@ export function JourneyDetailPage({
                 currentCinematicItem && (() => {
                   return (
                     <div className="w-full h-full flex items-center justify-between gap-1.5 sm:gap-2 select-none animate-in fade-in duration-200">
-                      {/* 1. Left: White Circular Toggle (Pause / Play) - Exactly matches w-7.5 h-7.5 sm:w-8 sm:h-8 */}
+                      {/* 1. Left: White Circular Toggle (Pause / Play) - Exactly matches w-7 h-7 sm:w-8 sm:h-8 aspect-square */}
                       <button
                         onClick={() => setIsCinematicPaused(p => !p)}
-                        className="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-full bg-white text-black flex items-center justify-center shadow-xs shrink-0 cursor-pointer active:scale-95 transition-all hover:bg-neutral-200"
+                        className="w-7 h-7 sm:w-8 sm:h-8 aspect-square shrink-0 rounded-full bg-white text-black flex items-center justify-center shadow-xs cursor-pointer active:scale-95 transition-all hover:bg-neutral-200"
                         title={isCinematicPaused ? '재생 (Space)' : '일시정지 (Space)'}
                       >
                         {isCinematicPaused ? (
@@ -3951,14 +3953,14 @@ export function JourneyDetailPage({
                         </span>
                       </div>
 
-                      {/* 3. Right: Independent White Capsule Controller (Reference Style Capsule) */}
-                      <div className="bg-white text-black rounded-full h-7.5 sm:h-8 px-2 sm:px-2.5 flex items-center gap-1 sm:gap-1.5 shadow-sm shrink-0">
+                      {/* 3. Right: Independent White Capsule Controller with Bold Borderless Speed Button */}
+                      <div className="bg-white text-black rounded-full h-7 sm:h-8 px-2 sm:px-2.5 flex items-center gap-1 sm:gap-1.5 shadow-sm shrink-0">
                         <button
-                          onClick={() => setCinematicSpeed(s => s === 3800 ? 2200 : (s === 2200 ? 5500 : 3800))}
-                          className="px-1 py-0.5 bg-black/10 hover:bg-black/20 rounded-xs text-[7.5px] sm:text-[8px] font-mono font-bold text-black transition-colors cursor-pointer"
-                          title="재생 속도"
+                          onClick={() => setCinematicSpeed(s => s === 3600 ? 1800 : (s === 1800 ? 7200 : 3600))}
+                          className="px-1 py-0.5 text-xs sm:text-[13px] font-mono font-black text-black hover:text-blue-600 transition-colors cursor-pointer select-none leading-none tracking-tight"
+                          title="재생 속도 (1X / 2X / 0.5X)"
                         >
-                          {cinematicSpeed === 3800 ? '1.0X' : (cinematicSpeed === 2200 ? '1.5X' : '0.7X')}
+                          {cinematicSpeed === 1800 ? '2X' : (cinematicSpeed === 7200 ? '0.5X' : '1X')}
                         </button>
 
                         <button
@@ -4505,6 +4507,46 @@ export function JourneyDetailPage({
                                   ))}
                                 </select>
 
+                                {/* Vehicle type selection pills: [도보 | 차량 | 열차] */}
+                                <div className="flex items-center justify-between gap-1 w-full py-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => updateTimelineItem(item.id, 'vehicleType', null)}
+                                    className={`flex-1 py-0.5 text-[8.5px] font-mono font-bold flex items-center justify-center border transition-colors cursor-pointer ${
+                                      !item.vehicleType
+                                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                                        : 'bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
+                                    }`}
+                                    title="도보 이동 (기본값)"
+                                  >
+                                    도보
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateTimelineItem(item.id, 'vehicleType', item.vehicleType === 'car' ? null : 'car')}
+                                    className={`flex-1 py-0.5 text-[8.5px] font-mono font-bold flex items-center justify-center border transition-colors cursor-pointer ${
+                                      item.vehicleType === 'car'
+                                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                                        : 'bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
+                                    }`}
+                                    title="차량으로 이동"
+                                  >
+                                    <Car className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateTimelineItem(item.id, 'vehicleType', item.vehicleType === 'train' ? null : 'train')}
+                                    className={`flex-1 py-0.5 text-[8.5px] font-mono font-bold flex items-center justify-center border transition-colors cursor-pointer ${
+                                      item.vehicleType === 'train'
+                                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                                        : 'bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
+                                    }`}
+                                    title="열차로 이동"
+                                  >
+                                    <Train className="w-3 h-3" />
+                                  </button>
+                                </div>
+
                                 {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) && (
                                   <button
                                     onClick={() => handleToggleExcludeFromMap(item)}
@@ -4548,6 +4590,18 @@ export function JourneyDetailPage({
                                   })()}
                                 </div>
                                 <div className="flex items-center gap-1.5 mt-1.5 h-6">
+                                  {/* Vehicle indicator in view mode */}
+                                  {item.vehicleType === 'car' && (
+                                    <span className="flex items-center gap-0.5 px-1 py-0.5 rounded bg-black/5 dark:bg-white/10 text-[9px] font-mono font-bold text-black/70 dark:text-white/70" title="다음 스팟까지 차량 이동">
+                                      <Car className="w-3 h-3" />
+                                    </span>
+                                  )}
+                                  {item.vehicleType === 'train' && (
+                                    <span className="flex items-center gap-0.5 px-1 py-0.5 rounded bg-black/5 dark:bg-white/10 text-[9px] font-mono font-bold text-black/70 dark:text-white/70" title="다음 스팟까지 열차 이동">
+                                      <Train className="w-3 h-3" />
+                                    </span>
+                                  )}
+
                                   {/* 장소 좌표가 있는 경우: 지도 표시 토글 핀 아이콘 */}
                                   {(item.lat !== undefined && item.lng !== undefined && item.lat !== null && item.lng !== null) && (
                                     <button
