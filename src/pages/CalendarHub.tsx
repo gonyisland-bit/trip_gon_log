@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  ChevronLeft, ChevronRight, ChevronDown, ChevronUp, 
+  ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Calendar as CalendarIcon,
   MapPin, Clock, ArrowRight, Plane, Sparkles, Compass, 
   CheckCircle2, ArrowUpRight, Plus, Eye, Briefcase, Heart, 
   User, AlertCircle, Trash2, Edit3, X, Tag, FileText, Check,
