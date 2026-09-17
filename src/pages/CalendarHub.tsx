@@ -2062,7 +2062,7 @@ export function CalendarHubPage({
                 let circleClasses = 'w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 rounded-full aspect-square shrink-0 flex flex-col items-center justify-center font-mono transition-all duration-150 relative z-10 cursor-pointer';
                 let textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-black leading-none';
 
-                const isSelectedDate = selectedDate === cell.dateStr;
+                const isSelectedDate = !!(selectedRange && selectedRange.start === cell.dateStr && selectedRange.end === cell.dateStr);
                 const isSelectedWeather = isWeatherMode && selectedWeatherDay?.dateStr === cell.dateStr;
                 const isSelected = isSelectedDate || isSelectedWeather;
 
