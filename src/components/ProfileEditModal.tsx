@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, Upload, ClipboardPaste, Trash2, Loader2, Sparkles, Image as ImageIcon,
-  Smile, Check
+  Smile, Check, User as UserIcon, Camera
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { ConfirmModal } from './ConfirmModal';
@@ -34,9 +35,10 @@ export function ProfileEditModal({
   
   // Profile Avatar State
   const [profileType, setProfileType] = useState<'icon' | 'image'>(user.profileType || 'icon');
-  const [profileIcon, setProfileIcon] = useState<string>(user.profileIcon || 'smile');
+  const [profileIcon, setProfileIcon] = useState<string>(user.profileIcon || 'user');
   const [profileImage, setProfileImage] = useState<string>(user.profileImage || '');
 
+  const [isAvatarPickerOpen, setIsAvatarPickerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'icon' | 'image'>(user.profileType || 'icon');
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'face' | 'baby' | 'animal'>('all');
   const [isUploading, setIsUploading] = useState(false);
@@ -55,9 +57,10 @@ export function ProfileEditModal({
       setBirthdate(user.birthdate || '');
       setPhone(user.phone || '');
       setProfileType(user.profileType || 'icon');
-      setProfileIcon(user.profileIcon || 'smile');
+      setProfileIcon(user.profileIcon || 'user');
       setProfileImage(user.profileImage || '');
       setActiveTab(user.profileType || 'icon');
+      setIsAvatarPickerOpen(false);
       setErrorMsg('');
       setIsSaving(false);
       setIsConfirmOpen(false);
@@ -213,10 +216,10 @@ export function ProfileEditModal({
     selectedCategory === 'all' ? true : i.category === selectedCategory
   );
 
-  return (
+  return createPortal(
     <>
       <div 
-        className="fixed inset-0 z-[700] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150 overflow-y-auto"
+        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150 overflow-y-auto"
         onClick={onClose}
       >
         <div 
@@ -251,194 +254,57 @@ export function ProfileEditModal({
           )}
 
           <form onSubmit={handleSaveClick} className="flex flex-col gap-5">
-            {/* 1. 1:1 Profile Avatar Customizer */}
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-3.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/10 dark:border-white/10">
-              {/* Left: 1x1 Preview */}
-              <div className="flex flex-col items-center gap-2 shrink-0">
-                <div className="relative group">
-                  <UserProfileAvatar 
-                    profile={currentPreviewProfile} 
-                    size="xl" 
-                    className="shadow-sm" 
-                  />
-                  {profileType === 'image' && profileImage && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setProfileImage('');
-                        setProfileType('icon');
-                        setActiveTab('icon');
-                      }}
-                      className="absolute -top-1 -right-1 p-1 bg-red-600 text-white text-[9px] font-mono hover:bg-red-700 transition-colors shadow-xs"
-                      title="이미지 제거"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-                <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-black/40 dark:text-white/40">
-                  1:1 PREVIEW
-                </span>
-              </div>
-
-              {/* Right: Icon / Image Selector Tabs */}
-              <div className="flex-1 w-full min-w-0 flex flex-col gap-2.5">
-                <div className="flex items-center gap-1 border-b border-black/10 dark:border-white/10 pb-1.5">
+            {/* 1. 1:1 Profile Avatar - Clean Minimal State with Change Button */}
+            <div className="flex flex-col items-center justify-center gap-2.5 p-4 bg-black/[0.02] dark:bg-white/[0.02] border border-black/10 dark:border-white/10">
+              <div className="relative group">
+                <UserProfileAvatar 
+                  profile={currentPreviewProfile} 
+                  size="xl" 
+                  className="shadow-sm" 
+                />
+                {profileType === 'image' && profileImage && (
                   <button
                     type="button"
                     onClick={() => {
-                      setActiveTab('icon');
+                      setProfileImage('');
                       setProfileType('icon');
+                      setProfileIcon('user');
                     }}
-                    className={`px-2.5 py-1 text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer ${
-                      activeTab === 'icon'
-                        ? 'border-b-2 border-black dark:border-white text-black dark:text-white font-black'
-                        : 'text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
-                    }`}
+                    className="absolute -top-1 -right-1 p-1 bg-red-600 text-white text-[9px] font-mono hover:bg-red-700 transition-colors shadow-xs"
+                    title="이미지 제거 및 기본값으로 복귀"
                   >
-                    기본 아이콘
+                    <Trash2 className="w-3 h-3" />
                   </button>
+                )}
+              </div>
+
+              {/* Action Button: Open Avatar Picker Modal */}
+              <div className="flex items-center gap-2 mt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsAvatarPickerOpen(true)}
+                  className="px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black border border-black dark:border-white text-xs font-mono font-bold uppercase tracking-wider hover:opacity-85 transition-opacity cursor-pointer flex items-center gap-1.5"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  <span>프로필 변경</span>
+                </button>
+                {profileType === 'image' && (
                   <button
                     type="button"
                     onClick={() => {
-                      setActiveTab('image');
-                      if (profileImage) setProfileType('image');
+                      setProfileImage('');
+                      setProfileType('icon');
+                      setProfileIcon('user');
                     }}
-                    className={`px-2.5 py-1 text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer ${
-                      activeTab === 'image'
-                        ? 'border-b-2 border-black dark:border-white text-black dark:text-white font-black'
-                        : 'text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
-                    }`}
+                    className="px-2.5 py-1.5 border border-black/20 dark:border-white/20 text-xs font-mono font-bold text-red-600 dark:text-red-400 hover:bg-red-500/10 cursor-pointer"
                   >
-                    1:1 이미지 등록
+                    기본값 복귀
                   </button>
-                </div>
-
-                {/* Sub Tab A: Preset Icons */}
-                {activeTab === 'icon' && (
-                  <div className="flex flex-col gap-2">
-                    {/* Category Filter */}
-                    <div className="flex items-center gap-1">
-                      {[
-                        { id: 'all', label: '전체' },
-                        { id: 'face', label: '얼굴/표정' },
-                        { id: 'baby', label: '베이비' },
-                        { id: 'animal', label: '동물' },
-                      ].map(cat => (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => setSelectedCategory(cat.id as any)}
-                          className={`px-1.5 py-0.5 text-[9.5px] font-mono font-bold border cursor-pointer transition-colors ${
-                            selectedCategory === cat.id
-                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                              : 'border-black/10 dark:border-white/10 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
-                          }`}
-                        >
-                          {cat.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Icons Grid */}
-                    <div className="grid grid-cols-6 gap-1.5 max-h-28 overflow-y-auto p-1 bg-white dark:bg-[#111] border border-black/10 dark:border-white/10">
-                      {filteredIcons.map(item => {
-                        const IconComponent = item.icon;
-                        const isSelected = profileType === 'icon' && profileIcon === item.id;
-                        return (
-                          <button
-                            key={item.id}
-                            type="button"
-                            onClick={() => {
-                              setProfileIcon(item.id);
-                              setProfileType('icon');
-                            }}
-                            title={item.label}
-                            className={`p-1.5 flex flex-col items-center justify-center aspect-square border transition-all cursor-pointer ${
-                              isSelected
-                                ? 'border-red-600 bg-red-600/10 text-red-600 dark:text-red-400 font-bold scale-105 shadow-xs'
-                                : 'border-black/10 dark:border-white/10 text-black/70 dark:text-white/70 hover:border-black dark:hover:border-white'
-                            }`}
-                          >
-                            <IconComponent className="w-5 h-5 stroke-[2]" />
-                            <span className="text-[8px] font-mono mt-0.5 truncate max-w-full">
-                              {item.label}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Sub Tab B: 1:1 Image Upload / Drag & Drop / Paste */}
-                {activeTab === 'image' && (
-                  <div className="flex flex-col gap-2">
-                    <input 
-                      type="file" 
-                      ref={fileInputRef} 
-                      onChange={handleFileSelect} 
-                      accept="image/*" 
-                      className="hidden" 
-                    />
-
-                    <div
-                      onDragEnter={(e) => { e.preventDefault(); setIsDragOver(true); }}
-                      onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-                      onDragLeave={(e) => { e.preventDefault(); setIsDragOver(false); }}
-                      onDrop={handleDrop}
-                      onClick={() => fileInputRef.current?.click()}
-                      className={`border-2 border-dashed p-3 text-center cursor-pointer transition-colors flex flex-col items-center justify-center min-h-[90px] ${
-                        isDragOver
-                          ? 'border-red-600 bg-red-600/5 text-red-600'
-                          : 'border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white bg-white dark:bg-[#111]'
-                      }`}
-                    >
-                      {isUploading ? (
-                        <div className="flex items-center gap-2 text-xs font-mono">
-                          <Loader2 className="w-4 h-4 animate-spin text-red-600" />
-                          <span>1:1 프로필 이미지 업로드 중...</span>
-                        </div>
-                      ) : (
-                        <>
-                          <Upload className="w-4 h-4 mb-1 text-black/50 dark:text-white/50" />
-                          <span className="text-[11px] font-mono font-bold text-black dark:text-white">
-                            이미지 클릭하여 선택 또는 여기에 드래그
-                          </span>
-                          <span className="text-[9.5px] font-mono text-black/40 dark:text-white/40 mt-0.5">
-                            * 기존 이미지가 있어도 덮어쓰기 가능 · 1:1 비율 권장
-                          </span>
-                        </>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between gap-2">
-                      <button
-                        type="button"
-                        onClick={handlePasteClick}
-                        className="flex-1 py-1.5 px-2 border border-black/20 dark:border-white/20 text-[10.5px] font-mono font-bold text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black flex items-center justify-center gap-1.5 cursor-pointer"
-                      >
-                        <ClipboardPaste className="w-3.5 h-3.5" />
-                        <span>클립보드 이미지 붙여넣기 (Ctrl+V)</span>
-                      </button>
-
-                      {profileImage && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setProfileImage('');
-                            setProfileType('icon');
-                            setActiveTab('icon');
-                          }}
-                          className="py-1.5 px-2 text-[10.5px] font-mono font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
-                        >
-                          이미지 초기화
-                        </button>
-                      )}
-                    </div>
-                  </div>
                 )}
               </div>
+              <span className="text-[9.5px] font-mono text-black/40 dark:text-white/40">
+                1:1 비율 프로필 · 아이콘 및 이미지 등록 지원
+              </span>
             </div>
 
             {/* 2. User Account & Identity Information */}
@@ -568,6 +434,200 @@ export function ProfileEditModal({
         onConfirm={handleConfirmSave}
         onCancel={() => setIsConfirmOpen(false)}
       />
-    </>
+
+      {/* Sub-Modal: 1:1 Profile Avatar Picker (Icon Grid or Image Upload) */}
+      {isAvatarPickerOpen && (
+        <div 
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
+          onClick={() => setIsAvatarPickerOpen(false)}
+        >
+          <div 
+            className="w-full max-w-md bg-white dark:bg-[#161616] border border-black dark:border-white shadow-2xl p-5 flex flex-col gap-4 animate-in zoom-in-95 duration-150"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-2.5">
+              <div className="flex items-center gap-2">
+                <Smile className="w-4 h-4 text-black dark:text-white" />
+                <span className="text-xs font-mono font-black uppercase tracking-wider text-black dark:text-white">
+                  CHANGE AVATAR · 프로필 선택
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAvatarPickerOpen(false)}
+                className="p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Tabs: Icon Presets vs Custom Image */}
+            <div className="flex items-center gap-1 border-b border-black/10 dark:border-white/10 pb-1.5">
+              <button
+                type="button"
+                onClick={() => setActiveTab('icon')}
+                className={`flex-1 py-1.5 text-xs font-mono font-bold uppercase tracking-wider text-center transition-colors cursor-pointer ${
+                  activeTab === 'icon'
+                    ? 'border-b-2 border-black dark:border-white text-black dark:text-white font-black'
+                    : 'text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
+                }`}
+              >
+                기본 아이콘
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('image')}
+                className={`flex-1 py-1.5 text-xs font-mono font-bold uppercase tracking-wider text-center transition-colors cursor-pointer ${
+                  activeTab === 'image'
+                    ? 'border-b-2 border-black dark:border-white text-black dark:text-white font-black'
+                    : 'text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
+                }`}
+              >
+                1:1 이미지 등록
+              </button>
+            </div>
+
+            {/* Tab 1: Icon Presets */}
+            {activeTab === 'icon' && (
+              <div className="flex flex-col gap-2.5">
+                {/* Category Filters */}
+                <div className="flex items-center gap-1">
+                  {[
+                    { id: 'all', label: '전체' },
+                    { id: 'face', label: '얼굴/사람' },
+                    { id: 'baby', label: '베이비' },
+                    { id: 'animal', label: '동물' },
+                  ].map(cat => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setSelectedCategory(cat.id as any)}
+                      className={`px-2 py-0.5 text-[10px] font-mono font-bold border cursor-pointer transition-colors ${
+                        selectedCategory === cat.id
+                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                          : 'border-black/10 dark:border-white/10 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Icons Grid */}
+                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-52 overflow-y-auto p-2 bg-black/[0.02] dark:bg-white/[0.02] border border-black/10 dark:border-white/10">
+                  {filteredIcons.map(item => {
+                    const IconComponent = item.icon;
+                    const isSelected = profileType === 'icon' && profileIcon === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => {
+                          setProfileIcon(item.id);
+                          setProfileType('icon');
+                        }}
+                        title={item.label}
+                        className={`p-2 flex flex-col items-center justify-center aspect-square border transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-red-600 bg-red-600/10 text-red-600 dark:text-red-400 font-bold shadow-xs'
+                            : 'border-black/10 dark:border-white/10 text-black/70 dark:text-white/70 hover:border-black dark:hover:border-white bg-white dark:bg-[#111]'
+                        }`}
+                      >
+                        <IconComponent className="w-6 h-6 stroke-[2]" />
+                        <span className="text-[8.5px] font-mono mt-1 truncate max-w-full">
+                          {item.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Tab 2: 1:1 Image Upload / Drag & Drop / Clipboard Paste */}
+            {activeTab === 'image' && (
+              <div className="flex flex-col gap-2.5">
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileSelect} 
+                  accept="image/*" 
+                  className="hidden" 
+                />
+
+                <div
+                  onDragEnter={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                  onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                  onDragLeave={(e) => { e.preventDefault(); setIsDragOver(false); }}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed p-4 text-center cursor-pointer transition-colors flex flex-col items-center justify-center min-h-[110px] ${
+                    isDragOver
+                      ? 'border-red-600 bg-red-600/5 text-red-600'
+                      : 'border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white bg-white dark:bg-[#111]'
+                  }`}
+                >
+                  {isUploading ? (
+                    <div className="flex items-center gap-2 text-xs font-mono">
+                      <Loader2 className="w-4 h-4 animate-spin text-red-600" />
+                      <span>1:1 프로필 이미지 업로드 중...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="w-5 h-5 mb-1.5 text-black/50 dark:text-white/50" />
+                      <span className="text-xs font-mono font-bold text-black dark:text-white">
+                        클릭하여 이미지 선택 또는 여기에 드래그
+                      </span>
+                      <span className="text-[10px] font-mono text-black/40 dark:text-white/40 mt-1">
+                        * 기존 이미지가 있어도 덮어쓰기 교체 가능 · 1:1 권장
+                      </span>
+                    </>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={handlePasteClick}
+                    className="flex-1 py-2 px-2 border border-black/20 dark:border-white/20 text-[11px] font-mono font-bold text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <ClipboardPaste className="w-3.5 h-3.5" />
+                    <span>클립보드 붙여넣기 (Ctrl+V)</span>
+                  </button>
+
+                  {profileImage && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProfileImage('');
+                        setProfileType('icon');
+                        setProfileIcon('user');
+                      }}
+                      className="py-2 px-2 text-[11px] font-mono font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                    >
+                      초기화
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Modal Bottom Confirm Button */}
+            <div className="pt-2 border-t border-black/10 dark:border-white/10 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsAvatarPickerOpen(false)}
+                className="w-full py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:opacity-85 transition-opacity cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>선택 완료</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>,
+    document.body
   );
 }

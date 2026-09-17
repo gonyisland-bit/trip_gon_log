@@ -14,6 +14,7 @@ export interface PresetIconItem {
 
 export const PROFILE_PRESET_ICONS: PresetIconItem[] = [
   // Faces
+  { id: 'user', label: '기본 사람', category: 'face', icon: DefaultUserIcon },
   { id: 'smile', label: '미소', category: 'face', icon: Smile },
   { id: 'smile-plus', label: '행복', category: 'face', icon: SmilePlus },
   { id: 'laugh', label: '웃음', category: 'face', icon: Laugh },

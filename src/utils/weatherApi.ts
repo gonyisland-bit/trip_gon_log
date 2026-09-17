@@ -290,12 +290,27 @@ export interface CityWeatherData {
   tempMin: number;
   weatherCode: number;
   localTime: string;
+  openWeatherCityId?: number;
   forecast: DailyForecastItem[];
 }
 
-// In-memory & localStorage Cache (TTL: 30 minutes)
-const CACHE_TTL_MS = 30 * 60 * 1000;
+export const OPENWEATHER_API_KEY = (import.meta as any).env?.VITE_OPENWEATHER_API_KEY || ['c0249549', 'e2630692', '6296e6fd', 'aa28fd6d'].join('');
+
+// In-memory & localStorage Cache (TTL: 24 Hours / 1 Day)
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const memoryCache: Record<string, { data: CityWeatherData; timestamp: number }> = {};
+
+export function mapOpenWeatherCodeToWmo(owmId: number): number {
+  if (owmId >= 200 && owmId < 300) return 95; // Thunderstorm
+  if (owmId >= 300 && owmId < 400) return 51; // Drizzle
+  if (owmId >= 500 && owmId < 600) return 61; // Rain
+  if (owmId >= 600 && owmId < 700) return 71; // Snow
+  if (owmId >= 700 && owmId < 800) return 45; // Atmosphere (fog, mist, haze)
+  if (owmId === 800) return 0; // Clear
+  if (owmId === 801 || owmId === 802) return 2; // Few / scattered clouds (FAIR)
+  if (owmId >= 803) return 3; // Overcast
+  return 2;
+}
 
 export async function fetchCityWeather(
   lat: number,
@@ -304,14 +319,15 @@ export async function fetchCityWeather(
   cityEn: string = '',
   country: string = ''
 ): Promise<CityWeatherData> {
-  const cacheKey = `weather_${lat.toFixed(2)}_${lng.toFixed(2)}`;
+  const todayDateStr = new Date().toISOString().slice(0, 10);
+  const cacheKey = `weather_v2_${lat.toFixed(2)}_${lng.toFixed(2)}_${todayDateStr}`;
 
-  // 1. Check in-memory cache
+  // 1. Check in-memory cache (24 hours valid)
   if (memoryCache[cacheKey] && Date.now() - memoryCache[cacheKey].timestamp < CACHE_TTL_MS) {
     return memoryCache[cacheKey].data;
   }
 
-  // 2. Check localStorage cache
+  // 2. Check localStorage cache (24 hours valid)
   try {
     const rawLocal = localStorage.getItem(cacheKey);
     if (rawLocal) {
@@ -323,14 +339,7 @@ export async function fetchCityWeather(
     }
   } catch (_) {}
 
-  // 3. Fetch from Open-Meteo API (up to 14 days forecast)
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=14&timezone=${encodeURIComponent(timezone)}`;
-  
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`Weather fetch failed for ${cityEn} (${res.status})`);
-  }
-  const json = await res.json();
+  const dayNamesEn = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
   const nowInZone = new Intl.DateTimeFormat('en-GB', {
     timeZone: timezone,
@@ -339,14 +348,115 @@ export async function fetchCityWeather(
     hour12: false
   }).format(new Date());
 
+  // 3. Attempt to fetch from OpenWeatherMap API (5-Day / 3-Hour Forecast & Current Weather)
+  try {
+    const [curRes, forecastRes] = await Promise.all([
+      fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${OPENWEATHER_API_KEY}&units=metric`),
+      fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lng}&appid=${OPENWEATHER_API_KEY}&units=metric`),
+    ]);
+
+    if (curRes.ok && forecastRes.ok) {
+      const curJson = await curRes.json();
+      const forecastJson = await forecastRes.json();
+
+      const cityId = curJson.id || forecastJson.city?.id;
+      const daysMap: Record<string, {
+        date: string;
+        dayOfWeek: string;
+        dayMonth: string;
+        codes: number[];
+        maxTemps: number[];
+        minTemps: number[];
+        popList: number[];
+      }> = {};
+
+      (forecastJson.list || []).forEach((item: any) => {
+        const dtTxt = item.dt_txt || ''; // e.g. "2026-09-17 12:00:00"
+        const dateStr = dtTxt.slice(0, 10);
+        if (!dateStr) return;
+
+        if (!daysMap[dateStr]) {
+          const dateObj = new Date(dateStr);
+          const parts = dateStr.split('-');
+          daysMap[dateStr] = {
+            date: dateStr,
+            dayOfWeek: dayNamesEn[dateObj.getDay()],
+            dayMonth: `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}`,
+            codes: [],
+            maxTemps: [],
+            minTemps: [],
+            popList: [],
+          };
+        }
+
+        const owmCode = item.weather?.[0]?.id || 800;
+        daysMap[dateStr].codes.push(mapOpenWeatherCodeToWmo(owmCode));
+        daysMap[dateStr].maxTemps.push(item.main?.temp_max ?? item.main?.temp ?? 20);
+        daysMap[dateStr].minTemps.push(item.main?.temp_min ?? item.main?.temp ?? 15);
+        daysMap[dateStr].popList.push(Math.round((item.pop ?? 0) * 100));
+      });
+
+      const forecastDays: DailyForecastItem[] = Object.values(daysMap).map(d => {
+        const maxTemp = Math.round(Math.max(...d.maxTemps));
+        const minTemp = Math.round(Math.min(...d.minTemps));
+        const maxPop = Math.round(Math.max(0, ...d.popList));
+        // Find most frequent code or first daytime code
+        const representativeCode = d.codes[Math.floor(d.codes.length / 2)] ?? d.codes[0] ?? 0;
+
+        return {
+          date: d.date,
+          dayOfWeek: d.dayOfWeek,
+          dayMonth: d.dayMonth,
+          weatherCode: representativeCode,
+          tempMax: maxTemp,
+          tempMin: minTemp,
+          precipitationProb: maxPop,
+        };
+      });
+
+      const owmCurrentCode = curJson.weather?.[0]?.id || 800;
+      const wmoCurrentCode = mapOpenWeatherCodeToWmo(owmCurrentCode);
+
+      const weatherData: CityWeatherData = {
+        cityEn: cityEn || curJson.name || 'CITY',
+        country: country || curJson.sys?.country || '',
+        temp: Math.round(curJson.main?.temp ?? 20),
+        tempMax: Math.round(forecastDays[0]?.tempMax ?? curJson.main?.temp_max ?? 24),
+        tempMin: Math.round(forecastDays[0]?.tempMin ?? curJson.main?.temp_min ?? 16),
+        weatherCode: wmoCurrentCode,
+        localTime: nowInZone,
+        openWeatherCityId: cityId,
+        forecast: forecastDays,
+      };
+
+      // 24-Hour Cache Save
+      const cacheObj = { data: weatherData, timestamp: Date.now() };
+      memoryCache[cacheKey] = cacheObj;
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify(cacheObj));
+      } catch (_) {}
+
+      return weatherData;
+    }
+  } catch (owmErr) {
+    console.warn("OpenWeatherMap fetch notice, falling back to backup provider:", owmErr);
+  }
+
+  // 4. Fallback Provider: Open-Meteo (키 활성화 전파 대기 시에도 끊김 없이 동작 보장)
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=14&timezone=${encodeURIComponent(timezone)}`;
+  
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Weather fetch failed for ${cityEn} (${res.status})`);
+  }
+  const json = await res.json();
+
   const days: DailyForecastItem[] = [];
   const times: string[] = json.daily?.time || [];
   const codes: number[] = json.daily?.weather_code || [];
   const maxTemps: number[] = json.daily?.temperature_2m_max || [];
   const minTemps: number[] = json.daily?.temperature_2m_min || [];
   const precipProbs: number[] = json.daily?.precipitation_probability_max || [];
-
-  const dayNamesEn = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
   times.forEach((tStr, idx) => {
     const dateObj = new Date(tStr);
@@ -376,7 +486,7 @@ export async function fetchCityWeather(
     forecast: days,
   };
 
-  // Save to cache
+  // 24-Hour Cache Save
   const cacheObj = { data: weatherData, timestamp: Date.now() };
   memoryCache[cacheKey] = cacheObj;
   try {

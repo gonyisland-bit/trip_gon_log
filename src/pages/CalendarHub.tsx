@@ -2062,6 +2062,8 @@ export function CalendarHubPage({
                 let circleClasses = 'w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 rounded-full aspect-square shrink-0 flex flex-col items-center justify-center font-mono transition-all duration-150 relative z-10 cursor-pointer';
                 let textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-black leading-none';
 
+                const isSelectedWeather = isWeatherMode && selectedWeatherDay?.dateStr === cell.dateStr;
+
                 if (!cell.isCurrentMonth) {
                   circleClasses += ' opacity-20 text-black/40 dark:text-white/40 hover:opacity-40';
                 } else if (cell.isToday) {
@@ -2070,6 +2072,9 @@ export function CalendarHubPage({
                 } else if (hasTrip) {
                   circleClasses += ' text-white font-black hover:opacity-95';
                   textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-black leading-none text-white';
+                } else if (isSelectedWeather) {
+                  circleClasses += ' bg-black text-white dark:bg-white dark:text-black font-black ring-2 ring-black dark:ring-white scale-105 shadow-md';
+                  textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-black leading-none text-white dark:text-black';
                 } else if (isInRange) {
                   circleClasses += ' bg-red-600/20 ring-2 ring-red-600 text-red-600 dark:text-red-400 font-black';
                 } else if (hasEvent) {
@@ -2127,7 +2132,7 @@ export function CalendarHubPage({
                       className={circleClasses}
                       title={cell.holiday ? `${cell.dateStr} (${cell.holiday.name})` : cell.dateStr}
                     >
-                      {/* Weather Mode 3-Tier Layout (실시간 예보는 Open-Meteo 사용, 14일 이후/타월은 실제 기후 통계 시뮬레이터 연동) */}
+                      {/* Weather Mode 3-Tier Layout (실시간 예보는 OpenWeatherMap 사용, 타월/예보외 구간은 실제 기후 통계 시뮬레이터 연동) */}
                       {isWeatherMode && cell.isCurrentMonth ? (() => {
                         const exact = cityWeatherData?.forecast?.find(f => f.date === cell.dateStr);
                         const weatherItem = exact || getSimulatedWeatherForDate(selectedWeatherCity.nameEn, cell.dateStr);
@@ -2137,21 +2142,23 @@ export function CalendarHubPage({
                         }
 
                         const { icon: WeatherIconComponent, colorClass } = getWeatherMeta(weatherItem.weatherCode, weatherItem.precipitationProb);
+                        const isSelectedWeather = selectedWeatherDay?.dateStr === cell.dateStr;
+                        const isCellHighlighted = hasTrip || cell.isToday || isInRange || isSelectedWeather;
 
                         return (
                           <div className="flex flex-col items-center justify-between h-full w-full py-1 sm:py-1.5 pointer-events-none select-none">
                             {/* 1. 상단: 날짜 일자 숫자 */}
-                            <span className="text-[9px] sm:text-[10px] md:text-[11px] font-mono font-bold leading-none opacity-60">
+                            <span className={`text-[9px] sm:text-[10px] md:text-[11px] font-mono font-bold leading-none ${isCellHighlighted ? 'text-white/95 opacity-90' : 'opacity-60'}`}>
                               {cell.dayNum}
                             </span>
 
-                            {/* 2. 중앙 메인: 날씨 아이콘 크게 배치 */}
+                            {/* 2. 중앙 메인: 날씨 아이콘 크게 배치 (선택/여정/오늘 활성화 시 순백색 고대비 적용) */}
                             <div className="my-auto flex items-center justify-center">
-                              <WeatherIconComponent className={`w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 stroke-[2.2] shrink-0 ${hasTrip || cell.isToday ? 'text-white' : colorClass}`} />
+                              <WeatherIconComponent className={`w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 shrink-0 ${isCellHighlighted ? 'text-white stroke-[2.4] drop-shadow-xs' : `${colorClass} stroke-[2.2]`}`} />
                             </div>
 
                             {/* 3. 하단: 최저/최고 기온 */}
-                            <span className={`text-[7.5px] sm:text-[8.5px] md:text-[9.5px] font-mono font-bold tracking-tighter leading-none ${hasTrip || cell.isToday ? 'text-white/95' : 'text-black/75 dark:text-white/75'}`}>
+                            <span className={`text-[7.5px] sm:text-[8.5px] md:text-[9.5px] font-mono font-bold tracking-tighter leading-none ${isCellHighlighted ? 'text-white font-black' : 'text-black/75 dark:text-white/75'}`}>
                               {weatherItem.tempMin}°/{weatherItem.tempMax}°
                             </span>
                           </div>
@@ -2192,33 +2199,35 @@ export function CalendarHubPage({
                 selectedWeatherDay.weather.weatherCode, 
                 selectedWeatherDay.weather.precipitationProb
               );
-              const isKorea = selectedWeatherDay.city.country === 'KR' || selectedWeatherDay.city.nameEn === 'SEOUL';
-              const weatherSearchUrl = isKorea
-                ? `https://search.naver.com/search.naver?query=${encodeURIComponent(selectedWeatherDay.city.name + ' 날씨')}`
-                : `https://www.google.com/search?q=${encodeURIComponent(selectedWeatherDay.city.name + ' ' + selectedWeatherDay.dateStr + ' weather')}`;
+              
+              // OpenWeatherMap 공식 도시 페이지 매칭 (기온/날씨 100% 일치)
+              const openWeatherId = cityWeatherData?.openWeatherCityId;
+              const weatherUrl = openWeatherId
+                ? `https://openweathermap.org/city/${openWeatherId}`
+                : `https://openweathermap.org/find?q=${encodeURIComponent(selectedWeatherDay.city.nameEn)}`;
 
               return (
                 <a 
-                  href={weatherSearchUrl}
+                  href={weatherUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full mt-3 p-3 sm:p-3.5 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.03] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 font-mono cursor-pointer hover:border-black/50 dark:hover:border-white/50 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all group select-none animate-in fade-in duration-200 no-underline text-inherit"
-                  title={`${selectedWeatherDay.city.name} 기상 상세 정보 사이트 새 창 이동`}
+                  className="w-full mt-3 p-3 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.03] flex flex-row items-center justify-between gap-3 font-mono cursor-pointer hover:border-black/50 dark:hover:border-white/50 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all group select-none animate-in fade-in duration-200 no-underline text-inherit"
+                  title={`${selectedWeatherDay.city.name} OpenWeatherMap 공식 예보 사이트 새 창 이동`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center shrink-0">
                       <WeatherIconComponent className={`w-5 h-5 sm:w-6 sm:h-6 ${colorClass} stroke-[2.2]`} />
                     </div>
-                    <div className="flex flex-col">
-                      <div className="flex items-baseline gap-2">
+                    <div className="flex flex-col min-w-0">
+                      <div className="flex items-baseline gap-2 truncate">
                         <span className="text-xs sm:text-sm font-black text-black dark:text-white">
                           {selectedWeatherDay.dateStr.replace(/-/g, '.')} ({selectedWeatherDay.weather.dayOfWeek})
                         </span>
-                        <span className="text-[10.5px] font-bold text-red-600 dark:text-red-400 uppercase">
+                        <span className="text-[10.5px] font-bold text-red-600 dark:text-red-400 uppercase truncate">
                           {selectedWeatherDay.city.name} ({selectedWeatherDay.city.nameEn})
                         </span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 text-[11px] text-black/60 dark:text-white/60 mt-0.5">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10.5px] sm:text-[11px] text-black/60 dark:text-white/60 mt-0.5 truncate">
                         <span className="font-bold text-black dark:text-white">{labelKo} ({label})</span>
                         <span>·</span>
                         <span>최고 {selectedWeatherDay.weather.tempMax}°C / 최저 {selectedWeatherDay.weather.tempMin}°C</span>
@@ -2228,8 +2237,8 @@ export function CalendarHubPage({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 text-[10.5px] font-mono font-bold text-black/60 dark:text-white/60 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors shrink-0 sm:self-center">
-                    <span>{isKorea ? '기상청 / 날씨 사이트 이동' : '날씨 제공 사이트 이동'}</span>
+                  {/* 날씨 이동 문구 없이 LUCIDE 대각화살 표기 심플 원형 버튼 (모바일에서도 우측에 1열 안착) */}
+                  <div className="w-8 h-8 rounded-full border border-black/20 dark:border-white/20 group-hover:border-black dark:group-hover:border-white group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black flex items-center justify-center shrink-0 transition-all">
                     <ArrowUpRight className="w-4 h-4 stroke-[2.2]" />
                   </div>
                 </a>

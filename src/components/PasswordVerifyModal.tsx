@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Lock, Loader2, KeyRound } from 'lucide-react';
 import { auth } from '../firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
@@ -49,9 +50,9 @@ export function PasswordVerifyModal({
     }
   };
 
-  return (
+  return createPortal(
     <div 
-      className="fixed inset-0 z-[750] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
       onClick={onClose}
     >
       <div 
@@ -126,6 +127,7 @@ export function PasswordVerifyModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
