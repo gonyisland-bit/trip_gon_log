@@ -3869,11 +3869,11 @@ export function JourneyDetailPage({
               onTouchStart={() => { setIsPlayFabIdle(false); resetPlayFabIdleTimer(); }}
               className={`absolute bottom-3 md:bottom-6 lg:bottom-8 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-auto flex items-center rounded-full overflow-hidden opacity-100 bg-[#18181B] text-white border border-white/15 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur-md ${
                 isCinematicMode
-                  ? 'h-9.5 sm:h-10 w-[calc(100%-1.5rem)] max-w-[500px] px-2 sm:px-2.5 justify-between'
-                  : 'h-9.5 sm:h-10 w-auto px-1.5 sm:px-2 justify-center hover:scale-105 active:scale-95 cursor-pointer group'
+                  ? 'h-9.5 sm:h-10 w-[calc(100%-1.5rem)] max-w-[500px] p-1 justify-between'
+                  : 'h-9.5 sm:h-10 w-auto p-1 justify-center hover:scale-105 active:scale-95 cursor-pointer group'
               }`}
             >
-              {/* Collapsed State: Dark Capsule with Left White Symbol and Right Spot Badge */}
+              {/* Collapsed State: Monochromatic Solid Capsule with Flush Concentric Play Button & 'Playlog' */}
               {!isCinematicMode ? (
                 <button
                   onClick={() => {
@@ -3887,34 +3887,29 @@ export function JourneyDetailPage({
                     setIsCinematicMode(true);
                     setIsCinematicPaused(false);
                   }}
-                  className="w-full h-full flex items-center gap-2 sm:gap-2.5 px-0.5 cursor-pointer select-none"
+                  className="w-full h-full flex items-center gap-2 sm:gap-2.5 cursor-pointer select-none"
                   title="플레이로그 시작 (Space)"
-                  aria-label="Play Log"
+                  aria-label="Playlog"
                 >
-                  {/* Left: White Circular Symbol Badge */}
-                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white text-black flex items-center justify-center shadow-xs shrink-0 group-hover:scale-105 transition-transform">
+                  {/* Left: White Circular Play Button (Perfect concentric 4px inset) */}
+                  <div className="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-full bg-white text-black flex items-center justify-center shadow-xs shrink-0 group-hover:bg-neutral-100 transition-colors">
                     <Play className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-black text-black ml-0.5" />
                   </div>
 
-                  {/* Middle: Clean Sans-Serif Title */}
-                  <span className="text-xs sm:text-[12.5px] font-sans font-bold tracking-tight text-white whitespace-nowrap">
-                    Play Log
+                  {/* Clean Sans-Serif Title: Playlog */}
+                  <span className="text-xs sm:text-[13px] font-sans font-bold tracking-tight text-white whitespace-nowrap pr-3.5 sm:pr-4 select-none">
+                    Playlog
                   </span>
-
-                  {/* Right: Independent Capsule Badge */}
-                  <div className="px-2 py-0.5 rounded-full bg-white/15 text-white/85 group-hover:bg-white group-hover:text-black transition-colors font-mono text-[9px] font-bold tracking-wider shrink-0">
-                    {cinematicItems.length} SPOTS
-                  </div>
                 </button>
               ) : (
                 /* Expanded State: Left White Toggle Circle + Middle Track + Right White Capsule Controller */
                 currentCinematicItem && (() => {
                   return (
                     <div className="w-full h-full flex items-center justify-between gap-1.5 sm:gap-2 select-none animate-in fade-in duration-200">
-                      {/* 1. Left: White Circular Toggle (Pause / Play) */}
+                      {/* 1. Left: White Circular Toggle (Pause / Play) - Exactly matches w-7.5 h-7.5 sm:w-8 sm:h-8 */}
                       <button
                         onClick={() => setIsCinematicPaused(p => !p)}
-                        className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white text-black flex items-center justify-center shadow-xs shrink-0 cursor-pointer active:scale-95 transition-transform hover:bg-neutral-200"
+                        className="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-full bg-white text-black flex items-center justify-center shadow-xs shrink-0 cursor-pointer active:scale-95 transition-all hover:bg-neutral-200"
                         title={isCinematicPaused ? '재생 (Space)' : '일시정지 (Space)'}
                       >
                         {isCinematicPaused ? (
@@ -3957,7 +3952,7 @@ export function JourneyDetailPage({
                       </div>
 
                       {/* 3. Right: Independent White Capsule Controller (Reference Style Capsule) */}
-                      <div className="bg-white text-black rounded-full px-2 py-0.5 sm:px-2.5 sm:py-1 flex items-center gap-1 sm:gap-1.5 shadow-sm shrink-0">
+                      <div className="bg-white text-black rounded-full h-7.5 sm:h-8 px-2 sm:px-2.5 flex items-center gap-1 sm:gap-1.5 shadow-sm shrink-0">
                         <button
                           onClick={() => setCinematicSpeed(s => s === 3800 ? 2200 : (s === 2200 ? 5500 : 3800))}
                           className="px-1 py-0.5 bg-black/10 hover:bg-black/20 rounded-xs text-[7.5px] sm:text-[8px] font-mono font-bold text-black transition-colors cursor-pointer"

@@ -213,12 +213,12 @@ export function Navigation({
             type="button"
             onClick={() => setIsDarkMode(!isDarkMode)}
             className="hidden md:flex p-2 sm:p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors cursor-pointer items-center justify-center"
-            title={isDarkMode ? "라이트 모드로 전환 (Ctrl + Shift + L)" : "나이트 모드로 전환 (Ctrl + Shift + L)"}
+            title={isDarkMode ? "나이트 모드 (클릭 시 라이트 모드로 전환, Ctrl + Shift + L)" : "라이트 모드 (클릭 시 나이트 모드로 전환, Ctrl + Shift + L)"}
           >
             {isDarkMode ? (
-              <Sun className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-amber-500" />
+              <Moon className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-indigo-400" />
             ) : (
-              <Moon className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-indigo-500" />
+              <Sun className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-amber-500" />
             )}
           </button>
 

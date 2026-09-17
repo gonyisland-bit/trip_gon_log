@@ -110,9 +110,19 @@ export function MapArea({
               transform: translateY(-2px) scale(1.12);
               box-shadow: 0 6px 18px rgba(37,99,235,0.6);
             }
-            .pocket-pin-wrapper:hover .pocket-pin-label {
-              border-color: rgba(59,130,246,0.9);
-              transform: translateY(-1px);
+            .pocket-pin-label {
+              opacity: 0;
+              visibility: hidden;
+              transform: translate(-50%, 4px);
+              pointer-events: none;
+              transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.2s;
+            }
+            .pocket-pin-wrapper:hover .pocket-pin-label,
+            .pocket-pin-wrapper.active-pocket-pin .pocket-pin-label {
+              opacity: 1;
+              visibility: visible;
+              transform: translate(-50%, 0);
+              pointer-events: auto;
             }
           </style>
 
@@ -126,10 +136,10 @@ export function MapArea({
             </svg>
           </div>
 
-          <!-- Clean Glassmorphism Solid Label -->
-          <div class="pocket-pin-label" style="position: relative; z-index: 2; margin-top: 3px; background: rgba(15, 23, 42, 0.94); backdrop-filter: blur(4px); border: 1px solid rgba(59, 130, 246, 0.45); border-radius: 4px; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); display: flex; align-items: center;">
-            <span style="background: #2563eb; color: #fff; font-size: 7.5px; font-weight: 900; padding: 1px 3.5px; border-radius: 2px; margin-right: 4px; font-family: monospace; letter-spacing: 0.05em;">POCKET</span>
-            <span style="color: #f8fafc; font-weight: 700;">${spot.title}</span>
+          <!-- Clean Swiss Minimal Gray Label (Hidden by default, shown on hover/click) -->
+          <div class="pocket-pin-label" style="position: absolute; top: 25px; left: 50%; z-index: 10; background: rgba(244, 244, 246, 0.96); backdrop-filter: blur(8px); border: 1px solid rgba(212, 212, 216, 0.95); border-radius: 4px; color: #18181b; font-size: 10px; font-weight: 700; padding: 2.5px 7px; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.06); display: flex; align-items: center;">
+            <span style="background: #e4e4e7; color: #2563eb; font-size: 7.5px; font-weight: 900; padding: 1px 4px; border-radius: 2px; margin-right: 4px; font-family: monospace; letter-spacing: 0.05em; border: 0.5px solid rgba(37,99,235,0.25);">POCKET</span>
+            <span style="color: #18181b; font-weight: 700;">${spot.title}</span>
           </div>
         </div>
       `;
@@ -161,6 +171,8 @@ export function MapArea({
       marker.bindPopup(popupHtml, { closeButton: true, offset: [0, -6] });
 
       marker.on('popupopen', () => {
+        const el = marker.getElement();
+        if (el) el.querySelector('.pocket-pin-wrapper')?.classList.add('active-pocket-pin');
         const btn = document.getElementById(`ghost-pin-add-${spot.id}`);
         if (btn) {
           btn.onclick = () => {
@@ -168,6 +180,11 @@ export function MapArea({
             marker.closePopup();
           };
         }
+      });
+
+      marker.on('popupclose', () => {
+        const el = marker.getElement();
+        if (el) el.querySelector('.pocket-pin-wrapper')?.classList.remove('active-pocket-pin');
       });
 
       pocketMarkersRef.current[spot.id] = marker;
