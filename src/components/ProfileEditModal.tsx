@@ -94,7 +94,7 @@ export function ProfileEditModal({
     setIsUploading(true);
     setErrorMsg('');
     try {
-      const compressedBlob = await compressImage(file, { maxWidth: 600, maxHeight: 600, quality: 0.85 });
+      const compressedBlob = await compressImage(file, 600, 600, 0.85);
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const storagePath = `users/profiles/${user.uid}_${Date.now()}_${safeName}`;
       
@@ -561,9 +561,10 @@ export function ProfileEditModal({
         isOpen={isConfirmOpen}
         title="SAVE PROFILE"
         message="프로필 변경 사항을 저장하시겠습니까? (이메일 외 아이디 및 1:1 프로필이 즉시 반영됩니다)"
-        confirmText="저장 확인"
-        cancelText="취소"
-        variant="info"
+        confirmLabel="저장 확인"
+        cancelLabel="취소"
+        iconType="info"
+        confirmVariant="black"
         onConfirm={handleConfirmSave}
         onCancel={() => setIsConfirmOpen(false)}
       />
