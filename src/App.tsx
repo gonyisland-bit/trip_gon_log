@@ -2591,6 +2591,8 @@ function App() {
             onSearchClick={() => setIsSearchOpen(true)}
             isAdmin={isAdmin}
             isHomeGradientActive={isHomeGradientActive}
+            currentUserProfile={currentUserProfile}
+            onUpdateCurrentUserProfile={setCurrentUserProfile}
           />
         )}
 

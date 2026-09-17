@@ -10,6 +10,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { ConfirmModal } from './ConfirmModal';
 import { UserProfile } from '../types';
+import { PROFILE_PRESET_ICONS, UserProfileAvatar } from './UserProfileAvatar';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -22,6 +23,8 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
+  const [profileIcon, setProfileIcon] = useState('smile');
   const [lastName, setLastName] = useState('');
   const [firstName, setFirstName] = useState('');
   const [birthdate, setBirthdate] = useState('');
@@ -37,6 +40,8 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
       setError('');
       setEmail('');
       setPassword('');
+      setUsername('');
+      setProfileIcon('smile');
       setLastName('');
       setFirstName('');
       setBirthdate('');
@@ -100,6 +105,9 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
         const newProfile: UserProfile = {
           uid: user.uid,
           email: cleanEmail,
+          username: username.trim() || cleanEmail.split('@')[0],
+          profileType: 'icon',
+          profileIcon: profileIcon || 'smile',
           lastName: lastName.trim(),
           firstName: firstName.trim(),
           birthdate: birthdate.trim(),
@@ -240,6 +248,49 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
                     placeholder="010-0000-0000"
                     className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
                   />
+                </div>
+              </div>
+
+              {/* Username (아이디) */}
+              <div>
+                <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
+                  아이디 (USERNAME)
+                </label>
+                <input 
+                  type="text" 
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="traveler99 (미입력 시 이메일 앞자리 자동 지정)"
+                  className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
+                />
+              </div>
+
+              {/* 1:1 Profile Icon Selector */}
+              <div>
+                <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1.5">
+                  1:1 프로필 아이콘 선택
+                </label>
+                <div className="grid grid-cols-6 gap-1 p-1 bg-black/[0.02] dark:bg-white/[0.02] border border-black/15 dark:border-white/15">
+                  {PROFILE_PRESET_ICONS.slice(0, 12).map((item) => {
+                    const IconComp = item.icon;
+                    const isSelected = profileIcon === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setProfileIcon(item.id)}
+                        title={item.label}
+                        className={`p-1.5 flex flex-col items-center justify-center aspect-square border transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-red-600 bg-red-600/10 text-red-600 font-bold scale-105'
+                            : 'border-transparent text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black/20'
+                        }`}
+                      >
+                        <IconComp className="w-4 h-4 stroke-[2.2]" />
+                        <span className="text-[7.5px] font-mono mt-0.5">{item.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

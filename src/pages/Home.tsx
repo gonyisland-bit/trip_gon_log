@@ -2312,10 +2312,10 @@ export function HomePage({
               </button>
             </div>
 
-            {/* Swiss Responsive 3-Column Layout: 1. Month/Year -> 2. Large Calendar -> 3. Schedule Feed */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 xl:gap-10 items-start">
+            {/* Swiss Responsive 3-Column Layout: 1. Month/Year (3 cols) -> 2. Schedule Feed (5 cols) -> 3. Large Calendar (4 cols) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 xl:gap-8 items-stretch">
               {/* 1. Month/Year Display Column (lg:col-span-3 xl:col-span-3) */}
-              <div className="lg:col-span-3 xl:col-span-3 flex flex-col justify-start gap-4">
+              <div className="lg:col-span-3 xl:col-span-3 flex flex-col justify-between gap-4 lg:pr-6">
                 <div 
                   onClick={() => onNavigate('calendar')}
                   className="cursor-pointer group flex flex-col items-start select-none"
@@ -2352,8 +2352,8 @@ export function HomePage({
                 </div>
               </div>
 
-              {/* 2. Monthly Schedules Feed Column (lg:col-span-4 xl:col-span-4) */}
-              <div className="lg:col-span-4 xl:col-span-4 flex flex-col justify-start w-full border-t lg:border-t-0 lg:border-l border-black/10 dark:border-white/10 pt-6 lg:pt-0 lg:pl-8">
+              {/* 2. Monthly Schedules Feed Column (lg:col-span-5 xl:col-span-5) */}
+              <div className="lg:col-span-5 xl:col-span-5 flex flex-col justify-start w-full border-t lg:border-t-0 lg:border-l border-black/10 dark:border-white/10 pt-6 lg:pt-0 lg:px-7">
                 <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-3">
                   <span className="text-[10px] font-mono font-black uppercase tracking-widest text-black/40 dark:text-white/40">
                     MONTHLY SCHEDULES ({monthSchedules.length})
@@ -2402,9 +2402,9 @@ export function HomePage({
                 )}
               </div>
 
-              {/* 3. Large Circular Calendar Grid Column (lg:col-span-5 xl:col-span-5) - Right Aligned */}
-              <div className="lg:col-span-5 xl:col-span-5 flex flex-col items-center lg:items-end justify-center w-full border-t lg:border-t-0 lg:border-l border-black/10 dark:border-white/10 pt-6 lg:pt-0 lg:pl-8 lg:pr-2">
-                <div className="w-full max-w-[420px] mx-auto lg:mr-0 lg:ml-auto">
+              {/* 3. Large Circular Calendar Grid Column (lg:col-span-4 xl:col-span-4) - Snug & Right Aligned */}
+              <div className="lg:col-span-4 xl:col-span-4 flex flex-col items-center lg:items-end justify-start w-full border-t lg:border-t-0 lg:border-l border-black/10 dark:border-white/10 pt-6 lg:pt-0 lg:pl-7 lg:pr-0">
+                <div className="w-full max-w-[380px] lg:max-w-full mx-auto lg:mr-0 lg:ml-auto">
                   {/* Weekday Headers */}
                   <div className="grid grid-cols-7 gap-2 sm:gap-3 mb-3 text-center text-xs sm:text-sm font-black font-mono select-none text-black/40 dark:text-white/40">
                     <div>M</div>

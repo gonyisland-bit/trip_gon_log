@@ -293,6 +293,10 @@ export interface UserPermissions {
 export interface UserProfile {
   uid: string;
   email: string;
+  username?: string;
+  profileType?: 'icon' | 'image';
+  profileIcon?: string;
+  profileImage?: string;
   lastName: string;
   firstName: string;
   birthdate: string;

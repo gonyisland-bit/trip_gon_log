@@ -398,6 +398,16 @@ export function CalendarHubPage({
     weather: DailyForecastItem;
   } | null>(null);
 
+  // 이동된 도시 일시적 하이라이트 상태 (색상 인지 효과)
+  const [recentlyMovedCityEn, setRecentlyMovedCityEn] = useState<string | null>(null);
+  const movedHighlightTimerRef = useRef<any>(null);
+
+  useEffect(() => {
+    return () => {
+      if (movedHighlightTimerRef.current) clearTimeout(movedHighlightTimerRef.current);
+    };
+  }, []);
+
   const handleAddWeatherCity = (
     placeName: string, 
     coords: { lat: number; lng: number } | null, 
@@ -466,6 +476,14 @@ export function CalendarHubPage({
     updated[idx] = updated[targetIdx];
     updated[targetIdx] = temp;
     setWeatherCities(updated);
+
+    // 이동한 칸 색상 인지 효과 (1.2초간 오렌지 하이라이트)
+    setRecentlyMovedCityEn(temp.nameEn);
+    if (movedHighlightTimerRef.current) clearTimeout(movedHighlightTimerRef.current);
+    movedHighlightTimerRef.current = setTimeout(() => {
+      setRecentlyMovedCityEn(null);
+    }, 1200);
+
     try {
       localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(updated));
       setDoc(doc(db, 'settings', 'calendar_weather_cities'), { cities: updated }, { merge: true }).catch(console.error);
@@ -1823,14 +1841,14 @@ export function CalendarHubPage({
 
             {/* Weather Settings Panel (지역 추가, 순서 변경, 삭제 통합 모달/패널) */}
             {isWeatherSettingsOpen && (
-              <div className="w-full mt-2 pt-3 pb-2 border-t border-black/10 dark:border-white/10 flex flex-col gap-3 animate-in fade-in duration-150 bg-black/[0.02] dark:bg-white/[0.03] p-3 border border-black/10 dark:border-white/10">
+              <div className="w-full max-w-xl mt-2 pt-3 pb-2.5 border-t border-black/10 dark:border-white/10 flex flex-col gap-3 animate-in fade-in duration-150 bg-black/[0.02] dark:bg-white/[0.03] p-3.5 border border-black/10 dark:border-white/10">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-mono font-bold uppercase text-black dark:text-white flex items-center gap-1.5">
                     <Sliders className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />
-                    <span>WEATHER CITIES MANAGEMENT (날씨 지역 순서 및 추가/삭제)</span>
+                    <span>WEATHER CITIES MANAGEMENT (날씨 지역 순서 및 관리)</span>
                   </span>
                   <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
-                    총 {weatherCities.length}개 지역
+                    총 {weatherCities.length}개 등록됨
                   </span>
                 </div>
 
@@ -1853,56 +1871,67 @@ export function CalendarHubPage({
                   </span>
                 </div>
 
-                {/* City Reorder & Delete List */}
-                <div className="flex flex-col divide-y divide-black/10 dark:divide-white/10 border border-black/10 dark:border-white/10 bg-white dark:bg-[#141414] max-h-48 overflow-y-auto">
-                  {weatherCities.map((c, idx) => (
-                    <div key={c.nameEn} className="px-3 py-1.5 flex items-center justify-between gap-2 text-xs font-mono">
-                      <div className="flex items-center gap-2 truncate">
-                        <span className="text-[10px] text-black/40 dark:text-white/40 font-bold w-4">
-                          {idx + 1}
-                        </span>
-                        <span className="font-bold text-black dark:text-white">
-                          {c.name}
-                        </span>
-                        <span className="text-[10px] text-black/50 dark:text-white/50">
-                          ({c.nameEn}, {c.country})
-                        </span>
-                      </div>
+                {/* City Reorder & Delete List (Compact & Highlight on move) */}
+                <div className="flex flex-col divide-y divide-black/10 dark:divide-white/10 border border-black/10 dark:border-white/10 bg-white dark:bg-[#141414] max-h-52 overflow-y-auto">
+                  {weatherCities.map((c, idx) => {
+                    const isMoved = recentlyMovedCityEn?.toUpperCase() === c.nameEn.toUpperCase();
 
-                      <div className="flex items-center gap-1 shrink-0">
-                        {/* Move Up */}
-                        <button
-                          type="button"
-                          onClick={() => handleMoveWeatherCity(idx, 'up')}
-                          disabled={idx === 0}
-                          className="p-1 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer"
-                          title="앞으로 이동"
-                        >
-                          <ChevronUp className="w-3.5 h-3.5" />
-                        </button>
-                        {/* Move Down */}
-                        <button
-                          type="button"
-                          onClick={() => handleMoveWeatherCity(idx, 'down')}
-                          disabled={idx === weatherCities.length - 1}
-                          className="p-1 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer"
-                          title="뒤로 이동"
-                        >
-                          <ChevronDown className="w-3.5 h-3.5" />
-                        </button>
-                        {/* Delete */}
-                        <button
-                          type="button"
-                          onClick={(e) => handleRemoveWeatherCity(e, c.nameEn)}
-                          disabled={weatherCities.length <= 1}
-                          className="p-1 text-red-600/70 hover:text-red-600 dark:text-red-400/70 dark:hover:text-red-400 disabled:opacity-20 cursor-pointer ml-1"
-                          title="삭제"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                    return (
+                      <div 
+                        key={c.nameEn} 
+                        className={`px-3 py-2 flex items-center justify-between gap-3 text-xs font-mono transition-all duration-300 ${
+                          isMoved 
+                            ? 'bg-orange-500/15 border-l-4 border-l-orange-500 text-orange-700 dark:text-orange-400 font-bold' 
+                            : 'bg-white dark:bg-[#141414] hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 truncate min-w-0">
+                          <span className={`text-[10px] font-bold w-4 shrink-0 ${isMoved ? 'text-orange-600 dark:text-orange-400' : 'text-black/40 dark:text-white/40'}`}>
+                            {idx + 1}
+                          </span>
+                          <span className={`font-bold truncate ${isMoved ? 'text-orange-600 dark:text-orange-400' : 'text-black dark:text-white'}`}>
+                            {c.name}
+                          </span>
+                          <span className="text-[10px] text-black/50 dark:text-white/50 shrink-0">
+                            ({c.nameEn})
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          {/* Move Up */}
+                          <button
+                            type="button"
+                            onClick={() => handleMoveWeatherCity(idx, 'up')}
+                            disabled={idx === 0}
+                            className="p-1 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer transition-colors"
+                            title="앞으로 이동"
+                          >
+                            <ChevronUp className="w-3.5 h-3.5" />
+                          </button>
+                          {/* Move Down */}
+                          <button
+                            type="button"
+                            onClick={() => handleMoveWeatherCity(idx, 'down')}
+                            disabled={idx === weatherCities.length - 1}
+                            className="p-1 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer transition-colors"
+                            title="뒤로 이동"
+                          >
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          </button>
+                          {/* Delete */}
+                          <button
+                            type="button"
+                            onClick={(e) => handleRemoveWeatherCity(e, c.nameEn)}
+                            disabled={weatherCities.length <= 1}
+                            className="p-1 text-red-600/70 hover:text-red-600 dark:text-red-400/70 dark:hover:text-red-400 disabled:opacity-20 cursor-pointer ml-1 transition-colors"
+                            title="삭제"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -2163,14 +2192,18 @@ export function CalendarHubPage({
                 selectedWeatherDay.weather.weatherCode, 
                 selectedWeatherDay.weather.precipitationProb
               );
-              const googleWeatherQuery = encodeURIComponent(`${selectedWeatherDay.city.name} ${selectedWeatherDay.dateStr} 날씨`);
-              const weatherSearchUrl = `https://www.google.com/search?q=${googleWeatherQuery}`;
+              const isKorea = selectedWeatherDay.city.country === 'KR' || selectedWeatherDay.city.nameEn === 'SEOUL';
+              const weatherSearchUrl = isKorea
+                ? `https://search.naver.com/search.naver?query=${encodeURIComponent(selectedWeatherDay.city.name + ' 날씨')}`
+                : `https://www.google.com/search?q=${encodeURIComponent(selectedWeatherDay.city.name + ' ' + selectedWeatherDay.dateStr + ' weather')}`;
 
               return (
-                <div 
-                  onClick={() => window.open(weatherSearchUrl, '_blank', 'noopener,noreferrer')}
-                  className="w-full mt-3 p-3 sm:p-3.5 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.03] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 font-mono cursor-pointer hover:border-black/50 dark:hover:border-white/50 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all group select-none animate-in fade-in duration-200"
-                  title="클릭 시 기상 상세 정보(Google Weather) 새 창 이동"
+                <a 
+                  href={weatherSearchUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full mt-3 p-3 sm:p-3.5 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.03] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 font-mono cursor-pointer hover:border-black/50 dark:hover:border-white/50 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all group select-none animate-in fade-in duration-200 no-underline text-inherit"
+                  title={`${selectedWeatherDay.city.name} 기상 상세 정보 사이트 새 창 이동`}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center shrink-0">
@@ -2195,11 +2228,11 @@ export function CalendarHubPage({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-black/50 dark:text-white/50 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors shrink-0 sm:self-center">
-                    <span>날씨 제공 사이트 확인</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
+                  <div className="flex items-center gap-1.5 text-[10.5px] font-mono font-bold text-black/60 dark:text-white/60 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors shrink-0 sm:self-center">
+                    <span>{isKorea ? '기상청 / 날씨 사이트 이동' : '날씨 제공 사이트 이동'}</span>
+                    <ArrowUpRight className="w-4 h-4 stroke-[2.2]" />
                   </div>
-                </div>
+                </a>
               );
             })()}
 

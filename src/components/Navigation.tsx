@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Menu, LogOut, User, Sun, Moon, Search, Home, Archive as ArchiveIcon, Compass, X, SlidersHorizontal } from 'lucide-react';
-import { auth } from '../firebase';
-import { signOut } from 'firebase/auth';
+import { auth, db } from '../firebase';
+import { signOut, updateProfile } from 'firebase/auth';
+import { doc, updateDoc } from 'firebase/firestore';
+import { UserProfile } from '../types';
+import { UserProfileAvatar } from './UserProfileAvatar';
+import { PasswordVerifyModal } from './PasswordVerifyModal';
+import { ProfileEditModal } from './ProfileEditModal';
 
 interface NavigationProps {
   currentView: string;
@@ -17,6 +22,8 @@ interface NavigationProps {
   onSearchClick: () => void;
   isAdmin?: boolean;
   isHomeGradientActive?: boolean;
+  currentUserProfile?: UserProfile | null;
+  onUpdateCurrentUserProfile?: (profile: UserProfile) => void;
 }
 
 export function Navigation({
@@ -33,10 +40,28 @@ export function Navigation({
   onSearchClick,
   isAdmin = false,
   isHomeGradientActive = false,
+  currentUserProfile,
+  onUpdateCurrentUserProfile,
 }: NavigationProps) {
   const currentUser = auth.currentUser;
-  const displayName = currentUser?.displayName || currentUser?.email?.split('@')[0].toUpperCase() || 'USER';
+  const displayName = currentUserProfile?.username || currentUser?.displayName || currentUser?.email?.split('@')[0].toUpperCase() || 'USER';
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const [isPasswordVerifyOpen, setIsPasswordVerifyOpen] = useState(false);
+  const [isProfileEditOpen, setIsProfileEditOpen] = useState(false);
+
+  const handleSaveMyProfile = async (updated: Partial<UserProfile>) => {
+    if (!currentUser) return;
+    await updateDoc(doc(db, 'users', currentUser.uid), updated);
+    if (currentUserProfile) {
+      const merged: UserProfile = { ...currentUserProfile, ...updated };
+      onUpdateCurrentUserProfile?.(merged);
+    }
+    const newDisplayName = `${updated.lastName || currentUserProfile?.lastName || ''} ${updated.firstName || currentUserProfile?.firstName || ''}`.trim() || updated.username;
+    if (newDisplayName) {
+      await updateProfile(currentUser, { displayName: newDisplayName }).catch(() => {});
+    }
+  };
 
   const handleLogout = async () => {
     setShowSettings(false);
@@ -221,6 +246,18 @@ export function Navigation({
               <Sun className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-amber-500" />
             )}
           </button>
+
+          {/* Profile Avatar Button - Desktop Only (암호 확인 후 프로필 수정) */}
+          {isLoggedIn && (
+            <button
+              type="button"
+              onClick={() => setIsPasswordVerifyOpen(true)}
+              className="hidden md:flex p-1 hover:ring-2 hover:ring-black/30 dark:hover:ring-white/30 transition-all cursor-pointer items-center justify-center"
+              title={`프로필 관리 (${displayName})`}
+            >
+              <UserProfileAvatar profile={currentUserProfile} size="sm" fallbackName={displayName} />
+            </button>
+          )}
 
           {/* Log In / Out Button - Desktop Only */}
           {isLoggedIn ? (
@@ -428,10 +465,25 @@ export function Navigation({
           <div className="pt-5 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-xs font-mono">
             {isLoggedIn ? (
               <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                  <span className="font-bold text-black/60 dark:text-white/60 uppercase tracking-wider">{displayName}</span>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSettings(false);
+                    setIsPasswordVerifyOpen(true);
+                  }}
+                  className="flex items-center gap-2.5 text-left cursor-pointer group"
+                  title="내 프로필 수정 (암호 확인 후 진입)"
+                >
+                  <UserProfileAvatar profile={currentUserProfile} size="sm" fallbackName={displayName} />
+                  <div className="flex flex-col">
+                    <span className="font-bold text-black dark:text-white uppercase tracking-wider group-hover:text-red-600 transition-colors">
+                      {displayName}
+                    </span>
+                    <span className="text-[9px] text-black/40 dark:text-white/40 font-mono">
+                      프로필 수정
+                    </span>
+                  </div>
+                </button>
                 <button
                   onClick={handleLogout}
                   className="font-black text-red-600 dark:text-red-400 hover:underline cursor-pointer tracking-widest uppercase"
@@ -458,6 +510,41 @@ export function Navigation({
             )}
           </div>
         </div>
+
+      {/* Password Verification Modal before accessing profile */}
+      {isPasswordVerifyOpen && currentUser?.email && (
+        <PasswordVerifyModal
+          isOpen={isPasswordVerifyOpen}
+          email={currentUser.email}
+          onClose={() => setIsPasswordVerifyOpen(false)}
+          onSuccess={() => {
+            setIsPasswordVerifyOpen(false);
+            setIsProfileEditOpen(true);
+          }}
+        />
+      )}
+
+      {/* User Profile Edit Modal */}
+      {isProfileEditOpen && currentUser && (
+        <ProfileEditModal
+          isOpen={isProfileEditOpen}
+          user={currentUserProfile || {
+            uid: currentUser.uid,
+            email: currentUser.email || '',
+            username: displayName,
+            lastName: '',
+            firstName: '',
+            birthdate: '',
+            phone: '',
+            role: 'user',
+            permissions: { canCreate: true, canEdit: false, canDelete: false },
+            createdAt: Date.now(),
+          }}
+          onClose={() => setIsProfileEditOpen(false)}
+          onSave={handleSaveMyProfile}
+          title="내 프로필 수정"
+        />
+      )}
     </nav>
   );
 }

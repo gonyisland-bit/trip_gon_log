@@ -58,6 +58,8 @@ import { db } from '../firebase';
 import { Trip, Plan, MagazineMoment, MagazineSection, MagazineItem, MagazineHubConfig, ArchiveHubConfig, TimelineData, TimelineItem, TrashedMagazineSection, UserProfile, UserPermissions, LandingHeroMediaItem, HomeWidgetConfig, CityWeatherConfig } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
+import { UserProfileAvatar } from '../components/UserProfileAvatar';
+import { ProfileEditModal } from '../components/ProfileEditModal';
 import { getEffectiveImageUrl, uploadFileToR2, deleteFileFromR2 } from '../utils/storageHelper';
 import { compressImage } from '../utils/imageHelper';
 import { inspectAndPrepareVideo } from '../utils/videoHelper';
@@ -486,6 +488,10 @@ export function ManageHubPage({
           list.push({
             uid: docSnap.id,
             email: data.email,
+            username: data.username || '',
+            profileType: data.profileType || 'icon',
+            profileIcon: data.profileIcon || 'smile',
+            profileImage: data.profileImage || '',
             lastName: data.lastName || '',
             firstName: data.firstName || '',
             birthdate: data.birthdate || '',
@@ -8160,34 +8166,42 @@ export function ManageHubPage({
 
                   return (
                     <div key={user.uid} className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-black/[0.01] dark:hover:bg-white/[0.01] transition-colors">
-                      {/* Left: User Details */}
-                      <div className="flex flex-col gap-1.5 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm sm:text-base font-black uppercase tracking-tight text-black dark:text-white font-sans">
-                            {fullName}
-                          </span>
-                          <span className="text-xs font-mono text-black/60 dark:text-white/60">
-                            ({user.email})
-                          </span>
-                          {isSuper ? (
-                            <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-red-600 text-white leading-none">
-                              SUPER ADMIN
+                      {/* Left: 1x1 Avatar & User Details */}
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <UserProfileAvatar profile={user} size="lg" fallbackName={fullName} />
+                        <div className="flex flex-col gap-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm sm:text-base font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                              {fullName}
                             </span>
-                          ) : user.role === 'admin' ? (
-                            <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-black text-white dark:bg-white dark:text-black leading-none">
-                              ADMIN
+                            {user.username && (
+                              <span className="text-xs font-mono font-bold text-red-600 dark:text-red-400">
+                                @{user.username}
+                              </span>
+                            )}
+                            <span className="text-xs font-mono text-black/60 dark:text-white/60">
+                              ({user.email})
                             </span>
-                          ) : (
-                            <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 leading-none">
-                              USER
-                            </span>
-                          )}
-                        </div>
+                            {isSuper ? (
+                              <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-red-600 text-white leading-none">
+                                SUPER ADMIN
+                              </span>
+                            ) : user.role === 'admin' ? (
+                              <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-black text-white dark:bg-white dark:text-black leading-none">
+                                ADMIN
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 leading-none">
+                                USER
+                              </span>
+                            )}
+                          </div>
 
-                        <div className="flex items-center gap-3 text-[11px] font-mono text-black/50 dark:text-white/50 flex-wrap">
-                          {user.phone && <span>전화: {user.phone}</span>}
-                          {user.birthdate && <span>생일: {user.birthdate}</span>}
-                          <span>가입일: {joinDate}</span>
+                          <div className="flex items-center gap-3 text-[11px] font-mono text-black/50 dark:text-white/50 flex-wrap">
+                            {user.phone && <span>전화: {user.phone}</span>}
+                            {user.birthdate && <span>생일: {user.birthdate}</span>}
+                            <span>가입일: {joinDate}</span>
+                          </div>
                         </div>
                       </div>
 
@@ -8282,108 +8296,19 @@ export function ManageHubPage({
 
       </div>
 
-      {/* User Info Edit Modal */}
+      {/* User Info Edit Modal (Admin Mode with 1:1 Avatar, Username & Details) */}
       {isUserEditModalOpen && editingUser && (
-        <div 
-          className="fixed inset-0 z-[650] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150" 
-          onClick={() => { setIsUserEditModalOpen(false); setEditingUser(null); }}
-        >
-          <div 
-            className="w-full max-w-md bg-white dark:bg-[#161616] border border-black dark:border-white p-6 shadow-2xl flex flex-col gap-4" 
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
-              <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-black dark:text-white">
-                EDIT USER PROFILE
-              </h3>
-              <button 
-                type="button" 
-                onClick={() => { setIsUserEditModalOpen(false); setEditingUser(null); }} 
-                className="p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">성 (LAST NAME)</label>
-                  <input 
-                    type="text" 
-                    value={editingUser.lastName}
-                    onChange={e => setEditingUser({ ...editingUser, lastName: e.target.value })}
-                    className="w-full px-3 py-2 bg-black/[0.02] dark:bg-white/[0.02] border border-black/20 dark:border-white/20 outline-none text-xs font-sans"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">이름 (FIRST NAME)</label>
-                  <input 
-                    type="text" 
-                    value={editingUser.firstName}
-                    onChange={e => setEditingUser({ ...editingUser, firstName: e.target.value })}
-                    className="w-full px-3 py-2 bg-black/[0.02] dark:bg-white/[0.02] border border-black/20 dark:border-white/20 outline-none text-xs font-sans"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">이메일 (EMAIL - 읽기 전용)</label>
-                <input 
-                  type="email" 
-                  disabled
-                  value={editingUser.email}
-                  className="w-full px-3 py-2 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 outline-none text-xs font-mono opacity-60 cursor-not-allowed"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">생년월일 (BIRTHDAY)</label>
-                  <input 
-                    type="text" 
-                    value={editingUser.birthdate}
-                    onChange={e => setEditingUser({ ...editingUser, birthdate: e.target.value })}
-                    placeholder="YYYY-MM-DD"
-                    className="w-full px-3 py-2 bg-black/[0.02] dark:bg-white/[0.02] border border-black/20 dark:border-white/20 outline-none text-xs font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[9px] font-mono font-bold uppercase tracking-wider opacity-60 mb-1">전화번호 (PHONE)</label>
-                  <input 
-                    type="tel" 
-                    value={editingUser.phone}
-                    onChange={e => setEditingUser({ ...editingUser, phone: e.target.value })}
-                    placeholder="010-0000-0000"
-                    className="w-full px-3 py-2 bg-black/[0.02] dark:bg-white/[0.02] border border-black/20 dark:border-white/20 outline-none text-xs font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-3 border-t border-black/10 dark:border-white/10">
-                <button 
-                  type="button"
-                  onClick={() => { setIsUserEditModalOpen(false); setEditingUser(null); }}
-                  className="flex-1 py-2.5 border border-black/20 dark:border-white/20 text-xs font-mono font-bold uppercase tracking-wider hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
-                >
-                  CANCEL
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => handleSaveUserEdit({
-                    lastName: editingUser.lastName,
-                    firstName: editingUser.firstName,
-                    birthdate: editingUser.birthdate,
-                    phone: editingUser.phone,
-                  })}
-                  className="flex-1 py-2.5 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:opacity-85 transition-opacity cursor-pointer"
-                >
-                  SAVE
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ProfileEditModal
+          isOpen={isUserEditModalOpen}
+          user={editingUser}
+          onClose={() => {
+            setIsUserEditModalOpen(false);
+            setEditingUser(null);
+          }}
+          onSave={handleSaveUserEdit}
+          isAdminEditing={true}
+          title={`유저 정보 수정 (${editingUser.lastName} ${editingUser.firstName})`}
+        />
       )}
 
       {/* User Trip Delegation Modal */}
