@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  ChevronLeft, ChevronRight, ChevronDown, Calendar as CalendarIcon, 
+  ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Calendar as CalendarIcon, 
   MapPin, Clock, ArrowRight, Plane, Sparkles, Compass, 
   CheckCircle2, ArrowUpRight, Plus, Eye, Briefcase, Heart, 
   User, AlertCircle, Trash2, Edit3, X, Tag, FileText, Check,
   LayoutGrid, CalendarDays, Share2, Copy, MousePointerClick,
-  Sun
+  Sun, Sliders, ExternalLink
 } from 'lucide-react';
 import { Trip, Plan, TimelineData, TimelineItem, CalendarCustomEvent } from '../types';
 import { getKoreanHolidays, getHolidayInfo, KoreanHoliday } from '../utils/koreanHolidays';
@@ -14,6 +14,7 @@ import { db, auth } from '../firebase';
 import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { fetchCityWeather, getWeatherMeta, getSimulatedWeatherForDate, CityWeatherData, DailyForecastItem } from '../utils/weatherApi';
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
+import { cleanAdministrativeDistricts } from '../components/SummaryView';
 
 export interface CalendarWeatherCity {
   name: string;
@@ -386,9 +387,16 @@ export function CalendarHubPage({
   const [selectedWeatherCity, setSelectedWeatherCity] = useState<CalendarWeatherCity>(() => weatherCities[0] || CALENDAR_WEATHER_CITIES[0]);
   const [cityWeatherData, setCityWeatherData] = useState<CityWeatherData | null>(null);
 
-  // 날씨 도시 추가 인라인 팝오버 상태
-  const [isAddCityOpen, setIsAddCityOpen] = useState<boolean>(false);
+  // 날씨 도시 설정 모달 및 인라인 상태
+  const [isWeatherSettingsOpen, setIsWeatherSettingsOpen] = useState<boolean>(false);
   const [searchCityQuery, setSearchCityQuery] = useState<string>('');
+
+  // 선택된 날짜의 상세 날씨 위젯 상태
+  const [selectedWeatherDay, setSelectedWeatherDay] = useState<{
+    dateStr: string;
+    city: CalendarWeatherCity;
+    weather: DailyForecastItem;
+  } | null>(null);
 
   const handleAddWeatherCity = (
     placeName: string, 
@@ -397,8 +405,11 @@ export function CalendarHubPage({
     countryName?: string, 
     cityName?: string
   ) => {
-    const finalName = cityName || placeName || '도시';
-    const finalEn = (cityName || placeName || 'CITY').toUpperCase();
+    // 1. 행정구역 수식어 자동 정규화 ('서울특별시' -> '서울', '제주특별자치도' -> '제주', '도쿄도' -> '도쿄')
+    const rawName = cityName || placeName || '도시';
+    const cleaned = cleanAdministrativeDistricts(rawName);
+    const finalName = cleaned || rawName;
+    const finalEn = (cityName || placeName || 'CITY').toUpperCase().replace(/,\s*(SOUTH KOREA|KOREA|JAPAN|FRANCE|USA|VIETNAM|THAILAND|UK|SPAIN).*$/i, '').trim();
     const finalCountry = countryName || 'WORLD';
     const finalLat = coords ? coords.lat : 37.5665;
     const finalLng = coords ? coords.lng : 126.9780;
@@ -421,7 +432,6 @@ export function CalendarHubPage({
     const updated = exists ? weatherCities : [...weatherCities, newCity];
     setWeatherCities(updated);
     setSelectedWeatherCity(newCity);
-    setIsAddCityOpen(false);
     setSearchCityQuery('');
 
     try {
@@ -441,6 +451,21 @@ export function CalendarHubPage({
     if (selectedWeatherCity.nameEn.toUpperCase() === cityEn.toUpperCase()) {
       setSelectedWeatherCity(updated[0]);
     }
+    try {
+      localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(updated));
+      setDoc(doc(db, 'settings', 'calendar_weather_cities'), { cities: updated }, { merge: true }).catch(console.error);
+    } catch (_) {}
+  };
+
+  const handleMoveWeatherCity = (idx: number, direction: 'up' | 'down') => {
+    if (direction === 'up' && idx === 0) return;
+    if (direction === 'down' && idx === weatherCities.length - 1) return;
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    const updated = [...weatherCities];
+    const temp = updated[idx];
+    updated[idx] = updated[targetIdx];
+    updated[targetIdx] = temp;
+    setWeatherCities(updated);
     try {
       localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(updated));
       setDoc(doc(db, 'settings', 'calendar_weather_cities'), { cities: updated }, { merge: true }).catch(console.error);
@@ -1104,6 +1129,19 @@ export function CalendarHubPage({
         }
       }
     }
+
+    // 날씨 모드일 때 클릭한 일자의 상세 일기예보 데이터 세팅
+    if (isWeatherMode && cell.isCurrentMonth) {
+      const exact = cityWeatherData?.forecast?.find(f => f.date === cell.dateStr);
+      const w = exact || getSimulatedWeatherForDate(selectedWeatherCity.nameEn, cell.dateStr);
+      if (w) {
+        setSelectedWeatherDay({
+          dateStr: cell.dateStr,
+          city: selectedWeatherCity,
+          weather: w
+        });
+      }
+    }
   };
 
   // 년달력 날짜 셀 클릭 핸들러 (1차 클릭: 날짜 선택 강조 및 모달 표시, 2차 클릭: 월달력으로 진입)
@@ -1737,75 +1775,137 @@ export function CalendarHubPage({
                 </span>
               </div>
 
-              {/* Add City Action Button */}
+              {/* City Setting Action Button */}
               <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   type="button"
-                  onClick={() => setIsAddCityOpen(prev => !prev)}
+                  onClick={() => setIsWeatherSettingsOpen(prev => !prev)}
                   className={`h-6 px-2 text-[10px] font-mono font-bold border transition-all cursor-pointer flex items-center gap-1 ${
-                    isAddCityOpen
-                      ? 'bg-red-600 text-white border-red-600'
+                    isWeatherSettingsOpen
+                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
                       : 'border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white text-black dark:text-white'
                   }`}
-                  title="새로운 날씨 지역 추가"
+                  title="날씨 지역 관리 (추가, 순서 변경, 삭제)"
                 >
-                  <Plus className="w-3 h-3 stroke-[2.5]" />
-                  <span>{isAddCityOpen ? '닫기' : 'ADD CITY'}</span>
+                  <Sliders className="w-3 h-3" />
+                  <span>{isWeatherSettingsOpen ? '설정 닫기' : '지역 설정'}</span>
                 </button>
               </div>
             </div>
 
-            {/* Inline Autocomplete Input for Adding City */}
-            {isAddCityOpen && (
-              <div className="w-full pt-2 pb-1 border-t border-black/10 dark:border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 animate-in fade-in duration-150">
-                <div className="relative flex-1 min-w-[200px]">
+            {/* City Tabs Scroll List (평소 정갈한 탭 바) */}
+            <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar pt-1 w-full">
+              {weatherCities.map((c) => {
+                const isSelected = selectedWeatherCity.nameEn.toUpperCase() === c.nameEn.toUpperCase();
+                return (
+                  <button
+                    key={c.nameEn}
+                    type="button"
+                    onClick={() => {
+                      setSelectedWeatherCity(c);
+                      if (selectedWeatherDay) {
+                        const exact = cityWeatherData?.forecast?.find(f => f.date === selectedWeatherDay.dateStr);
+                        const w = exact || getSimulatedWeatherForDate(c.nameEn, selectedWeatherDay.dateStr);
+                        setSelectedWeatherDay({ dateStr: selectedWeatherDay.dateStr, city: c, weather: w });
+                      }
+                    }}
+                    className={`px-2 py-0.5 text-[9.5px] sm:text-[10px] font-mono font-bold border transition-colors cursor-pointer shrink-0 ${
+                      isSelected
+                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                        : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white bg-white/50 dark:bg-zinc-900/50'
+                    }`}
+                  >
+                    {c.name}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Weather Settings Panel (지역 추가, 순서 변경, 삭제 통합 모달/패널) */}
+            {isWeatherSettingsOpen && (
+              <div className="w-full mt-2 pt-3 pb-2 border-t border-black/10 dark:border-white/10 flex flex-col gap-3 animate-in fade-in duration-150 bg-black/[0.02] dark:bg-white/[0.03] p-3 border border-black/10 dark:border-white/10">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-bold uppercase text-black dark:text-white flex items-center gap-1.5">
+                    <Sliders className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />
+                    <span>WEATHER CITIES MANAGEMENT (날씨 지역 순서 및 추가/삭제)</span>
+                  </span>
+                  <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                    총 {weatherCities.length}개 지역
+                  </span>
+                </div>
+
+                {/* Add New City Autocomplete Input */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10.5px] font-mono font-bold text-black/70 dark:text-white/70">
+                    새 날씨 지역 추가 (도시명 검색)
+                  </span>
                   <PlaceAutocompleteInput
                     value={searchCityQuery}
                     onChange={(val) => setSearchCityQuery(val)}
                     onSelectPlace={(placeName, coords, address, countryName, cityName) => {
                       handleAddWeatherCity(placeName, coords, address, countryName, cityName);
                     }}
-                    placeholder="도시 또는 지역명 검색 (예: 삿포로, 오사카, 바르셀로나...)"
+                    placeholder="도시 또는 지역명 검색 (예: 서울, 도쿄, 파리, 제주, 삿포로...)"
                     className="w-full h-8 px-3 text-xs bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white text-black dark:text-white outline-none rounded-none font-sans"
                   />
+                  <span className="text-[9.5px] text-black/40 dark:text-white/40 font-mono">
+                    * '서울특별시', '제주특별자치도' 등 긴 이름은 '서울', '제주'로 자동 정규화되어 짧게 등록됩니다.
+                  </span>
                 </div>
-                <span className="text-[10px] text-black/40 dark:text-white/40 font-sans">
-                  * 도시를 검색하여 선택하면 날씨 바에 즉시 등록됩니다.
-                </span>
+
+                {/* City Reorder & Delete List */}
+                <div className="flex flex-col divide-y divide-black/10 dark:divide-white/10 border border-black/10 dark:border-white/10 bg-white dark:bg-[#141414] max-h-48 overflow-y-auto">
+                  {weatherCities.map((c, idx) => (
+                    <div key={c.nameEn} className="px-3 py-1.5 flex items-center justify-between gap-2 text-xs font-mono">
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="text-[10px] text-black/40 dark:text-white/40 font-bold w-4">
+                          {idx + 1}
+                        </span>
+                        <span className="font-bold text-black dark:text-white">
+                          {c.name}
+                        </span>
+                        <span className="text-[10px] text-black/50 dark:text-white/50">
+                          ({c.nameEn}, {c.country})
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        {/* Move Up */}
+                        <button
+                          type="button"
+                          onClick={() => handleMoveWeatherCity(idx, 'up')}
+                          disabled={idx === 0}
+                          className="p-1 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer"
+                          title="앞으로 이동"
+                        >
+                          <ChevronUp className="w-3.5 h-3.5" />
+                        </button>
+                        {/* Move Down */}
+                        <button
+                          type="button"
+                          onClick={() => handleMoveWeatherCity(idx, 'down')}
+                          disabled={idx === weatherCities.length - 1}
+                          className="p-1 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer"
+                          title="뒤로 이동"
+                        >
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </button>
+                        {/* Delete */}
+                        <button
+                          type="button"
+                          onClick={(e) => handleRemoveWeatherCity(e, c.nameEn)}
+                          disabled={weatherCities.length <= 1}
+                          className="p-1 text-red-600/70 hover:text-red-600 dark:text-red-400/70 dark:hover:text-red-400 disabled:opacity-20 cursor-pointer ml-1"
+                          title="삭제"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
-
-            {/* City Chips Scroll List with Delete Support */}
-            <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar pt-1 w-full">
-              {weatherCities.map((c) => {
-                const isSelected = selectedWeatherCity.nameEn.toUpperCase() === c.nameEn.toUpperCase();
-                return (
-                  <div
-                    key={c.nameEn}
-                    onClick={() => setSelectedWeatherCity(c)}
-                    className={`group px-2 py-0.5 text-[9.5px] sm:text-[10px] font-mono font-bold border transition-colors cursor-pointer shrink-0 flex items-center gap-1.5 ${
-                      isSelected
-                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                        : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white bg-white/50 dark:bg-zinc-900/50'
-                    }`}
-                  >
-                    <span>{c.name}</span>
-                    {weatherCities.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={(e) => handleRemoveWeatherCity(e, c.nameEn)}
-                        className={`opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity p-0.5 -mr-0.5 cursor-pointer ${
-                          isSelected ? 'text-white/70 hover:text-red-400' : 'text-black/40 dark:text-white/40'
-                        }`}
-                        title={`${c.name} 날씨 삭제`}
-                      >
-                        <X className="w-2.5 h-2.5 stroke-[3]" />
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
           </div>
         )}
 
@@ -2056,6 +2156,52 @@ export function CalendarHubPage({
                 );
               })}
             </div>
+
+            {/* Selected Day Weather Detail Widget (날씨 모드에서 날짜 클릭 시 하단에 심플하게 표기되는 날씨 상세 위젯) */}
+            {isWeatherMode && selectedWeatherDay && (() => {
+              const { icon: WeatherIconComponent, colorClass, labelKo, label } = getWeatherMeta(
+                selectedWeatherDay.weather.weatherCode, 
+                selectedWeatherDay.weather.precipitationProb
+              );
+              const googleWeatherQuery = encodeURIComponent(`${selectedWeatherDay.city.name} ${selectedWeatherDay.dateStr} 날씨`);
+              const weatherSearchUrl = `https://www.google.com/search?q=${googleWeatherQuery}`;
+
+              return (
+                <div 
+                  onClick={() => window.open(weatherSearchUrl, '_blank', 'noopener,noreferrer')}
+                  className="w-full mt-3 p-3 sm:p-3.5 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.03] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 font-mono cursor-pointer hover:border-black/50 dark:hover:border-white/50 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-all group select-none animate-in fade-in duration-200"
+                  title="클릭 시 기상 상세 정보(Google Weather) 새 창 이동"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center shrink-0">
+                      <WeatherIconComponent className={`w-5 h-5 sm:w-6 sm:h-6 ${colorClass} stroke-[2.2]`} />
+                    </div>
+                    <div className="flex flex-col">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-xs sm:text-sm font-black text-black dark:text-white">
+                          {selectedWeatherDay.dateStr.replace(/-/g, '.')} ({selectedWeatherDay.weather.dayOfWeek})
+                        </span>
+                        <span className="text-[10.5px] font-bold text-red-600 dark:text-red-400 uppercase">
+                          {selectedWeatherDay.city.name} ({selectedWeatherDay.city.nameEn})
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-[11px] text-black/60 dark:text-white/60 mt-0.5">
+                        <span className="font-bold text-black dark:text-white">{labelKo} ({label})</span>
+                        <span>·</span>
+                        <span>최고 {selectedWeatherDay.weather.tempMax}°C / 최저 {selectedWeatherDay.weather.tempMin}°C</span>
+                        <span>·</span>
+                        <span className="text-blue-600 dark:text-blue-400 font-bold">강수확률 {selectedWeatherDay.weather.precipitationProb}%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-black/50 dark:text-white/50 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors shrink-0 sm:self-center">
+                    <span>날씨 제공 사이트 확인</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Mockup-Style Unified 1-Line Agenda Feed (달력 하단 상시 일정 목록 및 선택 영역 색상화) */}
             <div className="mt-4 sm:mt-6 border-t border-black/15 dark:border-white/15 pt-4">

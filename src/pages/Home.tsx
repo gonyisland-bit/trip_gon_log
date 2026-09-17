@@ -2352,8 +2352,58 @@ export function HomePage({
                 </div>
               </div>
 
-              {/* 2. Large Circular Calendar Grid Column (lg:col-span-5 xl:col-span-5) */}
-              <div className="lg:col-span-5 xl:col-span-5 flex flex-col items-center lg:items-end justify-center w-full border-t lg:border-t-0 lg:border-l border-black/10 dark:border-white/10 pt-6 lg:pt-0 lg:pl-8 lg:pr-4">
+              {/* 2. Monthly Schedules Feed Column (lg:col-span-4 xl:col-span-4) */}
+              <div className="lg:col-span-4 xl:col-span-4 flex flex-col justify-start w-full border-t lg:border-t-0 lg:border-l border-black/10 dark:border-white/10 pt-6 lg:pt-0 lg:pl-8">
+                <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-3">
+                  <span className="text-[10px] font-mono font-black uppercase tracking-widest text-black/40 dark:text-white/40">
+                    MONTHLY SCHEDULES ({monthSchedules.length})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('calendar')}
+                    className="text-[10.5px] font-mono font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                  >
+                    VIEW ALL
+                  </button>
+                </div>
+
+                {monthSchedules.length === 0 ? (
+                  <div className="text-xs font-mono text-black/40 dark:text-white/40 py-8 text-center">
+                    NO SCHEDULES RECORDED THIS MONTH
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1 divide-y divide-black/5 dark:divide-white/5">
+                    {monthSchedules.map((item) => {
+                      const sFormatted = item.start ? `${parseInt(item.start.split('-')[1], 10)}/${parseInt(item.start.split('-')[2], 10)}` : '';
+                      const eFormatted = item.end && item.end !== item.start ? `${parseInt(item.end.split('-')[1], 10)}/${parseInt(item.end.split('-')[2], 10)}` : sFormatted;
+                      const dateRangeStr = sFormatted === eFormatted ? sFormatted : `${sFormatted} - ${eFormatted}`;
+
+                      return (
+                        <div
+                          key={`home-sched-${item.id}`}
+                          onClick={() => handleCellClick(item.start)}
+                          className="pt-2 flex items-center justify-between gap-2 text-xs font-mono cursor-pointer group hover:text-red-600 transition-colors"
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <span className="text-black/50 dark:text-white/50 font-bold shrink-0">
+                              {dateRangeStr}
+                            </span>
+                            <span className="font-sans font-bold text-black dark:text-white group-hover:text-red-600 truncate">
+                              {item.title}
+                            </span>
+                          </div>
+                          <span className="text-[10.5px] font-bold font-mono text-red-600 dark:text-red-400 shrink-0">
+                            {item.days === 1 ? '1 DAY' : `${item.days} DAYS`}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* 3. Large Circular Calendar Grid Column (lg:col-span-5 xl:col-span-5) - Right Aligned */}
+              <div className="lg:col-span-5 xl:col-span-5 flex flex-col items-center lg:items-end justify-center w-full border-t lg:border-t-0 lg:border-l border-black/10 dark:border-white/10 pt-6 lg:pt-0 lg:pl-8 lg:pr-2">
                 <div className="w-full max-w-[420px] mx-auto lg:mr-0 lg:ml-auto">
                   {/* Weekday Headers */}
                   <div className="grid grid-cols-7 gap-2 sm:gap-3 mb-3 text-center text-xs sm:text-sm font-black font-mono select-none text-black/40 dark:text-white/40">
@@ -2421,56 +2471,6 @@ export function HomePage({
                     })}
                   </div>
                 </div>
-              </div>
-
-              {/* 3. Monthly Schedules Feed Column (lg:col-span-4 xl:col-span-4) */}
-              <div className="lg:col-span-4 xl:col-span-4 flex flex-col justify-start w-full border-t lg:border-t-0 lg:border-l border-black/10 dark:border-white/10 pt-6 lg:pt-0 lg:pl-8">
-                <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-3">
-                  <span className="text-[10px] font-mono font-black uppercase tracking-widest text-black/40 dark:text-white/40">
-                    MONTHLY SCHEDULES ({monthSchedules.length})
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => onNavigate('calendar')}
-                    className="text-[10.5px] font-mono font-bold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
-                  >
-                    VIEW ALL
-                  </button>
-                </div>
-
-                {monthSchedules.length === 0 ? (
-                  <div className="text-xs font-mono text-black/40 dark:text-white/40 py-8 text-center">
-                    NO SCHEDULES RECORDED THIS MONTH
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1 divide-y divide-black/5 dark:divide-white/5">
-                    {monthSchedules.map((item) => {
-                      const sFormatted = item.start ? `${parseInt(item.start.split('-')[1], 10)}/${parseInt(item.start.split('-')[2], 10)}` : '';
-                      const eFormatted = item.end && item.end !== item.start ? `${parseInt(item.end.split('-')[1], 10)}/${parseInt(item.end.split('-')[2], 10)}` : sFormatted;
-                      const dateRangeStr = sFormatted === eFormatted ? sFormatted : `${sFormatted} - ${eFormatted}`;
-
-                      return (
-                        <div
-                          key={`home-sched-${item.id}`}
-                          onClick={() => handleCellClick(item.start)}
-                          className="pt-2 flex items-center justify-between gap-2 text-xs font-mono cursor-pointer group hover:text-red-600 transition-colors"
-                        >
-                          <div className="flex items-center gap-2 truncate">
-                            <span className="text-black/50 dark:text-white/50 font-bold shrink-0">
-                              {dateRangeStr}
-                            </span>
-                            <span className="font-sans font-bold text-black dark:text-white group-hover:text-red-600 truncate">
-                              {item.title}
-                            </span>
-                          </div>
-                          <span className="text-[10.5px] font-bold font-mono text-red-600 dark:text-red-400 shrink-0">
-                            {item.days === 1 ? '1 DAY' : `${item.days} DAYS`}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
             </div>
           </section>
