@@ -694,20 +694,21 @@ export function MagazineHubPage({
             </div>
           </section>
 
-          {/* 1-2. Magazine Issues Directory Grid (MOUTHWASH Magazine Style Cards) */}
-          <section className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-10 sm:py-16">
-            <div className="flex items-center justify-between mb-8 sm:mb-12 border-b border-black/10 dark:border-white/10 pb-4">
-              <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-red-600 dark:text-red-400" />
-                <h2 className="text-sm sm:text-base font-mono font-bold uppercase tracking-wider text-black dark:text-white">
-                  ALL PUBLISHED ISSUES ({effectiveSections.length})
-                </h2>
-              </div>
-              <span className="text-xs font-mono text-black/40 dark:text-white/40 hidden sm:inline">
-                SELECT AN ISSUE TO OPEN FULL EDITORIAL
+          {/* Controls Bar — Standard 2nd Line (Trip Standard Height py-4) */}
+          <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-4 border-b border-black/10 dark:border-white/10 flex items-center justify-between gap-4 transition-colors">
+            <div className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-red-600 dark:text-red-400" />
+              <span className="text-xs sm:text-sm font-['Inter',sans-serif] font-bold uppercase tracking-wider text-black dark:text-white">
+                ALL ISSUES ({effectiveSections.length})
               </span>
             </div>
+            <span className="text-[11px] font-mono text-black/40 dark:text-white/40 hidden sm:inline uppercase tracking-wider">
+              SELECT AN ISSUE TO OPEN FULL EDITORIAL
+            </span>
+          </div>
 
+          {/* 1-2. Magazine Issues Directory Grid (Matching Trip Standard Padding py-6 sm:py-10) */}
+          <section className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-6 sm:py-10">
             {/* Magazine Cover Cards Grid (Responsive 2 Cols on Mobile -> 4 Cols on Web) */}
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3.5 sm:gap-5 md:gap-6">
               {effectiveSections.map((sec, idx) => {

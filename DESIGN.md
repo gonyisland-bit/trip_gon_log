@@ -80,6 +80,25 @@
 - **반응형 피드 그리드 (포켓/갤러리)**: 풀-와이드 화면 확장 시 카드가 지나치게 비대해지는 것을 방지하고 최적의 정보 밀도를 유지하기 위해 반응형 2~6열 그리드를 적용합니다.
   - `grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-5`
 
+### 전체 허브 2단 가로줄 및 툴바 표준화 (Trip 기준 규격)
+모든 허브 페이지(Trip, Magazine, Pocket)는 일관된 시각적 그리드와 높이 표준을 위해 **Trip 허브 기준 2단 전폭 가로줄 및 툴바 규격**을 동일하게 적용합니다.
+
+- **1단 (마스트헤드 경계선)**:
+  상단 대제목 및 설명 섹션 하단에 전폭 가로줄 (`border-b border-black/10 dark:border-white/10`, 패딩 `pt-8 sm:pt-14 pb-8`).
+- **2단 (컨트롤 툴바 표준 높이 및 경계선)**:
+  `w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-4 border-b border-black/10 dark:border-white/10`
+  - 두 가로줄 사이의 상하 여백 높이를 **`py-4` 표준 높이**로 전 허브에 일치시킵니다.
+  - 내부 패딩 박스 안에 갇혀 있는 좌우 여백 있는 가로줄(`mb-8 border-b` 등) 및 과도한 상단 공백은 전면 폐기하고 전폭 가로줄로 통일합니다.
+- **서브 라벨(`ALL ~`) Inter 폰트 통일**:
+  `ALL TRIPS`, `ALL ISSUES`, `ALL SPOTS` 등 툴바 좌측 카운터 라벨은 디자인 지침 폰트인 **`Inter`**(`font-['Inter',sans-serif] font-bold text-xs sm:text-sm uppercase tracking-wider text-black dark:text-white`)로 단일화합니다.
+- **툴바 버튼 스타일 일원화 (Trip 기준)**:
+  - 기본 상태: `border border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5 text-black dark:text-white`
+  - 활성/선택 상태: `bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs`
+  - 폰트 및 패딩: `text-[10px] sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider rounded-none`
+
+### 모바일 뷰포트 공간 최적화 (Mobile Viewport Optimization)
+- **홈허브 히어로 하단 모바일 압축**: 모바일(`md` 미만)에서 3:4 사진 아래 날짜, 여정설명, 일수, 장소, 이동버튼이 세로로 길게 늘어지지 않도록, 1화면 안에 들어오는 컴팩트 인라인 블록(`px-2 pt-4 pb-2 border-t border-black/10`)으로 압축하여 스크롤 낭비를 배제합니다. 데스크톱(`md` 이상)의 웅장한 3열 오버랩 레이아웃은 그대로 유지합니다.
+
 ### 박스인박스(Box-in-Box) 및 이중 컨테이너 배제
 - **이중 컨테이너 및 두꺼운 배경 박스 제거**: 컨테이너 안에 불필요하게 중첩된 테두리, 카드 래퍼, 두꺼운 회색 배경 박스(`bg-black/5`, `p-4 inside p-4` 등)의 중복 사용을 엄격히 금지합니다.
 - **단일 라인의 얇은 모노크롬 보더**: 컴포넌트 및 모달의 경계선은 단일 라인의 얇은 모노크롬 보더(`border border-black/20 dark:border-white/20`)만을 사용합니다.

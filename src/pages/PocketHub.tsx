@@ -746,169 +746,177 @@ export function PocketHubPage({
         </div>
       )}
 
-      {/* Main Container */}
-      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 pt-8 pb-16 flex-grow flex flex-col">
-        {/* Header - Editorial Masthead (Matching Trip & MagazineHub Style) */}
-        <div className="border-b border-black/15 dark:border-white/15 pb-6 mb-8 flex flex-col gap-4">
-          {/* Top Metadata Barcode & Category Tag */}
-          <div className="flex items-center justify-between text-xs font-mono tracking-widest uppercase text-black/60 dark:text-white/60">
-            <div className="flex items-center gap-2.5 sm:gap-3">
-              <span className="bg-black text-white dark:bg-white dark:text-black font-black px-2 py-0.5 text-[10px]">
-                POCKET
-              </span>
-              <span className="font-bold text-red-600 dark:text-red-400">
-                SPOT INSPIRATION
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="hidden sm:inline">VOL. 01</span>
-              <span>{spots.length} SPOTS SAVED</span>
-            </div>
+      {/* 1. Header - Editorial Masthead (Matching Trip & Magazine Style) */}
+      <section className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 pt-8 sm:pt-14 pb-8 border-b border-black/10 dark:border-white/10">
+        {/* Top Metadata Barcode & Category Tag */}
+        <div className="flex items-center justify-between text-xs font-mono tracking-widest uppercase text-black/60 dark:text-white/60 mb-4 sm:mb-6">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <span className="bg-black text-white dark:bg-white dark:text-black font-black px-2 py-0.5 text-[10px]">
+              POCKET
+            </span>
+            <span className="font-bold text-red-600 dark:text-red-400">
+              SPOT INSPIRATION
+            </span>
           </div>
-
-          {/* Large Editorial Title & Action Buttons */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div className="flex flex-col gap-2 max-w-5xl">
-              <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-satoshi font-black uppercase tracking-tight leading-[0.98] text-black dark:text-white">
-                POCKET
-              </h1>
-              <p className="text-xs sm:text-sm md:text-base font-['Noto_Sans_KR',sans-serif] font-medium text-black/60 dark:text-white/60 max-w-2xl leading-relaxed pt-1 break-keep">
-                SNS 스크랩 & 숨은 핫플 꿀팁을 지역별 갤러리로 보관하고, 여정 작성 시 즉시 꺼내어 활용하세요.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 pb-1">
-              {/* Swiss Minimal Grip Toggle: Moved to top action row to maximize toolbar whitespace */}
-              {isAdmin && sortMode === 'custom' && (
-                <button
-                  type="button"
-                  onClick={() => setIsReorderMode(prev => !prev)}
-                  className={`h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center border transition-colors cursor-pointer shrink-0 ${
-                    isReorderMode
-                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
-                      : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white'
-                  }`}
-                  title={isReorderMode ? "피드 순서 편집 활성 (종료하려면 클릭)" : "피드 순서 편집 (관리자)"}
-                >
-                  <GripVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSelectionMode(prev => !prev);
-                  if (isSelectionMode) setSelectedSpotIds(new Set());
-                }}
-                className={`h-9 sm:h-10 px-2.5 sm:px-4 text-[11px] sm:text-xs font-mono font-bold tracking-wider sm:tracking-widest uppercase flex items-center gap-1.5 sm:gap-2 border transition-colors cursor-pointer ${
-                  isSelectionMode
-                    ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
-                    : 'border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white'
-                }`}
-                title={isSelectionMode ? "선택 모드 해제 (ESC)" : "선택 모드 활성화"}
-              >
-                {isSelectionMode ? (
-                  <CheckSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500" />
-                ) : (
-                  <Square className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/60 dark:text-white/60" />
-                )}
-                <span>SELECT</span>
-              </button>
-              <button
-                onClick={() => setIsAddModalOpen(true)}
-                className="h-9 sm:h-10 px-3 sm:px-5 bg-black text-white dark:bg-white dark:text-black text-[11px] sm:text-xs font-mono font-bold tracking-wider sm:tracking-widest uppercase flex items-center gap-1.5 sm:gap-2 hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">KEEP SPOT</span>
-                <span className="sm:hidden">SPOT</span>
-              </button>
-            </div>
+          <div className="flex items-center gap-3">
+            <span className="hidden sm:inline">VOL. 01</span>
+            <span>{spots.length} SPOTS SAVED</span>
           </div>
         </div>
 
-        {/* ── Filter & Sort Bar ── */}
-        <div className="mb-6 space-y-2">
-          {/* 1-Row compact bar: [FILTER] + [SEARCH flex-1] + [SORT] */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            {/* FILTER toggle button: Mobile icon-only optimization */}
-            <button
-              type="button"
-              onClick={() => setIsFilterOpen(prev => !prev)}
-              className={`h-8 px-2.5 sm:px-3 flex items-center gap-1.5 text-[11px] font-mono font-bold tracking-widest uppercase border transition-colors cursor-pointer shrink-0 ${
-                isFilterOpen || activeFilterCount > 0
-                  ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
-                  : 'border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white'
-              }`}
-              title="필터"
-            >
-              <SlidersHorizontal className="w-3 h-3" />
-              <span className="hidden sm:inline">FILTER</span>
-              {activeFilterCount > 0 && (
-                <span className="bg-red-600 text-white text-[9px] font-black px-1 py-0.5 leading-none">{activeFilterCount}</span>
-              )}
-            </button>
+        {/* Large Editorial Title & Description */}
+        <div className="flex flex-col gap-2 sm:gap-4 max-w-5xl">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-satoshi font-black uppercase tracking-tight leading-[0.98] text-black dark:text-white">
+            POCKET
+          </h1>
+          <p className="text-xs sm:text-sm md:text-base font-['Noto_Sans_KR',sans-serif] font-medium text-black/60 dark:text-white/60 max-w-2xl leading-relaxed pt-1 break-keep">
+            SNS 스크랩 & 숨은 핫플 꿀팁을 지역별 갤러리로 보관하고, 여정 작성 시 즉시 꺼내어 활용하세요.
+          </p>
+        </div>
+      </section>
 
-            {/* Search Input: Flexible width filling remaining space */}
-            <div className="relative flex-1 min-w-0">
-              <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="장소, 지역 검색..."
-                className="w-full h-8 pl-7 sm:pl-8 pr-7 sm:pr-8 bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15 text-[10.5px] sm:text-[11px] font-mono placeholder:text-black/30 dark:placeholder:text-white/30 focus:outline-none focus:border-black dark:focus:border-white transition-colors"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer"
-                  title="검색어 지우기"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
-            </div>
+      {/* 2. Controls & Toolbar Bar (Trip Standard Height py-4 & border-b) */}
+      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-4 border-b border-black/10 dark:border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
+        {/* Left: Section Sub-label */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs sm:text-sm font-['Inter',sans-serif] font-bold uppercase tracking-wider text-black dark:text-white">
+            ALL SPOTS ({sortedSpots.length})
+          </span>
+        </div>
 
-            {/* Sort dropdown - Mobile compact width */}
-            <div ref={sortRef} className="relative shrink-0">
+        {/* Right: Search, Filter, Sort & Action buttons */}
+        <div className="flex flex-wrap items-center justify-between md:justify-end gap-2 w-full md:w-auto">
+          {/* FILTER toggle button */}
+          <button
+            type="button"
+            onClick={() => setIsFilterOpen(prev => !prev)}
+            className={`text-[10px] sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-none transition-all flex items-center gap-1.5 cursor-pointer ${
+              isFilterOpen || activeFilterCount > 0
+                ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                : 'border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5 text-black dark:text-white'
+            }`}
+            title="필터"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <span>FILTER</span>
+            {activeFilterCount > 0 && (
+              <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
+            )}
+          </button>
+
+          {/* Search Input */}
+          <div className="relative flex items-center">
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="장소, 지역 검색..."
+              className="w-32 sm:w-44 pl-7 pr-6 py-1 text-xs bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 font-sans font-medium outline-none text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 rounded-none"
+            />
+            {searchQuery && (
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); setIsSortOpen(prev => !prev); }}
-                className={`h-8 px-2 sm:px-3 flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[11px] font-mono font-bold tracking-wider sm:tracking-widest uppercase border transition-colors cursor-pointer ${
-                  isSortOpen
-                    ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
-                    : 'border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white'
-                }`}
+                onClick={() => setSearchQuery('')}
+                className="absolute right-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white p-0.5 cursor-pointer"
+                title="검색어 지우기"
               >
-                <ArrowUpDown className="w-3 h-3" />
-                <span>{SORT_LABELS[sortMode]}</span>
-                <ChevronDown className={`w-3 h-3 transition-transform ${isSortOpen ? 'rotate-180' : ''}`} />
+                <X className="w-3 h-3" />
               </button>
-              {isSortOpen && (
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  className="absolute right-0 top-full mt-1 z-30 w-36 bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 shadow-xl py-1 font-mono text-[11px] animate-in fade-in zoom-in-95 duration-100"
-                >
-                  {(['custom', 'newest', 'oldest', 'title', 'category'] as const).map(mode => (
-                    <button
-                      key={mode}
-                      onClick={() => { setSortMode(mode); setIsSortOpen(false); }}
-                      className={`w-full px-3 py-2 text-left flex items-center gap-2 uppercase tracking-wider cursor-pointer transition-colors ${
-                        sortMode === mode
-                          ? 'bg-black text-white dark:bg-white dark:text-black font-bold'
-                          : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white'
-                      }`}
-                    >
-                      {sortMode === mode && <Check className="w-3 h-3 shrink-0" />}
-                      <span className={sortMode === mode ? '' : 'ml-5'}>{SORT_LABELS[mode]}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            )}
           </div>
 
+          {/* Sort dropdown */}
+          <div ref={sortRef} className="relative shrink-0">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setIsSortOpen(prev => !prev); }}
+              className={`text-[10px] sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-none transition-all flex items-center gap-1.5 cursor-pointer ${
+                isSortOpen
+                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                  : 'border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5 text-black dark:text-white'
+              }`}
+            >
+              <ArrowUpDown className="w-3.5 h-3.5" />
+              <span>{SORT_LABELS[sortMode]}</span>
+              <ChevronDown className={`w-3 h-3 transition-transform ${isSortOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {isSortOpen && (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="absolute right-0 top-full mt-1 z-30 w-36 bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 shadow-xl py-1 font-mono text-[11px] animate-in fade-in zoom-in-95 duration-100"
+              >
+                {(['custom', 'newest', 'oldest', 'title', 'category'] as const).map(mode => (
+                  <button
+                    key={mode}
+                    onClick={() => { setSortMode(mode); setIsSortOpen(false); }}
+                    className={`w-full px-3 py-2 text-left flex items-center gap-2 uppercase tracking-wider cursor-pointer transition-colors ${
+                      sortMode === mode
+                        ? 'bg-black text-white dark:bg-white dark:text-black font-bold'
+                        : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white'
+                    }`}
+                  >
+                    {sortMode === mode && <Check className="w-3 h-3 shrink-0" />}
+                    <span className={sortMode === mode ? '' : 'ml-5'}>{SORT_LABELS[mode]}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Admin Reorder Grip Button */}
+          {isAdmin && sortMode === 'custom' && (
+            <button
+              type="button"
+              onClick={() => setIsReorderMode(prev => !prev)}
+              className={`p-1.5 border rounded-none transition-colors cursor-pointer shrink-0 ${
+                isReorderMode
+                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                  : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-black dark:hover:border-white'
+              }`}
+              title={isReorderMode ? "피드 순서 편집 활성" : "피드 순서 편집"}
+            >
+              <GripVertical className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {/* SELECT Mode Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsSelectionMode(prev => !prev);
+              if (isSelectionMode) setSelectedSpotIds(new Set());
+            }}
+            className={`text-[10px] sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-none transition-all flex items-center gap-1.5 cursor-pointer ${
+              isSelectionMode
+                ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
+                : 'border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white bg-black/5 dark:bg-white/5'
+            }`}
+            title={isSelectionMode ? "선택 모드 해제" : "선택 모드 활성화"}
+          >
+            {isSelectionMode ? (
+              <CheckSquare className="w-3.5 h-3.5 text-red-500" />
+            ) : (
+              <Square className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
+            )}
+            <span>SELECT</span>
+          </button>
+
+          {/* KEEP SPOT (Primary CTA) */}
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black text-[10px] sm:text-[11px] font-mono font-bold tracking-wider uppercase flex items-center gap-1.5 hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer rounded-none"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">KEEP SPOT</span>
+            <span className="sm:hidden">SPOT</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 3. Filter Rail & Panel (Expandable under 2nd line) */}
+      {(activeFilterCount > 0 || isFilterOpen) && (
+        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-3 border-b border-black/10 dark:border-white/10 space-y-3">
           {/* Active filter chips: Clean horizontal rail */}
           {activeFilterCount > 0 && (
             <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 animate-in fade-in duration-150">
@@ -961,26 +969,31 @@ export function PocketHubPage({
                     className={`px-2 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors cursor-pointer ${
                       selectedCountry === 'ALL'
                         ? 'bg-black text-white dark:bg-white dark:text-black border-transparent font-bold'
-                        : 'border-black/15 dark:border-white/15 hover:border-black/40 text-black/70 dark:text-white/70'
+                        : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                     }`}
                   >ALL</button>
-                  {countryOptions.map(({ country, count }) => (
-                    <button
-                      key={country}
-                      onClick={() => { setSelectedCountry(country); setSelectedCity('ALL'); }}
-                      className={`px-2 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors cursor-pointer ${
-                        selectedCountry === country
-                          ? 'bg-black text-white dark:bg-white dark:text-black border-transparent font-bold'
-                          : 'border-black/15 dark:border-white/15 hover:border-black/40 text-black/70 dark:text-white/70'
-                      }`}
-                    >{country} ({count})</button>
-                  ))}
+                  {countryOptions.map(({ country, count }) => {
+                    const isSelected = selectedCountry === country;
+                    return (
+                      <button
+                        key={country}
+                        onClick={() => { setSelectedCountry(country); setSelectedCity('ALL'); }}
+                        className={`px-2 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-transparent font-bold'
+                            : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                        }`}
+                      >
+                        {country} <span className="opacity-60 text-[9px]">({count})</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* CITY (only when country selected) */}
+              {/* CITY (Visible when country selected) */}
               {selectedCountry !== 'ALL' && cityOptions.length > 0 && (
-                <div className="flex items-start gap-2 flex-wrap">
+                <div className="flex items-start gap-2 flex-wrap pt-2 border-t border-black/10 dark:border-white/10">
                   <span className="text-[9px] font-mono tracking-widest text-black/40 dark:text-white/40 uppercase pt-1.5 shrink-0 w-16">CITY</span>
                   <div className="flex flex-wrap gap-1.5 flex-1">
                     <button
@@ -988,26 +1001,31 @@ export function PocketHubPage({
                       className={`px-2 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors cursor-pointer ${
                         selectedCity === 'ALL'
                           ? 'bg-black text-white dark:bg-white dark:text-black border-transparent font-bold'
-                          : 'border-black/15 dark:border-white/15 hover:border-black/40 text-black/70 dark:text-white/70'
+                          : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                       }`}
                     >ALL</button>
-                    {cityOptions.map(({ city, count }) => (
-                      <button
-                        key={city}
-                        onClick={() => setSelectedCity(city)}
-                        className={`px-2 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors cursor-pointer ${
-                          selectedCity === city
-                            ? 'bg-black text-white dark:bg-white dark:text-black border-transparent font-bold'
-                            : 'border-black/15 dark:border-white/15 hover:border-black/40 text-black/70 dark:text-white/70'
-                        }`}
-                      >{city} ({count})</button>
-                    ))}
+                    {cityOptions.map(({ city, count }) => {
+                      const isSelected = selectedCity === city;
+                      return (
+                        <button
+                          key={city}
+                          onClick={() => setSelectedCity(city)}
+                          className={`px-2 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors cursor-pointer ${
+                            isSelected
+                              ? 'bg-black text-white dark:bg-white dark:text-black border-transparent font-bold'
+                              : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                          }`}
+                        >
+                          {city} <span className="opacity-60 text-[9px]">({count})</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
               {/* CATEGORY */}
-              <div className="flex items-start gap-2 flex-wrap">
+              <div className="flex items-start gap-2 flex-wrap pt-2 border-t border-black/10 dark:border-white/10">
                 <span className="text-[9px] font-mono tracking-widest text-black/40 dark:text-white/40 uppercase pt-1.5 shrink-0 w-16">CATEGORY</span>
                 <div className="flex flex-wrap gap-1.5 flex-1">
                   <button
@@ -1015,7 +1033,7 @@ export function PocketHubPage({
                     className={`px-2 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors cursor-pointer ${
                       selectedCategory === 'ALL'
                         ? 'bg-black text-white dark:bg-white dark:text-black border-transparent font-bold'
-                        : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60'
+                        : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                     }`}
                   >ALL</button>
                   {(Object.keys(CATEGORY_META) as PocketCategory[]).map(cat => {
@@ -1062,7 +1080,10 @@ export function PocketHubPage({
             </div>
           )}
         </div>
+      )}
 
+      {/* 4. Main Gallery Feed Section (Matching Trip Standard Padding py-6 sm:py-10) */}
+      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-6 sm:py-10 flex-grow flex flex-col">
         {/* Gallery — Grouped by country·city or flat drag mode */}
         {sortedSpots.length === 0 ? (
           <div className="flex-grow flex flex-col items-center justify-center py-24 border border-dashed border-black/20 dark:border-white/20 text-center">

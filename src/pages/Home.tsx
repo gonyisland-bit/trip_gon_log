@@ -1165,8 +1165,8 @@ export function HomePage({
 
             return (
               <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 grid grid-cols-1 md:grid-cols-12 items-center">
-                {/* 1. Left Column: Top branding, Big Title, Month/Year, Auto Journey Sentence */}
-                <div className="md:col-span-3 lg:col-span-3 flex flex-col justify-between h-full order-2 md:order-1 relative z-20 md:-mr-8 lg:-mr-12 pointer-events-none py-6 sm:py-8 md:py-12 lg:py-16 px-2 sm:px-4 md:px-0">
+                {/* 1. Left Column: Top branding, Big Title, Month/Year, Auto Journey Sentence (Desktop md+) */}
+                <div className="hidden md:flex md:col-span-3 lg:col-span-3 flex-col justify-between h-full order-2 md:order-1 relative z-20 md:-mr-8 lg:-mr-12 pointer-events-none py-6 sm:py-8 md:py-12 lg:py-16 px-2 sm:px-4 md:px-0">
                   <div>
                     {/* Minimal Branding / Title in Inter */}
                     <div className="text-[11px] font-['Inter',sans-serif] font-bold tracking-[0.25em] text-black/40 dark:text-white/40 uppercase mb-3 sm:mb-4 md:mb-6 pointer-events-auto">
@@ -1198,7 +1198,7 @@ export function HomePage({
                 </div>
 
                 {/* 2. Center Column: Large 3:4 Aspect Ratio Borderless Hero Media Frame (Dead center of the screen, towering height) */}
-                <div className="md:col-span-6 lg:col-span-6 flex items-center justify-center order-1 md:order-2 relative z-10 w-full px-0">
+                <div className="md:col-span-6 lg:col-span-6 flex flex-col items-center justify-center order-1 md:order-2 relative z-10 w-full px-0">
                   <div 
                     onClick={() => onNavigate('detail', currentHero.id)}
                     onMouseEnter={preloadDetailPage}
@@ -1220,10 +1220,91 @@ export function HomePage({
                     ))}
                     <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors pointer-events-none" />
                   </div>
+
+                  {/* Mobile Compact Hero Bottom (Shown only on mobile < md: removes excessive vertical scrolling) */}
+                  <div className="w-full block md:hidden px-2 pt-4 pb-2 font-['Inter',sans-serif]">
+                    {/* Row 1: Brand/Category + Slide Indicator & Arrows */}
+                    <div className="flex items-center justify-between text-xs mb-1.5">
+                      <span className="text-[10px] font-bold tracking-[0.2em] text-black/40 dark:text-white/40 uppercase">
+                        {homeTitle ? homeTitle.replace(/\\n|\n/g, ' ') : 'JOURNAL'}
+                      </span>
+                      {heroJourneys.length > 1 && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-black tracking-wider text-black dark:text-white">
+                            {String(heroSlide + 1).padStart(2, '0')} / {String(heroJourneys.length).padStart(2, '0')}
+                          </span>
+                          <div className="flex items-center gap-0.5">
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); goToPrev(); }}
+                              className="p-1 text-black/60 dark:text-white/60 active:scale-90"
+                              title="Prev"
+                            >
+                              <ChevronLeft className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); goToNext(); }}
+                              className="p-1 text-black/60 dark:text-white/60 active:scale-90"
+                              title="Next"
+                            >
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Row 2: Big Title */}
+                    <h2
+                      onClick={() => onNavigate('detail', currentHero.id)}
+                      className="text-2xl sm:text-3xl font-black uppercase tracking-tight leading-tight text-black dark:text-white cursor-pointer active:opacity-80 mb-2.5"
+                      style={{ wordBreak: 'keep-all' }}
+                    >
+                      {currentHero.title}
+                    </h2>
+
+                    {/* Row 3: Meta & Action in compact 2-side flex */}
+                    <div className="flex items-end justify-between gap-3 pt-2.5 border-t border-black/10 dark:border-white/10">
+                      <div className="flex flex-col gap-1 min-w-0 flex-1">
+                        <div className="flex items-baseline gap-1.5 flex-wrap">
+                          <span className="text-xs sm:text-sm font-black tracking-tight text-black dark:text-white uppercase">
+                            {month} {year}
+                          </span>
+                          <span className="text-black/30 dark:text-white/30 text-xs">·</span>
+                          <span className="text-xs sm:text-sm font-black tracking-tight text-black dark:text-white">
+                            {dateRange}
+                          </span>
+                          {days && (
+                            <span className="text-[10px] font-mono font-bold text-red-600 dark:text-red-400 uppercase">
+                              ({days})
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] sm:text-xs font-bold text-black/70 dark:text-white/70 uppercase tracking-wider truncate">
+                          {cities}
+                        </div>
+                        {/* Auto Journey Message */}
+                        <p className="text-[10.5px] sm:text-[11px] font-medium text-black/60 dark:text-white/60 leading-snug break-keep mt-0.5 line-clamp-2">
+                          {generateJourneyMessage(currentHero.locationStr, currentHero.date, getHeroDetails(currentHero).daysCount)}
+                        </p>
+                      </div>
+
+                      {/* Direct View Trip Button */}
+                      <button
+                        type="button"
+                        onClick={() => onNavigate('detail', currentHero.id)}
+                        className="w-10 h-10 rounded-full border border-black/20 dark:border-white/20 bg-black text-white dark:bg-white dark:text-black flex items-center justify-center shrink-0 active:scale-95 shadow-sm cursor-pointer"
+                        title="VIEW TRIP"
+                      >
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                {/* 3. Right Column: Date range / Days duration, Cities, Minimal circular arrow button */}
-                <div className="md:col-span-3 lg:col-span-3 flex flex-col justify-between h-full order-3 text-left md:text-right items-start md:items-end relative z-20 md:pl-6 lg:pl-10 font-['Inter',sans-serif] py-6 sm:py-8 md:py-12 lg:py-16 px-2 sm:px-4 md:px-0">
+                {/* 3. Right Column: Date range / Days duration, Cities, Minimal circular arrow button (Desktop md+) */}
+                <div className="hidden md:flex md:col-span-3 lg:col-span-3 flex-col justify-between h-full order-3 text-left md:text-right items-start md:items-end relative z-20 md:pl-6 lg:pl-10 font-['Inter',sans-serif] py-6 sm:py-8 md:py-12 lg:py-16 px-2 sm:px-4 md:px-0">
                   {/* Top Slide Indicator (e.g. 01 / 03) with minimal gauge & arrows */}
                   {heroJourneys.length > 1 ? (
                     <div className="flex items-center gap-2.5 mb-4 sm:mb-6">

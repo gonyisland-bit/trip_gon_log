@@ -723,8 +723,8 @@ export function ArchiveHubPage({
         <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-4 border-b border-black/10 dark:border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
           {/* Left: Section Sub-label */}
           <div className="flex items-center gap-2">
-            <span className="text-xs sm:text-sm font-mono font-bold uppercase tracking-wider text-black dark:text-white">
-              ALL ARCHIVES ({filteredTrips.length})
+            <span className="text-xs sm:text-sm font-['Inter',sans-serif] font-bold uppercase tracking-wider text-black dark:text-white">
+              ALL TRIPS ({filteredTrips.length})
             </span>
           </div>
           
