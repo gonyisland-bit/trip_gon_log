@@ -187,8 +187,8 @@ export function ProfileEditModal({
         birthdate: birthdate.trim(),
         phone: phone.trim(),
         profileType,
-        profileIcon: profileType === 'icon' ? profileIcon : undefined,
-        profileImage: profileType === 'image' ? profileImage : undefined,
+        profileIcon: profileType === 'icon' ? (profileIcon || 'user') : '',
+        profileImage: profileType === 'image' ? (profileImage || '') : '',
       };
 
       await onSave(updatedData);

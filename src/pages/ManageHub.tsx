@@ -538,8 +538,13 @@ export function ManageHubPage({
   const handleSaveUserEdit = async (updated: Partial<UserProfile>) => {
     if (!editingUser) return;
     try {
-      await updateDoc(doc(db, 'users', editingUser.uid), updated);
-      setUsersList(prev => prev.map(u => u.uid === editingUser.uid ? { ...u, ...updated } : u));
+      const cleanData: Record<string, any> = {};
+      Object.entries(updated).forEach(([k, v]) => {
+        if (v !== undefined) cleanData[k] = v;
+      });
+
+      await setDoc(doc(db, 'users', editingUser.uid), cleanData, { merge: true });
+      setUsersList(prev => prev.map(u => u.uid === editingUser.uid ? { ...u, ...cleanData } : u));
       setIsUserEditModalOpen(false);
       setEditingUser(null);
       setUserActionToast('유저 정보가 수정되었습니다.');

@@ -2062,19 +2062,32 @@ export function CalendarHubPage({
                 let circleClasses = 'w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 rounded-full aspect-square shrink-0 flex flex-col items-center justify-center font-mono transition-all duration-150 relative z-10 cursor-pointer';
                 let textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-black leading-none';
 
+                const isSelectedDate = selectedDate === cell.dateStr;
                 const isSelectedWeather = isWeatherMode && selectedWeatherDay?.dateStr === cell.dateStr;
+                const isSelected = isSelectedDate || isSelectedWeather;
 
                 if (!cell.isCurrentMonth) {
                   circleClasses += ' opacity-20 text-black/40 dark:text-white/40 hover:opacity-40';
                 } else if (cell.isToday) {
-                  circleClasses += ' bg-black text-white dark:bg-white dark:text-black font-black shadow-sm scale-105';
-                  textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-black leading-none';
-                } else if (hasTrip) {
-                  circleClasses += ' text-white font-black hover:opacity-95';
+                  // 오늘 날짜: 인터내셔널 오렌지/레드 고유 포인트 컬러
+                  circleClasses += ' bg-[#FF4500] text-white font-black shadow-sm';
+                  if (isSelected) {
+                    circleClasses += ' ring-2 ring-black dark:ring-white scale-105 shadow-md z-20';
+                  } else {
+                    circleClasses += ' ring-2 ring-[#FF4500]/40';
+                  }
                   textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-black leading-none text-white';
-                } else if (isSelectedWeather) {
-                  circleClasses += ' bg-black text-white dark:bg-white dark:text-black font-black ring-2 ring-black dark:ring-white scale-105 shadow-md';
-                  textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-black leading-none text-white dark:text-black';
+                } else if (hasTrip) {
+                  // 여정 날짜: 오렌지 알약 위 텍스트 + 선택 시 링 강조
+                  circleClasses += ' text-white font-black hover:opacity-95';
+                  if (isSelected) {
+                    circleClasses += ' ring-2 ring-black dark:ring-white scale-105 shadow-lg z-20';
+                  }
+                  textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-black leading-none text-white';
+                } else if (isSelected) {
+                  // 선택 날짜: 테두리와 내부 은은한 색상 적용 (날씨 온전 표기 및 다크모드 가림 방지)
+                  circleClasses += ' bg-black/10 dark:bg-white/15 text-black dark:text-white font-black ring-2 ring-black dark:ring-white scale-105 shadow-md z-20';
+                  textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-black leading-none text-black dark:text-white';
                 } else if (isInRange) {
                   circleClasses += ' bg-red-600/20 ring-2 ring-red-600 text-red-600 dark:text-red-400 font-black';
                 } else if (hasEvent) {
@@ -2096,16 +2109,16 @@ export function CalendarHubPage({
                     data-calendar-date={cell.dateStr}
                     className="relative flex items-center justify-center h-14 sm:h-16 md:h-20 lg:h-22 w-full"
                   >
-                    {/* Multi-day Trip Capsule Ribbon (원형 버튼 높이와 100% 일치시켜 경계면 침범 방지) */}
+                    {/* Multi-day Trip Capsule Ribbon (날짜 원형 버튼과 1:1로 완벽히 일치하는 알약 라운드) */}
                     {hasTrip && cell.isCurrentMonth && (
                       <div
                         className={`absolute top-1/2 -translate-y-1/2 h-10 sm:h-12 md:h-14 lg:h-16 z-0 ${
                           !prevInRowHasSameTrip && !nextInRowHasSameTrip
-                            ? 'inset-x-1 sm:inset-x-1.5 md:inset-x-2 rounded-full'
+                            ? 'left-1/2 -translate-x-1/2 w-10 sm:w-12 md:w-14 lg:w-16 rounded-full'
                             : !prevInRowHasSameTrip && nextInRowHasSameTrip
-                              ? 'left-1 sm:left-1.5 md:left-2 right-0 rounded-l-full'
+                              ? 'left-1/2 -ml-5 sm:-ml-6 md:-ml-7 lg:-ml-8 right-0 rounded-l-full'
                               : prevInRowHasSameTrip && !nextInRowHasSameTrip
-                                ? 'left-0 right-1 sm:right-1.5 md:right-2 rounded-r-full'
+                                ? 'left-0 right-1/2 -mr-5 sm:-mr-6 md:-mr-7 lg:-mr-8 rounded-r-full'
                                 : 'left-0 right-0 rounded-none'
                         } ${isPlan ? 'bg-amber-500' : 'bg-[#FF4500] dark:bg-[#FF4500]'}`}
                       />
@@ -2142,23 +2155,38 @@ export function CalendarHubPage({
                         }
 
                         const { icon: WeatherIconComponent, colorClass } = getWeatherMeta(weatherItem.weatherCode, weatherItem.precipitationProb);
-                        const isSelectedWeather = selectedWeatherDay?.dateStr === cell.dateStr;
-                        const isCellHighlighted = hasTrip || cell.isToday || isInRange || isSelectedWeather;
+                        const isOrangeBg = hasTrip || cell.isToday;
 
                         return (
                           <div className="flex flex-col items-center justify-between h-full w-full py-1 sm:py-1.5 pointer-events-none select-none">
                             {/* 1. 상단: 날짜 일자 숫자 */}
-                            <span className={`text-[9px] sm:text-[10px] md:text-[11px] font-mono font-bold leading-none ${isCellHighlighted ? 'text-white/95 opacity-90' : 'opacity-60'}`}>
+                            <span className={`text-[9px] sm:text-[10px] md:text-[11px] font-mono leading-none ${
+                              isOrangeBg 
+                                ? 'text-white font-black' 
+                                : isSelected 
+                                  ? 'text-black dark:text-white font-black' 
+                                  : 'text-black/70 dark:text-white/70 font-bold'
+                            }`}>
                               {cell.dayNum}
                             </span>
 
-                            {/* 2. 중앙 메인: 날씨 아이콘 크게 배치 (선택/여정/오늘 활성화 시 순백색 고대비 적용) */}
+                            {/* 2. 중앙 메인: 날씨 아이콘 (오렌지 배경은 고대비 흰색, 선택/일반 셀은 고유 날씨 컬러 온전 표기) */}
                             <div className="my-auto flex items-center justify-center">
-                              <WeatherIconComponent className={`w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 shrink-0 ${isCellHighlighted ? 'text-white stroke-[2.4] drop-shadow-xs' : `${colorClass} stroke-[2.2]`}`} />
+                              <WeatherIconComponent className={`w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 shrink-0 ${
+                                isOrangeBg 
+                                  ? 'text-white stroke-[2.4] drop-shadow-xs' 
+                                  : `${colorClass} stroke-[2.2]`
+                              }`} />
                             </div>
 
                             {/* 3. 하단: 최저/최고 기온 */}
-                            <span className={`text-[7.5px] sm:text-[8.5px] md:text-[9.5px] font-mono font-bold tracking-tighter leading-none ${isCellHighlighted ? 'text-white font-black' : 'text-black/75 dark:text-white/75'}`}>
+                            <span className={`text-[7.5px] sm:text-[8.5px] md:text-[9.5px] font-mono tracking-tighter leading-none ${
+                              isOrangeBg 
+                                ? 'text-white font-black' 
+                                : isSelected 
+                                  ? 'text-black dark:text-white font-black' 
+                                  : 'text-black/75 dark:text-white/75 font-bold'
+                            }`}>
                               {weatherItem.tempMin}°/{weatherItem.tempMax}°
                             </span>
                           </div>

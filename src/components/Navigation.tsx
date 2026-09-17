@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Menu, LogOut, User, Sun, Moon, Search, Home, Archive as ArchiveIcon, Compass, X, SlidersHorizontal } from 'lucide-react';
 import { auth, db } from '../firebase';
 import { signOut, updateProfile } from 'firebase/auth';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import { UserProfile } from '../types';
 import { UserProfileAvatar } from './UserProfileAvatar';
 import { PasswordVerifyModal } from './PasswordVerifyModal';
@@ -23,7 +23,7 @@ interface NavigationProps {
   isAdmin?: boolean;
   isHomeGradientActive?: boolean;
   currentUserProfile?: UserProfile | null;
-  onUpdateCurrentUserProfile?: (profile: UserProfile) => void;
+  onUpdateCurrentUserProfile?: (updated: UserProfile) => void;
 }
 
 export function Navigation({
@@ -52,12 +52,27 @@ export function Navigation({
 
   const handleSaveMyProfile = async (updated: Partial<UserProfile>) => {
     if (!currentUser) return;
-    await updateDoc(doc(db, 'users', currentUser.uid), updated);
-    if (currentUserProfile) {
-      const merged: UserProfile = { ...currentUserProfile, ...updated };
-      onUpdateCurrentUserProfile?.(merged);
-    }
-    const newDisplayName = `${updated.lastName || currentUserProfile?.lastName || ''} ${updated.firstName || currentUserProfile?.firstName || ''}`.trim() || updated.username;
+    const cleanData: Record<string, any> = {};
+    Object.entries(updated).forEach(([k, v]) => {
+      if (v !== undefined) cleanData[k] = v;
+    });
+
+    await setDoc(doc(db, 'users', currentUser.uid), cleanData, { merge: true });
+    
+    const merged: UserProfile = {
+      uid: currentUser.uid,
+      email: currentUser.email || '',
+      username: displayName,
+      role: 'user',
+      permissions: { canCreate: true, canEdit: false, canDelete: false },
+      createdAt: Date.now(),
+      ...(currentUserProfile || {}),
+      ...cleanData,
+    } as UserProfile;
+    
+    onUpdateCurrentUserProfile?.(merged);
+    
+    const newDisplayName = `${merged.lastName || ''} ${merged.firstName || ''}`.trim() || merged.username || displayName;
     if (newDisplayName) {
       await updateProfile(currentUser, { displayName: newDisplayName }).catch(() => {});
     }
