@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Menu, Edit2, Trash2, GripVertical, Copy, ArrowUp, Tag, ChevronDown, ChevronUp, Search, X, LayoutGrid, StretchHorizontal, List, Calendar as CalendarIcon, CalendarDays, Compass, MapPin, ArrowUpRight } from 'lucide-react';
-import { Trip, Plan, MagazineMoment, MagazineSection, TimelineData } from '../types';
+import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Menu, Edit2, Trash2, GripVertical, Copy, ArrowUp, Tag, ChevronDown, ChevronUp, Search, X, LayoutGrid, StretchHorizontal, List, Calendar as CalendarIcon, CalendarDays, Compass, MapPin, ArrowUpRight, Coins, Clock, Sliders } from 'lucide-react';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase';
+import { Trip, Plan, MagazineMoment, MagazineSection, TimelineData, HomeWidgetConfig } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { cleanAdministrativeDistricts, generateJourneyMessage } from '../components/SummaryView';
 import { preloadDetailPage } from '../utils/prefetchHelper';
 import { getKoreanHolidays } from '../utils/koreanHolidays';
 import { HomeWeatherWidget } from '../components/HomeWeatherWidget';
+import { HomeWidgetConfigModal } from '../components/HomeWidgetConfigModal';
 
 interface HomePageProps {
   onNavigate: (view: string, tripId?: number | null) => void;
@@ -40,6 +43,7 @@ interface HomePageProps {
   canEditTrip?: (trip?: Trip) => boolean;
   canDeleteTrip?: (trip?: Trip) => boolean;
   onOpenAuthModal?: (mode?: 'login' | 'signup') => void;
+  isAdmin?: boolean;
 }
 
 function parseDateParts(dateStr: string, defaultYear?: number): Date | null {
@@ -834,6 +838,7 @@ export function HomePage({
   canEditTrip,
   canDeleteTrip,
   onOpenAuthModal,
+  isAdmin = false,
 }: HomePageProps) {
   const [activeFilter, setActiveFilter] = useState('All');
   const [isTagAccordionOpen, setIsTagAccordionOpen] = useState(false);
@@ -841,6 +846,37 @@ export function HomePage({
   const [heroSlide, setHeroSlide] = useState(0);
   const [activeCardId, setActiveCardId] = useState<number | null>(null);
   const [cardViewMode, setCardViewMode] = useState<'grid' | 'wide' | 'list'>(() => (localStorage.getItem('cardViewMode') as any) || 'grid');
+
+  const [isWidgetConfigModalOpen, setIsWidgetConfigModalOpen] = useState<boolean>(false);
+  const [widgetConfig, setWidgetConfig] = useState<HomeWidgetConfig>(() => {
+    try {
+      const cached = localStorage.getItem('cached_home_widget_config');
+      if (cached) return JSON.parse(cached);
+    } catch (_) {}
+    return {
+      showCalendarArchive: true,
+      showLiveWeather: true,
+      widgetOrder: 'calendar-first',
+      showExchangeRates: false,
+      showUpcomingDDay: false,
+      cities: []
+    };
+  });
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'app_settings', 'home_widgets'), (snap) => {
+      if (snap.exists()) {
+        const data = snap.data() as HomeWidgetConfig;
+        setWidgetConfig(data);
+        try {
+          localStorage.setItem('cached_home_widget_config', JSON.stringify(data));
+        } catch (_) {}
+      }
+    }, (err) => {
+      console.warn("Home widgets firestore listen notice:", err);
+    });
+    return () => unsub();
+  }, []);
 
   const handleSetCardViewMode = (mode: 'grid' | 'wide' | 'list') => {
     setCardViewMode(mode);
@@ -2058,7 +2094,8 @@ export function HomePage({
       {/* Swiss Minimal Circular Calendar Part (홈허브 하단 캘린더 파트)  */}
       {/* ───────────────────────────────────────────────────────────── */}
       {(() => {
-        const today = new Date();
+        const renderCalendarArchive = () => {
+          const today = new Date();
         const year = today.getFullYear();
         const month = today.getMonth(); // 0-indexed
         const dateNum = today.getDate();
@@ -2305,7 +2342,7 @@ export function HomePage({
                 </div>
               </div>
 
-              {/* Middle Column: 1-Line Simple Schedules Feed (빈 영역 채움) */}
+              {/* Middle Column: 1-Line Simple Schedules Feed */}
               <div className="lg:col-span-4 flex flex-col justify-center border-t lg:border-t-0 lg:border-l lg:border-r border-black/10 dark:border-white/10 pt-4 lg:pt-0 lg:px-6 min-h-[140px]">
                 <div className="text-[10px] font-mono font-black uppercase tracking-widest text-black/40 dark:text-white/40 mb-2.5">
                   MONTHLY SCHEDULES ({monthSchedules.length})
@@ -2346,10 +2383,10 @@ export function HomePage({
                 )}
               </div>
 
-              {/* Right Column: Circular Dot Grid (7 Columns: M T W T F S S) - Centered on Mobile */}
+              {/* Right Column: Circular Dot Grid */}
               <div className="lg:col-span-4 flex flex-col items-center lg:items-end justify-center w-full">
                 <div className="w-full max-w-[320px] sm:max-w-[340px] mx-auto lg:mr-0">
-                  {/* Weekday Headers: M T W T F S S */}
+                  {/* Weekday Headers */}
                   <div className="grid grid-cols-7 gap-2 sm:gap-2.5 mb-2 text-center text-xs font-black font-mono select-none text-black/40 dark:text-white/40">
                     <div>M</div>
                     <div>T</div>
@@ -2419,12 +2456,110 @@ export function HomePage({
             </div>
           </section>
         );
-      })()}
+      };
 
-      {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* 04. LIVE WEATHER (스위스 미니멀 여행지 실시간 날씨)                   */}
-      {/* ─────────────────────────────────────────────────────────────────── */}
-      <HomeWeatherWidget trips={trips} />
-    </main>
-  );
+      const renderWeather = () => (
+        <HomeWeatherWidget 
+          trips={trips} 
+          isAdmin={isAdmin}
+          onOpenConfig={() => setIsWidgetConfigModalOpen(true)}
+          customCities={widgetConfig.cities}
+        />
+      );
+
+      return (
+        <>
+          {/* Optional Extended Modules: Upcoming D-Day Banner */}
+          {widgetConfig.showUpcomingDDay && (() => {
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const upcomingTrips = [...trips, ...plans].filter(t => {
+              const parts = t.date ? t.date.split(/[-~]/) : [];
+              const start = parts && parts[0] ? parts[0].trim().replace(/\./g, '-') : '';
+              return start >= todayStr;
+            }).sort((a, b) => {
+              const sa = a.date ? a.date.split(/[-~]/)[0]?.trim().replace(/\./g, '-') : '';
+              const sb = b.date ? b.date.split(/[-~]/)[0]?.trim().replace(/\./g, '-') : '';
+              return sa.localeCompare(sb);
+            });
+
+            const nextTrip = upcomingTrips[0];
+            if (!nextTrip) return null;
+
+            const startParsed = parseDateParts(nextTrip.date);
+            if (!startParsed) return null;
+            const diffDays = Math.ceil((startParsed.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+            const dDayStr = diffDays === 0 ? 'D-DAY' : (diffDays > 0 ? `D-${diffDays}` : `D+${Math.abs(diffDays)}`);
+
+            return (
+              <section className="w-full max-w-[1920px] mx-auto mt-12 px-4 sm:px-8 md:px-12 select-none">
+                <div 
+                  onClick={() => onNavigate('detail', nextTrip.id)}
+                  className="p-3 sm:p-4 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-between cursor-pointer group"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="px-2 py-0.5 bg-red-600 text-white font-mono font-black text-xs uppercase tracking-wider">
+                      {dDayStr}
+                    </span>
+                    <span className="font-mono font-bold text-xs uppercase tracking-wider text-black dark:text-white group-hover:text-red-600 transition-colors">
+                      {nextTrip.title}
+                    </span>
+                    <span className="text-[11px] font-mono text-black/50 dark:text-white/50 hidden sm:inline">
+                      {nextTrip.locationStr || nextTrip.country} · {nextTrip.date}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs font-mono font-bold text-black/50 dark:text-white/50 group-hover:text-black dark:group-hover:text-white transition-colors">
+                    <span className="hidden sm:inline">VIEW TRIP</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+              </section>
+            );
+          })()}
+
+          {/* Optional Extended Modules: Live Exchange Rates Bar */}
+          {widgetConfig.showExchangeRates && (
+            <section className="w-full max-w-[1920px] mx-auto mt-6 px-4 sm:px-8 md:px-12 select-none font-mono">
+              <div className="py-2.5 px-4 border border-black/10 dark:border-white/10 bg-black/[0.01] dark:bg-white/[0.01] flex items-center justify-between overflow-x-auto hide-scrollbar text-xs">
+                <div className="flex items-center gap-2 shrink-0 pr-4">
+                  <Coins className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+                  <span className="font-black text-[10px] uppercase tracking-widest text-black/50 dark:text-white/50">
+                    EXCHANGE RATES
+                  </span>
+                </div>
+                <div className="flex items-center gap-5 sm:gap-8 shrink-0 text-[11px] font-bold">
+                  <span>USD <strong className="font-black text-black dark:text-white">1,388.50</strong> <span className="text-red-500 text-[9.5px]">▲ 2.5</span></span>
+                  <span>JPY <strong className="font-black text-black dark:text-white">918.40</strong> <span className="text-blue-500 text-[9.5px]">▼ 1.2</span></span>
+                  <span>EUR <strong className="font-black text-black dark:text-white">1,512.20</strong> <span className="text-red-500 text-[9.5px]">▲ 3.0</span></span>
+                  <span>TWD <strong className="font-black text-black dark:text-white">43.25</strong> <span className="text-black/40 dark:text-white/40 text-[9.5px]">-</span></span>
+                  <span>VND <strong className="font-black text-black dark:text-white">5.58</strong> <span className="text-black/40 dark:text-white/40 text-[9.5px]">-</span></span>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Ordered Bottom Widgets */}
+          {widgetConfig.widgetOrder === 'weather-first' ? (
+            <>
+              {widgetConfig.showLiveWeather && renderWeather()}
+              {widgetConfig.showCalendarArchive && renderCalendarArchive()}
+            </>
+          ) : (
+            <>
+              {widgetConfig.showCalendarArchive && renderCalendarArchive()}
+              {widgetConfig.showLiveWeather && renderWeather()}
+            </>
+          )}
+
+          {/* Admin Config Modal */}
+          <HomeWidgetConfigModal
+            isOpen={isWidgetConfigModalOpen}
+            onClose={() => setIsWidgetConfigModalOpen(false)}
+            config={widgetConfig}
+            onSaveConfig={(newCfg) => setWidgetConfig(newCfg)}
+          />
+        </>
+      );
+    })()}
+  </main>
+);
 }

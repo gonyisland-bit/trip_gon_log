@@ -4,13 +4,30 @@ import {
   MapPin, Clock, ArrowRight, Plane, Sparkles, Compass, 
   CheckCircle2, ArrowUpRight, Plus, Eye, Briefcase, Heart, 
   User, AlertCircle, Trash2, Edit3, X, Tag, FileText, Check,
-  LayoutGrid, CalendarDays, Share2, Copy, MousePointerClick
+  LayoutGrid, CalendarDays, Share2, Copy, MousePointerClick,
+  Sun
 } from 'lucide-react';
 import { Trip, Plan, TimelineData, TimelineItem, CalendarCustomEvent } from '../types';
 import { getKoreanHolidays, getHolidayInfo, KoreanHoliday } from '../utils/koreanHolidays';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { db, auth } from '../firebase';
 import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { fetchCityWeather, getWeatherMeta, CityWeatherData, DailyForecastItem } from '../utils/weatherApi';
+
+const CALENDAR_WEATHER_CITIES = [
+  { name: '서울', nameEn: 'SEOUL', country: 'KR', lat: 37.5665, lng: 126.9780, timezone: 'Asia/Seoul' },
+  { name: '도쿄', nameEn: 'TOKYO', country: 'JP', lat: 35.6762, lng: 139.6503, timezone: 'Asia/Tokyo' },
+  { name: '오사카', nameEn: 'OSAKA', country: 'JP', lat: 34.6937, lng: 135.5023, timezone: 'Asia/Tokyo' },
+  { name: '파리', nameEn: 'PARIS', country: 'FR', lat: 48.8566, lng: 2.3522, timezone: 'Europe/Paris' },
+  { name: '런던', nameEn: 'LONDON', country: 'GB', lat: 51.5074, lng: -0.1278, timezone: 'Europe/London' },
+  { name: '뉴욕', nameEn: 'NEW YORK', country: 'US', lat: 40.7128, lng: -74.0060, timezone: 'America/New_York' },
+  { name: '방콕', nameEn: 'BANGKOK', country: 'TH', lat: 13.7563, lng: 100.5018, timezone: 'Asia/Bangkok' },
+  { name: '다낭', nameEn: 'DA NANG', country: 'VN', lat: 16.0544, lng: 108.2022, timezone: 'Asia/Ho_Chi_Minh' },
+  { name: '싱가포르', nameEn: 'SINGAPORE', country: 'SG', lat: 1.3521, lng: 103.8198, timezone: 'Asia/Singapore' },
+  { name: '타이베이', nameEn: 'TAIPEI', country: 'TW', lat: 25.0330, lng: 121.5654, timezone: 'Asia/Taipei' },
+  { name: '홍콩', nameEn: 'HONG KONG', country: 'HK', lat: 22.3193, lng: 114.1694, timezone: 'Asia/Hong_Kong' },
+  { name: '바르셀로나', nameEn: 'BARCELONA', country: 'ES', lat: 41.3851, lng: 2.1734, timezone: 'Europe/Madrid' },
+];
 
 interface CalendarHubPageProps {
   trips: Trip[];
@@ -323,6 +340,28 @@ export function CalendarHubPage({
     } catch (_) {}
     return [];
   });
+
+  // 날씨 토글 및 선택 도시 상태 (기본: 서울)
+  const [isWeatherMode, setIsWeatherMode] = useState<boolean>(false);
+  const [selectedWeatherCity, setSelectedWeatherCity] = useState<typeof CALENDAR_WEATHER_CITIES[0]>(CALENDAR_WEATHER_CITIES[0]);
+  const [cityWeatherData, setCityWeatherData] = useState<CityWeatherData | null>(null);
+
+  useEffect(() => {
+    if (!isWeatherMode) return;
+    let isCancelled = false;
+    fetchCityWeather(
+      selectedWeatherCity.lat,
+      selectedWeatherCity.lng,
+      selectedWeatherCity.timezone,
+      selectedWeatherCity.nameEn,
+      selectedWeatherCity.country
+    ).then((data) => {
+      if (!isCancelled) setCityWeatherData(data);
+    }).catch((err) => {
+      console.warn("Calendar weather fetch notice:", err);
+    });
+    return () => { isCancelled = true; };
+  }, [isWeatherMode, selectedWeatherCity]);
 
   // 뷰 전용 스위스 모달 상태
   const [viewingEvent, setViewingEvent] = useState<CalendarCustomEvent | null>(null);
@@ -1501,6 +1540,24 @@ export function CalendarHubPage({
               </button>
             </div>
 
+            {/* 2.5 Weather Mode Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setIsWeatherMode(prev => !prev)}
+              className={`h-7 sm:h-8 px-2 sm:px-3 rounded-full border text-[10px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 shadow-xs ${
+                isWeatherMode
+                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white ring-2 ring-black/20 dark:ring-white/20'
+                  : 'bg-white/80 dark:bg-zinc-900/80 border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
+              }`}
+              title={isWeatherMode ? "날씨 모드 끄기" : "날씨 모드 켜기 (캘린더에 일별 날씨/기온 표시)"}
+            >
+              <Sun className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isWeatherMode ? 'text-amber-400' : ''}`} />
+              <span>WEATHER</span>
+              <span className={`text-[8.5px] font-mono font-black px-1 py-0.2 rounded-xs ${isWeatherMode ? 'bg-white/20 dark:bg-black/20 text-white dark:text-black' : 'bg-black/10 dark:bg-white/10'}`}>
+                {isWeatherMode ? 'ON' : 'OFF'}
+              </span>
+            </button>
+
             {/* 3. Edit Mode Toggle Button (h-7 sm:h-8 통일 - 모바일에서는 ON으로 축약하여 폭 확보) */}
             {viewMode === 'month' && (
               <button
@@ -1557,6 +1614,41 @@ export function CalendarHubPage({
             )}
           </div>
         </div>
+
+        {/* Weather Forecast City Selector Bar */}
+        {isWeatherMode && (
+          <div className="w-full flex items-center justify-between gap-3 px-3 sm:px-4 py-2 mt-3 bg-black/[0.03] dark:bg-white/[0.05] border border-black/10 dark:border-white/10 font-mono text-xs select-none animate-in fade-in duration-200">
+            <div className="flex items-center gap-2 shrink-0">
+              <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />
+              <span className="font-black text-black dark:text-white uppercase tracking-wider">
+                {selectedWeatherCity.nameEn}
+              </span>
+              <span className="text-[10px] text-black/50 dark:text-white/50">
+                ({selectedWeatherCity.name}, {selectedWeatherCity.country})
+              </span>
+              <span className="text-[10px] font-bold text-black/40 dark:text-white/40 hidden md:inline">
+                · FORECAST ON CALENDAR
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1 overflow-x-auto hide-scrollbar shrink-0 max-w-[55%] sm:max-w-none">
+              {CALENDAR_WEATHER_CITIES.map((c) => (
+                <button
+                  key={c.nameEn}
+                  type="button"
+                  onClick={() => setSelectedWeatherCity(c)}
+                  className={`px-2 py-0.5 text-[9.5px] sm:text-[10px] font-mono font-bold border transition-colors cursor-pointer shrink-0 ${
+                    selectedWeatherCity.nameEn === c.nameEn
+                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                      : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white bg-white/50 dark:bg-zinc-900/50'
+                  }`}
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* 12-Month Quick Selector Tabs: 2-Tier Stack (Big Bold Number + Small Month Code) in 12-Column Grid (No Horizontal Scroll) */}
         {viewMode === 'month' && (
@@ -1747,25 +1839,59 @@ export function CalendarHubPage({
                       className={circleClasses}
                       title={cell.holiday ? `${cell.dateStr} (${cell.holiday.name})` : cell.dateStr}
                     >
-                      <span className={textClasses}>{cell.dayNum}</span>
+                      {/* Weather Mode 3-Tier Layout (사용자 피드백: 날씨 아이콘 중앙에 크게, 최저/최고온도 알약 하단에) */}
+                      {isWeatherMode && cell.isCurrentMonth && cityWeatherData?.forecast ? (() => {
+                        const exact = cityWeatherData.forecast.find(f => f.date === cell.dateStr);
+                        const dayIdx = (cell.dayNum - 1) % cityWeatherData.forecast.length;
+                        const weatherItem = exact || cityWeatherData.forecast[dayIdx];
 
-                      {/* Event Dots Indicator (Centered row of colored dots for multiple events) */}
-                      {hasEvent && !hasTrip && !cell.isToday && cell.isCurrentMonth && (
-                        <div className="flex items-center justify-center gap-0.5 sm:gap-1 mt-1 max-w-[28px] overflow-hidden">
-                          {cell.overlappingEvents.slice(0, 4).map((evtWrap) => {
-                            const cat = EVENT_CATEGORIES.find(c => c.id === evtWrap.event.category);
-                            return (
-                              <span 
-                                key={evtWrap.event.id}
-                                className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full shrink-0" 
-                                style={{ backgroundColor: cat?.color || '#2563eb' }} 
-                              />
-                            );
-                          })}
-                        </div>
-                      )}
-                      {cell.holiday && !hasTrip && !cell.isToday && !hasEvent && cell.isCurrentMonth && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-400 mt-1" />
+                        if (!weatherItem) {
+                          return <span className={textClasses}>{cell.dayNum}</span>;
+                        }
+
+                        const { icon: WeatherIconComponent, colorClass } = getWeatherMeta(weatherItem.weatherCode);
+
+                        return (
+                          <div className="flex flex-col items-center justify-between h-full w-full py-1 sm:py-1.5 pointer-events-none select-none">
+                            {/* 1. 상단: 날짜 일자 숫자 */}
+                            <span className="text-[9px] sm:text-[10px] md:text-[11px] font-mono font-bold leading-none opacity-60">
+                              {cell.dayNum}
+                            </span>
+
+                            {/* 2. 중앙 메인: 날씨 아이콘 크게 배치 */}
+                            <div className="my-auto flex items-center justify-center">
+                              <WeatherIconComponent className={`w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 stroke-[2.2] shrink-0 ${hasTrip || cell.isToday ? 'text-white' : colorClass}`} />
+                            </div>
+
+                            {/* 3. 하단: 최저/최고 기온 */}
+                            <span className={`text-[7.5px] sm:text-[8.5px] md:text-[9.5px] font-mono font-bold tracking-tighter leading-none ${hasTrip || cell.isToday ? 'text-white/95' : 'text-black/75 dark:text-white/75'}`}>
+                              {weatherItem.tempMin}°/{weatherItem.tempMax}°
+                            </span>
+                          </div>
+                        );
+                      })() : (
+                        <>
+                          <span className={textClasses}>{cell.dayNum}</span>
+
+                          {/* Event Dots Indicator (Centered row of colored dots for multiple events) */}
+                          {hasEvent && !hasTrip && !cell.isToday && cell.isCurrentMonth && (
+                            <div className="flex items-center justify-center gap-0.5 sm:gap-1 mt-1 max-w-[28px] overflow-hidden">
+                              {cell.overlappingEvents.slice(0, 4).map((evtWrap) => {
+                                const cat = EVENT_CATEGORIES.find(c => c.id === evtWrap.event.category);
+                                return (
+                                  <span 
+                                    key={evtWrap.event.id}
+                                    className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full shrink-0" 
+                                    style={{ backgroundColor: cat?.color || '#2563eb' }} 
+                                  />
+                                );
+                              })}
+                            </div>
+                          )}
+                          {cell.holiday && !hasTrip && !cell.isToday && !hasEvent && cell.isCurrentMonth && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-400 mt-1" />
+                          )}
+                        </>
                       )}
                     </button>
                   </div>

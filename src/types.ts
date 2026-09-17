@@ -302,3 +302,21 @@ export interface UserProfile {
   createdAt: number;
 }
 
+export interface CityWeatherConfig {
+  name: string;
+  nameEn: string;
+  country: string;
+  lat: number;
+  lng: number;
+  timezone: string;
+}
+
+export interface HomeWidgetConfig {
+  showCalendarArchive: boolean;
+  showLiveWeather: boolean;
+  widgetOrder: 'calendar-first' | 'weather-first';
+  showExchangeRates?: boolean;
+  showUpcomingDDay?: boolean;
+  cities: CityWeatherConfig[];
+  updatedAt?: number;
+}

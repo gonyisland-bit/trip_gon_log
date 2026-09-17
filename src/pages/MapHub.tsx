@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, X, ArrowRight, Calendar, Star, Plus, Tag, MapPin, Bookmark, Home as HomeIcon, List, Clock, LocateFixed, Plane } from 'lucide-react';
+import { Search, X, ArrowRight, Calendar, Star, Plus, Tag, MapPin, Bookmark, Home as HomeIcon, List, Clock, LocateFixed, Plane, Sun, Droplets, ChevronDown, ChevronUp } from 'lucide-react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Trip, Plan } from '../types';
@@ -7,6 +7,7 @@ import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
 import { TripBuilderPanel } from '../components/TripBuilderPanel';
 import { findCityByNameOrAlias, DestinationCountry, DestinationCity, PresetTripPlan } from '../data/worldDestinations';
+import { fetchCityWeather, getWeatherMeta, CityWeatherData } from '../utils/weatherApi';
 
 export interface CountryInfo {
   code: string;
@@ -1578,6 +1579,43 @@ export function MapHubPage({
   const [selectedDestCities, setSelectedDestCities] = useState<string[]>([]);
   useEffect(() => {
     setSelectedDestCities([]);
+  }, [selectedCountry?.code]);
+
+  // Selected country weather data state
+  const [countryWeather, setCountryWeather] = useState<CityWeatherData | null>(null);
+  const [isCountryWeatherLoading, setIsCountryWeatherLoading] = useState<boolean>(false);
+  const [isCountryForecastOpen, setIsCountryForecastOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!selectedCountry) {
+      setCountryWeather(null);
+      setIsCountryForecastOpen(false);
+      return;
+    }
+
+    let isCancelled = false;
+    setIsCountryWeatherLoading(true);
+
+    const lat = selectedCountry.center[0];
+    const lng = selectedCountry.center[1];
+    const cityEn = selectedCountry.cities?.[0] || selectedCountry.name;
+
+    fetchCityWeather(lat, lng, 'UTC', cityEn, selectedCountry.code)
+      .then((data) => {
+        if (!isCancelled) {
+          setCountryWeather(data);
+        }
+      })
+      .catch((err) => {
+        console.warn("Country weather fetch notice:", err);
+      })
+      .finally(() => {
+        if (!isCancelled) {
+          setIsCountryWeatherLoading(false);
+        }
+      });
+
+    return () => { isCancelled = true; };
   }, [selectedCountry?.code]);
 
   const toggleDestCity = (cityName: string) => {
@@ -3496,6 +3534,93 @@ export function MapHubPage({
                     </>
                   );
                 })()}
+              </div>
+            </div>
+
+            {/* 2.5 Live Weather & 7-Day Forecast Widget Card */}
+            <div className="pb-3 border-b border-black/10 dark:border-white/10 select-none">
+              <div className="bg-[#f0f0f0] dark:bg-[#252525] rounded-2xl p-3 shadow-xs border border-black/5 dark:border-white/10">
+                <div className="flex items-center justify-between pb-2 border-b border-black/10 dark:border-white/10">
+                  <div className="flex items-center gap-1.5">
+                    <Sun className="w-3.5 h-3.5 text-amber-500" />
+                    <span className="text-[10px] font-mono font-black uppercase tracking-widest text-black/50 dark:text-white/50">
+                      LIVE WEATHER
+                    </span>
+                  </div>
+                  {countryWeather && countryWeather.forecast && countryWeather.forecast.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setIsCountryForecastOpen(prev => !prev)}
+                      className="text-[10px] font-mono font-bold text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <span>7-DAY FORECAST</span>
+                      {isCountryForecastOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                    </button>
+                  )}
+                </div>
+
+                {isCountryWeatherLoading ? (
+                  <div className="py-4 flex items-center justify-center text-xs font-mono text-black/40 dark:text-white/40">
+                    LOADING CONDITIONS...
+                  </div>
+                ) : countryWeather ? (
+                  <>
+                    <div className="pt-2 flex items-center justify-between">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl sm:text-4xl font-extrabold font-sans tracking-tight text-black dark:text-white leading-none">
+                          {countryWeather.temp}°
+                        </span>
+                        <span className="text-xs font-mono font-bold text-black/60 dark:text-white/60 uppercase">
+                          {getWeatherMeta(countryWeather.weatherCode).label}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-right">
+                        {(() => {
+                          const { icon: WeatherIcon, colorClass } = getWeatherMeta(countryWeather.weatherCode);
+                          return <WeatherIcon className={`w-6 h-6 stroke-[2] ${colorClass}`} />;
+                        })()}
+                        <div className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50">
+                          <div>H:{countryWeather.tempMax}° L:{countryWeather.tempMin}°</div>
+                          <div className="text-[9px] text-black/40 dark:text-white/40">{countryWeather.localTime} LOCAL</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 7-Day Forecast Expandable Accordion */}
+                    {isCountryForecastOpen && countryWeather.forecast && (
+                      <div className="mt-3 pt-3 border-t border-black/10 dark:border-white/10 grid grid-cols-4 sm:grid-cols-7 gap-1.5 animate-in fade-in duration-150">
+                        {countryWeather.forecast.slice(0, 7).map((item, fIdx) => {
+                          const { icon: FIcon, colorClass } = getWeatherMeta(item.weatherCode);
+                          const isToday = fIdx === 0;
+
+                          return (
+                            <div 
+                              key={`country-f-${item.date}`}
+                              className={`p-1.5 rounded-lg flex flex-col items-center justify-between text-center gap-1 ${
+                                isToday 
+                                  ? 'bg-black/5 dark:bg-white/10 font-bold border border-black/10 dark:border-white/20' 
+                                  : 'bg-white/40 dark:bg-black/20'
+                              }`}
+                            >
+                              <span className={`text-[8.5px] font-mono ${isToday ? 'font-black text-red-600 dark:text-red-400' : 'text-black/50 dark:text-white/50'}`}>
+                                {isToday ? 'TODAY' : item.dayOfWeek}
+                              </span>
+                              <FIcon className={`w-3.5 h-3.5 stroke-[2] ${colorClass}`} />
+                              <span className="text-[8.5px] font-mono font-bold text-black/80 dark:text-white/80 leading-none">
+                                {item.tempMax}°
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="py-2 text-xs font-mono text-black/40 dark:text-white/40 text-center">
+                    WEATHER UNAVAILABLE
+                  </div>
+                )}
               </div>
             </div>
 

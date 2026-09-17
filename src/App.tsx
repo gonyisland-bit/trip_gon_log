@@ -2724,6 +2724,7 @@ function App() {
                     homeMagazineSectionId={homeMagazineSectionId}
                     homeMagazineLimit={homeMagazineLimit}
                     timelineData={timelineData}
+                    isAdmin={isAdmin}
                   />
                 </div>
               )}
