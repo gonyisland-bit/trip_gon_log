@@ -1345,9 +1345,9 @@ export function CalendarHubPage({
       {/* Top Banner & Swiss Minimal Typography Header                  */}
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 pt-8 sm:pt-12 pb-6 border-b border-black/10 dark:border-white/10">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 sm:gap-6">
-          {/* Left: Giant Typography Year & Month + < TODAY > Navigation (같은 줄에 배치하여 모바일 공간 낭비 최적화) */}
-          <div className="w-full md:w-auto">
+        <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4 sm:gap-6">
+          {/* Left: Giant Typography Year & Month + < TODAY > Navigation */}
+          <div className="w-full xl:w-auto">
             <div className="flex items-center gap-3 mb-1 text-red-600 dark:text-red-500 font-bold text-xs sm:text-sm tracking-[0.25em] uppercase font-mono">
               <CalendarIcon className="w-4 h-4" />
               <span>
@@ -1478,136 +1478,144 @@ export function CalendarHubPage({
             </div>
           </div>
 
-          {/* Unified Controls Block (모바일: 1줄 완전 통합 / 웹: [ < TODAY > ] 와 [ MONTH | YEAR ] 가 나란히 결합) */}
-          <div className="flex items-center justify-between md:justify-end gap-1 sm:gap-2 w-full md:w-auto shrink-0 flex-nowrap">
-            {/* 1. < TODAY > Navigation (h-7 sm:h-8 통일) */}
-            <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
-              <button
-                type="button"
-                onClick={viewMode === 'month' ? handlePrevMonth : () => setCurrentYear(prev => prev - 1)}
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
-                title={viewMode === 'month' ? "이전 달" : "이전 연도"}
-              >
-                <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </button>
+          {/* Unified Controls Block (모바일 & 좁은 웹: 2개 논리 그룹 분리 및 유연 래핑, 절대 잘리지 않음) */}
+          <div className="flex flex-wrap sm:flex-nowrap items-center justify-between xl:justify-end gap-2 sm:gap-3 w-full xl:w-auto">
+            {/* Group 1: Navigation & View Mode Switcher */}
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+              {/* 1. < TODAY > Navigation (h-7 sm:h-8 통일) */}
+              <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={viewMode === 'month' ? handlePrevMonth : () => setCurrentYear(prev => prev - 1)}
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
+                  title={viewMode === 'month' ? "이전 달" : "이전 연도"}
+                >
+                  <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </button>
 
-              <button
-                type="button"
-                onClick={handleGoToday}
-                className="h-7 sm:h-8 px-1.5 sm:px-2.5 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black text-black dark:text-white hover:text-white dark:hover:bg-white dark:hover:text-black text-[10px] sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center justify-center shrink-0"
-                title="오늘 날짜로 이동"
-              >
-                TODAY
-              </button>
+                <button
+                  type="button"
+                  onClick={handleGoToday}
+                  className="h-7 sm:h-8 px-2 sm:px-2.5 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black text-black dark:text-white hover:text-white dark:hover:bg-white dark:hover:text-black text-[10px] sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center justify-center shrink-0"
+                  title="오늘 날짜로 이동"
+                >
+                  TODAY
+                </button>
 
-              <button
-                type="button"
-                onClick={viewMode === 'month' ? handleNextMonth : () => setCurrentYear(prev => prev + 1)}
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
-                title={viewMode === 'month' ? "다음 달" : "다음 연도"}
-              >
-                <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </button>
+                <button
+                  type="button"
+                  onClick={viewMode === 'month' ? handleNextMonth : () => setCurrentYear(prev => prev + 1)}
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
+                  title={viewMode === 'month' ? "다음 달" : "다음 연도"}
+                >
+                  <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </button>
+              </div>
+
+              {/* 2. [ MONTH | YEAR ] View Mode Switcher (h-7 sm:h-8 통일, 모바일 최적화) */}
+              <div className="h-7 sm:h-8 flex items-center p-0.5 bg-black/5 dark:bg-white/10 rounded-full border border-black/10 dark:border-white/10 font-mono text-[10px] sm:text-xs font-bold shrink-0">
+                <button
+                  type="button"
+                  onClick={() => toggleViewMode('month')}
+                  className={`h-full px-2 sm:px-2.5 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
+                    viewMode === 'month'
+                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                      : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                  }`}
+                  title="월별 보기로 전환"
+                >
+                  <CalendarDays className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span className="hidden sm:inline">MONTH</span>
+                  <span className="inline sm:hidden">M</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleViewMode('year')}
+                  className={`h-full px-2 sm:px-2.5 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
+                    viewMode === 'year'
+                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                      : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                  }`}
+                  title="연간 보기로 전환 (3열 12개월)"
+                >
+                  <LayoutGrid className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span className="hidden sm:inline">YEAR</span>
+                  <span className="inline sm:hidden">Y</span>
+                </button>
+              </div>
             </div>
 
-            {/* 2. [ MONTH | YEAR ] View Mode Switcher (h-7 sm:h-8 통일) */}
-            <div className="h-7 sm:h-8 flex items-center p-0.5 bg-black/5 dark:bg-white/10 rounded-full border border-black/10 dark:border-white/10 font-mono text-[10px] sm:text-xs font-bold shrink-0">
+            {/* Group 2: Action Tools (Weather, Edit, New Trip) */}
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+              {/* 2.5 Weather Mode Toggle Button - Minimal Swiss Round Icon */}
               <button
                 type="button"
-                onClick={() => toggleViewMode('month')}
-                className={`h-full px-1.5 sm:px-2.5 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
-                  viewMode === 'month'
-                    ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
-                    : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-                }`}
-                title="월별 보기로 전환"
-              >
-                <CalendarDays className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>MONTH</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => toggleViewMode('year')}
-                className={`h-full px-1.5 sm:px-2.5 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
-                  viewMode === 'year'
-                    ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
-                    : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-                }`}
-                title="연간 보기로 전환 (3열 12개월)"
-              >
-                <LayoutGrid className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>YEAR</span>
-              </button>
-            </div>
-
-            {/* 2.5 Weather Mode Toggle Button - Minimal Swiss Round Icon */}
-            <button
-              type="button"
-              onClick={() => setIsWeatherMode(prev => !prev)}
-              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-xs ${
-                isWeatherMode
-                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white ring-2 ring-black/20 dark:ring-white/20'
-                  : 'bg-white/80 dark:bg-zinc-900/80 border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
-              }`}
-              title={isWeatherMode ? "날씨 모드 끄기" : "날씨 모드 켜기 (캘린더에 일별 날씨/기온 표시)"}
-            >
-              <Sun className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isWeatherMode ? 'text-amber-400 dark:text-amber-500' : ''}`} />
-            </button>
-
-            {/* 3. Edit Mode Toggle Button (h-7 sm:h-8 통일 - 모바일에서는 ON으로 축약하여 폭 확보) */}
-            {viewMode === 'month' && (
-              <button
-                type="button"
-                onClick={() => {
-                  setIsEditMode(prev => {
-                    const next = !prev;
-                    if (!next) {
-                      setSelectedRange(null);
-                    }
-                    return next;
-                  });
-                }}
-                className={`h-7 sm:h-8 px-2 sm:px-3 rounded-full border text-[10px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 shadow-xs ${
-                  isEditMode
-                    ? 'bg-red-600 text-white border-red-600 ring-2 ring-red-600/30'
+                onClick={() => setIsWeatherMode(prev => !prev)}
+                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-xs ${
+                  isWeatherMode
+                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white ring-2 ring-black/20 dark:ring-white/20'
                     : 'bg-white/80 dark:bg-zinc-900/80 border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
                 }`}
-                title={isEditMode ? "편집 모드 활성 (클릭 시 조회 전용 모드로 전환)" : "편집 모드 켜기 (날짜 선택 및 일정 등록)"}
+                title={isWeatherMode ? "날씨 모드 끄기" : "날씨 모드 켜기 (캘린더에 일별 날씨/기온 표시)"}
               >
-                <Edit3 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>
-                  {isEditMode ? (
-                    <>
-                      <span className="inline sm:hidden">ON</span>
-                      <span className="hidden sm:inline">EDIT: ON</span>
-                    </>
-                  ) : (
-                    'EDIT'
-                  )}
-                </span>
-                {isEditMode && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />}
+                <Sun className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isWeatherMode ? 'text-amber-400 dark:text-amber-500' : ''}`} />
               </button>
-            )}
 
-            {/* 4. Swiss Minimal NEW TRIP Button (모바일에서는 TRIP으로 축약) */}
-            {onCreateTrip && (
-              <button
-                type="button"
-                onClick={() => {
-                  const yyyy = currentYear;
-                  const mm = String(currentMonth + 1).padStart(2, '0');
-                  const dd = '01';
-                  onCreateTrip(`${yyyy}-${mm}-${dd}`);
-                }}
-                className="h-7 sm:h-8 px-2 sm:px-3 rounded-full bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 shadow-xs"
-                title="이 달을 기준으로 새로운 트립 생성"
-              >
-                <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>
-                  <span className="hidden sm:inline">NEW </span>TRIP
-                </span>
-              </button>
-            )}
+              {/* 3. Edit Mode Toggle Button */}
+              {viewMode === 'month' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditMode(prev => {
+                      const next = !prev;
+                      if (!next) {
+                        setSelectedRange(null);
+                      }
+                      return next;
+                    });
+                  }}
+                  className={`h-7 sm:h-8 px-2 sm:px-3 rounded-full border text-[10px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 shadow-xs ${
+                    isEditMode
+                      ? 'bg-red-600 text-white border-red-600 ring-2 ring-red-600/30'
+                      : 'bg-white/80 dark:bg-zinc-900/80 border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
+                  }`}
+                  title={isEditMode ? "편집 모드 활성 (클릭 시 조회 전용 모드로 전환)" : "편집 모드 켜기 (날짜 선택 및 일정 등록)"}
+                >
+                  <Edit3 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span>
+                    {isEditMode ? (
+                      <>
+                        <span className="inline sm:hidden">ON</span>
+                        <span className="hidden sm:inline">EDIT: ON</span>
+                      </>
+                    ) : (
+                      'EDIT'
+                    )}
+                  </span>
+                  {isEditMode && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />}
+                </button>
+              )}
+
+              {/* 4. Swiss Minimal NEW TRIP Button (절대 잘리지 않도록 shrink-0 및 든든한 패딩 유지) */}
+              {onCreateTrip && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const yyyy = currentYear;
+                    const mm = String(currentMonth + 1).padStart(2, '0');
+                    const dd = '01';
+                    onCreateTrip(`${yyyy}-${mm}-${dd}`);
+                  }}
+                  className="h-7 sm:h-8 px-2.5 sm:px-3 rounded-full bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 shadow-xs"
+                  title="이 달을 기준으로 새로운 트립 생성"
+                >
+                  <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span>
+                    <span className="hidden sm:inline">NEW </span>TRIP
+                  </span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
