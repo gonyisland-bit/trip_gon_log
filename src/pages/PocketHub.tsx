@@ -787,100 +787,106 @@ export function PocketHubPage({
         </div>
 
         {/* Right: Search, Filter, Sort & Action buttons */}
-        <div className="flex flex-wrap items-center justify-between md:justify-end gap-2 w-full md:w-auto">
-          {/* FILTER toggle button (Unified to Trip Tag icon standard) */}
-          <button
-            type="button"
-            onClick={() => setIsFilterOpen(prev => !prev)}
-            className={`text-[10px] sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-none transition-all flex items-center gap-1.5 cursor-pointer ${
-              isFilterOpen || activeFilterCount > 0
-                ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
-                : 'border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5 text-black dark:text-white'
-            }`}
-            title="필터"
-          >
-            <Tag className="w-3.5 h-3.5" />
-            <span>FILTER</span>
-            {activeFilterCount > 0 && (
-              <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
-            )}
-          </button>
-
-          {/* Search Button (Trip Standard: expands inline input) */}
-          <button
-            type="button"
-            onClick={() => {
-              setIsSearchInputOpen(v => !v);
-              if (isSearchInputOpen) setSearchQuery('');
-            }}
-            className={`p-2 border transition-colors flex items-center justify-center rounded-none cursor-pointer relative ${
-              isSearchInputOpen || searchQuery
-                ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
-                : 'border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-transparent text-black dark:text-white'
-            }`}
-            title="포켓 검색"
-          >
-            <Search className="w-3.5 h-3.5" />
-            {searchQuery && (
-              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-600" />
-            )}
-          </button>
-
-          {/* Inline Search Input */}
-          {isSearchInputOpen && (
-            <div className="relative flex items-center animate-in fade-in slide-in-from-left-2 duration-150">
-              <input
-                type="text"
-                autoFocus
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="장소, 지역 검색..."
-                className="w-28 sm:w-44 pl-2.5 pr-6 py-1.5 text-xs bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 font-sans font-medium outline-none text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 rounded-none"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white p-0.5 cursor-pointer"
-                  title="검색어 지우기"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Sort dropdown (Trip Standard native Swiss select) */}
-          <div className="flex items-center gap-1.5">
-            <ArrowUpDown className="w-3.5 h-3.5 text-black/60 dark:text-white/60 shrink-0" />
-            <select
-              value={sortMode}
-              onChange={(e) => setSortMode(e.target.value as any)}
-              className="bg-transparent text-[10px] sm:text-xs font-black uppercase tracking-widest border border-black/20 dark:border-white/20 px-2.5 py-1.5 focus:outline-none focus:border-black dark:focus:border-white transition-colors cursor-pointer rounded-none font-sans text-black dark:text-white"
-            >
-              <option value="custom" className="bg-[#F9F8F6] dark:bg-[#111111]">CUSTOM</option>
-              <option value="newest" className="bg-[#F9F8F6] dark:bg-[#111111]">NEWEST</option>
-              <option value="oldest" className="bg-[#F9F8F6] dark:bg-[#111111]">OLDEST</option>
-              <option value="title" className="bg-[#F9F8F6] dark:bg-[#111111]">A-Z</option>
-              <option value="category" className="bg-[#F9F8F6] dark:bg-[#111111]">CATEGORY</option>
-            </select>
-          </div>
-
-          {/* Admin Reorder Grip Button */}
-          {isAdmin && sortMode === 'custom' && (
+        <div className="flex flex-wrap items-center justify-between md:justify-end gap-2.5 w-full md:w-auto">
+          {/* Left Group on Mobile: FILTER + SEARCH close together (Trip Hub Standard) */}
+          <div className="flex items-center gap-2">
+            {/* FILTER toggle button (Unified to Trip Tag icon standard) */}
             <button
               type="button"
-              onClick={() => setIsReorderMode(prev => !prev)}
-              className={`p-1.5 border rounded-none transition-colors cursor-pointer shrink-0 ${
-                isReorderMode
+              onClick={() => setIsFilterOpen(prev => !prev)}
+              className={`text-[10px] sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-none transition-all flex items-center gap-1.5 cursor-pointer ${
+                isFilterOpen || activeFilterCount > 0
                   ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
-                  : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-black dark:hover:border-white'
+                  : 'border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5 text-black dark:text-white'
               }`}
-              title={isReorderMode ? "피드 순서 편집 활성" : "피드 순서 편집"}
+              title="필터"
             >
-              <GripVertical className="w-3.5 h-3.5" />
+              <Tag className="w-3.5 h-3.5" />
+              <span>FILTER</span>
+              {activeFilterCount > 0 && (
+                <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
+              )}
             </button>
-          )}
+
+            {/* Search Button (Trip Standard: expands inline input) */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsSearchInputOpen(v => !v);
+                if (isSearchInputOpen) setSearchQuery('');
+              }}
+              className={`p-2 border transition-colors flex items-center justify-center rounded-none cursor-pointer relative ${
+                isSearchInputOpen || searchQuery
+                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                  : 'border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-transparent text-black dark:text-white'
+              }`}
+              title="포켓 검색"
+            >
+              <Search className="w-3.5 h-3.5" />
+              {searchQuery && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-600" />
+              )}
+            </button>
+
+            {/* Inline Search Input */}
+            {isSearchInputOpen && (
+              <div className="relative flex items-center animate-in fade-in slide-in-from-left-2 duration-150">
+                <input
+                  type="text"
+                  autoFocus
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="장소, 지역 검색..."
+                  className="w-28 sm:w-44 pl-2.5 pr-6 py-1.5 text-xs bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 font-sans font-medium outline-none text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 rounded-none"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white p-0.5 cursor-pointer"
+                    title="검색어 지우기"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Right Group on Mobile: SORT + GRIP aligned right */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Sort dropdown (Trip Standard native Swiss select) */}
+            <div className="flex items-center gap-1.5">
+              <ArrowUpDown className="w-3.5 h-3.5 text-black/60 dark:text-white/60 shrink-0" />
+              <select
+                value={sortMode}
+                onChange={(e) => setSortMode(e.target.value as any)}
+                className="bg-transparent text-[10px] sm:text-xs font-black uppercase tracking-widest border border-black/20 dark:border-white/20 px-2.5 py-1.5 focus:outline-none focus:border-black dark:focus:border-white transition-colors cursor-pointer rounded-none font-sans text-black dark:text-white"
+              >
+                <option value="custom" className="bg-[#F9F8F6] dark:bg-[#111111]">CUSTOM</option>
+                <option value="newest" className="bg-[#F9F8F6] dark:bg-[#111111]">NEWEST</option>
+                <option value="oldest" className="bg-[#F9F8F6] dark:bg-[#111111]">OLDEST</option>
+                <option value="title" className="bg-[#F9F8F6] dark:bg-[#111111]">A-Z</option>
+                <option value="category" className="bg-[#F9F8F6] dark:bg-[#111111]">CATEGORY</option>
+              </select>
+            </div>
+
+            {/* Admin Reorder Grip Button */}
+            {isAdmin && sortMode === 'custom' && (
+              <button
+                type="button"
+                onClick={() => setIsReorderMode(prev => !prev)}
+                className={`p-1.5 border rounded-none transition-colors cursor-pointer shrink-0 ${
+                  isReorderMode
+                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                    : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-black dark:hover:border-white'
+                }`}
+                title={isReorderMode ? "피드 순서 편집 활성" : "피드 순서 편집"}
+              >
+                <GripVertical className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
 
           {/* ADD (Primary CTA) - Standardized with Trip Hub, full width on mobile */}
           <button

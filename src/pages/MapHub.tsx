@@ -862,7 +862,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currency: 'USD',
     currencySymbol: '$',
     rateToKRW: 1380,
-    cities: ['TUMON', 'HAGATNA', 'TAMUNING'],
+    cities: ['GUAM', '괌', 'TUMON', 'HAGATNA', 'TAMUNING'],
     center: [13.4757, 144.7489], // Hagatna
     zoom: 11,
     continent: 'Oceania',
@@ -875,7 +875,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currency: 'USD',
     currencySymbol: '$',
     rateToKRW: 1380,
-    cities: ['GARAPAN', 'MARPI', 'SUSUPE'],
+    cities: ['SAIPAN', '사이판', 'GARAPAN', 'MARPI', 'SUSUPE'],
     center: [15.1850, 145.7467], // Saipan
     zoom: 11,
     continent: 'Oceania',
@@ -1273,26 +1273,76 @@ export const CITY_KO_MAP: Record<string, string> = {
   '사이판': 'SAIPAN',
 };
 
-export function findCountryForGroup(countryStr?: string, cityStr?: string): CountryInfo | undefined {
-  if (!countryStr && !cityStr) return undefined;
+export function findCountryForGroup(
+  countryStr?: string, 
+  cityStr?: string, 
+  coords?: { lat: number; lng: number }
+): CountryInfo | undefined {
+  if (!countryStr && !cityStr && !coords) return undefined;
   const cClean = (countryStr || '').toUpperCase().trim();
   const cityClean = (cityStr || '').toUpperCase().trim();
 
-  // 1. Direct code or name match
-  let found = COUNTRIES_DATA.find(c => 
-    c.code === cClean || 
-    c.name.toUpperCase() === cClean || 
-    c.nameKo === countryStr ||
-    cClean.includes(c.name.toUpperCase()) ||
-    (countryStr && countryStr.includes(c.nameKo))
-  );
-  if (found) return found;
+  // 0. Explicit territory & city-state fast mapping (GUAM, SAIPAN, etc.)
+  if (cityClean === 'GUAM' || cityClean.includes('GUAM') || cityStr?.includes('괌')) {
+    const guam = COUNTRIES_DATA.find(c => c.code === 'GU');
+    if (guam) return guam;
+  }
+  if (cityClean === 'SAIPAN' || cityClean.includes('SAIPAN') || cityStr?.includes('사이판')) {
+    const saipan = COUNTRIES_DATA.find(c => c.code === 'MP');
+    if (saipan) return saipan;
+  }
 
-  // 2. City name match
-  found = COUNTRIES_DATA.find(c =>
-    c.cities.some(cty => cty.toUpperCase() === cityClean || cityClean.includes(cty.toUpperCase()))
-  );
-  return found;
+  // 1. Direct code or name match by country string
+  if (cClean) {
+    let found = COUNTRIES_DATA.find(c => 
+      c.code === cClean || 
+      c.name.toUpperCase() === cClean || 
+      c.nameKo === countryStr ||
+      cClean.includes(c.name.toUpperCase()) ||
+      (countryStr && countryStr.includes(c.nameKo))
+    );
+    if (found) return found;
+  }
+
+  // 2. Direct name match by city string (for city-states or island destinations)
+  if (cityClean) {
+    let found = COUNTRIES_DATA.find(c =>
+      c.name.toUpperCase() === cityClean ||
+      c.nameKo === cityStr ||
+      cityClean.includes(c.name.toUpperCase()) ||
+      (cityStr && cityStr.includes(c.nameKo))
+    );
+    if (found) return found;
+  }
+
+  // 3. City name in country's cities list match
+  if (cityClean) {
+    let found = COUNTRIES_DATA.find(c =>
+      c.cities.some(cty => cty.toUpperCase() === cityClean || cityClean.includes(cty.toUpperCase()))
+    );
+    if (found) return found;
+  }
+
+  // 4. Proximity fallback by coordinates
+  if (coords && typeof coords.lat === 'number' && typeof coords.lng === 'number') {
+    let closest: CountryInfo | null = null;
+    let minDeg = Infinity;
+    for (const c of COUNTRIES_DATA) {
+      let diffLng = Math.abs(coords.lng - c.center[1]);
+      while (diffLng > 180) diffLng = Math.abs(diffLng - 360);
+      const degDist = Math.hypot(coords.lat - c.center[0], diffLng);
+      if (degDist < minDeg) {
+        minDeg = degDist;
+        closest = c;
+      }
+    }
+    // Match if within ~350km (~3.5 degrees)
+    if (closest && minDeg < 3.5) {
+      return closest;
+    }
+  }
+
+  return undefined;
 }
 
 // Country Code to IANA Timezone mapping
@@ -2680,7 +2730,7 @@ export function MapHubPage({
       const addPinMarkerAt = (lat: number, lng: number) => {
         const marker = L.marker([lat, lng], { icon }).addTo(map);
         marker.on('click', () => {
-          const c = findCountryForGroup(group.country, group.city);
+          const c = findCountryForGroup(group.country, group.city, { lat: group.lat, lng: group.lng });
           if (c) {
             handleSelectCountryRef.current(c);
           } else {
