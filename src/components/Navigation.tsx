@@ -42,6 +42,7 @@ export function Navigation({
     setShowSettings(false);
     if (window.confirm("로그아웃 하시겠습니까?")) {
       await signOut(auth);
+      navigateTo('home');
     }
   };
 

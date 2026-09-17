@@ -5198,26 +5198,23 @@ export function JourneyDetailPage({
                 <div 
                   ref={el => { itemRefs.current[imgItem.id] = el; }}
                   key={`${imgItem.type}-${imgItem.url}-${idx}`} 
-                  className={`h-full flex flex-col group/gallery transition-all duration-200 relative border select-none opacity-100 ${
+                  onClick={() => {
+                    setExpandedItemId(prev => prev === imgItem.id ? null : imgItem.id);
+                  }}
+                  onDoubleClick={() => {
+                    const globalIdx = galleryUrlIndexMap.get(imgItem.url) ?? 0;
+                    setLightboxIndex(globalIdx);
+                    setExpandedItemId(imgItem.id);
+                    setIsLightboxOpen(true);
+                  }}
+                  className={`h-full flex flex-col group/gallery transition-all duration-200 relative cursor-pointer select-none opacity-100 ${
                     isPhotoActive 
-                      ? 'bg-black/[0.05] dark:bg-white/[0.08] ring-1 ring-inset ring-black/20 dark:ring-white/25 border-black/30 dark:border-white/30 shadow-xs' 
-                      : 'border-black/15 dark:border-white/15 bg-white dark:bg-[#0E0E0E] hover:bg-black/[0.015] dark:hover:bg-white/[0.015]'
+                      ? 'bg-black/[0.04] dark:bg-white/[0.06] ring-1 ring-inset ring-black/40 dark:ring-white/40 z-10' 
+                      : 'bg-white dark:bg-[#0E0E0E] hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
                   }`}
                 >
                   {/* Film-photo styled image container */}
-                  <div
-                    className="relative overflow-hidden border-b border-black/10 dark:border-white/10 transition-all duration-300 cursor-pointer aspect-[4/3] group shrink-0"
-                    onClick={() => {
-                      setExpandedItemId(prev => prev === imgItem.id ? null : imgItem.id);
-                    }}
-                    onDoubleClick={(e) => {
-                      e.stopPropagation();
-                      const globalIdx = galleryUrlIndexMap.get(imgItem.url) ?? 0;
-                      setLightboxIndex(globalIdx);
-                      setExpandedItemId(imgItem.id);
-                      setIsLightboxOpen(true);
-                    }}
-                  >
+                  <div className="relative overflow-hidden border-b border-black/10 dark:border-white/10 transition-all duration-300 aspect-[4/3] group shrink-0">
                     <img
                       src={imgItem.url}
                       alt={imgItem.place || 'Gallery Photo'}
@@ -5283,12 +5280,15 @@ export function JourneyDetailPage({
                   <div className="px-3 py-2.5 flex-1 flex flex-col justify-between gap-1 transition-colors duration-200 bg-transparent text-black dark:text-white">
                     {/* Top Meta: Date and Time */}
                     {imgItem.date && (
-                      <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider not-italic text-black/60 dark:text-white/60">
-                        <span>{imgItem.date}</span>
+                      <div 
+                        className="flex items-center gap-1 text-[10px] sm:text-[10.5px] font-mono font-medium text-black/50 dark:text-white/50 whitespace-nowrap truncate min-w-0"
+                        title={`${imgItem.date}${imgItem.time ? ' · ' + imgItem.time : ''}`}
+                      >
+                        <span className="truncate">{imgItem.date}</span>
                         {imgItem.time && (
                           <>
-                            <span className="text-black/30 dark:text-white/30">·</span>
-                            <span>{imgItem.time}</span>
+                            <span className="text-black/30 dark:text-white/30 shrink-0">·</span>
+                            <span className="shrink-0">{imgItem.time}</span>
                           </>
                         )}
                       </div>
@@ -5472,7 +5472,7 @@ export function JourneyDetailPage({
                       if (items.length === 0) return null;
 
                       return (
-                        <div key={date} className="w-full border-b border-black/15 dark:border-white/15">
+                        <div key={date} className="w-full border-b border-black/10 dark:border-white/10">
                           <button
                             onClick={() => {
                               if (isCollapsed) {
@@ -5493,7 +5493,7 @@ export function JourneyDetailPage({
                             </span>
                           </button>
                           {!isCollapsed && (
-                            <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 md:grid-cols-2 gap-[1px]' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[1px]'} bg-black/15 dark:bg-white/15 border-b border-black/15 dark:border-white/15`}>
+                            <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 md:grid-cols-2 gap-px' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-px'} bg-black/10 dark:bg-white/10 border-b border-black/10 dark:border-white/10`}>
                               {items.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
                             </div>
                           )}
@@ -5506,7 +5506,7 @@ export function JourneyDetailPage({
                       const items = galleryGroups['NO_DATE'];
                       const isCollapsed = collapsedGalleryDays.includes('NO_DATE');
                       return (
-                        <div className="w-full border-b border-black/15 dark:border-white/15">
+                        <div className="w-full border-b border-black/10 dark:border-white/10">
                           <button
                             onClick={() => {
                               if (isCollapsed) {
@@ -5523,7 +5523,7 @@ export function JourneyDetailPage({
                             </span>
                           </button>
                           {!isCollapsed && (
-                            <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 md:grid-cols-2 gap-[1px]' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[1px]'} bg-black/15 dark:bg-white/15 border-b border-black/15 dark:border-white/15`}>
+                            <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 md:grid-cols-2 gap-px' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-px'} bg-black/10 dark:bg-white/10 border-b border-black/10 dark:border-white/10`}>
                               {items.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
                             </div>
                           )}
@@ -5533,7 +5533,7 @@ export function JourneyDetailPage({
                   </div>
                 ) : (
                   /* Timeline Grid View */
-                  <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 md:grid-cols-2 gap-[1px]' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-[1px]'} bg-black/15 dark:bg-white/15 border-b border-black/15 dark:border-white/15`}>
+                  <div className={`grid ${galleryColumns === 2 ? 'grid-cols-1 md:grid-cols-2 gap-px' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-px'} bg-black/10 dark:bg-white/10 border-b border-black/10 dark:border-white/10`}>
                     {allGalleryImages.map((imgMeta, index) => renderGalleryItem(imgMeta, index))}
                   </div>
                 )}

@@ -15,9 +15,10 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialMode?: 'login' | 'signup';
+  onSuccess?: () => void;
 }
 
-export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }: AuthModalProps) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -118,6 +119,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
         await signInWithEmailAndPassword(auth, email.trim(), password);
       }
       setIsConfirmOpen(false);
+      onSuccess?.();
       onClose();
     } catch (err: any) {
       console.error(err);

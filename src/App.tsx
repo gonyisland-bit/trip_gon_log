@@ -252,6 +252,7 @@ function App() {
   const [createDateInitial, setCreateDateInitial] = useState<string>('');
   const [mapBuilderRequested, setMapBuilderRequested] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
+  const initialAuthCheckedRef = useRef<boolean>(false);
   
   // Hydrate from localStorage cache for instant 0ms mobile launch
   const [trips, setTrips] = useState<Trip[]>(() => {
@@ -990,10 +991,14 @@ function App() {
       if (user) {
         setIsLoggedIn(true);
         localStorage.setItem('isLoggedIn', 'true');
+        if (initialAuthCheckedRef.current) {
+          setCurrentView('home');
+        }
       } else {
         setIsLoggedIn(false);
         localStorage.removeItem('isLoggedIn');
       }
+      initialAuthCheckedRef.current = true;
       setIsAuthReady(true);
     });
 
@@ -2974,6 +2979,7 @@ function App() {
             isOpen={isAuthModalOpen} 
             onClose={() => setIsAuthModalOpen(false)} 
             initialMode={authModalMode}
+            onSuccess={() => setCurrentView('home')}
           />
 
           {/* Settings Modal Popup */}
