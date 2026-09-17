@@ -8,7 +8,7 @@ import {
   SlidersHorizontal, ArrowUpDown, ChevronDown, GripVertical, ArrowUp, ArrowDown,
   Tag
 } from 'lucide-react';
-import { SpotPocketItem, PocketCategory, Trip, Plan, TimelineItem, PocketComment } from '../types';
+import { SpotPocketItem, PocketCategory, Trip, Plan, TimelineItem, PocketComment, UserProfile } from '../types';
 import { getSavedPockets, savePockets, detectPlatform, subscribePockets, getOrCreateGuestId, toggleSpotLike } from '../utils/pocketStorage';
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -27,6 +27,7 @@ interface PocketHubPageProps {
   isLoggedIn: boolean;
   isAdmin: boolean;
   isDarkMode: boolean;
+  currentUserProfile?: UserProfile | null;
   onOpenAuthModal?: () => void;
 }
 
@@ -191,6 +192,7 @@ export function PocketHubPage({
   isLoggedIn,
   isAdmin,
   isDarkMode,
+  currentUserProfile,
   onOpenAuthModal,
 }: PocketHubPageProps) {
   const [spots, setSpots] = useState<SpotPocketItem[]>(() => getSavedPockets());
@@ -1724,6 +1726,7 @@ export function PocketHubPage({
         onSaveComments={handleSaveSpotComments}
         isLoggedIn={isLoggedIn}
         currentUser={auth.currentUser}
+        currentUserProfile={currentUserProfile}
         onOpenAuthModal={onOpenAuthModal}
       />
 

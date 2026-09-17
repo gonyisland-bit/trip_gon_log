@@ -5,7 +5,7 @@ import {
   Navigation, Utensils, Coffee, Camera, ShoppingBag, Lightbulb,
   MessageSquare, Send, Check
 } from 'lucide-react';
-import { SpotPocketItem, PocketCategory, PocketComment } from '../types';
+import { SpotPocketItem, PocketCategory, PocketComment, UserProfile } from '../types';
 
 interface PocketDetailModalProps {
   isOpen: boolean;
@@ -20,6 +20,7 @@ interface PocketDetailModalProps {
   onSaveComments?: (spotId: string, comments: PocketComment[]) => void;
   isLoggedIn?: boolean;
   currentUser?: { uid?: string; displayName?: string | null; email?: string | null } | null;
+  currentUserProfile?: UserProfile | null;
   onOpenAuthModal?: () => void;
 }
 
@@ -44,6 +45,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
   onSaveComments,
   isLoggedIn = false,
   currentUser,
+  currentUserProfile,
   onOpenAuthModal,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -357,7 +359,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
                         if (e.key === 'Enter') {
                           e.preventDefault();
                           if (!quickCommentText.trim()) return;
-                          const authorDisplayName = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'USER';
+                          const authorDisplayName = currentUserProfile?.username || currentUser?.displayName || currentUser?.email?.split('@')[0] || 'USER';
                           const newComment: PocketComment = {
                             id: `comment-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
                             text: quickCommentText.trim(),
@@ -378,7 +380,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
                       disabled={!quickCommentText.trim()}
                       onClick={() => {
                         if (!quickCommentText.trim()) return;
-                        const authorDisplayName = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'USER';
+                        const authorDisplayName = currentUserProfile?.username || currentUser?.displayName || currentUser?.email?.split('@')[0] || 'USER';
                         const newComment: PocketComment = {
                           id: `comment-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
                           text: quickCommentText.trim(),

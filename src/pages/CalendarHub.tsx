@@ -2069,24 +2069,22 @@ export function CalendarHubPage({
                 if (!cell.isCurrentMonth) {
                   circleClasses += ' opacity-20 text-black/40 dark:text-white/40 hover:opacity-40';
                 } else if (cell.isToday) {
-                  // 오늘 날짜: 인터내셔널 오렌지/레드 고유 포인트 컬러
-                  circleClasses += ' bg-[#FF4500] text-white font-black shadow-sm';
+                  // 오늘 날짜: 예전처럼 테두리 없는 반전 상태 (블랙)
+                  circleClasses += ' bg-black text-white dark:bg-white dark:text-black font-black shadow-sm';
                   if (isSelected) {
-                    circleClasses += ' ring-2 ring-black dark:ring-white scale-105 shadow-md z-20';
-                  } else {
-                    circleClasses += ' ring-2 ring-[#FF4500]/40';
+                    circleClasses += ' ring-[2.5px] ring-black dark:ring-white ring-offset-2 scale-105 z-20';
                   }
-                  textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-black leading-none text-white';
+                  textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-black leading-none';
                 } else if (hasTrip) {
-                  // 여정 날짜: 오렌지 알약 위 텍스트 + 선택 시 링 강조
+                  // 여정 날짜: 오렌지 알약 위 텍스트 + 선택 시 여백 없이 핏되는 인셋 링
                   circleClasses += ' text-white font-black hover:opacity-95';
                   if (isSelected) {
-                    circleClasses += ' ring-2 ring-black dark:ring-white scale-105 shadow-lg z-20';
+                    circleClasses += ' ring-[2.5px] ring-inset ring-white shadow-md z-20';
                   }
                   textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-black leading-none text-white';
                 } else if (isSelected) {
-                  // 선택 날짜: 테두리와 내부 은은한 색상 적용 (날씨 온전 표기 및 다크모드 가림 방지)
-                  circleClasses += ' bg-black/10 dark:bg-white/15 text-black dark:text-white font-black ring-2 ring-black dark:ring-white scale-105 shadow-md z-20';
+                  // 선택 날짜: 테두리 진하고 약간 더 두껍게 (ring-[2.5px]) + 내부 은은한 모노크롬 색상
+                  circleClasses += ' bg-black/10 dark:bg-white/15 text-black dark:text-white font-black ring-[2.5px] ring-black dark:ring-white scale-105 shadow-md z-20';
                   textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-black leading-none text-black dark:text-white';
                 } else if (isInRange) {
                   circleClasses += ' bg-red-600/20 ring-2 ring-red-600 text-red-600 dark:text-red-400 font-black';
@@ -2103,25 +2101,43 @@ export function CalendarHubPage({
                   }
                 }
 
+                const ribbonColor = isPlan ? 'bg-amber-500' : 'bg-[#FF4500] dark:bg-[#FF4500]';
+
                 return (
                   <div
                     key={cell.dateStr}
                     data-calendar-date={cell.dateStr}
                     className="relative flex items-center justify-center h-14 sm:h-16 md:h-20 lg:h-22 w-full"
                   >
-                    {/* Multi-day Trip Capsule Ribbon (날짜 원형 버튼과 1:1로 완벽히 일치하는 알약 라운드) */}
+                    {/* Multi-day Trip Capsule Ribbon (날짜 원형과 100% 일치하는 정원 + 연결 바로 틈 없는 완벽 핏) */}
                     {hasTrip && cell.isCurrentMonth && (
-                      <div
-                        className={`absolute top-1/2 -translate-y-1/2 h-10 sm:h-12 md:h-14 lg:h-16 z-0 ${
-                          !prevInRowHasSameTrip && !nextInRowHasSameTrip
-                            ? 'left-1/2 -translate-x-1/2 w-10 sm:w-12 md:w-14 lg:w-16 rounded-full'
-                            : !prevInRowHasSameTrip && nextInRowHasSameTrip
-                              ? 'left-1/2 -ml-5 sm:-ml-6 md:-ml-7 lg:-ml-8 right-0 rounded-l-full'
-                              : prevInRowHasSameTrip && !nextInRowHasSameTrip
-                                ? 'left-0 right-1/2 -mr-5 sm:-mr-6 md:-mr-7 lg:-mr-8 rounded-r-full'
-                                : 'left-0 right-0 rounded-none'
-                        } ${isPlan ? 'bg-amber-500' : 'bg-[#FF4500] dark:bg-[#FF4500]'}`}
-                      />
+                      <div className="absolute inset-0 pointer-events-none z-0">
+                        {/* 1. 단일일 여정: 날짜 원형과 동일한 단일 정원 */}
+                        {!prevInRowHasSameTrip && !nextInRowHasSameTrip && (
+                          <div className={`absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-10 sm:w-12 md:w-14 lg:w-16 h-10 sm:h-12 md:h-14 lg:h-16 rounded-full ${ribbonColor}`} />
+                        )}
+
+                        {/* 2. 여정 시작일: 원형 버튼과 100% 동일한 정원 베이스 + 오른쪽 확장 바 */}
+                        {!prevInRowHasSameTrip && nextInRowHasSameTrip && (
+                          <>
+                            <div className={`absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-10 sm:w-12 md:w-14 lg:w-16 h-10 sm:h-12 md:h-14 lg:h-16 rounded-full ${ribbonColor}`} />
+                            <div className={`absolute top-1/2 -translate-y-1/2 left-1/2 right-0 h-10 sm:h-12 md:h-14 lg:h-16 ${ribbonColor}`} />
+                          </>
+                        )}
+
+                        {/* 3. 여정 종료일: 왼쪽 확장 바 + 원형 버튼과 100% 동일한 정원 베이스 */}
+                        {prevInRowHasSameTrip && !nextInRowHasSameTrip && (
+                          <>
+                            <div className={`absolute top-1/2 -translate-y-1/2 left-0 right-1/2 h-10 sm:h-12 md:h-14 lg:h-16 ${ribbonColor}`} />
+                            <div className={`absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-10 sm:w-12 md:w-14 lg:w-16 h-10 sm:h-12 md:h-14 lg:h-16 rounded-full ${ribbonColor}`} />
+                          </>
+                        )}
+
+                        {/* 4. 여정 중간일: 셀 전체를 채우는 직사각형 바 */}
+                        {prevInRowHasSameTrip && nextInRowHasSameTrip && (
+                          <div className={`absolute top-1/2 -translate-y-1/2 left-0 right-0 h-10 sm:h-12 md:h-14 lg:h-16 ${ribbonColor}`} />
+                        )}
+                      </div>
                     )}
 
                     {/* Interactive Circular Day Button */}
@@ -2155,7 +2171,7 @@ export function CalendarHubPage({
                         }
 
                         const { icon: WeatherIconComponent, colorClass } = getWeatherMeta(weatherItem.weatherCode, weatherItem.precipitationProb);
-                        const isOrangeBg = hasTrip || cell.isToday;
+                        const isOrangeBg = hasTrip;
 
                         return (
                           <div className="flex flex-col items-center justify-between h-full w-full py-1 sm:py-1.5 pointer-events-none select-none">
@@ -2163,19 +2179,23 @@ export function CalendarHubPage({
                             <span className={`text-[9px] sm:text-[10px] md:text-[11px] font-mono leading-none ${
                               isOrangeBg 
                                 ? 'text-white font-black' 
-                                : isSelected 
-                                  ? 'text-black dark:text-white font-black' 
-                                  : 'text-black/70 dark:text-white/70 font-bold'
+                                : cell.isToday
+                                  ? 'text-white dark:text-black font-black'
+                                  : isSelected 
+                                    ? 'text-black dark:text-white font-black' 
+                                    : 'text-black/70 dark:text-white/70 font-bold'
                             }`}>
                               {cell.dayNum}
                             </span>
 
-                            {/* 2. 중앙 메인: 날씨 아이콘 (오렌지 배경은 고대비 흰색, 선택/일반 셀은 고유 날씨 컬러 온전 표기) */}
+                            {/* 2. 중앙 메인: 날씨 아이콘 */}
                             <div className="my-auto flex items-center justify-center">
                               <WeatherIconComponent className={`w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 shrink-0 ${
                                 isOrangeBg 
                                   ? 'text-white stroke-[2.4] drop-shadow-xs' 
-                                  : `${colorClass} stroke-[2.2]`
+                                  : cell.isToday
+                                    ? 'text-white dark:text-black stroke-[2.4]'
+                                    : `${colorClass} stroke-[2.2]`
                               }`} />
                             </div>
 
@@ -2183,9 +2203,11 @@ export function CalendarHubPage({
                             <span className={`text-[7.5px] sm:text-[8.5px] md:text-[9.5px] font-mono tracking-tighter leading-none ${
                               isOrangeBg 
                                 ? 'text-white font-black' 
-                                : isSelected 
-                                  ? 'text-black dark:text-white font-black' 
-                                  : 'text-black/75 dark:text-white/75 font-bold'
+                                : cell.isToday
+                                  ? 'text-white dark:text-black font-black'
+                                  : isSelected 
+                                    ? 'text-black dark:text-white font-black' 
+                                    : 'text-black/75 dark:text-white/75 font-bold'
                             }`}>
                               {weatherItem.tempMin}°/{weatherItem.tempMax}°
                             </span>

@@ -2920,6 +2920,7 @@ function App() {
                     isLoggedIn={isLoggedIn}
                     isAdmin={isAdmin}
                     isDarkMode={isDarkMode}
+                    currentUserProfile={currentUserProfile}
                     onOpenAuthModal={() => { setAuthModalMode('login'); setIsAuthModalOpen(true); }}
                   />
                 </div>

@@ -6,7 +6,7 @@ import {
   createUserWithEmailAndPassword,
   updateProfile
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { ConfirmModal } from './ConfirmModal';
 import { UserProfile } from '../types';
@@ -24,7 +24,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
-  const [profileIcon, setProfileIcon] = useState('smile');
+  const [profileIcon, setProfileIcon] = useState('user');
   const [lastName, setLastName] = useState('');
   const [firstName, setFirstName] = useState('');
   const [birthdate, setBirthdate] = useState('');
@@ -34,18 +34,20 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
   const [loading, setLoading] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
+  // Sync mode when initialMode changes or modal opens
   React.useEffect(() => {
     if (isOpen) {
       setIsSignUp(initialMode === 'signup');
-      setError('');
       setEmail('');
       setPassword('');
       setUsername('');
-      setProfileIcon('smile');
+      setProfileIcon('user');
       setLastName('');
       setFirstName('');
       setBirthdate('');
       setPhone('');
+      setError('');
+      setLoading(false);
       setIsConfirmOpen(false);
     }
   }, [isOpen, initialMode]);
@@ -63,7 +65,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
 
   if (!isOpen) return null;
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -72,12 +74,50 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
         setError('성(Last Name)과 이름(First Name)을 모두 입력해 주세요.');
         return;
       }
+      if (!username.trim()) {
+        setError('아이디(USERNAME)를 입력해 주세요.');
+        return;
+      }
       if (!email.trim() || !password.trim()) {
         setError('이메일과 비밀번호를 입력해 주세요.');
         return;
       }
-      // Open confirm modal for sign up
-      setIsConfirmOpen(true);
+      if (password.length < 6) {
+        setError('비밀번호는 최소 6자 이상이어야 합니다.');
+        return;
+      }
+
+      // Pre-check duplicate email and username in Firestore
+      setLoading(true);
+      const cleanEmail = email.trim().toLowerCase();
+      const cleanUsername = username.trim().toLowerCase();
+
+      try {
+        // 1. Username duplicate check
+        const usernameQuery = query(collection(db, 'users'), where('username', '==', cleanUsername));
+        const usernameSnap = await getDocs(usernameQuery);
+        if (!usernameSnap.empty) {
+          setError('이미 사용 중인 아이디입니다. 다른 아이디를 입력해 주세요.');
+          setLoading(false);
+          return;
+        }
+
+        // 2. Email duplicate check in users collection
+        const emailQuery = query(collection(db, 'users'), where('email', '==', cleanEmail));
+        const emailSnap = await getDocs(emailQuery);
+        if (!emailSnap.empty) {
+          setError('이미 등록된 이메일 계정입니다.');
+          setLoading(false);
+          return;
+        }
+
+        setLoading(false);
+        setIsConfirmOpen(true);
+      } catch (checkErr) {
+        console.warn('Pre-check error, proceeding to Auth:', checkErr);
+        setLoading(false);
+        setIsConfirmOpen(true);
+      }
     } else {
       executeAuth(false);
     }
@@ -89,8 +129,21 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
 
     try {
       if (isCreatingAccount) {
+        const cleanEmail = email.trim().toLowerCase();
+        const cleanUsername = username.trim().toLowerCase();
+
+        // Double check username right before creation
+        const usernameQuery = query(collection(db, 'users'), where('username', '==', cleanUsername));
+        const usernameSnap = await getDocs(usernameQuery);
+        if (!usernameSnap.empty) {
+          setError('이미 사용 중인 아이디입니다. 다른 아이디를 입력해 주세요.');
+          setIsConfirmOpen(false);
+          setLoading(false);
+          return;
+        }
+
         // 1. Create Firebase Auth user
-        const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+        const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
         const user = userCredential.user;
 
         const fullName = `${lastName.trim()} ${firstName.trim()}`;
@@ -98,16 +151,15 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
           displayName: fullName
         });
 
-        const cleanEmail = email.trim().toLowerCase();
         const isSuper = cleanEmail === 'gonyisland@naver.com';
 
         // 2. Save UserProfile to Firestore users collection
         const newProfile: UserProfile = {
           uid: user.uid,
           email: cleanEmail,
-          username: username.trim() || cleanEmail.split('@')[0],
+          username: cleanUsername,
           profileType: 'icon',
-          profileIcon: profileIcon || 'smile',
+          profileIcon: profileIcon || 'user',
           lastName: lastName.trim(),
           firstName: firstName.trim(),
           birthdate: birthdate.trim(),
@@ -260,7 +312,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
                   type="text" 
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="traveler99 (미입력 시 이메일 앞자리 자동 지정)"
+                  placeholder="아이디 입력 (중복 불가 고유 아이디)"
                   className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
                 />
               </div>

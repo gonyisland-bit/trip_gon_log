@@ -9,6 +9,8 @@ import { ConfirmModal } from './ConfirmModal';
 import { PROFILE_PRESET_ICONS, UserProfileAvatar } from './UserProfileAvatar';
 import { uploadFileToR2 } from '../utils/storageHelper';
 import { compressImage } from '../utils/imageHelper';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
 
 interface ProfileEditModalProps {
   isOpen: boolean;
@@ -164,13 +166,32 @@ export function ProfileEditModal({
     }
   };
 
-  const handleSaveClick = (e: React.FormEvent) => {
+  const handleSaveClick = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
     if (!lastName.trim() || !firstName.trim()) {
       setErrorMsg('성(Last Name)과 이름(First Name)을 모두 입력해 주세요.');
       return;
+    }
+
+    const trimmedUsername = username.trim().toLowerCase();
+    if (trimmedUsername && trimmedUsername !== (user.username || '').trim().toLowerCase()) {
+      setIsSaving(true);
+      try {
+        const uq = query(collection(db, 'users'), where('username', '==', trimmedUsername));
+        const snap = await getDocs(uq);
+        const hasOtherUser = snap.docs.some(d => d.id !== user.uid);
+        if (hasOtherUser) {
+          setErrorMsg('이미 다른 사용자가 사용 중인 아이디입니다. 다른 아이디를 입력해 주세요.');
+          setIsSaving(false);
+          return;
+        }
+      } catch (checkErr) {
+        console.warn('Username uniqueness check warning:', checkErr);
+      } finally {
+        setIsSaving(false);
+      }
     }
 
     // Open ConfirmModal for 2-step verification
