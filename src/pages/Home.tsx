@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { ArrowRight, ChevronLeft, ChevronRight, MoreVertical, Menu, Edit2, Trash2, GripVertical, Copy, ArrowUp, Tag, ChevronDown, ChevronUp, Search, X, LayoutGrid, StretchHorizontal, List, Calendar as CalendarIcon, CalendarDays, Compass, MapPin, ArrowUpRight, Coins, Clock, Sliders } from 'lucide-react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Trip, Plan, MagazineMoment, MagazineSection, TimelineData, HomeWidgetConfig } from '../types';
+import { Trip, Plan, MagazineMoment, MagazineSection, TimelineData, HomeWidgetConfig, CityWeatherConfig } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { cleanAdministrativeDistricts, generateJourneyMessage } from '../components/SummaryView';
@@ -872,6 +872,31 @@ export function HomePage({
       }
     }, (err) => {
       console.warn("Home widgets firestore listen notice:", err);
+    });
+    return () => unsub();
+  }, []);
+
+  const [calendarWeatherCities, setCalendarWeatherCities] = useState<CityWeatherConfig[]>(() => {
+    try {
+      const saved = localStorage.getItem('cached_calendar_weather_cities');
+      if (saved) return JSON.parse(saved);
+    } catch (_) {}
+    return [];
+  });
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'settings', 'calendar_weather_cities'), (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        if (Array.isArray(data?.cities)) {
+          setCalendarWeatherCities(data.cities);
+          try {
+            localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(data.cities));
+          } catch (_) {}
+        }
+      }
+    }, (err) => {
+      console.warn("Calendar weather cities listen notice:", err);
     });
     return () => unsub();
   }, []);
@@ -2481,7 +2506,7 @@ export function HomePage({
         <HomeWeatherWidget 
           trips={trips} 
           isAdmin={isAdmin}
-          customCities={widgetConfig.cities}
+          customCities={calendarWeatherCities.length > 0 ? calendarWeatherCities : widgetConfig.cities}
         />
       );
 

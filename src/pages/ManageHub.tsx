@@ -60,6 +60,7 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { UserProfileAvatar } from '../components/UserProfileAvatar';
 import { ProfileEditModal } from '../components/ProfileEditModal';
+import { cleanAdministrativeDistricts } from '../components/SummaryView';
 import { getEffectiveImageUrl, uploadFileToR2, deleteFileFromR2 } from '../utils/storageHelper';
 import { compressImage } from '../utils/imageHelper';
 import { inspectAndPrepareVideo } from '../utils/videoHelper';
@@ -306,10 +307,10 @@ export function ManageHubPage({
     }
   };
 
-  // Top-level mode tabs ordered: 'HOME' | 'ARCHIVE' | 'MAGAZINE' | 'UTIL' | 'USERS'
-  const [activeMode, setActiveMode] = useState<'HOME' | 'ARCHIVE' | 'MAGAZINE' | 'UTIL' | 'USERS'>(() => {
+  // Top-level mode tabs ordered: 'HOME' | 'ARCHIVE' | 'CALENDAR' | 'MAGAZINE' | 'UTIL' | 'USERS'
+  const [activeMode, setActiveMode] = useState<'HOME' | 'ARCHIVE' | 'CALENDAR' | 'MAGAZINE' | 'UTIL' | 'USERS'>(() => {
     const fromSession = sessionStorage.getItem('initialManageTab');
-    if (fromSession && ['HOME', 'ARCHIVE', 'MAGAZINE', 'UTIL', 'USERS'].includes(fromSession)) {
+    if (fromSession && ['HOME', 'ARCHIVE', 'CALENDAR', 'MAGAZINE', 'UTIL', 'USERS'].includes(fromSession)) {
       sessionStorage.removeItem('initialManageTab');
       return fromSession as any;
     }
@@ -319,6 +320,117 @@ export function ManageHubPage({
     }
     return 'HOME';
   });
+
+  // CALENDAR Tab State: Weather Cities Management (Central Firestore Sync)
+  const [calendarWeatherCities, setCalendarWeatherCities] = useState<CityWeatherConfig[]>(() => {
+    try {
+      const saved = localStorage.getItem('cached_calendar_weather_cities');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (_) {}
+    return [
+      { name: '서울', nameEn: 'SEOUL', country: 'KR', lat: 37.5665, lng: 126.9780, timezone: 'Asia/Seoul' },
+      { name: '도쿄', nameEn: 'TOKYO', country: 'JP', lat: 35.6762, lng: 139.6503, timezone: 'Asia/Tokyo' },
+      { name: '오사카', nameEn: 'OSAKA', country: 'JP', lat: 34.6937, lng: 135.5023, timezone: 'Asia/Tokyo' },
+      { name: '파리', nameEn: 'PARIS', country: 'FR', lat: 48.8566, lng: 2.3522, timezone: 'Europe/Paris' },
+      { name: '제주', nameEn: 'JEJU', country: 'KR', lat: 33.4996, lng: 126.5312, timezone: 'Asia/Seoul' },
+      { name: '후쿠오카', nameEn: 'FUKUOKA', country: 'JP', lat: 33.5904, lng: 130.4017, timezone: 'Asia/Tokyo' },
+    ];
+  });
+  const [searchCalendarCityQuery, setSearchCalendarCityQuery] = useState<string>('');
+  const [calendarCityMovedEn, setCalendarCityMovedEn] = useState<string | null>(null);
+  const calendarCityMovedTimerRef = useRef<any>(null);
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'settings', 'calendar_weather_cities'), (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        if (Array.isArray(data?.cities) && data.cities.length > 0) {
+          setCalendarWeatherCities(data.cities);
+          try {
+            localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(data.cities));
+          } catch (_) {}
+        }
+      }
+    }, (err) => {
+      console.warn("ManageHub calendar weather sync notice:", err);
+    });
+    return () => unsub();
+  }, []);
+
+  const handleAddCalendarWeatherCity = (
+    placeName: string,
+    coords: { lat: number; lng: number } | null,
+    address: string,
+    countryName?: string,
+    cityName?: string
+  ) => {
+    if (!coords || !coords.lat || !coords.lng) return;
+    const rawName = cityName || placeName || '도시';
+    const cleaned = cleanAdministrativeDistricts(rawName);
+    const finalName = cleaned || rawName;
+    const finalEn = (cityName || placeName || 'CITY').toUpperCase().replace(/,\s*(SOUTH KOREA|KOREA|JAPAN|FRANCE|USA|VIETNAM|THAILAND|UK|SPAIN).*$/i, '').trim();
+    const finalCountry = countryName || 'WORLD';
+    let tz = 'UTC';
+    try {
+      tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    } catch (_) {}
+
+    const newCity: CityWeatherConfig = {
+      name: finalName,
+      nameEn: finalEn,
+      country: finalCountry.slice(0, 2).toUpperCase(),
+      lat: coords.lat,
+      lng: coords.lng,
+      timezone: tz
+    };
+
+    const exists = calendarWeatherCities.some(c => c.nameEn.toUpperCase() === newCity.nameEn.toUpperCase());
+    const updated = exists ? calendarWeatherCities : [...calendarWeatherCities, newCity];
+    setCalendarWeatherCities(updated);
+    setSearchCalendarCityQuery('');
+    try {
+      localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(updated));
+      setDoc(doc(db, 'settings', 'calendar_weather_cities'), { cities: updated }, { merge: true }).catch(console.error);
+    } catch (_) {}
+  };
+
+  const handleMoveCalendarWeatherCity = (idx: number, direction: 'up' | 'down') => {
+    if (direction === 'up' && idx === 0) return;
+    if (direction === 'down' && idx === calendarWeatherCities.length - 1) return;
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    const updated = [...calendarWeatherCities];
+    const temp = updated[idx];
+    updated[idx] = updated[targetIdx];
+    updated[targetIdx] = temp;
+    setCalendarWeatherCities(updated);
+
+    setCalendarCityMovedEn(temp.nameEn);
+    if (calendarCityMovedTimerRef.current) clearTimeout(calendarCityMovedTimerRef.current);
+    calendarCityMovedTimerRef.current = setTimeout(() => {
+      setCalendarCityMovedEn(null);
+    }, 1200);
+
+    try {
+      localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(updated));
+      setDoc(doc(db, 'settings', 'calendar_weather_cities'), { cities: updated }, { merge: true }).catch(console.error);
+    } catch (_) {}
+  };
+
+  const handleRemoveCalendarWeatherCity = (cityEn: string) => {
+    if (calendarWeatherCities.length <= 1) {
+      alert('최소 1개 이상의 날씨 지역이 필요합니다.');
+      return;
+    }
+    const updated = calendarWeatherCities.filter(c => c.nameEn.toUpperCase() !== cityEn.toUpperCase());
+    setCalendarWeatherCities(updated);
+    try {
+      localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(updated));
+      setDoc(doc(db, 'settings', 'calendar_weather_cities'), { cities: updated }, { merge: true }).catch(console.error);
+    } catch (_) {}
+  };
 
   // PRESETS Management State
   const [utilSubTab, setUtilSubTab] = useState<'all' | 'display' | 'bgm' | 'map' | 'presets' | 'trash'>('all');
@@ -3823,6 +3935,7 @@ export function ManageHubPage({
             {([
               { id: 'HOME', label: 'HOME' },
               { id: 'ARCHIVE', label: 'TRIP' },
+              { id: 'CALENDAR', label: 'CALENDAR' },
               { id: 'MAGAZINE', label: 'MAGAZINE' },
               { id: 'UTIL', label: 'UTIL' },
               { id: 'USERS', label: 'USERS' },
@@ -5770,6 +5883,152 @@ export function ManageHubPage({
           </div>
         </div>
       )}
+
+        {/* ─────────────────────────────────────────────────────────────────── */}
+        {/* MODE: CALENDAR (Calendar & Weather Cities Management)               */}
+        {/* ─────────────────────────────────────────────────────────────────── */}
+        {activeMode === 'CALENDAR' && (
+          <div
+            onScroll={handleContainerScroll}
+            className="w-full max-w-4xl mx-auto p-4 sm:p-8 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-60px)] animate-in fade-in duration-200 select-none"
+          >
+            {/* Header Title */}
+            <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
+              <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                CALENDAR & WEATHER CONFIGURATION
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                CALENDAR SETTING
+              </h2>
+              <p className="text-xs text-black/60 dark:text-white/60 font-mono">
+                [캘린더 허브 및 홈허브 하단에 실시간 연동될 날씨 도시 목록과 순서를 관리합니다]
+              </p>
+            </div>
+
+            {/* SECTION: WEATHER CITIES MANAGEMENT */}
+            <section className="flex flex-col gap-6 pt-2">
+              <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-red-600 dark:text-red-500" />
+                  <h3 className="text-base sm:text-lg font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                    WEATHER CITIES MANAGEMENT
+                  </h3>
+                </div>
+                <span className="text-[11px] font-mono font-bold text-black/50 dark:text-white/50">
+                  총 {calendarWeatherCities.length}개 도시 등록됨
+                </span>
+              </div>
+
+              {/* Add New City Autocomplete Input */}
+              <div className="flex flex-col gap-2 p-4 border border-black/10 dark:border-white/10 bg-black/[0.01] dark:bg-white/[0.01]">
+                <span className="text-xs font-mono font-bold text-black dark:text-white uppercase tracking-wider">
+                  새 날씨 도시 추가 (도시명 검색)
+                </span>
+                <PlaceAutocompleteInput
+                  value={searchCalendarCityQuery}
+                  onChange={(val) => setSearchCalendarCityQuery(val)}
+                  onSelectPlace={(placeName, coords, address, countryName, cityName) => {
+                    handleAddCalendarWeatherCity(placeName, coords, address, countryName, cityName);
+                  }}
+                  placeholder="도시명 검색 (예: 서울, 도쿄, 오사카, 파리, 삿포로, 런던, 뉴욕...)"
+                  className="w-full h-9 px-3 text-xs bg-white dark:bg-[#141414] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white text-black dark:text-white outline-none rounded-none font-sans"
+                />
+                <span className="text-[10px] text-black/40 dark:text-white/40 font-mono">
+                  * 검색 후 선택 시 한글 정규화 도시명과 공식 영문 코드가 자동 등록되며, 실시간 클라우드에 영속 저장됩니다.
+                </span>
+              </div>
+
+              {/* City Reorder & Management List */}
+              <div className="flex flex-col border border-black/10 dark:border-white/10 divide-y divide-black/10 dark:divide-white/10 bg-white dark:bg-[#0c0c0c]">
+                {calendarWeatherCities.map((c, idx) => {
+                  const isHomeTarget = idx < 4;
+                  const isMoved = calendarCityMovedEn?.toUpperCase() === c.nameEn.toUpperCase();
+
+                  return (
+                    <div
+                      key={`${c.nameEn}-${idx}`}
+                      className={`p-3 sm:px-4 sm:py-3 flex items-center justify-between gap-3 text-xs font-mono transition-all duration-300 ${
+                        isMoved
+                          ? 'bg-orange-500/15 border-l-4 border-l-orange-500 text-orange-700 dark:text-orange-400 font-bold'
+                          : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
+                      }`}
+                    >
+                      {/* Left: Index + Home Badge + City Info */}
+                      <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+                        <span className={`text-[11px] font-bold w-4 text-center shrink-0 ${isMoved ? 'text-orange-600 dark:text-orange-400' : 'text-black/40 dark:text-white/40'}`}>
+                          {idx + 1}
+                        </span>
+
+                        {isHomeTarget ? (
+                          <span className="px-1.5 py-0.5 bg-black text-white dark:bg-white dark:text-black text-[9px] font-mono font-black tracking-wider uppercase shrink-0">
+                            HOME 4
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.5 border border-black/15 dark:border-white/15 text-black/40 dark:text-white/40 text-[9px] font-mono tracking-wider uppercase shrink-0">
+                            CALENDAR
+                          </span>
+                        )}
+
+                        <div className="flex items-baseline gap-2 min-w-0 truncate">
+                          <span className="font-sans font-black text-sm text-black dark:text-white truncate">
+                            {c.name}
+                          </span>
+                          <span className="text-[11px] font-mono font-bold text-black/50 dark:text-white/50 shrink-0">
+                            {c.nameEn}
+                          </span>
+                          <span className="text-[9.5px] font-mono text-black/35 dark:text-white/35 shrink-0">
+                            ({c.country})
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Right: Actions (Move Up, Move Down, Delete) */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleMoveCalendarWeatherCity(idx, 'up')}
+                          disabled={idx === 0}
+                          className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-20 transition-colors cursor-pointer text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white"
+                          title="위로 이동"
+                        >
+                          <ChevronUp className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleMoveCalendarWeatherCity(idx, 'down')}
+                          disabled={idx === calendarWeatherCities.length - 1}
+                          className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-20 transition-colors cursor-pointer text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white"
+                          title="아래로 이동"
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCalendarWeatherCity(c.nameEn)}
+                          disabled={calendarWeatherCities.length <= 1}
+                          className="p-1.5 hover:bg-red-500/10 text-red-600/70 hover:text-red-600 dark:text-red-400/70 dark:hover:text-red-400 disabled:opacity-20 transition-colors cursor-pointer ml-1"
+                          title="도시 삭제"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Integration Guide Note */}
+              <div className="p-4 border-l-2 border-black/40 dark:border-white/40 bg-black/[0.02] dark:bg-white/[0.02] flex flex-col gap-1 text-[11px] font-mono text-black/60 dark:text-white/60">
+                <div className="font-bold text-black dark:text-white uppercase tracking-wider mb-0.5">
+                  SYSTEM PERSISTENCE & DISPLAY NOTE
+                </div>
+                <div>· 상위 1~4순위 [HOME 4] 도시는 홈허브 하단 날씨 위젯에 실시간 4열로 자동 노출됩니다.</div>
+                <div>· 캘린더 허브에서 날씨 모드 토글 시 등록된 모든 도시가 상단 앱 스타일 알약 칩으로 노출됩니다.</div>
+                <div>· 모든 변경 사항은 Firebase 중앙 서버에 실시간 저장되어 다중 디바이스에 즉각 동기화됩니다.</div>
+              </div>
+            </section>
+          </div>
+        )}
 
         {/* ─────────────────────────────────────────────────────────────────── */}
         {/* MODE: MAGAZINE (Sections, Hero, Layout & Moments Management)        */}

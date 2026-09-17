@@ -387,108 +387,12 @@ export function CalendarHubPage({
   const [selectedWeatherCity, setSelectedWeatherCity] = useState<CalendarWeatherCity>(() => weatherCities[0] || CALENDAR_WEATHER_CITIES[0]);
   const [cityWeatherData, setCityWeatherData] = useState<CityWeatherData | null>(null);
 
-  // 날씨 도시 설정 모달 및 인라인 상태
-  const [isWeatherSettingsOpen, setIsWeatherSettingsOpen] = useState<boolean>(false);
-  const [searchCityQuery, setSearchCityQuery] = useState<string>('');
-
   // 선택된 날짜의 상세 날씨 위젯 상태
   const [selectedWeatherDay, setSelectedWeatherDay] = useState<{
     dateStr: string;
     city: CalendarWeatherCity;
     weather: DailyForecastItem;
   } | null>(null);
-
-  // 이동된 도시 일시적 하이라이트 상태 (색상 인지 효과)
-  const [recentlyMovedCityEn, setRecentlyMovedCityEn] = useState<string | null>(null);
-  const movedHighlightTimerRef = useRef<any>(null);
-
-  useEffect(() => {
-    return () => {
-      if (movedHighlightTimerRef.current) clearTimeout(movedHighlightTimerRef.current);
-    };
-  }, []);
-
-  const handleAddWeatherCity = (
-    placeName: string, 
-    coords: { lat: number; lng: number } | null, 
-    address: string, 
-    countryName?: string, 
-    cityName?: string
-  ) => {
-    // 1. 행정구역 수식어 자동 정규화 ('서울특별시' -> '서울', '제주특별자치도' -> '제주', '도쿄도' -> '도쿄')
-    const rawName = cityName || placeName || '도시';
-    const cleaned = cleanAdministrativeDistricts(rawName);
-    const finalName = cleaned || rawName;
-    const finalEn = (cityName || placeName || 'CITY').toUpperCase().replace(/,\s*(SOUTH KOREA|KOREA|JAPAN|FRANCE|USA|VIETNAM|THAILAND|UK|SPAIN).*$/i, '').trim();
-    const finalCountry = countryName || 'WORLD';
-    const finalLat = coords ? coords.lat : 37.5665;
-    const finalLng = coords ? coords.lng : 126.9780;
-    
-    let timezone = 'UTC';
-    try {
-      timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-    } catch (_) {}
-
-    const newCity: CalendarWeatherCity = {
-      name: finalName,
-      nameEn: finalEn,
-      country: finalCountry,
-      lat: finalLat,
-      lng: finalLng,
-      timezone
-    };
-
-    const exists = weatherCities.some(c => c.nameEn.toUpperCase() === newCity.nameEn.toUpperCase());
-    const updated = exists ? weatherCities : [...weatherCities, newCity];
-    setWeatherCities(updated);
-    setSelectedWeatherCity(newCity);
-    setSearchCityQuery('');
-
-    try {
-      localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(updated));
-      setDoc(doc(db, 'settings', 'calendar_weather_cities'), { cities: updated }, { merge: true }).catch(console.error);
-    } catch (_) {}
-  };
-
-  const handleRemoveWeatherCity = (e: React.MouseEvent, cityEn: string) => {
-    e.stopPropagation();
-    if (weatherCities.length <= 1) {
-      alert('최소 1개 이상의 날씨 지역이 필요합니다.');
-      return;
-    }
-    const updated = weatherCities.filter(c => c.nameEn.toUpperCase() !== cityEn.toUpperCase());
-    setWeatherCities(updated);
-    if (selectedWeatherCity.nameEn.toUpperCase() === cityEn.toUpperCase()) {
-      setSelectedWeatherCity(updated[0]);
-    }
-    try {
-      localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(updated));
-      setDoc(doc(db, 'settings', 'calendar_weather_cities'), { cities: updated }, { merge: true }).catch(console.error);
-    } catch (_) {}
-  };
-
-  const handleMoveWeatherCity = (idx: number, direction: 'up' | 'down') => {
-    if (direction === 'up' && idx === 0) return;
-    if (direction === 'down' && idx === weatherCities.length - 1) return;
-    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
-    const updated = [...weatherCities];
-    const temp = updated[idx];
-    updated[idx] = updated[targetIdx];
-    updated[targetIdx] = temp;
-    setWeatherCities(updated);
-
-    // 이동한 칸 색상 인지 효과 (1.2초간 오렌지 하이라이트)
-    setRecentlyMovedCityEn(temp.nameEn);
-    if (movedHighlightTimerRef.current) clearTimeout(movedHighlightTimerRef.current);
-    movedHighlightTimerRef.current = setTimeout(() => {
-      setRecentlyMovedCityEn(null);
-    }, 1200);
-
-    try {
-      localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(updated));
-      setDoc(doc(db, 'settings', 'calendar_weather_cities'), { cities: updated }, { merge: true }).catch(console.error);
-    } catch (_) {}
-  };
 
   useEffect(() => {
     if (!isWeatherMode) return;
@@ -1789,43 +1693,20 @@ export function CalendarHubPage({
           </div>
         </div>
 
-        {/* Weather Forecast City Selector Bar */}
+        {/* Weather Forecast City Selector Bar - App Style Minimal Pill Chips */}
         {isWeatherMode && (
-          <div className="w-full flex flex-col gap-2 mt-3 bg-black/[0.03] dark:bg-white/[0.05] border border-black/10 dark:border-white/10 p-2.5 sm:px-4 sm:py-2.5 font-mono text-xs select-none animate-in fade-in duration-200">
-            <div className="flex flex-wrap items-center justify-between gap-2.5">
-              <div className="flex items-center gap-2 shrink-0">
-                <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />
-                <span className="font-black text-black dark:text-white uppercase tracking-wider">
-                  {selectedWeatherCity.nameEn}
-                </span>
-                <span className="text-[10px] text-black/50 dark:text-white/50">
-                  ({selectedWeatherCity.name}, {selectedWeatherCity.country})
-                </span>
-                <span className="text-[10px] font-bold text-black/40 dark:text-white/40 hidden md:inline">
-                  · FORECAST ON CALENDAR
-                </span>
-              </div>
-
-              {/* City Setting Action Button */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsWeatherSettingsOpen(prev => !prev)}
-                  className={`h-6 px-2 text-[10px] font-mono font-bold border transition-all cursor-pointer flex items-center gap-1 ${
-                    isWeatherSettingsOpen
-                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
-                      : 'border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white text-black dark:text-white'
-                  }`}
-                  title="날씨 지역 관리 (추가, 순서 변경, 삭제)"
-                >
-                  <Sliders className="w-3 h-3" />
-                  <span>{isWeatherSettingsOpen ? '설정 닫기' : '지역 설정'}</span>
-                </button>
-              </div>
+          <div className="w-full flex items-center gap-2 py-2 border-b border-black/10 dark:border-white/10 select-none animate-in fade-in duration-150">
+            {/* Left Location Indicator */}
+            <div className="flex items-center gap-1.5 shrink-0 pr-2 border-r border-black/15 dark:border-white/15 text-[11px] font-mono font-black text-black dark:text-white uppercase tracking-wider">
+              <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />
+              <span>{selectedWeatherCity.name}</span>
+              <span className="text-[9.5px] font-normal text-black/50 dark:text-white/50 hidden sm:inline">
+                ({selectedWeatherCity.country})
+              </span>
             </div>
 
-            {/* City Tabs Scroll List (평소 정갈한 탭 바) */}
-            <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar pt-1 w-full">
+            {/* App-style Pill Chips Scroll */}
+            <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar flex-1 py-0.5">
               {weatherCities.map((c) => {
                 const isSelected = selectedWeatherCity.nameEn.toUpperCase() === c.nameEn.toUpperCase();
                 return (
@@ -1840,114 +1721,18 @@ export function CalendarHubPage({
                         setSelectedWeatherDay({ dateStr: selectedWeatherDay.dateStr, city: c, weather: w });
                       }
                     }}
-                    className={`px-2 py-0.5 text-[9.5px] sm:text-[10px] font-mono font-bold border transition-colors cursor-pointer shrink-0 ${
+                    className={`h-6 px-2.5 rounded-full text-[10px] sm:text-[10.5px] font-mono font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1 shadow-2xs ${
                       isSelected
-                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                        : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white bg-white/50 dark:bg-zinc-900/50'
+                        ? 'bg-black text-white dark:bg-white dark:text-black font-black'
+                        : 'bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 text-black/70 dark:text-white/70'
                     }`}
                   >
-                    {c.name}
+                    <span>{c.name}</span>
+                    <span className="text-[9px] opacity-60 uppercase">{c.nameEn}</span>
                   </button>
                 );
               })}
             </div>
-
-            {/* Weather Settings Panel (지역 추가, 순서 변경, 삭제 통합 모달/패널) */}
-            {isWeatherSettingsOpen && (
-              <div className="w-full max-w-xl mt-2 pt-3 pb-2.5 border-t border-black/10 dark:border-white/10 flex flex-col gap-3 animate-in fade-in duration-150 bg-black/[0.02] dark:bg-white/[0.03] p-3.5 border border-black/10 dark:border-white/10">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-bold uppercase text-black dark:text-white flex items-center gap-1.5">
-                    <Sliders className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />
-                    <span>WEATHER CITIES MANAGEMENT (날씨 지역 순서 및 관리)</span>
-                  </span>
-                  <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
-                    총 {weatherCities.length}개 등록됨
-                  </span>
-                </div>
-
-                {/* Add New City Autocomplete Input */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[10.5px] font-mono font-bold text-black/70 dark:text-white/70">
-                    새 날씨 지역 추가 (도시명 검색)
-                  </span>
-                  <PlaceAutocompleteInput
-                    value={searchCityQuery}
-                    onChange={(val) => setSearchCityQuery(val)}
-                    onSelectPlace={(placeName, coords, address, countryName, cityName) => {
-                      handleAddWeatherCity(placeName, coords, address, countryName, cityName);
-                    }}
-                    placeholder="도시 또는 지역명 검색 (예: 서울, 도쿄, 파리, 제주, 삿포로...)"
-                    className="w-full h-8 px-3 text-xs bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white text-black dark:text-white outline-none rounded-none font-sans"
-                  />
-                  <span className="text-[9.5px] text-black/40 dark:text-white/40 font-mono">
-                    * '서울특별시', '제주특별자치도' 등 긴 이름은 '서울', '제주'로 자동 정규화되어 짧게 등록됩니다.
-                  </span>
-                </div>
-
-                {/* City Reorder & Delete List (Compact & Highlight on move) */}
-                <div className="flex flex-col divide-y divide-black/10 dark:divide-white/10 border border-black/10 dark:border-white/10 bg-white dark:bg-[#141414] max-h-52 overflow-y-auto">
-                  {weatherCities.map((c, idx) => {
-                    const isMoved = recentlyMovedCityEn?.toUpperCase() === c.nameEn.toUpperCase();
-
-                    return (
-                      <div 
-                        key={c.nameEn} 
-                        className={`px-3 py-2 flex items-center justify-between gap-3 text-xs font-mono transition-all duration-300 ${
-                          isMoved 
-                            ? 'bg-orange-500/15 border-l-4 border-l-orange-500 text-orange-700 dark:text-orange-400 font-bold' 
-                            : 'bg-white dark:bg-[#141414] hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 truncate min-w-0">
-                          <span className={`text-[10px] font-bold w-4 shrink-0 ${isMoved ? 'text-orange-600 dark:text-orange-400' : 'text-black/40 dark:text-white/40'}`}>
-                            {idx + 1}
-                          </span>
-                          <span className={`font-bold truncate ${isMoved ? 'text-orange-600 dark:text-orange-400' : 'text-black dark:text-white'}`}>
-                            {c.name}
-                          </span>
-                          <span className="text-[10px] text-black/50 dark:text-white/50 shrink-0">
-                            ({c.nameEn})
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-1 shrink-0">
-                          {/* Move Up */}
-                          <button
-                            type="button"
-                            onClick={() => handleMoveWeatherCity(idx, 'up')}
-                            disabled={idx === 0}
-                            className="p-1 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer transition-colors"
-                            title="앞으로 이동"
-                          >
-                            <ChevronUp className="w-3.5 h-3.5" />
-                          </button>
-                          {/* Move Down */}
-                          <button
-                            type="button"
-                            onClick={() => handleMoveWeatherCity(idx, 'down')}
-                            disabled={idx === weatherCities.length - 1}
-                            className="p-1 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer transition-colors"
-                            title="뒤로 이동"
-                          >
-                            <ChevronDown className="w-3.5 h-3.5" />
-                          </button>
-                          {/* Delete */}
-                          <button
-                            type="button"
-                            onClick={(e) => handleRemoveWeatherCity(e, c.nameEn)}
-                            disabled={weatherCities.length <= 1}
-                            className="p-1 text-red-600/70 hover:text-red-600 dark:text-red-400/70 dark:hover:text-red-400 disabled:opacity-20 cursor-pointer ml-1 transition-colors"
-                            title="삭제"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
         )}
 

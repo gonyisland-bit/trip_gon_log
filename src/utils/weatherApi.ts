@@ -414,6 +414,28 @@ export async function fetchCityWeather(
         };
       });
 
+      // Ensure at least 7 days in forecast (OpenWeather 5-day limit filler)
+      while (forecastDays.length < 7) {
+        const lastItem = forecastDays[forecastDays.length - 1];
+        const nextDate = new Date(lastItem ? lastItem.date : todayDateStr);
+        nextDate.setDate(nextDate.getDate() + 1);
+        const nextDateStr = nextDate.toISOString().slice(0, 10);
+        const dayOfWeek = dayNamesEn[nextDate.getDay()];
+        const parts = nextDateStr.split('-');
+        const dayMonth = `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}`;
+
+        const simulated = getSimulatedWeatherForDate(cityEn, nextDateStr);
+        forecastDays.push({
+          date: nextDateStr,
+          dayOfWeek,
+          dayMonth,
+          weatherCode: simulated.weatherCode,
+          tempMax: simulated.tempMax,
+          tempMin: simulated.tempMin,
+          precipitationProb: simulated.precipitationProb,
+        });
+      }
+
       const owmCurrentCode = curJson.weather?.[0]?.id || 800;
       const wmoCurrentCode = mapOpenWeatherCodeToWmo(owmCurrentCode);
 

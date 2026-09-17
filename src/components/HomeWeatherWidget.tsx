@@ -46,10 +46,10 @@ export function HomeWeatherWidget({
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   });
 
-  // Determine active target cities: customCities from settings OR auto-matched from trips + popular
+  // Determine active target cities: customCities from settings OR auto-matched from trips + popular (Strictly 4 for clean 4-col web grid)
   const targetCities: CityWeatherConfig[] = useMemo(() => {
     if (customCities && customCities.length > 0) {
-      return customCities.slice(0, 8);
+      return customCities.slice(0, 4);
     }
 
     const matched: CityWeatherConfig[] = [];
@@ -58,7 +58,7 @@ export function HomeWeatherWidget({
     // 1. If trips exist, prioritize trip locations
     if (trips && trips.length > 0) {
       for (const trip of trips) {
-        if (matched.length >= 5) break;
+        if (matched.length >= 4) break;
         const candidateCity = ((trip as any).city || trip.locationStr || trip.title || '').toLowerCase();
         const candidateCountry = (trip.country || '').toLowerCase();
 
@@ -79,14 +79,14 @@ export function HomeWeatherWidget({
 
     // 2. Fill with standard popular destinations (Seoul is #0)
     for (const def of DEFAULT_POPULAR_DESTINATIONS) {
-      if (matched.length >= 5) break;
+      if (matched.length >= 4) break;
       if (!addedNames.has(def.nameEn)) {
         matched.push(def);
         addedNames.add(def.nameEn);
       }
     }
 
-    return matched.slice(0, 5);
+    return matched.slice(0, 4);
   }, [trips, customCities]);
 
   const fetchAllWeather = async () => {
@@ -159,9 +159,9 @@ export function HomeWeatherWidget({
         </div>
       </div>
 
-      {/* Grid Container: Responsive 2-Cols on Mobile (No horizontal cutoff!), 3-Cols on sm, 5-Cols on md+ */}
+      {/* Grid Container: Responsive 2-Cols on Mobile, 4-Cols on Desktop (Strictly 4-card full width) */}
       <div className="w-full border-b border-black/10 dark:border-white/10">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-px bg-black/10 dark:bg-white/10">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-black/10 dark:bg-white/10">
           {targetCities.map((city, idx) => {
             const data = weatherMap[city.nameEn];
             const isSelected = selectedCityEn === city.nameEn;
@@ -179,7 +179,7 @@ export function HomeWeatherWidget({
                 key={`${city.nameEn}-${idx}`}
                 type="button"
                 onClick={() => setSelectedCityEn(isSelected ? null : city.nameEn)}
-                className={`p-4 sm:p-5 flex flex-col justify-between gap-3 text-left transition-all cursor-pointer relative ${
+                className={`p-3 sm:p-4 md:p-5 flex flex-col justify-between gap-2.5 sm:gap-3 text-left transition-all cursor-pointer relative ${
                   isSelected
                     ? 'bg-black/5 dark:bg-white/10 ring-1 ring-inset ring-black dark:ring-white'
                     : 'bg-white dark:bg-[#0c0c0c] hover:bg-black/[0.02] dark:hover:bg-white/[0.03]'
@@ -187,7 +187,7 @@ export function HomeWeatherWidget({
                 title="클릭하여 1주일 예보 확인"
               >
                 {/* Header: City Name + Country Code */}
-                <div className="flex items-center justify-between gap-2 w-full">
+                <div className="flex items-center justify-between gap-1.5 w-full">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="text-xs sm:text-sm font-black font-sans uppercase tracking-tight text-black dark:text-white truncate">
                       {city.nameEn}
@@ -234,17 +234,18 @@ export function HomeWeatherWidget({
       </div>
 
       {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* 1주일치 날씨 (7-Day Forecast Sub-Panel)                             */}
+      {/* 1주일치 날씨 (배경 및 아웃라인 없는 스위스 슬림라인 스타일)        */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       {activeForecastCity && activeForecastCity.forecast && activeForecastCity.forecast.length > 0 && (
-        <div className="border-b border-l border-r border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] p-4 sm:p-6 animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10 mb-4">
-            <div className="flex items-center gap-2 font-mono">
+        <div className="w-full py-4 sm:py-5 border-b border-black/10 dark:border-white/10 bg-transparent animate-in fade-in duration-200 select-none">
+          {/* Sub Header */}
+          <div className="flex items-center justify-between pb-2.5 border-b border-black/10 dark:border-white/10 mb-2 font-mono">
+            <div className="flex items-center gap-2">
               <Calendar className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />
               <span className="text-xs font-black uppercase tracking-wider text-black dark:text-white">
                 {activeForecastCity.cityEn} · 7-DAY FORECAST
               </span>
-              <span className="text-[10.5px] text-black/50 dark:text-white/50">
+              <span className="text-[10px] text-black/40 dark:text-white/40 hidden sm:inline">
                 (향후 1주일 기상 전망)
               </span>
             </div>
@@ -254,56 +255,99 @@ export function HomeWeatherWidget({
               className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
               title="예보 닫기"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          {/* 7-Days Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+          {/* 1. Mobile View (< 768px): 한 요일당 한 줄씩 세로 7행 슬림라인 나열 (배경/박스 없음) */}
+          <div className="md:hidden flex flex-col divide-y divide-black/10 dark:divide-white/10">
+            {activeForecastCity.forecast.slice(0, 7).map((fItem: DailyForecastItem, fIdx: number) => {
+              const { label, icon: DayIcon, colorClass } = getWeatherMeta(fItem.weatherCode, fItem.precipitationProb);
+              const isToday = fIdx === 0;
+
+              return (
+                <div 
+                  key={`m-forecast-${fItem.date}-${fIdx}`}
+                  className="py-2.5 flex items-center justify-between text-xs font-mono"
+                >
+                  {/* Left: 요일 및 날짜 */}
+                  <div className="flex items-center gap-2 w-24 shrink-0">
+                    <span className={`text-xs ${isToday ? 'font-black text-red-600 dark:text-red-500' : 'font-bold text-black/70 dark:text-white/70'}`}>
+                      {isToday ? 'TODAY' : fItem.dayOfWeek}
+                    </span>
+                    <span className="text-[10px] text-black/40 dark:text-white/40">
+                      {fItem.dayMonth}
+                    </span>
+                  </div>
+
+                  {/* Center: 날씨 아이콘 + 상태 라벨 + 강수 확률 */}
+                  <div className="flex items-center gap-2 flex-1 justify-center min-w-0">
+                    <DayIcon className={`w-4 h-4 stroke-[2] shrink-0 ${colorClass}`} />
+                    <span className="text-[11px] font-sans font-medium text-black/80 dark:text-white/80 truncate">
+                      {label}
+                    </span>
+                    {fItem.precipitationProb > 0 && (
+                      <span className="text-[9.5px] font-mono text-blue-500 flex items-center gap-0.5 shrink-0">
+                        <Droplets className="w-2.5 h-2.5" />
+                        <span>{fItem.precipitationProb}%</span>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Right: 최고 / 최저 기온 */}
+                  <div className="w-16 text-right font-mono text-xs shrink-0">
+                    <span className="font-bold text-black dark:text-white">{fItem.tempMax}°</span>
+                    <span className="text-black/40 dark:text-white/40 ml-1.5">{fItem.tempMin}°</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 2. Web View (>= 768px): 7개 요일 가로 7열 나열 (배경/박스 없이 슬림 구분선) */}
+          <div className="hidden md:grid md:grid-cols-7 divide-x divide-black/10 dark:divide-white/10 pt-1">
             {activeForecastCity.forecast.slice(0, 7).map((fItem: DailyForecastItem, fIdx: number) => {
               const { label, icon: DayIcon, colorClass } = getWeatherMeta(fItem.weatherCode, fItem.precipitationProb);
               const isToday = fIdx === 0;
 
               return (
                 <div
-                  key={`forecast-${fItem.date}-${fIdx}`}
-                  className={`p-3 border flex flex-col items-center justify-between text-center gap-2 ${
-                    isToday
-                      ? 'border-black dark:border-white bg-black/5 dark:bg-white/10 font-bold'
-                      : 'border-black/10 dark:border-white/10 bg-white dark:bg-[#111111]'
-                  }`}
+                  key={`w-forecast-${fItem.date}-${fIdx}`}
+                  className="px-2 py-3 flex flex-col items-center justify-between text-center gap-2.5"
                 >
+                  {/* 요일 & 날짜 */}
                   <div className="flex flex-col items-center leading-tight">
-                    <span className={`text-[11px] font-mono font-black ${isToday ? 'text-red-600 dark:text-red-500' : 'text-black/60 dark:text-white/60'}`}>
+                    <span className={`text-[11px] font-mono ${isToday ? 'font-black text-red-600 dark:text-red-500' : 'font-bold text-black/60 dark:text-white/60'}`}>
                       {isToday ? 'TODAY' : fItem.dayOfWeek}
                     </span>
-                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                    <span className="text-[10px] font-mono text-black/40 dark:text-white/40 mt-0.5">
                       {fItem.dayMonth}
                     </span>
                   </div>
 
-                  <div className="flex flex-col items-center gap-1 my-1">
-                    <DayIcon className={`w-6 h-6 stroke-[2] ${colorClass}`} />
-                    <span className="text-[9.5px] font-mono font-bold uppercase text-black/75 dark:text-white/75">
+                  {/* 날씨 아이콘 & 라벨 */}
+                  <div className="flex flex-col items-center gap-1.5 my-0.5">
+                    <DayIcon className={`w-5 h-5 stroke-[2] ${colorClass}`} />
+                    <span className="text-[10px] font-mono font-bold uppercase text-black/75 dark:text-white/75">
                       {label}
                     </span>
                   </div>
 
-                  <div className="w-full flex items-center justify-between text-[10.5px] font-mono pt-1.5 border-t border-black/5 dark:border-white/5">
-                    <span className="font-black text-black dark:text-white">
-                      {fItem.tempMax}°
-                    </span>
-                    <span className="text-black/40 dark:text-white/40">
-                      {fItem.tempMin}°
-                    </span>
-                  </div>
-
-                  {fItem.precipitationProb > 0 && (
-                    <div className="flex items-center gap-0.5 text-[9px] font-mono text-blue-600 dark:text-blue-400">
-                      <Droplets className="w-2.5 h-2.5" />
-                      <span>{fItem.precipitationProb}%</span>
+                  {/* 기온 & 강수 확률 */}
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="text-xs font-mono">
+                      <span className="font-bold text-black dark:text-white">{fItem.tempMax}°</span>
+                      <span className="text-black/40 dark:text-white/40 ml-1">{fItem.tempMin}°</span>
                     </div>
-                  )}
+                    {fItem.precipitationProb > 0 ? (
+                      <div className="flex items-center gap-0.5 text-[9px] font-mono text-blue-500">
+                        <Droplets className="w-2.5 h-2.5" />
+                        <span>{fItem.precipitationProb}%</span>
+                      </div>
+                    ) : (
+                      <div className="h-[13.5px]" />
+                    )}
+                  </div>
                 </div>
               );
             })}
