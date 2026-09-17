@@ -1005,9 +1005,11 @@ export function MagazineHubPage({
                         <span className="text-[10px] font-mono font-semibold text-black/45 dark:text-white/45">
                           {sec.heroDate || 'VOL. 2026'}
                         </span>
-                        <div className="h-7 px-3 bg-black dark:bg-white text-white dark:text-black rounded-full text-[10px] sm:text-[10.5px] font-mono font-bold uppercase tracking-wider flex items-center gap-1 group-hover:bg-red-600 dark:group-hover:bg-red-500 group-hover:text-white dark:group-hover:text-white transition-colors shadow-xs">
-                          <span>OPEN</span>
-                          <span className="text-xs">↗</span>
+                        <div 
+                          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center group-hover:bg-red-600 dark:group-hover:bg-red-500 group-hover:text-white dark:group-hover:text-white transition-colors shadow-xs shrink-0"
+                          title="OPEN ISSUE"
+                        >
+                          <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.2]" />
                         </div>
                       </div>
                     </div>

@@ -6,6 +6,7 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { cleanAdministrativeDistricts, generateJourneyMessage } from '../components/SummaryView';
 import { preloadDetailPage } from '../utils/prefetchHelper';
 import { getKoreanHolidays } from '../utils/koreanHolidays';
+import { HomeWeatherWidget } from '../components/HomeWeatherWidget';
 
 interface HomePageProps {
   onNavigate: (view: string, tripId?: number | null) => void;
@@ -1686,14 +1687,18 @@ export function HomePage({
                       );
                     })()}
 
-                    {/* 우측 상단 원형 심볼 뱃지 (나이키 스우시 위치) */}
-                    <div className="absolute top-3 right-3 sm:top-3.5 sm:right-3.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 text-black dark:text-white shadow-xs flex items-center justify-center font-mono text-[10px] sm:text-[11px] font-black group-hover:rotate-12 transition-transform duration-300">
-                      {trip.country ? (
-                        trip.country.slice(0, 2).toUpperCase()
-                      ) : (
-                        <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      )}
-                    </div>
+                    {/* 우측 상단 원형 심볼 뱃지 (해당 여정 년도 표기) */}
+                    {(() => {
+                      const tripYear = getYearAndMonth(trip.date).year || (trip.date ? trip.date.match(/\b(19\d\d|20\d\d)\b/)?.[0] : '') || String(new Date().getFullYear());
+                      return (
+                        <div 
+                          className="absolute top-3 right-3 sm:top-3.5 sm:right-3.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 text-black dark:text-white shadow-xs flex items-center justify-center font-mono text-[9.5px] sm:text-[10.5px] font-black tracking-tight group-hover:rotate-12 transition-transform duration-300"
+                          title={`${tripYear}년 여정`}
+                        >
+                          <span>{tripYear}</span>
+                        </div>
+                      );
+                    })()}
 
                     {/* 하단 중앙 4개 도트 인디케이터 */}
                     <div className="absolute bottom-2.5 inset-x-0 flex justify-center items-center gap-1 pointer-events-none">
@@ -1735,28 +1740,27 @@ export function HomePage({
 
                     {/* 3. 하단 메타 & 알약 액션 바 */}
                     <div className="pt-3 mt-3 border-t border-black/8 dark:border-white/10 flex items-center justify-between gap-1.5 sm:gap-2">
-                      {/* 좌측 알약 뱃지: 장소명 모바일 온전 표기 최적화 (생략 방지) */}
-                      <div className="flex-1 min-w-0 mr-0.5 sm:mr-1">
+                      {/* 좌측 알약 뱃지: 장소명 웹/모바일 온전 표기 최적화 (생략 방지) */}
+                      <div className="flex-1 min-w-0 mr-1 sm:mr-1.5">
                         <div className={`min-h-[26px] sm:min-h-[30px] px-2 sm:px-3 py-0.5 sm:py-1 rounded-full inline-flex items-center gap-1 font-mono text-[9.5px] sm:text-[11px] font-bold max-w-full leading-tight ${
                           isItemPlan 
                             ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
                             : 'bg-black/5 dark:bg-white/10 text-black/80 dark:text-white/80'
                         }`}>
                           <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0 text-black/40 dark:text-white/40" />
-                          <span className="break-words line-clamp-1 sm:line-clamp-none sm:truncate">{line3CountryCity || (durationBadge || 'JOURNEY')}</span>
+                          <span className="truncate">{line3CountryCity || (durationBadge || 'JOURNEY')}</span>
                         </div>
                       </div>
 
-                      {/* 우측 알약 액션 버튼: 모바일에서 원형 아이콘 버튼으로 슬림화하여 좌측 공간 극대화 */}
-                      <div className={`h-7 w-7 sm:w-auto sm:h-8 sm:px-3.5 rounded-full font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-wider flex items-center justify-center sm:gap-1 transition-colors shadow-xs shrink-0 ${
+                      {/* 우측 원형 액션 버튼: 웹과 모바일 모두 원형 아이콘 버튼으로 통일하여 좌측 공간 극대화 */}
+                      <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-colors shadow-xs shrink-0 ${
                         isItemPlan
                           ? 'bg-blue-600 hover:bg-blue-700 text-white'
                           : 'bg-black dark:bg-white text-white dark:text-black group-hover:bg-red-600 dark:group-hover:bg-red-500 group-hover:text-white dark:group-hover:text-white'
                       }`}
                       title={isItemPlan ? "PLAN VIEW" : "TRIP LOG"}
                       >
-                        <span className="hidden sm:inline">{isItemPlan ? 'PLAN' : 'LOG'}</span>
-                        <ArrowUpRight className="w-3.5 h-3.5 sm:w-3 sm:h-3 stroke-[2.2]" />
+                        <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.2]" />
                       </div>
                     </div>
                   </div>
@@ -2416,6 +2420,11 @@ export function HomePage({
           </section>
         );
       })()}
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* 04. LIVE WEATHER (스위스 미니멀 여행지 실시간 날씨)                   */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      <HomeWeatherWidget trips={trips} />
     </main>
   );
 }

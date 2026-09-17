@@ -3867,12 +3867,12 @@ export function JourneyDetailPage({
               onMouseEnter={() => setIsPlayFabIdle(false)}
               onMouseLeave={resetPlayFabIdleTimer}
               onTouchStart={() => { setIsPlayFabIdle(false); resetPlayFabIdleTimer(); }}
-              className={`absolute bottom-3 md:bottom-6 lg:bottom-8 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] pointer-events-auto flex items-center bg-white/95 dark:bg-[#141414]/95 backdrop-blur-md border border-black/15 dark:border-white/20 text-black dark:text-white rounded-full shadow-xl overflow-hidden ${
-                !isCinematicMode && isPlayFabIdle ? 'opacity-40 hover:opacity-100' : 'opacity-100'
-              } ${
+              className={`absolute bottom-3 md:bottom-6 lg:bottom-8 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] pointer-events-auto flex items-center rounded-full overflow-hidden opacity-100 ${
                 isCinematicMode
-                  ? 'h-10 sm:h-11 w-[calc(100%-1.5rem)] max-w-[500px] px-3 sm:px-4 justify-between gap-1.5 sm:gap-2.5'
-                  : 'h-8 sm:h-9 w-auto px-3 sm:px-3.5 justify-center hover:scale-105 active:scale-95 cursor-pointer group'
+                  ? 'h-10 sm:h-11 w-[calc(100%-1.5rem)] max-w-[500px] px-3 sm:px-4 justify-between gap-1.5 sm:gap-2.5 bg-white/95 dark:bg-[#141414]/95 backdrop-blur-md border border-black/15 dark:border-white/20 text-black dark:text-white shadow-xl'
+                  : isPlayFabIdle
+                    ? 'h-8 sm:h-9 w-auto px-3.5 sm:px-4 justify-center bg-white/65 dark:bg-black/55 backdrop-blur-xl border border-black/15 dark:border-white/20 text-black/80 dark:text-white/85 shadow-[0_4px_24px_rgba(0,0,0,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] hover:bg-white/95 dark:hover:bg-[#141414]/95 hover:text-black dark:hover:text-white hover:scale-105 active:scale-95 cursor-pointer group'
+                    : 'h-8 sm:h-9 w-auto px-3.5 sm:px-4 justify-center bg-white/95 dark:bg-[#141414]/95 backdrop-blur-md border border-black/20 dark:border-white/25 text-black dark:text-white shadow-xl hover:scale-105 active:scale-95 cursor-pointer group'
               }`}
             >
               {/* Collapsed State: Swiss Minimal Minimized Pill */}
@@ -3893,8 +3893,8 @@ export function JourneyDetailPage({
                   title="플레이로그 시작 (Space)"
                   aria-label="Play Log"
                 >
-                  <Play className="w-2.5 h-2.5 fill-current text-black dark:text-white" />
-                  <span className="text-[9px] sm:text-[9.5px] font-mono font-bold tracking-widest uppercase text-black dark:text-white">
+                  <Play className="w-2.5 h-2.5 fill-current" />
+                  <span className="text-[9px] sm:text-[9.5px] font-mono font-bold tracking-widest uppercase">
                     PLAY LOG
                   </span>
                 </button>
