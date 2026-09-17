@@ -747,14 +747,14 @@ export function PocketHubPage({
       )}
 
       {/* Main Container */}
-      <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-8 pb-16 flex-grow flex flex-col">
-        {/* Header - Editorial Masthead (Matching Archive & MagazineHub Style) */}
+      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 pt-8 pb-16 flex-grow flex flex-col">
+        {/* Header - Editorial Masthead (Matching Trip & MagazineHub Style) */}
         <div className="border-b border-black/15 dark:border-white/15 pb-6 mb-8 flex flex-col gap-4">
           {/* Top Metadata Barcode & Category Tag */}
           <div className="flex items-center justify-between text-xs font-mono tracking-widest uppercase text-black/60 dark:text-white/60">
             <div className="flex items-center gap-2.5 sm:gap-3">
               <span className="bg-black text-white dark:bg-white dark:text-black font-black px-2 py-0.5 text-[10px]">
-                POCKET ARCHIVE
+                POCKET
               </span>
               <span className="font-bold text-red-600 dark:text-red-400">
                 SPOT INSPIRATION
@@ -762,7 +762,7 @@ export function PocketHubPage({
             </div>
             <div className="flex items-center gap-3">
               <span className="hidden sm:inline">VOL. 01</span>
-              <span>{spots.length} SPOTS ARCHIVED</span>
+              <span>{spots.length} SPOTS SAVED</span>
             </div>
           </div>
 
@@ -1288,7 +1288,7 @@ export function PocketHubPage({
                           <span className="text-[10px] font-mono text-black/40 dark:text-white/40">{group.items.length}</span>
                           <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-2.5 sm:gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-5">
                           {group.items.slice(0, visibleCount).map(renderCard)}
                         </div>
                       </div>

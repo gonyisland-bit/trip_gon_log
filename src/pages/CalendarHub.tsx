@@ -1305,14 +1305,14 @@ export function CalendarHubPage({
       {/* ───────────────────────────────────────────────────────────── */}
       {/* Top Banner & Swiss Minimal Typography Header                  */}
       {/* ───────────────────────────────────────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-6 border-b border-black/10 dark:border-white/10">
+      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 pt-8 sm:pt-12 pb-6 border-b border-black/10 dark:border-white/10">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 sm:gap-6">
           {/* Left: Giant Typography Year & Month + < TODAY > Navigation (같은 줄에 배치하여 모바일 공간 낭비 최적화) */}
           <div className="w-full md:w-auto">
             <div className="flex items-center gap-3 mb-1 text-red-600 dark:text-red-500 font-bold text-xs sm:text-sm tracking-[0.25em] uppercase font-mono">
               <CalendarIcon className="w-4 h-4" />
               <span>
-                CALENDAR ARCHIVE · {viewMode === 'year' ? `${currentYear} ANNUAL` : `${MONTH_TABS[currentMonth].num} ${MONTH_TABS[currentMonth].short}`}
+                CALENDAR SCHEDULE · {viewMode === 'year' ? `${currentYear} ANNUAL` : `${MONTH_TABS[currentMonth].num} ${MONTH_TABS[currentMonth].short}`}
               </span>
             </div>
 

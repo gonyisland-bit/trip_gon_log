@@ -69,18 +69,27 @@
 
 ---
 
-## 6. 레이아웃 원칙 (Swiss Minimal Structure)
+## 6. 레이아웃 및 뷰포트 원칙 (Swiss Minimal Viewport Standard)
+
+### 전체 허브 표준 뷰포트 컨테이너 (Trip 기준 규격)
+모든 허브 페이지(Home, Trip, Magazine, Pocket, Calendar 상단)는 일관된 에디토리얼 정렬선과 풀-와이드 개방감을 보장하기 위해 **Trip 허브 기준 표준 컨테이너 클래스**를 동일하게 적용합니다.
+
+- **표준 메인 컨테이너**:
+  `w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12`
+- **고정 폭 래퍼(`max-w-7xl` 등) 배제**: 데스크톱 와이드 화면(1440px~1920px)에서 허브 간 이동 시 레이아웃이 쪼그라들거나 양옆에 불필요한 공백이 생기지 않도록 `max-w-7xl` 등 임의의 축소 래퍼 사용을 엄격히 금지합니다.
+- **반응형 피드 그리드 (포켓/갤러리)**: 풀-와이드 화면 확장 시 카드가 지나치게 비대해지는 것을 방지하고 최적의 정보 밀도를 유지하기 위해 반응형 2~6열 그리드를 적용합니다.
+  - `grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-5`
 
 ### 박스인박스(Box-in-Box) 및 이중 컨테이너 배제
 - **이중 컨테이너 및 두꺼운 배경 박스 제거**: 컨테이너 안에 불필요하게 중첩된 테두리, 카드 래퍼, 두꺼운 회색 배경 박스(`bg-black/5`, `p-4 inside p-4` 등)의 중복 사용을 엄격히 금지합니다.
-- **단일 라인 및 얇은 모노크롬 보더**: 컴포넌트 및 모달의 경계선은 단일 라인의 얇은 모노크롬 보더(`border border-black/20 dark:border-white/20`)만을 사용합니다.
+- **단일 라인의 얇은 모노크롬 보더**: 컴포넌트 및 모달의 경계선은 단일 라인의 얇은 모노크롬 보더(`border border-black/20 dark:border-white/20`)만을 사용합니다.
 - **구분선 및 포인트 바**: 섹션 구분이 필요할 때는 단일 분할선(`border-t border-black/10 dark:border-white/10`) 또는 스위스 스타일의 얇은 좌측 포인트 바(`border-l-2`)만을 활용합니다.
 - **타이포그래피 계층**: 정보의 위계는 중첩 박스가 아닌 산세리프(Sans)와 고정폭(Mono) 폰트의 크기/굵기 스케일 대비 및 투명도(`text-black/60 dark:text-white/60`)로 표현합니다.
 
-### 여백 및 그리드
+### 여백 및 그리드 기본값
 - 모바일: px-3~4 py-3~4, 컴팩트한 그리드 간격(`gap-2` ~ `gap-3`)
-- 데스크탑: sm:px-6 sm:py-5
-- 섹션 간: space-y-4 기본
+- 데스크탑: sm:px-6 sm:py-5, 상위 섹션은 `px-4 sm:px-8 md:px-12`
+- 섹션 간: space-y-4 ~ space-y-8
 - 한 줄 정렬(Compact 1-row layout) 및 일관된 그리드 정렬 유지
 
 ---
@@ -110,15 +119,31 @@
 
 ---
 
-## 9. 용어 (Terminology)
+## 9. 허브 체계 및 용어 정의 (Terminology & Hub Architecture)
+
+### 공식 허브 명칭 체계
+| 허브 명칭 | 대응 파일 (Page) | 설명 및 역할 |
+|---|---|---|
+| **Home** | `src/pages/Home.tsx` | 메인 인트로 및 추천 쇼케이스 |
+| **Trip** | `src/pages/Archive.tsx` | **메인 트립 목록 & 피드 (UI 라벨 'TRIP')** |
+| **Magazine** | `src/pages/MagazineHub.tsx` | 매거진 및 에디토리얼 아티클 |
+| **Pocket** | `src/pages/PocketHub.tsx` | 스크랩 & 스팟 꿀팁 갤러리 피드 |
+| **Calendar** | `src/pages/CalendarHub.tsx` | 연간/월간 캘린더 및 일정 관리 |
+| **Map** | `src/pages/MapHub.tsx` | 인터랙티브 맵 뷰포트 |
+
+### 용어 사용 규칙 (Archive 용어 폐기)
+- **Archive(아카이브) 용어 폐기**: 초기 아카이브 허브는 현재 공식적으로 **Trip(트립) 허브**로 정의합니다. UI, 라벨, 문서, 커뮤니케이션에서 '아카이브'라는 명칭은 배제하고 항상 **Trip / 트립**으로 지칭합니다.
 
 | 사용 금지 | 올바른 표현 |
 |----------|------------|
+| Archive / archive (허브 지칭 시) | Trip / trip (트립) |
 | Journey / journey | Trip / trip |
 | 여정 | 트립 |
-| JOURNEY TITLE | TRIP TITLE |
+| JOURNEY TITLE / ARCHIVE TITLE | TRIP TITLE |
 | CREATE JOURNEY | CREATE TRIP |
 | GENERATE JOURNEY | GENERATE TRIP |
+| POCKET ARCHIVE | POCKET |
+| CALENDAR ARCHIVE | CALENDAR SCHEDULE |
 
 ---
 
@@ -143,4 +168,4 @@
 
 ---
 
-*최종 업데이트: 2026-09-15*
+*최종 업데이트: 2026-09-17 (Trip 기준 허브 레이아웃 표준화 & 허브 명칭 체계 정립)*
