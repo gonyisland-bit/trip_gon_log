@@ -178,7 +178,8 @@ export function HomeWeatherWidget({
             const data = weatherMap[city.nameEn];
             const isSelected = selectedCityEn === city.nameEn;
             const weatherCode = data ? data.weatherCode : 0;
-            const { label, icon: IconComponent, colorClass } = getWeatherMeta(weatherCode);
+            const precipProb = data?.forecast?.[0]?.precipitationProb;
+            const { label, icon: IconComponent, colorClass } = getWeatherMeta(weatherCode, precipProb);
 
             const temp = data ? data.temp : '--';
             const tempMax = data ? data.tempMax : '--';
@@ -272,7 +273,7 @@ export function HomeWeatherWidget({
           {/* 7-Days Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
             {activeForecastCity.forecast.slice(0, 7).map((fItem: DailyForecastItem, fIdx: number) => {
-              const { label, icon: DayIcon, colorClass } = getWeatherMeta(fItem.weatherCode);
+              const { label, icon: DayIcon, colorClass } = getWeatherMeta(fItem.weatherCode, fItem.precipitationProb);
               const isToday = fIdx === 0;
 
               return (

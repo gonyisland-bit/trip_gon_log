@@ -1540,22 +1540,18 @@ export function CalendarHubPage({
               </button>
             </div>
 
-            {/* 2.5 Weather Mode Toggle Button */}
+            {/* 2.5 Weather Mode Toggle Button - Minimal Swiss Round Icon */}
             <button
               type="button"
               onClick={() => setIsWeatherMode(prev => !prev)}
-              className={`h-7 sm:h-8 px-2 sm:px-3 rounded-full border text-[10px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 shadow-xs ${
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-xs ${
                 isWeatherMode
                   ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white ring-2 ring-black/20 dark:ring-white/20'
                   : 'bg-white/80 dark:bg-zinc-900/80 border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
               }`}
               title={isWeatherMode ? "날씨 모드 끄기" : "날씨 모드 켜기 (캘린더에 일별 날씨/기온 표시)"}
             >
-              <Sun className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isWeatherMode ? 'text-amber-400' : ''}`} />
-              <span>WEATHER</span>
-              <span className={`text-[8.5px] font-mono font-black px-1 py-0.2 rounded-xs ${isWeatherMode ? 'bg-white/20 dark:bg-black/20 text-white dark:text-black' : 'bg-black/10 dark:bg-white/10'}`}>
-                {isWeatherMode ? 'ON' : 'OFF'}
-              </span>
+              <Sun className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isWeatherMode ? 'text-amber-400 dark:text-amber-500' : ''}`} />
             </button>
 
             {/* 3. Edit Mode Toggle Button (h-7 sm:h-8 통일 - 모바일에서는 ON으로 축약하여 폭 확보) */}
@@ -1849,7 +1845,7 @@ export function CalendarHubPage({
                           return <span className={textClasses}>{cell.dayNum}</span>;
                         }
 
-                        const { icon: WeatherIconComponent, colorClass } = getWeatherMeta(weatherItem.weatherCode);
+                        const { icon: WeatherIconComponent, colorClass } = getWeatherMeta(weatherItem.weatherCode, weatherItem.precipitationProb);
 
                         return (
                           <div className="flex flex-col items-center justify-between h-full w-full py-1 sm:py-1.5 pointer-events-none select-none">
@@ -2153,6 +2149,14 @@ export function CalendarHubPage({
                   </div>
                 );
               })()}
+
+              {/* Weather Mode Attribution (Swiss Minimal Mono) */}
+              {isWeatherMode && (
+                <div className="mt-4 pt-3 border-t border-black/10 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-1.5 text-[9.5px] sm:text-[10px] font-mono text-black/40 dark:text-white/40 select-none">
+                  <span>WEATHER SOURCE: OPEN-METEO GLOBAL FORECAST API (HOURLY UPDATED)</span>
+                  <span>{selectedWeatherCity.nameEn} ({selectedWeatherCity.name}) · 14-DAY FORECAST</span>
+                </div>
+              )}
             </div>
           </div>
         ) : (

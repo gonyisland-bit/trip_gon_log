@@ -3571,13 +3571,13 @@ export function MapHubPage({
                           {countryWeather.temp}°
                         </span>
                         <span className="text-xs font-mono font-bold text-black/60 dark:text-white/60 uppercase">
-                          {getWeatherMeta(countryWeather.weatherCode).label}
+                          {getWeatherMeta(countryWeather.weatherCode, countryWeather.forecast?.[0]?.precipitationProb).label}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-2 text-right">
                         {(() => {
-                          const { icon: WeatherIcon, colorClass } = getWeatherMeta(countryWeather.weatherCode);
+                          const { icon: WeatherIcon, colorClass } = getWeatherMeta(countryWeather.weatherCode, countryWeather.forecast?.[0]?.precipitationProb);
                           return <WeatherIcon className={`w-6 h-6 stroke-[2] ${colorClass}`} />;
                         })()}
                         <div className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50">
@@ -3591,7 +3591,7 @@ export function MapHubPage({
                     {isCountryForecastOpen && countryWeather.forecast && (
                       <div className="mt-3 pt-3 border-t border-black/10 dark:border-white/10 grid grid-cols-4 sm:grid-cols-7 gap-1.5 animate-in fade-in duration-150">
                         {countryWeather.forecast.slice(0, 7).map((item, fIdx) => {
-                          const { icon: FIcon, colorClass } = getWeatherMeta(item.weatherCode);
+                          const { icon: FIcon, colorClass } = getWeatherMeta(item.weatherCode, item.precipitationProb);
                           const isToday = fIdx === 0;
 
                           return (

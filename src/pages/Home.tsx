@@ -2314,78 +2314,81 @@ export function HomePage({
               </button>
             </div>
 
-            {/* Swiss 3-Column Layout: Left (Big Month + SEPTEMBER) - Middle (1-Line Schedules) - Right (Circular Dot Grid) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
-              {/* Left Column: Giant Month Number + Horizontal Month Name & Year */}
-              <div className="lg:col-span-4 flex items-center gap-4 sm:gap-5">
-                <div 
-                  onClick={() => onNavigate('calendar')}
-                  className="cursor-pointer group flex items-baseline gap-3.5"
-                  title="달력 허브로 이동"
-                >
-                  <span className="text-7xl sm:text-8xl lg:text-9xl font-black font-satoshi tracking-tighter leading-none text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
-                    {String(month + 1).padStart(2, '0')}
-                  </span>
-                  <div className="flex flex-col justify-center">
-                    <span className="text-xl sm:text-2xl lg:text-3xl font-black font-satoshi tracking-tight uppercase text-black dark:text-white leading-tight">
-                      {MONTH_NAMES_EN[month]}
+            {/* Swiss Responsive Layout: Compact 2-Column on md/lg, 3-Tier harmonious spacing */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 xl:gap-10 items-start">
+              {/* Left Column (md:col-span-6 lg:col-span-7 xl:col-span-7): Month Display + Schedules Feed */}
+              <div className="md:col-span-6 lg:col-span-7 xl:col-span-7 flex flex-col justify-between gap-6">
+                {/* Giant Month Number + Horizontal Month Name & Year */}
+                <div className="flex items-center gap-4 sm:gap-5">
+                  <div 
+                    onClick={() => onNavigate('calendar')}
+                    className="cursor-pointer group flex items-baseline gap-3.5"
+                    title="달력 허브로 이동"
+                  >
+                    <span className="text-7xl sm:text-8xl lg:text-9xl font-black font-satoshi tracking-tighter leading-none text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
+                      {String(month + 1).padStart(2, '0')}
                     </span>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-sm sm:text-base font-bold font-mono text-black/40 dark:text-white/40">
-                        {year}
+                    <div className="flex flex-col justify-center">
+                      <span className="text-xl sm:text-2xl lg:text-3xl font-black font-satoshi tracking-tight uppercase text-black dark:text-white leading-tight">
+                        {MONTH_NAMES_EN[month]}
                       </span>
-                      <span className="text-xs sm:text-sm font-bold font-mono text-red-600 dark:text-red-500 uppercase">
-                        · {dateNum} {dayOfWeekStr}
-                      </span>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-sm sm:text-base font-bold font-mono text-black/40 dark:text-white/40">
+                          {year}
+                        </span>
+                        <span className="text-xs sm:text-sm font-bold font-mono text-red-600 dark:text-red-500 uppercase">
+                          · {dateNum} {dayOfWeekStr}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Middle Column: 1-Line Simple Schedules Feed */}
-              <div className="lg:col-span-4 flex flex-col justify-center border-t lg:border-t-0 lg:border-l lg:border-r border-black/10 dark:border-white/10 pt-4 lg:pt-0 lg:px-6 min-h-[140px]">
-                <div className="text-[10px] font-mono font-black uppercase tracking-widest text-black/40 dark:text-white/40 mb-2.5">
-                  MONTHLY SCHEDULES ({monthSchedules.length})
-                </div>
-
-                {monthSchedules.length === 0 ? (
-                  <div className="text-xs font-mono text-black/40 dark:text-white/40 py-4">
-                    NO SCHEDULES RECORDED THIS MONTH
+                {/* 1-Line Simple Schedules Feed */}
+                <div className="flex flex-col justify-center border-t border-black/10 dark:border-white/10 pt-4">
+                  <div className="text-[10px] font-mono font-black uppercase tracking-widest text-black/40 dark:text-white/40 mb-2.5">
+                    MONTHLY SCHEDULES ({monthSchedules.length})
                   </div>
-                ) : (
-                  <div className="flex flex-col gap-2 max-h-[180px] overflow-y-auto pr-1 divide-y divide-black/5 dark:divide-white/5">
-                    {monthSchedules.map((item) => {
-                      const sFormatted = item.start ? `${parseInt(item.start.split('-')[1], 10)}/${parseInt(item.start.split('-')[2], 10)}` : '';
-                      const eFormatted = item.end && item.end !== item.start ? `${parseInt(item.end.split('-')[1], 10)}/${parseInt(item.end.split('-')[2], 10)}` : sFormatted;
-                      const dateRangeStr = sFormatted === eFormatted ? sFormatted : `${sFormatted} - ${eFormatted}`;
 
-                      return (
-                        <div
-                          key={`home-sched-${item.id}`}
-                          onClick={() => handleCellClick(item.start)}
-                          className="pt-1.5 flex items-center justify-between gap-2 text-xs font-mono cursor-pointer group hover:text-red-600 transition-colors"
-                        >
-                          <div className="flex items-center gap-2 truncate">
-                            <span className="text-black/50 dark:text-white/50 font-bold shrink-0">
-                              {dateRangeStr}
-                            </span>
-                            <span className="font-sans font-bold text-black dark:text-white group-hover:text-red-600 truncate">
-                              {item.title}
+                  {monthSchedules.length === 0 ? (
+                    <div className="text-xs font-mono text-black/40 dark:text-white/40 py-2">
+                      NO SCHEDULES RECORDED THIS MONTH
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto pr-1 divide-y divide-black/5 dark:divide-white/5">
+                      {monthSchedules.map((item) => {
+                        const sFormatted = item.start ? `${parseInt(item.start.split('-')[1], 10)}/${parseInt(item.start.split('-')[2], 10)}` : '';
+                        const eFormatted = item.end && item.end !== item.start ? `${parseInt(item.end.split('-')[1], 10)}/${parseInt(item.end.split('-')[2], 10)}` : sFormatted;
+                        const dateRangeStr = sFormatted === eFormatted ? sFormatted : `${sFormatted} - ${eFormatted}`;
+
+                        return (
+                          <div
+                            key={`home-sched-${item.id}`}
+                            onClick={() => handleCellClick(item.start)}
+                            className="pt-1.5 flex items-center justify-between gap-2 text-xs font-mono cursor-pointer group hover:text-red-600 transition-colors"
+                          >
+                            <div className="flex items-center gap-2 truncate">
+                              <span className="text-black/50 dark:text-white/50 font-bold shrink-0">
+                                {dateRangeStr}
+                              </span>
+                              <span className="font-sans font-bold text-black dark:text-white group-hover:text-red-600 truncate">
+                                {item.title}
+                              </span>
+                            </div>
+                            <span className="text-[10.5px] font-bold font-mono text-red-600 dark:text-red-400 shrink-0">
+                              {item.days === 1 ? '1 DAY' : `${item.days} DAYS`}
                             </span>
                           </div>
-                          <span className="text-[10.5px] font-bold font-mono text-red-600 dark:text-red-400 shrink-0">
-                            {item.days === 1 ? '1 DAY' : `${item.days} DAYS`}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Right Column: Circular Dot Grid */}
-              <div className="lg:col-span-4 flex flex-col items-center lg:items-end justify-center w-full">
-                <div className="w-full max-w-[320px] sm:max-w-[340px] mx-auto lg:mr-0">
+              {/* Right Column (md:col-span-6 lg:col-span-5 xl:col-span-5): Circular Dot Grid */}
+              <div className="md:col-span-6 lg:col-span-5 xl:col-span-5 flex flex-col items-center md:items-end justify-center w-full border-t md:border-t-0 md:border-l border-black/10 dark:border-white/10 pt-6 md:pt-0 md:pl-6 lg:pl-8">
+                <div className="w-full max-w-[320px] sm:max-w-[340px] mx-auto md:mr-0">
                   {/* Weekday Headers */}
                   <div className="grid grid-cols-7 gap-2 sm:gap-2.5 mb-2 text-center text-xs font-black font-mono select-none text-black/40 dark:text-white/40">
                     <div>M</div>
@@ -2462,7 +2465,7 @@ export function HomePage({
         <HomeWeatherWidget 
           trips={trips} 
           isAdmin={isAdmin}
-          onOpenConfig={() => setIsWidgetConfigModalOpen(true)}
+          onOpenConfig={isAdmin ? () => setIsWidgetConfigModalOpen(true) : undefined}
           customCities={widgetConfig.cities}
         />
       );
@@ -2551,12 +2554,14 @@ export function HomePage({
           )}
 
           {/* Admin Config Modal */}
-          <HomeWidgetConfigModal
-            isOpen={isWidgetConfigModalOpen}
-            onClose={() => setIsWidgetConfigModalOpen(false)}
-            config={widgetConfig}
-            onSaveConfig={(newCfg) => setWidgetConfig(newCfg)}
-          />
+          {isAdmin && isWidgetConfigModalOpen && (
+            <HomeWidgetConfigModal
+              isOpen={isWidgetConfigModalOpen}
+              onClose={() => setIsWidgetConfigModalOpen(false)}
+              config={widgetConfig}
+              onSaveConfig={(newCfg) => setWidgetConfig(newCfg)}
+            />
+          )}
         </>
       );
     })()}

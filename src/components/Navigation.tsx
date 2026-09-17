@@ -208,11 +208,11 @@ export function Navigation({
             </button>
           )}
 
-          {/* Night Mode Button - Desktop Only */}
+          {/* Night Mode Button - Visible on both Mobile & Desktop (Left of Mobile Menu) */}
           <button
             type="button"
             onClick={() => setIsDarkMode(!isDarkMode)}
-            className="hidden md:flex p-2 sm:p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors cursor-pointer items-center justify-center"
+            className="flex p-2 sm:p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors cursor-pointer items-center justify-center"
             title={isDarkMode ? "나이트 모드 (클릭 시 라이트 모드로 전환, Ctrl + Shift + L)" : "라이트 모드 (클릭 시 나이트 모드로 전환, Ctrl + Shift + L)"}
           >
             {isDarkMode ? (

@@ -16,20 +16,31 @@ export interface WeatherMeta {
   colorClass: string;
 }
 
-export function getWeatherMeta(code: number): WeatherMeta {
-  if (code === 0) {
+export function getWeatherMeta(code: number, precipitationProb?: number): WeatherMeta {
+  // If precipitation probability is low (< 35%), light drizzle (51, 53, 55) or light shower (80)
+  // should not be rendered as a full-day rain when it's mostly fair or overcast.
+  let effectiveCode = code;
+  if (precipitationProb !== undefined && precipitationProb < 35) {
+    if (code === 51 || code === 53 || code === 55 || code === 80) {
+      effectiveCode = 2; // FAIR (CloudSun)
+    } else if (code === 61) {
+      effectiveCode = 3; // OVERCAST (Cloud)
+    }
+  }
+
+  if (effectiveCode === 0) {
     return { label: 'CLEAR', labelKo: '맑음', icon: Sun, colorClass: 'text-amber-500' };
-  } else if (code === 1 || code === 2) {
+  } else if (effectiveCode === 1 || effectiveCode === 2) {
     return { label: 'FAIR', labelKo: '대체로 맑음', icon: CloudSun, colorClass: 'text-amber-400' };
-  } else if (code === 3) {
+  } else if (effectiveCode === 3) {
     return { label: 'OVERCAST', labelKo: '흐림', icon: Cloud, colorClass: 'text-zinc-400' };
-  } else if (code === 45 || code === 48) {
+  } else if (effectiveCode === 45 || effectiveCode === 48) {
     return { label: 'FOGGY', labelKo: '안개', icon: Cloud, colorClass: 'text-zinc-400' };
-  } else if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) {
+  } else if ((effectiveCode >= 51 && effectiveCode <= 67) || (effectiveCode >= 80 && effectiveCode <= 82)) {
     return { label: 'RAIN', labelKo: '비', icon: CloudRain, colorClass: 'text-blue-500' };
-  } else if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) {
+  } else if ((effectiveCode >= 71 && effectiveCode <= 77) || (effectiveCode >= 85 && effectiveCode <= 86)) {
     return { label: 'SNOW', labelKo: '눈', icon: Snowflake, colorClass: 'text-cyan-400' };
-  } else if (code >= 95) {
+  } else if (effectiveCode >= 95) {
     return { label: 'STORM', labelKo: '뇌우', icon: CloudLightning, colorClass: 'text-purple-500' };
   }
   return { label: 'BREEZE', labelKo: '바람', icon: Wind, colorClass: 'text-teal-400' };
