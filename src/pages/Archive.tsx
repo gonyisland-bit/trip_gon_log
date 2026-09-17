@@ -728,9 +728,10 @@ export function ArchiveHubPage({
             </span>
           </div>
           
-          {/* Right: Active Filter, Search, and Controls Layout */}
-          <div className="flex flex-col gap-2 w-full md:w-auto relative z-20">
-            <div className="flex flex-wrap items-center justify-between md:justify-end gap-2.5">
+          {/* Right: Active Filter, Search, Controls Layout, and ADD Button */}
+          <div className="flex flex-wrap items-center justify-between md:justify-end gap-2.5 w-full md:w-auto">
+            <div className="flex flex-col gap-2 w-full md:w-auto relative z-20">
+              <div className="flex flex-wrap items-center justify-between md:justify-end gap-2.5">
               {/* Tag / Multi-Filter Dropdown Button */}
               <div className="relative inline-block text-left">
                 <div className="flex items-center gap-2">
@@ -993,14 +994,15 @@ export function ArchiveHubPage({
                 </select>
               </div>
             </div>
+            </div>
+            </div>
+            {isLoggedIn && (
+              <button onClick={onAddArchive} className="w-full sm:w-auto flex items-center justify-center gap-1.5 text-[9px] sm:text-[10px] md:text-xs font-mono font-black uppercase tracking-widest border border-black dark:border-white px-3 py-1.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors shrink-0 cursor-pointer">
+                <Plus className="w-3.5 h-3.5" /> <span>ADD TRIP</span>
+              </button>
+            )}
           </div>
         </div>
-        {isLoggedIn && (
-          <button onClick={onAddArchive} className="w-full sm:w-auto flex items-center justify-center gap-1.5 text-[9px] sm:text-[10px] md:text-xs font-mono font-black uppercase tracking-widest border border-black dark:border-white px-3 py-1.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors shrink-0 cursor-pointer">
-            <Plus className="w-3.5 h-3.5" /> <span>ADD TRIP</span>
-          </button>
-        )}
-      </div>
       
       {/* Journeys Container: Flat list/grid for USER, or Accordion Sections for TIME / PLACE */}
       <div className="flex flex-col w-full">
