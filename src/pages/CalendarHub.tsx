@@ -13,8 +13,18 @@ import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { db, auth } from '../firebase';
 import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { fetchCityWeather, getWeatherMeta, getSimulatedWeatherForDate, CityWeatherData, DailyForecastItem } from '../utils/weatherApi';
+import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 
-const CALENDAR_WEATHER_CITIES = [
+export interface CalendarWeatherCity {
+  name: string;
+  nameEn: string;
+  country: string;
+  lat: number;
+  lng: number;
+  timezone: string;
+}
+
+const CALENDAR_WEATHER_CITIES: CalendarWeatherCity[] = [
   { name: '서울', nameEn: 'SEOUL', country: 'KR', lat: 37.5665, lng: 126.9780, timezone: 'Asia/Seoul' },
   { name: '도쿄', nameEn: 'TOKYO', country: 'JP', lat: 35.6762, lng: 139.6503, timezone: 'Asia/Tokyo' },
   { name: '오사카', nameEn: 'OSAKA', country: 'JP', lat: 34.6937, lng: 135.5023, timezone: 'Asia/Tokyo' },
@@ -341,10 +351,101 @@ export function CalendarHubPage({
     return [];
   });
 
+  // 날씨 도시 목록 (로컬 및 클라우드 영속성)
+  const [weatherCities, setWeatherCities] = useState<CalendarWeatherCity[]>(() => {
+    try {
+      const saved = localStorage.getItem('cached_calendar_weather_cities');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (_) {}
+    return CALENDAR_WEATHER_CITIES;
+  });
+
+  // Firestore 동기화 (다중 디바이스 지원)
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'settings', 'calendar_weather_cities'), (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        if (Array.isArray(data?.cities) && data.cities.length > 0) {
+          setWeatherCities(data.cities);
+          try {
+            localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(data.cities));
+          } catch (_) {}
+        }
+      }
+    }, (err) => {
+      console.warn("Calendar weather cities sync notice:", err);
+    });
+    return () => unsub();
+  }, []);
+
   // 날씨 토글 및 선택 도시 상태 (기본: 서울)
   const [isWeatherMode, setIsWeatherMode] = useState<boolean>(false);
-  const [selectedWeatherCity, setSelectedWeatherCity] = useState<typeof CALENDAR_WEATHER_CITIES[0]>(CALENDAR_WEATHER_CITIES[0]);
+  const [selectedWeatherCity, setSelectedWeatherCity] = useState<CalendarWeatherCity>(() => weatherCities[0] || CALENDAR_WEATHER_CITIES[0]);
   const [cityWeatherData, setCityWeatherData] = useState<CityWeatherData | null>(null);
+
+  // 날씨 도시 추가 인라인 팝오버 상태
+  const [isAddCityOpen, setIsAddCityOpen] = useState<boolean>(false);
+  const [searchCityQuery, setSearchCityQuery] = useState<string>('');
+
+  const handleAddWeatherCity = (
+    placeName: string, 
+    coords: { lat: number; lng: number } | null, 
+    address: string, 
+    countryName?: string, 
+    cityName?: string
+  ) => {
+    const finalName = cityName || placeName || '도시';
+    const finalEn = (cityName || placeName || 'CITY').toUpperCase();
+    const finalCountry = countryName || 'WORLD';
+    const finalLat = coords ? coords.lat : 37.5665;
+    const finalLng = coords ? coords.lng : 126.9780;
+    
+    let timezone = 'UTC';
+    try {
+      timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    } catch (_) {}
+
+    const newCity: CalendarWeatherCity = {
+      name: finalName,
+      nameEn: finalEn,
+      country: finalCountry,
+      lat: finalLat,
+      lng: finalLng,
+      timezone
+    };
+
+    const exists = weatherCities.some(c => c.nameEn.toUpperCase() === newCity.nameEn.toUpperCase());
+    const updated = exists ? weatherCities : [...weatherCities, newCity];
+    setWeatherCities(updated);
+    setSelectedWeatherCity(newCity);
+    setIsAddCityOpen(false);
+    setSearchCityQuery('');
+
+    try {
+      localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(updated));
+      setDoc(doc(db, 'settings', 'calendar_weather_cities'), { cities: updated }, { merge: true }).catch(console.error);
+    } catch (_) {}
+  };
+
+  const handleRemoveWeatherCity = (e: React.MouseEvent, cityEn: string) => {
+    e.stopPropagation();
+    if (weatherCities.length <= 1) {
+      alert('최소 1개 이상의 날씨 지역이 필요합니다.');
+      return;
+    }
+    const updated = weatherCities.filter(c => c.nameEn.toUpperCase() !== cityEn.toUpperCase());
+    setWeatherCities(updated);
+    if (selectedWeatherCity.nameEn.toUpperCase() === cityEn.toUpperCase()) {
+      setSelectedWeatherCity(updated[0]);
+    }
+    try {
+      localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(updated));
+      setDoc(doc(db, 'settings', 'calendar_weather_cities'), { cities: updated }, { merge: true }).catch(console.error);
+    } catch (_) {}
+  };
 
   useEffect(() => {
     if (!isWeatherMode) return;
@@ -1344,7 +1445,7 @@ export function CalendarHubPage({
       {/* ───────────────────────────────────────────────────────────── */}
       {/* Top Banner & Swiss Minimal Typography Header                  */}
       {/* ───────────────────────────────────────────────────────────── */}
-      <div className="w-full max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-6 border-b border-black/10 dark:border-white/10">
+      <div className="w-full max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-4 sm:pb-6">
         <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4 sm:gap-6">
           {/* Left: Giant Typography Year & Month + < TODAY > Navigation */}
           <div className="w-full xl:w-auto">
@@ -1621,42 +1722,96 @@ export function CalendarHubPage({
 
         {/* Weather Forecast City Selector Bar */}
         {isWeatherMode && (
-          <div className="w-full flex items-center justify-between gap-3 px-3 sm:px-4 py-2 mt-3 bg-black/[0.03] dark:bg-white/[0.05] border border-black/10 dark:border-white/10 font-mono text-xs select-none animate-in fade-in duration-200">
-            <div className="flex items-center gap-2 shrink-0">
-              <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />
-              <span className="font-black text-black dark:text-white uppercase tracking-wider">
-                {selectedWeatherCity.nameEn}
-              </span>
-              <span className="text-[10px] text-black/50 dark:text-white/50">
-                ({selectedWeatherCity.name}, {selectedWeatherCity.country})
-              </span>
-              <span className="text-[10px] font-bold text-black/40 dark:text-white/40 hidden md:inline">
-                · FORECAST ON CALENDAR
-              </span>
+          <div className="w-full flex flex-col gap-2 mt-3 bg-black/[0.03] dark:bg-white/[0.05] border border-black/10 dark:border-white/10 p-2.5 sm:px-4 sm:py-2.5 font-mono text-xs select-none animate-in fade-in duration-200">
+            <div className="flex flex-wrap items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2 shrink-0">
+                <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />
+                <span className="font-black text-black dark:text-white uppercase tracking-wider">
+                  {selectedWeatherCity.nameEn}
+                </span>
+                <span className="text-[10px] text-black/50 dark:text-white/50">
+                  ({selectedWeatherCity.name}, {selectedWeatherCity.country})
+                </span>
+                <span className="text-[10px] font-bold text-black/40 dark:text-white/40 hidden md:inline">
+                  · FORECAST ON CALENDAR
+                </span>
+              </div>
+
+              {/* Add City Action Button */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsAddCityOpen(prev => !prev)}
+                  className={`h-6 px-2 text-[10px] font-mono font-bold border transition-all cursor-pointer flex items-center gap-1 ${
+                    isAddCityOpen
+                      ? 'bg-red-600 text-white border-red-600'
+                      : 'border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white text-black dark:text-white'
+                  }`}
+                  title="새로운 날씨 지역 추가"
+                >
+                  <Plus className="w-3 h-3 stroke-[2.5]" />
+                  <span>{isAddCityOpen ? '닫기' : 'ADD CITY'}</span>
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center gap-1 overflow-x-auto hide-scrollbar shrink-0 max-w-[55%] sm:max-w-none">
-              {CALENDAR_WEATHER_CITIES.map((c) => (
-                <button
-                  key={c.nameEn}
-                  type="button"
-                  onClick={() => setSelectedWeatherCity(c)}
-                  className={`px-2 py-0.5 text-[9.5px] sm:text-[10px] font-mono font-bold border transition-colors cursor-pointer shrink-0 ${
-                    selectedWeatherCity.nameEn === c.nameEn
-                      ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                      : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white bg-white/50 dark:bg-zinc-900/50'
-                  }`}
-                >
-                  {c.name}
-                </button>
-              ))}
+            {/* Inline Autocomplete Input for Adding City */}
+            {isAddCityOpen && (
+              <div className="w-full pt-2 pb-1 border-t border-black/10 dark:border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 animate-in fade-in duration-150">
+                <div className="relative flex-1 min-w-[200px]">
+                  <PlaceAutocompleteInput
+                    value={searchCityQuery}
+                    onChange={(val) => setSearchCityQuery(val)}
+                    onSelectPlace={(placeName, coords, address, countryName, cityName) => {
+                      handleAddWeatherCity(placeName, coords, address, countryName, cityName);
+                    }}
+                    placeholder="도시 또는 지역명 검색 (예: 삿포로, 오사카, 바르셀로나...)"
+                    className="w-full h-8 px-3 text-xs bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white text-black dark:text-white outline-none rounded-none font-sans"
+                  />
+                </div>
+                <span className="text-[10px] text-black/40 dark:text-white/40 font-sans">
+                  * 도시를 검색하여 선택하면 날씨 바에 즉시 등록됩니다.
+                </span>
+              </div>
+            )}
+
+            {/* City Chips Scroll List with Delete Support */}
+            <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar pt-1 w-full">
+              {weatherCities.map((c) => {
+                const isSelected = selectedWeatherCity.nameEn.toUpperCase() === c.nameEn.toUpperCase();
+                return (
+                  <div
+                    key={c.nameEn}
+                    onClick={() => setSelectedWeatherCity(c)}
+                    className={`group px-2 py-0.5 text-[9.5px] sm:text-[10px] font-mono font-bold border transition-colors cursor-pointer shrink-0 flex items-center gap-1.5 ${
+                      isSelected
+                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                        : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white bg-white/50 dark:bg-zinc-900/50'
+                    }`}
+                  >
+                    <span>{c.name}</span>
+                    {weatherCities.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={(e) => handleRemoveWeatherCity(e, c.nameEn)}
+                        className={`opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity p-0.5 -mr-0.5 cursor-pointer ${
+                          isSelected ? 'text-white/70 hover:text-red-400' : 'text-black/40 dark:text-white/40'
+                        }`}
+                        title={`${c.name} 날씨 삭제`}
+                      >
+                        <X className="w-2.5 h-2.5 stroke-[3]" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
 
         {/* 12-Month Quick Selector Tabs: 2-Tier Stack (Big Bold Number + Small Month Code) in 12-Column Grid (No Horizontal Scroll) */}
         {viewMode === 'month' && (
-          <div className="grid grid-cols-12 gap-0.5 sm:gap-1 mt-4 sm:mt-5 pt-3 border-t border-black/10 dark:border-white/10 select-none">
+          <div className="grid grid-cols-12 gap-0.5 sm:gap-1 mt-4 sm:mt-5 py-3 border-y border-black/10 dark:border-white/10 select-none">
             {MONTH_TABS.map((mTab, idx) => {
               const isActive = currentMonth === idx;
               return (
@@ -1696,7 +1851,7 @@ export function CalendarHubPage({
       }`}>
         {viewMode === 'month' ? (
           /* ──────────────── MONTH VIEW (Pure Circular Swiss Minimal) ──────────────── */
-          <div className="w-full max-w-5xl xl:max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 mt-3 sm:mt-5">
+          <div className="w-full max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-3 sm:mt-5">
             {/* Edit Mode Control & Multi-Select Indicator Bar (Fixed height slot prevents calendar layout shift) */}
             {isEditMode && (
               <div className="h-9 sm:h-10 flex items-center justify-between pb-2 px-1 text-xs sm:text-sm font-mono font-bold select-none">

@@ -55,7 +55,7 @@ import {
 } from 'lucide-react';
 import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc, deleteField, setDoc, onSnapshot, QuerySnapshot, DocumentData } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Trip, Plan, MagazineMoment, MagazineSection, MagazineItem, MagazineHubConfig, ArchiveHubConfig, TimelineData, TimelineItem, TrashedMagazineSection, UserProfile, UserPermissions, LandingHeroMediaItem } from '../types';
+import { Trip, Plan, MagazineMoment, MagazineSection, MagazineItem, MagazineHubConfig, ArchiveHubConfig, TimelineData, TimelineItem, TrashedMagazineSection, UserProfile, UserPermissions, LandingHeroMediaItem, HomeWidgetConfig, CityWeatherConfig } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { getEffectiveImageUrl, uploadFileToR2, deleteFileFromR2 } from '../utils/storageHelper';
@@ -1765,6 +1765,97 @@ export function ManageHubPage({
     return localJourneys.find(j => j.id === selectedJourneyId);
   }, [localJourneys, selectedJourneyId]);
 
+  // ── HOME Bottom Widgets Configuration State (Calendar & Weather) ──
+  const [widgetShowCalendar, setWidgetShowCalendar] = useState<boolean>(true);
+  const [widgetShowWeather, setWidgetShowWeather] = useState<boolean>(true);
+  const [widgetOrder, setWidgetOrder] = useState<'calendar-first' | 'weather-first'>('calendar-first');
+  const [widgetShowExchange, setWidgetShowExchange] = useState<boolean>(false);
+  const [widgetShowDDay, setWidgetShowDDay] = useState<boolean>(false);
+  const [widgetCities, setWidgetCities] = useState<CityWeatherConfig[]>([]);
+  const [isAddingWeatherCity, setIsAddingWeatherCity] = useState<boolean>(false);
+  const [newCitySearchQuery, setNewCitySearchQuery] = useState<string>('');
+  const savedHomeWidgetsSnapshotRef = useRef<string>('');
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'app_settings', 'home_widgets'), (snap) => {
+      if (snap.exists()) {
+        const data = snap.data() as HomeWidgetConfig;
+        setWidgetShowCalendar(data.showCalendarArchive ?? true);
+        setWidgetShowWeather(data.showLiveWeather ?? true);
+        setWidgetOrder(data.widgetOrder || 'calendar-first');
+        setWidgetShowExchange(Boolean(data.showExchangeRates));
+        setWidgetShowDDay(Boolean(data.showUpcomingDDay));
+        const cities = Array.isArray(data.cities) ? data.cities : [];
+        setWidgetCities(cities);
+        savedHomeWidgetsSnapshotRef.current = JSON.stringify({
+          showCalendarArchive: data.showCalendarArchive ?? true,
+          showLiveWeather: data.showLiveWeather ?? true,
+          widgetOrder: data.widgetOrder || 'calendar-first',
+          showExchangeRates: Boolean(data.showExchangeRates),
+          showUpcomingDDay: Boolean(data.showUpcomingDDay),
+          cities
+        });
+      }
+    }, (err) => {
+      console.warn("ManageHub home_widgets fetch notice:", err);
+    });
+    return () => unsub();
+  }, []);
+
+  const handleAddHomeWeatherCity = (
+    placeName: string, 
+    coords: { lat: number; lng: number } | null, 
+    address: string, 
+    countryName?: string, 
+    cityName?: string
+  ) => {
+    const finalName = cityName || placeName || '도시';
+    const finalEn = (cityName || placeName || 'CITY').toUpperCase();
+    const finalCountry = countryName || 'WORLD';
+    const finalLat = coords ? coords.lat : 37.5665;
+    const finalLng = coords ? coords.lng : 126.9780;
+    
+    let timezone = 'UTC';
+    try {
+      timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    } catch (_) {}
+
+    const newCity: CityWeatherConfig = {
+      name: finalName,
+      nameEn: finalEn,
+      country: finalCountry,
+      lat: finalLat,
+      lng: finalLng,
+      timezone
+    };
+
+    const exists = widgetCities.some(c => c.nameEn.toUpperCase() === newCity.nameEn.toUpperCase());
+    if (exists) {
+      alert('이미 등록된 도시입니다.');
+      return;
+    }
+    setWidgetCities(prev => [...prev, newCity]);
+    setIsAddingWeatherCity(false);
+    setNewCitySearchQuery('');
+  };
+
+  const handleRemoveHomeWeatherCity = (idx: number) => {
+    setWidgetCities(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleMoveHomeWeatherCity = (idx: number, direction: 'up' | 'down') => {
+    if (direction === 'up' && idx === 0) return;
+    if (direction === 'down' && idx === widgetCities.length - 1) return;
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    setWidgetCities(prev => {
+      const next = [...prev];
+      const temp = next[idx];
+      next[idx] = next[targetIdx];
+      next[targetIdx] = temp;
+      return next;
+    });
+  };
+
   // ── Snapshot References for instant and reliable Dirty tracking ──
   const savedHomeSnapshotRef = useRef({
     title: homeTitle || '',
@@ -1857,9 +1948,24 @@ export function ManageHubPage({
       homeMagSectionId !== snap.homeMagSectionId ||
       homeMagLimit !== snap.homeMagLimit ||
       (localLandingHeroImage || '').trim() !== (snap.landingHeroImage || '').trim() ||
-      currentLandingMediaStr !== (snap.landingHeroMedia || '[]')
+      currentLandingMediaStr !== (snap.landingHeroMedia || '[]') ||
+      isHomeWidgetsDirty
     );
-  }, [title, subtitle, homeJourneyLimit, selectedHeroIds, autoSlide, slideDuration, mediaType, showMarquee, homeMarquee, homeSpeed, gradientEnabled, gradientFrom, gradientTo, homeMagSectionId, homeMagLimit, localLandingHeroImage, localLandingHeroMedia, saveRevision]);
+  }, [title, subtitle, homeJourneyLimit, selectedHeroIds, autoSlide, slideDuration, mediaType, showMarquee, homeMarquee, homeSpeed, gradientEnabled, gradientFrom, gradientTo, homeMagSectionId, homeMagLimit, localLandingHeroImage, localLandingHeroMedia, isHomeWidgetsDirty, saveRevision]);
+
+  // Dirty tracking for HOME Bottom Widgets
+  const isHomeWidgetsDirty = useMemo(() => {
+    if (!savedHomeWidgetsSnapshotRef.current) return false;
+    const currentStr = JSON.stringify({
+      showCalendarArchive: widgetShowCalendar,
+      showLiveWeather: widgetShowWeather,
+      widgetOrder,
+      showExchangeRates: widgetShowExchange,
+      showUpcomingDDay: widgetShowDDay,
+      cities: widgetCities
+    });
+    return currentStr !== savedHomeWidgetsSnapshotRef.current;
+  }, [widgetShowCalendar, widgetShowWeather, widgetOrder, widgetShowExchange, widgetShowDDay, widgetCities, saveRevision]);
 
   // Dirty tracking for currently selected journey in ARCHIVE mode
   const isArchiveDirty = useMemo(() => {
@@ -1960,6 +2066,14 @@ export function ManageHubPage({
       badgeText: archiveHubBadgeText,
       volumeText: archiveHubVolumeText,
     };
+    savedHomeWidgetsSnapshotRef.current = JSON.stringify({
+      showCalendarArchive: widgetShowCalendar,
+      showLiveWeather: widgetShowWeather,
+      widgetOrder,
+      showExchangeRates: widgetShowExchange,
+      showUpcomingDDay: widgetShowDDay,
+      cities: widgetCities
+    });
     if (selectedJourney) {
       savedArchiveSnapshotRef.current[selectedJourney.id] = JSON.stringify(getNormalizedJourneyData({
         title: editTitle,
@@ -2075,6 +2189,18 @@ export function ManageHubPage({
     if (savedPresetsSnapshotRef.current) {
       try {
         setPresetsList(JSON.parse(savedPresetsSnapshotRef.current));
+      } catch (_) {}
+    }
+
+    if (savedHomeWidgetsSnapshotRef.current) {
+      try {
+        const wSnap = JSON.parse(savedHomeWidgetsSnapshotRef.current);
+        setWidgetShowCalendar(wSnap.showCalendarArchive ?? true);
+        setWidgetShowWeather(wSnap.showLiveWeather ?? true);
+        setWidgetOrder(wSnap.widgetOrder || 'calendar-first');
+        setWidgetShowExchange(Boolean(wSnap.showExchangeRates));
+        setWidgetShowDDay(Boolean(wSnap.showUpcomingDDay));
+        setWidgetCities(wSnap.cities || []);
       } catch (_) {}
     }
   };
@@ -2335,6 +2461,19 @@ export function ManageHubPage({
         localLandingHeroImage,
         localLandingHeroMedia
       );
+
+      // Save Bottom Widgets (Calendar & Weather) settings to Firestore
+      const widgetConfigData: HomeWidgetConfig = {
+        showCalendarArchive: widgetShowCalendar,
+        showLiveWeather: widgetShowWeather,
+        widgetOrder,
+        showExchangeRates: widgetShowExchange,
+        showUpcomingDDay: widgetShowDDay,
+        cities: widgetCities
+      };
+      await setDoc(doc(db, 'app_settings', 'home_widgets'), widgetConfigData, { merge: true });
+      savedHomeWidgetsSnapshotRef.current = JSON.stringify(widgetConfigData);
+
       savedHomeSnapshotRef.current = {
         title,
         subtitle,
@@ -3369,6 +3508,18 @@ export function ManageHubPage({
         localLandingHeroMedia
       );
 
+      // Save Bottom Widgets (Calendar & Weather) settings to Firestore
+      const widgetConfigData: HomeWidgetConfig = {
+        showCalendarArchive: widgetShowCalendar,
+        showLiveWeather: widgetShowWeather,
+        widgetOrder,
+        showExchangeRates: widgetShowExchange,
+        showUpcomingDDay: widgetShowDDay,
+        cities: widgetCities
+      };
+      await setDoc(doc(db, 'app_settings', 'home_widgets'), widgetConfigData, { merge: true });
+      savedHomeWidgetsSnapshotRef.current = JSON.stringify(widgetConfigData);
+
       // 2. Save Journey if currently editing one
       if (selectedJourney) {
         await onSaveTrip(selectedJourney.id, {
@@ -4398,6 +4549,271 @@ export function ManageHubPage({
                       </div>
                     );
                   })()}
+                </section>
+
+                {/* ═══════════════════════════════════════════════════════════════ */}
+                {/* SECTION: BOTTOM WIDGETS (홈 하단 달력 및 날씨 위젯 설정)        */}
+                {/* ═══════════════════════════════════════════════════════════════ */}
+                <section className="flex flex-col gap-6 pt-6 border-t border-black/20 dark:border-white/20">
+                  <div className="flex items-center justify-between border-b-2 border-black dark:border-white pb-2">
+                    <div className="flex items-baseline gap-3">
+                      <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                        BOTTOM WIDGETS
+                      </h3>
+                      <span className="text-xs font-mono font-bold text-black/50 dark:text-white/50 uppercase">
+                        CALENDAR & WEATHER SETTINGS
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 1. Widget Display Toggles */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Calendar Archive Toggle */}
+                    <div className="flex flex-col gap-1.5 p-3.5 border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616]">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-red-600 dark:text-red-500" />
+                          <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                            달력 아카이브 위젯
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setWidgetShowCalendar(!widgetShowCalendar)}
+                          className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer ${
+                            widgetShowCalendar ? 'bg-black dark:bg-white justify-end' : 'bg-black/20 dark:bg-white/20 justify-start'
+                          }`}
+                        >
+                          <span className={`w-4 h-4 rounded-full transition-transform ${
+                            widgetShowCalendar ? 'bg-white dark:bg-black' : 'bg-white dark:bg-zinc-400'
+                          }`} />
+                        </button>
+                      </div>
+                      <p className="text-[10px] font-mono text-black/50 dark:text-white/50 mt-1">
+                        홈 하단에 여행 일정 및 연간 캘린더 대시보드를 표시합니다.
+                      </p>
+                    </div>
+
+                    {/* Live Weather Widget Toggle */}
+                    <div className="flex flex-col gap-1.5 p-3.5 border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616]">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Globe className="w-4 h-4 text-blue-600 dark:text-blue-500" />
+                          <span className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white">
+                            실시간 세계 날씨 위젯
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setWidgetShowWeather(!widgetShowWeather)}
+                          className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer ${
+                            widgetShowWeather ? 'bg-black dark:bg-white justify-end' : 'bg-black/20 dark:bg-white/20 justify-start'
+                          }`}
+                        >
+                          <span className={`w-4 h-4 rounded-full transition-transform ${
+                            widgetShowWeather ? 'bg-white dark:bg-black' : 'bg-white dark:bg-zinc-400'
+                          }`} />
+                        </button>
+                      </div>
+                      <p className="text-[10px] font-mono text-black/50 dark:text-white/50 mt-1">
+                        홈 하단에 여행지 및 주요 도시의 실시간 일기예보를 표시합니다.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 2. Widget Priority Order */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-mono font-bold uppercase tracking-wider text-black/80 dark:text-white/80">
+                      WIDGET DISPLAY ORDER (위젯 배치 우선순위)
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setWidgetOrder('calendar-first')}
+                        className={`p-3 border text-left flex items-center justify-between cursor-pointer transition-all ${
+                          widgetOrder === 'calendar-first'
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                            : 'bg-white dark:bg-[#161616] border-black/15 dark:border-white/15 text-black dark:text-white hover:border-black/50'
+                        }`}
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold font-mono uppercase">1. 달력 ➔ 2. 날씨</span>
+                          <span className="text-[10px] opacity-70 font-mono">CALENDAR ARCHIVE FIRST</span>
+                        </div>
+                        {widgetOrder === 'calendar-first' && <Check className="w-4 h-4 shrink-0" />}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setWidgetOrder('weather-first')}
+                        className={`p-3 border text-left flex items-center justify-between cursor-pointer transition-all ${
+                          widgetOrder === 'weather-first'
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                            : 'bg-white dark:bg-[#161616] border-black/15 dark:border-white/15 text-black dark:text-white hover:border-black/50'
+                        }`}
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold font-mono uppercase">1. 날씨 ➔ 2. 달력</span>
+                          <span className="text-[10px] opacity-70 font-mono">LIVE WEATHER FIRST</span>
+                        </div>
+                        {widgetOrder === 'weather-first' && <Check className="w-4 h-4 shrink-0" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 3. Extended Modules (D-Day & Exchange Rates) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* D-Day Banner Toggle */}
+                    <div className="flex items-center justify-between p-3 border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616]">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                          다가오는 여정 D-DAY 배너
+                        </span>
+                        <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                          UPCOMING TRIP D-DAY
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setWidgetShowDDay(!widgetShowDDay)}
+                        className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer ${
+                          widgetShowDDay ? 'bg-black dark:bg-white justify-end' : 'bg-black/20 dark:bg-white/20 justify-start'
+                        }`}
+                      >
+                        <span className={`w-4 h-4 rounded-full transition-transform ${
+                          widgetShowDDay ? 'bg-white dark:bg-black' : 'bg-white dark:bg-zinc-400'
+                        }`} />
+                      </button>
+                    </div>
+
+                    {/* Live Exchange Rates Toggle */}
+                    <div className="flex items-center justify-between p-3 border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616]">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-mono font-bold uppercase text-black dark:text-white">
+                          실시간 주요 환율 정보 바
+                        </span>
+                        <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                          LIVE EXCHANGE RATES
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setWidgetShowExchange(!widgetShowExchange)}
+                        className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer ${
+                          widgetShowExchange ? 'bg-black dark:bg-white justify-end' : 'bg-black/20 dark:bg-white/20 justify-start'
+                        }`}
+                      >
+                        <span className={`w-4 h-4 rounded-full transition-transform ${
+                          widgetShowExchange ? 'bg-white dark:bg-black' : 'bg-white dark:bg-zinc-400'
+                        }`} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 4. Weather Target Cities Management */}
+                  <div className="flex flex-col gap-3 pt-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col">
+                        <label className="text-xs font-mono font-bold uppercase tracking-wider text-black/80 dark:text-white/80">
+                          홈 날씨 대상 도시 목록 ({widgetCities.length}개 설정됨)
+                        </label>
+                        <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                          * 미설정 시 최근 등록된 여정의 여행지 및 세계 주요 도시가 자동 노출됩니다.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingWeatherCity(prev => !prev)}
+                        className={`px-2.5 py-1 text-xs font-mono font-bold border transition-all cursor-pointer flex items-center gap-1 ${
+                          isAddingWeatherCity
+                            ? 'bg-red-600 text-white border-red-600'
+                            : 'border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white text-black dark:text-white'
+                        }`}
+                      >
+                        <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                        <span>{isAddingWeatherCity ? '닫기' : 'ADD CITY'}</span>
+                      </button>
+                    </div>
+
+                    {/* Autocomplete Input for Adding City */}
+                    {isAddingWeatherCity && (
+                      <div className="p-3 border border-black/20 dark:border-white/20 bg-white dark:bg-[#161616] flex flex-col gap-2 animate-in fade-in duration-150">
+                        <span className="text-xs font-mono font-bold uppercase text-black/70 dark:text-white/70">
+                          추가할 도시 또는 여행지 검색
+                        </span>
+                        <div className="relative">
+                          <PlaceAutocompleteInput
+                            value={newCitySearchQuery}
+                            onChange={(val) => setNewCitySearchQuery(val)}
+                            onSelectPlace={(placeName, coords, address, countryName, cityName) => {
+                              handleAddHomeWeatherCity(placeName, coords, address, countryName, cityName);
+                            }}
+                            placeholder="도시명 검색 (예: 런던, 바르셀로나, 교토, 로마...)"
+                            className="w-full h-8 px-3 text-xs bg-transparent border border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white text-black dark:text-white outline-none rounded-none font-sans"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Cities List with Ordering & Deleting */}
+                    <div className="flex flex-col divide-y divide-black/10 dark:divide-white/10 border border-black/15 dark:border-white/15 bg-white dark:bg-[#161616]">
+                      {widgetCities.length === 0 ? (
+                        <div className="p-4 text-center text-xs font-mono text-black/40 dark:text-white/40">
+                          등록된 맞춤 도시가 없습니다. (자동 감지 모드로 동작)
+                        </div>
+                      ) : (
+                        widgetCities.map((city, idx) => (
+                          <div
+                            key={`${city.nameEn}_${idx}`}
+                            className="p-2.5 sm:px-4 sm:py-3 flex items-center justify-between gap-3 text-xs font-mono"
+                          >
+                            <div className="flex items-center gap-2 sm:gap-3 truncate">
+                              <span className="text-[10px] text-black/40 dark:text-white/40 font-bold w-4">
+                                {idx + 1}
+                              </span>
+                              <div className="flex items-baseline gap-1.5 truncate">
+                                <span className="font-bold text-black dark:text-white uppercase truncate">
+                                  {city.nameEn}
+                                </span>
+                                <span className="text-[10px] text-black/50 dark:text-white/50">
+                                  ({city.name}, {city.country})
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => handleMoveHomeWeatherCity(idx, 'up')}
+                                disabled={idx === 0}
+                                className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer"
+                                title="위로 이동"
+                              >
+                                <ChevronUp className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleMoveHomeWeatherCity(idx, 'down')}
+                                disabled={idx === widgetCities.length - 1}
+                                className="p-1 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer"
+                                title="아래로 이동"
+                              >
+                                <ChevronDown className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveHomeWeatherCity(idx)}
+                                className="p-1 text-red-600/70 hover:text-red-600 dark:text-red-400/70 dark:hover:text-red-400 cursor-pointer ml-1"
+                                title="삭제"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 </section>
 
               {/* Save Button */}

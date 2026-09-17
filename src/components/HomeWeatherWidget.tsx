@@ -156,18 +156,6 @@ export function HomeWeatherWidget({
           >
             <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
-
-          {isAdmin && onOpenConfig && (
-            <button
-              type="button"
-              onClick={onOpenConfig}
-              className="flex items-center gap-1 px-2 py-0.5 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
-              title="홈 하단 위젯 관리자 설정"
-            >
-              <Sliders className="w-3 h-3" />
-              <span className="text-[10px] font-mono font-bold uppercase hidden sm:inline">SETTINGS</span>
-            </button>
-          )}
         </div>
       </div>
 

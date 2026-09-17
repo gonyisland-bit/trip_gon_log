@@ -9,7 +9,6 @@ import { cleanAdministrativeDistricts, generateJourneyMessage } from '../compone
 import { preloadDetailPage } from '../utils/prefetchHelper';
 import { getKoreanHolidays } from '../utils/koreanHolidays';
 import { HomeWeatherWidget } from '../components/HomeWeatherWidget';
-import { HomeWidgetConfigModal } from '../components/HomeWidgetConfigModal';
 
 interface HomePageProps {
   onNavigate: (view: string, tripId?: number | null) => void;
@@ -847,7 +846,6 @@ export function HomePage({
   const [activeCardId, setActiveCardId] = useState<number | null>(null);
   const [cardViewMode, setCardViewMode] = useState<'grid' | 'wide' | 'list'>(() => (localStorage.getItem('cardViewMode') as any) || 'grid');
 
-  const [isWidgetConfigModalOpen, setIsWidgetConfigModalOpen] = useState<boolean>(false);
   const [widgetConfig, setWidgetConfig] = useState<HomeWidgetConfig>(() => {
     try {
       const cached = localStorage.getItem('cached_home_widget_config');
@@ -2355,8 +2353,8 @@ export function HomePage({
               </div>
 
               {/* 2. Large Circular Calendar Grid Column (lg:col-span-5 xl:col-span-5) */}
-              <div className="lg:col-span-5 xl:col-span-5 flex flex-col items-center justify-center w-full border-t lg:border-t-0 lg:border-l border-black/10 dark:border-white/10 pt-6 lg:pt-0 lg:pl-8">
-                <div className="w-full max-w-[420px] mx-auto">
+              <div className="lg:col-span-5 xl:col-span-5 flex flex-col items-center lg:items-end justify-center w-full border-t lg:border-t-0 lg:border-l border-black/10 dark:border-white/10 pt-6 lg:pt-0 lg:pl-8 lg:pr-4">
+                <div className="w-full max-w-[420px] mx-auto lg:mr-0 lg:ml-auto">
                   {/* Weekday Headers */}
                   <div className="grid grid-cols-7 gap-2 sm:gap-3 mb-3 text-center text-xs sm:text-sm font-black font-mono select-none text-black/40 dark:text-white/40">
                     <div>M</div>
@@ -2483,7 +2481,6 @@ export function HomePage({
         <HomeWeatherWidget 
           trips={trips} 
           isAdmin={isAdmin}
-          onOpenConfig={isAdmin ? () => setIsWidgetConfigModalOpen(true) : undefined}
           customCities={widgetConfig.cities}
         />
       );
@@ -2558,7 +2555,7 @@ export function HomePage({
             </section>
           )}
 
-          {/* Ordered Bottom Widgets */}
+          {/* Bottom Widgets */}
           {widgetConfig.widgetOrder === 'weather-first' ? (
             <>
               {widgetConfig.showLiveWeather && renderWeather()}
@@ -2569,16 +2566,6 @@ export function HomePage({
               {widgetConfig.showCalendarArchive && renderCalendarArchive()}
               {widgetConfig.showLiveWeather && renderWeather()}
             </>
-          )}
-
-          {/* Admin Config Modal */}
-          {isAdmin && isWidgetConfigModalOpen && (
-            <HomeWidgetConfigModal
-              isOpen={isWidgetConfigModalOpen}
-              onClose={() => setIsWidgetConfigModalOpen(false)}
-              config={widgetConfig}
-              onSaveConfig={(newCfg) => setWidgetConfig(newCfg)}
-            />
           )}
         </>
       );
