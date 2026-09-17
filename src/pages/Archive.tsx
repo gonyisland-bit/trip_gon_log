@@ -996,7 +996,7 @@ export function ArchiveHubPage({
           </div>
         </div>
         {isLoggedIn && (
-          <button onClick={onAddArchive} className="flex items-center justify-center gap-1.5 text-[9px] sm:text-[10px] md:text-xs font-mono font-black uppercase tracking-widest border border-black dark:border-white px-3 py-1.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors shrink-0 w-auto cursor-pointer">
+          <button onClick={onAddArchive} className="w-full sm:w-auto flex items-center justify-center gap-1.5 text-[9px] sm:text-[10px] md:text-xs font-mono font-black uppercase tracking-widest border border-black dark:border-white px-3 py-1.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors shrink-0 cursor-pointer">
             <Plus className="w-3.5 h-3.5" /> <span>ADD TRIP</span>
           </button>
         )}
@@ -1060,6 +1060,10 @@ export function ArchiveHubPage({
                         return (
                           <div
                             key={trip.id}
+                            style={{
+                              animation: 'cardEntrance 260ms cubic-bezier(0.16, 1, 0.3, 1) both',
+                              animationDelay: `${Math.min(index * 20, 200)}ms`
+                            }}
                             onClick={() => onNavigate('detail', trip.id)}
                             onMouseEnter={preloadDetailPage}
                             onTouchStart={preloadDetailPage}
@@ -1156,6 +1160,10 @@ export function ArchiveHubPage({
                       return (
                         <article
                           key={trip.id}
+                          style={{
+                            animation: 'cardEntrance 260ms cubic-bezier(0.16, 1, 0.3, 1) both',
+                            animationDelay: `${Math.min(index * 30, 240)}ms`
+                          }}
                           onClick={() => onNavigate('detail', trip.id)}
                           onMouseEnter={preloadDetailPage}
                           onTouchStart={preloadDetailPage}

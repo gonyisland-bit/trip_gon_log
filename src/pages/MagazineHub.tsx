@@ -592,6 +592,10 @@ export function MagazineHubPage({
       return (
         <article
           key={item.id || itemIndex}
+          style={{
+            animation: 'cardEntrance 260ms cubic-bezier(0.16, 1, 0.3, 1) both',
+            animationDelay: `${Math.min(itemIndex * 30, 240)}ms`
+          }}
           className={`group flex flex-col h-full justify-center transition-all duration-300 ${containerBleedClass} ${options.spanClass || ''}`}
         >
           <div
@@ -641,6 +645,10 @@ export function MagazineHubPage({
     return (
       <article
         key={item.id || itemIndex}
+        style={{
+          animation: 'cardEntrance 260ms cubic-bezier(0.16, 1, 0.3, 1) both',
+          animationDelay: `${Math.min(itemIndex * 30, 240)}ms`
+        }}
         className={`group relative flex flex-col justify-between h-full transition-all duration-300 select-none bg-transparent border-none shadow-none ${containerBleedClass} ${options.spanClass || ''}`}
       >
         <div
@@ -931,6 +939,10 @@ export function MagazineHubPage({
                 return (
                   <article
                     key={sec.id}
+                    style={{
+                      animation: 'cardEntrance 260ms cubic-bezier(0.16, 1, 0.3, 1) both',
+                      animationDelay: `${Math.min(idx * 30, 240)}ms`
+                    }}
                     onClick={() => handleOpenSection(sec.id)}
                     className="group relative flex flex-col border border-black/10 dark:border-white/20 bg-white dark:bg-[#1C1C1E] rounded-3xl transition-all duration-300 overflow-hidden shadow-xs hover:shadow-2xl hover:border-black/30 dark:hover:border-white/40 cursor-pointer select-none"
                   >

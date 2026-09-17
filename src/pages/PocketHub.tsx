@@ -197,6 +197,7 @@ export function PocketHubPage({
   const [selectedCity, setSelectedCity] = useState<string>('ALL');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isSearchInputOpen, setIsSearchInputOpen] = useState<boolean>(false);
   const [isFavoriteFilter, setIsFavoriteFilter] = useState<boolean>(false);
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
 
@@ -805,64 +806,64 @@ export function PocketHubPage({
             )}
           </button>
 
-          {/* Search Input */}
-          <div className="relative flex items-center">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="장소, 지역 검색..."
-              className="w-32 sm:w-44 pl-7 pr-6 py-1 text-xs bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 font-sans font-medium outline-none text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 rounded-none"
-            />
+          {/* Search Button (Trip Standard: expands inline input) */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsSearchInputOpen(v => !v);
+              if (isSearchInputOpen) setSearchQuery('');
+            }}
+            className={`p-2 border transition-colors flex items-center justify-center rounded-none cursor-pointer relative ${
+              isSearchInputOpen || searchQuery
+                ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                : 'border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-transparent text-black dark:text-white'
+            }`}
+            title="포켓 검색"
+          >
+            <Search className="w-3.5 h-3.5" />
             {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white p-0.5 cursor-pointer"
-                title="검색어 지우기"
-              >
-                <X className="w-3 h-3" />
-              </button>
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-600" />
             )}
-          </div>
+          </button>
 
-          {/* Sort dropdown */}
-          <div ref={sortRef} className="relative shrink-0">
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); setIsSortOpen(prev => !prev); }}
-              className={`text-[10px] sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-none transition-all flex items-center gap-1.5 cursor-pointer ${
-                isSortOpen
-                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
-                  : 'border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5 text-black dark:text-white'
-              }`}
+          {/* Inline Search Input */}
+          {isSearchInputOpen && (
+            <div className="relative flex items-center animate-in fade-in slide-in-from-left-2 duration-150">
+              <input
+                type="text"
+                autoFocus
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="장소, 지역 검색..."
+                className="w-28 sm:w-44 pl-2.5 pr-6 py-1.5 text-xs bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 font-sans font-medium outline-none text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 rounded-none"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white p-0.5 cursor-pointer"
+                  title="검색어 지우기"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Sort dropdown (Trip Standard native Swiss select) */}
+          <div className="flex items-center gap-1.5">
+            <ArrowUpDown className="w-3.5 h-3.5 text-black/60 dark:text-white/60 shrink-0" />
+            <select
+              value={sortMode}
+              onChange={(e) => setSortMode(e.target.value as any)}
+              className="bg-transparent text-[10px] sm:text-xs font-black uppercase tracking-widest border border-black/20 dark:border-white/20 px-2.5 py-1.5 focus:outline-none focus:border-black dark:focus:border-white transition-colors cursor-pointer rounded-none font-sans text-black dark:text-white"
             >
-              <ArrowUpDown className="w-3.5 h-3.5" />
-              <span>{SORT_LABELS[sortMode]}</span>
-              <ChevronDown className={`w-3 h-3 transition-transform ${isSortOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {isSortOpen && (
-              <div
-                onClick={(e) => e.stopPropagation()}
-                className="absolute right-0 top-full mt-1 z-30 w-36 bg-white dark:bg-[#181818] border border-black/20 dark:border-white/20 shadow-xl py-1 font-mono text-[11px] animate-in fade-in zoom-in-95 duration-100"
-              >
-                {(['custom', 'newest', 'oldest', 'title', 'category'] as const).map(mode => (
-                  <button
-                    key={mode}
-                    onClick={() => { setSortMode(mode); setIsSortOpen(false); }}
-                    className={`w-full px-3 py-2 text-left flex items-center gap-2 uppercase tracking-wider cursor-pointer transition-colors ${
-                      sortMode === mode
-                        ? 'bg-black text-white dark:bg-white dark:text-black font-bold'
-                        : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white'
-                    }`}
-                  >
-                    {sortMode === mode && <Check className="w-3 h-3 shrink-0" />}
-                    <span className={sortMode === mode ? '' : 'ml-5'}>{SORT_LABELS[mode]}</span>
-                  </button>
-                ))}
-              </div>
-            )}
+              <option value="custom" className="bg-[#F9F8F6] dark:bg-[#111111]">CUSTOM</option>
+              <option value="newest" className="bg-[#F9F8F6] dark:bg-[#111111]">NEWEST</option>
+              <option value="oldest" className="bg-[#F9F8F6] dark:bg-[#111111]">OLDEST</option>
+              <option value="title" className="bg-[#F9F8F6] dark:bg-[#111111]">A-Z</option>
+              <option value="category" className="bg-[#F9F8F6] dark:bg-[#111111]">CATEGORY</option>
+            </select>
           </div>
 
           {/* Admin Reorder Grip Button */}
@@ -881,36 +882,13 @@ export function PocketHubPage({
             </button>
           )}
 
-          {/* SELECT Mode Button */}
-          <button
-            type="button"
-            onClick={() => {
-              setIsSelectionMode(prev => !prev);
-              if (isSelectionMode) setSelectedSpotIds(new Set());
-            }}
-            className={`text-[10px] sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider border rounded-none transition-all flex items-center gap-1.5 cursor-pointer ${
-              isSelectionMode
-                ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-xs'
-                : 'border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white bg-black/5 dark:bg-white/5'
-            }`}
-            title={isSelectionMode ? "선택 모드 해제" : "선택 모드 활성화"}
-          >
-            {isSelectionMode ? (
-              <CheckSquare className="w-3.5 h-3.5 text-red-500" />
-            ) : (
-              <Square className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
-            )}
-            <span>SELECT</span>
-          </button>
-
-          {/* KEEP SPOT (Primary CTA) */}
+          {/* ADD (Primary CTA) - Standardized with Trip Hub, full width on mobile */}
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black text-[10px] sm:text-[11px] font-mono font-bold tracking-wider uppercase flex items-center gap-1.5 hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer rounded-none"
+            className="w-full sm:w-auto flex items-center justify-center gap-1.5 text-[9px] sm:text-[10px] md:text-xs font-mono font-black uppercase tracking-widest border border-black dark:border-white px-3 py-1.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors shrink-0 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">KEEP SPOT</span>
-            <span className="sm:hidden">SPOT</span>
+            <span>ADD</span>
           </button>
         </div>
       </div>
@@ -1102,7 +1080,7 @@ export function PocketHubPage({
             {(() => {
               const hasAnySelected = isSelectionMode && selectedSpotIds.size > 0;
 
-              const renderCard = (spot: SpotPocketItem) => {
+              const renderCard = (spot: SpotPocketItem, cardIdx: number = 0) => {
                 const meta = CATEGORY_META[spot.category] || CATEGORY_META.spot;
                 const Icon = meta.icon;
                 const normalizedCountry = getNormalizedCountry(spot.country);
@@ -1117,6 +1095,10 @@ export function PocketHubPage({
                 return (
                   <div
                     key={spot.id}
+                    style={{
+                      animation: 'cardEntrance 260ms cubic-bezier(0.16, 1, 0.3, 1) both',
+                      animationDelay: `${Math.min(cardIdx * 30, 240)}ms`
+                    }}
                     draggable={isDragMode}
                     onDragStart={isDragMode ? () => setDraggingSpotId(spot.id) : undefined}
                     onDragOver={isDragMode ? (e) => { e.preventDefault(); setDragOverSpotId(spot.id); } : undefined}
@@ -1311,7 +1293,7 @@ export function PocketHubPage({
                           <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3.5 sm:gap-5 md:gap-6">
-                          {group.items.slice(0, visibleCount).map(renderCard)}
+                          {group.items.slice(0, visibleCount).map((spot, idx) => renderCard(spot, idx))}
                         </div>
                       </div>
                     ))}

@@ -100,6 +100,23 @@
   - 기본 상태: `border border-black/20 dark:border-white/20 hover:border-black/50 dark:hover:border-white/50 bg-black/5 dark:bg-white/5 text-black dark:text-white`
   - 활성/선택 상태: `bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs`
   - 폰트 및 패딩: `text-[10px] sm:text-[11px] px-2.5 py-1.5 uppercase font-mono font-bold tracking-wider rounded-none`
+- **허브 툴바 공간 효율화 (모바일 1-Row 정렬)**:
+  - 검색창을 상시 노출하여 모바일 공간을 낭비하지 않고, Trip 허브 표준인 **인라인 펼침 방식(`isSearchInputOpen`)**으로 단일화합니다.
+  - 이로 인해 모바일에서도 `[FILTER]`, `[SEARCH]`, `[SORT]` 3개 핵심 컨트롤이 단 한 줄(1-row)에 간결하게 배치됩니다.
+  - 정렬 컴포넌트는 `<ArrowUpDown />` 아이콘과 스위스 네이티브 모노크롬 `<select>` 요소를 결합하여 군더더기 팝업 없이 직관적으로 동작하도록 통일합니다.
+- **허브 ADD 버튼 표준화 및 마우스 오버 통일**:
+  - 명칭: `KEEP SPOT` 등 이질적인 명칭을 배제하고 `<Plus className="w-3.5 h-3.5" /> ADD` (Trip은 `ADD TRIP`)로 간결화.
+  - 모바일 반응형: 모바일에서는 하단 1줄 전체를 시원하게 채우는 풀사이즈(`w-full`), 데스크톱에서는 우측 정렬(`sm:w-auto`).
+  - 마우스 오버 전후 색상 100% 통일:
+    - 오버 전: `border border-black dark:border-white text-black dark:text-white bg-transparent`
+    - 오버 후: `hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors`
+
+### 카드 렌더링 모션 시스템 (Fast Cascading Motion)
+- **앱 감성의 순차적 스태거 모션(Stagger Motion)**:
+  - 카드가 한 번에 정적으로 나타나지 않고, 미세한 시간차(30ms 단위)를 두고 부드럽게 솟아오르는 인터랙션을 제공합니다.
+  - 키프레임: `@keyframes cardEntrance` (`from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); }`)
+  - 타이밍 함수: `cubic-bezier(0.16, 1, 0.3, 1)` (스위스 모던 감성의 빠르고 정갈한 감속 곡선)
+  - 지속 시간 및 상한: 기본 `260ms`, 딜레이는 `Math.min(index * 30, 240)ms`로 캡핑하여 카드가 수십 개여도 0.24초 이내에 모든 카드가 쾌적하게 안착하도록 보장합니다.
 
 ### 모바일 뷰포트 공간 최적화 (Mobile Viewport Optimization)
 - **홈허브 히어로 하단 모바일 압축**: 모바일(`md` 미만)에서 3:4 사진 아래 날짜, 여정설명, 일수, 장소, 이동버튼이 세로로 길게 늘어지지 않도록, 1화면 안에 들어오는 컴팩트 인라인 블록(`px-2 pt-4 pb-2 border-t border-black/10`)으로 압축하여 스크롤 낭비를 배제합니다. 데스크톱(`md` 이상)의 웅장한 3열 오버랩 레이아웃은 그대로 유지합니다.
