@@ -1871,6 +1871,7 @@ export function CalendarHubPage({
                               {weatherItem.tempMin}°/{weatherItem.tempMax}°
                             </span>
                           </div>
+                        );
                       })() : (
                         <>
                           <span className={textClasses}>{cell.dayNum}</span>
