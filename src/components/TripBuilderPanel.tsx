@@ -369,21 +369,23 @@ export function TripBuilderPanel({
       const spotCountryObj = findCountryByNameOrAlias(s.country || '');
       const spotCityObj = findCityByNameOrAlias(s.city || '');
 
-      // 국가 일치 검사
-      if (countryTokens.size > 0) {
-        if (sCountry && countryTokens.has(sCountry)) return true;
-        if (spotCountryObj && (countryTokens.has(spotCountryObj.nameEn.toLowerCase()) || countryTokens.has(spotCountryObj.nameKo.toLowerCase()))) return true;
-        for (const tok of countryTokens) {
-          if (tok && (sCountry.includes(tok) || sAddr.includes(tok) || sTitle.includes(tok))) return true;
-        }
-      }
-
-      // 도시 일치 검사
+      // 1. 도시가 지정된 경우: 해당 도시/지역과 일치하는 포켓만 선별
       if (cityTokens.size > 0) {
         if (sCity && cityTokens.has(sCity)) return true;
         if (spotCityObj && (cityTokens.has(spotCityObj.nameEn.toLowerCase()) || cityTokens.has(spotCityObj.nameKo.toLowerCase()))) return true;
         for (const tok of cityTokens) {
           if (tok && (sCity.includes(tok) || sAddr.includes(tok) || sTitle.includes(tok))) return true;
+        }
+        // 도시가 지정되어 있을 때는 타 도시 포켓이 노출되지 않도록 국가 일치만으로는 통과시키지 않음
+        return false;
+      }
+
+      // 2. 도시가 지정되지 않고 국가만 선택된 경우: 해당 국가의 모든 포켓 노출
+      if (countryTokens.size > 0) {
+        if (sCountry && countryTokens.has(sCountry)) return true;
+        if (spotCountryObj && (countryTokens.has(spotCountryObj.nameEn.toLowerCase()) || countryTokens.has(spotCountryObj.nameKo.toLowerCase()))) return true;
+        for (const tok of countryTokens) {
+          if (tok && (sCountry.includes(tok) || sAddr.includes(tok) || sTitle.includes(tok))) return true;
         }
       }
 

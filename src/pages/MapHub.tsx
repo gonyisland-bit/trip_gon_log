@@ -1525,6 +1525,15 @@ function getOptimalCurrencyUnit(rate: number, currency: string): number {
   return Math.max(1, Math.pow(10, power));
 }
 
+function shiftGeoJsonCoordinates(coords: any, lngOffset: number): any {
+  if (typeof coords[0] === 'number') {
+    return [coords[0] + lngOffset, coords[1]];
+  }
+  return coords.map((sub: any) => shiftGeoJsonCoordinates(sub, lngOffset));
+}
+
+let cachedCountriesGeoJson: any = null;
+
 interface MapPinGroup {
   city: string;
   country: string;
@@ -1581,6 +1590,26 @@ export function MapHubPage({
   const selectPinRef = useRef<any>(null);
   const yellowMarkersRef = useRef<any[]>([]);
   const countryDotsRef = useRef<any[]>([]);
+  const geoJsonDataRef = useRef<any>(cachedCountriesGeoJson);
+  const prevDestCitiesCountRef = useRef<number>(0);
+
+  // Load lightweight country GeoJSON dataset for exact boundary highlighting
+  useEffect(() => {
+    if (!cachedCountriesGeoJson) {
+      fetch('/data/countries.geojson')
+        .then(res => res.json())
+        .then(data => {
+          cachedCountriesGeoJson = data;
+          geoJsonDataRef.current = data;
+          if (selectedCountry) {
+            updateCountryHighlightAndPin(selectedCountry);
+          }
+        })
+        .catch(err => console.warn('Failed to load countries.geojson:', err));
+    } else {
+      geoJsonDataRef.current = cachedCountriesGeoJson;
+    }
+  }, [selectedCountry]);
 
   // In-place Trip Builder Split-Screen State
   const [isBuilderOpen, setIsBuilderOpen] = useState<boolean>(() => Boolean(initialBuilderOpen));
@@ -1800,7 +1829,22 @@ export function MapHubPage({
     });
     destCityMarkersRef.current = [];
 
+    const prevCount = prevDestCitiesCountRef.current;
+    prevDestCitiesCountRef.current = selectedDestCities.length;
+
     if (!selectedDestCities || selectedDestCities.length === 0) {
+      // 복수 선택 후 모든 도시가 해제된 경우, 활성 국가의 원래 중심과 전체 줌으로 자연스럽게 복귀
+      if (prevCount > 0 && selectedCountry && !isFlyingToCountryRef.current) {
+        const isMobile = window.innerWidth < 640;
+        let landingCoords: [number, number] = [selectedCountry.center[0], selectedCountry.center[1]];
+        if (landingCoords[1] < -35) landingCoords[1] += 360;
+        let targetCenter: [number, number] = landingCoords;
+        if (isMobile) {
+          const targetPoint = map.project(landingCoords, selectedCountry.zoom).add([0, window.innerHeight * 0.22]);
+          targetCenter = [map.unproject(targetPoint, selectedCountry.zoom).lat, map.unproject(targetPoint, selectedCountry.zoom).lng];
+        }
+        map.flyTo(targetCenter, selectedCountry.zoom, { duration: 0.8 });
+      }
       return;
     }
 
@@ -2584,7 +2628,7 @@ export function MapHubPage({
     flightAnimRef.current = requestAnimationFrame(animateFlight);
   };
 
-  // Updates circular boundary highlight & pulse pin on map
+  // Updates boundary highlight (exact GeoJSON polygon if available, or fallback circle) & pulse pin on map
   const updateCountryHighlightAndPin = useCallback((country: CountryInfo) => {
     const map = mapRef.current;
     const L = (window as any).L;
@@ -2599,23 +2643,68 @@ export function MapHubPage({
       selectPinRef.current = null;
     }
 
-    // Boundary highlight circle (proportional to country size/zoom)
-    const radiusMeters = country.zoom >= 11
-      ? 15000 // Hong Kong, Macau, Singapore
-      : country.zoom >= 9
-        ? 35000 // Small island nations / city states
-        : country.zoom >= 7
-          ? 75000 // Taiwan, Maldives, Nepal, etc.
-          : Math.max(110000, (10.5 - country.zoom) * 85000);
+    const geoData = geoJsonDataRef.current || cachedCountriesGeoJson;
+    const countryFeature = geoData?.features?.find((f: any) => f.properties?.code === country.code.toUpperCase());
 
-    const circleOptions = {
-      radius: radiusMeters,
-      color: '#DC2626',
-      weight: 2,
-      dashArray: '6, 6',
-      fillColor: '#DC2626',
-      fillOpacity: 0.12,
-    };
+    const highlightLayers: any[] = [];
+
+    if (countryFeature) {
+      const geoStyle = {
+        color: '#DC2626',
+        weight: 1.8,
+        dashArray: '4, 4',
+        fillColor: '#DC2626',
+        fillOpacity: 0.13,
+      };
+
+      highlightLayers.push(L.geoJSON(countryFeature, { style: geoStyle, interactive: false }));
+
+      // World wrap replication: Eastern Asia / Pacific (lng < 60) or Americas (lng > 0)
+      if (country.center[1] < 60) {
+        const shiftedCoords = shiftGeoJsonCoordinates(countryFeature.geometry.coordinates, 360);
+        const shiftedFeature = {
+          ...countryFeature,
+          geometry: { ...countryFeature.geometry, coordinates: shiftedCoords }
+        };
+        highlightLayers.push(L.geoJSON(shiftedFeature, { style: geoStyle, interactive: false }));
+      }
+      if (country.center[1] > 0) {
+        const shiftedCoords = shiftGeoJsonCoordinates(countryFeature.geometry.coordinates, -360);
+        const shiftedFeature = {
+          ...countryFeature,
+          geometry: { ...countryFeature.geometry, coordinates: shiftedCoords }
+        };
+        highlightLayers.push(L.geoJSON(shiftedFeature, { style: geoStyle, interactive: false }));
+      }
+    } else {
+      // Fallback: circular boundary while geojson is loading
+      const radiusMeters = country.zoom >= 11
+        ? 15000 // Hong Kong, Macau, Singapore
+        : country.zoom >= 9
+          ? 35000 // Small island nations / city states
+          : country.zoom >= 7
+            ? 75000 // Taiwan, Maldives, Nepal, etc.
+            : Math.max(110000, (10.5 - country.zoom) * 85000);
+
+      const circleOptions = {
+        radius: radiusMeters,
+        color: '#DC2626',
+        weight: 2,
+        dashArray: '6, 6',
+        fillColor: '#DC2626',
+        fillOpacity: 0.12,
+      };
+
+      highlightLayers.push(L.circle(country.center, circleOptions));
+      if (country.center[1] < 60) {
+        highlightLayers.push(L.circle([country.center[0], country.center[1] + 360], circleOptions));
+      }
+      if (country.center[1] > 0) {
+        highlightLayers.push(L.circle([country.center[0], country.center[1] - 360], circleOptions));
+      }
+    }
+
+    highlightLayerRef.current = L.featureGroup(highlightLayers).addTo(map);
 
     // Selected country pulse pin
     const selectHtml = `
@@ -2632,21 +2721,15 @@ export function MapHubPage({
       iconAnchor: [20, 20],
     });
 
-    const circles: any[] = [L.circle(country.center, circleOptions)];
     const markers: any[] = [L.marker(country.center, { icon: selectIcon, zIndexOffset: 1200 })];
-
-    // World wrap replication: Americas/Atlantic/Pacific
     if (country.center[1] < 60) {
-      circles.push(L.circle([country.center[0], country.center[1] + 360], circleOptions));
       markers.push(L.marker([country.center[0], country.center[1] + 360], { icon: selectIcon, zIndexOffset: 1200 }));
     }
     if (country.center[1] > 0) {
-      circles.push(L.circle([country.center[0], country.center[1] - 360], circleOptions));
       markers.push(L.marker([country.center[0], country.center[1] - 360], { icon: selectIcon, zIndexOffset: 1200 }));
     }
 
-    highlightLayerRef.current = L.layerGroup(circles).addTo(map);
-    selectPinRef.current = L.layerGroup(markers).addTo(map);
+    selectPinRef.current = L.featureGroup(markers).addTo(map);
   }, []);
 
   // Country selection handler: highlights country area and flies airplane from Korea
