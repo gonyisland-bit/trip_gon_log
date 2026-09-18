@@ -1092,6 +1092,39 @@ export function JourneyDetailPage({
 
   const currentCinematicItem = cinematicItems[cinematicIndex] || null;
 
+  // Track previous cinematic index to determine direction (forward vs backward)
+  const prevCinematicIndexRef = useRef<number>(0);
+  const [currentCinematicVehicleType, setCurrentCinematicVehicleType] = useState<'car' | 'train' | 'ship' | 'flight' | null>(null);
+
+  useEffect(() => {
+    const prevIdx = prevCinematicIndexRef.current;
+    const curIdx = cinematicIndex;
+    prevCinematicIndexRef.current = curIdx;
+
+    if (curIdx === prevIdx) return;
+
+    if (curIdx > prevIdx) {
+      // 앞으로 진행: 이전 스팟(curIdx - 1)의 탈것 설정 적용
+      const vType = curIdx > 0 ? (cinematicItems[curIdx - 1]?.vehicleType || null) : null;
+      setCurrentCinematicVehicleType(vType);
+    } else {
+      // 뒤로 역방향 진행: 돌아가는 구간의 시작점(curIdx)의 탈것 설정 적용 (배, 차량 등 유지)
+      const vType = cinematicItems[curIdx]?.vehicleType || null;
+      setCurrentCinematicVehicleType(vType);
+    }
+  }, [cinematicIndex, cinematicItems]);
+
+  // Reset timeline scroll to top (start of day) when switching dates in normal view
+  const prevSelectedDateRef = useRef<string>(selectedDate);
+  useEffect(() => {
+    if (prevSelectedDateRef.current !== selectedDate) {
+      prevSelectedDateRef.current = selectedDate;
+      if (!isCinematicMode && tabContentRef.current) {
+        tabContentRef.current.scrollTo({ top: 0, behavior: 'instant' });
+      }
+    }
+  }, [selectedDate, isCinematicMode]);
+
   // Sync active step to timeline and map
   useEffect(() => {
     if (!isCinematicMode || !currentCinematicItem) return;
@@ -3856,7 +3889,7 @@ export function JourneyDetailPage({
               transits={isEditing ? draftTransits : transits}
               isCinematicMode={isCinematicMode}
               cinematicSpeed={cinematicSpeed}
-              cinematicVehicleType={cinematicIndex > 0 ? cinematicItems[cinematicIndex - 1]?.vehicleType : null}
+              cinematicVehicleType={currentCinematicVehicleType}
               hoveredItemId={hoveredItemId}
               onItemHover={setHoveredItemId}
               onAddSpotToTimeline={handleDirectAddFromPocket}
@@ -3872,7 +3905,7 @@ export function JourneyDetailPage({
               className={`absolute bottom-3 md:bottom-6 lg:bottom-8 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-auto flex items-center rounded-full overflow-hidden opacity-100 bg-[#2E2E33] text-white border border-white/20 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur-md p-1 ${
                 isCinematicMode
                   ? 'h-9.5 sm:h-10 w-[calc(100%-1.5rem)] max-w-[480px] justify-between'
-                  : 'h-9.5 sm:h-10 w-[120px] sm:w-[126px] justify-center hover:scale-105 active:scale-95 cursor-pointer group'
+                  : 'h-9.5 sm:h-10 w-auto justify-center hover:scale-105 active:scale-95 cursor-pointer group'
               }`}
             >
               {/* Collapsed State: Monochromatic Solid Capsule with Flush Concentric Play Button & 'Playlog' */}
@@ -3889,7 +3922,7 @@ export function JourneyDetailPage({
                     setIsCinematicMode(true);
                     setIsCinematicPaused(false);
                   }}
-                  className="w-full h-full flex items-center gap-2 sm:gap-2.5 cursor-pointer select-none"
+                  className="w-full h-full flex items-center gap-1.5 sm:gap-2 cursor-pointer select-none pl-0.5 pr-2.5 sm:pr-3"
                   title="플레이로그 시작 (Space)"
                   aria-label="Playlog"
                 >
@@ -3899,7 +3932,7 @@ export function JourneyDetailPage({
                   </div>
 
                   {/* Clean Sans-Serif Title: Playlog */}
-                  <span className="text-xs sm:text-[13px] font-sans font-bold tracking-tight text-white whitespace-nowrap pr-3.5 sm:pr-4 select-none">
+                  <span className="text-xs sm:text-[13px] font-sans font-bold tracking-tight text-white whitespace-nowrap select-none">
                     Playlog
                   </span>
                 </button>
@@ -4111,6 +4144,9 @@ export function JourneyDetailPage({
                           if (!hasMovedRef.current) {
                             setSelectedDate(d.date); 
                             setExpandedItemId(null); 
+                            if (tabContentRef.current) {
+                              tabContentRef.current.scrollTo({ top: 0, behavior: 'instant' });
+                            }
                           }
                         }} 
                         className={`flex-1 min-w-[58px] sm:min-w-[72px] md:min-w-[85px] h-full px-3 flex items-center justify-center border-r border-black/15 dark:border-white/15 last:border-r-0 transition-all whitespace-nowrap cursor-pointer font-['Inter',sans-serif] ${

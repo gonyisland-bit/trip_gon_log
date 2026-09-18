@@ -43,17 +43,19 @@ const getVehicleDimensions = (type: 'car' | 'train' | 'ship' | 'flight' | null |
 
 const getTravelerHtml = (vehicleType: 'car' | 'train' | 'ship' | 'flight' | null | undefined, isWest: boolean, isMoving: boolean) => {
   const flipStyle = isWest ? 'scaleX(-1)' : 'scaleX(1)';
+  // 자동차 SVG는 기본 상태에서 차 앞머리(보닛)가 왼쪽(x=5)을 향하므로 플립 반전 적용
+  const carFlipStyle = isWest ? 'scaleX(1)' : 'scaleX(-1)';
   
   if (vehicleType === 'car') {
     return `
       <div style="width: 48px; height: 32px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; pointer-events: none;">
         <style>
           @keyframes carSuspension {
-            0%, 100% { transform: translateY(0px) ${flipStyle}; }
-            50% { transform: translateY(-1.5px) ${flipStyle}; }
+            0%, 100% { transform: translateY(0px) ${carFlipStyle}; }
+            50% { transform: translateY(-1.5px) ${carFlipStyle}; }
           }
         </style>
-        <div style="${isMoving ? 'animation: carSuspension 0.22s ease-in-out infinite;' : `transform: ${flipStyle};`} transform-origin: center center;">
+        <div style="${isMoving ? 'animation: carSuspension 0.22s ease-in-out infinite;' : `transform: ${carFlipStyle};`} transform-origin: center center;">
           <svg viewBox="0 0 48 28" width="44" height="26" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block; filter: drop-shadow(0 0 1.5px #FFFFFF) drop-shadow(0 0 2.5px #FFFFFF) drop-shadow(0 4px 8px rgba(0,0,0,0.6));">
             <path d="M5 19C5 18 6 15 8 13.5C10 12 14 11 16 7.5C17.5 5 21 4.5 28 4.5C35 4.5 37 7.5 40 10.5C43 13 45 15.5 45 18C45 20 44 20.5 42 20.5C41 18 39 16 36.5 16C34 16 32 18 31 20.5H19C18 18 16 16 13.5 16C11 16 9 18 8 20.5C6 20.5 5 20 5 19Z" fill="#18181B" />
             <path d="M17.5 8C19 6 22 5.5 27 5.5V11H13.5C14.8 9.5 16.2 8.5 17.5 8Z" fill="#FFFFFF" fill-opacity="0.9" />
@@ -896,7 +898,8 @@ export function MapArea({
         }
       }
 
-      if (activeTab !== 'summary' && expandedItemId === null && coords.length > 0 && (tabChanged || !isInteractive || !hasFitRef.current || isGalleryTab)) {
+      const shouldFitAll = tabChanged || !isInteractive || !hasFitRef.current || isGalleryTab || (itemIdChanged && expandedItemId === null);
+      if (activeTab !== 'summary' && expandedItemId === null && coords.length > 0 && shouldFitAll) {
         const bounds = L.latLngBounds(coords);
         map.fitBounds(bounds, { padding: isMobile ? [15, 15] : [48, 48], maxZoom: isMobile ? 15 : 15, animate: true });
         hasFitRef.current = true;
@@ -1043,9 +1046,9 @@ export function MapArea({
               animate: true 
             });
           } else if (hasFrom) {
-            map.setView([Number(fromPoint.lat), Number(fromPoint.lng)], 14, { animate: true });
+            map.setView([Number(fromPoint.lat), Number(fromPoint.lng)], 15, { animate: true });
           } else if (hasTo) {
-            map.setView([Number(toPoint.lat), Number(toPoint.lng)], 14, { animate: true });
+            map.setView([Number(toPoint.lat), Number(toPoint.lng)], 15, { animate: true });
           }
         }
       }
