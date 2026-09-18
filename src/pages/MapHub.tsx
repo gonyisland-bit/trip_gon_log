@@ -1593,24 +1593,6 @@ export function MapHubPage({
   const geoJsonDataRef = useRef<any>(cachedCountriesGeoJson);
   const prevDestCitiesCountRef = useRef<number>(0);
 
-  // Load lightweight country GeoJSON dataset for exact boundary highlighting
-  useEffect(() => {
-    if (!cachedCountriesGeoJson) {
-      fetch('/data/countries.geojson')
-        .then(res => res.json())
-        .then(data => {
-          cachedCountriesGeoJson = data;
-          geoJsonDataRef.current = data;
-          if (selectedCountry) {
-            updateCountryHighlightAndPin(selectedCountry);
-          }
-        })
-        .catch(err => console.warn('Failed to load countries.geojson:', err));
-    } else {
-      geoJsonDataRef.current = cachedCountriesGeoJson;
-    }
-  }, [selectedCountry]);
-
   // In-place Trip Builder Split-Screen State
   const [isBuilderOpen, setIsBuilderOpen] = useState<boolean>(() => Boolean(initialBuilderOpen));
   const [builderCountry, setBuilderCountry] = useState<string>(initialBuilderCountry);
@@ -2731,6 +2713,24 @@ export function MapHubPage({
 
     selectPinRef.current = L.featureGroup(markers).addTo(map);
   }, []);
+
+  // Load lightweight country GeoJSON dataset for exact boundary highlighting
+  useEffect(() => {
+    if (!cachedCountriesGeoJson) {
+      fetch('/data/countries.geojson')
+        .then(res => res.json())
+        .then(data => {
+          cachedCountriesGeoJson = data;
+          geoJsonDataRef.current = data;
+          if (selectedCountry) {
+            updateCountryHighlightAndPin(selectedCountry);
+          }
+        })
+        .catch(err => console.warn('Failed to load countries.geojson:', err));
+    } else {
+      geoJsonDataRef.current = cachedCountriesGeoJson;
+    }
+  }, [selectedCountry, updateCountryHighlightAndPin]);
 
   // Country selection handler: highlights country area and flies airplane from Korea
   const handleSelectCountry = (country: CountryInfo) => {
