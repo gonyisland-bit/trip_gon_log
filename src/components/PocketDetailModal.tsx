@@ -232,11 +232,11 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
                   href={googleMapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/80 hover:bg-black text-white dark:bg-white/90 dark:hover:bg-white dark:text-black backdrop-blur-md text-[11px] font-mono font-bold tracking-wider uppercase shadow-md transition-all cursor-pointer"
-                  title="Google 지도에서 길찾기 및 위치 확인"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/80 hover:bg-black text-white dark:bg-white/90 dark:hover:bg-white dark:text-black backdrop-blur-md text-[10px] font-mono font-bold tracking-wider uppercase shadow-sm border border-white/20 dark:border-black/20 transition-all cursor-pointer select-none"
+                  title="Google Maps 열기"
                 >
-                  <Navigation className="w-3 h-3 text-red-500" />
-                  <span>GOOGLE MAPS</span>
+                  <Navigation className="w-2.5 h-2.5 text-red-500 fill-red-500" />
+                  <span>MAPS</span>
                   <ExternalLink className="w-2.5 h-2.5 opacity-60" />
                 </a>
               </div>
@@ -244,30 +244,15 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
           ) : null}
 
           {/* Detailed Address Block */}
-          <div className="p-3 bg-black/[0.03] dark:bg-white/[0.03] rounded-2xl border border-black/10 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-            <div className="flex items-start gap-2 min-w-0">
-              <MapPin className="w-4 h-4 text-black/40 dark:text-white/40 shrink-0 mt-0.5" />
-              <div className="min-w-0">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-black/40 dark:text-white/40 block font-bold">
-                  LOCATION & ADDRESS
-                </span>
-                <p className="text-black/80 dark:text-white/80 font-mono text-[11.5px] truncate select-all">
-                  {spot.address || '주소 정보가 등록되지 않았습니다.'}
-                </p>
-              </div>
-            </div>
-
-            {/* Quick Open in Google Maps */}
-            <div className="shrink-0 flex items-center gap-1.5 self-end sm:self-center">
-              <a
-                href={googleMapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 text-[10px] sm:text-[11px] font-mono font-bold tracking-wider uppercase rounded-lg transition-colors cursor-pointer"
-              >
-                <span>GOOGLE MAPS</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
+          <div className="p-3 bg-black/[0.02] dark:bg-white/[0.02] rounded-xl border border-black/10 dark:border-white/10 flex items-start gap-2.5 text-xs">
+            <MapPin className="w-3.5 h-3.5 text-black/40 dark:text-white/40 shrink-0 mt-0.5" />
+            <div className="min-w-0 flex-1">
+              <span className="text-[9.5px] font-mono uppercase tracking-wider text-black/40 dark:text-white/40 block font-bold mb-0.5">
+                LOCATION & ADDRESS
+              </span>
+              <p className="text-black/80 dark:text-white/80 font-mono text-[11.5px] leading-relaxed break-words select-all">
+                {spot.address || '주소 정보가 등록되지 않았습니다.'}
+              </p>
             </div>
           </div>
 

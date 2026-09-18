@@ -43,7 +43,7 @@ const renderPlatformIcon = (platform?: string) => {
   const p = (platform || '').toLowerCase();
   if (p.includes('insta')) {
     return (
-      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
         <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
         <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
@@ -52,19 +52,19 @@ const renderPlatformIcon = (platform?: string) => {
   }
   if (p.includes('youtu')) {
     return (
-      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17" />
         <polygon points="10 15 15 12 10 9 10 15" fill="currentColor" stroke="none" />
       </svg>
     );
   }
   if (p.includes('thread') || p.includes('blog') || p.includes('naver') || p.includes('tistory')) {
-    return <FileText className="w-3.5 h-3.5" />;
+    return <FileText className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />;
   }
   if (p.includes('map')) {
-    return <MapPin className="w-3.5 h-3.5" />;
+    return <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />;
   }
-  return <Globe className="w-3.5 h-3.5" />;
+  return <Globe className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />;
 };
 
 const COUNTRY_NAME_MAP: Record<string, string> = {
@@ -1242,37 +1242,37 @@ export function PocketHubPage({
                       </div>
 
                       {/* SNS Action Bar (1-Row Toolbar) */}
-                      <div className="pt-3 mt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center gap-1.5">
+                      <div className="pt-2.5 sm:pt-3 mt-2.5 sm:mt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between gap-1" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
                           {/* Likes Toggle Button */}
                           <button
                             type="button"
                             onClick={() => handleToggleLike(spot.id)}
-                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10.5px] sm:text-[11px] font-mono font-bold transition-all cursor-pointer ${
+                            className={`flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 h-6.5 sm:h-7 rounded-full border text-[9.5px] sm:text-[11px] font-mono font-bold transition-all cursor-pointer shrink-0 ${
                               isLiked
                                 ? 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400'
                                 : 'border-black/10 dark:border-white/15 text-black/65 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
                             }`}
                             title="좋아요 관심사 체크"
                           >
-                            <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-red-600 text-red-600 dark:fill-red-400 dark:text-red-400' : ''}`} />
-                            <span>{spot.likes || 0}</span>
+                            <Heart className={`w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 ${isLiked ? 'fill-red-600 text-red-600 dark:fill-red-400 dark:text-red-400' : ''}`} />
+                            <span className="leading-none">{spot.likes || 0}</span>
                           </button>
 
                           {/* Comment Trigger with Count Badge: Opens Detail Modal */}
                           <button
                             type="button"
                             onClick={() => setSelectedSpotForModal(spot)}
-                            className={`flex items-center gap-1.5 px-2 py-1 rounded-full border text-[10.5px] sm:text-[11px] font-mono font-bold transition-all cursor-pointer ${
+                            className={`flex items-center gap-1 sm:gap-1.5 h-6.5 sm:h-7 rounded-full border text-[9.5px] sm:text-[11px] font-mono font-bold transition-all cursor-pointer shrink-0 ${
                               spot.comments && spot.comments.length > 0
-                                ? 'bg-black/5 dark:bg-white/5 border-black/20 dark:border-white/20 text-black dark:text-white shadow-xs'
-                                : 'w-7 h-7 !p-0 justify-center border-black/10 dark:border-white/15 text-black/60 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
+                                ? 'px-1.5 py-0.5 sm:px-2 sm:py-1 bg-black/5 dark:bg-white/5 border-black/20 dark:border-white/20 text-black dark:text-white shadow-xs'
+                                : 'w-6.5 h-6.5 sm:w-7 sm:h-7 !p-0 justify-center border-black/10 dark:border-white/15 text-black/60 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
                             }`}
                             title={`댓글 ${spot.comments?.length || 0}개 (클릭하여 보기/작성)`}
                           >
-                            <MessageSquare className="w-3.5 h-3.5" />
+                            <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
                             {spot.comments && spot.comments.length > 0 && (
-                              <span>{spot.comments.length}</span>
+                              <span className="leading-none">{spot.comments.length}</span>
                             )}
                           </button>
 
@@ -1280,10 +1280,10 @@ export function PocketHubPage({
                           <button
                             type="button"
                             onClick={() => setSpotToUseInTrip(spot)}
-                            className="w-7 h-7 rounded-full border border-black/10 dark:border-white/15 flex items-center justify-center text-black/60 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30 transition-colors cursor-pointer"
+                            className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full border border-black/10 dark:border-white/15 flex items-center justify-center text-black/60 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30 transition-colors cursor-pointer shrink-0"
                             title="여정 타임라인에 추가"
                           >
-                            <Plus className="w-3.5 h-3.5" />
+                            <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
                           </button>
                         </div>
 
@@ -1293,7 +1293,7 @@ export function PocketHubPage({
                             href={spot.sourceUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="w-7 h-7 rounded-full border border-black/10 dark:border-white/15 flex items-center justify-center text-black/60 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30 transition-colors cursor-pointer"
+                            className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full border border-black/10 dark:border-white/15 flex items-center justify-center text-black/60 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30 transition-colors cursor-pointer shrink-0"
                             title={`${spot.platform || '원문 출처'} 바로가기`}
                           >
                             {renderPlatformIcon(spot.platform)}
