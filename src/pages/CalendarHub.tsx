@@ -174,9 +174,10 @@ export function CalendarHubPage({
   const [isEditingMonth, setIsEditingMonth] = useState<boolean>(false);
   const [monthInputVal, setMonthInputVal] = useState<string>(String(initialFocus.month + 1));
 
-  // 연도 / 월 스크롤형 드롭다운 메뉴 상태 및 Ref
+  // 연도 / 월 스크롤형 드롭다운 메뉴 및 12개월 스트립 상태 및 Ref
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState<boolean>(false);
   const [isMonthDropdownOpen, setIsMonthDropdownOpen] = useState<boolean>(false);
+  const [isMonthStripOpen, setIsMonthStripOpen] = useState<boolean>(false);
   const yearDropdownRef = useRef<HTMLDivElement>(null);
   const monthDropdownRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -209,6 +210,7 @@ export function CalendarHubPage({
       }
       if (monthDropdownRef.current && !monthDropdownRef.current.contains(target)) {
         setIsMonthDropdownOpen(false);
+        setIsMonthStripOpen(false);
       }
       if (hoveredTooltip) {
         // 년달력 또는 월달력 날짜 버튼 클릭이 아닌 다른 곳을 누르면 툴팁 및 선택 해제
@@ -220,7 +222,7 @@ export function CalendarHubPage({
         }
       }
     };
-    if (isYearDropdownOpen || isMonthDropdownOpen || hoveredTooltip) {
+    if (isYearDropdownOpen || isMonthDropdownOpen || isMonthStripOpen || hoveredTooltip) {
       document.addEventListener('mousedown', handleOutsideClick);
       document.addEventListener('touchstart', handleOutsideClick, { passive: true });
     }
@@ -228,7 +230,7 @@ export function CalendarHubPage({
       document.removeEventListener('mousedown', handleOutsideClick);
       document.removeEventListener('touchstart', handleOutsideClick);
     };
-  }, [isYearDropdownOpen, isMonthDropdownOpen, hoveredTooltip]);
+  }, [isYearDropdownOpen, isMonthDropdownOpen, isMonthStripOpen, hoveredTooltip]);
 
   // 뷰 모드: 월별 보기 ('month') vs 연간 보기 ('year')
   const [viewMode, setViewMode] = useState<'month' | 'year'>('month');
@@ -1406,290 +1408,275 @@ export function CalendarHubPage({
       {/* Top Banner & Swiss Minimal Typography Header                  */}
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="w-full max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-4 sm:pb-6">
-        {/* Top Metadata Barcode & Category Tag (다른 허브 표준 디자인 양식 통일) */}
-        <div className="flex items-center justify-between text-xs font-mono tracking-widest uppercase text-black/60 dark:text-white/60 mb-4 sm:mb-6">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <span className="bg-black text-white dark:bg-white dark:text-black font-black px-2 py-0.5 text-[10px]">
+        {/* Top Metadata Bar & Pure Typography Year */}
+        <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3 mb-4 sm:mb-6">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <span className="bg-black text-white dark:bg-white dark:text-black font-black px-2 py-0.5 text-[10px] tracking-widest font-mono">
               CALENDAR
             </span>
-            <span className="font-bold text-red-600 dark:text-red-400">
+
+            {/* Pure Typography Year (알약 배지 X, 순수 텍스트 표기, 클릭 시 드롭다운) */}
+            <div className="relative" ref={yearDropdownRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsYearDropdownOpen(prev => !prev);
+                  setIsMonthStripOpen(false);
+                }}
+                className="flex items-baseline gap-1.5 cursor-pointer text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors group select-none"
+                title="클릭하여 연도 선택"
+              >
+                <span className="text-xl sm:text-2xl lg:text-3xl font-light font-satoshi tracking-tight">
+                  {currentYear}
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white transition-transform duration-200 ${isYearDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Scrollable Year Dropdown Popover */}
+              {isYearDropdownOpen && (
+                <div className="absolute top-full left-0 mt-2 z-50 w-36 sm:w-44 max-h-64 overflow-y-auto rounded-md border border-black/15 dark:border-white/15 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md shadow-2xl py-1 text-sm font-mono animate-in fade-in zoom-in-95 duration-150">
+                  {Array.from({ length: 16 }, (_, i) => 2020 + i).map(year => {
+                    const isSelected = year === currentYear;
+                    return (
+                      <button
+                        key={year}
+                        type="button"
+                        onClick={() => {
+                          setCurrentYear(year);
+                          setIsYearDropdownOpen(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left font-bold transition-colors flex items-center justify-between cursor-pointer ${
+                          isSelected
+                            ? 'bg-red-600 text-white font-black'
+                            : 'text-black/80 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/10'
+                        }`}
+                      >
+                        <span className="text-sm sm:text-base font-satoshi">{year}</span>
+                        {isSelected && <span className="text-[10px] uppercase font-mono tracking-wider">선택</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <span className="hidden sm:inline-block font-mono text-[11px] font-bold text-red-600 dark:text-red-400 tracking-wider">
               {viewMode === 'year' ? 'ANNUAL OVERVIEW' : 'SCHEDULE & TIMELINE'}
             </span>
           </div>
-          <div className="flex items-center gap-3">
+
+          <div className="text-[11px] sm:text-xs font-mono font-bold tracking-wider text-black/40 dark:text-white/40 flex items-center gap-3">
             <span className="hidden sm:inline">VOL. {currentYear}</span>
             <span>{trips.length + plans.length} JOURNEYS RECORDED</span>
           </div>
         </div>
 
-        <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4 sm:gap-6">
-          {/* Left: Giant Typography Year & Month + Dropdown Selectors */}
-          <div className="w-full xl:w-auto">
-            <div className="flex items-end gap-2.5 sm:gap-6 flex-nowrap whitespace-nowrap select-none">
-              {/* 1. Year Display & Scrollable Dropdown Selector */}
-              <div className="relative" ref={yearDropdownRef}>
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 leading-tight mb-1">
-                    YEAR
+        {/* Center Hero: Giant Month (09 SEPTEMBER) & Expandable 1~12 Month Strip */}
+        <div className="relative flex flex-col items-center justify-center my-4 sm:my-6 select-none" ref={monthDropdownRef}>
+          {viewMode === 'month' ? (
+            <>
+              {/* Clickable Giant Month Heading */}
+              <button
+                type="button"
+                onClick={() => setIsMonthStripOpen(prev => !prev)}
+                className="group flex flex-col items-center cursor-pointer transition-transform duration-200 active:scale-98"
+                title="클릭하여 1~12월 선택 탭 열기"
+              >
+                {/* Giant Month Number */}
+                <span className="text-7xl sm:text-8xl lg:text-9xl font-black font-satoshi tracking-tighter leading-none text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
+                  {String(currentMonth + 1).padStart(2, '0')}
+                </span>
+                {/* English Month Name */}
+                <div className="flex items-center gap-2 mt-1 sm:mt-2">
+                  <span className="text-base sm:text-xl lg:text-2xl font-bold font-satoshi tracking-[0.25em] sm:tracking-[0.3em] uppercase text-black/60 dark:text-white/60 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
+                    {MONTH_NAMES[currentMonth]}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsYearDropdownOpen(prev => !prev);
-                      setIsMonthDropdownOpen(false);
-                    }}
-                    className="flex items-baseline gap-1.5 sm:gap-2 cursor-pointer hover:opacity-80 transition-opacity group text-black dark:text-white"
-                    title="클릭하여 연도 선택"
-                  >
-                    <span className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter leading-none group-hover:underline decoration-red-600 decoration-2 underline-offset-4">
-                      {currentYear}
-                    </span>
-                    <ChevronDown className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/30 dark:text-white/30 group-hover:text-red-600 transition-transform duration-200 self-center sm:self-auto sm:mb-1 ${isYearDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
-                  </button>
+                  <ChevronDown className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/30 dark:text-white/30 group-hover:text-red-600 transition-transform duration-200 ${isMonthStripOpen ? 'rotate-180 text-red-600' : ''}`} />
                 </div>
+              </button>
 
-                {/* Scrollable Year Dropdown Popover */}
-                {isYearDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-2 z-50 w-36 sm:w-44 max-h-64 overflow-y-auto rounded-md border border-black/15 dark:border-white/15 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md shadow-2xl py-1 text-sm font-mono animate-in fade-in zoom-in-95 duration-150">
-                    {Array.from({ length: 16 }, (_, i) => 2020 + i).map(year => {
-                      const isSelected = year === currentYear;
+              {/* Expandable 1~12 Month Strip (월 클릭 시 펼쳐지고 선택 시 자동 닫힘) */}
+              {isMonthStripOpen && (
+                <div className="w-full max-w-2xl mt-4 sm:mt-6 p-2 sm:p-2.5 rounded-2xl border border-black/15 dark:border-white/15 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md shadow-2xl animate-in fade-in zoom-in-95 duration-200 z-30">
+                  <div className="grid grid-cols-6 sm:grid-cols-12 gap-1 sm:gap-1.5">
+                    {MONTH_TABS.map((mTab, idx) => {
+                      const isSelected = idx === currentMonth;
                       return (
                         <button
-                          key={year}
+                          key={mTab.num}
                           type="button"
                           onClick={() => {
-                            setCurrentYear(year);
-                            setIsYearDropdownOpen(false);
+                            setCurrentMonth(idx);
+                            setIsMonthStripOpen(false); // 골라지면 즉시 자동 숨김
                           }}
-                          className={`w-full px-3 py-2 text-left font-bold transition-colors flex items-center justify-between cursor-pointer ${
+                          className={`py-2 sm:py-2.5 rounded-xl text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
                             isSelected
-                              ? 'bg-red-600 text-white font-black'
-                              : 'text-black/80 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/10'
+                              ? 'bg-black text-white dark:bg-white dark:text-black font-black shadow-sm'
+                              : 'text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/10 hover:text-black dark:hover:text-white'
                           }`}
                         >
-                          <span className="text-sm sm:text-base font-satoshi">{year}</span>
-                          {isSelected && <span className="text-[10px] uppercase font-mono tracking-wider">선택</span>}
+                          <span className="font-mono text-xs sm:text-sm font-bold leading-tight">
+                            {String(mTab.num).padStart(2, '0')}
+                          </span>
+                          <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider opacity-80 leading-tight">
+                            {mTab.short}
+                          </span>
                         </button>
                       );
                     })}
                   </div>
-                )}
-              </div>
-
-              {/* Swiss Minimal Divider */}
-              <span className="self-baseline text-2xl sm:text-4xl lg:text-5xl font-light text-black/20 dark:text-white/20 select-none shrink-0 px-0.5 sm:px-1">
-                /
-              </span>
-
-              {/* 2. Month Big Number & Scrollable Dropdown Selector */}
-              {viewMode === 'month' ? (
-                <div className="relative" ref={monthDropdownRef}>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 leading-tight mb-1">
-                      MONTH
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsMonthDropdownOpen(prev => !prev);
-                        setIsYearDropdownOpen(false);
-                      }}
-                      className="flex items-baseline gap-1.5 sm:gap-2 cursor-pointer hover:opacity-80 transition-opacity group text-black dark:text-white"
-                      title="클릭하여 월 선택"
-                    >
-                      <span className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tighter leading-none group-hover:underline decoration-red-600 decoration-2 underline-offset-4">
-                        {String(currentMonth + 1).padStart(2, '0')}
-                      </span>
-                      <div className="flex items-baseline gap-1 sm:gap-1.5">
-                        <span className="text-base sm:text-xl md:text-2xl font-black font-satoshi tracking-wider uppercase text-red-600 dark:text-red-500 leading-none">
-                          {MONTH_NAMES[currentMonth]}
-                        </span>
-                        <ChevronDown className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/30 dark:text-white/30 group-hover:text-red-600 transition-transform duration-200 self-center sm:self-auto sm:mb-1 ${isMonthDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
-                      </div>
-                    </button>
-                  </div>
-
-                  {/* Scrollable Month Dropdown Popover */}
-                  {isMonthDropdownOpen && (
-                    <div className="absolute top-full left-0 mt-2 z-50 w-44 sm:w-52 max-h-72 overflow-y-auto rounded-md border border-black/15 dark:border-white/15 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md shadow-2xl py-1 text-sm animate-in fade-in zoom-in-95 duration-150">
-                      {MONTH_TABS.map((mTab, idx) => {
-                        const isSelected = idx === currentMonth;
-                        return (
-                          <button
-                            key={mTab.num}
-                            type="button"
-                            onClick={() => {
-                              setCurrentMonth(idx);
-                              setIsMonthDropdownOpen(false);
-                            }}
-                            className={`w-full px-3 py-2 text-left transition-colors flex items-center justify-between cursor-pointer ${
-                              isSelected
-                                ? 'bg-red-600 text-white font-black'
-                                : 'text-black/80 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/10'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono font-bold text-xs sm:text-sm">{String(mTab.num).padStart(2, '0')}</span>
-                              <span className="font-['Inter',sans-serif] font-black text-sm uppercase">{mTab.full}</span>
-                            </div>
-                            {isSelected && <span className="text-[10px] uppercase font-mono tracking-wider">선택</span>}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="flex flex-col justify-end">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-black/40 dark:text-white/40 leading-tight mb-1">
-                    VIEW
-                  </span>
-                  <span className="text-2xl sm:text-4xl lg:text-5xl font-black font-satoshi tracking-tight leading-none uppercase text-black/80 dark:text-white/80">
-                    ANNUAL 12M
-                  </span>
                 </div>
               )}
+            </>
+          ) : (
+            <div className="flex flex-col items-center py-2 sm:py-4">
+              <span className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tight leading-none uppercase text-black/80 dark:text-white/80">
+                ANNUAL 12M
+              </span>
+              <span className="text-xs sm:text-sm font-mono tracking-widest text-black/40 dark:text-white/40 mt-1 uppercase">
+                FULL YEAR OVERVIEW
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom Unified Controls Bar (모바일 & 웹 완벽 정렬, 절대 잘리지 않음) */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-4 pt-3 border-t border-black/5 dark:border-white/5">
+          {/* Group 1: Navigation & View Mode Switcher */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* 1. < TODAY > Navigation */}
+            <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={viewMode === 'month' ? handlePrevMonth : () => setCurrentYear(prev => prev - 1)}
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
+                title={viewMode === 'month' ? "이전 달" : "이전 연도"}
+              >
+                <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={handleGoToday}
+                className="h-7 sm:h-8 px-2 sm:px-2.5 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black text-black dark:text-white hover:text-white dark:hover:bg-white dark:hover:text-black text-[10px] sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center justify-center shrink-0"
+                title="오늘 날짜로 이동"
+              >
+                TODAY
+              </button>
+
+              <button
+                type="button"
+                onClick={viewMode === 'month' ? handleNextMonth : () => setCurrentYear(prev => prev + 1)}
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
+                title={viewMode === 'month' ? "다음 달" : "다음 연도"}
+              >
+                <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </button>
+            </div>
+
+            {/* 2. [ MONTH | YEAR ] View Mode Switcher */}
+            <div className="h-7 sm:h-8 flex items-center p-0.5 bg-black/5 dark:bg-white/10 rounded-full border border-black/10 dark:border-white/10 font-mono text-[10px] sm:text-xs font-bold shrink-0">
+              <button
+                type="button"
+                onClick={() => toggleViewMode('month')}
+                className={`h-full px-2 sm:px-2.5 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
+                  viewMode === 'month'
+                    ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                    : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                }`}
+                title="월별 보기로 전환"
+              >
+                <CalendarDays className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                <span className="hidden sm:inline">MONTH</span>
+                <span className="inline sm:hidden">M</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleViewMode('year')}
+                className={`h-full px-2 sm:px-2.5 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
+                  viewMode === 'year'
+                    ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                    : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                }`}
+                title="연간 보기로 전환"
+              >
+                <LayoutGrid className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                <span className="hidden sm:inline">YEAR</span>
+                <span className="inline sm:hidden">Y</span>
+              </button>
             </div>
           </div>
 
-          {/* Unified Controls Block (모바일 & 좁은 웹: 2개 논리 그룹 분리 및 유연 래핑, 절대 잘리지 않음) */}
-          <div className="flex flex-wrap sm:flex-nowrap items-center justify-between xl:justify-end gap-2 sm:gap-3 w-full xl:w-auto">
-            {/* Group 1: Navigation & View Mode Switcher */}
-            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-              {/* 1. < TODAY > Navigation (h-7 sm:h-8 통일) */}
-              <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
-                <button
-                  type="button"
-                  onClick={viewMode === 'month' ? handlePrevMonth : () => setCurrentYear(prev => prev - 1)}
-                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
-                  title={viewMode === 'month' ? "이전 달" : "이전 연도"}
-                >
-                  <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </button>
+          {/* Group 2: Action Tools (Weather, Edit, New Trip) */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* 2.5 Weather Mode Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setIsWeatherMode(prev => !prev)}
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-xs ${
+                isWeatherMode
+                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white ring-2 ring-black/20 dark:ring-white/20'
+                  : 'bg-white/80 dark:bg-zinc-900/80 border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
+              }`}
+              title={isWeatherMode ? "날씨 모드 끄기" : "날씨 모드 켜기 (캘린더에 일별 날씨/기온 표시)"}
+            >
+              <Sun className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isWeatherMode ? 'text-amber-400 dark:text-amber-500' : ''}`} />
+            </button>
 
-                <button
-                  type="button"
-                  onClick={handleGoToday}
-                  className="h-7 sm:h-8 px-2 sm:px-2.5 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black text-black dark:text-white hover:text-white dark:hover:bg-white dark:hover:text-black text-[10px] sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center justify-center shrink-0"
-                  title="오늘 날짜로 이동"
-                >
-                  TODAY
-                </button>
-
-                <button
-                  type="button"
-                  onClick={viewMode === 'month' ? handleNextMonth : () => setCurrentYear(prev => prev + 1)}
-                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
-                  title={viewMode === 'month' ? "다음 달" : "다음 연도"}
-                >
-                  <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </button>
-              </div>
-
-              {/* 2. [ MONTH | YEAR ] View Mode Switcher (h-7 sm:h-8 통일, 모바일 최적화) */}
-              <div className="h-7 sm:h-8 flex items-center p-0.5 bg-black/5 dark:bg-white/10 rounded-full border border-black/10 dark:border-white/10 font-mono text-[10px] sm:text-xs font-bold shrink-0">
-                <button
-                  type="button"
-                  onClick={() => toggleViewMode('month')}
-                  className={`h-full px-2 sm:px-2.5 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
-                    viewMode === 'month'
-                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
-                      : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-                  }`}
-                  title="월별 보기로 전환"
-                >
-                  <CalendarDays className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  <span className="hidden sm:inline">MONTH</span>
-                  <span className="inline sm:hidden">M</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => toggleViewMode('year')}
-                  className={`h-full px-2 sm:px-2.5 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
-                    viewMode === 'year'
-                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
-                      : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-                  }`}
-                  title="연간 보기로 전환 (3열 12개월)"
-                >
-                  <LayoutGrid className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  <span className="hidden sm:inline">YEAR</span>
-                  <span className="inline sm:hidden">Y</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Group 2: Action Tools (Weather, Edit, New Trip) */}
-            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-              {/* 2.5 Weather Mode Toggle Button - Minimal Swiss Round Icon */}
+            {/* 3. Edit Mode Toggle Button */}
+            {viewMode === 'month' && (
               <button
                 type="button"
-                onClick={() => setIsWeatherMode(prev => !prev)}
-                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-xs ${
-                  isWeatherMode
-                    ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white ring-2 ring-black/20 dark:ring-white/20'
+                onClick={() => {
+                  setIsEditMode(prev => {
+                    const next = !prev;
+                    if (!next) {
+                      setSelectedRange(null);
+                    }
+                    return next;
+                  });
+                }}
+                className={`h-7 sm:h-8 px-2 sm:px-3 rounded-full border text-[10px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 shadow-xs ${
+                  isEditMode
+                    ? 'bg-red-600 text-white border-red-600 ring-2 ring-red-600/30'
                     : 'bg-white/80 dark:bg-zinc-900/80 border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
                 }`}
-                title={isWeatherMode ? "날씨 모드 끄기" : "날씨 모드 켜기 (캘린더에 일별 날씨/기온 표시)"}
+                title={isEditMode ? "편집 모드 활성 (클릭 시 조회 전용 모드로 전환)" : "편집 모드 켜기 (날짜 선택 및 일정 등록)"}
               >
-                <Sun className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isWeatherMode ? 'text-amber-400 dark:text-amber-500' : ''}`} />
+                <Edit3 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                <span>
+                  {isEditMode ? (
+                    <>
+                      <span className="inline sm:hidden">ON</span>
+                      <span className="hidden sm:inline">EDIT: ON</span>
+                    </>
+                  ) : (
+                    'EDIT'
+                  )}
+                </span>
+                {isEditMode && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />}
               </button>
+            )}
 
-              {/* 3. Edit Mode Toggle Button */}
-              {viewMode === 'month' && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsEditMode(prev => {
-                      const next = !prev;
-                      if (!next) {
-                        setSelectedRange(null);
-                      }
-                      return next;
-                    });
-                  }}
-                  className={`h-7 sm:h-8 px-2 sm:px-3 rounded-full border text-[10px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 shadow-xs ${
-                    isEditMode
-                      ? 'bg-red-600 text-white border-red-600 ring-2 ring-red-600/30'
-                      : 'bg-white/80 dark:bg-zinc-900/80 border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
-                  }`}
-                  title={isEditMode ? "편집 모드 활성 (클릭 시 조회 전용 모드로 전환)" : "편집 모드 켜기 (날짜 선택 및 일정 등록)"}
-                >
-                  <Edit3 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  <span>
-                    {isEditMode ? (
-                      <>
-                        <span className="inline sm:hidden">ON</span>
-                        <span className="hidden sm:inline">EDIT: ON</span>
-                      </>
-                    ) : (
-                      'EDIT'
-                    )}
-                  </span>
-                  {isEditMode && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />}
-                </button>
-              )}
-
-              {/* 4. Swiss Minimal NEW TRIP Button (절대 잘리지 않도록 shrink-0 및 든든한 패딩 유지) */}
-              {onCreateTrip && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const yyyy = currentYear;
-                    const mm = String(currentMonth + 1).padStart(2, '0');
-                    const dd = '01';
-                    onCreateTrip(`${yyyy}-${mm}-${dd}`);
-                  }}
-                  className="h-7 sm:h-8 px-2.5 sm:px-3 rounded-full bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 shadow-xs"
-                  title="이 달을 기준으로 새로운 트립 생성"
-                >
-                  <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  <span>
-                    <span className="hidden sm:inline">NEW </span>TRIP
-                  </span>
-                </button>
-              )}
-            </div>
+            {/* 4. Swiss Minimal NEW TRIP Button */}
+            {onCreateTrip && (
+              <button
+                type="button"
+                onClick={() => {
+                  const yyyy = currentYear;
+                  const mm = String(currentMonth + 1).padStart(2, '0');
+                  const dd = '01';
+                  onCreateTrip(`${yyyy}-${mm}-${dd}`);
+                }}
+                className="h-7 sm:h-8 px-2.5 sm:px-3 rounded-full bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 shadow-xs"
+                title="이 달을 기준으로 새로운 트립 생성"
+              >
+                <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                <span>
+                  <span className="hidden sm:inline">NEW </span>TRIP
+                </span>
+              </button>
+            )}
           </div>
         </div>
 
