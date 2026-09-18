@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, X, ArrowRight, Calendar, Star, Plus, Tag, MapPin, Bookmark, Home as HomeIcon, List, Clock, LocateFixed, Plane, Sun, Droplets, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, X, ArrowRight, Calendar, Star, Plus, Tag, MapPin, Bookmark, Home as HomeIcon, List, Clock, LocateFixed, Plane, Sun, Droplets, ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Trip, Plan } from '../types';
@@ -1647,6 +1647,25 @@ export function MapHubPage({
   }, [isBuilderOpen]);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [isMobileControlsOpen, setIsMobileControlsOpen] = useState<boolean>(false);
+  const mobileControlsRef = useRef<HTMLDivElement>(null);
+
+  // Close mobile controls when tapping outside
+  useEffect(() => {
+    if (!isMobileControlsOpen) return;
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (mobileControlsRef.current && !mobileControlsRef.current.contains(e.target as Node)) {
+        setIsMobileControlsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isMobileControlsOpen]);
+
   const [selectedCountry, setSelectedCountry] = useState<CountryInfo | null>(null);
   const [selectedDestCities, setSelectedDestCities] = useState<string[]>([]);
   useEffect(() => {
@@ -3596,12 +3615,12 @@ export function MapHubPage({
       } overflow-hidden`}>
         
         {/* 1. Top Bar: Search with Integrated Wishlist Star & Swiss Minimal Layer Toggles */}
-        <div className="absolute top-4 left-4 right-4 sm:left-6 sm:right-auto z-[500] flex flex-wrap items-center gap-2">
+        <div className="absolute top-3 left-3 right-3 sm:top-4 sm:left-6 sm:right-auto z-[500] flex flex-nowrap items-center gap-1.5 sm:gap-2">
         
         {/* Country & Continent Search Bar with Integrated Wishlist Star Button */}
-        <div className="relative flex items-center bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/20 dark:border-white/20 shadow-2xl z-30">
-          <div className="w-56 sm:w-72 flex items-center px-3 py-2">
-            <Search className="w-3.5 h-3.5 text-black/50 dark:text-white/50 shrink-0 mr-2" />
+        <div className="relative flex items-center bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/20 dark:border-white/20 shadow-2xl z-30 shrink min-w-0">
+          <div className="flex-1 min-w-[110px] max-w-[170px] xs:max-w-[210px] sm:max-w-none sm:w-72 flex items-center px-2 py-1.5 sm:px-3 sm:py-2">
+            <Search className="w-3.5 h-3.5 text-black/50 dark:text-white/50 shrink-0 mr-1.5 sm:mr-2" />
             <input
               type="text"
               value={searchQuery}
@@ -3610,14 +3629,14 @@ export function MapHubPage({
                 setIsSearchDropdownOpen(true);
               }}
               onFocus={() => setIsSearchDropdownOpen(true)}
-              placeholder="SEARCH COUNTRY, CITY, CONTINENT..."
-              className="w-full bg-transparent text-xs font-sans font-bold uppercase tracking-wider text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 outline-none"
+              placeholder="SEARCH..."
+              className="w-full bg-transparent text-[11px] sm:text-xs font-sans font-bold uppercase tracking-wider text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 outline-none truncate"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={handleCloseCountry}
-                className="p-0.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer mr-1"
+                className="p-0.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer mr-0.5"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -3628,7 +3647,7 @@ export function MapHubPage({
           <button
             type="button"
             onClick={() => setIsWishlistModalOpen(true)}
-            className={`px-3 py-2.5 border-l border-black/15 dark:border-white/15 flex items-center gap-1.5 transition-colors cursor-pointer ${
+            className={`px-2 py-1.5 sm:px-3 sm:py-2.5 border-l border-black/15 dark:border-white/15 flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer shrink-0 ${
               favoriteCountries.length > 0
                 ? 'text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5'
                 : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
@@ -3637,7 +3656,7 @@ export function MapHubPage({
           >
             <Star className={`w-3.5 h-3.5 ${favoriteCountries.length > 0 ? 'fill-black text-black dark:fill-white dark:text-white' : ''}`} />
             {favoriteCountries.length > 0 && (
-              <span className="text-[10px] font-mono font-black">{favoriteCountries.length}</span>
+              <span className="text-[9px] sm:text-[10px] font-mono font-black">{favoriteCountries.length}</span>
             )}
           </button>
 
@@ -3681,8 +3700,138 @@ export function MapHubPage({
           )}
         </div>
 
-        {/* Swiss Minimal Monochrome Icon Toggles: Tag (Labels) / MapPin (Visited) / Bookmark (Wishlist) */}
-        <div className="flex items-center border border-black/20 dark:border-white/20 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md shadow-2xl divide-x divide-black/15 dark:divide-white/15 z-10">
+        {/* Mobile: Single Integrated Icon with Smooth Horizontal Expand */}
+        <div ref={mobileControlsRef} className="sm:hidden flex items-center bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/20 dark:border-white/20 shadow-2xl z-20 shrink-0">
+          {/* Master Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setIsMobileControlsOpen(prev => !prev)}
+            className={`p-2 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+              isMobileControlsOpen
+                ? 'bg-black text-white dark:bg-white dark:text-black'
+                : 'text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5'
+            }`}
+            title="지도 기능 메뉴"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Smooth Horizontal Expandable Toolbar */}
+          <div className={`flex items-center divide-x divide-black/15 dark:divide-white/15 transition-all duration-300 ease-in-out overflow-hidden border-l border-black/15 dark:border-white/15 ${
+            isMobileControlsOpen ? 'max-w-[320px] opacity-100' : 'max-w-0 opacity-0 pointer-events-none border-l-0'
+          }`}>
+            {/* 1. Label Toggle (Tag) */}
+            <button
+              type="button"
+              onClick={togglePinLabels}
+              className={`p-2 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+                showPinLabels
+                  ? 'bg-black text-white dark:bg-white dark:text-black'
+                  : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
+              }`}
+              title="TOGGLE LABELS"
+            >
+              <Tag className="w-3.5 h-3.5" />
+            </button>
+
+            {/* 2. Visited Red Pins Toggle (MapPin) */}
+            <button
+              type="button"
+              onClick={toggleVisitedPins}
+              className={`p-2 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+                showVisitedPins
+                  ? 'bg-black text-white dark:bg-white dark:text-black'
+                  : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
+              }`}
+              title="TOGGLE VISITED PINS"
+            >
+              <MapPin className="w-3.5 h-3.5" />
+            </button>
+
+            {/* 3. Wishlist Yellow Pins Toggle (Bookmark) */}
+            <button
+              type="button"
+              onClick={toggleWishlistPins}
+              className={`p-2 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+                showWishlistPins
+                  ? 'bg-black text-white dark:bg-white dark:text-black'
+                  : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
+              }`}
+              title="TOGGLE WISHLIST PINS"
+            >
+              <Bookmark className="w-3.5 h-3.5" />
+            </button>
+
+            {/* 4. Airplane Flight Animation Toggle (Plane) */}
+            <button
+              type="button"
+              onClick={togglePlaneAnim}
+              className={`p-2 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+                isPlaneAnimEnabled
+                  ? 'bg-black text-white dark:bg-white dark:text-black'
+                  : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
+              }`}
+              title={isPlaneAnimEnabled ? "비행기 모션 켜짐" : "비행기 모션 꺼짐"}
+            >
+              <Plane className="w-3.5 h-3.5" />
+            </button>
+
+            {/* 5. Reset to Global Home View Button */}
+            <button
+              type="button"
+              onClick={handleResetToDefaultView}
+              className="p-2 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+              title="RESET VIEW (H)"
+            >
+              <HomeIcon className="w-3.5 h-3.5" />
+            </button>
+
+            {/* 6. Registered Journey Places List Button */}
+            <button
+              type="button"
+              onClick={() => setIsPlaceListModalOpen(true)}
+              className="p-2 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+              title="PLACES LIST"
+            >
+              <List className="w-3.5 h-3.5" />
+            </button>
+
+            {/* 7. In-place Trip Builder Toggle Button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (isBuilderOpen) {
+                  handleCloseTripBuilder();
+                } else {
+                  handleOpenTripBuilder();
+                }
+              }}
+              className={`p-2 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+                isBuilderOpen
+                  ? 'bg-red-600 text-white dark:bg-red-500 dark:text-black'
+                  : 'bg-black text-white dark:bg-white dark:text-black'
+              }`}
+              title={isBuilderOpen ? "CLOSE TRIP BUILDER" : "CREATE NEW TRIP"}
+            >
+              <Plus className={`w-3.5 h-3.5 ${isBuilderOpen ? 'rotate-45' : ''} transition-transform`} />
+            </button>
+
+            {/* 8. Re-Center to Active Builder Target Button */}
+            {isBuilderOpen && builderTargetName && (
+              <button
+                type="button"
+                onClick={handleReCenterBuilderTarget}
+                className="p-2 text-black/70 dark:text-white/70 hover:text-red-600 dark:hover:text-red-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+                title={`RE-CENTER TO: ${builderTargetName}`}
+              >
+                <LocateFixed className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Desktop Swiss Minimal Monochrome Icon Toggles */}
+        <div className="hidden sm:flex items-center border border-black/20 dark:border-white/20 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md shadow-2xl divide-x divide-black/15 dark:divide-white/15 z-10">
           {/* 1. Label Toggle (Tag) */}
           <button
             type="button"
@@ -3819,7 +3968,7 @@ export function MapHubPage({
       {selectedCountry && !isFlyingToCountry && (
         <div className={`${isBuilderOpen ? 'hidden lg:block' : 'block'} fixed sm:absolute bottom-0 sm:bottom-auto sm:top-20 left-0 right-0 ${
           isBuilderOpen ? 'sm:left-6 sm:right-auto' : 'sm:left-auto sm:right-6'
-        } w-full sm:w-[380px] max-h-[44vh] sm:max-h-[82vh] bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border-t sm:border border-black/15 dark:border-white/15 shadow-2xl z-[500] p-3 sm:p-5 overflow-y-auto animate-in fade-in slide-in-from-bottom ${
+        } w-full sm:w-[380px] max-h-[65vh] sm:max-h-[82vh] bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border-t sm:border border-black/15 dark:border-white/15 shadow-2xl z-[500] p-3 sm:p-5 overflow-y-auto animate-in fade-in slide-in-from-bottom ${
           isBuilderOpen ? 'sm:slide-in-from-left' : 'sm:slide-in-from-right'
         } duration-200`}>
           
