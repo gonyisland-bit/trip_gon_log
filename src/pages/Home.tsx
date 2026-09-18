@@ -2316,9 +2316,9 @@ export function HomePage({
         monthSchedules.sort((a, b) => a.start.localeCompare(b.start));
 
         return (
-          <section className="w-full max-w-[1920px] mx-auto border-t border-black/10 dark:border-white/10 mt-14 pt-12 pb-16 px-4 sm:px-8 md:px-12 select-none">
+          <section className="w-full max-w-[1920px] mx-auto border-t border-black/10 dark:border-white/10 mt-8 pt-6 pb-6 sm:mt-12 sm:pt-10 sm:pb-8 px-4 sm:px-8 md:px-12 select-none">
             {/* Minimal Section Sub-Header */}
-            <div className="flex items-center justify-between pb-5 border-b border-black/10 dark:border-white/10 mb-8">
+            <div className="flex items-center justify-between pb-4 sm:pb-5 border-b border-black/10 dark:border-white/10 mb-6 sm:mb-8">
               <div className="flex items-center gap-2.5">
                 <span className="bg-black text-white dark:bg-white dark:text-black font-mono font-black text-[10px] px-2 py-0.5 uppercase tracking-widest">
                   CALENDAR ARCHIVE
@@ -2338,23 +2338,23 @@ export function HomePage({
             </div>
 
             {/* Swiss Responsive 3-Column Layout: 1. Month/Year (3 cols) -> 2. Schedule Feed (5 cols) -> 3. Large Calendar (4 cols) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 xl:gap-8 items-stretch">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
               {/* 1. Month/Year Display Column (lg:col-span-3 xl:col-span-3) */}
               <div className="lg:col-span-3 xl:col-span-3 flex flex-col justify-between gap-4 lg:pr-6">
                 <div 
                   onClick={() => onNavigate('calendar')}
-                  className="cursor-pointer group flex flex-col items-start select-none"
+                  className="cursor-pointer group flex flex-row items-baseline gap-4 sm:gap-6 lg:flex-col lg:items-start select-none"
                   title="달력 허브로 이동"
                 >
-                  <span className="text-7xl sm:text-8xl lg:text-9xl font-black font-satoshi tracking-tighter leading-none text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
+                  <span className="text-6xl sm:text-7xl lg:text-9xl font-black font-satoshi tracking-tighter leading-none text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors shrink-0">
                     {String(month + 1).padStart(2, '0')}
                   </span>
-                  <div className="mt-3 flex flex-col">
-                    <span className="text-2xl sm:text-3xl font-black font-satoshi tracking-tight uppercase text-black dark:text-white leading-tight">
+                  <div className="mt-0 lg:mt-3 flex flex-col">
+                    <span className="text-xl sm:text-2xl lg:text-3xl font-black font-satoshi tracking-tight uppercase text-black dark:text-white leading-tight">
                       {MONTH_NAMES_EN[month]}
                     </span>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-base sm:text-lg font-bold font-mono text-black/40 dark:text-white/40">
+                    <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1">
+                      <span className="text-sm sm:text-base lg:text-lg font-bold font-mono text-black/40 dark:text-white/40">
                         {year}
                       </span>
                       <span className="text-xs sm:text-sm font-bold font-mono text-red-600 dark:text-red-500 uppercase">

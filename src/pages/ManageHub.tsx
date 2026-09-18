@@ -433,7 +433,7 @@ export function ManageHubPage({
   };
 
   // PRESETS Management State
-  const [utilSubTab, setUtilSubTab] = useState<'all' | 'display' | 'bgm' | 'map' | 'presets' | 'trash'>('all');
+  const [utilSubTab, setUtilSubTab] = useState<'ui' | 'bgm' | 'map' | 'system'>('ui');
   const [mapSubTab, setMapSubTab] = useState<'settings' | 'presets'>('settings');
   const [presetsList, setPresetsList] = useState<PresetTripPlan[]>(() => getSavedPresets());
   const [presetSearchQuery, setPresetSearchQuery] = useState<string>('');
@@ -7356,56 +7356,54 @@ export function ManageHubPage({
               <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
                 UTILITIES
               </h2>
-              <p className="text-xs text-black/60 dark:text-white/60 font-mono">
-                [배경 그라데이션, 마퀴 배너, BGM 음원, 월드맵 타일, 여정 프리셋, 휴지통 및 DB 최적화 통합 관리]
+              <p className="text-xs text-black/60 dark:text-white/60 font-mono truncate">
+                [UI 비주얼, 마퀴 배너, BGM 음원, 지도 타일 및 여정 프리셋, 시스템 진단/휴지통]
               </p>
             </div>
 
-            {/* Swiss Minimal Sub-Nav Bar (Sticky with background backdrop so it stays accessible when scrolling long content) */}
+            {/* Swiss Minimal Sub-Nav Bar (4-Col Grid: Single row on both Mobile & Desktop) */}
             <div className="sticky top-0 z-20 bg-[#FAF9F6] dark:bg-[#141414] py-2.5 -mx-4 sm:-mx-8 px-4 sm:px-8 border-b border-black/15 dark:border-white/15">
-              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full">
+              <div className="grid grid-cols-4 gap-1 sm:gap-2 w-full">
                 {([
-                  { id: 'all', label: 'ALL' },
-                  { id: 'display', label: 'VISUAL' },
+                  { id: 'ui', label: 'UI' },
                   { id: 'bgm', label: 'BGM' },
-                  { id: 'map', label: 'MAP' },
-                  { id: 'presets', label: 'PRESETS', count: presetsList.length, isDirty: isPresetsDirty },
-                  { id: 'trash', label: 'SYSTEM', count: trashedJourneys.length + trashedSections.length, alert: (trashedJourneys.length + trashedSections.length) > 0 },
+                  { id: 'map', label: 'MAP', count: presetsList.length, isDirty: isPresetsDirty },
+                  { id: 'system', label: 'SYSTEM', count: trashedJourneys.length + trashedSections.length, alert: (trashedJourneys.length + trashedSections.length) > 0 },
                 ] as const).map(tab => (
                   <button
                     key={tab.id}
                     type="button"
                     onClick={() => setUtilSubTab(tab.id)}
-                    className={`px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider border transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                    className={`py-2 px-1 text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider border transition-colors cursor-pointer flex items-center justify-center gap-1 sm:gap-1.5 shrink-0 ${
                       utilSubTab === tab.id
-                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
                         : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white bg-black/[0.02] dark:bg-white/[0.02]'
                     }`}
                   >
                     <span>{tab.label}</span>
                     {'count' in tab && typeof tab.count === 'number' && (
-                      <span className={`text-[9px] px-1.5 py-0.2 font-mono font-bold ${
+                      <span className={`text-[8.5px] sm:text-[9px] px-1 py-0.2 font-mono font-bold shrink-0 ${
                         'alert' in tab && (tab as any).alert ? 'bg-red-600 text-white' : 'bg-orange-600 text-white'
                       }`}>
                         {tab.count}
                       </span>
                     )}
                     {'isDirty' in tab && tab.isDirty && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
                     )}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* 1. VISUAL (홈 화면 그라데이션 & 마퀴 설정 - 최상단) */}
-            {(utilSubTab === 'all' || utilSubTab === 'display') && (
+            {/* 1. UI (홈 화면 비주얼 & 마퀴 설정) */}
+            {utilSubTab === 'ui' && (
               <section className="flex flex-col gap-6 pt-2 pb-6 border-b border-black/15 dark:border-white/15">
                 <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
                   <div className="flex items-center gap-2">
                     <Sliders className="w-4 h-4 text-orange-600 dark:text-orange-400" />
                     <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-sans">
-                      VISUAL (홈 비주얼 & 배너 설정)
+                      UI (홈 비주얼 & 마퀴 설정)
                     </h3>
                   </div>
                 </div>
@@ -7617,26 +7615,26 @@ export function ManageHubPage({
               </section>
             )}
 
-            {/* 2. BACKGROUND MUSIC (BGM 트랙 및 자동 재생 관리) */}
-            {(utilSubTab === 'all' || utilSubTab === 'bgm') && (
+            {/* 2. BACKGROUND MUSIC (배경음) */}
+            {utilSubTab === 'bgm' && (
               <section className="flex flex-col gap-6 pt-2 pb-6 border-b border-black/15 dark:border-white/15">
                 <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
                   <div className="flex items-center gap-2">
                     <Music className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                    <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-sans">
-                      BACKGROUND MUSIC (슬라이드쇼 배경음악 관리)
+                    <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-sans truncate">
+                      BACKGROUND MUSIC (배경음)
                     </h3>
                   </div>
                 </div>
 
                 {/* Autoplay Option */}
                 <div className="flex items-center justify-between p-3.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/15 dark:border-white/15">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-sans">
-                      슬라이드쇼 시작 시 BGM 자동 재생
+                  <div className="flex flex-col gap-0.5 min-w-0 pr-2">
+                    <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-sans truncate">
+                      슬라이드쇼 BGM 자동 재생
                     </span>
-                    <span className="text-[10px] text-black/50 dark:text-white/50 font-mono">
-                      슬라이드쇼 재생 버튼 클릭 시 활성화된 BGM 트랙을 자동 재생합니다.
+                    <span className="text-[10px] text-black/50 dark:text-white/50 font-mono truncate">
+                      슬라이드쇼 시작 시 활성 BGM 트랙 자동 재생
                     </span>
                   </div>
                   <button
@@ -7812,7 +7810,7 @@ export function ManageHubPage({
             )}
 
             {/* 3. MAP TILESET SETTINGS (월드맵 타일 설정) */}
-            {(utilSubTab === 'all' || utilSubTab === 'map') && (
+            {utilSubTab === 'map' && (
               <section className="flex flex-col gap-6 pt-2 pb-6 border-b border-black/15 dark:border-white/15">
                 <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
                   <div className="flex items-center gap-2">
@@ -7867,8 +7865,8 @@ export function ManageHubPage({
               </section>
             )}
 
-            {/* 4. TRIP PRESETS (여행 프리셋 템플릿 관리) */}
-            {(utilSubTab === 'all' || utilSubTab === 'presets') && (
+            {/* 4. TRIP PRESETS (여정 추천 템플릿 관리 - MAP 탭에 통합) */}
+            {utilSubTab === 'map' && (
               <section className="flex flex-col gap-6 pt-2 pb-6 border-b border-black/15 dark:border-white/15">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-black/15 dark:border-white/15 pb-2">
                   <div className="flex items-center gap-2">
@@ -8048,17 +8046,17 @@ export function ManageHubPage({
             )}
 
             {/* 5. SYSTEM (DB 최적화 및 휴지통) */}
-            {(utilSubTab === 'all' || utilSubTab === 'trash') && (
+            {utilSubTab === 'system' && (
               <section className="flex flex-col gap-6 pt-2 pb-6">
                 <div className="flex items-baseline justify-between flex-wrap gap-2 border-b border-black/15 dark:border-white/15 pb-2">
                   <div className="flex items-center gap-2">
                     <Database className="w-4 h-4 text-red-600 dark:text-red-400" />
-                    <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-sans">
+                    <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-sans truncate">
                       SYSTEM (데이터베이스 진단 & 휴지통) ({trashedJourneys.length + trashedSections.length})
                     </h3>
                   </div>
-                  <span className="text-xs font-mono text-black/50 dark:text-white/50">
-                    삭제된 여정 보관 및 데이터베이스 무결성 최적화
+                  <span className="text-xs font-mono text-black/50 dark:text-white/50 truncate">
+                    삭제 여정 보관 및 DB 무결성 진단
                   </span>
                 </div>
 
