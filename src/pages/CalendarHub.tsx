@@ -202,7 +202,7 @@ export function CalendarHubPage({
     }[];
   } | null>(null);
 
-  // 날짜 상세 Quick View 바텀시트/팝오버 상태
+  // 날짜 상세 Quick View 바텀시트/팝오버 상태 및 부드러운 슬라이드 애니메이션 제어
   const [quickViewDate, setQuickViewDate] = useState<{
     dateStr: string;
     holidayName?: string;
@@ -216,7 +216,26 @@ export function CalendarHubPage({
       itemObj?: any;
     }[];
   } | null>(null);
+  const [isQuickViewAnimOpen, setIsQuickViewAnimOpen] = useState<boolean>(false);
   const quickViewRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (quickViewDate) {
+      const raf = requestAnimationFrame(() => {
+        setIsQuickViewAnimOpen(true);
+      });
+      return () => cancelAnimationFrame(raf);
+    } else {
+      setIsQuickViewAnimOpen(false);
+    }
+  }, [quickViewDate]);
+
+  const closeQuickView = () => {
+    setIsQuickViewAnimOpen(false);
+    setTimeout(() => {
+      setQuickViewDate(null);
+    }, 280);
+  };
 
   // 모바일 터치 스와이프 제스처 Ref
   const touchStartXRef = useRef<number | null>(null);
@@ -236,7 +255,7 @@ export function CalendarHubPage({
       if (quickViewRef.current && !quickViewRef.current.contains(target)) {
         const clickedDayBtn = (target as HTMLElement)?.closest?.('[data-calendar-date], [data-calendar-month-cell]');
         if (!clickedDayBtn) {
-          setQuickViewDate(null);
+          closeQuickView();
         }
       }
       if (hoveredTooltip) {
@@ -2524,11 +2543,21 @@ export function CalendarHubPage({
 
             {/* Restored 3-Column Desktop / 2-Column Mobile Grid (3 cols x 4 rows = 12M) */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-6 md:gap-8">
-              {yearMonthsData.map((m) => (
+              {yearMonthsData.map((m) => {
+                const isBestMonth = isWeatherMode && !!destinationCityData?.bestMonths?.includes(m.monthTab.num);
+                const isAvoidMonth = isWeatherMode && !!destinationCityData?.avoidMonths?.some(a => a.months?.includes(m.monthTab.num));
+
+                return (
                 <div
                   key={m.monthIdx}
                   id={`year-month-${m.monthIdx}`}
-                  className="bg-transparent p-2 sm:p-3 md:p-4 flex flex-col transition-all group"
+                  className={`bg-transparent p-2 sm:p-3 md:p-4 flex flex-col transition-all group relative ${
+                    isBestMonth
+                      ? 'border-t-2 border-red-600 dark:border-red-500'
+                      : isAvoidMonth
+                        ? 'border-t-2 border-black/20 dark:border-white/20'
+                        : ''
+                  }`}
                 >
                   {/* Month Card Header */}
                   <div className="flex items-center justify-between pb-2 mb-2 border-b border-black/10 dark:border-white/10">
@@ -2550,8 +2579,24 @@ export function CalendarHubPage({
                         </span>
                       </div>
                     </button>
-                    {/* Separated & High-Contrast Trip/Event Badges with Hyphen (3-D, 1-D 가독성 개선) */}
-                    <div className="flex items-center gap-1 sm:gap-1.5">
+                    {/* Separated & High-Contrast Trip/Event & Best/Avoid Weather Badges */}
+                    <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap justify-end">
+                      {isBestMonth && (
+                        <span 
+                          className="text-[8px] sm:text-[9px] font-mono font-black px-1.5 py-0.5 rounded-full bg-red-600 text-white tracking-wider shadow-2xs"
+                          title={`${destinationCityData?.nameKo || selectedWeatherCity.nameEn} 최적 여행 시기`}
+                        >
+                          BEST
+                        </span>
+                      )}
+                      {isAvoidMonth && (
+                        <span 
+                          className="text-[8px] sm:text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-black/10 dark:bg-white/15 text-black/60 dark:text-white/60 border border-black/10 dark:border-white/15 tracking-wider"
+                          title={`${destinationCityData?.nameKo || selectedWeatherCity.nameEn} 비추천 시기`}
+                        >
+                          AVOID
+                        </span>
+                      )}
                       {m.totalTripDays > 0 && (
                         <span className="text-[8.5px] sm:text-[9.5px] font-mono font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-red-600 text-white tracking-tight shadow-2xs">
                           TRIP {m.totalTripDays}-D
@@ -2581,7 +2626,7 @@ export function CalendarHubPage({
                   <div className="grid grid-cols-7 gap-y-0.5 sm:gap-y-1 text-center font-mono select-none">
                     {m.days.map((day, dIdx) => {
                       if (!day.isCurrentMonth) {
-                        return <div key={`empty-${m.monthIdx}-${dIdx}`} className="w-full h-7 sm:h-8 md:h-9" />;
+                        return <div key={`empty-${m.monthIdx}-${dIdx}`} className={isWeatherMode ? "w-full h-8 sm:h-9 md:h-10" : "w-full h-7 sm:h-8 md:h-9"} />;
                       }
 
                       const col = dIdx % 7;
@@ -2592,8 +2637,16 @@ export function CalendarHubPage({
                       const prevInRowHasTrip = day.hasTrip && col > 0 && m.days[dIdx - 1]?.hasTrip && (!day.tripId || !m.days[dIdx - 1]?.tripId || day.tripId === m.days[dIdx - 1]?.tripId);
                       const nextInRowHasTrip = day.hasTrip && col < 6 && m.days[dIdx + 1]?.hasTrip && (!day.tripId || !m.days[dIdx + 1]?.tripId || day.tripId === m.days[dIdx + 1]?.tripId);
 
-                      // 모바일 2열에서도 절대 겹치지 않는 스케일 (w-6 h-6 sm:w-7 sm:h-7)
-                      let circleClasses = 'w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full aspect-square flex items-center justify-center shrink-0 text-[10px] sm:text-xs md:text-sm font-bold transition-all relative z-10';
+                      // 날씨 데이터 획득 (예보 및 기후 통계 시뮬레이터)
+                      const exactWeather = isWeatherMode ? cityWeatherData?.forecast?.find(f => f.date === day.dateStr) : null;
+                      const cellWeather = isWeatherMode ? (exactWeather || getSimulatedWeatherForDate(selectedWeatherCity.nameEn, day.dateStr)) : null;
+                      const weatherMeta = cellWeather ? getWeatherMeta(cellWeather.weatherCode, cellWeather.precipitationProb) : null;
+                      const WeatherIcon = weatherMeta?.icon;
+
+                      // 모바일 2열에서도 절대 겹치지 않는 스케일
+                      let circleClasses = isWeatherMode
+                        ? 'w-7 h-7 sm:w-8 sm:h-8 md:w-8.5 md:h-8.5 rounded-md flex items-center justify-center shrink-0 transition-all relative z-10'
+                        : 'w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full aspect-square flex items-center justify-center shrink-0 text-[10px] sm:text-xs md:text-sm font-bold transition-all relative z-10';
                       let textClasses = 'leading-none';
 
                       const isYearSelected = selectedYearDate === day.dateStr;
@@ -2621,7 +2674,7 @@ export function CalendarHubPage({
                       return (
                         <div
                           key={day.dateStr}
-                          className="relative flex items-center justify-center h-7 sm:h-8 md:h-9 w-full"
+                          className={`relative flex items-center justify-center w-full ${isWeatherMode ? 'h-8 sm:h-9 md:h-10' : 'h-7 sm:h-8 md:h-9'}`}
                         >
                           {/* Continuous Trip Pill Ribbon (인접 셀 간 틈새 없이 완벽 결합) */}
                           {day.hasTrip && (
@@ -2659,11 +2712,44 @@ export function CalendarHubPage({
                               }
                             }}
                             className={`cursor-pointer active:scale-95 ${circleClasses}`}
-                            title={day.holidayName ? `${day.dateStr} (${day.holidayName})` : day.tripTitles.length > 0 ? `${day.dateStr} · ${day.tripTitles.join(', ')}` : day.dateStr}
+                            title={
+                              day.holidayName 
+                                ? `${day.dateStr} (${day.holidayName})` 
+                                : day.tripTitles.length > 0 
+                                  ? `${day.dateStr} · ${day.tripTitles.join(', ')}` 
+                                  : cellWeather
+                                    ? `${day.dateStr} · ${weatherMeta?.label} (${cellWeather.tempMin}°/${cellWeather.tempMax}°)`
+                                    : day.dateStr
+                            }
                           >
-                            <span className={textClasses}>
-                              {day.dayNum}
-                            </span>
+                            {isWeatherMode && WeatherIcon ? (
+                              <div className="flex flex-col items-center justify-center w-full h-full py-0.5 leading-none select-none pointer-events-none">
+                                <span className={`text-[7px] sm:text-[8px] font-mono font-bold leading-none mb-0.5 ${
+                                  day.hasTrip
+                                    ? 'text-white'
+                                    : day.isToday
+                                      ? 'text-white dark:text-black'
+                                      : isSun || day.isHoliday
+                                        ? 'text-red-600 dark:text-red-400'
+                                        : isSat
+                                          ? 'text-blue-600 dark:text-blue-400'
+                                          : 'text-black/60 dark:text-white/60'
+                                }`}>
+                                  {day.dayNum}
+                                </span>
+                                <WeatherIcon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${
+                                  day.hasTrip
+                                    ? 'text-white stroke-[2.4]'
+                                    : day.isToday
+                                      ? 'text-white dark:text-black stroke-[2.4]'
+                                      : `${weatherMeta.colorClass} stroke-[2.2]`
+                                }`} />
+                              </div>
+                            ) : (
+                              <span className={textClasses}>
+                                {day.dayNum}
+                              </span>
+                            )}
                           </button>
 
                           {/* Minimal Holiday Indicator Dot */}
@@ -2675,7 +2761,8 @@ export function CalendarHubPage({
                     })}
                   </div>
                 </div>
-              ))}
+              );
+            })}
             </div>
           </div>
         )}
@@ -3196,17 +3283,23 @@ export function CalendarHubPage({
       })()}
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* Swiss Minimal Quick View Bottom Sheet / Popover               */}
+      {/* Swiss Minimal Quick View Bottom Sheet / Popover (Smooth Slide) */}
       {/* ───────────────────────────────────────────────────────────── */}
       {quickViewDate && (
         <div 
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-200"
-          onClick={() => setQuickViewDate(null)}
+          className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 transition-all duration-300 ease-out ${
+            isQuickViewAnimOpen ? 'bg-black/50 backdrop-blur-xs' : 'bg-black/0 pointer-events-none'
+          }`}
+          onClick={closeQuickView}
         >
           <div
             ref={quickViewRef}
             onClick={(e) => e.stopPropagation()}
-            className="w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl border border-black/15 dark:border-white/15 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl shadow-2xl p-5 sm:p-6 text-black dark:text-white select-none animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200"
+            className={`w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl border border-black/15 dark:border-white/15 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl shadow-2xl p-5 sm:p-6 text-black dark:text-white select-none transition-all duration-300 ease-out transform ${
+              isQuickViewAnimOpen
+                ? 'translate-y-0 opacity-100 sm:scale-100'
+                : 'translate-y-full opacity-0 sm:translate-y-8 sm:scale-95'
+            }`}
           >
             {/* Top Bar: Date Header + Holiday Tag + Close */}
             <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10">
@@ -3222,7 +3315,7 @@ export function CalendarHubPage({
               </div>
               <button
                 type="button"
-                onClick={() => setQuickViewDate(null)}
+                onClick={closeQuickView}
                 className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                 title="닫기"
               >
@@ -3293,7 +3386,7 @@ export function CalendarHubPage({
                 type="button"
                 onClick={() => {
                   const d = quickViewDate.dateStr;
-                  setQuickViewDate(null);
+                  closeQuickView();
                   openNewEventModal(d, d);
                 }}
                 className="flex-1 h-9 rounded-full bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
@@ -3303,7 +3396,7 @@ export function CalendarHubPage({
               </button>
               <button
                 type="button"
-                onClick={() => setQuickViewDate(null)}
+                onClick={closeQuickView}
                 className="px-4 h-9 rounded-full border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10 text-xs font-mono font-bold transition-colors cursor-pointer"
               >
                 CLOSE
