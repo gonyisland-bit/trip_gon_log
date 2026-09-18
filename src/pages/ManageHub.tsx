@@ -3644,99 +3644,111 @@ export function ManageHubPage({
     setIsSavingAll(true);
     try {
       // 1. Save Home Settings
-      localStorage.setItem('playVideoOnActivate', String(playVideoOnActivate));
-      localStorage.setItem('home_journey_limit', String(homeJourneyLimit));
-      localStorage.setItem('hero_slide_duration', String(slideDuration));
-      localStorage.setItem('home_gradient_enabled', String(gradientEnabled));
-      localStorage.setItem('home_gradient_from', gradientFrom);
-      localStorage.setItem('home_gradient_to', gradientTo);
-      localStorage.setItem('home_magazine_section_id', homeMagSectionId);
-      localStorage.setItem('home_magazine_limit', String(homeMagLimit));
-      window.dispatchEvent(new CustomEvent('homeConfigChanged', {
-        detail: {
+      try {
+        localStorage.setItem('playVideoOnActivate', String(playVideoOnActivate));
+        localStorage.setItem('home_journey_limit', String(homeJourneyLimit));
+        localStorage.setItem('hero_slide_duration', String(slideDuration));
+        localStorage.setItem('home_gradient_enabled', String(gradientEnabled));
+        localStorage.setItem('home_gradient_from', gradientFrom);
+        localStorage.setItem('home_gradient_to', gradientTo);
+        localStorage.setItem('home_magazine_section_id', homeMagSectionId);
+        localStorage.setItem('home_magazine_limit', String(homeMagLimit));
+        window.dispatchEvent(new CustomEvent('homeConfigChanged', {
+          detail: {
+            gradientEnabled,
+            gradientFrom,
+            gradientTo,
+          }
+        }));
+
+        await onSaveAllHomeSettings(
+          title,
+          subtitle,
+          selectedHeroIds,
+          autoSlide,
+          showMarquee,
+          homeMarquee,
+          homeSpeed,
+          mediaType,
+          momentsList,
+          slideDuration,
           gradientEnabled,
           gradientFrom,
           gradientTo,
-        }
-      }));
-
-      await onSaveAllHomeSettings(
-        title,
-        subtitle,
-        selectedHeroIds,
-        autoSlide,
-        showMarquee,
-        homeMarquee,
-        homeSpeed,
-        mediaType,
-        momentsList,
-        slideDuration,
-        gradientEnabled,
-        gradientFrom,
-        gradientTo,
-        homeMagSectionId,
-        homeMagLimit,
-        sectionsList,
-        localLandingHeroImage,
-        localLandingHeroMedia
-      );
+          homeMagSectionId,
+          homeMagLimit,
+          sectionsList,
+          localLandingHeroImage,
+          localLandingHeroMedia
+        );
+      } catch (homeErr) {
+        console.warn('Home settings save notice in saveAll:', homeErr);
+      }
 
       // Save Bottom Widgets (Calendar & Weather) settings to Firestore
-      const widgetConfigData: HomeWidgetConfig = {
-        showCalendarArchive: widgetShowCalendar,
-        showLiveWeather: widgetShowWeather,
-        widgetOrder,
-        showExchangeRates: widgetShowExchange,
-        showUpcomingDDay: widgetShowDDay,
-        cities: widgetCities
-      };
-      await setDoc(doc(db, 'app_settings', 'home_widgets'), widgetConfigData, { merge: true });
-      savedHomeWidgetsSnapshotRef.current = JSON.stringify(widgetConfigData);
+      try {
+        const widgetConfigData: HomeWidgetConfig = {
+          showCalendarArchive: widgetShowCalendar,
+          showLiveWeather: widgetShowWeather,
+          widgetOrder,
+          showExchangeRates: widgetShowExchange,
+          showUpcomingDDay: widgetShowDDay,
+          cities: widgetCities
+        };
+        await setDoc(doc(db, 'app_settings', 'home_widgets'), widgetConfigData, { merge: true });
+        savedHomeWidgetsSnapshotRef.current = JSON.stringify(widgetConfigData);
+      } catch (widgetErr) {
+        console.warn('Home widgets save notice in saveAll:', widgetErr);
+      }
 
       // 2. Save Journey if currently editing one
       if (selectedJourney) {
-        await onSaveTrip(selectedJourney.id, {
-          title: editTitle,
-          date: editDate,
-          locationStr: editLocation,
-          country: editCountry,
-          tags: editTags,
-          img: editImg,
-          videoUrl: editVideoUrl,
-          heroImg: editHeroImg,
-          heroVideoUrl: editHeroVideoUrl,
-          statusBadge: editStatusBadge,
-        });
-        setLocalJourneys(prev => prev.map(j => {
-          if (j.id === selectedJourney.id) {
-            return {
-              ...j,
-              title: editTitle,
-              date: editDate,
-              locationStr: editLocation,
-              country: editCountry,
-              tags: editTags,
-              img: editImg,
-              videoUrl: editVideoUrl,
-              heroImg: editHeroImg,
-              heroVideoUrl: editHeroVideoUrl,
-              statusBadge: editStatusBadge,
-            };
-          }
-          return j;
-        }));
-        savedArchiveSnapshotRef.current[selectedJourney.id] = JSON.stringify(getNormalizedJourneyData({
-          title: editTitle,
-          date: editDate,
-          locationStr: editLocation,
-          country: editCountry,
-          tags: editTags,
-          img: editImg,
-          videoUrl: editVideoUrl,
-          heroImg: editHeroImg,
-          heroVideoUrl: editHeroVideoUrl,
-          statusBadge: editStatusBadge,
-        }));
+        try {
+          await onSaveTrip(selectedJourney.id, {
+            title: editTitle,
+            date: editDate,
+            locationStr: editLocation,
+            country: editCountry,
+            tags: editTags,
+            img: editImg,
+            videoUrl: editVideoUrl,
+            heroImg: editHeroImg,
+            heroVideoUrl: editHeroVideoUrl,
+            statusBadge: editStatusBadge,
+          });
+          setLocalJourneys(prev => prev.map(j => {
+            if (j.id === selectedJourney.id) {
+              return {
+                ...j,
+                title: editTitle,
+                date: editDate,
+                locationStr: editLocation,
+                country: editCountry,
+                tags: editTags,
+                img: editImg,
+                videoUrl: editVideoUrl,
+                heroImg: editHeroImg,
+                heroVideoUrl: editHeroVideoUrl,
+                statusBadge: editStatusBadge,
+              };
+            }
+            return j;
+          }));
+          savedArchiveSnapshotRef.current[selectedJourney.id] = JSON.stringify(getNormalizedJourneyData({
+            title: editTitle,
+            date: editDate,
+            locationStr: editLocation,
+            country: editCountry,
+            tags: editTags,
+            img: editImg,
+            videoUrl: editVideoUrl,
+            heroImg: editHeroImg,
+            heroVideoUrl: editHeroVideoUrl,
+            statusBadge: editStatusBadge,
+          }));
+        } catch (tripErr) {
+          console.error('Trip save error in saveAll:', tripErr);
+        }
       }
 
       // 3. Save Journey Hub Header if configured
@@ -3901,6 +3913,42 @@ export function ManageHubPage({
     }
   };
 
+  // Smart save handler targeting active mode first, then other dirty domains
+  const saveActiveOrAllSettings = async (showModal: boolean = false) => {
+    try {
+      if (activeMode === 'ARCHIVE') {
+        await handleSaveJourney(showModal);
+        if (isHomeDirty) {
+          try { await handleSaveHome(false); } catch (e) { console.warn('Background home save notice:', e); }
+        }
+        if (isMagazineDirty) {
+          try { await handleSaveMagazine(false); } catch (e) { console.warn('Background mag save notice:', e); }
+        }
+      } else if (activeMode === 'HOME') {
+        await handleSaveHome(showModal);
+        if (isArchiveDirty && selectedJourney) {
+          try { await handleSaveJourney(false); } catch (e) { console.warn('Background trip save notice:', e); }
+        }
+        if (isMagazineDirty) {
+          try { await handleSaveMagazine(false); } catch (e) { console.warn('Background mag save notice:', e); }
+        }
+      } else if (activeMode === 'MAGAZINE') {
+        await handleSaveMagazine(showModal);
+        if (isArchiveDirty && selectedJourney) {
+          try { await handleSaveJourney(false); } catch (e) { console.warn('Background trip save notice:', e); }
+        }
+      } else {
+        await handleSaveAllChanges(showModal);
+      }
+      syncAllSnapshotsToCurrent();
+    } catch (err) {
+      console.error('saveActiveOrAllSettings failed:', err);
+      try {
+        await handleSaveAllChanges(showModal);
+      } catch (_) {}
+    }
+  };
+
   // Directly read magazineSections from Firestore for diagnostics
   const handleLoadFirestoreMagazineSections = async () => {
     setIsLoadingFirestoreMag(true);
@@ -3916,8 +3964,8 @@ export function ManageHubPage({
         setFirestoreMagLoadedAt(new Date().toLocaleTimeString());
       }
     } catch (err: any) {
-      console.error('Firestore direct read error:', err);
-      alert(`Firestore 직접 읽기 실패: ${err?.message || err}`);
+      console.error('Failed to load Firestore magazine sections:', err);
+      alert('Firestore 매거진 섹션 로드 실패: ' + (err?.message || err));
     } finally {
       setIsLoadingFirestoreMag(false);
     }
@@ -3967,9 +4015,9 @@ export function ManageHubPage({
   // Sync saveRef with the unified save handler so any unsaved state across all tabs gets saved before navigating away
   useEffect(() => {
     if (saveRef) {
-      saveRef.current = () => handleSaveAllChanges(false);
+      saveRef.current = () => saveActiveOrAllSettings(false);
     }
-  }, [saveRef, handleSaveAllChanges]);
+  }, [saveRef, saveActiveOrAllSettings]);
 
   const isSelectedPlan = Boolean(
     selectedJourney && (
@@ -8795,7 +8843,7 @@ export function ManageHubPage({
           setPendingJourneyId(null);
 
           try {
-            await handleSaveAllChanges(false);
+            await saveActiveOrAllSettings(false);
           } catch (e) {
             console.error("Auto save failed:", e);
           }
