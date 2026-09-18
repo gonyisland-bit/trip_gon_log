@@ -58,6 +58,7 @@ export interface TripBuilderPanelProps {
   initialCountry?: string;
   initialCountryCode?: string;
   initialCity?: string;
+  initialCities?: string[];
   initialStartDate?: string;
   initialSelectedPockets?: SpotPocketItem[];
   existingTags?: string[];
@@ -155,6 +156,7 @@ export function TripBuilderPanel({
   initialCountry,
   initialCountryCode,
   initialCity,
+  initialCities,
   initialStartDate,
   initialSelectedPockets,
   existingTags = [],
@@ -637,10 +639,18 @@ export function TripBuilderPanel({
       let matchedCity: DestinationCity | undefined;
       let matchedCountryObj: DestinationCountry | undefined;
 
-      if (initialCity) {
-        matchedCity = findCityByNameOrAlias(initialCity);
-        if (matchedCity) {
-          matchedCountryObj = findCountryByNameOrAlias(matchedCity.countryEn);
+      const targetCities = (initialCities && initialCities.length > 0) ? initialCities : (initialCity ? [initialCity] : []);
+
+      let matchedCities: DestinationCity[] = [];
+      if (targetCities.length > 0) {
+        matchedCities = targetCities
+          .map(c => findCityByNameOrAlias(c))
+          .filter(Boolean) as DestinationCity[];
+        if (matchedCities.length > 0) {
+          matchedCity = matchedCities[0];
+          if (!matchedCountryObj) {
+            matchedCountryObj = findCountryByNameOrAlias(matchedCity.countryEn);
+          }
         }
       }
 
@@ -659,6 +669,9 @@ export function TripBuilderPanel({
         } else {
           matchedCity = WORLD_CITIES.find(c => c.countryEn.toUpperCase() === matchedCountryObj!.nameEn.toUpperCase());
         }
+        if (matchedCity) {
+          matchedCities = [matchedCity];
+        }
       }
 
       if (matchedCountryObj) {
@@ -675,13 +688,21 @@ export function TripBuilderPanel({
         setTags([]);
       }
 
-      if (matchedCity) {
-        setSmartCity(matchedCity);
-        setBuilderCitySearch(matchedCity.nameKo);
-        setTitle(`${matchedCity.nameEn.toUpperCase()} TRIP`);
-        const locs = [{ name: matchedCity.nameKo, lat: matchedCity.lat, lng: matchedCity.lng, country: matchedCity.countryEn }];
+      if (matchedCities.length > 0) {
+        setSmartCity(matchedCities[0]);
+        setBuilderCitySearch(matchedCities.map(c => c.nameKo).join(', '));
+        setTitle(matchedCities.length > 1
+          ? `${matchedCities.map(c => c.nameKo).join(' · ')} TRIP`
+          : `${matchedCities[0].nameEn.toUpperCase()} TRIP`
+        );
+        const locs = matchedCities.map(c => ({
+          name: c.nameKo,
+          lat: c.lat,
+          lng: c.lng,
+          country: c.countryEn
+        }));
         setLocations(locs);
-        onFocusLocationChange?.({ country: matchedCountryObj, city: matchedCity, locations: locs });
+        onFocusLocationChange?.({ country: matchedCountryObj, city: matchedCities[0], locations: locs });
       } else if (matchedCountryObj) {
         setTitle(`${matchedCountryObj.nameEn.toUpperCase()} TRIP`);
         const locs = [{ name: matchedCountryObj.nameEn, country: matchedCountryObj.nameEn }];
@@ -695,7 +716,7 @@ export function TripBuilderPanel({
         onFocusLocationChange?.({});
       }
     }
-  }, [isOpen, initialCountry, initialCountryCode, initialCity, initialStartDate]);
+  }, [isOpen, initialCountry, initialCountryCode, initialCity, initialCities, initialStartDate]);
 
   // Notify parent MapHub on focus change
   useEffect(() => {

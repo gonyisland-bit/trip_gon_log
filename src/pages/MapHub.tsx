@@ -863,7 +863,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currency: 'USD',
     currencySymbol: '$',
     rateToKRW: 1380,
-    cities: ['GUAM', '괌', 'TUMON', 'HAGATNA', 'TAMUNING'],
+    cities: ['TUMON', 'HAGATNA', 'TAMUNING', 'GUAM'],
     center: [13.4757, 144.7489], // Hagatna
     zoom: 11,
     continent: 'Oceania',
@@ -1135,6 +1135,10 @@ const KNOWN_CITY_COORDS: { [key: string]: [number, number] } = {
   괌: [13.4443, 144.7937],
   tumon: [13.5137, 144.8058],
   투몬: [13.5137, 144.8058],
+  hagatna: [13.4763, 144.7502],
+  하갓냐: [13.4763, 144.7502],
+  tamuning: [13.4877, 144.7811],
+  타무닝: [13.4877, 144.7811],
   saipan: [15.1850, 145.7467],
   사이판: [15.1850, 145.7467],
   garapan: [15.2078, 145.7198],
@@ -1143,6 +1147,36 @@ const KNOWN_CITY_COORDS: { [key: string]: [number, number] } = {
   마르피: [15.2833, 145.8167],
   susupe: [15.1500, 145.7167],
   수수페: [15.1500, 145.7167],
+  male: [4.1755, 73.5093],
+  말레: [4.1755, 73.5093],
+  maafushi: [3.9416, 73.4897],
+  마아푸시: [3.9416, 73.4897],
+  ariatoll: [3.8833, 72.8333],
+  아리아톨: [3.8833, 72.8333],
+  vik: [63.4186, -19.0060],
+  비크: [63.4186, -19.0060],
+  akureyri: [65.6835, -18.0878],
+  아쿠레이리: [65.6835, -18.0878],
+  goldencircle: [64.3100, -20.3000],
+  골든서클: [64.3100, -20.3000],
+  sentosa: [1.2494, 103.8303],
+  센토사: [1.2494, 103.8303],
+  marinabay: [1.2847, 103.8610],
+  마리나베이: [1.2847, 103.8610],
+  taipa: [22.1569, 113.5586],
+  타이파: [22.1569, 113.5586],
+  cotai: [22.1468, 113.5654],
+  코타이: [22.1468, 113.5654],
+  coloane: [22.1197, 113.5619],
+  콜로안: [22.1197, 113.5619],
+  kowloon: [22.3193, 114.1694],
+  구룡: [22.3193, 114.1694],
+  tsimshatsui: [22.2988, 114.1722],
+  침사추이: [22.2988, 114.1722],
+  lantau: [22.2591, 113.9525],
+  란타우: [22.2591, 113.9525],
+  mamanucaislands: [-17.6667, 177.0833],
+  마마누카제도: [-17.6667, 177.0833],
   vancouver: [49.2827, 236.8793],
   밴쿠버: [49.2827, 236.8793],
   toronto: [43.6532, 280.6168],
@@ -1279,6 +1313,22 @@ export const CITY_KO_MAP: Record<string, string> = {
   '가라판': 'GARAPAN',
   '마르피': 'MARPI',
   '수수페': 'SUSUPE',
+  '하갓냐': 'HAGATNA',
+  '타무닝': 'TAMUNING',
+  '말레': 'MALE',
+  '마아푸시': 'MAAFUSHI',
+  '아리아톨': 'ARI ATOLL',
+  '비크': 'VIK',
+  '아쿠레이리': 'AKUREYRI',
+  '골든서클': 'GOLDEN CIRCLE',
+  '센토사': 'SENTOSA',
+  '마리나베이': 'MARINA BAY',
+  '타이파': 'TAIPA',
+  '코타이': 'COTAI',
+  '콜로안': 'COLOANE',
+  '침사추이': 'TSIM SHA TSUI',
+  '란타우': 'LANTAU',
+  '마마누카': 'MAMANUCA ISLANDS',
 };
 
 export function findCountryForGroup(
@@ -1537,6 +1587,7 @@ export function MapHubPage({
   const [builderCountry, setBuilderCountry] = useState<string>(initialBuilderCountry);
   const [builderCountryCode, setBuilderCountryCode] = useState<string>('');
   const [builderCity, setBuilderCity] = useState<string>(initialBuilderCity);
+  const [builderCities, setBuilderCities] = useState<string[]>([]);
   const [builderDate, setBuilderDate] = useState<string>(initialBuilderDate);
   const builderRouteLayerRef = useRef<any>(null);
   const builderMarkersRef = useRef<any[]>([]);
@@ -1650,79 +1701,175 @@ export function MapHubPage({
 
   // City markers on map when selected in DESTINATIONS
   const destCityMarkersRef = useRef<any[]>([]);
+  // Mini dot pins for all cities belonging to selectedCountry
+  const countryCityDotsRef = useRef<any[]>([]);
 
-  // Cleanup dest city markers on country change or unmount
-  useEffect(() => {
-    destCityMarkersRef.current.forEach(m => {
-      try { m.remove(); } catch (_) {}
-    });
-    destCityMarkersRef.current = [];
-  }, [selectedCountry?.code]);
-
-  const toggleDestCity = (cityName: string) => {
+  const toggleDestCity = useCallback((cityName: string) => {
     setSelectedDestCities(prev => {
       const isAdding = !prev.includes(cityName);
       if (isAdding) {
         // 도시 선택 시 날씨도 해당 도시로 즉시 자동 동기화
         setActiveWeatherCity(cityName);
-
-        // 도시 위치 검색 및 지도 줌인 & 핀 활성화
-        const cleanKey = cityName.toLowerCase().replace(/\s+/g, '');
-        const cityObj = findCityByNameOrAlias(cityName);
-        const knownCoords = KNOWN_CITY_COORDS[cleanKey] || KNOWN_CITY_COORDS[cityName];
-        const lat = cityObj?.lat || knownCoords?.[0];
-        const lng = cityObj?.lng || knownCoords?.[1];
-
-        if (lat && lng && mapRef.current) {
-          const map = mapRef.current;
-          const curCenterLng = map.getCenter()?.lng ?? 126.44;
-          let effLng = lng;
-          let diff = effLng - curCenterLng;
-          while (diff > 180) { effLng -= 360; diff -= 360; }
-          while (diff < -180) { effLng += 360; diff += 360; }
-
-          const targetZoom = Math.max(8.5, (selectedCountry?.zoom ?? 5) + 1.5);
-          map.flyTo([lat, effLng], targetZoom, { duration: 0.9 });
-
-          // 기존 선택 도시 핀 제거 후 신규 핀 추가
-          destCityMarkersRef.current.forEach(m => {
-            try { m.remove(); } catch (_) {}
-          });
-          destCityMarkersRef.current = [];
-
-          const L = (window as any).L;
-          if (L) {
-            const pinHtml = `
-              <div class="relative flex flex-col items-center pointer-events-none select-none">
-                <span class="absolute w-8 h-8 rounded-full bg-amber-500/30 animate-ping"></span>
-                <div class="w-4 h-4 rounded-full bg-amber-500 border-2 border-white shadow-lg flex items-center justify-center">
-                  <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
-                </div>
-                <div class="mt-1 px-1.5 py-0.5 bg-black text-white text-[9px] font-mono font-black uppercase tracking-wider whitespace-nowrap shadow-md">
-                  ${cityName}
-                </div>
-              </div>
-            `;
-            const cityIcon = L.divIcon({
-              className: 'custom-dest-city-pin',
-              html: pinHtml,
-              iconSize: [60, 36],
-              iconAnchor: [30, 8],
-            });
-            const marker = L.marker([lat, effLng], { icon: cityIcon, zIndexOffset: 2000 }).addTo(map);
-            destCityMarkersRef.current.push(marker);
-          }
-        }
+        return [...prev, cityName];
       } else {
-        // 도시 선택 해제 시 해당 핀 제거
-        destCityMarkersRef.current.forEach(m => {
-          try { m.remove(); } catch (_) {}
-        });
-        destCityMarkersRef.current = [];
+        return prev.filter(c => c !== cityName);
       }
-      return isAdding ? [...prev, cityName] : prev.filter(c => c !== cityName);
     });
-  };
+  }, []);
+
+  const toggleDestCityRef = useRef(toggleDestCity);
+  useEffect(() => {
+    toggleDestCityRef.current = toggleDestCity;
+  }, [toggleDestCity]);
+
+  // Render subtle mini dot pins for all travel destinations in the selected country
+  useEffect(() => {
+    const L = (window as any).L;
+    const map = mapRef.current;
+    if (!map || !L) return;
+
+    countryCityDotsRef.current.forEach(m => {
+      try { m.remove(); } catch (_) {}
+    });
+    countryCityDotsRef.current = [];
+
+    if (!selectedCountry || !selectedCountry.cities || selectedCountry.cities.length === 0) {
+      return;
+    }
+
+    selectedCountry.cities.forEach(cityName => {
+      const cleanKey = cityName.toLowerCase().replace(/\s+/g, '');
+      const cityObj = findCityByNameOrAlias(cityName);
+      const knownCoords = KNOWN_CITY_COORDS[cleanKey] || KNOWN_CITY_COORDS[cityName];
+      const lat = cityObj?.lat || knownCoords?.[0];
+      const lng = cityObj?.lng || knownCoords?.[1];
+
+      if (!lat || !lng) return;
+
+      const curCenterLng = map.getCenter()?.lng ?? 126.44;
+      let effLng = lng;
+      let diff = effLng - curCenterLng;
+      while (diff > 180) { effLng -= 360; diff -= 360; }
+      while (diff < -180) { effLng += 360; diff += 360; }
+
+      const dotHtml = `
+        <div class="group relative cursor-pointer flex items-center justify-center select-none" style="width: 22px; height: 22px;">
+          <!-- Hover Tooltip -->
+          <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 3px; pointer-events: none; white-space: nowrap; z-index: 1500;" class="opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: ${isDarkMode ? '#FFFFFF' : '#000000'}; background-color: ${isDarkMode ? '#000000' : '#FFFFFF'}; border: 1px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; padding: 1.5px 5px; line-height: 1; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+              ${cityName}
+            </span>
+          </div>
+          <!-- Mini City Dot: 6.5px with clean contrast border -->
+          <div style="width: 6.5px; height: 6.5px; border-radius: 9999px; background-color: ${isDarkMode ? '#38BDF8' : '#0284C7'}; border: 1.5px solid ${isDarkMode ? '#FFFFFF' : '#000000'}; box-shadow: 0 0 0 1px ${isDarkMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)'};" class="group-hover:scale-150 transition-all duration-150"></div>
+        </div>
+      `;
+
+      const icon = L.divIcon({
+        className: 'custom-country-city-dot',
+        html: dotHtml,
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+      });
+
+      const dotMarker = L.marker([lat, effLng], { icon, zIndexOffset: 1200 }).addTo(map);
+      dotMarker.on('click', (e: any) => {
+        if (e && e.originalEvent) e.originalEvent.stopPropagation();
+        toggleDestCityRef.current(cityName);
+      });
+      countryCityDotsRef.current.push(dotMarker);
+    });
+
+    return () => {
+      countryCityDotsRef.current.forEach(m => {
+        try { m.remove(); } catch (_) {}
+      });
+      countryCityDotsRef.current = [];
+    };
+  }, [selectedCountry?.code, isDarkMode]);
+
+  // Effect reacting to selectedDestCities: renders pulse pins and adjusts map camera (single city: flyTo, multi-city: fitBounds)
+  useEffect(() => {
+    const L = (window as any).L;
+    const map = mapRef.current;
+    if (!map || !L) return;
+
+    // Clean previous dest city markers
+    destCityMarkersRef.current.forEach(m => {
+      try { m.remove(); } catch (_) {}
+    });
+    destCityMarkersRef.current = [];
+
+    if (!selectedDestCities || selectedDestCities.length === 0) {
+      return;
+    }
+
+    const curCenterLng = map.getCenter()?.lng ?? 126.44;
+    const selectedPoints: { name: string; lat: number; lng: number }[] = [];
+
+    selectedDestCities.forEach(cityName => {
+      const cleanKey = cityName.toLowerCase().replace(/\s+/g, '');
+      const cityObj = findCityByNameOrAlias(cityName);
+      const knownCoords = KNOWN_CITY_COORDS[cleanKey] || KNOWN_CITY_COORDS[cityName];
+      const lat = cityObj?.lat || knownCoords?.[0];
+      const lng = cityObj?.lng || knownCoords?.[1];
+
+      if (lat && lng) {
+        let effLng = lng;
+        let diff = effLng - curCenterLng;
+        while (diff > 180) { effLng -= 360; diff -= 360; }
+        while (diff < -180) { effLng += 360; diff += 360; }
+        selectedPoints.push({ name: cityName, lat, lng: effLng });
+      }
+    });
+
+    if (selectedPoints.length === 0) return;
+
+    // Render amber pulse pin for each selected city
+    selectedPoints.forEach((pt, idx) => {
+      const numBadge = selectedPoints.length > 1
+        ? `<span class="mr-1 text-amber-400 font-bold">${String(idx + 1).padStart(2, '0')}</span>`
+        : '';
+
+      const pinHtml = `
+        <div class="relative flex flex-col items-center pointer-events-none select-none">
+          <span class="absolute w-8 h-8 rounded-full bg-amber-500/30 animate-ping"></span>
+          <div class="w-4 h-4 rounded-full bg-amber-500 border-2 border-white shadow-lg flex items-center justify-center">
+            <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+          </div>
+          <div class="mt-1 px-1.5 py-0.5 bg-black text-white text-[9px] font-mono font-black uppercase tracking-wider whitespace-nowrap shadow-md flex items-center">
+            ${numBadge}${pt.name}
+          </div>
+        </div>
+      `;
+
+      const cityIcon = L.divIcon({
+        className: 'custom-dest-city-pin',
+        html: pinHtml,
+        iconSize: [70, 36],
+        iconAnchor: [35, 8],
+      });
+
+      const marker = L.marker([pt.lat, pt.lng], { icon: cityIcon, zIndexOffset: 2000 + idx }).addTo(map);
+      destCityMarkersRef.current.push(marker);
+    });
+
+    // Camera adjustment: Single city -> flyTo, Multi-city -> fitBounds
+    if (selectedPoints.length === 1) {
+      const targetZoom = Math.max(8.5, (selectedCountry?.zoom ?? 5) + 1.5);
+      map.flyTo([selectedPoints[0].lat, selectedPoints[0].lng], targetZoom, { duration: 0.9 });
+    } else if (selectedPoints.length >= 2) {
+      const bounds = L.latLngBounds(selectedPoints.map(p => [p.lat, p.lng]));
+      map.fitBounds(bounds, { padding: [80, 80], maxZoom: 13 });
+    }
+
+    return () => {
+      destCityMarkersRef.current.forEach(m => {
+        try { m.remove(); } catch (_) {}
+      });
+      destCityMarkersRef.current = [];
+    };
+  }, [selectedDestCities, selectedCountry?.zoom]);
 
   // Flight Arc animation state from South Korea to destination country
   const [isFlyingToCountry, setIsFlyingToCountry] = useState(false);
@@ -2940,6 +3087,7 @@ export function MapHubPage({
       const addYellowMarkerAt = (lat: number, lng: number) => {
         const marker = L.marker([lat, lng], { icon, zIndexOffset: 600 }).addTo(map);
         marker.on('click', () => {
+          if (isBuilderOpenRef.current) return;
           handleSelectCountryRef.current(country);
         });
         yellowMarkersRef.current.push(marker);
@@ -2984,6 +3132,7 @@ export function MapHubPage({
       const addCountryDotAt = (lat: number, lng: number) => {
         const dotMarker = L.marker([lat, lng], { icon, zIndexOffset: 300 }).addTo(map);
         dotMarker.on('click', (e: any) => {
+          if (isBuilderOpenRef.current) return;
           if (e && e.originalEvent) e.originalEvent.stopPropagation();
           handleSelectCountryRef.current(country);
         });
@@ -3024,15 +3173,45 @@ export function MapHubPage({
   const isCurrentCountryFavorite = selectedCountry && favoriteCountries.includes(selectedCountry.code);
 
   // In-place Trip Builder Handlers
-  const handleOpenTripBuilder = useCallback((country?: string, city?: string, date?: string, countryCode?: string) => {
+  const handleOpenTripBuilder = useCallback((country?: string, city?: string, date?: string, countryCode?: string, initialCities?: string[]) => {
     setIsBuilderOpen(true);
     if (country) setBuilderCountry(country);
     if (countryCode) setBuilderCountryCode(countryCode);
     if (city) setBuilderCity(city);
     if (date) setBuilderDate(date);
+    const targetCities = initialCities && initialCities.length > 0 ? initialCities : (city ? [city] : []);
+    setBuilderCities(targetCities);
     // 국가 모달은 닫지 않고 유지 (사용자 요청: 나라 모달은 활성상태에서 유지할 것)
     setSelectedPinGroup(null);
     setIsWishlistModalOpen(false);
+
+    // If multiple cities are provided, fit bounds across all cities
+    if (targetCities.length > 1 && mapRef.current) {
+      const L = (window as any).L;
+      if (L) {
+        const curCenterLng = mapRef.current.getCenter()?.lng ?? 126.44;
+        const coords: [number, number][] = [];
+        targetCities.forEach(c => {
+          const cData = findCityByNameOrAlias(c);
+          const cleanKey = c.toLowerCase().replace(/\s+/g, '');
+          const knownCoords = KNOWN_CITY_COORDS[cleanKey] || KNOWN_CITY_COORDS[c];
+          const lat = cData?.lat || knownCoords?.[0];
+          const lng = cData?.lng || knownCoords?.[1];
+          if (lat && lng) {
+            let effLng = lng;
+            let diff = effLng - curCenterLng;
+            while (diff > 180) { effLng -= 360; diff -= 360; }
+            while (diff < -180) { effLng += 360; diff += 360; }
+            coords.push([lat, effLng]);
+          }
+        });
+        if (coords.length > 1) {
+          const bounds = L.latLngBounds(coords);
+          mapRef.current.fitBounds(bounds, { padding: [80, 80], maxZoom: 12 });
+          return;
+        }
+      }
+    }
 
     // If city is provided, fly to it immediately with continuous longitude and adaptive zoom
     if (city) {
@@ -3121,6 +3300,7 @@ export function MapHubPage({
     setIsBuilderOpen(false);
     setBuilderCountry('');
     setBuilderCity('');
+    setBuilderCities([]);
     setBuilderDate('');
     if (builderRouteLayerRef.current) {
       builderRouteLayerRef.current.remove();
@@ -3875,7 +4055,7 @@ export function MapHubPage({
                 type="button"
                 onClick={() => {
                   const targetCity = selectedDestCities.length > 0 ? selectedDestCities[0] : undefined;
-                  handleOpenTripBuilder(selectedCountry.name, targetCity, undefined, selectedCountry.code);
+                  handleOpenTripBuilder(selectedCountry.name, targetCity, undefined, selectedCountry.code, selectedDestCities);
                 }}
                 className="w-full py-2 px-3 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-widest font-mono flex items-center justify-center gap-1.5 hover:opacity-85 transition-opacity cursor-pointer shadow-xs truncate"
                 title="선택된 장소 또는 국가 기준으로 새로운 트립 생성"
@@ -3904,6 +4084,7 @@ export function MapHubPage({
             initialCountry={builderCountry}
             initialCountryCode={builderCountryCode}
             initialCity={builderCity}
+            initialCities={builderCities}
             initialStartDate={builderDate}
             isAdmin={isAdmin}
             onFocusLocationChange={handleBuilderFocusChange}

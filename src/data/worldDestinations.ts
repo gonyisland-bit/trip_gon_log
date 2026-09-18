@@ -2500,8 +2500,8 @@ export const WORLD_CITIES: DestinationCity[] = [
     "nameKo": "구룡",
     "countryEn": "HONG KONG",
     "countryKo": "홍콩",
-    "lat": 0.0,
-    "lng": 0.0,
+    "lat": 22.3193,
+    "lng": 114.1694,
     "tags": [
       "City",
       "Culture",
@@ -2580,8 +2580,8 @@ export const WORLD_CITIES: DestinationCity[] = [
     "nameKo": "침사추이",
     "countryEn": "HONG KONG",
     "countryKo": "홍콩",
-    "lat": 0.0,
-    "lng": 0.0,
+    "lat": 22.2988,
+    "lng": 114.1722,
     "tags": [
       "City",
       "Culture",
@@ -2620,8 +2620,8 @@ export const WORLD_CITIES: DestinationCity[] = [
     "nameKo": "란타우",
     "countryEn": "HONG KONG",
     "countryKo": "홍콩",
-    "lat": 0.0,
-    "lng": 0.0,
+    "lat": 22.2591,
+    "lng": 113.9525,
     "tags": [
       "City",
       "Culture",
@@ -2700,8 +2700,8 @@ export const WORLD_CITIES: DestinationCity[] = [
     "nameKo": "타이파",
     "countryEn": "MACAU",
     "countryKo": "마카오",
-    "lat": 0.0,
-    "lng": 0.0,
+    "lat": 22.1569,
+    "lng": 113.5586,
     "tags": [
       "City",
       "Culture",
@@ -2740,8 +2740,8 @@ export const WORLD_CITIES: DestinationCity[] = [
     "nameKo": "코타이",
     "countryEn": "MACAU",
     "countryKo": "마카오",
-    "lat": 0.0,
-    "lng": 0.0,
+    "lat": 22.1468,
+    "lng": 113.5654,
     "tags": [
       "City",
       "Culture",
@@ -2780,8 +2780,8 @@ export const WORLD_CITIES: DestinationCity[] = [
     "nameKo": "콜로안",
     "countryEn": "MACAU",
     "countryKo": "마카오",
-    "lat": 0.0,
-    "lng": 0.0,
+    "lat": 22.1197,
+    "lng": 113.5619,
     "tags": [
       "City",
       "Culture",
@@ -4060,8 +4060,8 @@ export const WORLD_CITIES: DestinationCity[] = [
     "nameKo": "센토사",
     "countryEn": "SINGAPORE",
     "countryKo": "싱가포르",
-    "lat": 0.0,
-    "lng": 0.0,
+    "lat": 1.2494,
+    "lng": 103.8303,
     "tags": [
       "City",
       "Culture",
@@ -4100,8 +4100,8 @@ export const WORLD_CITIES: DestinationCity[] = [
     "nameKo": "마리나베이",
     "countryEn": "SINGAPORE",
     "countryKo": "싱가포르",
-    "lat": 0.0,
-    "lng": 0.0,
+    "lat": 1.2847,
+    "lng": 103.861,
     "tags": [
       "City",
       "Culture",
@@ -4780,8 +4780,8 @@ export const WORLD_CITIES: DestinationCity[] = [
     "nameKo": "말레",
     "countryEn": "MALDIVES",
     "countryKo": "몰디브",
-    "lat": 0.0,
-    "lng": 0.0,
+    "lat": 4.1755,
+    "lng": 73.5093,
     "tags": [
       "City",
       "Culture",
@@ -4820,8 +4820,8 @@ export const WORLD_CITIES: DestinationCity[] = [
     "nameKo": "마아푸시",
     "countryEn": "MALDIVES",
     "countryKo": "몰디브",
-    "lat": 0.0,
-    "lng": 0.0,
+    "lat": 3.9416,
+    "lng": 73.4897,
     "tags": [
       "City",
       "Culture",
@@ -4860,8 +4860,8 @@ export const WORLD_CITIES: DestinationCity[] = [
     "nameKo": "아리 아톨",
     "countryEn": "MALDIVES",
     "countryKo": "몰디브",
-    "lat": 0.0,
-    "lng": 0.0,
+    "lat": 3.8833,
+    "lng": 72.8333,
     "tags": [
       "City",
       "Culture",
@@ -9740,8 +9740,8 @@ export const WORLD_CITIES: DestinationCity[] = [
     "nameKo": "비크",
     "countryEn": "ICELAND",
     "countryKo": "아이슬란드",
-    "lat": 0.0,
-    "lng": 0.0,
+    "lat": 63.4186,
+    "lng": -19.006,
     "tags": [
       "City",
       "Culture",
@@ -9780,8 +9780,8 @@ export const WORLD_CITIES: DestinationCity[] = [
     "nameKo": "아쿠레이리",
     "countryEn": "ICELAND",
     "countryKo": "아이슬란드",
-    "lat": 0.0,
-    "lng": 0.0,
+    "lat": 65.6835,
+    "lng": -18.0878,
     "tags": [
       "City",
       "Culture",
@@ -9820,8 +9820,8 @@ export const WORLD_CITIES: DestinationCity[] = [
     "nameKo": "골든 서클",
     "countryEn": "ICELAND",
     "countryKo": "아이슬란드",
-    "lat": 0.0,
-    "lng": 0.0,
+    "lat": 64.31,
+    "lng": -20.3,
     "tags": [
       "City",
       "Culture",
@@ -13780,8 +13780,8 @@ export const WORLD_CITIES: DestinationCity[] = [
     "nameKo": "마마누카제도",
     "countryEn": "FIJI",
     "countryKo": "피지",
-    "lat": 0.0,
-    "lng": 0.0,
+    "lat": -17.6667,
+    "lng": 177.0833,
     "tags": [
       "City",
       "Culture",
@@ -13814,6 +13814,36 @@ export const WORLD_CITIES: DestinationCity[] = [
       "마마누카제도 뒷골목 히든 스폿"
     ],
     "coverImage": "https://images.unsplash.com/photo-1488646953014-85cb44e25828?q=80&w=1200&auto=format&fit=crop"
+  },
+  {
+    "nameEn": "Guam",
+    "nameKo": "괌",
+    "countryEn": "GUAM",
+    "countryKo": "괌",
+    "lat": 13.4443,
+    "lng": 144.7937,
+    "tags": [
+      "City",
+      "Nature",
+      "Resort"
+    ],
+    "bestMonths": [
+      12, 1, 2, 3, 4, 5
+    ],
+    "avoidMonths": [
+      { "months": [ 7, 8, 9 ], "reason": "우기 및 태풍 주의 시즌" }
+    ],
+    "iconicSpots": [
+      "사랑의 절벽",
+      "투몬 비치",
+      "아가나 대성당",
+      "스페인 광장"
+    ],
+    "hiddenGems": [
+      "이파오 비치 공원",
+      "탈로포포 폭포"
+    ],
+    "coverImage": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200&auto=format&fit=crop"
   },
   {
     "nameEn": "Tumon",
@@ -13860,8 +13890,8 @@ export const WORLD_CITIES: DestinationCity[] = [
     "nameKo": "하갓냐",
     "countryEn": "GUAM",
     "countryKo": "괌",
-    "lat": 0.0,
-    "lng": 0.0,
+    "lat": 13.4763,
+    "lng": 144.7502,
     "tags": [
       "City",
       "Culture",
@@ -13900,8 +13930,8 @@ export const WORLD_CITIES: DestinationCity[] = [
     "nameKo": "타무닝",
     "countryEn": "GUAM",
     "countryKo": "괌",
-    "lat": 0.0,
-    "lng": 0.0,
+    "lat": 13.4877,
+    "lng": 144.7811,
     "tags": [
       "City",
       "Culture",
