@@ -1495,12 +1495,12 @@ export function CalendarHubPage({
                 </div>
               </button>
 
-              {/* Expandable 1~12 Month Strip (월 클릭 시 펼쳐지고 선택 시 자동 닫힘) */}
+              {/* Expandable 12-Month Quick Selector Tabs (월 클릭 시 펼쳐지고 선택 시 자동 닫힘) */}
               {isMonthStripOpen && (
-                <div className="w-full max-w-2xl mt-4 sm:mt-6 p-2 sm:p-2.5 rounded-2xl border border-black/15 dark:border-white/15 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md shadow-2xl animate-in fade-in zoom-in-95 duration-200 z-30">
-                  <div className="grid grid-cols-6 sm:grid-cols-12 gap-1 sm:gap-1.5">
+                <div className="w-full mt-3 sm:mt-5 py-2.5 sm:py-3 border-y border-black/10 dark:border-white/10 select-none animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="grid grid-cols-12 gap-0.5 sm:gap-1">
                     {MONTH_TABS.map((mTab, idx) => {
-                      const isSelected = idx === currentMonth;
+                      const isActive = currentMonth === idx;
                       return (
                         <button
                           key={mTab.num}
@@ -1509,16 +1509,19 @@ export function CalendarHubPage({
                             setCurrentMonth(idx);
                             setIsMonthStripOpen(false); // 골라지면 즉시 자동 숨김
                           }}
-                          className={`py-2 sm:py-2.5 rounded-xl text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
-                            isSelected
-                              ? 'bg-black text-white dark:bg-white dark:text-black font-black shadow-sm'
-                              : 'text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/10 hover:text-black dark:hover:text-white'
+                          className={`flex flex-col items-center justify-center py-1 sm:py-1.5 px-0.5 rounded-xs transition-all cursor-pointer ${
+                            isActive
+                              ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs ring-1 ring-black dark:ring-white'
+                              : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5 hover:text-black dark:hover:text-white'
                           }`}
+                          title={`${mTab.full} (${mTab.num}월)`}
                         >
-                          <span className="font-mono text-xs sm:text-sm font-bold leading-tight">
-                            {String(mTab.num).padStart(2, '0')}
+                          <span className="text-sm sm:text-lg md:text-xl font-black font-['Inter',sans-serif] leading-none tracking-tight">
+                            {mTab.num}
                           </span>
-                          <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider opacity-80 leading-tight">
+                          <span className={`text-[8px] sm:text-[9.5px] md:text-[10.5px] font-bold tracking-wider uppercase leading-tight mt-0.5 font-['Inter',sans-serif] ${
+                            isActive ? 'text-white dark:text-black' : 'text-black/40 dark:text-white/40'
+                          }`}>
                             {mTab.short}
                           </span>
                         </button>
@@ -1540,10 +1543,10 @@ export function CalendarHubPage({
           )}
         </div>
 
-        {/* Bottom Unified Controls Bar (모바일 & 웹 완벽 정렬, 절대 잘리지 않음) */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-4 pt-3 border-t border-black/5 dark:border-white/5">
+        {/* Bottom Unified Controls Bar (모바일에서도 완벽하게 가로 1줄 단일행 정렬) */}
+        <div className="flex flex-nowrap items-center justify-between gap-1.5 sm:gap-4 pt-3 border-t border-black/5 dark:border-white/5 select-none">
           {/* Group 1: Navigation & View Mode Switcher */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {/* 1. < TODAY > Navigation */}
             <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
               <button
@@ -1558,7 +1561,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={handleGoToday}
-                className="h-7 sm:h-8 px-2 sm:px-2.5 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black text-black dark:text-white hover:text-white dark:hover:bg-white dark:hover:text-black text-[10px] sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center justify-center shrink-0"
+                className="h-7 sm:h-8 px-1.5 sm:px-2.5 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black text-black dark:text-white hover:text-white dark:hover:bg-white dark:hover:text-black text-[9.5px] sm:text-xs font-bold font-mono tracking-wider active:scale-95 transition-all cursor-pointer shadow-xs flex items-center justify-center shrink-0"
                 title="오늘 날짜로 이동"
               >
                 TODAY
@@ -1575,11 +1578,11 @@ export function CalendarHubPage({
             </div>
 
             {/* 2. [ MONTH | YEAR ] View Mode Switcher */}
-            <div className="h-7 sm:h-8 flex items-center p-0.5 bg-black/5 dark:bg-white/10 rounded-full border border-black/10 dark:border-white/10 font-mono text-[10px] sm:text-xs font-bold shrink-0">
+            <div className="h-7 sm:h-8 flex items-center p-0.5 bg-black/5 dark:bg-white/10 rounded-full border border-black/10 dark:border-white/10 font-mono text-[9.5px] sm:text-xs font-bold shrink-0">
               <button
                 type="button"
                 onClick={() => toggleViewMode('month')}
-                className={`h-full px-2 sm:px-2.5 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
+                className={`h-full px-1.5 sm:px-2.5 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
                   viewMode === 'month'
                     ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
                     : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -1593,7 +1596,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={() => toggleViewMode('year')}
-                className={`h-full px-2 sm:px-2.5 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
+                className={`h-full px-1.5 sm:px-2.5 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
                   viewMode === 'year'
                     ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
                     : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -1607,8 +1610,8 @@ export function CalendarHubPage({
             </div>
           </div>
 
-          {/* Group 2: Action Tools (Weather, Edit, New Trip) */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Group 2: Action Tools (Weather, Edit, New Trip - 모바일 1줄 최적화) */}
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {/* 2.5 Weather Mode Toggle Button */}
             <button
               type="button"
@@ -1623,7 +1626,7 @@ export function CalendarHubPage({
               <Sun className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isWeatherMode ? 'text-amber-400 dark:text-amber-500' : ''}`} />
             </button>
 
-            {/* 3. Edit Mode Toggle Button */}
+            {/* 3. Edit Mode Toggle Button - 모바일에서는 아이콘만 컴팩트 노출 */}
             {viewMode === 'month' && (
               <button
                 type="button"
@@ -1636,29 +1639,22 @@ export function CalendarHubPage({
                     return next;
                   });
                 }}
-                className={`h-7 sm:h-8 px-2 sm:px-3 rounded-full border text-[10px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 shadow-xs ${
+                className={`w-7 h-7 sm:w-auto sm:h-8 sm:px-3 rounded-full border text-[10px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center sm:gap-1.5 shrink-0 shadow-xs ${
                   isEditMode
                     ? 'bg-red-600 text-white border-red-600 ring-2 ring-red-600/30'
                     : 'bg-white/80 dark:bg-zinc-900/80 border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
                 }`}
                 title={isEditMode ? "편집 모드 활성 (클릭 시 조회 전용 모드로 전환)" : "편집 모드 켜기 (날짜 선택 및 일정 등록)"}
               >
-                <Edit3 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>
-                  {isEditMode ? (
-                    <>
-                      <span className="inline sm:hidden">ON</span>
-                      <span className="hidden sm:inline">EDIT: ON</span>
-                    </>
-                  ) : (
-                    'EDIT'
-                  )}
+                <Edit3 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">
+                  {isEditMode ? 'EDIT: ON' : 'EDIT'}
                 </span>
-                {isEditMode && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />}
+                {isEditMode && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping hidden sm:inline-block" />}
               </button>
             )}
 
-            {/* 4. Swiss Minimal NEW TRIP Button */}
+            {/* 4. Swiss Minimal NEW TRIP Button - 모바일에서는 + 아이콘만 컴팩트 노출 */}
             {onCreateTrip && (
               <button
                 type="button"
@@ -1668,12 +1664,12 @@ export function CalendarHubPage({
                   const dd = '01';
                   onCreateTrip(`${yyyy}-${mm}-${dd}`);
                 }}
-                className="h-7 sm:h-8 px-2.5 sm:px-3 rounded-full bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 shadow-xs"
+                className="w-7 h-7 sm:w-auto sm:h-8 sm:px-3.5 rounded-full bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-[10px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center sm:gap-1.5 shrink-0 shadow-xs"
                 title="이 달을 기준으로 새로운 트립 생성"
               >
-                <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>
-                  <span className="hidden sm:inline">NEW </span>TRIP
+                <Plus className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">
+                  <span className="hidden md:inline">NEW </span>TRIP
                 </span>
               </button>
             )}
@@ -1720,37 +1716,6 @@ export function CalendarHubPage({
                 );
               })}
             </div>
-          </div>
-        )}
-
-        {/* 12-Month Quick Selector Tabs: 2-Tier Stack (Big Bold Number + Small Month Code) in 12-Column Grid (No Horizontal Scroll) */}
-        {viewMode === 'month' && (
-          <div className="grid grid-cols-12 gap-0.5 sm:gap-1 mt-4 sm:mt-5 py-3 border-y border-black/10 dark:border-white/10 select-none">
-            {MONTH_TABS.map((mTab, idx) => {
-              const isActive = currentMonth === idx;
-              return (
-                <button
-                  key={mTab.num}
-                  type="button"
-                  onClick={() => setCurrentMonth(idx)}
-                  className={`flex flex-col items-center justify-center py-1 sm:py-1.5 px-0.5 rounded-xs transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs ring-1 ring-black dark:ring-white'
-                      : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5 hover:text-black dark:hover:text-white'
-                  }`}
-                  title={`${mTab.full} (${mTab.num}월)`}
-                >
-                  <span className="text-sm sm:text-lg md:text-xl font-black font-['Inter',sans-serif] leading-none tracking-tight">
-                    {mTab.num}
-                  </span>
-                  <span className={`text-[8px] sm:text-[9.5px] md:text-[10.5px] font-bold tracking-wider uppercase leading-tight mt-0.5 font-['Inter',sans-serif] ${
-                    isActive ? 'text-white dark:text-black' : 'text-black/40 dark:text-white/40'
-                  }`}>
-                    {mTab.short}
-                  </span>
-                </button>
-              );
-            })}
           </div>
         )}
       </div>
