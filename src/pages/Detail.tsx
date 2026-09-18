@@ -1094,25 +1094,39 @@ export function JourneyDetailPage({
 
   // Track previous cinematic index to determine direction (forward vs backward)
   const prevCinematicIndexRef = useRef<number>(0);
-  const [currentCinematicVehicleType, setCurrentCinematicVehicleType] = useState<'car' | 'train' | 'ship' | 'flight' | null>(null);
 
-  useEffect(() => {
+  // Compute current cinematic vehicle type strictly in sync during render (No 1-tick async delay)
+  const currentCinematicVehicleType = useMemo(() => {
+    if (cinematicItems.length === 0) return null;
     const prevIdx = prevCinematicIndexRef.current;
     const curIdx = cinematicIndex;
-    prevCinematicIndexRef.current = curIdx;
 
-    if (curIdx === prevIdx) return;
+    if (curIdx === prevIdx) {
+      return curIdx > 0 ? (cinematicItems[curIdx - 1]?.vehicleType || null) : null;
+    }
 
     if (curIdx > prevIdx) {
-      // 앞으로 진행: 이전 스팟(curIdx - 1)의 탈것 설정 적용
-      const vType = curIdx > 0 ? (cinematicItems[curIdx - 1]?.vehicleType || null) : null;
-      setCurrentCinematicVehicleType(vType);
+      // 정방향 이동: 출발 스팟(curIdx - 1부터 prevIdx까지 역순 탐색)의 지정 탈것을 우선 적용
+      for (let i = curIdx - 1; i >= prevIdx; i--) {
+        if (cinematicItems[i]?.vehicleType) {
+          return cinematicItems[i].vehicleType;
+        }
+      }
+      return cinematicItems[curIdx - 1]?.vehicleType || null;
     } else {
-      // 뒤로 역방향 진행: 돌아가는 구간의 시작점(curIdx)의 탈것 설정 적용 (배, 차량 등 유지)
-      const vType = cinematicItems[curIdx]?.vehicleType || null;
-      setCurrentCinematicVehicleType(vType);
+      // 뒤로 역방향 이동: 돌아가는 구간의 시작점(curIdx부터 prevIdx-1)의 탈것 유지
+      for (let i = curIdx; i <= prevIdx - 1; i++) {
+        if (cinematicItems[i]?.vehicleType) {
+          return cinematicItems[i].vehicleType;
+        }
+      }
+      return cinematicItems[curIdx]?.vehicleType || null;
     }
   }, [cinematicIndex, cinematicItems]);
+
+  useEffect(() => {
+    prevCinematicIndexRef.current = cinematicIndex;
+  }, [cinematicIndex]);
 
   // Reset timeline scroll to top (start of day) when switching dates in normal view
   const prevSelectedDateRef = useRef<string>(selectedDate);
@@ -1131,14 +1145,16 @@ export function JourneyDetailPage({
     setExpandedItemId(currentCinematicItem.id);
     setSelectedDate(currentCinematicItem.dateKey);
 
-    // Smoothly scroll timeline item into view
-    setTimeout(() => {
-      const el = document.getElementById(`timeline-item-${currentCinematicItem.id}`);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 150);
-  }, [isCinematicMode, cinematicIndex, currentCinematicItem]); // eslint-disable-line react-hooks/exhaustive-deps
+    // Smoothly scroll timeline item into view only in timeline tab
+    if (activeTab === 'timeline') {
+      setTimeout(() => {
+        const el = document.getElementById(`timeline-item-${currentCinematicItem.id}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 150);
+    }
+  }, [isCinematicMode, cinematicIndex, currentCinematicItem, activeTab]);
 
   // Cinematic timer loop
   useEffect(() => {
@@ -1163,9 +1179,9 @@ export function JourneyDetailPage({
     return () => clearInterval(timer);
   }, [isCinematicMode, isCinematicPaused, cinematicIndex, cinematicItems.length, cinematicSpeed]);
 
-  // Turn off cinematic mode when user edits or changes tab away from timeline
+  // Turn off cinematic mode when user edits or changes tab away from timeline or gallery
   useEffect(() => {
-    if (activeTab !== 'timeline' && isCinematicMode) {
+    if (activeTab !== 'timeline' && activeTab !== 'gallery' && isCinematicMode) {
       setIsCinematicMode(false);
     }
   }, [activeTab, isCinematicMode]);
@@ -2269,7 +2285,67 @@ export function JourneyDetailPage({
     }
   }, [trip?.id, timelineData]);
 
-  // Global Keyboard Shortcuts (Space play/pause, ArrowLeft/Right tour, ArrowUp/Down timeline navigation, Esc)
+  // Helper to determine the best starting spot index for Playlog
+  const getPlaylogStartIndex = () => {
+    if (cinematicItems.length === 0) return 0;
+
+    // 1. 직접 선택된 타임라인 스팟인 경우
+    if (expandedItemId !== null) {
+      const directIdx = cinematicItems.findIndex(i => i.id === expandedItemId);
+      if (directIdx !== -1) {
+        return directIdx;
+      }
+
+      // 2. 포토 탭 사진 또는 핀(500000대)이 선택된 경우
+      const selectedPhoto = allGalleryImages.find(g => g.id === expandedItemId);
+      if (selectedPhoto && selectedPhoto.date) {
+        const photoTimeMin = selectedPhoto.time ? parseTimeToMinutes(selectedPhoto.time) : 0;
+        const sameDateItems = cinematicItems
+          .map((item, idx) => ({ item, idx }))
+          .filter(({ item }) => item.dateKey === selectedPhoto.date);
+
+        if (sameDateItems.length > 0) {
+          if (selectedPhoto.time) {
+            let bestIdx = sameDateItems[0].idx;
+            let minDiff = Infinity;
+            for (const { item, idx } of sameDateItems) {
+              const itemMin = parseTimeToMinutes(item.time);
+              const diff = Math.abs(itemMin - photoTimeMin);
+              if (diff < minDiff) {
+                minDiff = diff;
+                bestIdx = idx;
+              }
+            }
+            return bestIdx;
+          } else {
+            return sameDateItems[0].idx;
+          }
+        }
+      }
+    }
+
+    // 3. 날짜 탭(selectedDate)이 ALL이 아닌 특정 일자로 선택되어 있는 경우
+    if (selectedDate && selectedDate !== 'ALL') {
+      const dateIdx = cinematicItems.findIndex(i => i.dateKey === selectedDate);
+      if (dateIdx !== -1) {
+        return dateIdx;
+      }
+    }
+
+    return 0;
+  };
+
+  const handleStartPlaylog = () => {
+    if (activeTab !== 'gallery') {
+      setActiveTab('timeline');
+    }
+    const startIndex = getPlaylogStartIndex();
+    setCinematicIndex(startIndex);
+    setIsCinematicMode(true);
+    setIsCinematicPaused(false);
+  };
+
+  // Keyboard shortcut listener for Detail Page
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // 0. If Lightbox is open, delegate all keyboard shortcuts to Lightbox component
@@ -2311,15 +2387,7 @@ export function JourneyDetailPage({
         if (cinematicItems.length === 0) return;
         e.preventDefault();
         if (!isCinematicMode) {
-          setActiveTab('timeline');
-          if (expandedItemId !== null) {
-            const targetIdx = cinematicItems.findIndex(i => i.id === expandedItemId);
-            setCinematicIndex(targetIdx !== -1 ? targetIdx : 0);
-          } else {
-            setCinematicIndex(0);
-          }
-          setIsCinematicMode(true);
-          setIsCinematicPaused(false);
+          handleStartPlaylog();
         } else {
           setIsCinematicPaused(prev => !prev);
         }
@@ -2384,7 +2452,7 @@ export function JourneyDetailPage({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [mapConfirm, isCinematicMode, cinematicItems, expandedItemId, currentTimeline, lightboxIndex]);
+  }, [mapConfirm, isCinematicMode, cinematicItems, expandedItemId, currentTimeline, lightboxIndex, allGalleryImages, selectedDate, activeTab]);
 
   const mapPoints = (() => {
     // Collect gallery photo points that have valid coordinates
@@ -2447,7 +2515,23 @@ export function JourneyDetailPage({
     } else if (activeTab === 'gallery') {
       // Use the outer timelinePhotoPoints (which contains all photo points unfiltered)
       const allPhotoPoints = [...photoPoints, ...timelinePhotoPoints];
-      // Do NOT filter by selectedDate. Keep "View All" on the map consistently.
+      // 플레이로그(시네마틱 모드) 진행 중일 때는 타임라인 스팟도 지도에 포함하여 여행자 마커 및 경로 완벽 지원
+      if (isCinematicMode) {
+        const timelinePoints = currentTimeline
+          .filter(item => !item.excludeFromMap && item.lat !== undefined && item.lat !== null && item.lng !== undefined && item.lng !== null)
+          .map(item => ({
+            ...item,
+            lat: Number(item.lat),
+            lng: Number(item.lng),
+            dayIndex: item.date ? allTripDates.indexOf(item.date) + 1 : 0
+          }));
+        const existingIds = new Set(allPhotoPoints.map(p => p.id));
+        timelinePoints.forEach(p => {
+          if (!existingIds.has(p.id)) {
+            allPhotoPoints.push(p);
+          }
+        });
+      }
       // Sort photos by date first, then by time to construct chronological photo paths
       allPhotoPoints.sort((a, b) => {
         const dateA = a.date || '';
@@ -3897,7 +3981,7 @@ export function JourneyDetailPage({
           </ErrorBoundary>
 
           {/* Floating Morphing Player (Swiss Minimal Floating Widget <-> Expanded Editorial Bar) */}
-          {cinematicItems.length > 0 && (
+          {cinematicItems.length > 0 && (activeTab === 'timeline' || activeTab === 'gallery') && (
             <div
               onMouseEnter={() => setIsPlayFabIdle(false)}
               onMouseLeave={resetPlayFabIdleTimer}
@@ -3911,17 +3995,7 @@ export function JourneyDetailPage({
               {/* Collapsed State: Monochromatic Solid Capsule with Flush Concentric Play Button & 'Playlog' */}
               {!isCinematicMode ? (
                 <button
-                  onClick={() => {
-                    setActiveTab('timeline');
-                    if (expandedItemId !== null) {
-                      const targetIdx = cinematicItems.findIndex(i => i.id === expandedItemId);
-                      setCinematicIndex(targetIdx !== -1 ? targetIdx : 0);
-                    } else {
-                      setCinematicIndex(0);
-                    }
-                    setIsCinematicMode(true);
-                    setIsCinematicPaused(false);
-                  }}
+                  onClick={handleStartPlaylog}
                   className="w-full h-full flex items-center gap-1.5 sm:gap-2 cursor-pointer select-none pl-0.5 pr-2.5 sm:pr-3"
                   title="플레이로그 시작 (Space)"
                   aria-label="Playlog"
