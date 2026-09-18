@@ -321,7 +321,7 @@ export function ManageHubPage({
     return 'HOME';
   });
 
-  // CALENDAR Tab State: Weather Cities Management (Central Firestore Sync)
+  // CALENDAR Tab State: Weather Cities Management (Central Firestore Sync & Guarded Dirty Tracking)
   const [calendarWeatherCities, setCalendarWeatherCities] = useState<CityWeatherConfig[]>(() => {
     try {
       const saved = localStorage.getItem('cached_calendar_weather_cities');
@@ -342,23 +342,32 @@ export function ManageHubPage({
   const [searchCalendarCityQuery, setSearchCalendarCityQuery] = useState<string>('');
   const [calendarCityMovedEn, setCalendarCityMovedEn] = useState<string | null>(null);
   const calendarCityMovedTimerRef = useRef<any>(null);
+  const [isSavingCalendar, setIsSavingCalendar] = useState<boolean>(false);
+  const [calendarSaveSuccess, setCalendarSaveSuccess] = useState<boolean>(false);
+
+  // Snapshot of saved Calendar Weather Cities for accurate dirty checking
+  const savedCalendarCitiesSnapshotRef = useRef<string>(JSON.stringify(calendarWeatherCities));
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'settings', 'calendar_weather_cities'), (snap) => {
       if (snap.exists()) {
         const data = snap.data();
         if (Array.isArray(data?.cities) && data.cities.length > 0) {
-          setCalendarWeatherCities(data.cities);
-          try {
-            localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(data.cities));
-          } catch (_) {}
+          // If current state matches saved snapshot (not dirty), sync with incoming Firestore data
+          if (savedCalendarCitiesSnapshotRef.current === JSON.stringify(calendarWeatherCities)) {
+            setCalendarWeatherCities(data.cities);
+            savedCalendarCitiesSnapshotRef.current = JSON.stringify(data.cities);
+            try {
+              localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(data.cities));
+            } catch (_) {}
+          }
         }
       }
     }, (err) => {
       console.warn("ManageHub calendar weather sync notice:", err);
     });
     return () => unsub();
-  }, []);
+  }, [calendarWeatherCities]);
 
   const handleAddCalendarWeatherCity = (
     placeName: string,
@@ -388,13 +397,13 @@ export function ManageHubPage({
     };
 
     const exists = calendarWeatherCities.some(c => c.nameEn.toUpperCase() === newCity.nameEn.toUpperCase());
-    const updated = exists ? calendarWeatherCities : [...calendarWeatherCities, newCity];
+    if (exists) {
+      alert('이미 등록된 도시입니다.');
+      return;
+    }
+    const updated = [...calendarWeatherCities, newCity];
     setCalendarWeatherCities(updated);
     setSearchCalendarCityQuery('');
-    try {
-      localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(updated));
-      setDoc(doc(db, 'settings', 'calendar_weather_cities'), { cities: updated }, { merge: true }).catch(console.error);
-    } catch (_) {}
   };
 
   const handleMoveCalendarWeatherCity = (idx: number, direction: 'up' | 'down') => {
@@ -412,11 +421,6 @@ export function ManageHubPage({
     calendarCityMovedTimerRef.current = setTimeout(() => {
       setCalendarCityMovedEn(null);
     }, 1200);
-
-    try {
-      localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(updated));
-      setDoc(doc(db, 'settings', 'calendar_weather_cities'), { cities: updated }, { merge: true }).catch(console.error);
-    } catch (_) {}
   };
 
   const handleRemoveCalendarWeatherCity = (cityEn: string) => {
@@ -426,10 +430,23 @@ export function ManageHubPage({
     }
     const updated = calendarWeatherCities.filter(c => c.nameEn.toUpperCase() !== cityEn.toUpperCase());
     setCalendarWeatherCities(updated);
+  };
+
+  const handleSaveCalendarSettings = async () => {
+    setIsSavingCalendar(true);
     try {
-      localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(updated));
-      setDoc(doc(db, 'settings', 'calendar_weather_cities'), { cities: updated }, { merge: true }).catch(console.error);
-    } catch (_) {}
+      localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(calendarWeatherCities));
+      await setDoc(doc(db, 'settings', 'calendar_weather_cities'), { cities: calendarWeatherCities }, { merge: true });
+      savedCalendarCitiesSnapshotRef.current = JSON.stringify(calendarWeatherCities);
+      setSaveRevision(prev => prev + 1);
+      setCalendarSaveSuccess(true);
+      setTimeout(() => setCalendarSaveSuccess(false), 2000);
+    } catch (err) {
+      console.error('Failed to save calendar weather cities:', err);
+      alert('캘린더 날씨 도시 저장 중 오류가 발생했습니다.');
+    } finally {
+      setIsSavingCalendar(false);
+    }
   };
 
   // PRESETS Management State
@@ -2150,6 +2167,11 @@ export function ManageHubPage({
     return (savedPresetsSnapshotRef.current || '[]') !== JSON.stringify(presetsList);
   }, [presetsList, saveRevision]);
 
+  // Dirty tracking for CALENDAR weather cities list
+  const isCalendarDirty = useMemo(() => {
+    return (savedCalendarCitiesSnapshotRef.current || '[]') !== JSON.stringify(calendarWeatherCities);
+  }, [calendarWeatherCities, saveRevision]);
+
   // Synchronize all snapshot references to current state so isAnyDirty becomes immediately false
   const syncAllSnapshotsToCurrent = () => {
     savedSectionsJsonRef.current = JSON.stringify(sectionsList);
@@ -2158,6 +2180,7 @@ export function ManageHubPage({
       autoplay: bgmAutoplay,
     };
     savedPresetsSnapshotRef.current = JSON.stringify(presetsList);
+    savedCalendarCitiesSnapshotRef.current = JSON.stringify(calendarWeatherCities);
     savedMagazineHubHeaderRef.current = {
       mainTitle: hubMainTitle,
       subtitle: hubSubtitle,
@@ -2216,7 +2239,7 @@ export function ManageHubPage({
   };
 
   // Unified global dirty state across all management tabs & sub-settings
-  const isAnyDirty = isHomeDirty || isArchiveDirty || isMagazineDirty || isArchiveHubHeaderDirty || isMagazineHubHeaderDirty || isBgmDirty || isPresetsDirty;
+  const isAnyDirty = isHomeDirty || isArchiveDirty || isMagazineDirty || isArchiveHubHeaderDirty || isMagazineHubHeaderDirty || isBgmDirty || isPresetsDirty || isCalendarDirty;
 
   useEffect(() => {
     if (onDirtyChange) {
@@ -2312,6 +2335,12 @@ export function ManageHubPage({
     if (savedPresetsSnapshotRef.current) {
       try {
         setPresetsList(JSON.parse(savedPresetsSnapshotRef.current));
+      } catch (_) {}
+    }
+
+    if (savedCalendarCitiesSnapshotRef.current) {
+      try {
+        setCalendarWeatherCities(JSON.parse(savedCalendarCitiesSnapshotRef.current));
       } catch (_) {}
     }
 
@@ -3747,7 +3776,16 @@ export function ManageHubPage({
       }
       setPresetsSaveSuccess(true);
 
-      // 8. Update all snapshot refs to ensure isAnyDirty is 100% false immediately
+      // 8. Save Calendar weather cities to Firestore & localStorage
+      try {
+        localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(calendarWeatherCities));
+        await setDoc(doc(db, 'settings', 'calendar_weather_cities'), { cities: calendarWeatherCities }, { merge: true });
+      } catch (cErr) {
+        console.warn('Firestore calendar weather cities sync notice:', cErr);
+      }
+      setCalendarSaveSuccess(true);
+
+      // 9. Update all snapshot refs to ensure isAnyDirty is 100% false immediately
       savedHomeSnapshotRef.current = {
         title,
         subtitle,
@@ -3813,6 +3851,7 @@ export function ManageHubPage({
         setMagazineSaveSuccess(false);
         setArchiveHubHeaderSaveSuccess(false);
         setHubHeaderSaveSuccess(false);
+        setCalendarSaveSuccess(false);
       }, 2000);
     } catch (err) {
       console.error('Failed to save all management changes:', err);
@@ -3964,13 +4003,16 @@ export function ManageHubPage({
                     setActiveMode(tab.id);
                   });
                 }}
-                className={`flex-1 md:flex-none px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10.5px] sm:text-xs font-mono font-bold uppercase tracking-tight cursor-pointer whitespace-nowrap text-center shrink-0 ${
+                className={`flex-1 md:flex-none px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10.5px] sm:text-xs font-mono font-bold uppercase tracking-tight cursor-pointer whitespace-nowrap text-center shrink-0 flex items-center justify-center gap-1 ${
                   activeMode === tab.id
                     ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
                     : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                 }`}
               >
                 <span>{tab.label}</span>
+                {tab.id === 'CALENDAR' && isCalendarDirty && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
+                )}
                 {tab.id === 'UTIL' && (trashedJourneys.length + trashedSections.length) > 0 && (
                   <span className="ml-1 text-[9px] font-mono px-1 py-0.5 bg-red-600 text-white font-bold leading-none inline-block">
                     {trashedJourneys.length + trashedSections.length}
@@ -5910,12 +5952,37 @@ export function ManageHubPage({
           >
             {/* Header Title */}
             <div className="flex flex-col gap-1 border-b-2 border-black dark:border-white pb-4">
-              <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
-                CALENDAR & WEATHER CONFIGURATION
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
-                CALENDAR SETTING
-              </h2>
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 block mb-0.5">
+                  CALENDAR & WEATHER CONFIGURATION
+                </span>
+                {isCalendarDirty && (
+                  <span className="px-2 py-0.5 bg-red-600 text-white font-mono text-[9px] font-black uppercase tracking-wider animate-pulse">
+                    UNSAVED CHANGES
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                  CALENDAR SETTING
+                </h2>
+                <button
+                  type="button"
+                  onClick={handleSaveCalendarSettings}
+                  disabled={isSavingCalendar || !isCalendarDirty}
+                  className={`px-4 py-1.5 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed shadow-xs ${
+                    calendarSaveSuccess
+                      ? 'bg-emerald-600 text-white border border-emerald-600'
+                      : isCalendarDirty
+                        ? 'bg-black text-white dark:bg-white dark:text-black border border-black dark:border-white ring-2 ring-red-600/30'
+                        : 'border border-black/20 dark:border-white/20 text-black/40 dark:text-white/40'
+                  }`}
+                  title={isCalendarDirty ? "변경된 캘린더 세팅 저장" : "저장할 변경사항이 없습니다"}
+                >
+                  <Save className={`w-3.5 h-3.5 ${isSavingCalendar ? 'animate-spin' : ''}`} />
+                  <span>{isSavingCalendar ? 'SAVING...' : calendarSaveSuccess ? 'SAVED' : 'SAVE CALENDAR SETTINGS'}</span>
+                </button>
+              </div>
               <p className="text-xs text-black/60 dark:text-white/60 font-mono">
                 [캘린더 허브 및 홈허브 하단에 실시간 연동될 날씨 도시 목록과 순서를 관리합니다]
               </p>

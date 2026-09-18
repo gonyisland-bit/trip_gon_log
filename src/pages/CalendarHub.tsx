@@ -2551,13 +2551,7 @@ export function CalendarHubPage({
                 <div
                   key={m.monthIdx}
                   id={`year-month-${m.monthIdx}`}
-                  className={`bg-transparent p-2 sm:p-3 md:p-4 flex flex-col transition-all group relative ${
-                    isBestMonth
-                      ? 'border-t-2 border-red-600 dark:border-red-500'
-                      : isAvoidMonth
-                        ? 'border-t-2 border-black/20 dark:border-white/20'
-                        : ''
-                  }`}
+                  className="bg-transparent p-2 sm:p-3 md:p-4 flex flex-col group relative"
                 >
                   {/* Month Card Header */}
                   <div className="flex items-center justify-between pb-2 mb-2 border-b border-black/10 dark:border-white/10">
@@ -2626,7 +2620,7 @@ export function CalendarHubPage({
                   <div className="grid grid-cols-7 gap-y-0.5 sm:gap-y-1 text-center font-mono select-none">
                     {m.days.map((day, dIdx) => {
                       if (!day.isCurrentMonth) {
-                        return <div key={`empty-${m.monthIdx}-${dIdx}`} className={isWeatherMode ? "w-full h-8 sm:h-9 md:h-10" : "w-full h-7 sm:h-8 md:h-9"} />;
+                        return <div key={`empty-${m.monthIdx}-${dIdx}`} className="w-full h-7 sm:h-8 md:h-8.5" />;
                       }
 
                       const col = dIdx % 7;
@@ -2643,10 +2637,8 @@ export function CalendarHubPage({
                       const weatherMeta = cellWeather ? getWeatherMeta(cellWeather.weatherCode, cellWeather.precipitationProb) : null;
                       const WeatherIcon = weatherMeta?.icon;
 
-                      // 모바일 2열에서도 절대 겹치지 않는 스케일
-                      let circleClasses = isWeatherMode
-                        ? 'w-7 h-7 sm:w-8 sm:h-8 md:w-8.5 md:h-8.5 rounded-md flex items-center justify-center shrink-0 transition-all relative z-10'
-                        : 'w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full aspect-square flex items-center justify-center shrink-0 text-[10px] sm:text-xs md:text-sm font-bold transition-all relative z-10';
+                      // 날씨 모드와 일반 모드 모두 균일한 원형(rounded-full) 유지하여 겹침 방지 및 폰트 튐(jank) 완전 제거
+                      let circleClasses = 'w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full aspect-square flex items-center justify-center shrink-0 text-[10px] sm:text-xs md:text-sm font-bold transition-colors relative z-10';
                       let textClasses = 'leading-none';
 
                       const isYearSelected = selectedYearDate === day.dateStr;
@@ -2674,7 +2666,7 @@ export function CalendarHubPage({
                       return (
                         <div
                           key={day.dateStr}
-                          className={`relative flex items-center justify-center w-full ${isWeatherMode ? 'h-8 sm:h-9 md:h-10' : 'h-7 sm:h-8 md:h-9'}`}
+                          className="relative flex items-center justify-center w-full h-7 sm:h-8 md:h-8.5"
                         >
                           {/* Continuous Trip Pill Ribbon (인접 셀 간 틈새 없이 완벽 결합) */}
                           {day.hasTrip && (
@@ -2723,8 +2715,8 @@ export function CalendarHubPage({
                             }
                           >
                             {isWeatherMode && WeatherIcon ? (
-                              <div className="flex flex-col items-center justify-center w-full h-full py-0.5 leading-none select-none pointer-events-none">
-                                <span className={`text-[7px] sm:text-[8px] font-mono font-bold leading-none mb-0.5 ${
+                              <div className="flex flex-col items-center justify-center w-full h-full p-0.5 leading-none select-none pointer-events-none">
+                                <span className={`text-[6.5px] sm:text-[7.5px] font-mono font-bold leading-none mb-0.5 ${
                                   day.hasTrip
                                     ? 'text-white'
                                     : day.isToday
@@ -2737,7 +2729,7 @@ export function CalendarHubPage({
                                 }`}>
                                   {day.dayNum}
                                 </span>
-                                <WeatherIcon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${
+                                <WeatherIcon className={`w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 ${
                                   day.hasTrip
                                     ? 'text-white stroke-[2.4]'
                                     : day.isToday
