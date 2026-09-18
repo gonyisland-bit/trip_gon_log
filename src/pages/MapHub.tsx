@@ -1649,13 +1649,18 @@ export function MapHubPage({
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobileControlsOpen, setIsMobileControlsOpen] = useState<boolean>(false);
   const mobileControlsRef = useRef<HTMLDivElement>(null);
+  const isControlsClosingRef = useRef<boolean>(false);
 
   // Close mobile controls when tapping outside
   useEffect(() => {
     if (!isMobileControlsOpen) return;
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       if (mobileControlsRef.current && !mobileControlsRef.current.contains(e.target as Node)) {
+        isControlsClosingRef.current = true;
         setIsMobileControlsOpen(false);
+        setTimeout(() => {
+          isControlsClosingRef.current = false;
+        }, 350);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -3618,24 +3623,51 @@ export function MapHubPage({
         <div className="absolute top-3 left-3 right-3 sm:top-4 sm:left-6 sm:right-auto z-[500] flex flex-nowrap items-center gap-1.5 sm:gap-2">
         
         {/* Country & Continent Search Bar with Integrated Wishlist Star Button */}
-        <div className="relative flex items-center bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/20 dark:border-white/20 shadow-2xl z-30 shrink min-w-0">
+        <div 
+          onClick={() => {
+            if (isMobileControlsOpen) {
+              isControlsClosingRef.current = true;
+              setIsMobileControlsOpen(false);
+              setTimeout(() => {
+                isControlsClosingRef.current = false;
+              }, 350);
+            }
+          }}
+          className={`relative flex items-center bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/20 dark:border-white/20 shadow-2xl z-30 shrink min-w-0 transition-all ${
+            isMobileControlsOpen ? 'cursor-pointer opacity-80' : ''
+          }`}
+        >
           <div className="flex-1 min-w-[110px] max-w-[170px] xs:max-w-[210px] sm:max-w-none sm:w-72 flex items-center px-2 py-1.5 sm:px-3 sm:py-2">
             <Search className="w-3.5 h-3.5 text-black/50 dark:text-white/50 shrink-0 mr-1.5 sm:mr-2" />
             <input
               type="text"
               value={searchQuery}
+              readOnly={isMobileControlsOpen}
               onChange={(e) => {
+                if (isMobileControlsOpen || isControlsClosingRef.current) return;
                 setSearchQuery(e.target.value);
                 setIsSearchDropdownOpen(true);
               }}
-              onFocus={() => setIsSearchDropdownOpen(true)}
+              onFocus={(e) => {
+                if (isMobileControlsOpen || isControlsClosingRef.current) {
+                  e.target.blur();
+                  return;
+                }
+                setIsMobileControlsOpen(false);
+                setIsSearchDropdownOpen(true);
+              }}
               placeholder="SEARCH..."
-              className="w-full bg-transparent text-[11px] sm:text-xs font-sans font-bold uppercase tracking-wider text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 outline-none truncate"
+              className={`w-full bg-transparent text-[11px] sm:text-xs font-sans font-bold uppercase tracking-wider text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 outline-none truncate ${
+                isMobileControlsOpen ? 'pointer-events-none' : ''
+              }`}
             />
-            {searchQuery && (
+            {searchQuery && !isMobileControlsOpen && (
               <button
                 type="button"
-                onClick={handleCloseCountry}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCloseCountry();
+                }}
                 className="p-0.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer mr-0.5"
               >
                 <X className="w-3.5 h-3.5" />
@@ -3646,7 +3678,18 @@ export function MapHubPage({
           {/* Integrated Wishlist Star Button on the right of Search */}
           <button
             type="button"
-            onClick={() => setIsWishlistModalOpen(true)}
+            onClick={(e) => {
+              if (isMobileControlsOpen) {
+                e.stopPropagation();
+                isControlsClosingRef.current = true;
+                setIsMobileControlsOpen(false);
+                setTimeout(() => {
+                  isControlsClosingRef.current = false;
+                }, 350);
+                return;
+              }
+              setIsWishlistModalOpen(true);
+            }}
             className={`px-2 py-1.5 sm:px-3 sm:py-2.5 border-l border-black/15 dark:border-white/15 flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer shrink-0 ${
               favoriteCountries.length > 0
                 ? 'text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5'
@@ -3660,37 +3703,45 @@ export function MapHubPage({
             )}
           </button>
 
-          {/* Dropdown Suggestions */}
-          {isSearchDropdownOpen && filteredCountries.length > 0 && (
+          {/* Dropdown Suggestions: Expanded Width & Swiss Minimal 2-Row Editorial Layout */}
+          {isSearchDropdownOpen && filteredCountries.length > 0 && !isMobileControlsOpen && (
             <>
               <div 
                 className="fixed inset-0 z-40" 
                 onClick={() => setIsSearchDropdownOpen(false)}
               />
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white/95 dark:bg-[#121212]/95 backdrop-blur-md border border-black/15 dark:border-white/15 max-h-64 overflow-y-auto z-[600] shadow-2xl divide-y divide-black/5 dark:divide-white/5">
+              <div className="absolute top-full left-0 mt-1 w-[calc(100vw-24px)] max-w-sm sm:w-full sm:max-w-none bg-white/95 dark:bg-[#121212]/95 backdrop-blur-md border border-black/15 dark:border-white/15 max-h-60 overflow-y-auto z-[600] shadow-2xl divide-y divide-black/5 dark:divide-white/5">
                 {filteredCountries.map(c => (
                   <div
                     key={c.code}
                     onClick={() => handleSelectCountry(c)}
-                    className="p-2.5 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer flex items-center justify-between transition-colors"
+                    className="p-2 sm:p-2.5 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer flex items-center justify-between gap-2.5 transition-colors"
                   >
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-black uppercase text-black dark:text-white">
+                    <div className="flex-1 min-w-0">
+                      {/* Row 1: Code Badge + English Name + Korean Name */}
+                      <div className="flex items-center gap-1.5 flex-nowrap truncate">
+                        <span className="text-[10px] font-mono font-black text-red-600 dark:text-red-500 shrink-0">
+                          {c.code}
+                        </span>
+                        <span className="text-xs font-black uppercase text-black dark:text-white truncate">
                           {c.name}
                         </span>
-                        <span className="text-[10px] font-sans text-black/50 dark:text-white/50">
+                        <span className="text-[10.5px] font-sans text-black/50 dark:text-white/50 shrink-0">
                           ({c.nameKo})
                         </span>
-                        <span className="px-1.5 py-0.5 text-[9.5px] font-mono font-bold bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60">
+                      </div>
+                      {/* Row 2: Continent Pill + Representative Cities */}
+                      <div className="flex items-center gap-1.5 mt-0.5 text-[9.5px] font-mono text-black/40 dark:text-white/40 truncate">
+                        <span className="px-1 py-0.2 text-[8.5px] font-bold bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 shrink-0">
                           {c.continentKo}
                         </span>
+                        <span className="truncate">
+                          {c.cities.slice(0, 4).join(' · ')}
+                        </span>
                       </div>
-                      <span className="text-[10px] font-mono text-black/40 dark:text-white/40 block mt-0.5 truncate">
-                        {c.cities.slice(0, 3).join(', ')}
-                      </span>
                     </div>
-                    <span className="text-[10px] font-mono font-bold text-red-600 dark:text-red-400">
+                    {/* Right: Currency Code */}
+                    <span className="text-[10px] font-mono font-bold text-black/70 dark:text-white/70 shrink-0">
                       {c.currency}
                     </span>
                   </div>
@@ -3705,7 +3756,19 @@ export function MapHubPage({
           {/* Master Toggle Button */}
           <button
             type="button"
-            onClick={() => setIsMobileControlsOpen(prev => !prev)}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isMobileControlsOpen) {
+                isControlsClosingRef.current = true;
+                setIsMobileControlsOpen(false);
+                setTimeout(() => {
+                  isControlsClosingRef.current = false;
+                }, 350);
+              } else {
+                setIsSearchDropdownOpen(false);
+                setIsMobileControlsOpen(true);
+              }
+            }}
             className={`p-2 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
               isMobileControlsOpen
                 ? 'bg-black text-white dark:bg-white dark:text-black'
@@ -3779,8 +3842,11 @@ export function MapHubPage({
             {/* 5. Reset to Global Home View Button */}
             <button
               type="button"
-              onClick={handleResetToDefaultView}
-              className="p-2 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+              onClick={() => {
+                handleResetToDefaultView();
+                setIsMobileControlsOpen(false);
+              }}
+              className="p-2 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors cursor-pointer flex items-center justify-center shrink-0"
               title="RESET VIEW (H)"
             >
               <HomeIcon className="w-3.5 h-3.5" />
@@ -3789,8 +3855,11 @@ export function MapHubPage({
             {/* 6. Registered Journey Places List Button */}
             <button
               type="button"
-              onClick={() => setIsPlaceListModalOpen(true)}
-              className="p-2 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+              onClick={() => {
+                setIsPlaceListModalOpen(true);
+                setIsMobileControlsOpen(false);
+              }}
+              className="p-2 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors cursor-pointer flex items-center justify-center shrink-0"
               title="PLACES LIST"
             >
               <List className="w-3.5 h-3.5" />
@@ -3805,6 +3874,7 @@ export function MapHubPage({
                 } else {
                   handleOpenTripBuilder();
                 }
+                setIsMobileControlsOpen(false);
               }}
               className={`p-2 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
                 isBuilderOpen
@@ -3820,7 +3890,10 @@ export function MapHubPage({
             {isBuilderOpen && builderTargetName && (
               <button
                 type="button"
-                onClick={handleReCenterBuilderTarget}
+                onClick={() => {
+                  handleReCenterBuilderTarget();
+                  setIsMobileControlsOpen(false);
+                }}
                 className="p-2 text-black/70 dark:text-white/70 hover:text-red-600 dark:hover:text-red-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
                 title={`RE-CENTER TO: ${builderTargetName}`}
               >
