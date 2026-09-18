@@ -56,6 +56,7 @@ export interface TripBuilderPanelProps {
   onClose: () => void;
   isAdmin?: boolean;
   initialCountry?: string;
+  initialCountryCode?: string;
   initialCity?: string;
   initialStartDate?: string;
   initialSelectedPockets?: SpotPocketItem[];
@@ -152,6 +153,7 @@ export function TripBuilderPanel({
   onClose,
   isAdmin = false,
   initialCountry,
+  initialCountryCode,
   initialCity,
   initialStartDate,
   initialSelectedPockets,
@@ -386,9 +388,9 @@ export function TripBuilderPanel({
       return false;
     });
 
-    // 2단계: 지역 매칭된 스팟이 있으면 우선 반환, 없으면 전체 보관함(allPockets)을 폴백으로 제공하여 절대 사라지지 않음!
-    if (matchedSpots.length > 0) {
-      return { relevantPocketSpots: matchedSpots, isAreaMatched: true, totalSavedCount: totalCount };
+    // 2단계: 국가/도시 타겟 필터가 있는 경우, 해당 지역에 매칭된 스팟만 정밀 반환 (무관한 타 지역 포켓 누출 차단)
+    if (hasTargetFilter) {
+      return { relevantPocketSpots: matchedSpots, isAreaMatched: matchedSpots.length > 0, totalSavedCount: totalCount };
     }
 
     return { relevantPocketSpots: allPockets, isAreaMatched: false, totalSavedCount: totalCount };
@@ -402,6 +404,17 @@ export function TripBuilderPanel({
           <div className="flex items-center gap-2 text-black/60 dark:text-white/60 font-mono">
             <Bookmark className="w-4 h-4 text-black/40 dark:text-white/40" />
             <span>보관된 포켓 장소가 없습니다. 포켓 허브에서 장소를 스크랩해 보세요.</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (relevantPocketSpots.length === 0) {
+      return (
+        <div className="rounded-xl border border-black/5 dark:border-white/5 bg-neutral-100 dark:bg-neutral-800/90 p-3.5 flex items-center justify-between text-xs transition-all">
+          <div className="flex items-center gap-2 text-black/60 dark:text-white/60 font-mono">
+            <Bookmark className="w-4 h-4 text-black/40 dark:text-white/40" />
+            <span>선택한 지역과 관련된 보관된 포켓이 없습니다. (총 {totalSavedCount}개 보관됨)</span>
           </div>
         </div>
       );
@@ -509,6 +522,7 @@ export function TripBuilderPanel({
                         <img
                           src={spot.thumbnailUrl}
                           alt=""
+                          onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?q=80&w=1200&auto=format&fit=crop'; }}
                           className="w-12 h-12 rounded-lg object-cover shadow-2xs shrink-0 bg-neutral-100 dark:bg-neutral-800"
                         />
                       ) : (
@@ -630,10 +644,20 @@ export function TripBuilderPanel({
         }
       }
 
+      if (!matchedCountryObj && initialCountryCode) {
+        matchedCountryObj = WORLD_COUNTRIES.find(c => c.code.toUpperCase() === initialCountryCode.toUpperCase());
+      }
+
       if (!matchedCountryObj && initialCountry) {
         matchedCountryObj = findCountryByNameOrAlias(initialCountry);
-        if (!matchedCity && matchedCountryObj) {
-          matchedCity = WORLD_CITIES.find(c => c.countryEn === matchedCountryObj!.nameEn);
+      }
+
+      if (!matchedCity && matchedCountryObj) {
+        const popCityName = matchedCountryObj.popularCities?.[0];
+        if (popCityName) {
+          matchedCity = findCityByNameOrAlias(popCityName) || WORLD_CITIES.find(c => c.countryEn.toUpperCase() === matchedCountryObj!.nameEn.toUpperCase());
+        } else {
+          matchedCity = WORLD_CITIES.find(c => c.countryEn.toUpperCase() === matchedCountryObj!.nameEn.toUpperCase());
         }
       }
 
@@ -671,7 +695,7 @@ export function TripBuilderPanel({
         onFocusLocationChange?.({});
       }
     }
-  }, [isOpen, initialCountry, initialCity, initialStartDate]);
+  }, [isOpen, initialCountry, initialCountryCode, initialCity, initialStartDate]);
 
   // Notify parent MapHub on focus change
   useEffect(() => {
@@ -1551,6 +1575,7 @@ export function TripBuilderPanel({
                     <img
                       src={preset.coverImg}
                       alt={preset.title}
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?q=80&w=1200&auto=format&fit=crop'; }}
                       className="w-14 h-14 object-cover grayscale shrink-0"
                     />
                     <div className="min-w-0 flex-1">
@@ -1719,6 +1744,7 @@ export function TripBuilderPanel({
                           <img
                             src={smartCity.coverImage}
                             alt={smartCity.nameKo}
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?q=80&w=1200&auto=format&fit=crop'; }}
                             className="w-14 h-14 rounded-xl object-cover shadow-xs shrink-0"
                           />
                         )}

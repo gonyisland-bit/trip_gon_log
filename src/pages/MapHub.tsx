@@ -1528,6 +1528,7 @@ export function MapHubPage({
   // In-place Trip Builder Split-Screen State
   const [isBuilderOpen, setIsBuilderOpen] = useState<boolean>(() => Boolean(initialBuilderOpen));
   const [builderCountry, setBuilderCountry] = useState<string>(initialBuilderCountry);
+  const [builderCountryCode, setBuilderCountryCode] = useState<string>('');
   const [builderCity, setBuilderCity] = useState<string>(initialBuilderCity);
   const [builderDate, setBuilderDate] = useState<string>(initialBuilderDate);
   const builderRouteLayerRef = useRef<any>(null);
@@ -1581,10 +1582,21 @@ export function MapHubPage({
     setSelectedDestCities([]);
   }, [selectedCountry?.code]);
 
-  // Selected country weather data state
+  // Selected country weather data state & active city selector
+  const [activeWeatherCity, setActiveWeatherCity] = useState<string>('');
   const [countryWeather, setCountryWeather] = useState<CityWeatherData | null>(null);
   const [isCountryWeatherLoading, setIsCountryWeatherLoading] = useState<boolean>(false);
   const [isCountryForecastOpen, setIsCountryForecastOpen] = useState<boolean>(false);
+
+  // 국가 변경 시 대표 도시(수도 또는 제1도시)로 activeWeatherCity 초기화
+  useEffect(() => {
+    if (selectedCountry) {
+      const defaultCity = selectedCountry.cities?.[0] || selectedCountry.name;
+      setActiveWeatherCity(defaultCity);
+    } else {
+      setActiveWeatherCity('');
+    }
+  }, [selectedCountry?.code]);
 
   useEffect(() => {
     if (!selectedCountry) {
@@ -1596,11 +1608,20 @@ export function MapHubPage({
     let isCancelled = false;
     setIsCountryWeatherLoading(true);
 
-    const lat = selectedCountry.center[0];
-    const lng = selectedCountry.center[1];
-    const cityEn = selectedCountry.cities?.[0] || selectedCountry.name;
+    // 도시 좌표 조회 (findCityByNameOrAlias) 또는 국가 중심 좌표
+    let lat = selectedCountry.center[0];
+    let lng = selectedCountry.center[1];
+    const targetCityName = activeWeatherCity || selectedCountry.cities?.[0] || selectedCountry.name;
 
-    fetchCityWeather(lat, lng, 'UTC', cityEn, selectedCountry.code)
+    if (activeWeatherCity) {
+      const cityObj = findCityByNameOrAlias(activeWeatherCity);
+      if (cityObj && cityObj.lat && cityObj.lng) {
+        lat = cityObj.lat;
+        lng = cityObj.lng;
+      }
+    }
+
+    fetchCityWeather(lat, lng, 'UTC', targetCityName, selectedCountry.code)
       .then((data) => {
         if (!isCancelled) {
           setCountryWeather(data);
@@ -1616,12 +1637,17 @@ export function MapHubPage({
       });
 
     return () => { isCancelled = true; };
-  }, [selectedCountry?.code]);
+  }, [selectedCountry?.code, activeWeatherCity]);
 
   const toggleDestCity = (cityName: string) => {
-    setSelectedDestCities(prev => 
-      prev.includes(cityName) ? prev.filter(c => c !== cityName) : [...prev, cityName]
-    );
+    setSelectedDestCities(prev => {
+      const isAdding = !prev.includes(cityName);
+      if (isAdding) {
+        // 도시 선택 시 날씨도 해당 도시로 즉시 자동 동기화
+        setActiveWeatherCity(cityName);
+      }
+      return isAdding ? [...prev, cityName] : prev.filter(c => c !== cityName);
+    });
   };
 
   // Flight Arc animation state from South Korea to destination country
@@ -2913,9 +2939,10 @@ export function MapHubPage({
   const isCurrentCountryFavorite = selectedCountry && favoriteCountries.includes(selectedCountry.code);
 
   // In-place Trip Builder Handlers
-  const handleOpenTripBuilder = useCallback((country?: string, city?: string, date?: string) => {
+  const handleOpenTripBuilder = useCallback((country?: string, city?: string, date?: string, countryCode?: string) => {
     setIsBuilderOpen(true);
     if (country) setBuilderCountry(country);
+    if (countryCode) setBuilderCountryCode(countryCode);
     if (city) setBuilderCity(city);
     if (date) setBuilderDate(date);
     setSelectedCountry(null);
@@ -2931,11 +2958,14 @@ export function MapHubPage({
       }
     }
     // If country is provided, fly to country center
-    if (country) {
+    if (countryCode || country) {
       const matched = COUNTRIES_DATA.find(c => 
-        c.name.toLowerCase() === country.toLowerCase() ||
-        c.nameKo === country ||
-        c.code.toLowerCase() === country.toLowerCase()
+        (countryCode && c.code.toLowerCase() === countryCode.toLowerCase()) ||
+        (country && (
+          c.name.toLowerCase() === country.toLowerCase() ||
+          c.nameKo === country ||
+          c.code.toLowerCase() === country.toLowerCase()
+        ))
       );
       if (matched && mapRef.current) {
         mapRef.current.flyTo(matched.center, matched.zoom || 5, { duration: 1.2 });
@@ -3541,23 +3571,46 @@ export function MapHubPage({
             <div className="pb-3 border-b border-black/10 dark:border-white/10 select-none">
               <div className="bg-[#f0f0f0] dark:bg-[#252525] rounded-2xl p-3 shadow-xs border border-black/5 dark:border-white/10">
                 <div className="flex items-center justify-between pb-2 border-b border-black/10 dark:border-white/10">
-                  <div className="flex items-center gap-1.5">
-                    <Sun className="w-3.5 h-3.5 text-amber-500" />
-                    <span className="text-[10px] font-mono font-black uppercase tracking-widest text-black/50 dark:text-white/50">
-                      LIVE WEATHER
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <span className="text-[10px] font-mono font-black uppercase tracking-widest text-black/60 dark:text-white/60 truncate">
+                      LIVE WEATHER · {activeWeatherCity || selectedCountry.name}
                     </span>
                   </div>
                   {countryWeather && countryWeather.forecast && countryWeather.forecast.length > 0 && (
                     <button
                       type="button"
                       onClick={() => setIsCountryForecastOpen(prev => !prev)}
-                      className="text-[10px] font-mono font-bold text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
+                      className="text-[10px] font-mono font-bold text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white flex items-center gap-1 transition-colors cursor-pointer shrink-0 ml-2"
                     >
                       <span>7-DAY FORECAST</span>
                       {isCountryForecastOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                     </button>
                   )}
                 </div>
+
+                {/* City Weather Selector Chips (도시별 날씨 전환) */}
+                {selectedCountry.cities && selectedCountry.cities.length > 1 && (
+                  <div className="flex items-center gap-1 pt-2 overflow-x-auto scrollbar-none text-[9.5px] font-mono select-none">
+                    {selectedCountry.cities.map(c => {
+                      const isCurCity = (activeWeatherCity || selectedCountry.cities[0]) === c;
+                      return (
+                        <button
+                          key={`weather-city-${c}`}
+                          type="button"
+                          onClick={() => setActiveWeatherCity(c)}
+                          className={`px-2 py-0.5 whitespace-nowrap transition-colors cursor-pointer border ${
+                            isCurCity
+                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-black shadow-2xs'
+                              : 'bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-black/60 dark:text-white/60 border-black/10 dark:border-white/10 font-bold'
+                          }`}
+                        >
+                          {c}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {isCountryWeatherLoading ? (
                   <div className="py-4 flex items-center justify-center text-xs font-mono text-black/40 dark:text-white/40">
@@ -3689,7 +3742,7 @@ export function MapHubPage({
                 type="button"
                 onClick={() => {
                   const targetCity = selectedDestCities.length > 0 ? selectedDestCities[0] : undefined;
-                  handleOpenTripBuilder(selectedCountry.name, targetCity);
+                  handleOpenTripBuilder(selectedCountry.name, targetCity, undefined, selectedCountry.code);
                 }}
                 className="w-full py-2 px-3 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-widest font-mono flex items-center justify-center gap-1.5 hover:opacity-85 transition-opacity cursor-pointer shadow-xs truncate"
                 title="선택된 장소 또는 국가 기준으로 새로운 트립 생성"
@@ -3716,6 +3769,7 @@ export function MapHubPage({
             onClose={handleCloseTripBuilder}
             onCreate={handleCreateJourneyFromPanel}
             initialCountry={builderCountry}
+            initialCountryCode={builderCountryCode}
             initialCity={builderCity}
             initialStartDate={builderDate}
             isAdmin={isAdmin}
@@ -3809,7 +3863,7 @@ export function MapHubPage({
                           <button
                             type="button"
                             onClick={() => {
-                              handleOpenTripBuilder(country.name);
+                              handleOpenTripBuilder(country.name, undefined, undefined, country.code);
                             }}
                             className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-[10px] font-black uppercase tracking-wider cursor-pointer hover:opacity-85 flex items-center gap-1"
                           >
@@ -3867,7 +3921,7 @@ export function MapHubPage({
                           <button
                             type="button"
                             onClick={() => {
-                              handleOpenTripBuilder(matchedCountry?.name || '', city);
+                              handleOpenTripBuilder(matchedCountry?.name || '', city, undefined, matchedCountry?.code);
                             }}
                             className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-sans text-[10px] font-black uppercase tracking-wider cursor-pointer hover:opacity-85 flex items-center gap-1"
                           >

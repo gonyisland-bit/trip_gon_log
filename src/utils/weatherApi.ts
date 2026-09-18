@@ -319,8 +319,13 @@ export async function fetchCityWeather(
   cityEn: string = '',
   country: string = ''
 ): Promise<CityWeatherData> {
+  // Normalize longitude to -180 ~ 180 (world wrap protection)
+  let normLng = lng;
+  while (normLng > 180) normLng -= 360;
+  while (normLng < -180) normLng += 360;
+
   const todayDateStr = new Date().toISOString().slice(0, 10);
-  const cacheKey = `weather_v3_${lat.toFixed(2)}_${lng.toFixed(2)}_${todayDateStr}`;
+  const cacheKey = `weather_v3_${lat.toFixed(2)}_${normLng.toFixed(2)}_${todayDateStr}`;
 
   // 1. Check in-memory cache (24 hours valid & ensure 7-day forecast exists)
   if (
@@ -360,8 +365,8 @@ export async function fetchCityWeather(
   // 3. Attempt to fetch from OpenWeatherMap API (5-Day / 3-Hour Forecast & Current Weather)
   try {
     const [curRes, forecastRes] = await Promise.all([
-      fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${OPENWEATHER_API_KEY}&units=metric`),
-      fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lng}&appid=${OPENWEATHER_API_KEY}&units=metric`),
+      fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${normLng}&appid=${OPENWEATHER_API_KEY}&units=metric`),
+      fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${normLng}&appid=${OPENWEATHER_API_KEY}&units=metric`),
     ]);
 
     if (curRes.ok && forecastRes.ok) {
@@ -474,7 +479,7 @@ export async function fetchCityWeather(
   }
 
   // 4. Fallback Provider: Open-Meteo (키 활성화 전파 대기 시에도 끊김 없이 동작 보장)
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=14&timezone=${encodeURIComponent(timezone)}`;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${normLng}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=14&timezone=${encodeURIComponent(timezone)}`;
   
   const res = await fetch(url);
   if (!res.ok) {

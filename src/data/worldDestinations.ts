@@ -2253,7 +2253,7 @@ export const WORLD_CITIES: DestinationCity[] = [
       "타이베이 로컬 카페거리",
       "타이베이 뒷골목 히든 스폿"
     ],
-    "coverImage": "https://images.unsplash.com/photo-1508248017083-161676cbddc3?q=80&w=1200&auto=format&fit=crop"
+    "coverImage": "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?q=80&w=1200&auto=format&fit=crop"
   },
   {
     "nameEn": "Kaohsiung",
@@ -2340,8 +2340,8 @@ export const WORLD_CITIES: DestinationCity[] = [
     "nameKo": "타이난",
     "countryEn": "TAIWAN",
     "countryKo": "대만",
-    "lat": 0.0,
-    "lng": 0.0,
+    "lat": 22.9997,
+    "lng": 120.2270,
     "tags": [
       "City",
       "Culture",
@@ -2380,8 +2380,8 @@ export const WORLD_CITIES: DestinationCity[] = [
     "nameKo": "화롄",
     "countryEn": "TAIWAN",
     "countryKo": "대만",
-    "lat": 0.0,
-    "lng": 0.0,
+    "lat": 23.9872,
+    "lng": 121.6016,
     "tags": [
       "City",
       "Culture",
@@ -2420,8 +2420,8 @@ export const WORLD_CITIES: DestinationCity[] = [
     "nameKo": "지우펀",
     "countryEn": "TAIWAN",
     "countryKo": "대만",
-    "lat": 0.0,
-    "lng": 0.0,
+    "lat": 25.1099,
+    "lng": 121.8452,
     "tags": [
       "City",
       "Culture",
@@ -7213,7 +7213,7 @@ export const WORLD_CITIES: DestinationCity[] = [
       "부다페스트 로컬 카페거리",
       "부다페스트 뒷골목 히든 스폿"
     ],
-    "coverImage": "https://images.unsplash.com/photo-1508827672230-0708f36c533e?q=80&w=1200&auto=format&fit=crop"
+    "coverImage": "https://images.unsplash.com/photo-1541849546-216549ae216d?q=80&w=1200&auto=format&fit=crop"
   },
   {
     "nameEn": "Debrecen",
@@ -7613,7 +7613,7 @@ export const WORLD_CITIES: DestinationCity[] = [
       "리스본 로컬 카페거리",
       "리스본 뒷골목 히든 스폿"
     ],
-    "coverImage": "https://images.unsplash.com/photo-1508672019048-805b876b67e2?q=80&w=1200&auto=format&fit=crop"
+    "coverImage": "https://images.unsplash.com/photo-1585208798174-6cedd86e019a?q=80&w=1200&auto=format&fit=crop"
   },
   {
     "nameEn": "Porto",
@@ -11853,7 +11853,7 @@ export const WORLD_CITIES: DestinationCity[] = [
       "밴쿠버 로컬 카페거리",
       "밴쿠버 뒷골목 히든 스폿"
     ],
-    "coverImage": "https://images.unsplash.com/photo-1559511260-66a65e09b245?q=80&w=1200&auto=format&fit=crop"
+    "coverImage": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200&auto=format&fit=crop"
   },
   {
     "nameEn": "Toronto",
@@ -14295,20 +14295,54 @@ export function saveAllPresets(presets: PresetTripPlan[]): PresetTripPlan[] {
 export function findCountryByNameOrAlias(query: string): DestinationCountry | undefined {
   if (!query) return undefined;
   const q = query.trim().toLowerCase();
-  return WORLD_COUNTRIES.find(c => 
+
+  // 1단계: 100% 완전 일치 우선 (코드, 영문명, 한글명, 별칭 완전 일치)
+  const exact = WORLD_COUNTRIES.find(c => 
+    c.code.toLowerCase() === q ||
     c.nameEn.toLowerCase() === q ||
-    c.nameKo === q ||
-    c.aliases.some(alias => alias.toLowerCase() === q || q.includes(alias.toLowerCase()))
+    c.nameKo.toLowerCase() === q ||
+    c.aliases.some(alias => alias.toLowerCase() === q)
+  );
+  if (exact) return exact;
+
+  // 2단계: 접두사 일치 (검색어가 3자 이상일 때만 허용하여 2자리 코드 오인 차단)
+  if (q.length >= 3) {
+    const prefix = WORLD_COUNTRIES.find(c =>
+      c.nameEn.toLowerCase().startsWith(q) ||
+      q.startsWith(c.nameEn.toLowerCase()) ||
+      c.nameKo.toLowerCase().startsWith(q) ||
+      q.startsWith(c.nameKo.toLowerCase())
+    );
+    if (prefix) return prefix;
+  }
+
+  // 3단계: 3글자 이상 별칭 부분 일치 (최후의 수단)
+  return WORLD_COUNTRIES.find(c =>
+    c.aliases.some(alias => alias.length >= 3 && (alias.toLowerCase().includes(q) || q.includes(alias.toLowerCase())))
   );
 }
 
 export function findCityByNameOrAlias(query: string): DestinationCity | undefined {
   if (!query) return undefined;
   const q = query.trim().toLowerCase();
-  return WORLD_CITIES.find(city => 
+
+  // 1단계: 완전 일치 우선
+  const exact = WORLD_CITIES.find(city => 
     city.nameEn.toLowerCase() === q ||
-    city.nameKo === q ||
-    q.includes(city.nameKo) ||
-    q.includes(city.nameEn.toLowerCase())
+    city.nameKo.toLowerCase() === q
   );
+  if (exact) return exact;
+
+  // 2단계: 3글자 이상 부분 일치
+  if (q.length >= 2) {
+    return WORLD_CITIES.find(city => 
+      city.nameEn.toLowerCase().startsWith(q) ||
+      q.startsWith(city.nameEn.toLowerCase()) ||
+      city.nameKo.toLowerCase().startsWith(q) ||
+      q.startsWith(city.nameKo.toLowerCase()) ||
+      (q.length >= 3 && (q.includes(city.nameKo.toLowerCase()) || q.includes(city.nameEn.toLowerCase())))
+    );
+  }
+
+  return undefined;
 }
