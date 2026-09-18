@@ -15,6 +15,7 @@ import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firesto
 import { fetchCityWeather, getWeatherMeta, getSimulatedWeatherForDate, CityWeatherData, DailyForecastItem } from '../utils/weatherApi';
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
+import { WORLD_CITIES } from '../data/worldDestinations';
 
 export interface CalendarWeatherCity {
   name: string;
@@ -201,7 +202,27 @@ export function CalendarHubPage({
     }[];
   } | null>(null);
 
-  // 드롭다운 및 모바일 툴팁 외부 클릭/터치 감지하여 닫기
+  // 날짜 상세 Quick View 바텀시트/팝오버 상태
+  const [quickViewDate, setQuickViewDate] = useState<{
+    dateStr: string;
+    holidayName?: string;
+    weather?: DailyForecastItem | null;
+    items: {
+      title: string;
+      type: 'trip' | 'event';
+      isPlan?: boolean;
+      categoryColor?: string;
+      days?: number;
+      itemObj?: any;
+    }[];
+  } | null>(null);
+  const quickViewRef = useRef<HTMLDivElement>(null);
+
+  // 모바일 터치 스와이프 제스처 Ref
+  const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
+
+  // 드롭다운 및 모바일 툴팁/퀵뷰 외부 클릭/터치 감지하여 닫기
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
       const target = e.target as Node;
@@ -211,6 +232,12 @@ export function CalendarHubPage({
       if (monthDropdownRef.current && !monthDropdownRef.current.contains(target)) {
         setIsMonthDropdownOpen(false);
         setIsMonthStripOpen(false);
+      }
+      if (quickViewRef.current && !quickViewRef.current.contains(target)) {
+        const clickedDayBtn = (target as HTMLElement)?.closest?.('[data-calendar-date], [data-calendar-month-cell]');
+        if (!clickedDayBtn) {
+          setQuickViewDate(null);
+        }
       }
       if (hoveredTooltip) {
         // 년달력 또는 월달력 날짜 버튼 클릭이 아닌 다른 곳을 누르면 툴팁 및 선택 해제
@@ -222,7 +249,7 @@ export function CalendarHubPage({
         }
       }
     };
-    if (isYearDropdownOpen || isMonthDropdownOpen || isMonthStripOpen || hoveredTooltip) {
+    if (isYearDropdownOpen || isMonthDropdownOpen || isMonthStripOpen || hoveredTooltip || quickViewDate) {
       document.addEventListener('mousedown', handleOutsideClick);
       document.addEventListener('touchstart', handleOutsideClick, { passive: true });
     }
@@ -230,7 +257,7 @@ export function CalendarHubPage({
       document.removeEventListener('mousedown', handleOutsideClick);
       document.removeEventListener('touchstart', handleOutsideClick);
     };
-  }, [isYearDropdownOpen, isMonthDropdownOpen, isMonthStripOpen, hoveredTooltip]);
+  }, [isYearDropdownOpen, isMonthDropdownOpen, isMonthStripOpen, hoveredTooltip, quickViewDate]);
 
   // 뷰 모드: 월별 보기 ('month') vs 연간 보기 ('year')
   const [viewMode, setViewMode] = useState<'month' | 'year'>('month');
@@ -413,6 +440,46 @@ export function CalendarHubPage({
     return () => { isCancelled = true; };
   }, [isWeatherMode, selectedWeatherCity]);
 
+  // 현재 선택된 날씨 도시의 최적 여행 시기 데이터 (WORLD_CITIES 매칭)
+  const destinationCityData = useMemo(() => {
+    if (!isWeatherMode || !selectedWeatherCity) return null;
+    const targetEn = selectedWeatherCity.nameEn.toLowerCase();
+    const targetKo = selectedWeatherCity.name;
+    return WORLD_CITIES.find(
+      c => c.nameEn.toLowerCase() === targetEn || c.nameKo === targetKo
+    ) || null;
+  }, [isWeatherMode, selectedWeatherCity]);
+
+  // 다가오는 가장 가까운 미래 여정 계산 (D-Day 배지용)
+  const nextUpcomingTrip = useMemo(() => {
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const allFuture: { title: string; startDate: string; daysLeft: number }[] = [];
+
+    trips.forEach(t => {
+      const range = parseTripDateRange(t.date);
+      const s = range?.start;
+      if (s && s >= todayStr) {
+        const diffMs = new Date(s).getTime() - new Date(todayStr).getTime();
+        const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        allFuture.push({ title: t.title, startDate: s, daysLeft });
+      }
+    });
+
+    plans.forEach(p => {
+      const range = parseTripDateRange(p.date);
+      const s = range?.start;
+      if (s && s >= todayStr) {
+        const diffMs = new Date(s).getTime() - new Date(todayStr).getTime();
+        const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        allFuture.push({ title: p.title, startDate: s, daysLeft });
+      }
+    });
+
+    if (allFuture.length === 0) return null;
+    allFuture.sort((a, b) => a.startDate.localeCompare(b.startDate));
+    return allFuture[0];
+  }, [trips, plans, today]);
+
   // 뷰 전용 스위스 모달 상태
   const [viewingEvent, setViewingEvent] = useState<CalendarCustomEvent | null>(null);
   const [shareCopied, setShareCopied] = useState<boolean>(false);
@@ -564,6 +631,18 @@ export function CalendarHubPage({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        if (quickViewDate) {
+          setQuickViewDate(null);
+          return;
+        }
+        if (isMonthStripOpen) {
+          setIsMonthStripOpen(false);
+          return;
+        }
+        if (isYearDropdownOpen) {
+          setIsYearDropdownOpen(false);
+          return;
+        }
         if (viewingTrip) {
           setViewingTrip(null);
           return;
@@ -595,24 +674,32 @@ export function CalendarHubPage({
         }
       }
 
-      if (isEditingYear || isEditingMonth || isEventModalOpen || viewingEvent || viewingTrip) return;
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (isEditingYear || isEditingMonth || isEventModalOpen || viewingEvent || viewingTrip || quickViewDate) return;
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || (e.target as HTMLElement)?.isContentEditable) return;
 
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        handlePrevMonth();
+        if (viewMode === 'month') handlePrevMonth();
+        else setCurrentYear(prev => prev - 1);
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
-        handleNextMonth();
+        if (viewMode === 'month') handleNextMonth();
+        else setCurrentYear(prev => prev + 1);
       } else if (e.key === 't' || e.key === 'T') {
         e.preventDefault();
         handleGoToday();
+      } else if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        toggleViewMode(viewMode === 'month' ? 'year' : 'month');
+      } else if (e.key === 'w' || e.key === 'W') {
+        e.preventDefault();
+        setIsWeatherMode(prev => !prev);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isEditingYear, isEditingMonth, isEventModalOpen, viewingEvent, currentYear, currentMonth, selectedRange]);
+  }, [isEditingYear, isEditingMonth, isEventModalOpen, viewingEvent, viewingTrip, quickViewDate, isMonthStripOpen, isYearDropdownOpen, currentYear, currentMonth, viewMode, selectedRange]);
 
   // 전역 마우스업 리스너 (드래그 종료)
   useEffect(() => {
@@ -1030,27 +1117,42 @@ export function CalendarHubPage({
       setSelectedScheduleId(null);
       const isSameDate = selectedRange && selectedRange.start === cell.dateStr && selectedRange.end === cell.dateStr;
 
-      if (isSameDate && hoveredTooltip?.dateStr === cell.dateStr) {
+      if (isSameDate && quickViewDate?.dateStr === cell.dateStr) {
         setSelectedRange(null);
         setDragAnchorDate(null);
         setHoveredTooltip(null);
+        setQuickViewDate(null);
       } else {
         setSelectedRange({ start: cell.dateStr, end: cell.dateStr });
         setDragAnchorDate(cell.dateStr);
 
-        // 여정, 일정 또는 공휴일이 있는 경우 클릭/터치 시에도 툴팁 정보창 팝업 표시
-        const hasDetails = cell.overlappingTrips.length > 0 || cell.overlappingEvents.length > 0 || Boolean(cell.holiday?.name);
-        if (hasDetails) {
-          handleDayHover(
-            e,
-            cell.dateStr,
-            cell.holiday?.name,
-            cell.overlappingTrips.map(t => ({ title: t.trip.title, isPlan: t.isPlan, totalDays: t.totalDays })),
-            cell.overlappingEvents.map(ev => ({ title: ev.event.title, category: ev.event.category, totalDays: ev.totalDays }))
-          );
-        } else {
-          setHoveredTooltip(null);
-        }
+        const exact = cityWeatherData?.forecast?.find(f => f.date === cell.dateStr);
+        const w = exact || (isWeatherMode ? getSimulatedWeatherForDate(selectedWeatherCity.nameEn, cell.dateStr) : undefined);
+
+        const items: any[] = [
+          ...cell.overlappingTrips.map(t => ({
+            title: t.trip.title,
+            type: 'trip' as const,
+            isPlan: t.isPlan,
+            days: t.totalDays,
+            categoryColor: t.isPlan ? '#3b82f6' : '#ef4444',
+            itemObj: t.trip
+          })),
+          ...cell.overlappingEvents.map(ev => ({
+            title: ev.event.title,
+            type: 'event' as const,
+            categoryColor: '#10b981',
+            days: ev.totalDays,
+            itemObj: ev.event
+          }))
+        ];
+
+        setQuickViewDate({
+          dateStr: cell.dateStr,
+          holidayName: cell.holiday?.name,
+          weather: w,
+          items
+        });
       }
     }
 
@@ -1123,6 +1225,36 @@ export function CalendarHubPage({
   const handleCellMouseEnter = (dateStr: string) => {
     if (!isEditMode || !isDragging || !dragAnchorDate) return;
     setSelectedRange(normalizeRange(dragAnchorDate, dateStr));
+  };
+
+  // 모바일 좌우 스와이프 제스처 (편집 모드가 아닐 때만 동작)
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (isEditMode) return;
+    touchStartXRef.current = e.touches[0].clientX;
+    touchStartYRef.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (isEditMode || touchStartXRef.current === null || touchStartYRef.current === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const diffX = touchEndX - touchStartXRef.current;
+    const diffY = touchEndY - touchStartYRef.current;
+
+    // 수평 이동 거리가 수직 이동보다 크고 50px 이상일 때 스와이프 판정
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+      if (diffX > 0) {
+        // 우로 스와이프 -> 이전 달
+        if (viewMode === 'month') handlePrevMonth();
+        else setCurrentYear(prev => prev - 1);
+      } else {
+        // 좌로 스와이프 -> 다음 달
+        if (viewMode === 'month') handleNextMonth();
+        else setCurrentYear(prev => prev + 1);
+      }
+    }
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
   };
 
   // 날짜 마우스 호버 및 모바일 탭 시 툴팁 표시 (뷰포트 클램핑 및 상하 자동 반전)
@@ -1463,6 +1595,27 @@ export function CalendarHubPage({
             <span className="hidden sm:inline-block font-mono text-[11px] font-bold text-red-600 dark:text-red-400 tracking-wider">
               {viewMode === 'year' ? 'ANNUAL OVERVIEW' : 'SCHEDULE & TIMELINE'}
             </span>
+
+            {/* Next Upcoming Trip D-Day Badge */}
+            {nextUpcomingTrip && (
+              <button
+                type="button"
+                onClick={() => {
+                  const [y, m] = nextUpcomingTrip.startDate.split('-').map(Number);
+                  if (y && m) {
+                    setCurrentYear(y);
+                    setCurrentMonth(m - 1);
+                    setSelectedRange({ start: nextUpcomingTrip.startDate, end: nextUpcomingTrip.startDate });
+                  }
+                }}
+                className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-600/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-500 dark:hover:text-black transition-colors font-mono font-bold text-[10px] sm:text-[10.5px] cursor-pointer group shadow-2xs shrink-0"
+                title={`클릭하여 ${nextUpcomingTrip.title} 일정으로 바로 이동`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-400 group-hover:bg-white animate-pulse shrink-0" />
+                <span className="max-w-[100px] sm:max-w-[150px] truncate">{nextUpcomingTrip.title}</span>
+                <span className="font-black">D-{nextUpcomingTrip.daysLeft === 0 ? 'DAY' : nextUpcomingTrip.daysLeft}</span>
+              </button>
+            )}
           </div>
 
           <div className="text-[11px] sm:text-xs font-mono font-bold tracking-wider text-black/40 dark:text-white/40 flex items-center gap-3">
@@ -1495,12 +1648,15 @@ export function CalendarHubPage({
                 </div>
               </button>
 
-              {/* Expandable 12-Month Quick Selector Tabs (월 클릭 시 펼쳐지고 선택 시 자동 닫힘) */}
+              {/* Expandable 12-Month Quick Selector Tabs (월 클릭 시 펼쳐지고 선택 시 자동 닫힘 + 날씨 도시 시즌 오버레이) */}
               {isMonthStripOpen && (
                 <div className="w-full mt-3 sm:mt-5 py-2.5 sm:py-3 border-y border-black/10 dark:border-white/10 select-none animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="grid grid-cols-12 gap-0.5 sm:gap-1">
                     {MONTH_TABS.map((mTab, idx) => {
                       const isActive = currentMonth === idx;
+                      const isBest = Boolean(isWeatherMode && destinationCityData?.bestMonths?.includes(mTab.num));
+                      const isAvoid = Boolean(isWeatherMode && destinationCityData?.avoidMonths?.some(a => a.months.includes(mTab.num)));
+
                       return (
                         <button
                           key={mTab.num}
@@ -1509,18 +1665,34 @@ export function CalendarHubPage({
                             setCurrentMonth(idx);
                             setIsMonthStripOpen(false); // 골라지면 즉시 자동 숨김
                           }}
-                          className={`flex flex-col items-center justify-center py-1 sm:py-1.5 px-0.5 rounded-xs transition-all cursor-pointer ${
+                          className={`relative flex flex-col items-center justify-center py-1 sm:py-1.5 px-0.5 rounded-xs transition-all cursor-pointer ${
                             isActive
                               ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs ring-1 ring-black dark:ring-white'
+                              : isAvoid
+                              ? 'opacity-40 text-black/40 dark:text-white/40 hover:opacity-80 hover:bg-black/5 dark:hover:bg-white/5'
                               : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5 hover:text-black dark:hover:text-white'
                           }`}
-                          title={`${mTab.full} (${mTab.num}월)`}
+                          title={
+                            isBest 
+                              ? `${mTab.full} (${mTab.num}월) - ${destinationCityData?.nameKo || selectedWeatherCity.name} 최적 여행 시즌`
+                              : isAvoid
+                              ? `${mTab.full} (${mTab.num}월) - 여행 비추천/주의 시즌`
+                              : `${mTab.full} (${mTab.num}월)`
+                          }
                         >
+                          {/* Season Indicator Dot (Best Season) */}
+                          {isBest && (
+                            <span className="absolute top-0.5 right-0.5 sm:right-1 w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-500 ring-2 ring-white dark:ring-zinc-900" />
+                          )}
                           <span className="text-sm sm:text-lg md:text-xl font-black font-['Inter',sans-serif] leading-none tracking-tight">
                             {mTab.num}
                           </span>
                           <span className={`text-[8px] sm:text-[9.5px] md:text-[10.5px] font-bold tracking-wider uppercase leading-tight mt-0.5 font-['Inter',sans-serif] ${
-                            isActive ? 'text-white dark:text-black' : 'text-black/40 dark:text-white/40'
+                            isActive 
+                              ? 'text-white dark:text-black' 
+                              : isBest
+                              ? 'text-red-600 dark:text-red-400 font-black'
+                              : 'text-black/40 dark:text-white/40'
                           }`}>
                             {mTab.short}
                           </span>
@@ -1528,6 +1700,30 @@ export function CalendarHubPage({
                       );
                     })}
                   </div>
+
+                  {/* Best Season Guide Caption (날씨 모드 켜졌을 때 해당 도시 시즌 요약 브리핑) */}
+                  {isWeatherMode && destinationCityData && (
+                    <div className="flex flex-wrap items-center justify-between gap-2 mt-2 pt-2 border-t border-black/5 dark:border-white/5 text-[10px] sm:text-xs font-mono">
+                      <div className="flex items-center gap-1.5 text-black/70 dark:text-white/70">
+                        <span className="font-bold text-red-600 dark:text-red-400 uppercase">
+                          [{destinationCityData.nameKo || selectedWeatherCity.name}]
+                        </span>
+                        <span>
+                          최적 여행 시즌: {destinationCityData.bestMonths.map(m => `${m}월`).join(', ')}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-black/40 dark:text-white/40 text-[9.5px]">
+                        <span className="flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-600 dark:bg-red-500" />
+                          BEST
+                        </span>
+                        <span>·</span>
+                        <span className="opacity-60">
+                          AVOID (주의/혹서/우기)
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </>
@@ -1730,7 +1926,11 @@ export function CalendarHubPage({
       }`}>
         {viewMode === 'month' ? (
           /* ──────────────── MONTH VIEW (Pure Circular Swiss Minimal) ──────────────── */
-          <div className="w-full max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-3 sm:mt-5">
+          <div 
+            className="w-full max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-3 sm:mt-5"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
             {/* Edit Mode Control & Multi-Select Indicator Bar (Fixed height slot prevents calendar layout shift) */}
             {isEditMode && (
               <div className="h-9 sm:h-10 flex items-center justify-between pb-2 px-1 text-xs sm:text-sm font-mono font-bold select-none">
@@ -2994,6 +3194,124 @@ export function CalendarHubPage({
           </div>
         );
       })()}
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* Swiss Minimal Quick View Bottom Sheet / Popover               */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {quickViewDate && (
+        <div 
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={() => setQuickViewDate(null)}
+        >
+          <div
+            ref={quickViewRef}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl border border-black/15 dark:border-white/15 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl shadow-2xl p-5 sm:p-6 text-black dark:text-white select-none animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200"
+          >
+            {/* Top Bar: Date Header + Holiday Tag + Close */}
+            <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10">
+              <div className="flex items-center gap-2">
+                <span className="text-base sm:text-lg font-black font-satoshi tracking-tight">
+                  {quickViewDate.dateStr.replace(/-/g, '.')}
+                </span>
+                {quickViewDate.holidayName && (
+                  <span className="px-2 py-0.5 rounded-full bg-red-600/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 text-[10px] font-bold font-mono">
+                    {quickViewDate.holidayName}
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setQuickViewDate(null)}
+                className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                title="닫기"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Weather Block (날씨 정보가 있는 경우) */}
+            {quickViewDate.weather && (() => {
+              const meta = getWeatherMeta(quickViewDate.weather.weatherCode, quickViewDate.weather.precipitationProb);
+              const IconComp = meta.icon;
+              return (
+                <div className="flex items-center justify-between py-2.5 px-3 my-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 text-xs font-mono">
+                  <div className="flex items-center gap-2">
+                    <IconComp className={`w-4 h-4 ${meta.colorClass}`} />
+                    <span className="font-bold">{meta.labelKo}</span>
+                    <span className="text-black/50 dark:text-white/50 font-normal">
+                      {selectedWeatherCity.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <span className="text-red-600 dark:text-red-400">
+                      {quickViewDate.weather.tempMax}°
+                    </span>
+                    <span className="text-black/30 dark:text-white/30">/</span>
+                    <span className="text-blue-600 dark:text-blue-400">
+                      {quickViewDate.weather.tempMin}°
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Schedule Items List */}
+            <div className="my-3 space-y-2 max-h-56 overflow-y-auto">
+              {quickViewDate.items.length === 0 ? (
+                <div className="py-6 text-center text-xs font-mono text-black/40 dark:text-white/40">
+                  등록된 여행이나 일정이 없습니다.
+                </div>
+              ) : (
+                quickViewDate.items.map((it, idx) => (
+                  <div 
+                    key={idx}
+                    className="p-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center justify-between gap-3"
+                  >
+                    <div className="flex items-center gap-2.5 truncate">
+                      <span 
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: it.categoryColor || (it.isPlan ? '#3b82f6' : '#ef4444') }}
+                      />
+                      <span className="font-satoshi font-bold text-sm truncate">
+                        {it.title}
+                      </span>
+                    </div>
+                    {it.days && (
+                      <span className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50 shrink-0">
+                        {it.days} DAYS
+                      </span>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Bottom Action Buttons */}
+            <div className="flex items-center gap-2 pt-3 border-t border-black/10 dark:border-white/10">
+              <button
+                type="button"
+                onClick={() => {
+                  const d = quickViewDate.dateStr;
+                  setQuickViewDate(null);
+                  openNewEventModal(d, d);
+                }}
+                className="flex-1 h-9 rounded-full bg-black text-white dark:bg-white dark:text-black hover:opacity-85 text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>ADD SCHEDULE</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setQuickViewDate(null)}
+                className="px-4 h-9 rounded-full border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10 text-xs font-mono font-bold transition-colors cursor-pointer"
+              >
+                CLOSE
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
