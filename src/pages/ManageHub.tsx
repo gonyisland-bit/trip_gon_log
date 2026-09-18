@@ -2355,6 +2355,8 @@ export function ManageHubPage({
         setWidgetCities(wSnap.cities || []);
       } catch (_) {}
     }
+    setSaveRevision(prev => prev + 1);
+    if (onDirtyChange) onDirtyChange(false);
   };
 
   // Safe navigation helper that explicitly clears dirty flag and passes force=true to App.tsx
@@ -2421,17 +2423,17 @@ export function ManageHubPage({
       setEditImg(selectedJourney.img || '');
       setEditVideoUrl(selectedJourney.videoUrl || '');
       setEditHeroImg(selectedJourney.heroImg || '');
+      setEditHeroVideoUrl(selectedJourney.heroVideoUrl || '');
       const isPlan = (selectedJourney as any).isPlan || selectedJourney.tags?.includes('Plan') || selectedJourney.title?.includes('(Plan)');
       const initialStatusBadge = selectedJourney.statusBadge || (isPlan ? 'PLAN' : '');
       setEditStatusBadge(initialStatusBadge);
       setTripSaveSuccess(false);
 
-      if (!savedArchiveSnapshotRef.current[selectedJourney.id]) {
-        savedArchiveSnapshotRef.current[selectedJourney.id] = JSON.stringify(getNormalizedJourneyData({
-          ...selectedJourney,
-          statusBadge: initialStatusBadge
-        }));
-      }
+      savedArchiveSnapshotRef.current[selectedJourney.id] = JSON.stringify(getNormalizedJourneyData({
+        ...selectedJourney,
+        heroVideoUrl: selectedJourney.heroVideoUrl || '',
+        statusBadge: initialStatusBadge
+      }));
     }
   }, [selectedJourneyId, selectedJourney]);
 
@@ -2503,6 +2505,25 @@ export function ManageHubPage({
         heroVideoUrl: editHeroVideoUrl,
         statusBadge: editStatusBadge,
       });
+
+      setLocalJourneys(prev => prev.map(j => {
+        if (j.id === selectedJourney.id) {
+          return {
+            ...j,
+            title: editTitle,
+            date: editDate,
+            locationStr: editLocation,
+            country: editCountry,
+            tags: editTags,
+            img: editImg,
+            videoUrl: editVideoUrl,
+            heroImg: editHeroImg,
+            heroVideoUrl: editHeroVideoUrl,
+            statusBadge: editStatusBadge,
+          };
+        }
+        return j;
+      }));
 
       savedArchiveSnapshotRef.current[selectedJourney.id] = JSON.stringify(getNormalizedJourneyData({
         title: editTitle,
@@ -3686,7 +3707,25 @@ export function ManageHubPage({
           heroVideoUrl: editHeroVideoUrl,
           statusBadge: editStatusBadge,
         });
-        savedArchiveSnapshotRef.current[selectedJourney.id] = JSON.stringify({
+        setLocalJourneys(prev => prev.map(j => {
+          if (j.id === selectedJourney.id) {
+            return {
+              ...j,
+              title: editTitle,
+              date: editDate,
+              locationStr: editLocation,
+              country: editCountry,
+              tags: editTags,
+              img: editImg,
+              videoUrl: editVideoUrl,
+              heroImg: editHeroImg,
+              heroVideoUrl: editHeroVideoUrl,
+              statusBadge: editStatusBadge,
+            };
+          }
+          return j;
+        }));
+        savedArchiveSnapshotRef.current[selectedJourney.id] = JSON.stringify(getNormalizedJourneyData({
           title: editTitle,
           date: editDate,
           locationStr: editLocation,
@@ -3697,7 +3736,7 @@ export function ManageHubPage({
           heroImg: editHeroImg,
           heroVideoUrl: editHeroVideoUrl,
           statusBadge: editStatusBadge,
-        });
+        }));
       }
 
       // 3. Save Journey Hub Header if configured

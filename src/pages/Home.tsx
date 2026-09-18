@@ -647,22 +647,29 @@ interface HeroMediaProps {
 
 function HeroMedia({ journey, isActive, onMediaReady }: HeroMediaProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoError, setVideoError] = useState(false);
+
+  useEffect(() => {
+    setVideoError(false);
+  }, [journey.id, journey.heroVideoUrl, journey.videoUrl]);
 
   // Smart resolution of hero media: heroVideoUrl > heroImg > videoUrl > img
   let finalVideoUrl = '';
   let finalImageUrl = '';
 
-  if (journey.heroVideoUrl) {
+  if (journey.heroVideoUrl && !videoError) {
     finalVideoUrl = getEffectiveImageUrl(journey.heroVideoUrl);
-  } else if (journey.heroImg) {
-    finalImageUrl = getEffectiveImageUrl(journey.heroImg);
-  } else if (journey.videoUrl) {
+  } else if (journey.videoUrl && !videoError && !journey.heroImg) {
     finalVideoUrl = getEffectiveImageUrl(journey.videoUrl);
+  }
+
+  if (journey.heroImg) {
+    finalImageUrl = getEffectiveImageUrl(journey.heroImg);
   } else {
     finalImageUrl = getEffectiveImageUrl(journey.img);
   }
 
-  const isVideo = Boolean(finalVideoUrl);
+  const isVideo = Boolean(finalVideoUrl) && !videoError;
 
   // Mobile WebKit / iOS autoplay policy: DOM properties must be explicitly set before play()
   useEffect(() => {
@@ -729,6 +736,11 @@ function HeroMedia({ journey, isActive, onMediaReady }: HeroMediaProps) {
           autoPlay={isActive}
           preload="auto"
           className="w-full h-full object-cover"
+          onError={() => {
+            console.warn("Hero video playback failed, falling back to image:", finalVideoUrl);
+            setVideoError(true);
+            if (onMediaReady) onMediaReady();
+          }}
         />
       ) : finalImageUrl ? (
         <img
