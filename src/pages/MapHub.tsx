@@ -3817,25 +3817,25 @@ export function MapHubPage({
 
       {/* 3. Selected Country Card (Swiss Minimal Editorial Style - Slim Lines, Compact Height, No Box Overload) */}
       {selectedCountry && !isFlyingToCountry && (
-        <div className={`fixed sm:absolute bottom-0 sm:bottom-auto sm:top-20 left-0 right-0 ${
+        <div className={`${isBuilderOpen ? 'hidden lg:block' : 'block'} fixed sm:absolute bottom-0 sm:bottom-auto sm:top-20 left-0 right-0 ${
           isBuilderOpen ? 'sm:left-6 sm:right-auto' : 'sm:left-auto sm:right-6'
-        } w-full sm:w-[380px] max-h-[78vh] sm:max-h-[82vh] bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border-t sm:border border-black/15 dark:border-white/15 shadow-2xl z-[500] p-4 sm:p-5 overflow-y-auto animate-in fade-in slide-in-from-bottom ${
+        } w-full sm:w-[380px] max-h-[44vh] sm:max-h-[82vh] bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border-t sm:border border-black/15 dark:border-white/15 shadow-2xl z-[500] p-3 sm:p-5 overflow-y-auto animate-in fade-in slide-in-from-bottom ${
           isBuilderOpen ? 'sm:slide-in-from-left' : 'sm:slide-in-from-right'
         } duration-200`}>
           
           {/* Header: Code + Continent & Country Name */}
-          <div className="flex items-start justify-between pb-2.5 border-b border-black/10 dark:border-white/10 mb-3">
+          <div className="flex items-center justify-between pb-1.5 sm:pb-2.5 border-b border-black/10 dark:border-white/10 mb-2 sm:mb-3">
             <div>
-              <div className="flex items-center gap-2 mb-0.5 font-['Inter',sans-serif]">
-                <span className="text-[10px] font-black uppercase tracking-widest text-red-600 dark:text-red-500">
+              <div className="flex items-center gap-1.5 mb-0.5 font-['Inter',sans-serif]">
+                <span className="text-[9.5px] font-black uppercase tracking-widest text-red-600 dark:text-red-500">
                   {selectedCountry.code}
                 </span>
-                <span className="text-[10px] font-bold text-black/40 dark:text-white/40">
+                <span className="text-[9.5px] font-bold text-black/40 dark:text-white/40">
                   · {selectedCountry.continentKo}
                 </span>
               </div>
               <div className="flex items-baseline gap-2">
-                <h3 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-black dark:text-white font-['Inter',sans-serif] leading-tight">
+                <h3 className="text-lg sm:text-2xl font-black uppercase tracking-tight text-black dark:text-white font-['Inter',sans-serif] leading-tight">
                   {selectedCountry.name}
                 </h3>
                 <span className="text-xs font-semibold text-black/50 dark:text-white/50">
@@ -3852,7 +3852,7 @@ export function MapHubPage({
             </button>
           </div>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2 sm:gap-3">
             {/* 1. Recorded Journey Cities in this Country (Slim Line Pills) */}
             {(() => {
               const countryPinGroups = pinGroups.filter(g => {
@@ -3865,10 +3865,10 @@ export function MapHubPage({
               const totalJourneys = countryPinGroups.reduce((acc, g) => acc + g.journeys.length, 0);
 
               return (
-                <div className="pb-3 border-b border-black/10 dark:border-white/10">
-                  <div className="text-[10px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 mb-1.5 flex items-center justify-between">
+                <div className="pb-2 sm:pb-3 border-b border-black/10 dark:border-white/10">
+                  <div className="text-[9.5px] sm:text-[10px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-500 mb-1 sm:mb-1.5 flex items-center justify-between">
                     <span>RECORDED JOURNEYS</span>
-                    <span className="text-[10px] font-mono font-bold text-black/40 dark:text-white/40">
+                    <span className="text-[9px] sm:text-[10px] font-mono font-bold text-black/40 dark:text-white/40">
                       {totalJourneys} TOTAL
                     </span>
                   </div>
@@ -3878,10 +3878,10 @@ export function MapHubPage({
                         key={group.city}
                         type="button"
                         onClick={() => setSelectedPinGroup(group)}
-                        className="px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider bg-black/5 dark:bg-white/10 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-black dark:text-white border border-black/10 dark:border-white/10 transition-all cursor-pointer flex items-center gap-1.5"
+                        className="px-2 py-0.5 text-[10.5px] sm:text-[11px] font-bold uppercase tracking-wider bg-black/5 dark:bg-white/10 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-black dark:text-white border border-black/10 dark:border-white/10 transition-all cursor-pointer flex items-center gap-1.5"
                       >
                         <span>{group.city}</span>
-                        <span className="text-[9.5px] px-1 py-0.2 bg-black/10 dark:bg-white/20 font-mono font-bold">
+                        <span className="text-[9px] sm:text-[9.5px] px-1 py-0.2 bg-black/10 dark:bg-white/20 font-mono font-bold">
                           {group.journeys.length}
                         </span>
                       </button>
@@ -3892,8 +3892,8 @@ export function MapHubPage({
             })()}
 
             {/* 2. Compact 2-Column Grid: Modern Travel Clock & Currency Exchange */}
-            <div className="grid grid-cols-2 gap-2.5 pb-3 border-b border-black/10 dark:border-white/10">
-              {/* Col 1: Modern Travel Clock Card (Attached Reference Style) */}
+            <div className="grid grid-cols-2 gap-2 sm:gap-2.5 pb-2 sm:pb-3 border-b border-black/10 dark:border-white/10">
+              {/* Col 1: Modern Travel Clock Card */}
               <div>
                 {(() => {
                   const liveInfo = getCountryLiveTime(selectedCountry.code, liveClockNow);
@@ -3901,18 +3901,18 @@ export function MapHubPage({
                   const countryCode = selectedCountry.code === 'ES' ? 'SPA' : selectedCountry.code === 'JP' ? 'JPN' : selectedCountry.code === 'KR' ? 'KOR' : selectedCountry.code === 'US' ? 'USA' : selectedCountry.code;
 
                   return (
-                    <div className="bg-[#f0f0f0] dark:bg-[#252525] rounded-2xl p-3 flex flex-col items-center justify-center text-center shadow-xs border border-black/5 dark:border-white/10 h-full">
-                      <span className="text-[11px] font-bold text-black/60 dark:text-white/60 lowercase tracking-wider">
+                    <div className="bg-[#f0f0f0] dark:bg-[#252525] rounded-xl sm:rounded-2xl p-2 sm:p-3 flex flex-col items-center justify-center text-center shadow-xs border border-black/5 dark:border-white/10 h-full">
+                      <span className="text-[9px] sm:text-[11px] font-bold text-black/60 dark:text-white/60 lowercase tracking-wider">
                         {liveInfo.ampm}
                       </span>
-                      <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-black dark:text-white my-0.5 font-sans leading-none">
+                      <span className="text-xl sm:text-4xl font-extrabold tracking-tight text-black dark:text-white my-0 sm:my-0.5 font-sans leading-none">
                         {liveInfo.dotTime}
                       </span>
-                      <div className="mt-1.5 rounded-full bg-white/90 dark:bg-white/10 px-2.5 py-0.5 inline-flex items-center gap-1 shadow-xs border border-black/5 dark:border-white/10">
-                        <span className="text-[11px] font-bold text-black dark:text-white">{mainCity}</span>
-                        <span className="text-[10px] font-mono text-black/40 dark:text-white/40 uppercase">{countryCode}</span>
+                      <div className="mt-1 sm:mt-1.5 rounded-full bg-white/90 dark:bg-white/10 px-2 sm:px-2.5 py-0.5 inline-flex items-center gap-1 shadow-xs border border-black/5 dark:border-white/10">
+                        <span className="text-[9.5px] sm:text-[11px] font-bold text-black dark:text-white truncate max-w-[80px] sm:max-w-none">{mainCity}</span>
+                        <span className="text-[8.5px] sm:text-[10px] font-mono text-black/40 dark:text-white/40 uppercase">{countryCode}</span>
                       </div>
-                      <div className="text-[9.5px] font-mono text-black/40 dark:text-white/40 mt-1.5">
+                      <div className="text-[8.5px] sm:text-[9.5px] font-mono text-black/40 dark:text-white/40 mt-0.5 sm:mt-1.5">
                         {liveInfo.diffText} (KST)
                       </div>
                     </div>
@@ -3921,7 +3921,7 @@ export function MapHubPage({
               </div>
 
               {/* Col 2: Balanced 50:50 Modern Travel Exchange Widget Card */}
-              <div className="bg-[#f0f0f0] dark:bg-[#252525] rounded-2xl p-3 flex flex-col justify-between shadow-xs border border-black/5 dark:border-white/10 h-full select-none">
+              <div className="bg-[#f0f0f0] dark:bg-[#252525] rounded-xl sm:rounded-2xl p-2 sm:p-3 flex flex-col justify-between shadow-xs border border-black/5 dark:border-white/10 h-full select-none">
                 {(() => {
                   const unit = getOptimalCurrencyUnit(selectedCountry.rateToKRW, selectedCountry.currency);
                   const approxKRW = Math.round(selectedCountry.rateToKRW * unit);
@@ -3929,31 +3929,31 @@ export function MapHubPage({
                   return (
                     <>
                       {/* Top Half (50%): Local Currency (e.g. 100 JPY) */}
-                      <div className="flex-1 flex flex-col items-center justify-center pb-1.5 border-b border-black/10 dark:border-white/10 text-center">
-                        <span className="text-[10px] font-mono font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-0.5">
+                      <div className="flex-1 flex flex-col items-center justify-center pb-1 sm:pb-1.5 border-b border-black/10 dark:border-white/10 text-center">
+                        <span className="text-[8.5px] sm:text-[10px] font-mono font-bold text-black/40 dark:text-white/40 uppercase tracking-widest">
                           LOCAL
                         </span>
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-black dark:text-white font-sans leading-none">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-base sm:text-3xl font-extrabold tracking-tight text-black dark:text-white font-sans leading-none">
                             {unit.toLocaleString()}
                           </span>
-                          <span className="text-xs sm:text-sm font-mono font-black text-black/70 dark:text-white/70 uppercase">
+                          <span className="text-[10px] sm:text-sm font-mono font-black text-black/70 dark:text-white/70 uppercase">
                             {selectedCountry.currency}
                           </span>
                         </div>
                       </div>
 
                       {/* Bottom Half (50%): Korean Won (e.g. 930 KRW) */}
-                      <div className="flex-1 flex flex-col items-center justify-center pt-1.5 text-center">
-                        <span className="text-[10px] font-mono font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-0.5">
-                          KOREAN WON
+                      <div className="flex-1 flex flex-col items-center justify-center pt-1 sm:pt-1.5 text-center">
+                        <span className="text-[8.5px] sm:text-[10px] font-mono font-bold text-black/40 dark:text-white/40 uppercase tracking-widest">
+                          KRW
                         </span>
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-black dark:text-white font-sans leading-none">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-base sm:text-3xl font-extrabold tracking-tight text-black dark:text-white font-sans leading-none">
                             {approxKRW.toLocaleString()}
                           </span>
-                          <span className="text-xs sm:text-sm font-mono font-black text-black/70 dark:text-white/70 uppercase">
-                            KRW
+                          <span className="text-[10px] sm:text-sm font-mono font-black text-black/70 dark:text-white/70 uppercase">
+                            원
                           </span>
                         </div>
                       </div>
@@ -3964,22 +3964,22 @@ export function MapHubPage({
             </div>
 
             {/* 2.5 Live Weather & 7-Day Forecast Widget Card */}
-            <div className="pb-3 border-b border-black/10 dark:border-white/10 select-none">
-              <div className="bg-[#f0f0f0] dark:bg-[#252525] rounded-2xl p-3 shadow-xs border border-black/5 dark:border-white/10">
-                <div className="flex items-center justify-between pb-2 border-b border-black/10 dark:border-white/10">
+            <div className="pb-2 sm:pb-3 border-b border-black/10 dark:border-white/10 select-none">
+              <div className="bg-[#f0f0f0] dark:bg-[#252525] rounded-xl sm:rounded-2xl p-2 sm:p-3 shadow-xs border border-black/5 dark:border-white/10">
+                <div className="flex items-center justify-between pb-1.5 sm:pb-2 border-b border-black/10 dark:border-white/10">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                    <span className="text-[10px] font-mono font-black uppercase tracking-widest text-black/60 dark:text-white/60 truncate">
-                      LIVE WEATHER · {activeWeatherCity || selectedCountry.name}
+                    <span className="text-[9.5px] sm:text-[10px] font-mono font-black uppercase tracking-widest text-black/60 dark:text-white/60 truncate">
+                      WEATHER · {activeWeatherCity || selectedCountry.name}
                     </span>
                   </div>
                   {countryWeather && countryWeather.forecast && countryWeather.forecast.length > 0 && (
                     <button
                       type="button"
                       onClick={() => setIsCountryForecastOpen(prev => !prev)}
-                      className="text-[10px] font-mono font-bold text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white flex items-center gap-1 transition-colors cursor-pointer shrink-0 ml-2"
+                      className="text-[9.5px] sm:text-[10px] font-mono font-bold text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white flex items-center gap-1 transition-colors cursor-pointer shrink-0 ml-2"
                     >
-                      <span>7-DAY FORECAST</span>
+                      <span>7-DAY</span>
                       {isCountryForecastOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                     </button>
                   )}
@@ -3987,7 +3987,7 @@ export function MapHubPage({
 
                 {/* City Weather Selector Chips (도시별 날씨 전환) */}
                 {selectedCountry.cities && selectedCountry.cities.length > 1 && (
-                  <div className="flex items-center gap-1 pt-2 overflow-x-auto scrollbar-none text-[9.5px] font-mono select-none">
+                  <div className="flex items-center gap-1 pt-1.5 sm:pt-2 overflow-x-auto scrollbar-none text-[9px] sm:text-[9.5px] font-mono select-none">
                     {selectedCountry.cities.map(c => {
                       const isCurCity = (activeWeatherCity || selectedCountry.cities[0]) === c;
                       return (
@@ -3995,7 +3995,7 @@ export function MapHubPage({
                           key={`weather-city-${c}`}
                           type="button"
                           onClick={() => setActiveWeatherCity(c)}
-                          className={`px-2 py-0.5 whitespace-nowrap transition-colors cursor-pointer border ${
+                          className={`px-1.5 sm:px-2 py-0.5 whitespace-nowrap transition-colors cursor-pointer border ${
                             isCurCity
                               ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-black shadow-2xs'
                               : 'bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-black/60 dark:text-white/60 border-black/10 dark:border-white/10 font-bold'
@@ -4009,36 +4009,36 @@ export function MapHubPage({
                 )}
 
                 {isCountryWeatherLoading ? (
-                  <div className="py-4 flex items-center justify-center text-xs font-mono text-black/40 dark:text-white/40">
+                  <div className="py-2.5 sm:py-4 flex items-center justify-center text-[10px] sm:text-xs font-mono text-black/40 dark:text-white/40">
                     LOADING CONDITIONS...
                   </div>
                 ) : countryWeather ? (
                   <>
-                    <div className="pt-2 flex items-center justify-between">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl sm:text-4xl font-extrabold font-sans tracking-tight text-black dark:text-white leading-none">
+                    <div className="pt-1.5 sm:pt-2 flex items-center justify-between">
+                      <div className="flex items-baseline gap-1.5 sm:gap-2">
+                        <span className="text-2xl sm:text-4xl font-extrabold font-sans tracking-tight text-black dark:text-white leading-none">
                           {countryWeather.temp}°
                         </span>
-                        <span className="text-xs font-mono font-bold text-black/60 dark:text-white/60 uppercase">
+                        <span className="text-[10px] sm:text-xs font-mono font-bold text-black/60 dark:text-white/60 uppercase">
                           {getWeatherMeta(countryWeather.weatherCode, countryWeather.forecast?.[0]?.precipitationProb).label}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2 text-right">
+                      <div className="flex items-center gap-1.5 sm:gap-2 text-right">
                         {(() => {
                           const { icon: WeatherIcon, colorClass } = getWeatherMeta(countryWeather.weatherCode, countryWeather.forecast?.[0]?.precipitationProb);
-                          return <WeatherIcon className={`w-6 h-6 stroke-[2] ${colorClass}`} />;
+                          return <WeatherIcon className={`w-5 h-5 sm:w-6 sm:h-6 stroke-[2] ${colorClass}`} />;
                         })()}
-                        <div className="text-[10px] font-mono font-bold text-black/50 dark:text-white/50">
+                        <div className="text-[9px] sm:text-[10px] font-mono font-bold text-black/50 dark:text-white/50">
                           <div>H:{countryWeather.tempMax}° L:{countryWeather.tempMin}°</div>
-                          <div className="text-[9px] text-black/40 dark:text-white/40">{countryWeather.localTime} LOCAL</div>
+                          <div className="text-[8.5px] sm:text-[9px] text-black/40 dark:text-white/40">{countryWeather.localTime} LOCAL</div>
                         </div>
                       </div>
                     </div>
 
                     {/* 7-Day Forecast Expandable Accordion */}
                     {isCountryForecastOpen && countryWeather.forecast && (
-                      <div className="mt-3 pt-3 border-t border-black/10 dark:border-white/10 grid grid-cols-4 sm:grid-cols-7 gap-1.5 animate-in fade-in duration-150">
+                      <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-black/10 dark:border-white/10 grid grid-cols-4 sm:grid-cols-7 gap-1 sm:gap-1.5 animate-in fade-in duration-150">
                         {countryWeather.forecast.slice(0, 7).map((item, fIdx) => {
                           const { icon: FIcon, colorClass } = getWeatherMeta(item.weatherCode, item.precipitationProb);
                           const isToday = fIdx === 0;
@@ -4046,17 +4046,17 @@ export function MapHubPage({
                           return (
                             <div 
                               key={`country-f-${item.date}`}
-                              className={`p-1.5 rounded-lg flex flex-col items-center justify-between text-center gap-1 ${
+                              className={`p-1 sm:p-1.5 rounded-lg flex flex-col items-center justify-between text-center gap-0.5 sm:gap-1 ${
                                 isToday 
                                   ? 'bg-black/5 dark:bg-white/10 font-bold border border-black/10 dark:border-white/20' 
                                   : 'bg-white/40 dark:bg-black/20'
                               }`}
                             >
-                              <span className={`text-[8.5px] font-mono ${isToday ? 'font-black text-red-600 dark:text-red-400' : 'text-black/50 dark:text-white/50'}`}>
+                              <span className={`text-[8px] sm:text-[8.5px] font-mono ${isToday ? 'font-black text-red-600 dark:text-red-400' : 'text-black/50 dark:text-white/50'}`}>
                                 {isToday ? 'TODAY' : item.dayOfWeek}
                               </span>
-                              <FIcon className={`w-3.5 h-3.5 stroke-[2] ${colorClass}`} />
-                              <span className="text-[8.5px] font-mono font-bold text-black/80 dark:text-white/80 leading-none">
+                              <FIcon className={`w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2] ${colorClass}`} />
+                              <span className="text-[8px] sm:text-[8.5px] font-mono font-bold text-black/80 dark:text-white/80 leading-none">
                                 {item.tempMax}°
                               </span>
                             </div>
@@ -4066,7 +4066,7 @@ export function MapHubPage({
                     )}
                   </>
                 ) : (
-                  <div className="py-2 text-xs font-mono text-black/40 dark:text-white/40 text-center">
+                  <div className="py-2 text-[10px] sm:text-xs font-mono text-black/40 dark:text-white/40 text-center">
                     WEATHER UNAVAILABLE
                   </div>
                 )}
@@ -4074,16 +4074,16 @@ export function MapHubPage({
             </div>
 
             {/* 3. Major Destinations (Clean Pill Buttons, No Star Icon, Toggle Selection) */}
-            <div className="pb-3 border-b border-black/10 dark:border-white/10">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-[10px] font-mono font-black uppercase tracking-widest text-black/40 dark:text-white/40">
+            <div className="pb-2 sm:pb-3 border-b border-black/10 dark:border-white/10">
+              <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                <div className="text-[9.5px] sm:text-[10px] font-mono font-black uppercase tracking-widest text-black/40 dark:text-white/40">
                   DESTINATIONS ({selectedCountry.cities.length})
                 </div>
                 {selectedDestCities.length > 0 && (
                   <button
                     type="button"
                     onClick={() => setSelectedDestCities([])}
-                    className="text-[10px] font-mono text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white underline cursor-pointer"
+                    className="text-[9.5px] sm:text-[10px] font-mono text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white underline cursor-pointer"
                   >
                     RESET ({selectedDestCities.length})
                   </button>
@@ -4097,7 +4097,7 @@ export function MapHubPage({
                       key={city}
                       type="button"
                       onClick={() => toggleDestCity(city)}
-                      className={`px-2.5 py-1 text-[10.5px] font-mono font-bold uppercase transition-all border cursor-pointer select-none ${
+                      className={`px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[10.5px] font-mono font-bold uppercase transition-all border cursor-pointer select-none ${
                         isCitySelected
                           ? 'bg-amber-500 text-black border-amber-500 shadow-xs'
                           : 'bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white'
@@ -4124,7 +4124,7 @@ export function MapHubPage({
                     }
                   });
                 }}
-                className={`w-full py-2 px-3 text-xs font-black uppercase tracking-widest font-mono flex items-center justify-center gap-1.5 transition-colors cursor-pointer border ${
+                className={`w-full py-1.5 sm:py-2 px-2.5 sm:px-3 text-[11px] sm:text-xs font-black uppercase tracking-widest font-mono flex items-center justify-center gap-1.5 transition-colors cursor-pointer border ${
                   isCurrentCountryFavorite
                     ? 'bg-amber-500 text-black border-amber-500 shadow-xs'
                     : 'bg-white dark:bg-[#161616] text-black dark:text-white border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white'
@@ -4140,7 +4140,7 @@ export function MapHubPage({
                   const targetCity = selectedDestCities.length > 0 ? selectedDestCities[0] : undefined;
                   handleOpenTripBuilder(selectedCountry.name, targetCity, undefined, selectedCountry.code, selectedDestCities);
                 }}
-                className="w-full py-2 px-3 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-widest font-mono flex items-center justify-center gap-1.5 hover:opacity-85 transition-opacity cursor-pointer shadow-xs truncate"
+                className="w-full py-1.5 sm:py-2 px-2.5 sm:px-3 bg-black text-white dark:bg-white dark:text-black text-[11px] sm:text-xs font-black uppercase tracking-widest font-mono flex items-center justify-center gap-1.5 hover:opacity-85 transition-opacity cursor-pointer shadow-xs truncate"
                 title="선택된 장소 또는 국가 기준으로 새로운 트립 생성"
               >
                 <Plus className="w-3.5 h-3.5 shrink-0" />
