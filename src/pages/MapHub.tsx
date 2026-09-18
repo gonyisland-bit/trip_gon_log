@@ -707,7 +707,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     rateToKRW: 1380,
     cities: ['NEW YORK', 'LOS ANGELES', 'SAN FRANCISCO', 'LAS VEGAS', 'HONOLULU', 'SEATTLE', 'CHICAGO'],
     center: [38.9072, 282.9631], // Washington, D.C. (-77.0369 + 360)
-    zoom: 4,
+    zoom: 4.8,
     continent: 'North America',
     continentKo: '북미',
   },
@@ -720,7 +720,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     rateToKRW: 1010,
     cities: ['VANCOUVER', 'TORONTO', 'MONTREAL', 'QUEBEC', 'BANFF', 'CALGARY'],
     center: [45.4215, 284.3028], // Ottawa (-75.6972 + 360)
-    zoom: 3.5,
+    zoom: 4.5,
     continent: 'North America',
     continentKo: '북미',
   },
@@ -1565,8 +1565,10 @@ export function MapHubPage({
     }
   }, [initialBuilderOpen, initialBuilderCountry, initialBuilderCity, initialBuilderDate]);
 
-  // Invalidate Leaflet size on builder split change
+  // Invalidate Leaflet size on builder split change & sync isBuilderOpenRef
+  const isBuilderOpenRef = useRef<boolean>(isBuilderOpen);
   useEffect(() => {
+    isBuilderOpenRef.current = isBuilderOpen;
     const timer = setTimeout(() => {
       if (mapRef.current) {
         mapRef.current.invalidateSize();
@@ -2270,7 +2272,7 @@ export function MapHubPage({
 
     // 비행 시작 전 비행기를 중심으로 안정적인 크루즈 줌 설정 (비행기 중심 추종 모션)
     const isMobile = window.innerWidth < 640;
-    const cruiseZoom = isMobile ? 3.6 : 4.2;
+    const cruiseZoom = isMobile ? 3.4 : 3.7;
     map.setView([startLat, startLng], cruiseZoom, { animate: false });
 
     // Smooth duration between 2000ms ~ 2800ms
@@ -2363,71 +2365,79 @@ export function MapHubPage({
     flightAnimRef.current = requestAnimationFrame(animateFlight);
   };
 
-  // Country selection handler: highlights country area and flies airplane from Korea
-  const handleSelectCountry = (country: CountryInfo) => {
-    setIsSearchDropdownOpen(false);
-
+  // Updates circular boundary highlight & pulse pin on map
+  const updateCountryHighlightAndPin = useCallback((country: CountryInfo) => {
     const map = mapRef.current;
     const L = (window as any).L;
-    if (map && L) {
-      if (highlightLayerRef.current) {
-        map.removeLayer(highlightLayerRef.current);
-        highlightLayerRef.current = null;
-      }
-      if (selectPinRef.current) {
-        map.removeLayer(selectPinRef.current);
-        selectPinRef.current = null;
-      }
+    if (!map || !L) return;
 
-      // Boundary highlight circle (proportional to country size/zoom)
-      const radiusMeters = country.zoom >= 11
-        ? 15000 // Hong Kong, Macau, Singapore
-        : country.zoom >= 9
-          ? 35000 // Small island nations / city states
-          : country.zoom >= 7
-            ? 75000 // Taiwan, Maldives, Nepal, etc.
-            : Math.max(110000, (10.5 - country.zoom) * 85000);
-
-      const circleOptions = {
-        radius: radiusMeters,
-        color: '#DC2626',
-        weight: 2,
-        dashArray: '6, 6',
-        fillColor: '#DC2626',
-        fillOpacity: 0.12,
-      };
-
-      // Selected country pulse pin
-      const selectHtml = `
-        <div class="relative w-10 h-10 flex items-center justify-center select-none pointer-events-none">
-          <span class="absolute w-12 h-12 rounded-full bg-red-600/30 animate-ping"></span>
-          <span class="absolute w-8 h-8 rounded-full bg-red-600/35"></span>
-          <span class="w-4 h-4 rounded-full bg-red-600 border-2 border-white shadow-lg"></span>
-        </div>
-      `;
-      const selectIcon = L.divIcon({
-        className: 'custom-select-pin',
-        html: selectHtml,
-        iconSize: [40, 40],
-        iconAnchor: [20, 20],
-      });
-
-      const circles: any[] = [L.circle(country.center, circleOptions)];
-      const markers: any[] = [L.marker(country.center, { icon: selectIcon, zIndexOffset: 1200 })];
-
-      // World wrap replication: Americas/Atlantic/Pacific
-      if (country.center[1] < 60) {
-        circles.push(L.circle([country.center[0], country.center[1] + 360], circleOptions));
-        markers.push(L.marker([country.center[0], country.center[1] + 360], { icon: selectIcon, zIndexOffset: 1200 }));
-      }
-      if (country.center[1] > 0) {
-        circles.push(L.circle([country.center[0], country.center[1] - 360], circleOptions));
-        markers.push(L.marker([country.center[0], country.center[1] - 360], { icon: selectIcon, zIndexOffset: 1200 }));
-      }
-
-      highlightLayerRef.current = L.layerGroup(circles).addTo(map);
-      selectPinRef.current = L.layerGroup(markers).addTo(map);
+    if (highlightLayerRef.current) {
+      map.removeLayer(highlightLayerRef.current);
+      highlightLayerRef.current = null;
     }
+    if (selectPinRef.current) {
+      map.removeLayer(selectPinRef.current);
+      selectPinRef.current = null;
+    }
+
+    // Boundary highlight circle (proportional to country size/zoom)
+    const radiusMeters = country.zoom >= 11
+      ? 15000 // Hong Kong, Macau, Singapore
+      : country.zoom >= 9
+        ? 35000 // Small island nations / city states
+        : country.zoom >= 7
+          ? 75000 // Taiwan, Maldives, Nepal, etc.
+          : Math.max(110000, (10.5 - country.zoom) * 85000);
+
+    const circleOptions = {
+      radius: radiusMeters,
+      color: '#DC2626',
+      weight: 2,
+      dashArray: '6, 6',
+      fillColor: '#DC2626',
+      fillOpacity: 0.12,
+    };
+
+    // Selected country pulse pin
+    const selectHtml = `
+      <div class="relative w-10 h-10 flex items-center justify-center select-none pointer-events-none">
+        <span class="absolute w-12 h-12 rounded-full bg-red-600/30 animate-ping"></span>
+        <span class="absolute w-8 h-8 rounded-full bg-red-600/35"></span>
+        <span class="w-4 h-4 rounded-full bg-red-600 border-2 border-white shadow-lg"></span>
+      </div>
+    `;
+    const selectIcon = L.divIcon({
+      className: 'custom-select-pin',
+      html: selectHtml,
+      iconSize: [40, 40],
+      iconAnchor: [20, 20],
+    });
+
+    const circles: any[] = [L.circle(country.center, circleOptions)];
+    const markers: any[] = [L.marker(country.center, { icon: selectIcon, zIndexOffset: 1200 })];
+
+    // World wrap replication: Americas/Atlantic/Pacific
+    if (country.center[1] < 60) {
+      circles.push(L.circle([country.center[0], country.center[1] + 360], circleOptions));
+      markers.push(L.marker([country.center[0], country.center[1] + 360], { icon: selectIcon, zIndexOffset: 1200 }));
+    }
+    if (country.center[1] > 0) {
+      circles.push(L.circle([country.center[0], country.center[1] - 360], circleOptions));
+      markers.push(L.marker([country.center[0], country.center[1] - 360], { icon: selectIcon, zIndexOffset: 1200 }));
+    }
+
+    highlightLayerRef.current = L.layerGroup(circles).addTo(map);
+    selectPinRef.current = L.layerGroup(markers).addTo(map);
+  }, []);
+
+  // Country selection handler: highlights country area and flies airplane from Korea
+  const handleSelectCountry = (country: CountryInfo) => {
+    // 트립 가이드 패널이 열려 있을 때 지도 및 핀 클릭을 통한 국가 변경 차단 (요청 2)
+    if (isBuilderOpenRef.current) return;
+
+    setIsSearchDropdownOpen(false);
+
+    updateCountryHighlightAndPin(country);
 
     // 대한민국이거나 비행기 애니메이션 OFF 상태인 경우 비행 없이 즉시 선택 및 착륙 이동
     if (country.code === 'KR' || !isPlaneAnimEnabled) {
@@ -2638,6 +2648,7 @@ export function MapHubPage({
 
     // Direct map click to select country
     map.on('click', (e: any) => {
+      if (isBuilderOpenRef.current) return;
       if (e && e.latlng) {
         matchCountryFromLatLng(e.latlng);
       }
@@ -2794,6 +2805,7 @@ export function MapHubPage({
       const addPinMarkerAt = (lat: number, lng: number) => {
         const marker = L.marker([lat, lng], { icon }).addTo(map);
         marker.on('click', () => {
+          if (isBuilderOpenRef.current) return;
           const c = findCountryForGroup(group.country, group.city, { lat: group.lat, lng: group.lng });
           if (c) {
             handleSelectCountryRef.current(c);
@@ -3051,6 +3063,15 @@ export function MapHubPage({
   }) => {
     if (!mapRef.current) return;
 
+    // 현재 지도 중심 경도 기준 연속 경도 계산 (아시아 중심 뷰 wrap 단절 및 지도 튐 완전 방지)
+    const curCenterLng = mapRef.current.getCenter()?.lng ?? 126.44;
+    const getContinuousLng = (lng: number, refLng: number = curCenterLng) => {
+      let diff = lng - refLng;
+      while (diff > 180) { lng -= 360; diff -= 360; }
+      while (diff < -180) { lng += 360; diff += 360; }
+      return lng;
+    };
+
     // Clean previous route and builder markers
     if (builderRouteLayerRef.current) {
       builderRouteLayerRef.current.remove();
@@ -3061,7 +3082,30 @@ export function MapHubPage({
     });
     builderMarkersRef.current = [];
 
-    const validLocs = (data.locations || []).filter(l => l.lat && l.lng);
+    // 트립 빌더에서 국가 변경 시 지도 핀, 에어리어, 국가 모달 실시간 동기화 (요청 3)
+    let matchedCountryInfo: CountryInfo | undefined;
+    if (data.country) {
+      matchedCountryInfo = COUNTRIES_DATA.find(c => 
+        c.code.toLowerCase() === data.country?.code.toLowerCase() ||
+        c.name.toLowerCase() === data.country?.nameEn.toLowerCase() ||
+        c.nameKo === data.country?.nameKo
+      );
+      if (matchedCountryInfo) {
+        setSelectedCountry(matchedCountryInfo);
+        setSearchQuery(matchedCountryInfo.name);
+        updateCountryHighlightAndPin(matchedCountryInfo);
+        if (matchedCountryInfo.cities && matchedCountryInfo.cities.length > 0) {
+          setActiveWeatherCity(matchedCountryInfo.cities[0]);
+        }
+      }
+    }
+
+    const validLocs = (data.locations || [])
+      .filter(l => l.lat && l.lng)
+      .map(l => ({
+        ...l,
+        lng: getContinuousLng(l.lng!)
+      }));
     const L = (window as any).L;
 
     if (validLocs.length > 0 && L) {
@@ -3138,27 +3182,24 @@ export function MapHubPage({
 
     if (data.city && data.city.lat && data.city.lng) {
       const targetTitle = data.city.nameKo || data.city.nameEn;
-      builderActiveTargetRef.current = { name: targetTitle, center: [data.city.lat, data.city.lng], zoom: 8.5 };
+      const cLng = getContinuousLng(data.city.lng);
+      builderActiveTargetRef.current = { name: targetTitle, center: [data.city.lat, cLng], zoom: 8.5 };
       setBuilderTargetName(targetTitle);
       setIsMapDivergedFromBuilder(false);
-      mapRef.current.flyTo([data.city.lat, data.city.lng], 8.5, { duration: 1.2 });
+      mapRef.current.flyTo([data.city.lat, cLng], 8.5, { duration: 1.2 });
       return;
     }
 
-    if (data.country) {
-      const matched = COUNTRIES_DATA.find(c => 
-        c.code.toLowerCase() === data.country?.code.toLowerCase() ||
-        c.name.toLowerCase() === data.country?.nameEn.toLowerCase()
-      );
-      if (matched) {
-        const targetTitle = data.country.nameKo || data.country.nameEn;
-        builderActiveTargetRef.current = { name: targetTitle, center: matched.center, zoom: matched.zoom || 5 };
-        setBuilderTargetName(targetTitle);
-        setIsMapDivergedFromBuilder(false);
-        mapRef.current.flyTo(matched.center, matched.zoom || 5, { duration: 1.2 });
-      }
+    if (matchedCountryInfo) {
+      const targetTitle = data.country?.nameKo || data.country?.nameEn || matchedCountryInfo.nameKo;
+      const cLng = getContinuousLng(matchedCountryInfo.center[1]);
+      const targetCenter: [number, number] = [matchedCountryInfo.center[0], cLng];
+      builderActiveTargetRef.current = { name: targetTitle, center: targetCenter, zoom: matchedCountryInfo.zoom || 5 };
+      setBuilderTargetName(targetTitle);
+      setIsMapDivergedFromBuilder(false);
+      mapRef.current.flyTo(targetCenter, matchedCountryInfo.zoom || 5, { duration: 1.2 });
     }
-  }, []);
+  }, [updateCountryHighlightAndPin]);
 
   const handleCreateJourneyFromPanel = useCallback((
     title: string,
