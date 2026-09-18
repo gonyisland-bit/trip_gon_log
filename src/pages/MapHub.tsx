@@ -2437,6 +2437,7 @@ export function MapHubPage({
 
     setIsSearchDropdownOpen(false);
 
+    const map = mapRef.current;
     updateCountryHighlightAndPin(country);
 
     // 대한민국이거나 비행기 애니메이션 OFF 상태인 경우 비행 없이 즉시 선택 및 착륙 이동
