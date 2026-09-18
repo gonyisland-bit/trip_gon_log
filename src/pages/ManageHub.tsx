@@ -3673,61 +3673,77 @@ export function ManageHubPage({
 
       // 3. Save Journey Hub Header if configured
       if (onSaveArchiveHubConfig) {
-        await onSaveArchiveHubConfig({
-          mainTitle: archiveHubMainTitle,
-          subtitle: archiveHubSubtitle,
-          badgeText: archiveHubBadgeText,
-          volumeText: archiveHubVolumeText,
-        });
-        savedArchiveHubHeaderRef.current = {
-          mainTitle: archiveHubMainTitle,
-          subtitle: archiveHubSubtitle,
-          badgeText: archiveHubBadgeText,
-          volumeText: archiveHubVolumeText,
-        };
+        try {
+          await onSaveArchiveHubConfig({
+            mainTitle: archiveHubMainTitle,
+            subtitle: archiveHubSubtitle,
+            badgeText: archiveHubBadgeText,
+            volumeText: archiveHubVolumeText,
+          });
+          savedArchiveHubHeaderRef.current = {
+            mainTitle: archiveHubMainTitle,
+            subtitle: archiveHubSubtitle,
+            badgeText: archiveHubBadgeText,
+            volumeText: archiveHubVolumeText,
+          };
+        } catch (err) {
+          console.warn('Archive hub header save notice:', err);
+        }
       }
 
       // 4. Save Magazine Hub Header if configured
       if (onSaveMagazineHubConfig) {
-        await onSaveMagazineHubConfig({
-          mainTitle: hubMainTitle,
-          subtitle: hubSubtitle,
-          badgeText: hubBadgeText,
-          volumeText: hubVolumeText,
-        });
-        savedMagazineHubHeaderRef.current = {
-          mainTitle: hubMainTitle,
-          subtitle: hubSubtitle,
-          badgeText: hubBadgeText,
-          volumeText: hubVolumeText,
-        };
+        try {
+          await onSaveMagazineHubConfig({
+            mainTitle: hubMainTitle,
+            subtitle: hubSubtitle,
+            badgeText: hubBadgeText,
+            volumeText: hubVolumeText,
+          });
+          savedMagazineHubHeaderRef.current = {
+            mainTitle: hubMainTitle,
+            subtitle: hubSubtitle,
+            badgeText: hubBadgeText,
+            volumeText: hubVolumeText,
+          };
+        } catch (err) {
+          console.warn('Magazine hub header save notice:', err);
+        }
       }
 
       // 5. Save Magazine Sections
-      if (onSaveMagazineSections) {
-        await onSaveMagazineSections(sectionsList);
-      } else if (onSaveMagazineMoments) {
-        const mainSec = sectionsList.find(s => s.id === 'main') || sectionsList[0];
-        await onSaveMagazineMoments(mainSec?.items || []);
+      try {
+        if (onSaveMagazineSections) {
+          await onSaveMagazineSections(sectionsList);
+        } else if (onSaveMagazineMoments) {
+          const mainSec = sectionsList.find(s => s.id === 'main') || sectionsList[0];
+          await onSaveMagazineMoments(mainSec?.items || []);
+        }
+      } catch (err) {
+        console.warn('Magazine sections save notice:', err);
       }
 
       // 6. Save BGM settings to Firestore & localStorage
-      if (onSaveBgmSettings) {
-        await onSaveBgmSettings(bgmTracks, bgmAutoplay);
-      } else {
-        saveStoredBgmTracks(bgmTracks);
-        saveStoredBgmAutoplay(bgmAutoplay);
+      try {
+        if (onSaveBgmSettings) {
+          await onSaveBgmSettings(bgmTracks, bgmAutoplay);
+        } else {
+          saveStoredBgmTracks(bgmTracks);
+          saveStoredBgmAutoplay(bgmAutoplay);
+        }
+      } catch (err) {
+        console.warn('BGM save notice:', err);
       }
 
       // 7. Save Presets settings to Firestore & localStorage
-      saveAllPresets(presetsList);
       try {
+        saveAllPresets(presetsList);
         await setDoc(doc(db, 'users', 'public', 'settings', 'presets'), {
           presets: presetsList,
           updatedAt: new Date().toISOString()
         }, { merge: true });
       } catch (fErr) {
-        console.warn('Firestore presets sync warning:', fErr);
+        console.warn('Firestore presets sync notice:', fErr);
       }
       setPresetsSaveSuccess(true);
 
@@ -7347,14 +7363,14 @@ export function ManageHubPage({
 
             {/* Swiss Minimal Sub-Nav Bar (Sticky with background backdrop so it stays accessible when scrolling long content) */}
             <div className="sticky top-0 z-20 bg-[#FAF9F6] dark:bg-[#141414] py-2.5 -mx-4 sm:-mx-8 px-4 sm:px-8 border-b border-black/15 dark:border-white/15">
-              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none w-full">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full">
                 {([
                   { id: 'all', label: 'ALL' },
-                  { id: 'display', label: 'DISPLAY & MARQUEE' },
+                  { id: 'display', label: 'VISUAL' },
                   { id: 'bgm', label: 'BGM' },
                   { id: 'map', label: 'MAP' },
                   { id: 'presets', label: 'PRESETS', count: presetsList.length, isDirty: isPresetsDirty },
-                  { id: 'trash', label: 'TRASH & DB', count: trashedJourneys.length + trashedSections.length, alert: (trashedJourneys.length + trashedSections.length) > 0 },
+                  { id: 'trash', label: 'SYSTEM', count: trashedJourneys.length + trashedSections.length, alert: (trashedJourneys.length + trashedSections.length) > 0 },
                 ] as const).map(tab => (
                   <button
                     key={tab.id}
@@ -7382,14 +7398,14 @@ export function ManageHubPage({
               </div>
             </div>
 
-            {/* 1. DISPLAY & MARQUEE (홈 화면 그라데이션 & 마퀴 설정 - 최상단) */}
+            {/* 1. VISUAL (홈 화면 그라데이션 & 마퀴 설정 - 최상단) */}
             {(utilSubTab === 'all' || utilSubTab === 'display') && (
               <section className="flex flex-col gap-6 pt-2 pb-6 border-b border-black/15 dark:border-white/15">
                 <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-2">
                   <div className="flex items-center gap-2">
                     <Sliders className="w-4 h-4 text-orange-600 dark:text-orange-400" />
                     <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-sans">
-                      DISPLAY & MARQUEE (홈 비주얼 & 배너 설정)
+                      VISUAL (홈 비주얼 & 배너 설정)
                     </h3>
                   </div>
                 </div>
@@ -7598,19 +7614,6 @@ export function ManageHubPage({
                     </div>
                   )}
                 </div>
-
-                {/* Save Display Settings Button */}
-                <div className="pt-2 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => handleSaveAllChanges(true)}
-                    disabled={isSavingAll}
-                    className="px-5 py-2.5 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-widest font-sans flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity disabled:opacity-50"
-                  >
-                    <Save className="w-3.5 h-3.5" />
-                    <span>{saveAllSuccess ? 'SAVED' : 'SAVE DISPLAY SETTINGS'}</span>
-                  </button>
-                </div>
               </section>
             )}
 
@@ -7805,21 +7808,6 @@ export function ManageHubPage({
                     </div>
                   )}
                 </div>
-
-                {/* Save BGM Button */}
-                <div className="pt-2 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      await handleSaveAllChanges(true);
-                    }}
-                    disabled={isSavingAll}
-                    className="px-5 py-2.5 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-widest font-sans flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity disabled:opacity-50"
-                  >
-                    <Save className="w-3.5 h-3.5" />
-                    <span>{saveAllSuccess ? 'SAVED' : 'SAVE BGM SETTINGS'}</span>
-                  </button>
-                </div>
               </section>
             )}
 
@@ -7875,18 +7863,6 @@ export function ManageHubPage({
                       구글 지도 타일, 한국어 지명 상세 표기, 다크모드 필터 지원
                     </p>
                   </div>
-                </div>
-
-                {/* Save Map Button */}
-                <div className="pt-2 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={handleSaveMapSettings}
-                    className="px-5 py-2.5 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-widest font-sans flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity"
-                  >
-                    <Save className="w-3.5 h-3.5" />
-                    <span>SAVE MAP SETTINGS</span>
-                  </button>
                 </div>
               </section>
             )}
@@ -8068,30 +8044,17 @@ export function ManageHubPage({
                       </div>
                     ))}
                 </div>
-
-                {/* Save Presets Settings Button */}
-                <div className="pt-2 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => handleSavePresets(true)}
-                    disabled={isSavingPresets}
-                    className="px-5 py-2.5 bg-black text-white dark:bg-white dark:text-black text-xs font-black uppercase tracking-widest font-sans flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity disabled:opacity-50"
-                  >
-                    <Save className="w-3.5 h-3.5" />
-                    <span>{presetsSaveSuccess ? 'SAVED' : 'SAVE PRESET SETTINGS'}</span>
-                  </button>
-                </div>
               </section>
             )}
 
-            {/* 5. DATABASE OPTIMIZER & TRASH REPOSITORY (DB 최적화 및 휴지통) */}
+            {/* 5. SYSTEM (DB 최적화 및 휴지통) */}
             {(utilSubTab === 'all' || utilSubTab === 'trash') && (
               <section className="flex flex-col gap-6 pt-2 pb-6">
                 <div className="flex items-baseline justify-between flex-wrap gap-2 border-b border-black/15 dark:border-white/15 pb-2">
                   <div className="flex items-center gap-2">
                     <Database className="w-4 h-4 text-red-600 dark:text-red-400" />
                     <h3 className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-sans">
-                      DATABASE OPTIMIZER & TRASH ({trashedJourneys.length + trashedSections.length})
+                      SYSTEM (데이터베이스 진단 & 휴지통) ({trashedJourneys.length + trashedSections.length})
                     </h3>
                   </div>
                   <span className="text-xs font-mono text-black/50 dark:text-white/50">

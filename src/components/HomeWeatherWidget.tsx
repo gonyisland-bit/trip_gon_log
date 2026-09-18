@@ -9,7 +9,7 @@ import {
   X
 } from 'lucide-react';
 import { Trip, CityWeatherConfig } from '../types';
-import { fetchCityWeather, getWeatherMeta, CityWeatherData, DailyForecastItem } from '../utils/weatherApi';
+import { fetchCityWeather, getWeatherMeta, getSimulatedWeatherForDate, CityWeatherData, DailyForecastItem } from '../utils/weatherApi';
 
 interface HomeWeatherWidgetProps {
   trips?: Trip[];
@@ -127,6 +127,44 @@ export function HomeWeatherWidget({
 
   const activeForecastCity = selectedCityEn ? weatherMap[selectedCityEn] : null;
 
+  // Ensure exactly 7 days forecast even if cached data or api returned fewer days
+  const displayForecast: DailyForecastItem[] = useMemo(() => {
+    if (!activeForecastCity || !activeForecastCity.forecast || activeForecastCity.forecast.length === 0) {
+      return [];
+    }
+    const dayNamesEn = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    const list: DailyForecastItem[] = [...activeForecastCity.forecast];
+
+    // If more than 7, keep first 7
+    if (list.length > 7) {
+      return list.slice(0, 7);
+    }
+
+    // If fewer than 7, fill missing days deterministically
+    while (list.length < 7) {
+      const lastItem = list[list.length - 1];
+      const nextDate = new Date(lastItem ? lastItem.date : new Date());
+      nextDate.setDate(nextDate.getDate() + 1);
+      const nextDateStr = nextDate.toISOString().slice(0, 10);
+      const dayOfWeek = dayNamesEn[nextDate.getDay()];
+      const parts = nextDateStr.split('-');
+      const dayMonth = `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}`;
+
+      const simulated = getSimulatedWeatherForDate(activeForecastCity.cityEn, nextDateStr);
+      list.push({
+        date: nextDateStr,
+        dayOfWeek,
+        dayMonth,
+        weatherCode: simulated.weatherCode,
+        tempMax: simulated.tempMax,
+        tempMin: simulated.tempMin,
+        precipitationProb: simulated.precipitationProb,
+      });
+    }
+
+    return list;
+  }, [activeForecastCity]);
+
   return (
     <section className="w-full max-w-[1920px] mx-auto border-t border-black/10 dark:border-white/10 mt-12 pt-8 pb-8 px-4 sm:px-8 md:px-12 select-none font-sans transition-colors">
       
@@ -236,7 +274,7 @@ export function HomeWeatherWidget({
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* 1주일치 날씨 (배경 및 아웃라인 없는 스위스 슬림라인 스타일)        */}
       {/* ─────────────────────────────────────────────────────────────────── */}
-      {activeForecastCity && activeForecastCity.forecast && activeForecastCity.forecast.length > 0 && (
+      {activeForecastCity && displayForecast.length === 7 && (
         <div className="w-full py-4 sm:py-5 border-b border-black/10 dark:border-white/10 bg-transparent animate-in fade-in duration-200 select-none">
           {/* Sub Header */}
           <div className="flex items-center justify-between pb-2.5 border-b border-black/10 dark:border-white/10 mb-2 font-mono">
@@ -261,7 +299,7 @@ export function HomeWeatherWidget({
 
           {/* 1. Mobile View (< 768px): 한 요일당 한 줄씩 세로 7행 슬림라인 나열 (배경/박스 없음) */}
           <div className="md:hidden flex flex-col divide-y divide-black/10 dark:divide-white/10">
-            {activeForecastCity.forecast.slice(0, 7).map((fItem: DailyForecastItem, fIdx: number) => {
+            {displayForecast.map((fItem: DailyForecastItem, fIdx: number) => {
               const { label, icon: DayIcon, colorClass } = getWeatherMeta(fItem.weatherCode, fItem.precipitationProb);
               const isToday = fIdx === 0;
 
@@ -280,16 +318,15 @@ export function HomeWeatherWidget({
                     </span>
                   </div>
 
-                  {/* Center: 날씨 아이콘 + 상태 라벨 + 강수 확률 */}
-                  <div className="flex items-center gap-2 flex-1 justify-center min-w-0">
+                  {/* Center: 날씨 아이콘 및 상태 라벨 */}
+                  <div className="flex items-center gap-1.5 flex-1 justify-center">
                     <DayIcon className={`w-4 h-4 stroke-[2] shrink-0 ${colorClass}`} />
-                    <span className="text-[11px] font-sans font-medium text-black/80 dark:text-white/80 truncate">
+                    <span className="text-[10px] font-mono font-bold uppercase text-black/75 dark:text-white/75 truncate">
                       {label}
                     </span>
                     {fItem.precipitationProb > 0 && (
-                      <span className="text-[9.5px] font-mono text-blue-500 flex items-center gap-0.5 shrink-0">
-                        <Droplets className="w-2.5 h-2.5" />
-                        <span>{fItem.precipitationProb}%</span>
+                      <span className="text-[9px] font-mono text-blue-500 font-bold ml-1">
+                        {fItem.precipitationProb}%
                       </span>
                     )}
                   </div>
@@ -306,7 +343,7 @@ export function HomeWeatherWidget({
 
           {/* 2. Web View (>= 768px): 7개 요일 가로 7열 나열 (배경/박스 없이 슬림 구분선) */}
           <div className="hidden md:grid md:grid-cols-7 divide-x divide-black/10 dark:divide-white/10 pt-1">
-            {activeForecastCity.forecast.slice(0, 7).map((fItem: DailyForecastItem, fIdx: number) => {
+            {displayForecast.map((fItem: DailyForecastItem, fIdx: number) => {
               const { label, icon: DayIcon, colorClass } = getWeatherMeta(fItem.weatherCode, fItem.precipitationProb);
               const isToday = fIdx === 0;
 

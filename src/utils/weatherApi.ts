@@ -320,19 +320,28 @@ export async function fetchCityWeather(
   country: string = ''
 ): Promise<CityWeatherData> {
   const todayDateStr = new Date().toISOString().slice(0, 10);
-  const cacheKey = `weather_v2_${lat.toFixed(2)}_${lng.toFixed(2)}_${todayDateStr}`;
+  const cacheKey = `weather_v3_${lat.toFixed(2)}_${lng.toFixed(2)}_${todayDateStr}`;
 
-  // 1. Check in-memory cache (24 hours valid)
-  if (memoryCache[cacheKey] && Date.now() - memoryCache[cacheKey].timestamp < CACHE_TTL_MS) {
+  // 1. Check in-memory cache (24 hours valid & ensure 7-day forecast exists)
+  if (
+    memoryCache[cacheKey] && 
+    Date.now() - memoryCache[cacheKey].timestamp < CACHE_TTL_MS &&
+    Array.isArray(memoryCache[cacheKey].data?.forecast) &&
+    memoryCache[cacheKey].data.forecast.length >= 7
+  ) {
     return memoryCache[cacheKey].data;
   }
 
-  // 2. Check localStorage cache (24 hours valid)
+  // 2. Check localStorage cache (24 hours valid & ensure 7-day forecast exists)
   try {
     const rawLocal = localStorage.getItem(cacheKey);
     if (rawLocal) {
       const parsed = JSON.parse(rawLocal);
-      if (Date.now() - parsed.timestamp < CACHE_TTL_MS) {
+      if (
+        Date.now() - parsed.timestamp < CACHE_TTL_MS &&
+        Array.isArray(parsed.data?.forecast) &&
+        parsed.data.forecast.length >= 7
+      ) {
         memoryCache[cacheKey] = parsed;
         return parsed.data;
       }
