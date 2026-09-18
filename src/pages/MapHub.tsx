@@ -876,7 +876,7 @@ const COUNTRIES_DATA: CountryInfo[] = [
     currency: 'USD',
     currencySymbol: '$',
     rateToKRW: 1380,
-    cities: ['SAIPAN', '사이판', 'GARAPAN', 'MARPI', 'SUSUPE'],
+    cities: ['GARAPAN', 'MARPI', 'SUSUPE', 'SAIPAN'],
     center: [15.1850, 145.7467], // Saipan
     zoom: 11,
     continent: 'Oceania',
@@ -1139,6 +1139,10 @@ const KNOWN_CITY_COORDS: { [key: string]: [number, number] } = {
   사이판: [15.1850, 145.7467],
   garapan: [15.2078, 145.7198],
   가라판: [15.2078, 145.7198],
+  marpi: [15.2833, 145.8167],
+  마르피: [15.2833, 145.8167],
+  susupe: [15.1500, 145.7167],
+  수수페: [15.1500, 145.7167],
   vancouver: [49.2827, 236.8793],
   밴쿠버: [49.2827, 236.8793],
   toronto: [43.6532, 280.6168],
@@ -1272,6 +1276,9 @@ export const CITY_KO_MAP: Record<string, string> = {
   '괌': 'GUAM',
   '투몬': 'TUMON',
   '사이판': 'SAIPAN',
+  '가라판': 'GARAPAN',
+  '마르피': 'MARPI',
+  '수수페': 'SUSUPE',
 };
 
 export function findCountryForGroup(
@@ -1641,12 +1648,77 @@ export function MapHubPage({
     return () => { isCancelled = true; };
   }, [selectedCountry?.code, activeWeatherCity]);
 
+  // City markers on map when selected in DESTINATIONS
+  const destCityMarkersRef = useRef<any[]>([]);
+
+  // Cleanup dest city markers on country change or unmount
+  useEffect(() => {
+    destCityMarkersRef.current.forEach(m => {
+      try { m.remove(); } catch (_) {}
+    });
+    destCityMarkersRef.current = [];
+  }, [selectedCountry?.code]);
+
   const toggleDestCity = (cityName: string) => {
     setSelectedDestCities(prev => {
       const isAdding = !prev.includes(cityName);
       if (isAdding) {
         // 도시 선택 시 날씨도 해당 도시로 즉시 자동 동기화
         setActiveWeatherCity(cityName);
+
+        // 도시 위치 검색 및 지도 줌인 & 핀 활성화
+        const cleanKey = cityName.toLowerCase().replace(/\s+/g, '');
+        const cityObj = findCityByNameOrAlias(cityName);
+        const knownCoords = KNOWN_CITY_COORDS[cleanKey] || KNOWN_CITY_COORDS[cityName];
+        const lat = cityObj?.lat || knownCoords?.[0];
+        const lng = cityObj?.lng || knownCoords?.[1];
+
+        if (lat && lng && mapRef.current) {
+          const map = mapRef.current;
+          const curCenterLng = map.getCenter()?.lng ?? 126.44;
+          let effLng = lng;
+          let diff = effLng - curCenterLng;
+          while (diff > 180) { effLng -= 360; diff -= 360; }
+          while (diff < -180) { effLng += 360; diff += 360; }
+
+          const targetZoom = Math.max(8.5, (selectedCountry?.zoom ?? 5) + 1.5);
+          map.flyTo([lat, effLng], targetZoom, { duration: 0.9 });
+
+          // 기존 선택 도시 핀 제거 후 신규 핀 추가
+          destCityMarkersRef.current.forEach(m => {
+            try { m.remove(); } catch (_) {}
+          });
+          destCityMarkersRef.current = [];
+
+          const L = (window as any).L;
+          if (L) {
+            const pinHtml = `
+              <div class="relative flex flex-col items-center pointer-events-none select-none">
+                <span class="absolute w-8 h-8 rounded-full bg-amber-500/30 animate-ping"></span>
+                <div class="w-4 h-4 rounded-full bg-amber-500 border-2 border-white shadow-lg flex items-center justify-center">
+                  <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+                </div>
+                <div class="mt-1 px-1.5 py-0.5 bg-black text-white text-[9px] font-mono font-black uppercase tracking-wider whitespace-nowrap shadow-md">
+                  ${cityName}
+                </div>
+              </div>
+            `;
+            const cityIcon = L.divIcon({
+              className: 'custom-dest-city-pin',
+              html: pinHtml,
+              iconSize: [60, 36],
+              iconAnchor: [30, 8],
+            });
+            const marker = L.marker([lat, effLng], { icon: cityIcon, zIndexOffset: 2000 }).addTo(map);
+            destCityMarkersRef.current.push(marker);
+          }
+        }
+      } else {
+        // 도시 선택 해제 시 해당 핀 제거
+        destCityMarkersRef.current.forEach(m => {
+          try { m.remove(); } catch (_) {}
+        });
+        destCityMarkersRef.current = [];
       }
       return isAdding ? [...prev, cityName] : prev.filter(c => c !== cityName);
     });
@@ -2958,15 +3030,30 @@ export function MapHubPage({
     if (countryCode) setBuilderCountryCode(countryCode);
     if (city) setBuilderCity(city);
     if (date) setBuilderDate(date);
-    setSelectedCountry(null);
+    // 국가 모달은 닫지 않고 유지 (사용자 요청: 나라 모달은 활성상태에서 유지할 것)
     setSelectedPinGroup(null);
     setIsWishlistModalOpen(false);
 
-    // If city is provided, fly to it immediately
+    // If city is provided, fly to it immediately with continuous longitude and adaptive zoom
     if (city) {
       const cityData = findCityByNameOrAlias(city);
       if (cityData && mapRef.current) {
-        mapRef.current.flyTo([cityData.lat, cityData.lng], 8, { duration: 1.2 });
+        const curCenterLng = mapRef.current.getCenter()?.lng ?? 126.44;
+        let effLng = cityData.lng;
+        let diff = effLng - curCenterLng;
+        while (diff > 180) { effLng -= 360; diff -= 360; }
+        while (diff < -180) { effLng += 360; diff += 360; }
+
+        const matched = COUNTRIES_DATA.find(c => 
+          (countryCode && c.code.toLowerCase() === countryCode.toLowerCase()) ||
+          (country && (
+            c.name.toLowerCase() === country.toLowerCase() ||
+            c.nameKo === country ||
+            c.code.toLowerCase() === country.toLowerCase()
+          ))
+        );
+        const cityZoom = Math.max(8.5, (matched?.zoom ?? 5) + 1.5);
+        mapRef.current.flyTo([cityData.lat, effLng], cityZoom, { duration: 1.2 });
         return;
       }
     }
@@ -3467,7 +3554,11 @@ export function MapHubPage({
 
       {/* 3. Selected Country Card (Swiss Minimal Editorial Style - Slim Lines, Compact Height, No Box Overload) */}
       {selectedCountry && !isFlyingToCountry && (
-        <div className="fixed sm:absolute bottom-0 sm:bottom-auto sm:top-20 left-0 right-0 sm:left-auto sm:right-6 w-full sm:w-[380px] max-h-[78vh] sm:max-h-[82vh] bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border-t sm:border border-black/15 dark:border-white/15 shadow-2xl z-[500] p-4 sm:p-5 overflow-y-auto animate-in fade-in slide-in-from-bottom sm:slide-in-from-right duration-200">
+        <div className={`fixed sm:absolute bottom-0 sm:bottom-auto sm:top-20 left-0 right-0 ${
+          isBuilderOpen ? 'sm:left-6 sm:right-auto' : 'sm:left-auto sm:right-6'
+        } w-full sm:w-[380px] max-h-[78vh] sm:max-h-[82vh] bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border-t sm:border border-black/15 dark:border-white/15 shadow-2xl z-[500] p-4 sm:p-5 overflow-y-auto animate-in fade-in slide-in-from-bottom ${
+          isBuilderOpen ? 'sm:slide-in-from-left' : 'sm:slide-in-from-right'
+        } duration-200`}>
           
           {/* Header: Code + Continent & Country Name */}
           <div className="flex items-start justify-between pb-2.5 border-b border-black/10 dark:border-white/10 mb-3">

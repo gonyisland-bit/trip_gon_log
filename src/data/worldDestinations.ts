@@ -13936,6 +13936,48 @@ export const WORLD_CITIES: DestinationCity[] = [
     "coverImage": "https://images.unsplash.com/photo-1488646953014-85cb44e25828?q=80&w=1200&auto=format&fit=crop"
   },
   {
+    "nameEn": "Saipan",
+    "nameKo": "사이판",
+    "countryEn": "SAIPAN",
+    "countryKo": "사이판",
+    "lat": 15.1850,
+    "lng": 145.7467,
+    "tags": [
+      "City",
+      "Nature",
+      "Resort"
+    ],
+    "bestMonths": [
+      12,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "avoidMonths": [
+      {
+        "months": [
+          7,
+          8,
+          9
+        ],
+        "reason": "우기 및 태풍 주의 시즌"
+      }
+    ],
+    "iconicSpots": [
+      "마나가하 섬",
+      "그로토 해저동굴",
+      "만세절벽",
+      "버드 아일랜드"
+    ],
+    "hiddenGems": [
+      "사이판 로컬 비치",
+      "타포차우 산 전망대"
+    ],
+    "coverImage": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200&auto=format&fit=crop"
+  },
+  {
     "nameEn": "Garapan",
     "nameKo": "가라판",
     "countryEn": "SAIPAN",
@@ -13980,8 +14022,8 @@ export const WORLD_CITIES: DestinationCity[] = [
     "nameKo": "마르피",
     "countryEn": "SAIPAN",
     "countryKo": "사이판",
-    "lat": 0.0,
-    "lng": 0.0,
+    "lat": 15.2833,
+    "lng": 145.8167,
     "tags": [
       "City",
       "Culture",
@@ -14020,8 +14062,8 @@ export const WORLD_CITIES: DestinationCity[] = [
     "nameKo": "수수페",
     "countryEn": "SAIPAN",
     "countryKo": "사이판",
-    "lat": 0.0,
-    "lng": 0.0,
+    "lat": 15.1500,
+    "lng": 145.7167,
     "tags": [
       "City",
       "Culture",
