@@ -833,3 +833,85 @@ div[data-pin-hover],
   pointer-events: none;
   animation: cityLightTwinkle 2.5s ease-in-out infinite;
 }
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* Global Weather Effect Motion Keyframes (Mobile Optimized)      */
+/* ═══════════════════════════════════════════════════════════════ */
+
+/* ── Rain Animations ── */
+@keyframes tglRainDropFg {
+  0% { transform: translate3d(0, -90px, 0); }
+  100% { transform: translate3d(-32px, 108vh, 0); }
+}
+@keyframes tglRainDropBg {
+  0% { transform: translate3d(0, -60px, 0); }
+  100% { transform: translate3d(-24px, 105vh, 0); }
+}
+@keyframes tglRainSplashRing {
+  0% { opacity: 0; transform: scale(0.2) translate3d(0, 0, 0); }
+  35% { opacity: 0.8; }
+  100% { opacity: 0; transform: scale(1.6) translate3d(0, 0, 0); }
+}
+@keyframes tglReboundDropLeft {
+  0% { opacity: 0; transform: translate3d(0, 0, 0) scale(0.6); }
+  30% { opacity: 0.9; transform: translate3d(-5px, -14px, 0) scale(1); }
+  100% { opacity: 0; transform: translate3d(-8px, -2px, 0) scale(0.3); }
+}
+@keyframes tglReboundDropRight {
+  0% { opacity: 0; transform: translate3d(0, 0, 0) scale(0.6); }
+  30% { opacity: 0.9; transform: translate3d(5px, -13px, 0) scale(1); }
+  100% { opacity: 0; transform: translate3d(7px, -1px, 0) scale(0.3); }
+}
+@keyframes tglWetGroundShimmer {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.75; }
+}
+
+/* ── Snow Animations ── */
+@keyframes tglSnowLinearFall {
+  0% { transform: translate3d(0, -35px, 0); }
+  100% { transform: translate3d(0, 106vh, 0); }
+}
+@keyframes tglSnowSwaySine {
+  0% { transform: translate3d(var(--sway-amp, 30px), 0, 0); }
+  100% { transform: translate3d(calc(-1 * var(--sway-amp, 30px)), 0, 0); }
+}
+
+/* ── Sun & Rays Animations ── */
+@keyframes tglSunRadiantBloom {
+  0%, 100% { opacity: 0.65; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.12); }
+}
+@keyframes tglSunRaysSoftSweep {
+  0%, 100% { opacity: 0.35; transform: rotate(0deg) scale(1); }
+  50% { opacity: 0.65; transform: rotate(2deg) scale(1.06); }
+}
+
+/* ── Overcast & Fair Atmosphere ── */
+@keyframes tglOvercastMassBreathe {
+  0%, 100% {
+    opacity: 0.85;
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04) translate3d(0, 8px, 0);
+  }
+}
+@keyframes tglFairGlowBreathe {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.05); }
+}
+
+/* ── Night Star Twinkle & Storm Flash ── */
+@keyframes tglStarTwinkle {
+  0%, 100% { opacity: 0.2; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.4); }
+}
+@keyframes tglStormFlash {
+  0%, 90%, 100% { opacity: 0; }
+  91% { opacity: 0.55; }
+  92% { opacity: 0.15; }
+  94% { opacity: 0.7; }
+}
+

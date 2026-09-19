@@ -626,6 +626,7 @@ export function ManageHubPage({
             birthdate: data.birthdate || '',
             phone: data.phone || '',
             role: data.role || (data.email === 'gonyisland@naver.com' ? 'admin' : 'user'),
+            status: data.status || (data.email === 'gonyisland@naver.com' ? 'approved' : 'approved'),
             permissions: data.permissions || { canCreate: true, canEdit: false, canDelete: false },
             createdAt: data.createdAt || 0,
           });
@@ -638,6 +639,33 @@ export function ManageHubPage({
     });
     return () => unsub();
   }, [activeMode, isLoggedIn]);
+
+  const handleApproveUser = async (user: UserProfile) => {
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        status: 'approved',
+      });
+      setUserActionToast(`[${user.lastName} ${user.firstName}] 님의 가입 신청이 승인되었습니다.`);
+      setTimeout(() => setUserActionToast(null), 2500);
+    } catch (err) {
+      console.error('Failed to approve user:', err);
+      alert('승인 처리 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleRejectUser = async (user: UserProfile) => {
+    if (!window.confirm(`[${user.lastName} ${user.firstName}] 님의 가입 신청을 거절하시겠습니까?`)) return;
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        status: 'rejected',
+      });
+      setUserActionToast(`[${user.lastName} ${user.firstName}] 님의 가입 신청이 거절되었습니다.`);
+      setTimeout(() => setUserActionToast(null), 2500);
+    } catch (err) {
+      console.error('Failed to reject user:', err);
+      alert('거절 처리 중 오류가 발생했습니다.');
+    }
+  };
 
   const handleToggleUserPermission = async (user: UserProfile, permKey: keyof UserPermissions) => {
     const currentVal = user.permissions?.[permKey] ?? false;
@@ -8558,10 +8586,82 @@ export function ManageHubPage({
               )}
             </div>
 
+            {/* Pending Approvals Section */}
+            {(() => {
+              const pendingList = usersList.filter(u => u.status === 'pending');
+              if (pendingList.length === 0) return null;
+              return (
+                <div className="flex flex-col border border-red-600 dark:border-red-500 bg-red-500/5 p-4 sm:p-5 gap-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+                      <span className="text-xs font-mono font-black uppercase tracking-wider text-red-600 dark:text-red-400">
+                        PENDING APPROVALS ({pendingList.length})
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                      신규 회원 가입 승인 대기 목록
+                    </span>
+                  </div>
+
+                  <div className="divide-y divide-black/10 dark:divide-white/10 border border-black/10 dark:border-white/10 bg-white dark:bg-[#161616]">
+                    {pendingList.map(user => {
+                      const fullName = `${user.lastName} ${user.firstName}`.trim() || '미등록';
+                      const applyDate = user.createdAt ? new Date(user.createdAt).toLocaleString() : '-';
+                      return (
+                        <div key={user.uid} className="p-3 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <UserProfileAvatar profile={user} size="md" fallbackName={fullName} />
+                            <div className="flex flex-col gap-0.5 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-sm font-black uppercase text-black dark:text-white font-sans">
+                                  {fullName}
+                                </span>
+                                {user.username && (
+                                  <span className="text-xs font-mono font-bold text-red-600 dark:text-red-400">
+                                    @{user.username}
+                                  </span>
+                                )}
+                                <span className="text-xs font-mono text-black/60 dark:text-white/60">
+                                  ({user.email})
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-[10px] font-mono text-black/50 dark:text-white/50 flex-wrap">
+                                {user.phone && <span>전화: {user.phone}</span>}
+                                <span>신청: {applyDate}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleApproveUser(user)}
+                              className="px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:bg-green-600 dark:hover:bg-green-600 dark:hover:text-white text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                            >
+                              APPROVE
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRejectUser(user)}
+                              className="px-3 py-1.5 border border-black/20 dark:border-white/20 hover:border-red-600 hover:text-red-600 text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                            >
+                              REJECT
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Users List Table / Cards */}
             <div className="flex flex-col border border-black/20 dark:border-white/20 divide-y divide-black/10 dark:divide-white/10 bg-white dark:bg-[#161616]">
               {usersList
                 .filter(u => {
+                  if (u.status === 'pending') return false; // Show only active/rejected in main table
                   if (!userSearchQuery.trim()) return true;
                   const q = userSearchQuery.toLowerCase();
                   const name = `${u.lastName} ${u.firstName}`.toLowerCase();
@@ -8593,6 +8693,10 @@ export function ManageHubPage({
                             {isSuper ? (
                               <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-red-600 text-white leading-none">
                                 SUPER ADMIN
+                              </span>
+                            ) : user.status === 'rejected' ? (
+                              <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 leading-none">
+                                REJECTED
                               </span>
                             ) : user.role === 'admin' ? (
                               <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-black text-white dark:bg-white dark:text-black leading-none">

@@ -570,7 +570,19 @@ function App() {
     const currentUid = auth.currentUser.uid;
     const unsub = onSnapshot(doc(db, 'users', currentUid), (snapshot) => {
       if (snapshot.exists()) {
-        setCurrentUserProfile(snapshot.data() as UserProfile);
+        const profile = snapshot.data() as UserProfile;
+        // Non-super admin with pending or rejected status is kicked out
+        if (!isSuperAdmin && (profile.status === 'pending' || profile.status === 'rejected')) {
+          auth.signOut();
+          setIsLoggedIn(false);
+          setCurrentUserProfile(null);
+          alert(profile.status === 'pending'
+            ? '가입 승인 대기 중인 계정입니다. 관리자의 승인이 완료된 후 서비스 이용이 가능합니다.'
+            : '가입 승인이 거절된 계정입니다. 관리자에게 문의해 주세요.'
+          );
+          return;
+        }
+        setCurrentUserProfile(profile);
       } else if (isSuperAdmin) {
         // Auto initialize super admin profile in Firestore if not yet exists
         const adminProfile: UserProfile = {

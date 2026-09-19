@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Mail, Lock, User, Calendar, Phone } from 'lucide-react';
+import { X, Mail, Lock, User, Calendar, Phone, CheckCircle2, AlertCircle } from 'lucide-react';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
   updateProfile
 } from 'firebase/auth';
-import { doc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { ConfirmModal } from './ConfirmModal';
 import { UserProfile } from '../types';
@@ -33,6 +33,14 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [signupSubmitted, setSignupSubmitted] = useState(false);
+
+  // Field touched states for inline validation
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const markTouched = (field: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+  };
 
   // Sync mode when initialMode changes or modal opens
   React.useEffect(() => {
@@ -49,19 +57,68 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
       setError('');
       setLoading(false);
       setIsConfirmOpen(false);
+      setSignupSubmitted(false);
+      setTouched({});
     }
   }, [isOpen, initialMode]);
+
+  // Real-time inline field validation errors
+  const lastNameError = useMemo(() => {
+    if (!touched.lastName && !lastName) return '';
+    if (!lastName.trim()) return '성(Last Name)을 입력해 주세요.';
+    return '';
+  }, [touched.lastName, lastName]);
+
+  const firstNameError = useMemo(() => {
+    if (!touched.firstName && !firstName) return '';
+    if (!firstName.trim()) return '이름(First Name)을 입력해 주세요.';
+    return '';
+  }, [touched.firstName, firstName]);
+
+  const usernameError = useMemo(() => {
+    if (!touched.username && !username) return '';
+    const val = username.trim();
+    if (!val) return '아이디(USERNAME)를 입력해 주세요.';
+    if (val.length < 3 || val.length > 20) return '아이디는 3자 이상 20자 이하로 입력해 주세요.';
+    if (!/^[a-zA-Z0-9_]+$/.test(val)) return '아이디는 영문, 숫자, 밑줄(_)만 사용할 수 있습니다.';
+    return '';
+  }, [touched.username, username]);
+
+  const emailError = useMemo(() => {
+    if (!touched.email && !email) return '';
+    const val = email.trim();
+    if (!val) return '이메일을 입력해 주세요.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return '올바른 이메일 형식을 입력해 주세요 (예: name@example.com).';
+    return '';
+  }, [touched.email, email]);
+
+  const passwordError = useMemo(() => {
+    if (!touched.password && !password) return '';
+    if (!password) return '비밀번호를 입력해 주세요.';
+    if (password.length < 6) return '비밀번호는 최소 6자 이상이어야 합니다.';
+    return '';
+  }, [touched.password, password]);
+
+  const isSignUpValid = Boolean(
+    lastName.trim() &&
+    firstName.trim() &&
+    username.trim().length >= 3 &&
+    username.trim().length <= 20 &&
+    /^[a-zA-Z0-9_]+$/.test(username.trim()) &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
+    password.length >= 6
+  );
 
   React.useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !isConfirmOpen) {
+      if (e.key === 'Escape' && !isConfirmOpen && !signupSubmitted) {
         onClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isConfirmOpen, onClose]);
+  }, [isOpen, isConfirmOpen, signupSubmitted, onClose]);
 
   if (!isOpen) return null;
 
@@ -70,19 +127,28 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
     setError('');
 
     if (isSignUp) {
+      // Mark all fields touched
+      setTouched({
+        lastName: true,
+        firstName: true,
+        username: true,
+        email: true,
+        password: true,
+      });
+
       if (!lastName.trim() || !firstName.trim()) {
         setError('성(Last Name)과 이름(First Name)을 모두 입력해 주세요.');
         return;
       }
-      if (!username.trim()) {
-        setError('아이디(USERNAME)를 입력해 주세요.');
+      if (!username.trim() || username.trim().length < 3 || username.trim().length > 20 || !/^[a-zA-Z0-9_]+$/.test(username.trim())) {
+        setError('아이디는 3~20자의 영문, 숫자, 밑줄(_)만 사용 가능합니다.');
         return;
       }
-      if (!email.trim() || !password.trim()) {
-        setError('이메일과 비밀번호를 입력해 주세요.');
+      if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        setError('올바른 이메일 형식을 입력해 주세요.');
         return;
       }
-      if (password.length < 6) {
+      if (!password.trim() || password.length < 6) {
         setError('비밀번호는 최소 6자 이상이어야 합니다.');
         return;
       }
@@ -93,7 +159,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
       const cleanUsername = username.trim().toLowerCase();
 
       try {
-        // 1. Username duplicate check
+        // 1. Username duplicate check (아이디 자체의 고유성 검사)
         const usernameQuery = query(collection(db, 'users'), where('username', '==', cleanUsername));
         const usernameSnap = await getDocs(usernameQuery);
         if (!usernameSnap.empty) {
@@ -102,7 +168,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
           return;
         }
 
-        // 2. Email duplicate check in users collection
+        // 2. Email duplicate check in users collection (전체 이메일 주소 단위 검사)
         const emailQuery = query(collection(db, 'users'), where('email', '==', cleanEmail));
         const emailSnap = await getDocs(emailQuery);
         if (!emailSnap.empty) {
@@ -165,6 +231,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
           birthdate: birthdate.trim(),
           phone: phone.trim(),
           role: isSuper ? 'admin' : 'user',
+          status: isSuper ? 'approved' : 'pending',
           permissions: {
             canCreate: true,
             canEdit: isSuper,
@@ -174,9 +241,42 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
         };
 
         await setDoc(doc(db, 'users', user.uid), newProfile);
+
+        setIsConfirmOpen(false);
+
+        // If not super admin, sign out immediately and show pending application modal
+        if (!isSuper) {
+          await auth.signOut();
+          setLoading(false);
+          setSignupSubmitted(true);
+          return;
+        }
       } else {
         // Log In
-        await signInWithEmailAndPassword(auth, email.trim(), password);
+        const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
+        const user = userCredential.user;
+
+        // Verify user approval status in Firestore
+        try {
+          const userSnap = await getDoc(doc(db, 'users', user.uid));
+          if (userSnap.exists()) {
+            const prof = userSnap.data() as UserProfile;
+            if (prof.status === 'pending') {
+              await auth.signOut();
+              setError('가입 승인 대기 중인 계정입니다. 관리자의 승인이 완료된 후 로그인하실 수 있습니다.');
+              setLoading(false);
+              return;
+            }
+            if (prof.status === 'rejected') {
+              await auth.signOut();
+              setError('가입 승인이 거절된 계정입니다. 관리자에게 문의해 주세요.');
+              setLoading(false);
+              return;
+            }
+          }
+        } catch (fetchErr) {
+          console.warn('Profile status check warning:', fetchErr);
+        }
       }
       setIsConfirmOpen(false);
       onSuccess?.();
@@ -194,6 +294,8 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
         errorMsg = '올바른 이메일 형식을 입력해 주세요.';
       } else if (err.code === 'auth/weak-password') {
         errorMsg = '비밀번호는 최소 6자 이상이어야 합니다.';
+      } else if (err.message) {
+        errorMsg = `인증 오류: ${err.message}`;
       }
       setError(errorMsg);
       setIsConfirmOpen(false);
@@ -218,238 +320,325 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
           <X className="w-5 h-5" />
         </button>
 
-        {/* Header - Swiss Minimal with Inter font */}
-        <div className="border-b border-black/15 dark:border-white/15 pb-4 mb-5">
-          <span className="text-[10px] font-mono font-bold tracking-widest text-red-600 dark:text-red-500 uppercase block mb-1">
-            {isSignUp ? 'USER REGISTRATION' : 'AUTHENTICATION'}
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-inter font-black uppercase tracking-tight text-black dark:text-white">
-            {isSignUp ? 'CREATE ACCOUNT' : 'SIGN IN'}
-          </h2>
-          <p className="text-xs font-mono text-black/50 dark:text-white/50 mt-1">
-            {isSignUp 
-              ? '필수 정보를 입력하여 새로운 유저 계정을 생성하세요.' 
-              : '여정 편집 및 관리를 위해 등록된 계정으로 로그인하세요.'}
-          </p>
-        </div>
-
-        {/* Error message */}
-        {error && (
-          <div className="mb-4 p-3 border border-red-500/30 bg-red-500/5 text-red-600 dark:text-red-400 text-xs font-mono leading-relaxed">
-            {error}
+        {/* Sign Up Submitted Notice View */}
+        {signupSubmitted ? (
+          <div className="py-4 flex flex-col items-center text-center animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-12 h-12 rounded-full border border-black/20 dark:border-white/20 flex items-center justify-center mb-4 text-black dark:text-white">
+              <CheckCircle2 className="w-6 h-6 stroke-[1.8]" />
+            </div>
+            <span className="text-[10px] font-mono font-bold tracking-widest text-red-600 dark:text-red-500 uppercase block mb-1">
+              APPLICATION SUBMITTED
+            </span>
+            <h3 className="text-xl sm:text-2xl font-inter font-black uppercase tracking-tight text-black dark:text-white mb-3">
+              APPROVAL PENDING
+            </h3>
+            <p className="text-xs font-mono text-black/70 dark:text-white/70 leading-relaxed max-w-sm mb-6">
+              가입 신청이 성공적으로 접수되었습니다.<br />
+              관리자의 승인이 완료된 후 서비스 이용이 가능합니다.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setSignupSubmitted(false);
+                setIsSignUp(false);
+                onClose();
+              }}
+              className="w-full h-11 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer"
+            >
+              확인 (CONFIRM)
+            </button>
           </div>
-        )}
+        ) : (
+          <>
+            {/* Header - Swiss Minimal with Inter font */}
+            <div className="border-b border-black/15 dark:border-white/15 pb-4 mb-5">
+              <span className="text-[10px] font-mono font-bold tracking-widest text-red-600 dark:text-red-500 uppercase block mb-1">
+                {isSignUp ? 'USER REGISTRATION' : 'AUTHENTICATION'}
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-inter font-black uppercase tracking-tight text-black dark:text-white">
+                {isSignUp ? 'CREATE ACCOUNT' : 'SIGN IN'}
+              </h2>
+              <p className="text-xs font-mono text-black/50 dark:text-white/50 mt-1">
+                {isSignUp 
+                  ? '필수 정보를 입력하여 새로운 유저 계정 가입을 신청하세요.' 
+                  : '여정 편집 및 관리를 위해 등록된 계정으로 로그인하세요.'}
+              </p>
+            </div>
 
-        {/* Form */}
-        <form onSubmit={handleFormSubmit} className="space-y-4">
-          {/* Sign Up Mode: Additional Profile Fields */}
-          {isSignUp ? (
-            <>
-              {/* Last Name & First Name (2 Columns) */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
-                    성 (LAST NAME) *
-                  </label>
-                  <input 
-                    type="text"
-                    required
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    placeholder="김 / Hong"
-                    className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
-                    이름 (FIRST NAME) *
-                  </label>
-                  <input 
-                    type="text"
-                    required
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="길동 / Gildong"
-                    className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
-                  />
-                </div>
+            {/* Error message */}
+            {error && (
+              <div className="mb-4 p-3 border border-red-500/30 bg-red-500/5 text-red-600 dark:text-red-400 text-xs font-mono leading-relaxed">
+                {error}
               </div>
+            )}
 
-              {/* Birthdate & Phone (2 Columns) */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
-                    생년월일 (BIRTHDAY)
-                  </label>
-                  <input 
-                    type="text"
-                    value={birthdate}
-                    onChange={(e) => setBirthdate(e.target.value)}
-                    placeholder="YYYY-MM-DD"
-                    className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
-                    전화번호 (PHONE)
-                  </label>
-                  <input 
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="010-0000-0000"
-                    className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
-                  />
-                </div>
-              </div>
-
-              {/* Username (아이디) */}
-              <div>
-                <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
-                  아이디 (USERNAME)
-                </label>
-                <input 
-                  type="text" 
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="아이디 입력 (중복 불가 고유 아이디)"
-                  className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
-                />
-              </div>
-
-              {/* 1:1 Profile Icon Selector */}
-              <div>
-                <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1.5">
-                  1:1 프로필 아이콘 선택
-                </label>
-                <div className="grid grid-cols-6 gap-1 p-1 bg-black/[0.02] dark:bg-white/[0.02] border border-black/15 dark:border-white/15">
-                  {PROFILE_PRESET_ICONS.slice(0, 12).map((item) => {
-                    const IconComp = item.icon;
-                    const isSelected = profileIcon === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => setProfileIcon(item.id)}
-                        title={item.label}
-                        className={`p-1.5 flex flex-col items-center justify-center aspect-square border transition-all cursor-pointer ${
-                          isSelected
-                            ? 'border-red-600 bg-red-600/10 text-red-600 font-bold scale-105'
-                            : 'border-transparent text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black/20'
+            {/* Form */}
+            <form onSubmit={handleFormSubmit} className="space-y-4">
+              {/* Sign Up Mode: Additional Profile Fields */}
+              {isSignUp ? (
+                <>
+                  {/* Last Name & First Name (2 Columns) */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
+                        성 (LAST NAME) *
+                      </label>
+                      <input 
+                        type="text"
+                        required
+                        value={lastName}
+                        onBlur={() => markTouched('lastName')}
+                        onChange={(e) => setLastName(e.target.value)}
+                        placeholder="김 / Hong"
+                        className={`w-full h-8 px-0 bg-transparent border-b rounded-none text-xs font-mono focus:outline-none transition-colors ${
+                          lastNameError 
+                            ? 'border-red-500 text-red-600 dark:text-red-400' 
+                            : 'border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white'
                         }`}
-                      >
-                        <IconComp className="w-4 h-4 stroke-[2.2]" />
-                        <span className="text-[7.5px] font-mono mt-0.5">{item.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+                      />
+                      {lastNameError && (
+                        <p className="text-[10px] font-mono text-red-600 dark:text-red-400 mt-1">
+                          {lastNameError}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
+                        이름 (FIRST NAME) *
+                      </label>
+                      <input 
+                        type="text"
+                        required
+                        value={firstName}
+                        onBlur={() => markTouched('firstName')}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        placeholder="길동 / Gildong"
+                        className={`w-full h-8 px-0 bg-transparent border-b rounded-none text-xs font-mono focus:outline-none transition-colors ${
+                          firstNameError 
+                            ? 'border-red-500 text-red-600 dark:text-red-400' 
+                            : 'border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white'
+                        }`}
+                      />
+                      {firstNameError && (
+                        <p className="text-[10px] font-mono text-red-600 dark:text-red-400 mt-1">
+                          {firstNameError}
+                        </p>
+                      )}
+                    </div>
+                  </div>
 
-              {/* Email Address */}
-              <div>
-                <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
-                  이메일 (EMAIL) *
-                </label>
-                <input 
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
-                  className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
-                />
-              </div>
+                  {/* Birthdate & Phone (2 Columns) */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
+                        생년월일 (BIRTHDAY)
+                      </label>
+                      <input 
+                        type="text"
+                        value={birthdate}
+                        onChange={(e) => setBirthdate(e.target.value)}
+                        placeholder="YYYY-MM-DD"
+                        className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
+                        전화번호 (PHONE)
+                      </label>
+                      <input 
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="010-0000-0000"
+                        className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
+                      />
+                    </div>
+                  </div>
 
-              {/* Password */}
-              <div>
-                <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
-                  비밀번호 (PASSWORD) *
-                </label>
-                <input 
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="•••••• (6자 이상)"
-                  className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
-                />
-              </div>
+                  {/* Username (아이디) */}
+                  <div>
+                    <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
+                      아이디 (USERNAME) *
+                    </label>
+                    <input 
+                      type="text" 
+                      required
+                      value={username}
+                      onBlur={() => markTouched('username')}
+                      onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ''))}
+                      placeholder="3~20자 영문/숫자/_ (예: traveler_01)"
+                      className={`w-full h-8 px-0 bg-transparent border-b rounded-none text-xs font-mono focus:outline-none transition-colors ${
+                        usernameError 
+                          ? 'border-red-500 text-red-600 dark:text-red-400' 
+                          : 'border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white'
+                      }`}
+                    />
+                    {usernameError ? (
+                      <p className="text-[10px] font-mono text-red-600 dark:text-red-400 mt-1">
+                        {usernameError}
+                      </p>
+                    ) : (
+                      <p className="text-[9.5px] font-mono text-black/40 dark:text-white/40 mt-1">
+                        영문 소문자, 숫자, 밑줄(_) 조합 (3~20자)
+                      </p>
+                    )}
+                  </div>
 
-              <button 
-                type="submit"
-                disabled={loading}
-                className="w-full h-11 mt-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors disabled:opacity-50 flex items-center justify-center rounded-none cursor-pointer"
-              >
-                {loading ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}
-              </button>
+                  {/* 1:1 Profile Icon Selector */}
+                  <div>
+                    <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1.5">
+                      1:1 프로필 아이콘 선택
+                    </label>
+                    <div className="grid grid-cols-6 gap-1 p-1 bg-black/[0.02] dark:bg-white/[0.02] border border-black/15 dark:border-white/15">
+                      {PROFILE_PRESET_ICONS.slice(0, 12).map((item) => {
+                        const IconComp = item.icon;
+                        const isSelected = profileIcon === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => setProfileIcon(item.id)}
+                            title={item.label}
+                            className={`p-1.5 flex flex-col items-center justify-center aspect-square border transition-all cursor-pointer ${
+                              isSelected
+                                ? 'border-red-600 bg-red-600/10 text-red-600 font-bold scale-105'
+                                : 'border-transparent text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-black/20'
+                            }`}
+                          >
+                            <IconComp className="w-4 h-4 stroke-[2.2]" />
+                            <span className="text-[7.5px] font-mono mt-0.5">{item.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-              {/* Back to Sign In Link */}
-              <div className="pt-3 border-t border-black/15 dark:border-white/15 text-center">
-                <button
-                  type="button"
-                  onClick={() => { setIsSignUp(false); setError(''); }}
-                  className="text-xs font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
-                >
-                  ← BACK TO SIGN IN
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Sign In Mode: Email & Password Only */}
-              <div>
-                <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
-                  이메일 (EMAIL) *
-                </label>
-                <input 
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
-                  className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
-                />
-              </div>
+                  {/* Email Address */}
+                  <div>
+                    <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
+                      이메일 (EMAIL) *
+                    </label>
+                    <input 
+                      type="email"
+                      required
+                      value={email}
+                      onBlur={() => markTouched('email')}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="name@example.com"
+                      className={`w-full h-8 px-0 bg-transparent border-b rounded-none text-xs font-mono focus:outline-none transition-colors ${
+                        emailError 
+                          ? 'border-red-500 text-red-600 dark:text-red-400' 
+                          : 'border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white'
+                      }`}
+                    />
+                    {emailError && (
+                      <p className="text-[10px] font-mono text-red-600 dark:text-red-400 mt-1">
+                        {emailError}
+                      </p>
+                    )}
+                  </div>
 
-              <div>
-                <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
-                  비밀번호 (PASSWORD) *
-                </label>
-                <input 
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
-                />
-              </div>
+                  {/* Password */}
+                  <div>
+                    <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
+                      비밀번호 (PASSWORD) *
+                    </label>
+                    <input 
+                      type="password"
+                      required
+                      value={password}
+                      onBlur={() => markTouched('password')}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="•••••• (6자 이상)"
+                      className={`w-full h-8 px-0 bg-transparent border-b rounded-none text-xs font-mono focus:outline-none transition-colors ${
+                        passwordError 
+                          ? 'border-red-500 text-red-600 dark:text-red-400' 
+                          : 'border-black/20 dark:border-white/20 focus:border-black dark:focus:border-white'
+                      }`}
+                    />
+                    {passwordError && (
+                      <p className="text-[10px] font-mono text-red-600 dark:text-red-400 mt-1">
+                        {passwordError}
+                      </p>
+                    )}
+                  </div>
 
-              <button 
-                type="submit"
-                disabled={loading}
-                className="w-full h-11 mt-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors disabled:opacity-50 flex items-center justify-center rounded-none cursor-pointer"
-              >
-                {loading ? 'SIGNING IN...' : 'SIGN IN'}
-              </button>
+                  <button 
+                    type="submit"
+                    disabled={loading || !isSignUpValid}
+                    className="w-full h-11 mt-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors disabled:opacity-40 disabled:hover:bg-black dark:disabled:hover:bg-white dark:disabled:hover:text-black flex items-center justify-center rounded-none cursor-pointer"
+                  >
+                    {loading ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}
+                  </button>
 
-              {/* Switch to Sign Up */}
-              <div className="pt-4 border-t border-black/15 dark:border-white/15 flex flex-col items-center gap-1.5 text-center">
-                <span className="text-[11px] font-mono text-black/50 dark:text-white/50">
-                  계정이 아직 없으신가요?
-                </span>
-                <button
-                  type="button"
-                  onClick={() => { setIsSignUp(true); setError(''); }}
-                  className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white hover:text-red-600 dark:hover:text-red-500 transition-colors cursor-pointer"
-                >
-                  [CREATE AN ACCOUNT]
-                </button>
-              </div>
-            </>
-          )}
-        </form>
+                  {/* Back to Sign In Link */}
+                  <div className="pt-3 border-t border-black/15 dark:border-white/15 text-center">
+                    <button
+                      type="button"
+                      onClick={() => { setIsSignUp(false); setError(''); }}
+                      className="text-xs font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                    >
+                      ← BACK TO SIGN IN
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Sign In Mode: Email & Password Only */}
+                  <div>
+                    <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
+                      이메일 (EMAIL) *
+                    </label>
+                    <input 
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="name@example.com"
+                      className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-inter font-bold uppercase tracking-wider text-black/80 dark:text-white/80 mb-1">
+                      비밀번호 (PASSWORD) *
+                    </label>
+                    <input 
+                      type="password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
+                    />
+                  </div>
+
+                  <button 
+                    type="submit"
+                    disabled={loading}
+                    className="w-full h-11 mt-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors disabled:opacity-50 flex items-center justify-center rounded-none cursor-pointer"
+                  >
+                    {loading ? 'SIGNING IN...' : 'SIGN IN'}
+                  </button>
+
+                  {/* Switch to Sign Up */}
+                  <div className="pt-4 border-t border-black/15 dark:border-white/15 flex flex-col items-center gap-1.5 text-center">
+                    <span className="text-[11px] font-mono text-black/50 dark:text-white/50">
+                      계정이 아직 없으신가요?
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => { setIsSignUp(true); setError(''); }}
+                      className="text-xs font-mono font-bold uppercase tracking-wider text-black dark:text-white hover:text-red-600 dark:hover:text-red-500 transition-colors cursor-pointer"
+                    >
+                      [CREATE AN ACCOUNT]
+                    </button>
+                  </div>
+                </>
+              )}
+            </form>
+          </>
+        )}
       </div>
 
       {/* 2-Step Sign Up Confirmation Modal */}

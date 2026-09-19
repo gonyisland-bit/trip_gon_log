@@ -303,6 +303,7 @@ export interface UserProfile {
   phone: string;
   role: 'admin' | 'user';
   permissions: UserPermissions;
+  status?: 'pending' | 'approved' | 'rejected';
   createdAt: number;
 }
 

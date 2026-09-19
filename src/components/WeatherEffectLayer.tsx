@@ -111,7 +111,7 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 pointer-events-none overflow-hidden transition-all duration-700 select-none z-0 ${className}`}
+      className={`fixed inset-0 pointer-events-none overflow-hidden transition-all duration-700 select-none z-[25] ${className}`}
       style={{ opacity }}
       aria-hidden="true"
     >

@@ -250,15 +250,10 @@ export function HomeWeatherWidget({
                 title="클릭하여 1주일 예보 확인"
               >
                 {/* 1. Header: City Name & Country Pill Badge */}
-                <div className="flex items-center justify-between gap-1.5 w-full">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-xs sm:text-sm font-black font-sans uppercase tracking-tight text-black dark:text-white truncate">
-                      {city.nameEn}
-                    </span>
-                    <span className="text-[10px] text-black/40 dark:text-white/40 font-mono">
-                      {city.name}
-                    </span>
-                  </div>
+                <div className="flex items-center justify-between gap-2 w-full">
+                  <span className="text-xs sm:text-sm font-black font-sans uppercase tracking-tight text-black dark:text-white leading-tight">
+                    {city.nameEn}
+                  </span>
                   <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 shrink-0">
                     {city.country}
                   </span>
