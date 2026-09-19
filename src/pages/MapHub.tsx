@@ -2681,25 +2681,24 @@ export function MapHubPage({
         fillOpacity: 0.13,
       };
 
+      // 1. Base GeoJSON (Original coordinates)
       highlightLayers.push(L.geoJSON(countryFeature, { style: geoStyle, interactive: false }));
 
-      // World wrap replication: Eastern Asia / Pacific (lng < 60) or Americas (lng > 0)
-      if (country.center[1] < 60) {
-        const shiftedCoords = shiftGeoJsonCoordinates(countryFeature.geometry.coordinates, 360);
-        const shiftedFeature = {
-          ...countryFeature,
-          geometry: { ...countryFeature.geometry, coordinates: shiftedCoords }
-        };
-        highlightLayers.push(L.geoJSON(shiftedFeature, { style: geoStyle, interactive: false }));
-      }
-      if (country.center[1] > 0) {
-        const shiftedCoords = shiftGeoJsonCoordinates(countryFeature.geometry.coordinates, -360);
-        const shiftedFeature = {
-          ...countryFeature,
-          geometry: { ...countryFeature.geometry, coordinates: shiftedCoords }
-        };
-        highlightLayers.push(L.geoJSON(shiftedFeature, { style: geoStyle, interactive: false }));
-      }
+      // 2. World wrap replication: +360 shift (Essential for Pacific-centered Americas view)
+      const shiftedCoordsPlus = shiftGeoJsonCoordinates(countryFeature.geometry.coordinates, 360);
+      const shiftedFeaturePlus = {
+        ...countryFeature,
+        geometry: { ...countryFeature.geometry, coordinates: shiftedCoordsPlus }
+      };
+      highlightLayers.push(L.geoJSON(shiftedFeaturePlus, { style: geoStyle, interactive: false }));
+
+      // 3. World wrap replication: -360 shift (Essential for Western wrap view)
+      const shiftedCoordsMinus = shiftGeoJsonCoordinates(countryFeature.geometry.coordinates, -360);
+      const shiftedFeatureMinus = {
+        ...countryFeature,
+        geometry: { ...countryFeature.geometry, coordinates: shiftedCoordsMinus }
+      };
+      highlightLayers.push(L.geoJSON(shiftedFeatureMinus, { style: geoStyle, interactive: false }));
     } else {
       // Fallback: circular boundary while geojson is loading
       const radiusMeters = country.zoom >= 11
@@ -2720,12 +2719,8 @@ export function MapHubPage({
       };
 
       highlightLayers.push(L.circle(country.center, circleOptions));
-      if (country.center[1] < 60) {
-        highlightLayers.push(L.circle([country.center[0], country.center[1] + 360], circleOptions));
-      }
-      if (country.center[1] > 0) {
-        highlightLayers.push(L.circle([country.center[0], country.center[1] - 360], circleOptions));
-      }
+      highlightLayers.push(L.circle([country.center[0], country.center[1] + 360], circleOptions));
+      highlightLayers.push(L.circle([country.center[0], country.center[1] - 360], circleOptions));
     }
 
     highlightLayerRef.current = L.featureGroup(highlightLayers).addTo(map);
@@ -2745,13 +2740,11 @@ export function MapHubPage({
       iconAnchor: [20, 20],
     });
 
-    const markers: any[] = [L.marker(country.center, { icon: selectIcon, zIndexOffset: 1200 })];
-    if (country.center[1] < 60) {
-      markers.push(L.marker([country.center[0], country.center[1] + 360], { icon: selectIcon, zIndexOffset: 1200 }));
-    }
-    if (country.center[1] > 0) {
-      markers.push(L.marker([country.center[0], country.center[1] - 360], { icon: selectIcon, zIndexOffset: 1200 }));
-    }
+    const markers: any[] = [
+      L.marker(country.center, { icon: selectIcon, zIndexOffset: 1200 }),
+      L.marker([country.center[0], country.center[1] + 360], { icon: selectIcon, zIndexOffset: 1200 }),
+      L.marker([country.center[0], country.center[1] - 360], { icon: selectIcon, zIndexOffset: 1200 })
+    ];
 
     selectPinRef.current = L.featureGroup(markers).addTo(map);
   }, []);
