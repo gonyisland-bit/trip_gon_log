@@ -12,6 +12,8 @@ interface WeatherEffectLayerProps {
 
 export function resolveWeatherEffectType(code?: number, pop?: number): WeatherEffectType {
   if (code === undefined) return 'clear';
+  if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) return 'snow';
+  if (code >= 95) return 'storm';
   if (pop !== undefined && pop >= 55) {
     if (code === 0 || code === 1 || code === 2 || code === 3) {
       return 'rain';
@@ -22,8 +24,6 @@ export function resolveWeatherEffectType(code?: number, pop?: number): WeatherEf
   if (code === 3) return 'clouds';
   if (code === 45 || code === 48) return 'fog';
   if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return 'rain';
-  if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) return 'snow';
-  if (code >= 95) return 'storm';
   return 'clear';
 }
 

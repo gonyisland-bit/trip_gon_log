@@ -16,14 +16,30 @@ export interface WeatherMeta {
   colorClass: string;
 }
 
-export function getWeatherMeta(code: number, precipitationProb?: number): WeatherMeta {
+/**
+ * 도시명에서 불필요한 행정구역 꼬리표나 중복 영문 표기를 정제하여 간결한 단일 도시명만 반환
+ * e.g. "제주특별자치도" -> "제주", "서울특별시" -> "서울", "서울 SEOUL" -> "서울"
+ */
+export function cleanCityDisplayName(name: string): string {
+  if (!name) return '';
+  let cleaned = name.replace(/특별시|광역시|특별자치도|특별자치시|자치도/g, '').trim();
+  cleaned = cleaned.replace(/\s*[A-Za-z]+.*$/, '').trim();
+  return cleaned || name;
+}
+
+export function getWeatherMeta(code: number, precipitationProb?: number, temp?: number): WeatherMeta {
   let effectiveCode = code;
 
+  // 눈 코드(71~77, 85~86)는 우선적으로 온전히 보존
+  const isOriginalSnow = (code >= 71 && code <= 77) || (code >= 85 && code <= 86);
+
   // 우기/강수 확률 기반 정밀 보정
-  if (precipitationProb !== undefined) {
+  if (precipitationProb !== undefined && !isOriginalSnow) {
     if (precipitationProb >= 55) {
-      // 강수 확률 55% 이상이면 확실한 비(또는 뇌우) 반영
-      if (effectiveCode === 0 || effectiveCode === 1 || effectiveCode === 2 || effectiveCode === 3) {
+      // 강수 확률 55% 이상일 때, 기온이 영하/저온(2도 이하)이면 눈(SNOW)으로 정밀 판정
+      if (temp !== undefined && temp <= 2) {
+        effectiveCode = 71; // SNOW
+      } else if (effectiveCode === 0 || effectiveCode === 1 || effectiveCode === 2 || effectiveCode === 3) {
         effectiveCode = precipitationProb >= 75 ? 63 : 61; // RAIN
       }
     } else if (precipitationProb < 30) {
@@ -44,10 +60,10 @@ export function getWeatherMeta(code: number, precipitationProb?: number): Weathe
     return { label: 'OVERCAST', labelKo: '흐림', icon: Cloud, colorClass: 'text-zinc-400' };
   } else if (effectiveCode === 45 || effectiveCode === 48) {
     return { label: 'FOGGY', labelKo: '안개', icon: Cloud, colorClass: 'text-zinc-400' };
-  } else if ((effectiveCode >= 51 && effectiveCode <= 67) || (effectiveCode >= 80 && effectiveCode <= 82)) {
-    return { label: 'RAIN', labelKo: '비', icon: CloudRain, colorClass: 'text-blue-500' };
   } else if ((effectiveCode >= 71 && effectiveCode <= 77) || (effectiveCode >= 85 && effectiveCode <= 86)) {
     return { label: 'SNOW', labelKo: '눈', icon: Snowflake, colorClass: 'text-cyan-400' };
+  } else if ((effectiveCode >= 51 && effectiveCode <= 67) || (effectiveCode >= 80 && effectiveCode <= 82)) {
+    return { label: 'RAIN', labelKo: '비', icon: CloudRain, colorClass: 'text-blue-500' };
   } else if (effectiveCode >= 95) {
     return { label: 'STORM', labelKo: '뇌우', icon: CloudLightning, colorClass: 'text-purple-500' };
   }
@@ -225,18 +241,29 @@ export function getSimulatedWeatherForDate(cityEn: string, dateStr: string): Dai
   const tempMin = monthClimate.tMin + tempVarMin;
   const tempMax = Math.max(tempMin + 4, monthClimate.tMax + tempVarMax);
 
-  // 3. 강수 및 날씨 코드 판정 (실제 월별 강수 확률에 근거)
+  // 3. 강수 및 날씨 코드 판정 (실제 월별 강수 확률 및 동절기 저온 눈 판정)
   const rainChance = monthClimate.rainProb;
-  const snowChance = monthClimate.snowProb || 0;
+  const avgTemp = (tempMin + tempMax) / 2;
+  const isFreezing = tempMin <= 0 || avgTemp <= 2 || tempMax <= 3;
+  const snowChance = monthClimate.snowProb !== undefined 
+    ? monthClimate.snowProb 
+    : (isFreezing ? Math.round(rainChance * 0.75) : 0);
   const precipRoll = Math.round(rand3 * 100);
 
   let weatherCode = 0; // 기본 맑음
   let precipitationProb = Math.max(5, Math.min(95, rainChance + Math.round((rand1 - 0.5) * 20)));
 
-  if (snowChance > 0 && precipRoll < snowChance && tempMax <= 3) {
-    // 눈
-    weatherCode = 71;
-    precipitationProb = Math.max(60, precipRoll);
+  // 저온/영하 환경에서의 현실적인 눈(SNOW) 판정
+  if ((snowChance > 0 && precipRoll < snowChance) || (isFreezing && precipRoll < rainChance)) {
+    // 눈 (강도별 WMO 코드: 71 가벼운 눈, 73 보통 눈, 75 강한 눈)
+    if (precipRoll < (snowChance || rainChance) * 0.3) {
+      weatherCode = 75; // 강한 눈
+    } else if (precipRoll < (snowChance || rainChance) * 0.65) {
+      weatherCode = 73; // 보통 눈
+    } else {
+      weatherCode = 71; // 가벼운 눈
+    }
+    precipitationProb = Math.max(65, Math.min(95, Math.round(70 + rand1 * 25)));
   } else if (precipRoll < rainChance) {
     // 비 (강수일 판정)
     if (precipRoll < rainChance * 0.25) {

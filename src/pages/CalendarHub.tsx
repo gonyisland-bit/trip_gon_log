@@ -12,7 +12,7 @@ import { getKoreanHolidays, getHolidayInfo, KoreanHoliday } from '../utils/korea
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { db, auth } from '../firebase';
 import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
-import { fetchCityWeather, getWeatherMeta, getSimulatedWeatherForDate, CityWeatherData, DailyForecastItem } from '../utils/weatherApi';
+import { fetchCityWeather, getWeatherMeta, getSimulatedWeatherForDate, CityWeatherData, DailyForecastItem, cleanCityDisplayName } from '../utils/weatherApi';
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
 import { WORLD_CITIES } from '../data/worldDestinations';
@@ -534,6 +534,45 @@ export function CalendarHubPage({
     return () => { isCancelled = true; };
   }, [isWeatherMode, selectedWeatherCity]);
 
+  // 날씨 도시 알약 칩 가로 스크롤 상태 및 제어
+  const weatherChipsRef = useRef<HTMLDivElement>(null);
+  const [canScrollChipsLeft, setCanScrollChipsLeft] = useState(false);
+  const [canScrollChipsRight, setCanScrollChipsRight] = useState(false);
+
+  const checkChipsScroll = useCallback(() => {
+    const el = weatherChipsRef.current;
+    if (!el) return;
+    setCanScrollChipsLeft(el.scrollLeft > 2);
+    setCanScrollChipsRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+  }, []);
+
+  useEffect(() => {
+    const el = weatherChipsRef.current;
+    if (!el || !isWeatherMode) return;
+    checkChipsScroll();
+    el.addEventListener('scroll', checkChipsScroll, { passive: true });
+    window.addEventListener('resize', checkChipsScroll);
+    return () => {
+      el.removeEventListener('scroll', checkChipsScroll);
+      window.removeEventListener('resize', checkChipsScroll);
+    };
+  }, [weatherCities, isWeatherMode, checkChipsScroll]);
+
+  const scrollChipsLeft = () => {
+    weatherChipsRef.current?.scrollBy({ left: -160, behavior: 'smooth' });
+  };
+
+  const scrollChipsRight = () => {
+    weatherChipsRef.current?.scrollBy({ left: 160, behavior: 'smooth' });
+  };
+
+  // 캘린더 허브 언마운트 시 오늘 날씨 모션으로 복귀
+  useEffect(() => {
+    return () => {
+      window.dispatchEvent(new CustomEvent('weatherAmbienceOverride', { detail: null }));
+    };
+  }, []);
+
   // 현재 선택된 날씨 도시의 최적 여행 시기 데이터 (WORLD_CITIES 매칭)
   const destinationCityData = useMemo(() => {
     if (!isWeatherMode || !selectedWeatherCity) return null;
@@ -672,6 +711,8 @@ export function CalendarHubPage({
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     setSelectedRange({ start: todayStr, end: todayStr });
     setDragAnchorDate(todayStr);
+    // 오늘 날짜로 돌아올 때 오늘 기준 실시간 날씨로 배경 복귀
+    window.dispatchEvent(new CustomEvent('weatherAmbienceOverride', { detail: null }));
     if (viewMode !== 'month') {
       toggleViewMode('month');
     }
@@ -1216,12 +1257,20 @@ export function CalendarHubPage({
         setDragAnchorDate(null);
         setHoveredTooltip(null);
         setQuickViewDate(null);
+        setSelectedWeatherDay(null);
+        window.dispatchEvent(new CustomEvent('weatherAmbienceOverride', { detail: null }));
       } else {
         setSelectedRange({ start: cell.dateStr, end: cell.dateStr });
         setDragAnchorDate(cell.dateStr);
 
         const exact = cityWeatherData?.forecast?.find(f => f.date === cell.dateStr);
         const w = exact || (isWeatherMode ? getSimulatedWeatherForDate(selectedWeatherCity.nameEn, cell.dateStr) : undefined);
+
+        if (w) {
+          window.dispatchEvent(new CustomEvent('weatherAmbienceOverride', {
+            detail: { weatherCode: w.weatherCode, precipitationProb: w.precipitationProb }
+          }));
+        }
 
         const items: any[] = [
           ...cell.overlappingTrips.map(t => ({
@@ -1260,6 +1309,9 @@ export function CalendarHubPage({
           city: selectedWeatherCity,
           weather: w
         });
+        window.dispatchEvent(new CustomEvent('weatherAmbienceOverride', {
+          detail: { weatherCode: w.weatherCode, precipitationProb: w.precipitationProb }
+        }));
       }
     }
   };
@@ -1986,7 +2038,7 @@ export function CalendarHubPage({
 
         {/* Weather Forecast City Selector Bar - App Style Minimal Pill Chips */}
         {isWeatherMode && (
-          <div className="w-full flex items-center gap-2 py-2 border-b border-black/10 dark:border-white/10 select-none animate-in fade-in duration-150">
+          <div className="w-full flex items-center gap-1.5 sm:gap-2 py-2 border-b border-black/10 dark:border-white/10 select-none animate-in fade-in duration-150">
             {/* Left Location Indicator with Live Weather Motion */}
             <div className="flex items-center gap-1.5 shrink-0 pr-2 border-r border-black/15 dark:border-white/15 text-[11px] font-mono font-black text-black dark:text-white uppercase tracking-wider">
               {cityWeatherData ? (() => {
@@ -2003,33 +2055,67 @@ export function CalendarHubPage({
               })() : (
                 <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />
               )}
-              <span>{selectedWeatherCity.name}</span>
+              <span>{cleanCityDisplayName(selectedWeatherCity.name)}</span>
               <span className="text-[9.5px] font-normal text-black/50 dark:text-white/50 hidden sm:inline">
                 ({selectedWeatherCity.country})
               </span>
             </div>
 
+            {/* Left Scroll Arrow Button */}
+            <button
+              type="button"
+              onClick={scrollChipsLeft}
+              disabled={!canScrollChipsLeft}
+              className={`w-6 h-6 rounded-full border border-black/15 dark:border-white/15 flex items-center justify-center shrink-0 transition-all ${
+                canScrollChipsLeft
+                  ? 'text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer shadow-2xs'
+                  : 'opacity-20 text-black/30 dark:text-white/30 cursor-not-allowed border-transparent'
+              }`}
+              title="이전 지역 보기"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+
             {/* App-style Pill Chips Scroll */}
-            <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar flex-1 py-0.5">
+            <div
+              ref={weatherChipsRef}
+              className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar flex-1 py-0.5 scroll-smooth"
+            >
               {weatherCities.map((c) => {
                 const isSelected = selectedWeatherCity.nameEn.toUpperCase() === c.nameEn.toUpperCase();
+                const displayName = cleanCityDisplayName(c.name);
                 return (
                   <button
                     key={c.nameEn}
                     type="button"
                     onClick={() => handleSelectCity(c)}
-                    className={`h-6 px-2.5 rounded-full text-[10px] sm:text-[10.5px] font-mono font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1 shadow-2xs ${
+                    className={`h-6 px-2.5 rounded-full text-[10px] sm:text-[10.5px] font-mono font-bold transition-all cursor-pointer shrink-0 flex items-center shadow-2xs ${
                       isSelected
                         ? 'bg-black text-white dark:bg-white dark:text-black font-black'
                         : 'bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 text-black/70 dark:text-white/70'
                     }`}
+                    title={`${displayName} (${c.nameEn})`}
                   >
-                    <span>{c.name}</span>
-                    <span className="text-[9px] opacity-60 uppercase">{c.nameEn}</span>
+                    <span>{displayName}</span>
                   </button>
                 );
               })}
             </div>
+
+            {/* Right Scroll Arrow Button */}
+            <button
+              type="button"
+              onClick={scrollChipsRight}
+              disabled={!canScrollChipsRight}
+              className={`w-6 h-6 rounded-full border border-black/15 dark:border-white/15 flex items-center justify-center shrink-0 transition-all ${
+                canScrollChipsRight
+                  ? 'text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer shadow-2xs'
+                  : 'opacity-20 text-black/30 dark:text-white/30 cursor-not-allowed border-transparent'
+              }`}
+              title="다음 지역 보기"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         )}
       </div>

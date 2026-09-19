@@ -282,7 +282,9 @@ function App() {
     }
   });
 
-  // Listen for weather city change & ambience toggle across all hubs
+  const [ambienceOverride, setAmbienceOverride] = useState<{ weatherCode: number; precipitationProb: number } | null>(null);
+
+  // Listen for weather city change, ambience toggle & date-specific override across all hubs
   useEffect(() => {
     const handleCityChange = (e: Event) => {
       const customEvent = e as CustomEvent<CityWeatherConfig>;
@@ -296,15 +298,26 @@ function App() {
         setIsGlobalWeatherBgEnabled(customEvent.detail);
       }
     };
+    const handleAmbienceOverride = (e: Event) => {
+      const customEvent = e as CustomEvent<{ weatherCode: number; precipitationProb: number } | null>;
+      setAmbienceOverride(customEvent.detail || null);
+    };
 
     window.addEventListener('selectedWeatherCityChanged', handleCityChange);
     window.addEventListener('weatherBgToggled', handleBgToggle);
+    window.addEventListener('weatherAmbienceOverride', handleAmbienceOverride);
 
     return () => {
       window.removeEventListener('selectedWeatherCityChanged', handleCityChange);
       window.removeEventListener('weatherBgToggled', handleBgToggle);
+      window.removeEventListener('weatherAmbienceOverride', handleAmbienceOverride);
     };
   }, []);
+
+  // Reset ambience override when navigating between views/hubs so today's live weather is restored
+  useEffect(() => {
+    setAmbienceOverride(null);
+  }, [currentView]);
 
   // Fetch live weather data for the globally selected city
   useEffect(() => {
@@ -2638,8 +2651,8 @@ function App() {
         {/* Global Live Weather Background Ambience Layer (Home, Trip, Magazine, Pocket, Calendar, Detail) */}
         {isGlobalWeatherBgEnabled && globalWeatherData && currentView !== 'map' && (
           <WeatherEffectLayer
-            weatherCode={globalWeatherData.weatherCode}
-            precipitationProb={globalWeatherData.forecast?.[0]?.precipitationProb ?? 0}
+            weatherCode={ambienceOverride?.weatherCode ?? globalWeatherData.weatherCode}
+            precipitationProb={ambienceOverride?.precipitationProb ?? (globalWeatherData.forecast?.[0]?.precipitationProb ?? 0)}
             isDarkMode={isDarkMode}
           />
         )}
