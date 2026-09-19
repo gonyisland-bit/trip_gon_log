@@ -80,6 +80,40 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
     };
   }, [cities]);
 
+  // 날씨 배경 모션 토글 상태 및 동기화
+  const [isBgEnabled, setIsBgEnabled] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('calendar_weather_bg_enabled');
+      return saved !== null ? saved === 'true' : true;
+    } catch (_) {
+      return true;
+    }
+  });
+
+  useEffect(() => {
+    const handleBgToggle = (e: Event) => {
+      const customEvent = e as CustomEvent<boolean>;
+      if (typeof customEvent.detail === 'boolean') {
+        setIsBgEnabled(customEvent.detail);
+      }
+    };
+    window.addEventListener('weatherBgToggled', handleBgToggle);
+    return () => {
+      window.removeEventListener('weatherBgToggled', handleBgToggle);
+    };
+  }, []);
+
+  const handleToggleBg = () => {
+    setIsBgEnabled(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('calendar_weather_bg_enabled', String(next));
+      } catch (_) {}
+      window.dispatchEvent(new CustomEvent('weatherBgToggled', { detail: next }));
+      return next;
+    });
+  };
+
   // 외부 클릭 시 팝오버 닫기
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -213,6 +247,29 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
                 </button>
               );
             })}
+          </div>
+
+          {/* Swiss Minimal Weather Ambience Toggle */}
+          <div className="px-3 py-2 border-t border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] flex items-center justify-between">
+            <div className="flex flex-col">
+              <span className="text-[9.5px] font-mono font-bold tracking-wider text-black/80 dark:text-white/80">
+                AMBIENCE EFFECT
+              </span>
+              <span className="text-[8px] font-mono text-black/40 dark:text-white/40">
+                배경 날씨 애니메이션
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleToggleBg}
+              className={`px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold transition-all cursor-pointer ${
+                isBgEnabled
+                  ? 'bg-black text-white dark:bg-white dark:text-black shadow-2xs'
+                  : 'bg-black/10 dark:bg-white/10 text-black/50 dark:text-white/50 hover:bg-black/15 dark:hover:bg-white/15'
+              }`}
+            >
+              {isBgEnabled ? 'ON' : 'OFF'}
+            </button>
           </div>
         </div>
       )}

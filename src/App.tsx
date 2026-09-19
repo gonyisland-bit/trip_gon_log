@@ -85,8 +85,11 @@ import {
   ArchiveHubConfig,
   TrashedMagazineSection,
   UserProfile,
-  LandingHeroMediaItem
+  LandingHeroMediaItem,
+  CityWeatherConfig
 } from './types';
+import { WeatherEffectLayer } from './components/WeatherEffectLayer';
+import { fetchCityWeather, CityWeatherData } from './utils/weatherApi';
 import { auth, db } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { 
@@ -254,6 +257,76 @@ function App() {
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
   const initialAuthCheckedRef = useRef<boolean>(false);
   
+  // ── Global Weather Ambience State (All Hubs Realtime Sync) ──
+  const [globalWeatherCity, setGlobalWeatherCity] = useState<CityWeatherConfig | null>(() => {
+    try {
+      const savedEn = localStorage.getItem('selected_weather_city_en') || 'SEOUL';
+      const cached = localStorage.getItem('cached_calendar_weather_cities');
+      if (cached) {
+        const parsed: CityWeatherConfig[] = JSON.parse(cached);
+        const found = parsed.find(c => c.nameEn.toUpperCase() === savedEn.toUpperCase());
+        if (found) return found;
+      }
+    } catch (_) {}
+    return { name: '서울', nameEn: 'SEOUL', lat: 37.5665, lng: 126.9780, country: 'KR', timezone: 'Asia/Seoul' };
+  });
+
+  const [globalWeatherData, setGlobalWeatherData] = useState<CityWeatherData | null>(null);
+
+  const [isGlobalWeatherBgEnabled, setIsGlobalWeatherBgEnabled] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('calendar_weather_bg_enabled');
+      return saved !== null ? saved === 'true' : true;
+    } catch (_) {
+      return true;
+    }
+  });
+
+  // Listen for weather city change & ambience toggle across all hubs
+  useEffect(() => {
+    const handleCityChange = (e: Event) => {
+      const customEvent = e as CustomEvent<CityWeatherConfig>;
+      if (customEvent.detail && customEvent.detail.nameEn) {
+        setGlobalWeatherCity(customEvent.detail);
+      }
+    };
+    const handleBgToggle = (e: Event) => {
+      const customEvent = e as CustomEvent<boolean>;
+      if (typeof customEvent.detail === 'boolean') {
+        setIsGlobalWeatherBgEnabled(customEvent.detail);
+      }
+    };
+
+    window.addEventListener('selectedWeatherCityChanged', handleCityChange);
+    window.addEventListener('weatherBgToggled', handleBgToggle);
+
+    return () => {
+      window.removeEventListener('selectedWeatherCityChanged', handleCityChange);
+      window.removeEventListener('weatherBgToggled', handleBgToggle);
+    };
+  }, []);
+
+  // Fetch live weather data for the globally selected city
+  useEffect(() => {
+    if (!globalWeatherCity) return;
+    let isCancelled = false;
+    fetchCityWeather(
+      globalWeatherCity.lat,
+      globalWeatherCity.lng,
+      globalWeatherCity.timezone,
+      globalWeatherCity.nameEn,
+      globalWeatherCity.country
+    ).then(data => {
+      if (!isCancelled) {
+        setGlobalWeatherData(data);
+      }
+    }).catch(err => {
+      console.warn("Global weather fetch notice:", err);
+    });
+
+    return () => { isCancelled = true; };
+  }, [globalWeatherCity]);
+
   // Hydrate from localStorage cache for instant 0ms mobile launch
   const [trips, setTrips] = useState<Trip[]>(() => {
     try {
@@ -2560,8 +2633,16 @@ function App() {
 
       <div 
         style={appGradientStyle}
-        className={`min-h-screen ${appGradientStyle ? 'bg-transparent' : 'bg-white dark:bg-[#141414]'} text-black dark:text-white font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 w-full overflow-x-hidden flex flex-col ${(currentView === 'detail' || currentView === 'map') ? 'h-screen h-[100dvh] overflow-hidden overscroll-none' : ''}`}
+        className={`relative min-h-screen ${appGradientStyle ? 'bg-transparent' : 'bg-white dark:bg-[#141414]'} text-black dark:text-white font-sans selection:bg-red-500 selection:text-white transition-colors duration-300 w-full overflow-x-hidden flex flex-col ${(currentView === 'detail' || currentView === 'map') ? 'h-screen h-[100dvh] overflow-hidden overscroll-none' : ''}`}
       >
+        {/* Global Live Weather Background Ambience Layer (Home, Trip, Magazine, Pocket, Calendar, Detail) */}
+        {isGlobalWeatherBgEnabled && globalWeatherData && currentView !== 'map' && (
+          <WeatherEffectLayer
+            weatherCode={globalWeatherData.weatherCode}
+            precipitationProb={globalWeatherData.forecast?.[0]?.precipitationProb ?? 0}
+            isDarkMode={isDarkMode}
+          />
+        )}
         
         {/* Firebase Error/Status Banners */}
         {dbError && (

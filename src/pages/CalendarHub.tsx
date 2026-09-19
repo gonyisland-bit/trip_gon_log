@@ -16,7 +16,6 @@ import { fetchCityWeather, getWeatherMeta, getSimulatedWeatherForDate, CityWeath
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
 import { WORLD_CITIES } from '../data/worldDestinations';
-import { WeatherEffectLayer } from '../components/WeatherEffectLayer';
 
 export interface CalendarWeatherCity {
   name: string;
@@ -474,6 +473,7 @@ export function CalendarHubPage({
       try {
         localStorage.setItem('calendar_weather_bg_enabled', String(next));
       } catch (_) {}
+      window.dispatchEvent(new CustomEvent('weatherBgToggled', { detail: next }));
       return next;
     });
   };
@@ -1630,14 +1630,6 @@ export function CalendarHubPage({
       }}
       className="relative w-full min-h-screen bg-transparent text-black dark:text-white transition-colors duration-300 select-none pb-24 overflow-hidden"
     >
-      {/* Real-time Weather Background Animation Layer (Ambience Mode) */}
-      {isWeatherMode && isWeatherBgEnabled && cityWeatherData && (
-        <WeatherEffectLayer
-          weatherCode={cityWeatherData.weatherCode}
-          precipitationProb={cityWeatherData.forecast?.[0]?.precipitationProb ?? 0}
-          isDarkMode={isDarkMode}
-        />
-      )}
 
       {/* ───────────────────────────────────────────────────────────── */}
       {/* Top Banner & Swiss Minimal Typography Header                  */}
