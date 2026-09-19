@@ -713,13 +713,13 @@ export function MagazineHubPage({
   const headerVolume = hubConfig?.volumeText || `VOL. ${new Date().getFullYear()}`;
 
   return (
-    <main className="min-h-screen w-full bg-transparent dark:bg-[#111111] text-black dark:text-white flex flex-col font-sans transition-colors duration-300">
+    <main className="min-h-screen w-full bg-transparent dark:bg-transparent text-black dark:text-white flex flex-col font-sans transition-colors duration-300">
       
       {/* ═════════════════════════════════════════════════════════════════════ */}
       {/* MODE 1: MAGAZINE DIRECTORY HUB (전체 매거진 이슈 디렉토리 쇼케이스)      */}
       {/* ═════════════════════════════════════════════════════════════════════ */}
       {viewMode === 'hub' ? (
-        <div className="w-full flex flex-col flex-1">
+        <div className="w-full flex flex-col flex-1 bg-transparent">
           {/* 1-1. Editorial Large Headline & Directory Masthead */}
           <section className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 pt-8 sm:pt-14 pb-8 border-b border-black/10 dark:border-white/10">
             {/* Top Barcode & Category Tag */}
@@ -944,7 +944,7 @@ export function MagazineHubPage({
                       animationDelay: `${Math.min(idx * 30, 240)}ms`
                     }}
                     onClick={() => handleOpenSection(sec.id)}
-                    className="group relative flex flex-col border border-black/10 dark:border-white/20 bg-white dark:bg-[#1C1C1E] rounded-3xl transition-all duration-300 overflow-hidden shadow-xs hover:shadow-2xl hover:border-black/30 dark:hover:border-white/40 cursor-pointer select-none"
+                    className="group relative flex flex-col border border-black/10 dark:border-white/20 bg-white/90 dark:bg-[#181818]/90 backdrop-blur-xs rounded-3xl transition-all duration-300 overflow-hidden shadow-xs hover:shadow-2xl hover:border-black/30 dark:hover:border-white/40 cursor-pointer select-none"
                   >
                     {/* 1. Photo Frame: 4:3 Aspect Ratio (Nike & Pocket Card Minimal Frame) */}
                     <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/5 dark:bg-white/5 border-b border-black/10 dark:border-white/10">
@@ -1229,7 +1229,7 @@ export function MagazineHubPage({
         /* ═════════════════════════════════════════════════════════════════ */
         /* MODE 2: SECTION DETAIL VIEW (개별 섹션 풀스토리 에디토리얼 뷰)       */
         /* ═════════════════════════════════════════════════════════════════ */
-        <div className="w-full flex flex-col flex-1">
+        <div className="w-full flex flex-col flex-1 bg-transparent">
           
           {/* Back to Hub Floating / Top Navigation Bar */}
           <div className="w-full bg-black/90 backdrop-blur-md text-white px-4 sm:px-8 md:px-12 py-3 flex items-center justify-between text-xs font-mono tracking-wider uppercase z-30 border-b border-white/10">

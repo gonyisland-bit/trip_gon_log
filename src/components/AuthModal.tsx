@@ -153,37 +153,8 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
         return;
       }
 
-      // Pre-check duplicate email and username in Firestore
-      setLoading(true);
-      const cleanEmail = email.trim().toLowerCase();
-      const cleanUsername = username.trim().toLowerCase();
-
-      try {
-        // 1. Username duplicate check (아이디 자체의 고유성 검사)
-        const usernameQuery = query(collection(db, 'users'), where('username', '==', cleanUsername));
-        const usernameSnap = await getDocs(usernameQuery);
-        if (!usernameSnap.empty) {
-          setError('이미 사용 중인 아이디입니다. 다른 아이디를 입력해 주세요.');
-          setLoading(false);
-          return;
-        }
-
-        // 2. Email duplicate check in users collection (전체 이메일 주소 단위 검사)
-        const emailQuery = query(collection(db, 'users'), where('email', '==', cleanEmail));
-        const emailSnap = await getDocs(emailQuery);
-        if (!emailSnap.empty) {
-          setError('이미 등록된 이메일 계정입니다.');
-          setLoading(false);
-          return;
-        }
-
-        setLoading(false);
-        setIsConfirmOpen(true);
-      } catch (checkErr) {
-        console.warn('Pre-check error, proceeding to Auth:', checkErr);
-        setLoading(false);
-        setIsConfirmOpen(true);
-      }
+      // Open Swiss Minimal 2-step confirmation modal directly
+      setIsConfirmOpen(true);
     } else {
       executeAuth(false);
     }
@@ -198,17 +169,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
         const cleanEmail = email.trim().toLowerCase();
         const cleanUsername = username.trim().toLowerCase();
 
-        // Double check username right before creation
-        const usernameQuery = query(collection(db, 'users'), where('username', '==', cleanUsername));
-        const usernameSnap = await getDocs(usernameQuery);
-        if (!usernameSnap.empty) {
-          setError('이미 사용 중인 아이디입니다. 다른 아이디를 입력해 주세요.');
-          setIsConfirmOpen(false);
-          setLoading(false);
-          return;
-        }
-
-        // 1. Create Firebase Auth user
+        // 1. Create Firebase Auth user (Native email duplicate & format check)
         const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
         const user = userCredential.user;
 
