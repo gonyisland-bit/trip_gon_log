@@ -206,6 +206,27 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
           : (Math.random().toString(36).substring(2, 11) + Date.now().toString(36));
 
         // 2. Save UserProfile to both users/{uid} and public users collection
+        const newProfile: UserProfile = {
+          uid: user.uid,
+          email: cleanEmail,
+          username: cleanUsername,
+          profileType: 'icon',
+          profileIcon: profileIcon || 'user',
+          lastName: lastName.trim(),
+          firstName: firstName.trim(),
+          birthdate: birthdate.trim(),
+          phone: phone.trim(),
+          role: isSuper ? 'admin' : 'user',
+          status: isSuper ? 'approved' : 'pending',
+          approvalToken,
+          permissions: {
+            canCreate: true,
+            canEdit: isSuper,
+            canDelete: isSuper,
+          },
+          createdAt: Date.now(),
+        };
+
         await Promise.allSettled([
           setDoc(doc(db, 'users', user.uid), newProfile),
           setDoc(doc(db, 'users', 'public', 'users', user.uid), newProfile)
