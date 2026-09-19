@@ -874,13 +874,25 @@ export function HomePage({
   });
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'app_settings', 'home_widgets'), (snap) => {
+    // Standard secure path under users/public/settings with fallback to app_settings
+    const unsub = onSnapshot(doc(db, 'users', 'public', 'settings', 'home_widgets'), (snap) => {
       if (snap.exists()) {
         const data = snap.data() as HomeWidgetConfig;
         setWidgetConfig(data);
         try {
           localStorage.setItem('cached_home_widget_config', JSON.stringify(data));
         } catch (_) {}
+      } else {
+        // Fallback for backward compatibility
+        onSnapshot(doc(db, 'app_settings', 'home_widgets'), (legacySnap) => {
+          if (legacySnap.exists()) {
+            const legacyData = legacySnap.data() as HomeWidgetConfig;
+            setWidgetConfig(legacyData);
+            try {
+              localStorage.setItem('cached_home_widget_config', JSON.stringify(legacyData));
+            } catch (_) {}
+          }
+        }, () => {});
       }
     }, (err) => {
       console.warn("Home widgets firestore listen notice:", err);
@@ -897,7 +909,8 @@ export function HomePage({
   });
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'settings', 'calendar_weather_cities'), (snap) => {
+    // Standard secure path under users/public/settings with fallback to settings
+    const unsub = onSnapshot(doc(db, 'users', 'public', 'settings', 'calendar_weather_cities'), (snap) => {
       if (snap.exists()) {
         const data = snap.data();
         if (Array.isArray(data?.cities)) {
@@ -906,6 +919,19 @@ export function HomePage({
             localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(data.cities));
           } catch (_) {}
         }
+      } else {
+        // Fallback for legacy path
+        onSnapshot(doc(db, 'settings', 'calendar_weather_cities'), (legacySnap) => {
+          if (legacySnap.exists()) {
+            const data = legacySnap.data();
+            if (Array.isArray(data?.cities)) {
+              setCalendarWeatherCities(data.cities);
+              try {
+                localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(data.cities));
+              } catch (_) {}
+            }
+          }
+        }, () => {});
       }
     }, (err) => {
       console.warn("Calendar weather cities listen notice:", err);

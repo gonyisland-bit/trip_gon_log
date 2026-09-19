@@ -349,7 +349,7 @@ export function ManageHubPage({
   const savedCalendarCitiesSnapshotRef = useRef<string>(JSON.stringify(calendarWeatherCities));
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'settings', 'calendar_weather_cities'), (snap) => {
+    const unsub = onSnapshot(doc(db, 'users', 'public', 'settings', 'calendar_weather_cities'), (snap) => {
       if (snap.exists()) {
         const data = snap.data();
         if (Array.isArray(data?.cities) && data.cities.length > 0) {
@@ -436,7 +436,7 @@ export function ManageHubPage({
     setIsSavingCalendar(true);
     try {
       localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(calendarWeatherCities));
-      await setDoc(doc(db, 'settings', 'calendar_weather_cities'), { cities: calendarWeatherCities }, { merge: true });
+      await setDoc(doc(db, 'users', 'public', 'settings', 'calendar_weather_cities'), { cities: calendarWeatherCities }, { merge: true });
       savedCalendarCitiesSnapshotRef.current = JSON.stringify(calendarWeatherCities);
       setSaveRevision(prev => prev + 1);
       setCalendarSaveSuccess(true);
@@ -1917,7 +1917,7 @@ export function ManageHubPage({
   const savedHomeWidgetsSnapshotRef = useRef<string>('');
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'app_settings', 'home_widgets'), (snap) => {
+    const unsub = onSnapshot(doc(db, 'users', 'public', 'settings', 'home_widgets'), (snap) => {
       if (snap.exists()) {
         const data = snap.data() as HomeWidgetConfig;
         setWidgetShowCalendar(data.showCalendarArchive ?? true);
@@ -2107,6 +2107,16 @@ export function ManageHubPage({
     );
   }, [title, subtitle, homeJourneyLimit, selectedHeroIds, autoSlide, slideDuration, mediaType, showMarquee, homeMarquee, homeSpeed, gradientEnabled, gradientFrom, gradientTo, homeMagSectionId, homeMagLimit, localLandingHeroImage, localLandingHeroMedia, isHomeWidgetsDirty, saveRevision]);
 
+  // Snapshot ref for trip ordering in ARCHIVE
+  const savedTripOrderRef = useRef<string>('');
+
+  // Dirty tracking for Trip order in ARCHIVE
+  const isTripOrderDirty = useMemo(() => {
+    if (!savedTripOrderRef.current || localJourneys.length === 0) return false;
+    const currentOrder = JSON.stringify(localJourneys.map(j => j.id));
+    return savedTripOrderRef.current !== currentOrder;
+  }, [localJourneys, saveRevision]);
+
   // Dirty tracking for currently selected journey in ARCHIVE mode
   const isArchiveDirty = useMemo(() => {
     if (!selectedJourney) return false;
@@ -2234,12 +2244,13 @@ export function ManageHubPage({
         statusBadge: editStatusBadge,
       }));
     }
+    savedTripOrderRef.current = JSON.stringify(localJourneys.map(j => j.id));
     setSaveRevision(prev => prev + 1);
     if (onDirtyChange) onDirtyChange(false);
   };
 
   // Unified global dirty state across all management tabs & sub-settings
-  const isAnyDirty = isHomeDirty || isArchiveDirty || isMagazineDirty || isArchiveHubHeaderDirty || isMagazineHubHeaderDirty || isBgmDirty || isPresetsDirty || isCalendarDirty;
+  const isAnyDirty = isHomeDirty || isArchiveDirty || isTripOrderDirty || isMagazineDirty || isArchiveHubHeaderDirty || isMagazineHubHeaderDirty || isBgmDirty || isPresetsDirty || isCalendarDirty;
 
   useEffect(() => {
     if (onDirtyChange) {
@@ -2355,6 +2366,19 @@ export function ManageHubPage({
         setWidgetCities(wSnap.cities || []);
       } catch (_) {}
     }
+
+    if (savedTripOrderRef.current) {
+      try {
+        const orderIds: (string | number)[] = JSON.parse(savedTripOrderRef.current);
+        setLocalJourneys(prev => {
+          const map = new Map(prev.map(j => [String(j.id), j]));
+          const reordered = orderIds.map(id => map.get(String(id))).filter(Boolean) as Journey[];
+          const missing = prev.filter(j => !orderIds.map(String).includes(String(j.id)));
+          return [...reordered, ...missing];
+        });
+      } catch (_) {}
+    }
+
     setSaveRevision(prev => prev + 1);
     if (onDirtyChange) onDirtyChange(false);
   };
@@ -2406,6 +2430,9 @@ export function ManageHubPage({
     }
 
     setLocalJourneys(combined);
+    if (!savedTripOrderRef.current && combined.length > 0) {
+      savedTripOrderRef.current = JSON.stringify(combined.map(j => j.id));
+    }
     if (combined.length > 0 && selectedJourneyId === null) {
       setSelectedJourneyId(combined[0].id);
     }
@@ -2438,7 +2465,7 @@ export function ManageHubPage({
   }, [selectedJourneyId, selectedJourney]);
 
   // Order shift handlers (▲ / ▼)
-  const handleMoveOrder = async (index: number, direction: 'up' | 'down') => {
+  const handleMoveOrder = (index: number, direction: 'up' | 'down') => {
     if (!isLoggedIn) return alert('로그인 후 순서를 변경할 수 있습니다.');
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= localJourneys.length) return;
@@ -2448,12 +2475,6 @@ export function ManageHubPage({
     newArr.splice(targetIndex, 0, moved);
 
     setLocalJourneys(newArr);
-    const orderedIds = newArr.map(j => j.id);
-    try {
-      await onReorderTrips(orderedIds);
-    } catch (err) {
-      console.error('Failed to update trip order:', err);
-    }
   };
 
   // Drag and Drop handlers
@@ -2468,7 +2489,7 @@ export function ManageHubPage({
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleDrop = async (e: React.DragEvent, dropIndex: number) => {
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
     e.preventDefault();
     if (draggedIndex === null || draggedIndex === dropIndex) return;
 
@@ -2478,12 +2499,6 @@ export function ManageHubPage({
 
     setDraggedIndex(null);
     setLocalJourneys(newArr);
-    const orderedIds = newArr.map(j => j.id);
-    try {
-      await onReorderTrips(orderedIds);
-    } catch (err) {
-      console.error('Failed to update trip order:', err);
-    }
   };
 
   // Save journey handler
@@ -2524,6 +2539,14 @@ export function ManageHubPage({
         }
         return j;
       }));
+
+      if (isTripOrderDirty) {
+        try {
+          await onReorderTrips(localJourneys.map(j => j.id));
+        } catch (oErr) {
+          console.warn('Failed to update trip order during save trip:', oErr);
+        }
+      }
 
       savedArchiveSnapshotRef.current[selectedJourney.id] = JSON.stringify(getNormalizedJourneyData({
         title: editTitle,
@@ -2644,7 +2667,8 @@ export function ManageHubPage({
         showUpcomingDDay: widgetShowDDay,
         cities: widgetCities
       };
-      await setDoc(doc(db, 'app_settings', 'home_widgets'), widgetConfigData, { merge: true });
+      await setDoc(doc(db, 'users', 'public', 'settings', 'home_widgets'), widgetConfigData, { merge: true });
+      await setDoc(doc(db, 'users', 'public', 'settings', 'home'), { homeWidgets: widgetConfigData }, { merge: true });
       savedHomeWidgetsSnapshotRef.current = JSON.stringify(widgetConfigData);
 
       savedHomeSnapshotRef.current = {
@@ -3695,7 +3719,8 @@ export function ManageHubPage({
           showUpcomingDDay: widgetShowDDay,
           cities: widgetCities
         };
-        await setDoc(doc(db, 'app_settings', 'home_widgets'), widgetConfigData, { merge: true });
+        await setDoc(doc(db, 'users', 'public', 'settings', 'home_widgets'), widgetConfigData, { merge: true });
+        await setDoc(doc(db, 'users', 'public', 'settings', 'home'), { homeWidgets: widgetConfigData }, { merge: true });
         savedHomeWidgetsSnapshotRef.current = JSON.stringify(widgetConfigData);
       } catch (widgetErr) {
         console.warn('Home widgets save notice in saveAll:', widgetErr);
@@ -3830,11 +3855,21 @@ export function ManageHubPage({
       // 8. Save Calendar weather cities to Firestore & localStorage
       try {
         localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(calendarWeatherCities));
-        await setDoc(doc(db, 'settings', 'calendar_weather_cities'), { cities: calendarWeatherCities }, { merge: true });
+        await setDoc(doc(db, 'users', 'public', 'settings', 'calendar_weather_cities'), { cities: calendarWeatherCities }, { merge: true });
       } catch (cErr) {
         console.warn('Firestore calendar weather cities sync notice:', cErr);
       }
       setCalendarSaveSuccess(true);
+
+      // 9. Save Trip Order if dirty
+      if (isTripOrderDirty) {
+        try {
+          await onReorderTrips(localJourneys.map(j => j.id));
+          savedTripOrderRef.current = JSON.stringify(localJourneys.map(j => j.id));
+        } catch (oErr) {
+          console.warn('Trip order reorder notice in saveAllSettings:', oErr);
+        }
+      }
 
       // 9. Update all snapshot refs to ensure isAnyDirty is 100% false immediately
       savedHomeSnapshotRef.current = {
@@ -3916,6 +3951,15 @@ export function ManageHubPage({
   // Smart save handler targeting active mode first, then other dirty domains
   const saveActiveOrAllSettings = async (showModal: boolean = false) => {
     try {
+      if (isTripOrderDirty) {
+        try {
+          await onReorderTrips(localJourneys.map(j => j.id));
+          savedTripOrderRef.current = JSON.stringify(localJourneys.map(j => j.id));
+        } catch (oErr) {
+          console.warn('Trip order reorder notice in saveActiveOrAllSettings:', oErr);
+        }
+      }
+
       if (activeMode === 'ARCHIVE') {
         await handleSaveJourney(showModal);
         if (isHomeDirty) {
@@ -5084,21 +5128,6 @@ export function ManageHubPage({
                     </div>
                   </div>
                 </section>
-
-              {/* Save Button */}
-              <div className="pt-6 border-t border-black/20 dark:border-white/20 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => handleSaveHome()}
-                  disabled={isSavingHome}
-                  className={`px-8 py-3 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity ${
-                    homeSaveSuccess ? '!bg-green-600 !text-white' : ''
-                  }`}
-                >
-                  {homeSaveSuccess ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                  <span>{homeSaveSuccess ? 'SAVED' : 'SAVE'}</span>
-                </button>
-              </div>
             </div>
           </div>
         )}

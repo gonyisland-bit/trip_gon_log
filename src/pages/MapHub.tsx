@@ -1905,12 +1905,30 @@ export function MapHubPage({
     });
 
     // Camera adjustment: Single city -> flyTo, Multi-city -> fitBounds
+    // 모바일에서는 하단 국가 모달(65vh)을 감안하여 상단 가시 지도(35vh) 중앙으로 오프셋 보정
+    const isMobile = window.innerWidth < 640;
     if (selectedPoints.length === 1) {
       const targetZoom = Math.max(8.5, (selectedCountry?.zoom ?? 5) + 1.5);
-      map.flyTo([selectedPoints[0].lat, selectedPoints[0].lng], targetZoom, { duration: 0.9 });
+      const rawLat = selectedPoints[0].lat;
+      const rawLng = selectedPoints[0].lng;
+      let targetCenter: [number, number] = [rawLat, rawLng];
+      if (isMobile) {
+        const pt = map.project([rawLat, rawLng], targetZoom).add([0, window.innerHeight * 0.26]);
+        const unprojected = map.unproject(pt, targetZoom);
+        targetCenter = [unprojected.lat, unprojected.lng];
+      }
+      map.flyTo(targetCenter, targetZoom, { duration: 0.9 });
     } else if (selectedPoints.length >= 2) {
       const bounds = L.latLngBounds(selectedPoints.map(p => [p.lat, p.lng]));
-      map.fitBounds(bounds, { padding: [80, 80], maxZoom: 13 });
+      if (isMobile) {
+        map.fitBounds(bounds, {
+          paddingTopLeft: [40, 40],
+          paddingBottomRight: [40, window.innerHeight * 0.55],
+          maxZoom: 13
+        });
+      } else {
+        map.fitBounds(bounds, { padding: [80, 80], maxZoom: 13 });
+      }
     }
 
     return () => {
