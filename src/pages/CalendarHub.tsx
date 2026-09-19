@@ -1634,7 +1634,7 @@ export function CalendarHubPage({
       {isWeatherMode && isWeatherBgEnabled && cityWeatherData && (
         <WeatherEffectLayer
           weatherCode={cityWeatherData.weatherCode}
-          precipitationProb={cityWeatherData.precipitationProb}
+          precipitationProb={cityWeatherData.forecast?.[0]?.precipitationProb ?? 0}
           isDarkMode={isDarkMode}
         />
       )}
@@ -1998,9 +1998,10 @@ export function CalendarHubPage({
             {/* Left Location Indicator with Live Weather Motion */}
             <div className="flex items-center gap-1.5 shrink-0 pr-2 border-r border-black/15 dark:border-white/15 text-[11px] font-mono font-black text-black dark:text-white uppercase tracking-wider">
               {cityWeatherData ? (() => {
-                const meta = getWeatherMeta(cityWeatherData.weatherCode, cityWeatherData.precipitationProb);
+                const todayPop = cityWeatherData.forecast?.[0]?.precipitationProb ?? 0;
+                const meta = getWeatherMeta(cityWeatherData.weatherCode, todayPop);
                 const IconComp = meta.icon;
-                const isRainy = (cityWeatherData.weatherCode >= 51 && cityWeatherData.weatherCode <= 67) || (cityWeatherData.weatherCode >= 80 && cityWeatherData.weatherCode <= 82) || (cityWeatherData.precipitationProb >= 55);
+                const isRainy = (cityWeatherData.weatherCode >= 51 && cityWeatherData.weatherCode <= 67) || (cityWeatherData.weatherCode >= 80 && cityWeatherData.weatherCode <= 82) || (todayPop >= 55);
                 return (
                   <span className="flex items-center gap-1">
                     <IconComp className={`w-3.5 h-3.5 ${meta.colorClass} ${isRainy ? 'animate-bounce' : 'animate-pulse'}`} />

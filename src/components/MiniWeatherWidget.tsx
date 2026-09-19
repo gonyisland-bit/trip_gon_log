@@ -6,10 +6,10 @@ import { CityWeatherConfig } from '../types';
 import { fetchCityWeather, getWeatherMeta, CityWeatherData } from '../utils/weatherApi';
 
 const DEFAULT_CITIES: CityWeatherConfig[] = [
-  { nameKo: '서울', nameEn: 'SEOUL', lat: 37.5665, lon: 126.9780, country: 'KR', timezone: 'Asia/Seoul' },
-  { nameKo: '도쿄', nameEn: 'TOKYO', lat: 35.6762, lon: 139.6503, country: 'JP', timezone: 'Asia/Tokyo' },
-  { nameKo: '파리', nameEn: 'PARIS', lat: 48.8566, lon: 2.3522, country: 'FR', timezone: 'Europe/Paris' },
-  { nameKo: '런던', nameEn: 'LONDON', lat: 51.5074, lon: -0.1278, country: 'GB', timezone: 'Europe/London' },
+  { name: '서울', nameEn: 'SEOUL', lat: 37.5665, lng: 126.9780, country: 'KR', timezone: 'Asia/Seoul' },
+  { name: '도쿄', nameEn: 'TOKYO', lat: 35.6762, lng: 139.6503, country: 'JP', timezone: 'Asia/Tokyo' },
+  { name: '파리', nameEn: 'PARIS', lat: 48.8566, lng: 2.3522, country: 'FR', timezone: 'Europe/Paris' },
+  { name: '런던', nameEn: 'LONDON', lat: 51.5074, lng: -0.1278, country: 'GB', timezone: 'Europe/London' },
 ];
 
 interface MiniWeatherWidgetProps {
@@ -66,14 +66,19 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
     const handleGlobalChange = (e: Event) => {
       const customEvent = e as CustomEvent<CityWeatherConfig>;
       if (customEvent.detail && customEvent.detail.nameEn) {
-        setSelectedCity(customEvent.detail);
+        const matchingCity = cities.find(c => c.nameEn.toUpperCase() === customEvent.detail.nameEn.toUpperCase());
+        if (matchingCity) {
+          setSelectedCity(matchingCity);
+        } else {
+          setSelectedCity(customEvent.detail);
+        }
       }
     };
     window.addEventListener('selectedWeatherCityChanged', handleGlobalChange);
     return () => {
       window.removeEventListener('selectedWeatherCityChanged', handleGlobalChange);
     };
-  }, []);
+  }, [cities]);
 
   // 외부 클릭 시 팝오버 닫기
   useEffect(() => {
@@ -98,7 +103,7 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
     let isCancelled = false;
     setIsLoading(true);
     const lat = selectedCity.lat;
-    const lon = (selectedCity as any).lng ?? (selectedCity as any).lon ?? 126.9780;
+    const lon = selectedCity.lng;
     const tz = selectedCity.timezone || 'Asia/Seoul';
 
     fetchCityWeather(lat, lon, tz, selectedCity.nameEn, selectedCity.country)
@@ -129,8 +134,9 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
     window.dispatchEvent(new CustomEvent('selectedWeatherCityChanged', { detail: city }));
   };
 
+  const todayPop = weatherData?.forecast?.[0]?.precipitationProb ?? 0;
   const weatherMeta = weatherData
-    ? getWeatherMeta(weatherData.weatherCode, weatherData.precipitationProb)
+    ? getWeatherMeta(weatherData.weatherCode, todayPop)
     : null;
   const WeatherIcon = weatherMeta?.icon;
 
@@ -145,7 +151,7 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
             ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
             : 'bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 border-black/10 dark:border-white/15 text-black dark:text-white'
         }`}
-        title={`날씨 지역: ${selectedCity.nameKo || (selectedCity as any).name || selectedCity.nameEn} (클릭하여 변경)`}
+        title={`날씨 지역: ${selectedCity.name || selectedCity.nameEn} (클릭하여 변경)`}
       >
         {isLoading ? (
           <Loader2 className="w-3 h-3 animate-spin opacity-60 shrink-0" />
@@ -162,7 +168,7 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
         )}
 
         <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider hidden xs:inline shrink-0">
-          {selectedCity.nameKo || (selectedCity as any).name || selectedCity.nameEn}
+          {selectedCity.name || selectedCity.nameEn}
         </span>
 
         <ChevronDown className={`w-2.5 h-2.5 opacity-50 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
@@ -183,7 +189,7 @@ export const MiniWeatherWidget: React.FC<MiniWeatherWidgetProps> = ({ className 
           <div className="max-h-56 overflow-y-auto hide-scrollbar py-1">
             {cities.map((city) => {
               const isSelected = city.nameEn.toUpperCase() === selectedCity.nameEn.toUpperCase();
-              const cityName = city.nameKo || (city as any).name || city.nameEn;
+              const cityName = city.name || city.nameEn;
               return (
                 <button
                   key={city.nameEn}
