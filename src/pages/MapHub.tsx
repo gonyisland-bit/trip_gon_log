@@ -1598,11 +1598,6 @@ export function MapHubPage({
   const [isDayNightEnabled, setIsDayNightEnabled] = useState<boolean>(true);
   const [currentClockTime, setCurrentClockTime] = useState<Date>(() => new Date());
 
-  // Expandable Search State & Refs
-  const [isSearchExpanded, setIsSearchExpanded] = useState<boolean>(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const searchContainerRef = useRef<HTMLDivElement>(null);
-
   // Real-time map clock tick (every 1 second)
   useEffect(() => {
     const timer = setInterval(() => {
@@ -1624,31 +1619,6 @@ export function MapHubPage({
     const mm = String(currentClockTime.getMinutes()).padStart(2, '0');
     return `${hh}:${mm}`;
   }, [currentClockTime]);
-
-  // Handle outside click & Escape key for expandable search bar
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setIsSearchExpanded(false);
-        setIsSearchDropdownOpen(false);
-        searchInputRef.current?.blur();
-      }
-    };
-    const handleClickOutside = (e: MouseEvent) => {
-      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
-        if (!searchQuery.trim()) {
-          setIsSearchExpanded(false);
-        }
-        setIsSearchDropdownOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [searchQuery]);
 
   // In-place Trip Builder Split-Screen State
   const [isBuilderOpen, setIsBuilderOpen] = useState<boolean>(() => Boolean(initialBuilderOpen));
@@ -1704,6 +1674,35 @@ export function MapHubPage({
   }, [isBuilderOpen]);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchExpanded, setIsSearchExpanded] = useState<boolean>(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Handle outside click & Escape key for expandable search bar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsSearchExpanded(false);
+        setIsSearchDropdownOpen(false);
+        searchInputRef.current?.blur();
+      }
+    };
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        if (!searchQuery.trim()) {
+          setIsSearchExpanded(false);
+        }
+        setIsSearchDropdownOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [searchQuery]);
+
   const [isMobileControlsOpen, setIsMobileControlsOpen] = useState<boolean>(false);
   const mobileControlsRef = useRef<HTMLDivElement>(null);
   const isControlsClosingRef = useRef<boolean>(false);
