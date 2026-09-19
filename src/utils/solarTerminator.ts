@@ -118,3 +118,43 @@ export function getSolarAltitude(lat: number, lng: number, date: Date = new Date
 export function isLocationInNight(lat: number, lng: number, date: Date = new Date(), thresholdDeg: number = -3): boolean {
   return getSolarAltitude(lat, lng, date) <= thresholdDeg;
 }
+
+/**
+ * Generates a continuous night terminator polygon spanning across multiple world wraps (e.g. -540 to +540 degrees).
+ * Used for seamless CSS polygon clip-path masking across the entire pannable world map.
+ */
+export function getContinuousNightPolygon(
+  date: Date = new Date(),
+  lngStep: number = 2,
+  minLng: number = -540,
+  maxLng: number = 540
+): [number, number][] {
+  const { delta, gha } = getSolarPosition(date);
+  const tanDelta = Math.tan(delta);
+  const points: [number, number][] = [];
+
+  for (let lng = minLng; lng <= maxLng; lng += lngStep) {
+    const lngRad = (lng * Math.PI) / 180;
+    const hourAngle = lngRad + gha;
+    let latDeg: number;
+    if (Math.abs(tanDelta) < 1e-7) {
+      latDeg = Math.cos(hourAngle) > 0 ? -90 : 90;
+    } else {
+      const latRad = Math.atan(-Math.cos(hourAngle) / tanDelta);
+      latDeg = (latRad * 180) / Math.PI;
+    }
+    latDeg = Math.max(-85, Math.min(85, latDeg));
+    points.push([latDeg, lng]);
+  }
+
+  // Close the polygon towards the pole currently in polar night across the entire longitude span
+  if (delta >= 0) {
+    points.push([-85, maxLng]);
+    points.push([-85, minLng]);
+  } else {
+    points.push([85, maxLng]);
+    points.push([85, minLng]);
+  }
+
+  return points;
+}

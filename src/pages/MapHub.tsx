@@ -8,7 +8,7 @@ import { cleanAdministrativeDistricts } from '../components/SummaryView';
 import { TripBuilderPanel } from '../components/TripBuilderPanel';
 import { findCityByNameOrAlias, DestinationCountry, DestinationCity, PresetTripPlan, WORLD_CITIES } from '../data/worldDestinations';
 import { fetchCityWeather, getWeatherMeta, CityWeatherData } from '../utils/weatherApi';
-import { getNightTerminatorPolygon, shiftPolygonCoordinates, isLocationInNight } from '../utils/solarTerminator';
+import { getNightTerminatorPolygon, shiftPolygonCoordinates, isLocationInNight, getContinuousNightPolygon } from '../utils/solarTerminator';
 
 export interface CountryInfo {
   code: string;
@@ -3183,7 +3183,7 @@ export function MapHubPage({
       '마드리드', '베를린', '토론토', '밴쿠버', '이스탄불', '타이베이', '오사카'
     ]);
 
-    // 1. Function to update SVG clipPath projection from geo-coordinates to screen pixels
+    // 1. Function to update CSS clipPath polygon projection directly using Leaflet LayerPoints
     const updateNightClip = () => {
       const currentMap = mapRef.current;
       if (!currentMap) return;
@@ -3196,29 +3196,19 @@ export function MapHubPage({
         return;
       }
 
-      const polyBase = document.getElementById('nightClipPolyBase');
-      const polyEast = document.getElementById('nightClipPolyEast');
-      const polyWest = document.getElementById('nightClipPolyWest');
-      if (!polyBase || !polyEast || !polyWest) return;
-
       const now = new Date();
-      const basePoints = getNightTerminatorPolygon(now, 2);
-      const pointsEast = shiftPolygonCoordinates(basePoints, 360);
-      const pointsWest = shiftPolygonCoordinates(basePoints, -360);
+      // Generate wide continuous polygon covering -540 to +540 degrees (3 full world spans)
+      const continuousPoints = getContinuousNightPolygon(now, 2, -540, 540);
 
-      const toSvgPoints = (coords: [number, number][]) => {
-        return coords.map(([lat, lng]) => {
-          const pt = currentMap.latLngToContainerPoint([lat, lng]);
-          return `${Math.round(pt.x)},${Math.round(pt.y)}`;
-        }).join(' ');
-      };
+      // Convert geo-coordinates to Leaflet LayerPoint (matches nightTilePane's local coordinate system)
+      const layerPoints = continuousPoints.map(([lat, lng]) => {
+        const pt = currentMap.latLngToLayerPoint([lat, lng]);
+        return `${Math.round(pt.x)}px ${Math.round(pt.y)}px`;
+      });
 
-      polyBase.setAttribute('points', toSvgPoints(basePoints));
-      polyEast.setAttribute('points', toSvgPoints(pointsEast));
-      polyWest.setAttribute('points', toSvgPoints(pointsWest));
-
-      nightPane.style.clipPath = 'url(#nightTileClip)';
-      nightPane.style.webkitClipPath = 'url(#nightTileClip)';
+      const polygonCss = `polygon(${layerPoints.join(', ')})`;
+      nightPane.style.clipPath = polygonCss;
+      nightPane.style.webkitClipPath = polygonCss;
     };
 
     const renderTerminatorAndLights = () => {
@@ -4370,21 +4360,6 @@ export function MapHubPage({
         ref={mapContainerRef} 
         className="w-full h-full z-0" 
       />
-
-      {/* Real-Time SVG ClipPath Definition for Night Tiles */}
-      <svg 
-        className="absolute pointer-events-none w-0 h-0 overflow-hidden" 
-        style={{ position: 'absolute', width: 0, height: 0, visibility: 'hidden' }}
-        aria-hidden="true"
-      >
-        <defs>
-          <clipPath id="nightTileClip" clipPathUnits="userSpaceOnUse">
-            <polygon id="nightClipPolyBase" points="" />
-            <polygon id="nightClipPolyEast" points="" />
-            <polygon id="nightClipPolyWest" points="" />
-          </clipPath>
-        </defs>
-      </svg>
 
       {/* 2.5 Floating Re-center Button when diverged during trip building */}
       {isBuilderOpen && isMapDivergedFromBuilder && builderTargetName && (
