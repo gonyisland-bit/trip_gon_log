@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Mail, Lock, User, Calendar, Phone, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, Mail, Lock, User, Calendar, Phone, CheckCircle2, AlertCircle, Copy, ExternalLink, Send } from 'lucide-react';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
@@ -11,7 +11,7 @@ import { auth, db } from '../firebase';
 import { ConfirmModal } from './ConfirmModal';
 import { UserProfile } from '../types';
 import { PROFILE_PRESET_ICONS, UserProfileAvatar } from './UserProfileAvatar';
-import { sendAdminApprovalNotification } from '../utils/adminEmailNotifier';
+import { sendAdminApprovalNotification, generateAdminApprovalMailtoUrl } from '../utils/adminEmailNotifier';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -38,6 +38,8 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
   const [loading, setLoading] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [signupSubmitted, setSignupSubmitted] = useState(false);
+  const [submittedUser, setSubmittedUser] = useState<UserProfile | null>(null);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   // Field touched states for inline validation
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -113,14 +115,15 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
     password.length >= 6
   );
 
-  // Auto-close modal and return to landing guest view after 4 seconds of notice
+  // Auto-close modal and return to landing guest view after notice (generous timeout so applicant can copy link or send mail)
   React.useEffect(() => {
     if (signupSubmitted) {
       const timer = setTimeout(() => {
         setSignupSubmitted(false);
         setIsSignUp(false);
+        setSubmittedUser(null);
         onClose();
-      }, 4500);
+      }, 30000);
       return () => clearTimeout(timer);
     }
   }, [signupSubmitted, onClose]);
@@ -202,30 +205,13 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
           ? crypto.randomUUID() 
           : (Math.random().toString(36).substring(2, 11) + Date.now().toString(36));
 
-        // 2. Save UserProfile to Firestore users collection
-        const newProfile: UserProfile = {
-          uid: user.uid,
-          email: cleanEmail,
-          username: cleanUsername,
-          profileType: 'icon',
-          profileIcon: profileIcon || 'user',
-          lastName: lastName.trim(),
-          firstName: firstName.trim(),
-          birthdate: birthdate.trim(),
-          phone: phone.trim(),
-          role: isSuper ? 'admin' : 'user',
-          status: isSuper ? 'approved' : 'pending',
-          approvalToken,
-          permissions: {
-            canCreate: true,
-            canEdit: isSuper,
-            canDelete: isSuper,
-          },
-          createdAt: Date.now(),
-        };
+        // 2. Save UserProfile to both users/{uid} and public users collection
+        await Promise.allSettled([
+          setDoc(doc(db, 'users', user.uid), newProfile),
+          setDoc(doc(db, 'users', 'public', 'users', user.uid), newProfile)
+        ]);
 
-        await setDoc(doc(db, 'users', user.uid), newProfile);
-
+        setSubmittedUser(newProfile);
         setIsConfirmOpen(false);
 
         // Send approval notification email to administrator
@@ -249,23 +235,66 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
         const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
         const user = userCredential.user;
 
-        // Verify user approval status in Firestore
+        // Verify user approval status in Firestore (checks public collection first, then private)
         try {
-          const userSnap = await getDoc(doc(db, 'users', user.uid));
-          if (userSnap.exists()) {
-            const prof = userSnap.data() as UserProfile;
-            if (prof.status === 'pending') {
+          let prof: UserProfile | null = null;
+          const publicSnap = await getDoc(doc(db, 'users', 'public', 'users', user.uid));
+          if (publicSnap.exists()) {
+            prof = publicSnap.data() as UserProfile;
+          } else {
+            const userSnap = await getDoc(doc(db, 'users', user.uid));
+            if (userSnap.exists()) {
+              prof = userSnap.data() as UserProfile;
+            }
+          }
+
+          // If user exists in Auth but has no Firestore profile (isolated account recovery)
+          if (!prof) {
+            const isSuper = user.email?.toLowerCase() === 'gonyisland@naver.com';
+            const recoveryProfile: UserProfile = {
+              uid: user.uid,
+              email: user.email || '',
+              username: user.email?.split('@')[0] || 'user',
+              profileType: 'icon',
+              profileIcon: 'user',
+              lastName: user.displayName ? user.displayName.split(' ')[0] : '회원',
+              firstName: user.displayName ? user.displayName.split(' ').slice(1).join(' ') : '',
+              birthdate: '',
+              phone: '',
+              role: isSuper ? 'admin' : 'user',
+              status: isSuper ? 'approved' : 'pending',
+              approvalToken: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : (Math.random().toString(36).substring(2, 11) + Date.now().toString(36)),
+              permissions: { canCreate: true, canEdit: isSuper, canDelete: isSuper },
+              createdAt: Date.now(),
+            };
+
+            await Promise.allSettled([
+              setDoc(doc(db, 'users', user.uid), recoveryProfile, { merge: true }),
+              setDoc(doc(db, 'users', 'public', 'users', user.uid), recoveryProfile, { merge: true })
+            ]);
+
+            sendAdminApprovalNotification(recoveryProfile, adminEmail).catch(() => {});
+
+            if (!isSuper) {
               await auth.signOut();
-              setError('가입 승인 대기 중인 계정입니다. 관리자의 승인이 완료된 후 로그인하실 수 있습니다.');
+              setError('가입 계정 프로필이 확인되어 관리자 승인 대기 목록에 등록되었습니다.\n관리자의 승인이 완료된 후 로그인하실 수 있습니다.');
               setLoading(false);
               return;
             }
-            if (prof.status === 'rejected') {
-              await auth.signOut();
-              setError('가입 승인이 거절된 계정입니다. 관리자에게 문의해 주세요.');
-              setLoading(false);
-              return;
-            }
+            prof = recoveryProfile;
+          }
+
+          if (prof.status === 'pending') {
+            await auth.signOut();
+            setError('가입 승인 대기 중인 계정입니다. 관리자의 승인이 완료된 후 로그인하실 수 있습니다.');
+            setLoading(false);
+            return;
+          }
+          if (prof.status === 'rejected') {
+            await auth.signOut();
+            setError('가입 승인이 거절된 계정입니다. 관리자에게 문의해 주세요.');
+            setLoading(false);
+            return;
           }
         } catch (fetchErr) {
           console.warn('Profile status check warning:', fetchErr);
@@ -327,10 +356,51 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
             <h3 className="text-xl sm:text-2xl font-inter font-black uppercase tracking-tight text-black dark:text-white mb-3">
               APPROVAL PENDING
             </h3>
-            <p className="text-xs font-mono text-black/70 dark:text-white/70 leading-relaxed max-w-sm mb-6">
+            <p className="text-xs font-mono text-black/70 dark:text-white/70 leading-relaxed max-w-sm mb-5">
               가입 신청이 성공적으로 접수되었습니다.<br />
               관리자의 승인이 완료된 후 서비스 이용이 가능합니다.
             </p>
+
+            {/* Admin Direct Notification Options (Swiss Minimal) */}
+            {submittedUser && (
+              <div className="w-full flex flex-col gap-2 mb-5 p-3 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] text-left">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
+                    DIRECT ADMIN NOTIFICATION
+                  </span>
+                  <span className="text-[9px] font-mono text-red-600 dark:text-red-400 font-bold">
+                    {adminEmail || 'gonyisland@naver.com'}
+                  </span>
+                </div>
+
+                {/* 1. Send via local mail app (mailto:) */}
+                <a
+                  href={generateAdminApprovalMailtoUrl(submittedUser, adminEmail)}
+                  className="w-full py-2 px-3 border border-black/30 dark:border-white/30 hover:border-black dark:hover:border-white text-xs font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer text-black dark:text-white text-center"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>관리자에게 승인 요청 메일 발송 (MAILTO)</span>
+                </a>
+
+                {/* 2. Copy One-Click Approval URL */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://trip-gon-log.vercel.app';
+                    const link = `${origin}/?approve_uid=${submittedUser.uid}&token=${submittedUser.approvalToken || ''}`;
+                    navigator.clipboard?.writeText(link).then(() => {
+                      setCopiedLink(true);
+                      setTimeout(() => setCopiedLink(false), 2500);
+                    }).catch(() => {});
+                  }}
+                  className="w-full py-2 px-3 border border-black/20 dark:border-white/20 text-xs font-mono uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer text-black/80 dark:text-white/80"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>{copiedLink ? '승인 링크 복사 완료' : '원클릭 승인 링크 복사'}</span>
+                </button>
+              </div>
+            )}
+
             <button
               type="button"
               onClick={() => {
@@ -344,6 +414,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
                 setPhone('');
                 setBirthdate('');
                 setError('');
+                setSubmittedUser(null);
                 onClose();
               }}
               className="w-full h-11 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer"

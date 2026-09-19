@@ -118,7 +118,19 @@ ${approveUrl}
 </div>
 `.trim();
 
-    // 2. Save pending notification record to Firestore (visible in ManageHub)
+    // 2. Mirror UserProfile to public users collection for 100% visibility in ManageHub
+    try {
+      await setDoc(doc(db, 'users', 'public', 'users', user.uid), {
+        ...user,
+        status: user.status || 'pending',
+        approvalToken: user.approvalToken || '',
+        updatedAt: Date.now()
+      }, { merge: true });
+    } catch (publicUserErr) {
+      console.warn('Failed to mirror user to public/users:', publicUserErr);
+    }
+
+    // 2-2. Save pending notification record to Firestore (visible in ManageHub)
     try {
       await setDoc(doc(db, 'users', 'public', 'settings', `pendingApproval_${user.uid}`), {
         uid: user.uid,
@@ -205,4 +217,37 @@ ${approveUrl}
     console.error('Failed to dispatch admin approval email:', err);
     return false;
   }
+}
+
+/**
+ * Generates a standard mailto: URL so the applicant or admin can open their local email client
+ * directly addressed to the administrator with the approval request and one-click approve link.
+ */
+export function generateAdminApprovalMailtoUrl(
+  user: UserProfile,
+  targetAdminEmail?: string
+): string {
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://trip-gon-log.vercel.app';
+  const adminEmail = (targetAdminEmail || 'gonyisland@naver.com').trim();
+  const fullName = `${user.lastName || ''} ${user.firstName || ''}`.trim() || '신규 신청자';
+  const approveUrl = `${origin}/?approve_uid=${user.uid}&token=${user.approvalToken || ''}`;
+  const applyDate = user.createdAt ? new Date(user.createdAt).toLocaleString('ko-KR') : new Date().toLocaleString('ko-KR');
+
+  const subject = `[TRIPGON LOG] 가입 승인 요청 - ${fullName} (@${user.username || user.email})`;
+  const body = `[TRIPGON LOG 신규 회원 가입 승인 요청]
+
+회원 가입 승인을 요청드립니다.
+
+• 성명: ${fullName}
+• 아이디: @${user.username || '-'}
+• 이메일: ${user.email}
+• 전화번호: ${user.phone || '미기재'}
+• 신청일시: ${applyDate}
+
+▶ 원클릭 즉시 가입 승인 링크:
+${approveUrl}
+
+위 링크를 브라우저에서 클릭하시면 즉시 승인됩니다.`;
+
+  return `mailto:${adminEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }

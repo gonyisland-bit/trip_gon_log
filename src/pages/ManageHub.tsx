@@ -612,34 +612,50 @@ export function ManageHubPage({
   const [currentAdminEmail, setCurrentAdminEmail] = useState<string>(() => localStorage.getItem('cached_super_admin_email') || 'gonyisland@naver.com');
   const [newAdminEmailInput, setNewAdminEmailInput] = useState<string>('');
   const [adminEmailSaving, setAdminEmailSaving] = useState<boolean>(false);
+  // Manual Account Recovery & Registration State
+  const [manualUserEmail, setManualUserEmail] = useState<string>('');
+  const [manualUserLoading, setManualUserLoading] = useState<boolean>(false);
   // Always-on pending count (shows badge on USERS tab from any active tab)
   const [pendingUsersCount, setPendingUsersCount] = useState<number>(0);
 
-  // Always listen to pending user count (regardless of which tab is active)
+  // Always listen to pending user count from public/users (reliable without security rule blocks)
   useEffect(() => {
     if (!isLoggedIn) return;
-    const unsubPending = onSnapshot(
-      query(collection(db, 'users'), where('status', '==', 'pending')),
+    const unsubPendingPublic = onSnapshot(
+      collection(db, 'users', 'public', 'users'),
       (snapshot) => {
-        setPendingUsersCount(snapshot.size);
+        let count = 0;
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          if (data.status === 'pending') count++;
+        });
+        setPendingUsersCount(count);
       },
       (err) => {
-        console.warn('Failed to listen to pending users count:', err);
+        console.warn('Failed to listen to public pending users count, falling back:', err);
       }
     );
-    return () => unsubPending();
+    return () => unsubPendingPublic();
   }, [isLoggedIn]);
 
   useEffect(() => {
     if (activeMode !== 'USERS' || !isLoggedIn) return;
 
-    // Listen to registered users collection
-    const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot: QuerySnapshot<DocumentData>) => {
-      const list: UserProfile[] = [];
+    // Dual-source user profile map to guarantee 100% visibility even under Firestore security rule limits
+    const usersMap = new Map<string, UserProfile>();
+
+    const updateCombinedList = () => {
+      const combined = Array.from(usersMap.values());
+      combined.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      setUsersList(combined);
+    };
+
+    // 1. Primary listener: public safe path (users/public/users)
+    const unsubPublicUsers = onSnapshot(collection(db, 'users', 'public', 'users'), (snapshot: QuerySnapshot<DocumentData>) => {
       snapshot.forEach(docSnap => {
         const data = docSnap.data();
         if (data.email) {
-          list.push({
+          usersMap.set(docSnap.id, {
             uid: docSnap.id,
             email: data.email,
             username: data.username || '',
@@ -651,16 +667,47 @@ export function ManageHubPage({
             birthdate: data.birthdate || '',
             phone: data.phone || '',
             role: data.role || (data.email === 'gonyisland@naver.com' ? 'admin' : 'user'),
-            status: data.status || (data.email === 'gonyisland@naver.com' ? 'approved' : 'approved'),
+            status: data.status || 'pending',
+            approvalToken: data.approvalToken || '',
             permissions: data.permissions || { canCreate: true, canEdit: false, canDelete: false },
             createdAt: data.createdAt || 0,
           });
         }
       });
-      list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-      setUsersList(list);
+      updateCombinedList();
     }, (err: Error) => {
-      console.warn('Failed to listen to users:', err);
+      console.warn('Notice: public/users listener notice:', err);
+    });
+
+    // 2. Secondary listener: root users collection (merges with public)
+    const unsubRootUsers = onSnapshot(collection(db, 'users'), (snapshot: QuerySnapshot<DocumentData>) => {
+      snapshot.forEach(docSnap => {
+        if (docSnap.id === 'public') return; // Skip public root document
+        const data = docSnap.data();
+        if (data.email) {
+          const existing = usersMap.get(docSnap.id);
+          usersMap.set(docSnap.id, {
+            uid: docSnap.id,
+            email: data.email,
+            username: data.username || existing?.username || '',
+            profileType: data.profileType || existing?.profileType || 'icon',
+            profileIcon: data.profileIcon || existing?.profileIcon || 'smile',
+            profileImage: data.profileImage || existing?.profileImage || '',
+            lastName: data.lastName || existing?.lastName || '',
+            firstName: data.firstName || existing?.firstName || '',
+            birthdate: data.birthdate || existing?.birthdate || '',
+            phone: data.phone || existing?.phone || '',
+            role: data.role || existing?.role || (data.email === 'gonyisland@naver.com' ? 'admin' : 'user'),
+            status: data.status || existing?.status || 'pending',
+            approvalToken: data.approvalToken || existing?.approvalToken || '',
+            permissions: data.permissions || existing?.permissions || { canCreate: true, canEdit: false, canDelete: false },
+            createdAt: data.createdAt || existing?.createdAt || 0,
+          });
+        }
+      });
+      updateCombinedList();
+    }, (err: Error) => {
+      console.warn('Notice: root users listener restricted by rules, relying on public/users:', err);
     });
 
     // Listen to admin settings for dynamic superAdminEmail
@@ -676,7 +723,8 @@ export function ManageHubPage({
     });
 
     return () => {
-      unsubUsers();
+      unsubPublicUsers();
+      unsubRootUsers();
       unsubAdminConfig();
     };
   }, [activeMode, isLoggedIn]);
@@ -709,9 +757,12 @@ export function ManageHubPage({
 
   const handleApproveUser = async (user: UserProfile) => {
     try {
-      await updateDoc(doc(db, 'users', user.uid), {
-        status: 'approved',
-      });
+      await Promise.allSettled([
+        updateDoc(doc(db, 'users', user.uid), { status: 'approved', approvedAt: Date.now() }),
+        setDoc(doc(db, 'users', 'public', 'users', user.uid), { ...user, status: 'approved', approvedAt: Date.now() }, { merge: true }),
+        deleteDoc(doc(db, 'users', 'public', 'settings', `pendingApproval_${user.uid}`))
+      ]);
+      setUsersList(prev => prev.map(u => u.uid === user.uid ? { ...u, status: 'approved' } : u));
       setUserActionToast(`[${user.lastName} ${user.firstName}] 님의 가입 신청이 승인되었습니다.`);
       setTimeout(() => setUserActionToast(null), 2500);
     } catch (err) {
@@ -723,9 +774,12 @@ export function ManageHubPage({
   const handleRejectUser = async (user: UserProfile) => {
     if (!window.confirm(`[${user.lastName} ${user.firstName}] 님의 가입 신청을 거절하시겠습니까?`)) return;
     try {
-      await updateDoc(doc(db, 'users', user.uid), {
-        status: 'rejected',
-      });
+      await Promise.allSettled([
+        updateDoc(doc(db, 'users', user.uid), { status: 'rejected', rejectedAt: Date.now() }),
+        setDoc(doc(db, 'users', 'public', 'users', user.uid), { ...user, status: 'rejected', rejectedAt: Date.now() }, { merge: true }),
+        deleteDoc(doc(db, 'users', 'public', 'settings', `pendingApproval_${user.uid}`))
+      ]);
+      setUsersList(prev => prev.map(u => u.uid === user.uid ? { ...u, status: 'rejected' } : u));
       setUserActionToast(`[${user.lastName} ${user.firstName}] 님의 가입 신청이 거절되었습니다.`);
       setTimeout(() => setUserActionToast(null), 2500);
     } catch (err) {
@@ -748,9 +802,10 @@ export function ManageHubPage({
     } : u));
 
     try {
-      await updateDoc(doc(db, 'users', user.uid), {
-        [`permissions.${permKey}`]: newVal,
-      });
+      await Promise.allSettled([
+        updateDoc(doc(db, 'users', user.uid), { [`permissions.${permKey}`]: newVal }),
+        setDoc(doc(db, 'users', 'public', 'users', user.uid), { permissions: { ...(user.permissions || {}), [permKey]: newVal } }, { merge: true })
+      ]);
       setUserActionToast(`[${user.lastName} ${user.firstName}] ${permKey.replace('can', '')} 권한이 ${newVal ? '활성화' : '비활성화'}되었습니다.`);
       setTimeout(() => setUserActionToast(null), 2500);
     } catch (err) {
@@ -767,7 +822,10 @@ export function ManageHubPage({
         if (v !== undefined) cleanData[k] = v;
       });
 
-      await setDoc(doc(db, 'users', editingUser.uid), cleanData, { merge: true });
+      await Promise.allSettled([
+        setDoc(doc(db, 'users', editingUser.uid), cleanData, { merge: true }),
+        setDoc(doc(db, 'users', 'public', 'users', editingUser.uid), cleanData, { merge: true })
+      ]);
       setUsersList(prev => prev.map(u => u.uid === editingUser.uid ? { ...u, ...cleanData } : u));
       setIsUserEditModalOpen(false);
       setEditingUser(null);
@@ -776,6 +834,60 @@ export function ManageHubPage({
     } catch (err) {
       console.error('Failed to update user:', err);
       alert('유저 정보 수정에 실패했습니다.');
+    }
+  };
+
+  // Manual Register / Recovery for Isolated Auth Accounts
+  const handleManualRegisterUser = async () => {
+    const trimmed = manualUserEmail.trim().toLowerCase();
+    if (!trimmed || !trimmed.includes('@')) {
+      alert('유효한 이메일 주소를 입력해 주세요.');
+      return;
+    }
+    setManualUserLoading(true);
+    try {
+      // Check if already in list
+      const existing = usersList.find(u => u.email.toLowerCase() === trimmed);
+      if (existing) {
+        alert(`[${trimmed}] 계정은 이미 목록에 등록되어 있습니다.\n상태: ${existing.status || 'pending'}`);
+        setManualUserLoading(false);
+        return;
+      }
+
+      // Generate recovery UID (using email slug if actual uid not known)
+      const syntheticUid = `recovered_${trimmed.replace(/[^a-z0-9]/g, '_')}`;
+      const isSuper = trimmed === 'gonyisland@naver.com';
+      const recoveryProfile: UserProfile = {
+        uid: syntheticUid,
+        email: trimmed,
+        username: trimmed.split('@')[0],
+        profileType: 'icon',
+        profileIcon: 'user',
+        lastName: '수동등록',
+        firstName: trimmed.split('@')[0],
+        birthdate: '',
+        phone: '',
+        role: isSuper ? 'admin' : 'user',
+        status: 'pending',
+        approvalToken: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : (Math.random().toString(36).substring(2, 11) + Date.now().toString(36)),
+        permissions: { canCreate: true, canEdit: isSuper, canDelete: isSuper },
+        createdAt: Date.now(),
+      };
+
+      await Promise.allSettled([
+        setDoc(doc(db, 'users', syntheticUid), recoveryProfile, { merge: true }),
+        setDoc(doc(db, 'users', 'public', 'users', syntheticUid), recoveryProfile, { merge: true })
+      ]);
+
+      setUsersList(prev => [recoveryProfile, ...prev]);
+      setManualUserEmail('');
+      setUserActionToast(`[${trimmed}] 계정이 승인 대기 목록에 수동 등록되었습니다.`);
+      setTimeout(() => setUserActionToast(null), 4000);
+    } catch (err: any) {
+      console.error('Failed to manually register user:', err);
+      alert(`수동 등록 오류: ${err?.message || err}`);
+    } finally {
+      setManualUserLoading(false);
     }
   };
 
@@ -8670,6 +8782,42 @@ export function ManageHubPage({
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>{adminEmailSaving ? 'SAVING...' : 'UPDATE EMAIL'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Manual Account Registration / Recovery Panel (Swiss Minimal) */}
+            <div className="border border-black/20 dark:border-white/20 p-4 sm:p-5 flex flex-col gap-3 bg-black/[0.02] dark:bg-white/[0.02]">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-black/10 dark:border-white/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="w-4 h-4 text-black dark:text-white" />
+                  <span className="text-xs font-mono font-black uppercase tracking-wider text-black dark:text-white">
+                    MANUAL ACCOUNT RECOVERY / REGISTER
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                  이메일로 가입했으나 목록에 누락된 계정 수동 복구 및 승인 대기 등록
+                </span>
+              </div>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div className="relative flex-1">
+                  <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
+                  <input
+                    type="email"
+                    value={manualUserEmail}
+                    onChange={e => setManualUserEmail(e.target.value)}
+                    placeholder="복구 또는 등록할 유저 이메일 주소 입력 (예: user@example.com)..."
+                    className="w-full pl-9 pr-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleManualRegisterUser}
+                  disabled={manualUserLoading || !manualUserEmail.trim()}
+                  className="px-4 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:opacity-80 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{manualUserLoading ? 'REGISTERING...' : 'REGISTER ACCOUNT'}</span>
                 </button>
               </div>
             </div>

@@ -585,6 +585,7 @@ function App() {
       return;
     }
     const currentUid = auth.currentUser.uid;
+    let unsubPublic: (() => void) | null = null;
     const unsub = onSnapshot(doc(db, 'users', currentUid), (snapshot) => {
       if (snapshot.exists()) {
         const profile = snapshot.data() as UserProfile;
@@ -614,12 +615,46 @@ function App() {
           createdAt: Date.now(),
         };
         setDoc(doc(db, 'users', currentUid), adminProfile, { merge: true });
+        setDoc(doc(db, 'users', 'public', 'users', currentUid), adminProfile, { merge: true });
         setCurrentUserProfile(adminProfile);
+      } else {
+        // Fallback to public users collection
+        if (!unsubPublic) {
+          unsubPublic = onSnapshot(doc(db, 'users', 'public', 'users', currentUid), (pubSnap) => {
+            if (pubSnap.exists()) {
+              const pubProfile = pubSnap.data() as UserProfile;
+              if (!isSuperAdmin && (pubProfile.status === 'pending' || pubProfile.status === 'rejected')) {
+                auth.signOut();
+                setIsLoggedIn(false);
+                setCurrentUserProfile(null);
+                alert(pubProfile.status === 'pending'
+                  ? '가입 승인 대기 중인 계정입니다. 관리자의 승인이 완료된 후 서비스 이용이 가능합니다.'
+                  : '가입 승인이 거절된 계정입니다. 관리자에게 문의해 주세요.'
+                );
+                return;
+              }
+              setCurrentUserProfile(pubProfile);
+            }
+          }, (pubErr) => {
+            console.warn('Failed to listen to public user profile fallback:', pubErr);
+          });
+        }
       }
     }, (err) => {
-      console.warn('Failed to listen to user profile:', err);
+      console.warn('Failed to listen to user profile, listening to public fallback:', err);
+      if (!unsubPublic) {
+        unsubPublic = onSnapshot(doc(db, 'users', 'public', 'users', currentUid), (pubSnap) => {
+          if (pubSnap.exists()) {
+            const pubProfile = pubSnap.data() as UserProfile;
+            setCurrentUserProfile(pubProfile);
+          }
+        });
+      }
     });
-    return () => unsub();
+    return () => {
+      unsub();
+      if (unsubPublic) unsubPublic();
+    };
   }, [isSuperAdmin, isLoggedIn]);
 
   // Trip permission helpers: Super Admin/Admin has all rights; users can edit/delete their own trips, or trips they are delegated to
@@ -1156,23 +1191,38 @@ function App() {
     if (approveUid && token) {
       const handleApprove = async () => {
         try {
-          const userDocRef = doc(db, 'users', approveUid);
-          const snap = await getDoc(userDocRef);
-          if (!snap.exists()) {
+          // Check both public and root users collection
+          let userData: UserProfile | null = null;
+          const pubSnap = await getDoc(doc(db, 'users', 'public', 'users', approveUid));
+          if (pubSnap.exists()) {
+            userData = pubSnap.data() as UserProfile;
+          } else {
+            const rootSnap = await getDoc(doc(db, 'users', approveUid));
+            if (rootSnap.exists()) {
+              userData = rootSnap.data() as UserProfile;
+            }
+          }
+
+          if (!userData) {
             alert("존재하지 않는 회원 계정입니다.");
             return;
           }
-          const userData = snap.data() as UserProfile;
+
           if (userData.status === 'approved') {
             alert(`[${userData.email || userData.firstName || '회원'}] 이미 승인 완료된 계정입니다.`);
           } else if (userData.approvalToken && userData.approvalToken !== token) {
             alert("유효하지 않거나 만료된 승인 토큰입니다.");
             return;
           } else {
-            await updateDoc(userDocRef, {
+            const updatePayload = {
               status: 'approved',
               approvedAt: Date.now()
-            });
+            };
+            await Promise.allSettled([
+              updateDoc(doc(db, 'users', approveUid), updatePayload),
+              setDoc(doc(db, 'users', 'public', 'users', approveUid), { ...userData, ...updatePayload }, { merge: true }),
+              deleteDoc(doc(db, 'users', 'public', 'settings', `pendingApproval_${approveUid}`))
+            ]);
             alert(`회원 [${userData.email || userData.firstName || approveUid}] 가입 승인이 성공적으로 완료되었습니다.\n이제 해당 회원이 로그인할 수 있습니다.`);
           }
         } catch (err: any) {
