@@ -2589,61 +2589,48 @@ export function HomePage({
             );
           })()}
 
-          {/* Optional Extended Modules: Live Exchange Rates Round Box Widget */}
+          {/* Optional Extended Modules: Live Exchange Rates Compact 1-Row Round Box Widget */}
           {widgetConfig.showExchangeRates && (
-            <section className="w-full max-w-[1920px] mx-auto mt-8 px-4 sm:px-8 md:px-12 select-none font-mono">
-              <div className="p-3.5 sm:p-4 rounded-2xl border border-black/10 dark:border-white/10 bg-black/[0.015] dark:bg-white/[0.02] shadow-xs">
-                {/* Widget Header */}
-                <div className="flex items-center justify-between mb-2.5 sm:mb-3">
-                  <div className="flex items-center gap-2">
-                    <Coins className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
-                    <span className="font-black text-[10.5px] uppercase tracking-widest text-black/60 dark:text-white/60">
-                      EXCHANGE RATES
-                    </span>
-                  </div>
-                  <span className="text-[9.5px] text-black/40 dark:text-white/40 font-mono">
-                    KRW BASE
+            <section className="w-full max-w-[1920px] mx-auto mt-6 sm:mt-8 px-4 sm:px-8 md:px-12 select-none font-mono">
+              <div className="w-full py-2 sm:py-2.5 px-3.5 sm:px-5 rounded-full border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] backdrop-blur-xs flex items-center justify-between gap-2 sm:gap-4">
+                {/* Left: Swiss Minimal Icon & Label */}
+                <div className="flex items-center gap-1.5 shrink-0 pr-2 sm:pr-3 border-r border-black/10 dark:border-white/10">
+                  <Coins className="w-3.5 h-3.5 text-black/50 dark:text-white/50" />
+                  <span className="font-black text-[10px] sm:text-[11px] uppercase tracking-wider text-black/70 dark:text-white/70 hidden xs:inline">
+                    EXCHANGE
                   </span>
                 </div>
 
-                {/* Currency Cards: Responsive Grid (Never Clipped on Mobile) */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-2.5">
+                {/* Center: 3 Major Currencies (USD, JPY, EUR) in 1 Row */}
+                <div className="flex-1 flex items-center justify-around gap-1.5 sm:gap-3 text-xs sm:text-[13px]">
                   {[
-                    { code: 'USD', name: '미국 달러', rate: '1,388.50', diff: '+2.5', isUp: true },
-                    { code: 'JPY', name: '일본 100엔', rate: '918.40', diff: '-1.2', isUp: false },
-                    { code: 'EUR', name: '유럽 유로', rate: '1,512.20', diff: '+3.0', isUp: true },
-                    { code: 'TWD', name: '대만 달러', rate: '43.25', diff: '0.0', isUp: null },
-                    { code: 'VND', name: '베트남 100동', rate: '5.58', diff: '0.0', isUp: null },
-                  ].map((cur) => (
-                    <div 
-                      key={cur.code}
-                      className="p-2 sm:p-2.5 rounded-xl bg-white/80 dark:bg-zinc-900/80 border border-black/5 dark:border-white/10 flex flex-col justify-between gap-1 shadow-2xs hover:border-black/20 dark:hover:border-white/20 transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-black text-xs text-black dark:text-white tracking-wide">
-                          {cur.code}
-                        </span>
-                        <span className="text-[9px] text-black/40 dark:text-white/40 hidden xs:inline">
-                          {cur.name}
-                        </span>
-                      </div>
-                      <div className="flex items-baseline justify-between gap-1 mt-0.5">
-                        <span className="font-black text-xs sm:text-sm text-black dark:text-white tracking-tight">
-                          {cur.rate}
-                        </span>
-                        {cur.isUp === true && (
-                          <span className="text-[9px] font-bold text-red-500 shrink-0">▲ {cur.diff}</span>
-                        )}
-                        {cur.isUp === false && (
-                          <span className="text-[9px] font-bold text-blue-500 shrink-0">▼ {cur.diff.replace('-', '')}</span>
-                        )}
-                        {cur.isUp === null && (
-                          <span className="text-[9px] font-bold text-black/30 dark:text-white/30 shrink-0">-</span>
-                        )}
-                      </div>
+                    { code: 'USD', rate: '1,388.50', diff: '+2.5', isUp: true },
+                    { code: 'JPY', rate: '918.40', diff: '-1.2', isUp: false },
+                    { code: 'EUR', rate: '1,512.20', diff: '+3.0', isUp: true },
+                  ].map((cur, idx) => (
+                    <div key={cur.code} className="flex items-center gap-1 sm:gap-1.5">
+                      <span className="font-black text-[10px] sm:text-xs text-black/60 dark:text-white/60 tracking-wider">
+                        {cur.code}
+                      </span>
+                      <span className="font-black text-xs sm:text-sm text-black dark:text-white tracking-tight">
+                        {cur.rate}
+                      </span>
+                      <span className={`text-[8.5px] sm:text-[9.5px] font-bold hidden sm:inline ${
+                        cur.isUp ? 'text-red-500' : 'text-blue-500'
+                      }`}>
+                        {cur.isUp ? '▲' : '▼'}{cur.diff.replace('-', '')}
+                      </span>
+                      {idx < 2 && (
+                        <span className="text-black/20 dark:text-white/20 ml-1.5 sm:ml-3 hidden xs:inline">/</span>
+                      )}
                     </div>
                   ))}
                 </div>
+
+                {/* Right: Currency Base */}
+                <span className="text-[9px] sm:text-[10px] text-black/40 dark:text-white/40 shrink-0 pl-2 sm:pr-1 border-l border-black/10 dark:border-white/10 hidden sm:inline font-bold">
+                  KRW
+                </span>
               </div>
             </section>
           )}
