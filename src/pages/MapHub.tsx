@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, X, ArrowRight, Calendar, Star, Plus, Tag, MapPin, Bookmark, Home as HomeIcon, List, Clock, LocateFixed, Plane, Sun, Droplets, ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react';
+import { Search, X, ArrowRight, Calendar, Star, Plus, Tag, MapPin, Bookmark, Home as HomeIcon, List, Clock, LocateFixed, Plane, Sun, Moon, Droplets, ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Trip, Plan } from '../types';
@@ -8,6 +8,7 @@ import { cleanAdministrativeDistricts } from '../components/SummaryView';
 import { TripBuilderPanel } from '../components/TripBuilderPanel';
 import { findCityByNameOrAlias, DestinationCountry, DestinationCity, PresetTripPlan } from '../data/worldDestinations';
 import { fetchCityWeather, getWeatherMeta, CityWeatherData } from '../utils/weatherApi';
+import { getNightTerminatorPolygon, shiftPolygonCoordinates } from '../utils/solarTerminator';
 
 export interface CountryInfo {
   code: string;
@@ -1592,6 +1593,25 @@ export function MapHubPage({
   const countryDotsRef = useRef<any[]>([]);
   const geoJsonDataRef = useRef<any>(cachedCountriesGeoJson);
   const prevDestCitiesCountRef = useRef<number>(0);
+  const terminatorLayerRef = useRef<any>(null);
+  const [isDayNightEnabled, setIsDayNightEnabled] = useState<boolean>(true);
+  const [currentClockTime, setCurrentClockTime] = useState<Date>(() => new Date());
+
+  // Real-time map clock tick (every 1 second)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentClockTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Real-time formatted clock string (HH:mm:ss)
+  const formattedClockTime = useMemo(() => {
+    const hh = String(currentClockTime.getHours()).padStart(2, '0');
+    const mm = String(currentClockTime.getMinutes()).padStart(2, '0');
+    const ss = String(currentClockTime.getSeconds()).padStart(2, '0');
+    return `${hh}:${mm}:${ss}`;
+  }, [currentClockTime]);
 
   // In-place Trip Builder Split-Screen State
   const [isBuilderOpen, setIsBuilderOpen] = useState<boolean>(() => Boolean(initialBuilderOpen));
@@ -3070,6 +3090,66 @@ export function MapHubPage({
     }
   }, [isDarkMode, mapTileStyle]);
 
+  // Render Day/Night Solar Terminator Layer (controlled by isDayNightEnabled)
+  useEffect(() => {
+    const L = (window as any).L;
+    const map = mapRef.current;
+    if (!map || !L) return;
+
+    if (terminatorLayerRef.current) {
+      try { map.removeLayer(terminatorLayerRef.current); } catch (_) {}
+      terminatorLayerRef.current = null;
+    }
+
+    if (!isDayNightEnabled) return;
+
+    const renderTerminator = () => {
+      const currentMap = mapRef.current;
+      if (!currentMap) return;
+
+      const now = new Date();
+      const basePoints = getNightTerminatorPolygon(now, 2);
+      const pointsEast = shiftPolygonCoordinates(basePoints, 360);
+      const pointsWest = shiftPolygonCoordinates(basePoints, -360);
+
+      const terminatorStyle = {
+        color: '#F59E0B',     // Twilight golden amber borderline
+        weight: 1.2,
+        dashArray: '3, 4',
+        opacity: 0.55,
+        fillColor: '#000814', // Deep midnight navy shadow
+        fillOpacity: isDarkMode ? 0.28 : 0.18,
+        interactive: false,
+      };
+
+      const layers = [
+        L.polygon(basePoints, terminatorStyle),
+        L.polygon(pointsEast, terminatorStyle),
+        L.polygon(pointsWest, terminatorStyle),
+      ];
+
+      if (terminatorLayerRef.current) {
+        try { currentMap.removeLayer(terminatorLayerRef.current); } catch (_) {}
+      }
+
+      const fg = L.featureGroup(layers).addTo(currentMap);
+      if (fg.bringToBack) {
+        fg.bringToBack();
+      }
+      terminatorLayerRef.current = fg;
+    };
+
+    renderTerminator();
+    const interval = setInterval(renderTerminator, 60000); // 1분마다 태양 위치 갱신
+    return () => {
+      clearInterval(interval);
+      if (terminatorLayerRef.current && mapRef.current) {
+        try { mapRef.current.removeLayer(terminatorLayerRef.current); } catch (_) {}
+        terminatorLayerRef.current = null;
+      }
+    };
+  }, [isDayNightEnabled, isDarkMode]);
+
   // Reset to default global view (Clean reset to South Korea center view with complete mapping sync)
   const handleResetToDefaultView = () => {
     setSelectedCountry(null);
@@ -3850,6 +3930,20 @@ export function MapHubPage({
               <Plane className="w-3.5 h-3.5" />
             </button>
 
+            {/* 4.5 Day/Night Terminator Shade Toggle */}
+            <button
+              type="button"
+              onClick={() => setIsDayNightEnabled(prev => !prev)}
+              className={`p-2 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+                isDayNightEnabled
+                  ? 'bg-black text-amber-400 dark:bg-white dark:text-amber-500'
+                  : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
+              }`}
+              title={isDayNightEnabled ? "낮/밤 명암 경계선 켜짐" : "낮/밤 명암 경계선 꺼짐"}
+            >
+              {isDayNightEnabled ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+            </button>
+
             {/* 5. Reset to Global Home View Button */}
             <button
               type="button"
@@ -4024,6 +4118,34 @@ export function MapHubPage({
               <LocateFixed className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
             </button>
           )}
+        </div>
+
+        {/* Real-time Clock & Day/Night Shade Toggle Pill Widget */}
+        <div className="flex items-center border border-black/20 dark:border-white/20 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md shadow-2xl z-10 px-2.5 sm:px-3 py-1.5 sm:py-2 gap-1.5 sm:gap-2 text-black dark:text-white select-none shrink-0">
+          <div className="flex items-center gap-1.5 font-mono text-[10px] sm:text-[11px] font-extrabold tracking-tight">
+            <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-black/50 dark:text-white/50 shrink-0" />
+            <span className="font-mono tabular-nums">{formattedClockTime}</span>
+            <span className="text-[8.5px] sm:text-[9.5px] text-black/40 dark:text-white/40 font-bold uppercase hidden xs:inline">
+              KST
+            </span>
+          </div>
+          <div className="w-[1px] h-3 bg-black/15 dark:bg-white/15" />
+          <button
+            type="button"
+            onClick={() => setIsDayNightEnabled(prev => !prev)}
+            className={`p-0.5 transition-colors cursor-pointer flex items-center justify-center ${
+              isDayNightEnabled
+                ? 'text-amber-500 hover:text-amber-600'
+                : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
+            }`}
+            title={isDayNightEnabled ? "낮/밤 명암 경계선 켜짐 (클릭 시 끄기)" : "낮/밤 명암 경계선 꺼짐 (클릭 시 켜기)"}
+          >
+            {isDayNightEnabled ? (
+              <Sun className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            ) : (
+              <Moon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            )}
+          </button>
         </div>
 
       </div>
