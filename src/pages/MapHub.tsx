@@ -1586,6 +1586,7 @@ export function MapHubPage({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const tileLayerRef = useRef<any>(null);
+  const nightTileLayerRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const highlightLayerRef = useRef<any>(null);
   const selectPinRef = useRef<any>(null);
@@ -3040,6 +3041,11 @@ export function MapHubPage({
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
+    // Dedicated pane for clipped night-time tiles (above base tilePane 200, below overlayPane 400)
+    const nightPane = map.createPane('nightTilePane');
+    nightPane.style.zIndex = '205';
+    nightPane.style.pointerEvents = 'none';
+
     // Direct map click to select country
     map.on('click', (e: any) => {
       if (isBuilderOpenRef.current) return;
@@ -3047,40 +3053,6 @@ export function MapHubPage({
         matchCountryFromLatLng(e.latlng);
       }
     });
-
-    const getTileConfig = (style: 'esri' | 'google', dark: boolean) => {
-      if (style === 'google') {
-        return {
-          url: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko',
-          options: {
-            attribution: '&copy; Google Maps',
-            maxZoom: 20,
-            subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-            className: dark ? 'map-tiles-dark' : '',
-            updateWhenIdle: false,
-            updateWhenZooming: false,
-            crossOrigin: true,
-          }
-        };
-      }
-      return {
-        url: dark
-          ? 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
-          : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-        options: {
-          attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
-          maxZoom: 18,
-          tileSize: 256,
-          zoomOffset: 0,
-          updateWhenIdle: true,
-          updateWhenZooming: false,
-          crossOrigin: true,
-        }
-      };
-    };
-
-    const initialConfig = getTileConfig(mapTileStyle, isDarkMode);
-    tileLayerRef.current = L.tileLayer(initialConfig.url, initialConfig.options).addTo(map);
 
     mapRef.current = map;
 
@@ -3090,41 +3062,102 @@ export function MapHubPage({
     };
   }, []);
 
-  // Sync dark mode & mapTileStyle changes dynamically
+  // Sync dark mode, mapTileStyle & Day/Night Dual-Tile mode dynamically
   useEffect(() => {
     const map = mapRef.current;
     const L = (window as any).L;
     if (!map || !L) return;
 
     if (tileLayerRef.current) {
-      map.removeLayer(tileLayerRef.current);
+      try { map.removeLayer(tileLayerRef.current); } catch (_) {}
+      tileLayerRef.current = null;
+    }
+    if (nightTileLayerRef.current) {
+      try { map.removeLayer(nightTileLayerRef.current); } catch (_) {}
+      nightTileLayerRef.current = null;
     }
 
-    if (mapTileStyle === 'google') {
-      tileLayerRef.current = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko', {
-        attribution: '&copy; Google Maps',
-        maxZoom: 20,
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        className: isDarkMode ? 'map-tiles-dark' : '',
-        updateWhenIdle: false,
-        updateWhenZooming: false,
-        crossOrigin: true,
-      }).addTo(map);
+    if (isDayNightEnabled) {
+      // DUAL TILE MODE: Base Day Tile + Clipped Night Tile on nightTilePane
+      if (mapTileStyle === 'google') {
+        // 1. Google Base Day Tile (Normal Light)
+        tileLayerRef.current = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko', {
+          attribution: '&copy; Google Maps',
+          maxZoom: 20,
+          subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+          className: '',
+          updateWhenIdle: false,
+          updateWhenZooming: false,
+          crossOrigin: true,
+        }).addTo(map);
+
+        // 2. Google Clipped Night Tile (Night Mode with Dark CSS Filter)
+        nightTileLayerRef.current = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko', {
+          attribution: '&copy; Google Maps',
+          maxZoom: 20,
+          subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+          className: 'map-tiles-dark',
+          pane: 'nightTilePane',
+          updateWhenIdle: false,
+          updateWhenZooming: false,
+          crossOrigin: true,
+        }).addTo(map);
+      } else {
+        // 1. Esri Base Day Tile (World_Light_Gray_Base)
+        tileLayerRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+          attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+          maxZoom: 18,
+          keepBuffer: 16,
+          updateWhenIdle: false,
+          updateWhenZooming: false,
+          crossOrigin: true,
+        }).addTo(map);
+
+        // 2. Esri Clipped Night Tile (World_Dark_Gray_Base)
+        nightTileLayerRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+          attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+          maxZoom: 18,
+          keepBuffer: 16,
+          pane: 'nightTilePane',
+          updateWhenIdle: false,
+          updateWhenZooming: false,
+          crossOrigin: true,
+        }).addTo(map);
+      }
     } else {
-      const tileUrl = isDarkMode
-        ? 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
-        : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+      // SINGLE TILE MODE: When Day/Night is disabled, reset clip and respect isDarkMode
+      const nightPane = map.getPane('nightTilePane');
+      if (nightPane) {
+        nightPane.style.clipPath = 'none';
+        nightPane.style.webkitClipPath = 'none';
+      }
 
-      tileLayerRef.current = L.tileLayer(tileUrl, {
-        attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
-        maxZoom: 18,
-        keepBuffer: 16,
-        updateWhenIdle: false,
-        updateWhenZooming: false,
-        crossOrigin: true,
-      }).addTo(map);
+      if (mapTileStyle === 'google') {
+        tileLayerRef.current = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko', {
+          attribution: '&copy; Google Maps',
+          maxZoom: 20,
+          subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+          className: isDarkMode ? 'map-tiles-dark' : '',
+          updateWhenIdle: false,
+          updateWhenZooming: false,
+          crossOrigin: true,
+        }).addTo(map);
+      } else {
+        const tileUrl = isDarkMode
+          ? 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+          : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+
+        tileLayerRef.current = L.tileLayer(tileUrl, {
+          attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+          maxZoom: 18,
+          keepBuffer: 16,
+          updateWhenIdle: false,
+          updateWhenZooming: false,
+          crossOrigin: true,
+        }).addTo(map);
+      }
     }
-  }, [isDarkMode, mapTileStyle]);
+  }, [isDarkMode, mapTileStyle, isDayNightEnabled]);
 
   // Render Day/Night Solar Terminator Layer & Night City Lights (controlled by isDayNightEnabled)
   useEffect(() => {
@@ -3150,6 +3183,44 @@ export function MapHubPage({
       '마드리드', '베를린', '토론토', '밴쿠버', '이스탄불', '타이베이', '오사카'
     ]);
 
+    // 1. Function to update SVG clipPath projection from geo-coordinates to screen pixels
+    const updateNightClip = () => {
+      const currentMap = mapRef.current;
+      if (!currentMap) return;
+      const nightPane = currentMap.getPane('nightTilePane');
+      if (!nightPane) return;
+
+      if (!isDayNightEnabled) {
+        nightPane.style.clipPath = 'none';
+        nightPane.style.webkitClipPath = 'none';
+        return;
+      }
+
+      const polyBase = document.getElementById('nightClipPolyBase');
+      const polyEast = document.getElementById('nightClipPolyEast');
+      const polyWest = document.getElementById('nightClipPolyWest');
+      if (!polyBase || !polyEast || !polyWest) return;
+
+      const now = new Date();
+      const basePoints = getNightTerminatorPolygon(now, 2);
+      const pointsEast = shiftPolygonCoordinates(basePoints, 360);
+      const pointsWest = shiftPolygonCoordinates(basePoints, -360);
+
+      const toSvgPoints = (coords: [number, number][]) => {
+        return coords.map(([lat, lng]) => {
+          const pt = currentMap.latLngToContainerPoint([lat, lng]);
+          return `${Math.round(pt.x)},${Math.round(pt.y)}`;
+        }).join(' ');
+      };
+
+      polyBase.setAttribute('points', toSvgPoints(basePoints));
+      polyEast.setAttribute('points', toSvgPoints(pointsEast));
+      polyWest.setAttribute('points', toSvgPoints(pointsWest));
+
+      nightPane.style.clipPath = 'url(#nightTileClip)';
+      nightPane.style.webkitClipPath = 'url(#nightTileClip)';
+    };
+
     const renderTerminatorAndLights = () => {
       const currentMap = mapRef.current;
       if (!currentMap) return;
@@ -3159,13 +3230,13 @@ export function MapHubPage({
       const pointsEast = shiftPolygonCoordinates(basePoints, 360);
       const pointsWest = shiftPolygonCoordinates(basePoints, -360);
 
-      // 1. Soft Twilight & Midnight Shadow Polygon
+      // 1. Soft Twilight Borderline (Night tiles already dark, so gentle ambient atmospheric tint)
       const terminatorStyle = {
         color: '#F59E0B',     // Warm twilight golden amber edge
-        weight: 3,
-        opacity: 0.4,
-        fillColor: '#020617', // Deep cosmic midnight navy
-        fillOpacity: isDarkMode ? 0.35 : 0.22,
+        weight: 3.5,
+        opacity: 0.5,
+        fillColor: '#020617', // Deep midnight tint
+        fillOpacity: 0.08,    // Ultra-light overlay so actual dark tiles are crystal clear
         className: 'leaflet-terminator-soft',
         interactive: false,
       };
@@ -3218,9 +3289,25 @@ export function MapHubPage({
     };
 
     renderTerminatorAndLights();
-    const interval = setInterval(renderTerminatorAndLights, 60000); // 1분마다 태양 위치 및 밤 조명 갱신
+    updateNightClip();
+
+    // Bind real-time viewport projection listeners
+    map.on('move', updateNightClip);
+    map.on('zoom', updateNightClip);
+    map.on('viewreset', updateNightClip);
+    map.on('resize', updateNightClip);
+
+    const interval = setInterval(() => {
+      renderTerminatorAndLights();
+      updateNightClip();
+    }, 60000); // 1분마다 태양 위치 및 밤 조명 갱신
+
     return () => {
       clearInterval(interval);
+      map.off('move', updateNightClip);
+      map.off('zoom', updateNightClip);
+      map.off('viewreset', updateNightClip);
+      map.off('resize', updateNightClip);
       if (terminatorLayerRef.current && mapRef.current) {
         try { mapRef.current.removeLayer(terminatorLayerRef.current); } catch (_) {}
         terminatorLayerRef.current = null;
@@ -4283,6 +4370,21 @@ export function MapHubPage({
         ref={mapContainerRef} 
         className="w-full h-full z-0" 
       />
+
+      {/* Real-Time SVG ClipPath Definition for Night Tiles */}
+      <svg 
+        className="absolute pointer-events-none w-0 h-0 overflow-hidden" 
+        style={{ position: 'absolute', width: 0, height: 0, visibility: 'hidden' }}
+        aria-hidden="true"
+      >
+        <defs>
+          <clipPath id="nightTileClip" clipPathUnits="userSpaceOnUse">
+            <polygon id="nightClipPolyBase" points="" />
+            <polygon id="nightClipPolyEast" points="" />
+            <polygon id="nightClipPolyWest" points="" />
+          </clipPath>
+        </defs>
+      </svg>
 
       {/* 2.5 Floating Re-center Button when diverged during trip building */}
       {isBuilderOpen && isMapDivergedFromBuilder && builderTargetName && (
