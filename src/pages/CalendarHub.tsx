@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { 
   ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Calendar as CalendarIcon,
   MapPin, Clock, ArrowRight, Plane, Sparkles, Compass, 
@@ -3526,14 +3526,10 @@ export function CalendarHubPage({
               );
             })()}
 
-            {/* Schedule Items List */}
-            <div className="my-3 space-y-2 max-h-56 overflow-y-auto">
-              {quickViewDate.items.length === 0 ? (
-                <div className="py-6 text-center text-xs font-mono text-black/40 dark:text-white/40">
-                  등록된 여행이나 일정이 없습니다.
-                </div>
-              ) : (
-                quickViewDate.items.map((it, idx) => (
+            {/* Schedule Items List (일정이 있을 때만 표시하여 일정이 없는 날은 모달 높이 컴팩트화) */}
+            {quickViewDate.items.length > 0 && (
+              <div className="my-3 space-y-2 max-h-56 overflow-y-auto">
+                {quickViewDate.items.map((it, idx) => (
                   <div 
                     key={idx}
                     className="p-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center justify-between gap-3"
@@ -3553,12 +3549,18 @@ export function CalendarHubPage({
                       </span>
                     )}
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
 
             {/* Bottom Action Buttons */}
-            <div className="flex items-center gap-2 pt-3 border-t border-black/10 dark:border-white/10">
+            <div className={`flex items-center gap-2 ${
+              quickViewDate.items.length > 0
+                ? 'pt-3 border-t border-black/10 dark:border-white/10'
+                : quickViewDate.weather
+                  ? 'pt-1'
+                  : 'pt-3'
+            }`}>
               <button
                 type="button"
                 onClick={() => {
