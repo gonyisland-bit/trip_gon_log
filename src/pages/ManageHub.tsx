@@ -2372,7 +2372,7 @@ export function ManageHubPage({
         const orderIds: (string | number)[] = JSON.parse(savedTripOrderRef.current);
         setLocalJourneys(prev => {
           const map = new Map(prev.map(j => [String(j.id), j]));
-          const reordered = orderIds.map(id => map.get(String(id))).filter(Boolean) as Journey[];
+          const reordered = orderIds.map(id => map.get(String(id))).filter(Boolean) as (Trip | Plan)[];
           const missing = prev.filter(j => !orderIds.map(String).includes(String(j.id)));
           return [...reordered, ...missing];
         });
