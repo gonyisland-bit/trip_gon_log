@@ -1051,13 +1051,6 @@ export function HomePage({
     return () => window.removeEventListener('homeConfigChanged', handleConfigChange);
   }, []);
 
-  const gradientBackgroundStyle = useMemo(() => {
-    if (!gradientEnabled || isDarkMode) return undefined;
-    return {
-      background: `linear-gradient(135deg, ${gradientFrom} 0%, ${gradientTo} 100%)`,
-    };
-  }, [gradientEnabled, gradientFrom, gradientTo, isDarkMode]);
-
   // Drag-reorder state for archive cards
   const [draggedTripId, setDraggedTripId] = useState<number | null>(null);
   const [localTrips, setLocalTrips] = useState<Trip[]>(trips);
@@ -1202,8 +1195,7 @@ export function HomePage({
   return (
     <main 
       onClick={() => setActiveCardId(null)} 
-      style={gradientBackgroundStyle}
-      className="animate-in fade-in duration-700 w-full transition-all"
+      className="animate-in fade-in duration-700 w-full bg-transparent transition-all"
     >
 
       {/* ===== Hero Section: Guest Fullscreen Landing Hero or Swiss Editorial Hero ===== */}
@@ -1256,7 +1248,7 @@ export function HomePage({
           </div>
         </section>
       ) : (
-      <section className={`relative w-full border-b border-black/15 dark:border-white/15 ${gradientEnabled && !isDarkMode ? 'bg-transparent' : 'bg-[#FBFBFA] dark:bg-[#141414]'} overflow-hidden transition-colors`}>
+      <section className="relative w-full border-b border-black/15 dark:border-white/15 bg-transparent overflow-hidden transition-colors">
         {currentHero ? (
           (() => {
             const { year, month, days, dateRange, cities } = getHeroDetails(currentHero);
