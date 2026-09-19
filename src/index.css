@@ -795,3 +795,41 @@ div[data-pin-hover],
   height: 100%;
   background-color: currentColor;
 }
+
+/* Solar Terminator Soft Twilight Boundary & Night Shadow */
+.leaflet-terminator-soft path {
+  filter: blur(8px);
+  transition: opacity 0.5s ease-out;
+}
+
+/* Night Earth City Lights Glow & Ambient Lighting */
+@keyframes cityLightTwinkle {
+  0%, 100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+.night-city-light {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: #FDE047;
+  box-shadow: 0 0 6px 2px rgba(253, 224, 71, 0.75), 0 0 12px 4px rgba(245, 158, 11, 0.45);
+  pointer-events: none;
+  animation: cityLightTwinkle 3s ease-in-out infinite;
+}
+
+.night-city-light-hub {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #FEF08A;
+  box-shadow: 0 0 8px 3px rgba(254, 240, 138, 0.9), 0 0 16px 6px rgba(245, 158, 11, 0.55);
+  pointer-events: none;
+  animation: cityLightTwinkle 2.5s ease-in-out infinite;
+}

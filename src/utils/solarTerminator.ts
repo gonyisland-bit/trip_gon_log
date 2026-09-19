@@ -95,3 +95,26 @@ export function getNightTerminatorPolygon(date: Date = new Date(), lngStep: numb
 export function shiftPolygonCoordinates(points: [number, number][], lngOffset: number): [number, number][] {
   return points.map(([lat, lng]) => [lat, lng + lngOffset]);
 }
+
+/**
+ * Calculates solar altitude (elevation) in degrees at a specific latitude and longitude.
+ * Positive = above horizon (day), Negative = below horizon (night / twilight).
+ * e.g., 0 to -6 deg = civil twilight, < -6 deg = dark night.
+ */
+export function getSolarAltitude(lat: number, lng: number, date: Date = new Date()): number {
+  const { delta, gha } = getSolarPosition(date);
+  const latRad = (lat * Math.PI) / 180;
+  const hourAngle = (lng * Math.PI) / 180 + gha;
+
+  const sinAlt = Math.sin(delta) * Math.sin(latRad) + Math.cos(delta) * Math.cos(latRad) * Math.cos(hourAngle);
+  const clampedSinAlt = Math.max(-1, Math.min(1, sinAlt));
+  return (Math.asin(clampedSinAlt) * 180) / Math.PI;
+}
+
+/**
+ * Checks whether a given location (lat, lng) is currently in twilight or night.
+ * Defaults to threshold of -3 degrees (sun just dipped below horizon).
+ */
+export function isLocationInNight(lat: number, lng: number, date: Date = new Date(), thresholdDeg: number = -3): boolean {
+  return getSolarAltitude(lat, lng, date) <= thresholdDeg;
+}

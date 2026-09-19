@@ -6,9 +6,9 @@ import { Trip, Plan } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
 import { TripBuilderPanel } from '../components/TripBuilderPanel';
-import { findCityByNameOrAlias, DestinationCountry, DestinationCity, PresetTripPlan } from '../data/worldDestinations';
+import { findCityByNameOrAlias, DestinationCountry, DestinationCity, PresetTripPlan, WORLD_CITIES } from '../data/worldDestinations';
 import { fetchCityWeather, getWeatherMeta, CityWeatherData } from '../utils/weatherApi';
-import { getNightTerminatorPolygon, shiftPolygonCoordinates } from '../utils/solarTerminator';
+import { getNightTerminatorPolygon, shiftPolygonCoordinates, isLocationInNight } from '../utils/solarTerminator';
 
 export interface CountryInfo {
   code: string;
@@ -1594,8 +1594,14 @@ export function MapHubPage({
   const geoJsonDataRef = useRef<any>(cachedCountriesGeoJson);
   const prevDestCitiesCountRef = useRef<number>(0);
   const terminatorLayerRef = useRef<any>(null);
+  const nightLightsLayerRef = useRef<any>(null);
   const [isDayNightEnabled, setIsDayNightEnabled] = useState<boolean>(true);
   const [currentClockTime, setCurrentClockTime] = useState<Date>(() => new Date());
+
+  // Expandable Search State & Refs
+  const [isSearchExpanded, setIsSearchExpanded] = useState<boolean>(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   // Real-time map clock tick (every 1 second)
   useEffect(() => {
@@ -1605,13 +1611,44 @@ export function MapHubPage({
     return () => clearInterval(timer);
   }, []);
 
-  // Real-time formatted clock string (HH:mm:ss)
+  // Real-time formatted clock string (HH:mm:ss for desktop, HH:mm for mobile)
   const formattedClockTime = useMemo(() => {
     const hh = String(currentClockTime.getHours()).padStart(2, '0');
     const mm = String(currentClockTime.getMinutes()).padStart(2, '0');
     const ss = String(currentClockTime.getSeconds()).padStart(2, '0');
     return `${hh}:${mm}:${ss}`;
   }, [currentClockTime]);
+
+  const formattedClockShort = useMemo(() => {
+    const hh = String(currentClockTime.getHours()).padStart(2, '0');
+    const mm = String(currentClockTime.getMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
+  }, [currentClockTime]);
+
+  // Handle outside click & Escape key for expandable search bar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsSearchExpanded(false);
+        setIsSearchDropdownOpen(false);
+        searchInputRef.current?.blur();
+      }
+    };
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        if (!searchQuery.trim()) {
+          setIsSearchExpanded(false);
+        }
+        setIsSearchDropdownOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [searchQuery]);
 
   // In-place Trip Builder Split-Screen State
   const [isBuilderOpen, setIsBuilderOpen] = useState<boolean>(() => Boolean(initialBuilderOpen));
@@ -3090,7 +3127,7 @@ export function MapHubPage({
     }
   }, [isDarkMode, mapTileStyle]);
 
-  // Render Day/Night Solar Terminator Layer (controlled by isDayNightEnabled)
+  // Render Day/Night Solar Terminator Layer & Night City Lights (controlled by isDayNightEnabled)
   useEffect(() => {
     const L = (window as any).L;
     const map = mapRef.current;
@@ -3100,10 +3137,21 @@ export function MapHubPage({
       try { map.removeLayer(terminatorLayerRef.current); } catch (_) {}
       terminatorLayerRef.current = null;
     }
+    if (nightLightsLayerRef.current) {
+      try { map.removeLayer(nightLightsLayerRef.current); } catch (_) {}
+      nightLightsLayerRef.current = null;
+    }
 
     if (!isDayNightEnabled) return;
 
-    const renderTerminator = () => {
+    // Major global metropolitan hubs with enhanced night lighting glow
+    const MAJOR_NIGHT_HUBS = new Set([
+      '도쿄', '서울', '뉴욕', '런던', '파리', '싱가포르', '상하이', '베이징', '홍콩',
+      '로스앤젤레스', '샌프란시스코', '시카고', '시드니', '방콕', '두바이', '로마',
+      '마드리드', '베를린', '토론토', '밴쿠버', '이스탄불', '타이베이', '오사카'
+    ]);
+
+    const renderTerminatorAndLights = () => {
       const currentMap = mapRef.current;
       if (!currentMap) return;
 
@@ -3112,17 +3160,18 @@ export function MapHubPage({
       const pointsEast = shiftPolygonCoordinates(basePoints, 360);
       const pointsWest = shiftPolygonCoordinates(basePoints, -360);
 
+      // 1. Soft Twilight & Midnight Shadow Polygon
       const terminatorStyle = {
-        color: '#F59E0B',     // Twilight golden amber borderline
-        weight: 1.2,
-        dashArray: '3, 4',
-        opacity: 0.55,
-        fillColor: '#000814', // Deep midnight navy shadow
-        fillOpacity: isDarkMode ? 0.28 : 0.18,
+        color: '#F59E0B',     // Warm twilight golden amber edge
+        weight: 3,
+        opacity: 0.4,
+        fillColor: '#020617', // Deep cosmic midnight navy
+        fillOpacity: isDarkMode ? 0.35 : 0.22,
+        className: 'leaflet-terminator-soft',
         interactive: false,
       };
 
-      const layers = [
+      const polyLayers = [
         L.polygon(basePoints, terminatorStyle),
         L.polygon(pointsEast, terminatorStyle),
         L.polygon(pointsWest, terminatorStyle),
@@ -3132,20 +3181,54 @@ export function MapHubPage({
         try { currentMap.removeLayer(terminatorLayerRef.current); } catch (_) {}
       }
 
-      const fg = L.featureGroup(layers).addTo(currentMap);
+      const fg = L.featureGroup(polyLayers).addTo(currentMap);
       if (fg.bringToBack) {
         fg.bringToBack();
       }
       terminatorLayerRef.current = fg;
+
+      // 2. Night Earth City Lights on Continents
+      const nightCities = WORLD_CITIES.filter(c => isLocationInNight(c.lat, c.lng, now, -3));
+      const lightMarkers: any[] = [];
+
+      nightCities.forEach(city => {
+        const isHub = MAJOR_NIGHT_HUBS.has(city.nameKo);
+        const iconHtml = `<div class="${isHub ? 'night-city-light-hub' : 'night-city-light'}"></div>`;
+        const icon = L.divIcon({
+          className: '',
+          html: iconHtml,
+          iconSize: isHub ? [10, 10] : [6, 6],
+          iconAnchor: isHub ? [5, 5] : [3, 3],
+        });
+
+        // Add to main longitude and wrapped copies (-360, +360)
+        [-360, 0, 360].forEach(offsetLng => {
+          const marker = L.marker([city.lat, city.lng + offsetLng], {
+            icon,
+            interactive: false,
+          });
+          lightMarkers.push(marker);
+        });
+      });
+
+      if (nightLightsLayerRef.current) {
+        try { currentMap.removeLayer(nightLightsLayerRef.current); } catch (_) {}
+      }
+      const lightsGroup = L.layerGroup(lightMarkers).addTo(currentMap);
+      nightLightsLayerRef.current = lightsGroup;
     };
 
-    renderTerminator();
-    const interval = setInterval(renderTerminator, 60000); // 1분마다 태양 위치 갱신
+    renderTerminatorAndLights();
+    const interval = setInterval(renderTerminatorAndLights, 60000); // 1분마다 태양 위치 및 밤 조명 갱신
     return () => {
       clearInterval(interval);
       if (terminatorLayerRef.current && mapRef.current) {
         try { mapRef.current.removeLayer(terminatorLayerRef.current); } catch (_) {}
         terminatorLayerRef.current = null;
+      }
+      if (nightLightsLayerRef.current && mapRef.current) {
+        try { mapRef.current.removeLayer(nightLightsLayerRef.current); } catch (_) {}
+        nightLightsLayerRef.current = null;
       }
     };
   }, [isDayNightEnabled, isDarkMode]);
@@ -3713,8 +3796,9 @@ export function MapHubPage({
         {/* 1. Top Bar: Search with Integrated Wishlist Star & Swiss Minimal Layer Toggles */}
         <div className="absolute top-3 left-3 right-3 sm:top-4 sm:left-6 sm:right-auto z-[500] flex flex-nowrap items-center gap-1.5 sm:gap-2">
         
-        {/* Country & Continent Search Bar with Integrated Wishlist Star Button */}
+        {/* Country & Continent Search Bar with Integrated Wishlist Star Button (Expandable Swiss Minimal) */}
         <div 
+          ref={searchContainerRef}
           onClick={() => {
             if (isMobileControlsOpen) {
               isControlsClosingRef.current = true;
@@ -3724,47 +3808,75 @@ export function MapHubPage({
               }, 350);
             }
           }}
-          className={`relative flex items-center bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/20 dark:border-white/20 shadow-2xl z-30 shrink min-w-0 transition-all ${
+          className={`relative flex items-center bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/20 dark:border-white/20 shadow-2xl z-30 shrink min-w-0 transition-all duration-200 ${
             isMobileControlsOpen ? 'cursor-pointer opacity-80' : ''
           }`}
         >
-          <div className="flex-1 min-w-[110px] max-w-[170px] xs:max-w-[210px] sm:max-w-none sm:w-72 flex items-center px-2 py-1.5 sm:px-3 sm:py-2">
-            <Search className="w-3.5 h-3.5 text-black/50 dark:text-white/50 shrink-0 mr-1.5 sm:mr-2" />
-            <input
-              type="text"
-              value={searchQuery}
-              readOnly={isMobileControlsOpen}
-              onChange={(e) => {
-                if (isMobileControlsOpen || isControlsClosingRef.current) return;
-                setSearchQuery(e.target.value);
-                setIsSearchDropdownOpen(true);
-              }}
-              onFocus={(e) => {
-                if (isMobileControlsOpen || isControlsClosingRef.current) {
-                  e.target.blur();
-                  return;
+          {/* Collapsed Search Icon Trigger (Visible when search is closed & empty) */}
+          {!isSearchExpanded && !searchQuery ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (isMobileControlsOpen) {
+                  isControlsClosingRef.current = true;
+                  setIsMobileControlsOpen(false);
+                  setTimeout(() => { isControlsClosingRef.current = false; }, 350);
                 }
-                setIsMobileControlsOpen(false);
-                setIsSearchDropdownOpen(true);
+                setIsSearchExpanded(true);
+                setTimeout(() => searchInputRef.current?.focus(), 60);
               }}
-              placeholder="SEARCH..."
-              className={`w-full bg-transparent text-[11px] sm:text-xs font-sans font-bold uppercase tracking-wider text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 outline-none truncate ${
-                isMobileControlsOpen ? 'pointer-events-none' : ''
-              }`}
-            />
-            {searchQuery && !isMobileControlsOpen && (
+              className="p-2 sm:px-2.5 sm:py-2 flex items-center justify-center text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer shrink-0"
+              title="검색 (클릭하여 열기)"
+            >
+              <Search className="w-3.5 h-3.5" />
+            </button>
+          ) : (
+            /* Expanded Search Input Field */
+            <div className="flex-1 w-[calc(100vw-150px)] max-w-[240px] xs:max-w-[280px] sm:max-w-none sm:w-72 flex items-center px-2 py-1.5 sm:px-3 sm:py-2 animate-card-entrance">
+              <Search className="w-3.5 h-3.5 text-black/50 dark:text-white/50 shrink-0 mr-1.5 sm:mr-2" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                readOnly={isMobileControlsOpen}
+                onChange={(e) => {
+                  if (isMobileControlsOpen || isControlsClosingRef.current) return;
+                  setSearchQuery(e.target.value);
+                  setIsSearchDropdownOpen(true);
+                }}
+                onFocus={(e) => {
+                  if (isMobileControlsOpen || isControlsClosingRef.current) {
+                    e.target.blur();
+                    return;
+                  }
+                  setIsMobileControlsOpen(false);
+                  setIsSearchDropdownOpen(true);
+                }}
+                placeholder="SEARCH..."
+                className={`w-full bg-transparent text-[11px] sm:text-xs font-sans font-bold uppercase tracking-wider text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 outline-none truncate ${
+                  isMobileControlsOpen ? 'pointer-events-none' : ''
+                }`}
+              />
+              {/* Clear / Close Search Button */}
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleCloseCountry();
+                  if (searchQuery) {
+                    handleCloseCountry();
+                  } else {
+                    setIsSearchExpanded(false);
+                    setIsSearchDropdownOpen(false);
+                  }
                 }}
                 className="p-0.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer mr-0.5"
+                title={searchQuery ? "지우기" : "검색 닫기"}
               >
                 <X className="w-3.5 h-3.5" />
               </button>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Integrated Wishlist Star Button on the right of Search */}
           <button
@@ -3781,7 +3893,7 @@ export function MapHubPage({
               }
               setIsWishlistModalOpen(true);
             }}
-            className={`px-2 py-1.5 sm:px-3 sm:py-2.5 border-l border-black/15 dark:border-white/15 flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer shrink-0 ${
+            className={`p-2 sm:px-3 sm:py-2 border-l border-black/15 dark:border-white/15 flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer shrink-0 ${
               favoriteCountries.length > 0
                 ? 'text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5'
                 : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
@@ -3805,7 +3917,11 @@ export function MapHubPage({
                 {filteredCountries.map(c => (
                   <div
                     key={c.code}
-                    onClick={() => handleSelectCountry(c)}
+                    onClick={() => {
+                      handleSelectCountry(c);
+                      setIsSearchExpanded(false);
+                      setIsSearchDropdownOpen(false);
+                    }}
                     className="p-2 sm:p-2.5 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer flex items-center justify-between gap-2.5 transition-colors"
                   >
                     <div className="flex-1 min-w-0">
@@ -4120,25 +4236,38 @@ export function MapHubPage({
           )}
         </div>
 
-        {/* Real-time Clock & Day/Night Shade Toggle Pill Widget */}
-        <div className="flex items-center border border-black/20 dark:border-white/20 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md shadow-2xl z-10 px-2.5 sm:px-3 py-1.5 sm:py-2 gap-1.5 sm:gap-2 text-black dark:text-white select-none shrink-0">
-          <div className="flex items-center gap-1.5 font-mono text-[10px] sm:text-[11px] font-extrabold tracking-tight">
-            <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-black/50 dark:text-white/50 shrink-0" />
-            <span className="font-mono tabular-nums">{formattedClockTime}</span>
-            <span className="text-[8.5px] sm:text-[9.5px] text-black/40 dark:text-white/40 font-bold uppercase hidden xs:inline">
+        {/* Real-time Clock & Day/Night Shade Toggle Pill Widget (Native App Pill Style) */}
+        <div className="flex items-center h-8 sm:h-9 px-2 sm:px-3 rounded-full border border-black/20 dark:border-white/20 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md shadow-2xl z-10 gap-1.5 sm:gap-2 text-black dark:text-white select-none shrink-0 transition-all">
+          {/* Live Indicator Pulse Dot */}
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)] animate-pulse shrink-0" />
+          
+          {/* Time Display (Mobile: HH:mm, Desktop: HH:mm:ss KST) */}
+          <div className="flex items-baseline gap-1 font-mono tracking-tight font-black">
+            {/* Desktop Full Clock */}
+            <span className="hidden sm:inline text-xs font-black tabular-nums">
+              {formattedClockTime}
+            </span>
+            {/* Mobile Compact Clock */}
+            <span className="inline sm:hidden text-[11px] font-black tabular-nums">
+              {formattedClockShort}
+            </span>
+            <span className="text-[8.5px] sm:text-[9.5px] text-black/40 dark:text-white/40 font-bold uppercase hidden sm:inline">
               KST
             </span>
           </div>
+
           <div className="w-[1px] h-3 bg-black/15 dark:bg-white/15" />
+
+          {/* Integrated Day/Night Toggle Button */}
           <button
             type="button"
             onClick={() => setIsDayNightEnabled(prev => !prev)}
-            className={`p-0.5 transition-colors cursor-pointer flex items-center justify-center ${
+            className={`p-1 rounded-full transition-all cursor-pointer flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 ${
               isDayNightEnabled
-                ? 'text-amber-500 hover:text-amber-600'
-                : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
+                ? 'text-amber-500'
+                : 'text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white'
             }`}
-            title={isDayNightEnabled ? "낮/밤 명암 경계선 켜짐 (클릭 시 끄기)" : "낮/밤 명암 경계선 꺼짐 (클릭 시 켜기)"}
+            title={isDayNightEnabled ? "낮/밤 명암 및 야경 조명 켜짐 (클릭 시 끄기)" : "낮/밤 명암 및 야경 조명 꺼짐 (클릭 시 켜기)"}
           >
             {isDayNightEnabled ? (
               <Sun className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
