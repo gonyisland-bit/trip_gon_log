@@ -76,13 +76,13 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
     }));
   }, []);
 
-  // 4. 눈: 크기 확대(4px~9.5px) + 하늘색 오라 글로우 + 연속 등속 낙하(끊김 없음)
+  // 4. 눈: 크기 확대(4.2px~9.0px) + 하늘색 오라 글로우 + 연속 등속 낙하(끊김 없음)
   const snowflakes = useMemo(() => {
     return Array.from({ length: 44 }, (_, i) => {
-      const sizePx = 4.2 + ((i % 6) * 0.95); // 4.2px ~ 9.0px
-      const fallDuration = 3.6 + ((i % 5) * 0.65); // 3.6s ~ 6.2s 등속 하강
-      const swayDuration = 2.2 + ((i % 4) * 0.5); // 2.2s ~ 3.7s 좌우 살랑거림
-      const swayAmp = 25 + ((i % 5) * 8); // 25px ~ 57px 좌우 스웨이 진폭
+      const sizePx = 4.2 + ((i % 6) * 0.95);
+      const fallDuration = 3.6 + ((i % 5) * 0.65);
+      const swayDuration = 2.2 + ((i % 4) * 0.5);
+      const swayAmp = 25 + ((i % 5) * 8);
       return {
         id: `snow-${i}`,
         left: `${(i * 2.27 + (i % 7) * 2.1) % 100}%`,
@@ -107,16 +107,6 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
       delay: `${(i * 0.35) % 4}s`,
       duration: `${2.8 + ((i % 4) * 0.8)}s`,
     }));
-  }, []);
-
-  // 6. 뭉게구름 무리 클러스터 (선명한 경계면 + 몽글몽글 형태)
-  const clouds = useMemo(() => {
-    return [
-      { id: 'c1', top: '5%', width: '360px', duration: '46s', delay: '-4s', opacity: 0.88 },
-      { id: 'c2', top: '18%', width: '310px', duration: '58s', delay: '-26s', opacity: 0.75 },
-      { id: 'c3', top: '32%', width: '420px', duration: '52s', delay: '-40s', opacity: 0.82 },
-      { id: 'c4', top: '46%', width: '290px', duration: '64s', delay: '-16s', opacity: 0.68 },
-    ];
   }, []);
 
   return (
@@ -157,68 +147,44 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
 
         /* ── Snow Animations (등속 연속 하강 + 부드러운 사인파 스웨이) ── */
         @keyframes tglSnowLinearFall {
-          0% {
-            transform: translate3d(0, -35px, 0);
-          }
-          100% {
-            transform: translate3d(0, 106vh, 0);
-          }
+          0% { transform: translate3d(0, -35px, 0); }
+          100% { transform: translate3d(0, 106vh, 0); }
         }
         @keyframes tglSnowSwaySine {
-          0% {
-            transform: translate3d(var(--sway-amp, 30px), 0, 0);
-          }
-          100% {
-            transform: translate3d(calc(-1 * var(--sway-amp, 30px)), 0, 0);
-          }
+          0% { transform: translate3d(var(--sway-amp, 30px), 0, 0); }
+          100% { transform: translate3d(calc(-1 * var(--sway-amp, 30px)), 0, 0); }
         }
 
         /* ── Sun & Rays Animations (맑음 경계 없는 눈부신 빛 퍼짐) ── */
         @keyframes tglSunRadiantBloom {
-          0%, 100% {
-            opacity: 0.65;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 0.9;
-            transform: scale(1.12);
-          }
+          0%, 100% { opacity: 0.65; transform: scale(1); }
+          50% { opacity: 0.9; transform: scale(1.12); }
         }
         @keyframes tglSunRaysSoftSweep {
+          0%, 100% { opacity: 0.35; transform: rotate(0deg) scale(1); }
+          50% { opacity: 0.65; transform: rotate(2deg) scale(1.06); }
+        }
+
+        /* ── Overcast Atmosphere Gentle Breathing ── */
+        @keyframes tglOvercastMassBreathe {
           0%, 100% {
-            opacity: 0.35;
-            transform: rotate(0deg) scale(1);
+            opacity: 0.85;
+            transform: scale(1) translate3d(0, 0, 0);
           }
           50% {
-            opacity: 0.65;
-            transform: rotate(2deg) scale(1.06);
+            opacity: 1;
+            transform: scale(1.04) translate3d(0, 8px, 0);
           }
         }
-        @keyframes tglFairSunSoftGlow {
-          0%, 100% {
-            opacity: 0.45;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 0.7;
-            transform: scale(1.08);
-          }
+        @keyframes tglFairGlowBreathe {
+          0%, 100% { opacity: 0.7; transform: scale(1); }
+          50% { opacity: 0.9; transform: scale(1.05); }
         }
 
         /* ── Night Star Twinkle ── */
         @keyframes tglStarTwinkle {
           0%, 100% { opacity: 0.2; transform: scale(0.85); }
           50% { opacity: 1; transform: scale(1.4); }
-        }
-
-        /* ── Clouds Continuous Drift Flow ── */
-        @keyframes tglContinuousCloudFlow {
-          0% {
-            transform: translate3d(-50vw, 0, 0);
-          }
-          100% {
-            transform: translate3d(120vw, 0, 0);
-          }
         }
 
         /* ── Storm Flash ── */
@@ -372,7 +338,6 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
             }`}
           />
 
-          {/* 2중 래퍼: 부모는 linear 등속 하강(끊김 없음), 자식은 sine 좌우 살랑거림 */}
           {snowflakes.map((flake) => (
             <div
               key={flake.id}
@@ -390,7 +355,6 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
                   width: flake.size,
                   height: flake.size,
                   opacity: flake.opacity,
-                  // 은은한 하늘색 앰비언트 글로우로 밝은 배경에서도 선명하게 빛남
                   boxShadow: isDarkMode
                     ? '0 0 6px rgba(255, 255, 255, 0.95), 0 0 12px rgba(186, 230, 254, 0.75)'
                     : '0 0 7px rgba(56, 189, 248, 0.85), 0 0 14px rgba(14, 165, 233, 0.45), 0 1px 3px rgba(15, 23, 42, 0.35)',
@@ -463,9 +427,8 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
               ))}
             </div>
           ) : (
-            /* [라이트 모드] 경계선 없는 광활하고 눈부신 자연광 확산 (Radiant Sunlight Bloom) */
+            /* [라이트 모드] 경계선 없는 광활하고 눈부신 자연광 확산 */
             <div className="absolute inset-0 pointer-events-none">
-              {/* 1. 우상단 눈부신 백금/황금빛 발광 블룸 (딱딱한 원형 테두리 없음) */}
               <div 
                 className="absolute -top-24 -right-24 w-[500px] h-[500px] sm:w-[650px] sm:h-[650px] rounded-full blur-3xl bg-radial from-amber-100/90 via-amber-300/45 to-transparent"
                 style={{
@@ -473,12 +436,9 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
                   willChange: 'transform, opacity',
                 }}
               />
-              {/* 2. 대기 전체로 온화하게 번져나가는 골든 앰버 림 */}
               <div 
                 className="absolute -top-10 -right-10 w-[700px] h-[700px] sm:w-[900px] sm:h-[900px] rounded-full blur-[90px] bg-gradient-to-br from-amber-200/40 via-orange-200/20 to-transparent opacity-80" 
               />
-
-              {/* 3. 부드럽게 사선으로 퍼지는 은은한 대기 확산 빔 (God Rays) */}
               <div
                 className="absolute top-0 right-0 w-[95vw] h-[95vh] origin-top-right pointer-events-none opacity-70"
                 style={{
@@ -487,8 +447,6 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
                   willChange: 'transform, opacity',
                 }}
               />
-
-              {/* 전체 온화하고 쾌청한 대기 틴트 */}
               <div className="absolute inset-0 bg-gradient-to-b from-amber-100/25 via-transparent to-transparent" />
             </div>
           )}
@@ -496,7 +454,7 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
       )}
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* 4. FAIR EFFECT (조금 흐림 — 해 위치 하향, 구름 통과 일식 & 덜 인디고 나이트) */}
+      {/* 4. FAIR EFFECT (조금 흐림 — 구름 모양 없이, 흐림보다 밝고 은은한 대기 톤) */}
       {/* ───────────────────────────────────────────────────────────── */}
       {effectType === 'fair' && (
         <div className="absolute inset-0">
@@ -506,7 +464,6 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
               <div 
                 className="absolute inset-x-0 top-0 h-[60vh] bg-gradient-to-b from-[#0f172a]/75 via-[#181d3d]/30 to-transparent transition-opacity duration-1000" 
               />
-              {/* 은은한 별 노출 */}
               {stars.slice(0, 16).map((star) => (
                 <span
                   key={`fair-star-${star.id}`}
@@ -524,114 +481,73 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
               ))}
             </div>
           ) : (
-            /* [라이트 모드] 해 위치가 좀 더 낮고 은은하며, 구름이 지나가며 해를 절반씩 가림 */
+            /* [라이트 모드] 흐림보다 훨씬 밝고 부드러운 상단 그라데이션 + 은은한 온기 */
             <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute inset-0 bg-gradient-to-b from-sky-50/45 via-slate-50/15 to-transparent" />
-
-              {/* 1. 좀 더 낮아진 위치(top-24 right-14 sm:top-28 sm:right-24)의 온화한 태양 */}
+              {/* 1. 맑은 기운이 섞인 밝은 상단 앰비언트 그라데이션 (흐림보다 확연히 밝음) */}
               <div 
-                className="absolute top-20 right-10 sm:top-24 sm:right-20 w-32 h-32 sm:w-44 sm:h-44 rounded-full blur-xl bg-gradient-to-br from-amber-200/90 via-amber-300/60 to-amber-400/30"
+                className="absolute inset-x-0 top-0 h-[45vh] bg-gradient-to-b from-slate-300/25 via-sky-100/15 to-transparent transition-opacity duration-1000"
                 style={{
-                  animation: 'tglFairSunSoftGlow 8s ease-in-out infinite',
-                  willChange: 'transform, opacity',
+                  animation: 'tglFairGlowBreathe 8s ease-in-out infinite',
+                  willChange: 'opacity, transform',
                 }}
               />
-              <div className="absolute top-16 right-6 sm:top-20 sm:right-16 w-40 h-40 sm:w-56 sm:h-56 rounded-full blur-3xl bg-amber-300/25" />
 
-              {/* 2. 태양 앞을 천천히 통과하며 해를 절반씩 가리고 지나가는 뭉게구름 무리 */}
-              {clouds.slice(0, 3).map((c) => (
-                <div
-                  key={`fair-${c.id}`}
-                  className="absolute left-0 pointer-events-none z-10"
-                  style={{
-                    top: c.top,
-                    width: c.width,
-                    animation: `tglContinuousCloudFlow ${c.duration} linear infinite`,
-                    animationDelay: c.delay,
-                    willChange: 'transform',
-                    opacity: c.opacity,
-                  }}
-                >
-                  <CumulusCloudSvg isDarkMode={isDarkMode} />
-                </div>
-              ))}
+              {/* 2. 상단 중앙-우측에 부드럽게 감도는 밝은 소프트 에어 매스 */}
+              <div 
+                className="absolute -top-16 left-1/4 w-[60vw] h-[35vh] rounded-full blur-[80px] bg-slate-200/40 dark:bg-zinc-700/20"
+              />
+
+              {/* 3. 우상단에 아주 옅게 스며드는 온화한 자연광 블룸 (구름 틈새 은은한 햇빛) */}
+              <div 
+                className="absolute top-0 right-0 w-[45vw] h-[38vh] rounded-full blur-3xl bg-amber-200/20" 
+              />
             </div>
           )}
         </div>
       )}
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* 5. CLOUDS / FOG EFFECT (흐림 — 뭉게구름 경계면 & 끊김 없는 구름 흐름) */}
+      {/* 5. CLOUDS / FOG EFFECT (흐림 — 구름 모양 없이, 어둡게 흐린 덩어리감의 그라데이션) */}
       {/* ───────────────────────────────────────────────────────────── */}
       {(effectType === 'clouds' || effectType === 'fog') && (
-        <div className="absolute inset-0">
-          {/* 흐린 날의 차분한 오버캐스트 대기감 */}
+        <div className="absolute inset-0 pointer-events-none">
+          {/* 1. 상단에서 아래로 묵직하게 내려앉는 어두운 오버캐스트 베이스 그라데이션 */}
           <div 
-            className={`absolute inset-0 transition-opacity duration-1000 ${
+            className={`absolute inset-x-0 top-0 h-[65vh] transition-opacity duration-1000 ${
               isDarkMode
-                ? 'bg-zinc-950/35'
-                : 'bg-slate-300/35'
+                ? 'bg-gradient-to-b from-zinc-900/85 via-zinc-950/45 to-transparent'
+                : 'bg-gradient-to-b from-slate-500/40 via-slate-400/20 to-transparent'
             }`}
           />
 
-          {/* 화면 내에서 끊김 없이 둥실둥실 흘러가는 4개의 실제 뭉게구름(Cumulus) 무리 */}
-          {clouds.map((c) => (
-            <div
-              key={`cloud-${c.id}`}
-              className="absolute left-0 pointer-events-none"
-              style={{
-                top: c.top,
-                width: c.width,
-                animation: `tglContinuousCloudFlow ${c.duration} linear infinite`,
-                animationDelay: c.delay,
-                willChange: 'transform',
-                opacity: c.opacity,
-              }}
-            >
-              <CumulusCloudSvg isDarkMode={isDarkMode} />
-            </div>
-          ))}
+          {/* 2. 상단 좌측 묵직한 대기 음영 덩어리 (유기적인 소프트 매스) */}
+          <div 
+            className="absolute -top-20 -left-10 w-[75vw] h-[45vh] rounded-full blur-[90px]"
+            style={{
+              backgroundColor: isDarkMode ? 'rgba(39, 39, 42, 0.65)' : 'rgba(100, 116, 139, 0.35)',
+              animation: 'tglOvercastMassBreathe 12s ease-in-out infinite',
+              willChange: 'transform, opacity',
+            }}
+          />
+
+          {/* 3. 상단 우측 묵직한 대기 음영 덩어리 (깊이감 형성) */}
+          <div 
+            className="absolute -top-28 right-0 w-[65vw] h-[42vh] rounded-full blur-[85px]"
+            style={{
+              backgroundColor: isDarkMode ? 'rgba(24, 24, 27, 0.75)' : 'rgba(71, 85, 105, 0.3)',
+              animation: 'tglOvercastMassBreathe 10s ease-in-out infinite reverse',
+              willChange: 'transform, opacity',
+            }}
+          />
+
+          {/* 4. 전체 화면을 감싸는 차분하고 서늘한 오버캐스트 틴트 */}
+          <div 
+            className={`absolute inset-0 transition-opacity duration-1000 ${
+              isDarkMode ? 'bg-zinc-950/30' : 'bg-slate-300/25'
+            }`}
+          />
         </div>
       )}
     </div>
   );
 };
-
-// 몽글몽글한 경계면이 확실히 느껴지는 스위스 미니멀 뭉게구름(Cumulus) SVG 컴포넌트
-function CumulusCloudSvg({ isDarkMode }: { isDarkMode: boolean }) {
-  return (
-    <svg 
-      viewBox="0 0 340 180" 
-      className="w-full h-auto drop-shadow-sm filter blur-[2px] transform transition-transform"
-      style={{ overflow: 'visible' }}
-    >
-      {/* 뭉게구름 몸체 (4개의 유기적인 둥근 돔의 결합) */}
-      <path
-        d="M 50 145 
-           A 38 38 0 0 1 85 85 
-           A 55 55 0 0 1 175 50 
-           A 52 52 0 0 1 255 82 
-           A 46 46 0 0 1 295 145 
-           Z"
-        fill={isDarkMode ? 'rgba(113, 113, 122, 0.55)' : 'rgba(255, 255, 255, 0.88)'}
-      />
-      {/* 구름 하단 볼륨 음영 림 */}
-      <path
-        d="M 50 145 
-           Q 172 150 295 145 
-           A 46 46 0 0 1 255 128
-           Q 170 134 85 128
-           A 38 38 0 0 0 50 145 Z"
-        fill={isDarkMode ? 'rgba(63, 63, 70, 0.45)' : 'rgba(203, 213, 225, 0.65)'}
-      />
-      {/* 중심부 보송보송한 소프트 하이라이트 */}
-      <circle 
-        cx="175" 
-        cy="90" 
-        r="32" 
-        fill={isDarkMode ? 'rgba(161, 161, 170, 0.25)' : 'rgba(255, 255, 255, 0.6)'} 
-        filter="blur(8px)" 
-      />
-    </svg>
-  );
-}
