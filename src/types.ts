@@ -304,6 +304,7 @@ export interface UserProfile {
   role: 'admin' | 'user';
   permissions: UserPermissions;
   status?: 'pending' | 'approved' | 'rejected';
+  approvalToken?: string;
   createdAt: number;
 }
 

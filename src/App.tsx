@@ -96,6 +96,8 @@ import {
   collection, 
   doc, 
   setDoc, 
+  getDoc,
+  updateDoc,
   deleteDoc, 
   onSnapshot, 
   getDocs, 
@@ -196,7 +198,10 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
     return localStorage.getItem('isLoggedIn') === 'true' || Boolean(auth.currentUser);
   });
-  const [isAuthReady, setIsAuthReady] = useState<boolean>(true);
+  const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
+  const [superAdminEmail, setSuperAdminEmail] = useState<string>(() => {
+    return localStorage.getItem('cached_super_admin_email') || SUPER_ADMIN_EMAIL;
+  });
   const [adminEmails, setAdminEmails] = useState<string[]>(ADMIN_EMAILS);
   const [magazineMoments, setMagazineMoments] = useState<MagazineMoment[]>(() => {
     try {
@@ -555,11 +560,21 @@ function App() {
   };
 
   const currentUserEmail = auth.currentUser?.email?.toLowerCase() || '';
-  const isSuperAdmin = currentUserEmail === SUPER_ADMIN_EMAIL;
+  const isSuperAdmin = Boolean(
+    currentUserEmail && (
+      currentUserEmail === superAdminEmail.toLowerCase().trim() ||
+      currentUserEmail === SUPER_ADMIN_EMAIL
+    )
+  );
   const isGuest = currentUserEmail.startsWith('guest') || currentUserEmail.includes('guest') || Boolean(auth.currentUser?.isAnonymous);
   
   // Super Admin or users with admin role have full management rights
-  const isAdmin = isLoggedIn && (isSuperAdmin || currentUserProfile?.role === 'admin' || ADMIN_EMAILS.includes(currentUserEmail));
+  const isAdmin = isLoggedIn && (
+    isSuperAdmin || 
+    currentUserProfile?.role === 'admin' || 
+    adminEmails.includes(currentUserEmail) || 
+    ADMIN_EMAILS.includes(currentUserEmail)
+  );
 
   // Sync current user's profile from Firestore users collection
   useEffect(() => {
@@ -688,11 +703,12 @@ function App() {
 
   // Redirect non-admin if they try to access Management Hub
   useEffect(() => {
+    if (!isAuthReady) return;
     if (currentView === 'manage' && (!isLoggedIn || !isAdmin)) {
       alert("관리자(Admin) 계정만 Management Hub를 이용할 수 있습니다. 여정은 상세 페이지에서 편집하실 수 있습니다.");
       navigateTo('home', null, true);
     }
-  }, [currentView, isLoggedIn, isAdmin]);
+  }, [currentView, isLoggedIn, isAdmin, isAuthReady]);
 
   // activeTrip: strictly match activeTripId. Do not automatically fall back to trips[0]
   // to avoid rendering one trip's map with another trip's details during sync.
@@ -1077,9 +1093,16 @@ function App() {
     const unsubAdmin = onSnapshot(doc(db, 'users', uid, 'settings', 'admin'), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        if (Array.isArray(data.allowedAdmins)) {
-          setAdminEmails(Array.from(new Set([...ADMIN_EMAILS, ...data.allowedAdmins.map((e: string) => String(e).toLowerCase().trim())])));
+        if (data.superAdminEmail && typeof data.superAdminEmail === 'string') {
+          const email = data.superAdminEmail.toLowerCase().trim();
+          setSuperAdminEmail(email);
+          try {
+            localStorage.setItem('cached_super_admin_email', email);
+          } catch (_) {}
         }
+        const customAdmins = Array.isArray(data.allowedAdmins) ? data.allowedAdmins.map((e: string) => String(e).toLowerCase().trim()) : [];
+        const dynamicSuper = data.superAdminEmail ? [data.superAdminEmail.toLowerCase().trim()] : [];
+        setAdminEmails(Array.from(new Set([...ADMIN_EMAILS, ...dynamicSuper, ...customAdmins])));
       }
     }, (err) => {
       console.warn("Admin snapshot subscription notice:", err);
@@ -1112,6 +1135,48 @@ function App() {
       unsubSettings();
       unsubAdmin();
     };
+  }, []);
+
+  // Handle email one-click user approval (?approve_uid=...&token=...)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const approveUid = params.get('approve_uid');
+    const token = params.get('token');
+
+    if (approveUid && token) {
+      const handleApprove = async () => {
+        try {
+          const userDocRef = doc(db, 'users', approveUid);
+          const snap = await getDoc(userDocRef);
+          if (!snap.exists()) {
+            alert("존재하지 않는 회원 계정입니다.");
+            return;
+          }
+          const userData = snap.data() as UserProfile;
+          if (userData.status === 'approved') {
+            alert(`[${userData.email || userData.firstName || '회원'}] 이미 승인 완료된 계정입니다.`);
+          } else if (userData.approvalToken && userData.approvalToken !== token) {
+            alert("유효하지 않거나 만료된 승인 토큰입니다.");
+            return;
+          } else {
+            await updateDoc(userDocRef, {
+              status: 'approved',
+              approvedAt: Date.now()
+            });
+            alert(`회원 [${userData.email || userData.firstName || approveUid}] 가입 승인이 성공적으로 완료되었습니다.\n이제 해당 회원이 로그인할 수 있습니다.`);
+          }
+        } catch (err: any) {
+          console.error("User approval error:", err);
+          alert(`승인 처리 중 오류가 발생했습니다: ${err?.message || err}`);
+        } finally {
+          // Clean up URL parameters cleanly without refreshing page
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, '', newUrl);
+        }
+      };
+
+      handleApprove();
+    }
   }, []);
 
   // Sync real-time homeConfigChanged events (gradient / limits)
@@ -3089,6 +3154,7 @@ function App() {
             isOpen={isAuthModalOpen} 
             onClose={() => setIsAuthModalOpen(false)} 
             initialMode={authModalMode}
+            adminEmail={superAdminEmail}
             onSuccess={() => setCurrentView('home')}
           />
 

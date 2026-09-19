@@ -11,15 +11,17 @@ import { auth, db } from '../firebase';
 import { ConfirmModal } from './ConfirmModal';
 import { UserProfile } from '../types';
 import { PROFILE_PRESET_ICONS, UserProfileAvatar } from './UserProfileAvatar';
+import { sendAdminApprovalNotification } from '../utils/adminEmailNotifier';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialMode?: 'login' | 'signup';
   onSuccess?: () => void;
+  adminEmail?: string;
 }
 
-export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, adminEmail }: AuthModalProps) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -109,6 +111,18 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
     password.length >= 6
   );
 
+  // Auto-close modal and return to landing guest view after 4 seconds of notice
+  React.useEffect(() => {
+    if (signupSubmitted) {
+      const timer = setTimeout(() => {
+        setSignupSubmitted(false);
+        setIsSignUp(false);
+        onClose();
+      }, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [signupSubmitted, onClose]);
+
   React.useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -179,6 +193,9 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
         });
 
         const isSuper = cleanEmail === 'gonyisland@naver.com';
+        const approvalToken = typeof crypto !== 'undefined' && crypto.randomUUID 
+          ? crypto.randomUUID() 
+          : (Math.random().toString(36).substring(2, 11) + Date.now().toString(36));
 
         // 2. Save UserProfile to Firestore users collection
         const newProfile: UserProfile = {
@@ -193,6 +210,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
           phone: phone.trim(),
           role: isSuper ? 'admin' : 'user',
           status: isSuper ? 'approved' : 'pending',
+          approvalToken,
           permissions: {
             canCreate: true,
             canEdit: isSuper,
@@ -204,6 +222,11 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
         await setDoc(doc(db, 'users', user.uid), newProfile);
 
         setIsConfirmOpen(false);
+
+        // Send approval notification email to administrator
+        sendAdminApprovalNotification(newProfile, adminEmail).catch(err => {
+          console.warn('Background admin email notification warning:', err);
+        });
 
         // If not super admin, sign out immediately and show pending application modal
         if (!isSuper) {
@@ -302,6 +325,14 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }:
               onClick={() => {
                 setSignupSubmitted(false);
                 setIsSignUp(false);
+                setEmail('');
+                setPassword('');
+                setUsername('');
+                setLastName('');
+                setFirstName('');
+                setPhone('');
+                setBirthdate('');
+                setError('');
                 onClose();
               }}
               className="w-full h-11 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-widest hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white transition-colors cursor-pointer"

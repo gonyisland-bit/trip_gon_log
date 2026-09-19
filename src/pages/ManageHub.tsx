@@ -51,7 +51,9 @@ import {
   Users,
   UserCheck,
   Shield,
-  KeyRound
+  KeyRound,
+  Mail,
+  Save
 } from 'lucide-react';
 import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc, deleteField, setDoc, onSnapshot, QuerySnapshot, DocumentData } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -607,9 +609,16 @@ export function ManageHubPage({
   const [isDelegatingModalOpen, setIsDelegatingModalOpen] = useState<boolean>(false);
   const [userActionToast, setUserActionToast] = useState<string | null>(null);
 
+  // Admin Account Dynamic Management
+  const [currentAdminEmail, setCurrentAdminEmail] = useState<string>(() => localStorage.getItem('cached_super_admin_email') || 'gonyisland@naver.com');
+  const [newAdminEmailInput, setNewAdminEmailInput] = useState<string>('');
+  const [adminEmailSaving, setAdminEmailSaving] = useState<boolean>(false);
+
   useEffect(() => {
     if (activeMode !== 'USERS' || !isLoggedIn) return;
-    const unsub = onSnapshot(collection(db, 'users'), (snapshot: QuerySnapshot<DocumentData>) => {
+
+    // Listen to registered users collection
+    const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot: QuerySnapshot<DocumentData>) => {
       const list: UserProfile[] = [];
       snapshot.forEach(docSnap => {
         const data = docSnap.data();
@@ -637,8 +646,50 @@ export function ManageHubPage({
     }, (err: Error) => {
       console.warn('Failed to listen to users:', err);
     });
-    return () => unsub();
+
+    // Listen to admin settings for dynamic superAdminEmail
+    const unsubAdminConfig = onSnapshot(doc(db, 'users', 'public', 'settings', 'admin'), (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.superAdminEmail && typeof data.superAdminEmail === 'string') {
+          setCurrentAdminEmail(data.superAdminEmail);
+        }
+      }
+    }, (err) => {
+      console.warn('Failed to listen to admin settings:', err);
+    });
+
+    return () => {
+      unsubUsers();
+      unsubAdminConfig();
+    };
   }, [activeMode, isLoggedIn]);
+
+  const handleUpdateAdminEmail = async () => {
+    const trimmed = newAdminEmailInput.trim().toLowerCase();
+    if (!trimmed || !trimmed.includes('@')) {
+      alert("유효한 이메일 주소를 입력해 주세요.");
+      return;
+    }
+    setAdminEmailSaving(true);
+    try {
+      await setDoc(doc(db, 'users', 'public', 'settings', 'admin'), {
+        superAdminEmail: trimmed
+      }, { merge: true });
+      setCurrentAdminEmail(trimmed);
+      try {
+        localStorage.setItem('cached_super_admin_email', trimmed);
+      } catch (_) {}
+      setNewAdminEmailInput('');
+      setUserActionToast(`최고 관리자 이메일이 [${trimmed}]로 변경되었습니다.`);
+      setTimeout(() => setUserActionToast(null), 4000);
+    } catch (err: any) {
+      console.error("Failed to update admin email:", err);
+      alert(`관리자 이메일 저장 실패: ${err?.message || err}`);
+    } finally {
+      setAdminEmailSaving(false);
+    }
+  };
 
   const handleApproveUser = async (user: UserProfile) => {
     try {
@@ -8562,6 +8613,45 @@ export function ManageHubPage({
                 <span>{userActionToast}</span>
               </div>
             )}
+
+            {/* Admin Account Configuration Panel (Swiss Minimal) */}
+            <div className="border border-black/20 dark:border-white/20 p-4 sm:p-5 flex flex-col gap-3 bg-black/[0.02] dark:bg-white/[0.02]">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-black/10 dark:border-white/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-black dark:text-white" />
+                  <span className="text-xs font-mono font-black uppercase tracking-wider text-black dark:text-white">
+                    SUPER ADMIN ACCOUNT CONFIG
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono text-black/50 dark:text-white/50 uppercase">CURRENT:</span>
+                  <span className="text-xs font-mono font-bold text-red-600 dark:text-red-400 bg-red-500/10 px-2 py-0.5 border border-red-500/30">
+                    {currentAdminEmail}
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div className="relative flex-1">
+                  <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
+                  <input
+                    type="email"
+                    value={newAdminEmailInput}
+                    onChange={e => setNewAdminEmailInput(e.target.value)}
+                    placeholder="새 관리자 이메일 주소 입력 (가입 승인 메일 수신처)..."
+                    className="w-full pl-9 pr-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleUpdateAdminEmail}
+                  disabled={adminEmailSaving || !newAdminEmailInput.trim()}
+                  className="px-4 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:opacity-80 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{adminEmailSaving ? 'SAVING...' : 'UPDATE EMAIL'}</span>
+                </button>
+              </div>
+            </div>
 
             {/* Search Bar */}
             <div className="flex items-center gap-3">
