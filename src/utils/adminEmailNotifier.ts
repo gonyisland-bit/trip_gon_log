@@ -1,4 +1,4 @@
-import { collection, addDoc, doc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { UserProfile } from '../types';
 
@@ -10,9 +10,11 @@ export interface AdminApprovalEmailPayload {
 
 /**
  * Sends an email notification to the administrator requesting user approval.
- * 1. Resolves dynamic admin email from Firestore settings/admin if not explicitly passed.
+ * Strategy:
+ * 1. Saves a 'pendingNotification' record in Firestore so ManageHub shows pending badge.
  * 2. Queues the email in Firestore 'mail' collection (Firebase Trigger Email Extension standard).
- * 3. Also attempts external webhook/dispatch (Formspree or Cloud API) if configured, with graceful fallback.
+ * 3. Sends via Web3Forms API (no backend needed, delivers to any email via API key).
+ * 4. Falls back to Formspree if Web3Forms fails (recipient fixed to form owner).
  */
 export async function sendAdminApprovalNotification(
   user: UserProfile,
@@ -116,7 +118,23 @@ ${approveUrl}
 </div>
 `.trim();
 
-    // 2. Queue in Firestore 'mail' collection (Firebase Trigger Email extension standard)
+    // 2. Save pending notification record to Firestore (visible in ManageHub)
+    try {
+      await setDoc(doc(db, 'users', 'public', 'settings', `pendingApproval_${user.uid}`), {
+        uid: user.uid,
+        email: user.email,
+        fullName,
+        username: user.username,
+        phone: user.phone,
+        approveUrl,
+        createdAt: user.createdAt || Date.now(),
+        notified: false,
+      }, { merge: true });
+    } catch (notifErr) {
+      console.warn('Failed to save pending approval record:', notifErr);
+    }
+
+    // 3. Queue in Firestore 'mail' collection (Firebase Trigger Email extension standard)
     try {
       await addDoc(collection(db, 'mail'), {
         to: adminEmail,
@@ -129,16 +147,46 @@ ${approveUrl}
         status: 'pending',
       });
     } catch (firestoreErr) {
-      console.warn('Firestore mail queue notice (can be handled by backend/rules):', firestoreErr);
+      console.warn('Firestore mail queue notice:', firestoreErr);
     }
 
-    // 3. Dispatch to Formspree / Webhook endpoint if available or public notification channel
+    // 4. Send via Web3Forms (delivers to any email, just needs access_key)
+    // Web3Forms free plan: 250 submissions/month, no backend, no CORS issues
+    // Access key tied to admin email - set VITE_WEB3FORMS_KEY in Vercel env
+    const web3formsKey = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_WEB3FORMS_KEY) || '';
+    if (web3formsKey) {
+      try {
+        const res = await fetch('https://api.web3forms.com/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({
+            access_key: web3formsKey,
+            to: adminEmail,
+            subject,
+            from_name: 'TRIPGON LOG',
+            name: `신규 가입 신청: ${fullName}`,
+            email: user.email,
+            message: textContent,
+            html: htmlContent,
+          }),
+        });
+        const json = await res.json();
+        if (json.success) {
+          return true;
+        }
+      } catch (w3Err) {
+        console.warn('Web3Forms notification skipped:', w3Err);
+      }
+    }
+
+    // 5. Formspree fallback (sends to form owner's registered email)
     try {
-      // Formspree / Webhook fallback endpoint
       await fetch('https://formspree.io/f/mqkenvba', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
+          _subject: subject,
+          _replyto: user.email,
           adminEmail,
           applicantName: fullName,
           applicantUsername: user.username,
@@ -149,7 +197,7 @@ ${approveUrl}
         }),
       });
     } catch (webhookErr) {
-      console.warn('Direct webhook notification skipped:', webhookErr);
+      console.warn('Formspree notification skipped:', webhookErr);
     }
 
     return true;

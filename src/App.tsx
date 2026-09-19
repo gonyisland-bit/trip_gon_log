@@ -261,6 +261,8 @@ function App() {
   const [mapBuilderRequested, setMapBuilderRequested] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
   const initialAuthCheckedRef = useRef<boolean>(false);
+  // Prevents onAuthStateChanged from triggering login flow during account creation+signOut cycle
+  const isSigningUpRef = useRef<boolean>(false);
   
   // ── Global Weather Ambience State (All Hubs Realtime Sync) ──
   const [globalWeatherCity, setGlobalWeatherCity] = useState<CityWeatherConfig | null>(() => {
@@ -1110,12 +1112,20 @@ function App() {
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
+        // If we are in the middle of creating an account, ignore this transient login event
+        if (isSigningUpRef.current) return;
         setIsLoggedIn(true);
         localStorage.setItem('isLoggedIn', 'true');
         if (initialAuthCheckedRef.current) {
           setCurrentView('home');
         }
       } else {
+        // Also ignore the signOut that happens at the end of signup flow
+        if (isSigningUpRef.current) {
+          initialAuthCheckedRef.current = true;
+          setIsAuthReady(true);
+          return;
+        }
         setIsLoggedIn(false);
         localStorage.removeItem('isLoggedIn');
       }
@@ -3155,6 +3165,8 @@ function App() {
             onClose={() => setIsAuthModalOpen(false)} 
             initialMode={authModalMode}
             adminEmail={superAdminEmail}
+            onSignupStart={() => { isSigningUpRef.current = true; }}
+            onSignupEnd={() => { isSigningUpRef.current = false; }}
             onSuccess={() => setCurrentView('home')}
           />
 

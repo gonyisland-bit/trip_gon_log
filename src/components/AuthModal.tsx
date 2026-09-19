@@ -19,9 +19,11 @@ interface AuthModalProps {
   initialMode?: 'login' | 'signup';
   onSuccess?: () => void;
   adminEmail?: string;
+  onSignupStart?: () => void;
+  onSignupEnd?: () => void;
 }
 
-export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, adminEmail }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, adminEmail, onSignupStart, onSignupEnd }: AuthModalProps) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -183,6 +185,9 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
         const cleanEmail = email.trim().toLowerCase();
         const cleanUsername = username.trim().toLowerCase();
 
+        // Signal App that we're in signup flow so onAuthStateChanged won't fire login/logout side effects
+        onSignupStart?.();
+
         // 1. Create Firebase Auth user (Native email duplicate & format check)
         const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
         const user = userCredential.user;
@@ -231,10 +236,14 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
         // If not super admin, sign out immediately and show pending application modal
         if (!isSuper) {
           await auth.signOut();
+          // Signal App that signup flow has completed (signOut already done)
+          onSignupEnd?.();
           setLoading(false);
           setSignupSubmitted(true);
           return;
         }
+        // Super admin: end signup flag and proceed with normal login
+        onSignupEnd?.();
       } else {
         // Log In
         const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
@@ -267,13 +276,15 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
       onClose();
     } catch (err: any) {
       console.error(err);
+      // Always clear signup flag on error so auth state works normally again
+      onSignupEnd?.();
       let errorMsg = '인증에 실패했습니다. 다시 시도해 주세요.';
       if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         errorMsg = '이메일 또는 비밀번호가 올바르지 않습니다.';
       } else if (err.code === 'auth/user-not-found') {
         errorMsg = '등록되지 않은 이메일입니다.';
       } else if (err.code === 'auth/email-already-in-use') {
-        errorMsg = '이미 등록된 이메일 계정입니다.';
+        errorMsg = '이미 등록된 이메일 계정입니다.\n이미 가입 신청이 완료된 계정입니다. 관리자 승인 후 로그인하세요.';
       } else if (err.code === 'auth/invalid-email') {
         errorMsg = '올바른 이메일 형식을 입력해 주세요.';
       } else if (err.code === 'auth/weak-password') {

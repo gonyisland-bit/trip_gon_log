@@ -54,7 +54,7 @@ import {
   KeyRound,
   Mail
 } from 'lucide-react';
-import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc, deleteField, setDoc, onSnapshot, QuerySnapshot, DocumentData } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc, deleteField, setDoc, onSnapshot, QuerySnapshot, DocumentData, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Trip, Plan, MagazineMoment, MagazineSection, MagazineItem, MagazineHubConfig, ArchiveHubConfig, TimelineData, TimelineItem, TrashedMagazineSection, UserProfile, UserPermissions, LandingHeroMediaItem, HomeWidgetConfig, CityWeatherConfig } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -612,6 +612,23 @@ export function ManageHubPage({
   const [currentAdminEmail, setCurrentAdminEmail] = useState<string>(() => localStorage.getItem('cached_super_admin_email') || 'gonyisland@naver.com');
   const [newAdminEmailInput, setNewAdminEmailInput] = useState<string>('');
   const [adminEmailSaving, setAdminEmailSaving] = useState<boolean>(false);
+  // Always-on pending count (shows badge on USERS tab from any active tab)
+  const [pendingUsersCount, setPendingUsersCount] = useState<number>(0);
+
+  // Always listen to pending user count (regardless of which tab is active)
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    const unsubPending = onSnapshot(
+      query(collection(db, 'users'), where('status', '==', 'pending')),
+      (snapshot) => {
+        setPendingUsersCount(snapshot.size);
+      },
+      (err) => {
+        console.warn('Failed to listen to pending users count:', err);
+      }
+    );
+    return () => unsubPending();
+  }, [isLoggedIn]);
 
   useEffect(() => {
     if (activeMode !== 'USERS' || !isLoggedIn) return;
@@ -4225,6 +4242,11 @@ export function ManageHubPage({
                 {tab.id === 'UTIL' && (trashedJourneys.length + trashedSections.length) > 0 && (
                   <span className="ml-1 text-[9px] font-mono px-1 py-0.5 bg-red-600 text-white font-bold leading-none inline-block">
                     {trashedJourneys.length + trashedSections.length}
+                  </span>
+                )}
+                {tab.id === 'USERS' && pendingUsersCount > 0 && (
+                  <span className="ml-1 text-[9px] font-mono px-1 py-0.5 bg-red-600 text-white font-bold leading-none inline-block animate-pulse">
+                    {pendingUsersCount}
                   </span>
                 )}
               </button>
