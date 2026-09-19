@@ -16,6 +16,7 @@ import { fetchCityWeather, getWeatherMeta, getSimulatedWeatherForDate, CityWeath
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
 import { WORLD_CITIES } from '../data/worldDestinations';
+import { WeatherEffectLayer } from '../components/WeatherEffectLayer';
 
 export interface CalendarWeatherCity {
   name: string;
@@ -412,9 +413,9 @@ export function CalendarHubPage({
     return CALENDAR_WEATHER_CITIES;
   });
 
-  // Firestore 동기화 (다중 디바이스 지원)
+  // Firestore 동기화 (다중 디바이스 지원 & 보안 표준 경로)
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'settings', 'calendar_weather_cities'), (snap) => {
+    const unsub = onSnapshot(doc(db, 'users', 'public', 'settings', 'calendar_weather_cities'), (snap) => {
       if (snap.exists()) {
         const data = snap.data();
         if (Array.isArray(data?.cities) && data.cities.length > 0) {
@@ -423,6 +424,19 @@ export function CalendarHubPage({
             localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(data.cities));
           } catch (_) {}
         }
+      } else {
+        // Fallback for legacy path
+        onSnapshot(doc(db, 'settings', 'calendar_weather_cities'), (legacySnap) => {
+          if (legacySnap.exists()) {
+            const data = legacySnap.data();
+            if (Array.isArray(data?.cities) && data.cities.length > 0) {
+              setWeatherCities(data.cities);
+              try {
+                localStorage.setItem('cached_calendar_weather_cities', JSON.stringify(data.cities));
+              } catch (_) {}
+            }
+          }
+        }, () => {});
       }
     }, (err) => {
       console.warn("Calendar weather cities sync notice:", err);
@@ -430,10 +444,71 @@ export function CalendarHubPage({
     return () => unsub();
   }, []);
 
-  // 날씨 토글 및 선택 도시 상태 (기본: 서울)
+  // 날씨 토글 및 선택 도시 상태 (기본: 저장된 도시 또는 서울)
   const [isWeatherMode, setIsWeatherMode] = useState<boolean>(false);
-  const [selectedWeatherCity, setSelectedWeatherCity] = useState<CalendarWeatherCity>(() => weatherCities[0] || CALENDAR_WEATHER_CITIES[0]);
+  const [selectedWeatherCity, setSelectedWeatherCity] = useState<CalendarWeatherCity>(() => {
+    try {
+      const savedEn = localStorage.getItem('selected_weather_city_en');
+      if (savedEn) {
+        const found = weatherCities.find(c => c.nameEn.toUpperCase() === savedEn.toUpperCase());
+        if (found) return found;
+      }
+    } catch (_) {}
+    return weatherCities[0] || CALENDAR_WEATHER_CITIES[0];
+  });
   const [cityWeatherData, setCityWeatherData] = useState<CityWeatherData | null>(null);
+
+  // 날씨 배경 모션 토글 (로컬스토리지 기억)
+  const [isWeatherBgEnabled, setIsWeatherBgEnabled] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('calendar_weather_bg_enabled');
+      return saved !== null ? saved === 'true' : true;
+    } catch (_) {
+      return true;
+    }
+  });
+
+  const toggleWeatherBg = () => {
+    setIsWeatherBgEnabled(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('calendar_weather_bg_enabled', String(next));
+      } catch (_) {}
+      return next;
+    });
+  };
+
+  // 전역 미니 날씨 위젯과의 실시간 도시 동기화
+  useEffect(() => {
+    const handleGlobalChange = (e: Event) => {
+      const customEvent = e as CustomEvent<CalendarWeatherCity>;
+      if (customEvent.detail && customEvent.detail.nameEn) {
+        const matchingCity = weatherCities.find(c => c.nameEn.toUpperCase() === customEvent.detail.nameEn.toUpperCase());
+        if (matchingCity) {
+          setSelectedWeatherCity(matchingCity);
+        } else {
+          setSelectedWeatherCity(customEvent.detail);
+        }
+      }
+    };
+    window.addEventListener('selectedWeatherCityChanged', handleGlobalChange);
+    return () => {
+      window.removeEventListener('selectedWeatherCityChanged', handleGlobalChange);
+    };
+  }, [weatherCities]);
+
+  const handleSelectCity = (c: CalendarWeatherCity) => {
+    setSelectedWeatherCity(c);
+    try {
+      localStorage.setItem('selected_weather_city_en', c.nameEn);
+    } catch (_) {}
+    window.dispatchEvent(new CustomEvent('selectedWeatherCityChanged', { detail: c }));
+    if (selectedWeatherDay) {
+      const exact = cityWeatherData?.forecast?.find(f => f.date === selectedWeatherDay.dateStr);
+      const w = exact || getSimulatedWeatherForDate(c.nameEn, selectedWeatherDay.dateStr);
+      setSelectedWeatherDay({ dateStr: selectedWeatherDay.dateStr, city: c, weather: w });
+    }
+  };
 
   // 선택된 날짜의 상세 날씨 위젯 상태
   const [selectedWeatherDay, setSelectedWeatherDay] = useState<{
@@ -1553,8 +1628,17 @@ export function CalendarHubPage({
           setDragAnchorDate(null);
         }
       }}
-      className="w-full min-h-screen bg-transparent text-black dark:text-white transition-colors duration-300 select-none pb-24"
+      className="relative w-full min-h-screen bg-transparent text-black dark:text-white transition-colors duration-300 select-none pb-24 overflow-hidden"
     >
+      {/* Real-time Weather Background Animation Layer (Ambience Mode) */}
+      {isWeatherMode && isWeatherBgEnabled && cityWeatherData && (
+        <WeatherEffectLayer
+          weatherCode={cityWeatherData.weatherCode}
+          precipitationProb={cityWeatherData.precipitationProb}
+          isDarkMode={isDarkMode}
+        />
+      )}
+
       {/* ───────────────────────────────────────────────────────────── */}
       {/* Top Banner & Swiss Minimal Typography Header                  */}
       {/* ───────────────────────────────────────────────────────────── */}
@@ -1841,6 +1925,23 @@ export function CalendarHubPage({
               <Sun className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isWeatherMode ? 'text-amber-400 dark:text-amber-500' : ''}`} />
             </button>
 
+            {/* 2.6 Weather Background Ambience Toggle (When Weather Mode is ON) */}
+            {isWeatherMode && (
+              <button
+                type="button"
+                onClick={toggleWeatherBg}
+                className={`h-7 sm:h-8 px-2 sm:px-2.5 rounded-full border text-[10px] sm:text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1 shrink-0 shadow-xs ${
+                  isWeatherBgEnabled
+                    ? 'bg-blue-600 text-white border-blue-600 ring-2 ring-blue-600/20'
+                    : 'bg-white/80 dark:bg-zinc-900/80 border-black/15 dark:border-white/15 text-black/60 dark:text-white/60'
+                }`}
+                title={isWeatherBgEnabled ? "날씨 배경 애니메이션 끄기" : "날씨 배경 애니메이션 켜기 (비/눈/햇살 모션)"}
+              >
+                <Sparkles className="w-3 h-3" />
+                <span className="hidden sm:inline">{isWeatherBgEnabled ? 'BG: ON' : 'BG: OFF'}</span>
+              </button>
+            )}
+
             {/* 3. Edit Mode Toggle Button - 모바일에서는 아이콘만 컴팩트 노출 */}
             {viewMode === 'month' && (
               <button
@@ -1894,9 +1995,21 @@ export function CalendarHubPage({
         {/* Weather Forecast City Selector Bar - App Style Minimal Pill Chips */}
         {isWeatherMode && (
           <div className="w-full flex items-center gap-2 py-2 border-b border-black/10 dark:border-white/10 select-none animate-in fade-in duration-150">
-            {/* Left Location Indicator */}
+            {/* Left Location Indicator with Live Weather Motion */}
             <div className="flex items-center gap-1.5 shrink-0 pr-2 border-r border-black/15 dark:border-white/15 text-[11px] font-mono font-black text-black dark:text-white uppercase tracking-wider">
-              <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />
+              {cityWeatherData ? (() => {
+                const meta = getWeatherMeta(cityWeatherData.weatherCode, cityWeatherData.precipitationProb);
+                const IconComp = meta.icon;
+                const isRainy = (cityWeatherData.weatherCode >= 51 && cityWeatherData.weatherCode <= 67) || (cityWeatherData.weatherCode >= 80 && cityWeatherData.weatherCode <= 82) || (cityWeatherData.precipitationProb >= 55);
+                return (
+                  <span className="flex items-center gap-1">
+                    <IconComp className={`w-3.5 h-3.5 ${meta.colorClass} ${isRainy ? 'animate-bounce' : 'animate-pulse'}`} />
+                    <span>{cityWeatherData.temp}°</span>
+                  </span>
+                );
+              })() : (
+                <MapPin className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />
+              )}
               <span>{selectedWeatherCity.name}</span>
               <span className="text-[9.5px] font-normal text-black/50 dark:text-white/50 hidden sm:inline">
                 ({selectedWeatherCity.country})
@@ -1911,14 +2024,7 @@ export function CalendarHubPage({
                   <button
                     key={c.nameEn}
                     type="button"
-                    onClick={() => {
-                      setSelectedWeatherCity(c);
-                      if (selectedWeatherDay) {
-                        const exact = cityWeatherData?.forecast?.find(f => f.date === selectedWeatherDay.dateStr);
-                        const w = exact || getSimulatedWeatherForDate(c.nameEn, selectedWeatherDay.dateStr);
-                        setSelectedWeatherDay({ dateStr: selectedWeatherDay.dateStr, city: c, weather: w });
-                      }
-                    }}
+                    onClick={() => handleSelectCity(c)}
                     className={`h-6 px-2.5 rounded-full text-[10px] sm:text-[10.5px] font-mono font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1 shadow-2xs ${
                       isSelected
                         ? 'bg-black text-white dark:bg-white dark:text-black font-black'

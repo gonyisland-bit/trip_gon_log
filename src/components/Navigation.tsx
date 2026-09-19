@@ -7,6 +7,7 @@ import { UserProfile } from '../types';
 import { UserProfileAvatar } from './UserProfileAvatar';
 import { PasswordVerifyModal } from './PasswordVerifyModal';
 import { ProfileEditModal } from './ProfileEditModal';
+import { MiniWeatherWidget } from './MiniWeatherWidget';
 
 interface NavigationProps {
   currentView: string;
@@ -247,6 +248,9 @@ export function Navigation({
               <SlidersHorizontal className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             </button>
           )}
+
+          {/* Mini Weather Widget Pill (All Hubs Persistent) */}
+          <MiniWeatherWidget className="mr-0.5 sm:mr-1 shrink-0" />
 
           {/* Night Mode Button - Visible on both Mobile & Desktop (Left of Mobile Menu) */}
           <button
