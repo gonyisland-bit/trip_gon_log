@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { StormLightningCanvas } from './StormLightningCanvas';
 
 export type WeatherEffectType = 'clear' | 'fair' | 'clouds' | 'fog' | 'rain' | 'snow' | 'storm';
 
@@ -109,29 +110,6 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
     }));
   }, []);
 
-  // 6. 뇌우: 번개 벼락 볼트 (6개 — CSS clip-path polygon 기반, 무작위 위치/타이밍)
-  const lightningBolts = useMemo(() => {
-    return Array.from({ length: 6 }, (_, i) => ({
-      id: `bolt-${i}`,
-      // 화면 좌측 5%~우측 85% 사이 분산 배치
-      left: `${8 + (i * 14 + (i % 3) * 9) % 77}%`,
-      // 화면 상단 2~22% 내에 시작점 분산
-      top: `${2 + (i % 5) * 4}%`,
-      // 번개 볼트 높이: 100px~200px
-      height: `${110 + (i % 4) * 28}px`,
-      // 번개 볼트 폭: 14px~24px (clip-path로 실제 보이는 넓이는 달라짐)
-      width: `${16 + (i % 3) * 6}px`,
-      // 각 볼트 사이클 길이: 3.5초~9초 (분산되어 서로 다른 타이밍)
-      duration: `${3.5 + (i % 5) * 1.3}s`,
-      // 초기 지연: 0~8초 (각각 다르게 시작)
-      delay: `${(i * 1.55 + (i % 4) * 0.9) % 8.5}s`,
-      // 글로우 블러 강도: 8~16px
-      glow: `${9 + (i % 3) * 4}px`,
-      // 약간 다른 기울기로 볼트마다 개성 부여 (-4 ~ +4도)
-      skewX: `${-3 + (i % 4) * 2}deg`,
-    }));
-  }, []);
-
   return (
     <div
       className={`fixed inset-0 pointer-events-none overflow-hidden transition-all duration-700 select-none z-0 ${className}`}
@@ -178,7 +156,7 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
           100% { transform: translate3d(calc(-1 * var(--sway-amp, 30px)), 0, 0); }
         }
 
-        /* ── Sun & Rays Animations (맑음 경계 없는 눈부신 빛 퍼짐) ── */
+        /* ── Sun & Rays Animations ── */
         @keyframes tglSunRadiantBloom {
           0%, 100% { opacity: 0.65; transform: scale(1); }
           50% { opacity: 0.9; transform: scale(1.12); }
@@ -210,55 +188,13 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
           50% { opacity: 1; transform: scale(1.4); }
         }
 
-        /* ── Storm Background Flash (대기 번쩍임 오버레이) ── */
+        /* ── Storm Background Atmosphere Flash (대기 배경 섬광 — Canvas 번개와 동기화) ── */
         @keyframes tglStormFlash {
           0%, 90%, 100% { opacity: 0; }
-          91% { opacity: 0.45; }
-          92% { opacity: 0.08; }
-          94% { opacity: 0.55; }
+          91% { opacity: 0.38; }
+          92% { opacity: 0.06; }
+          94% { opacity: 0.48; }
           95% { opacity: 0; }
-        }
-
-        /* ── Lightning Bolt Strike (벼락 볼트 이중 섬광) ── */
-        @keyframes tglLightningStrike {
-          0%, 84%, 100% {
-            opacity: 0;
-            transform: var(--bolt-skew, skewX(0deg)) scaleY(0.85);
-          }
-          85% {
-            opacity: 1;
-            transform: var(--bolt-skew, skewX(0deg)) scaleY(1);
-          }
-          87% {
-            opacity: 0.08;
-            transform: var(--bolt-skew, skewX(0deg)) scaleY(0.98);
-          }
-          88% {
-            opacity: 0.9;
-            transform: var(--bolt-skew, skewX(0deg)) scaleY(1);
-          }
-          90%, 100% {
-            opacity: 0;
-            transform: var(--bolt-skew, skewX(0deg)) scaleY(0.9);
-          }
-        }
-
-        /* ── Lightning Glow Aura (번개 주변 글로우 헤일로) ── */
-        @keyframes tglLightningGlow {
-          0%, 83%, 100% { opacity: 0; }
-          85% { opacity: 0.85; }
-          87% { opacity: 0.05; }
-          88% { opacity: 0.75; }
-          91% { opacity: 0; }
-        }
-
-        /* ── Sky Flash per Bolt (번개칠 때 하늘 밝아지는 순간 조명) ── */
-        @keyframes tglSkyFlash {
-          0%, 84%, 100% { opacity: 0; }
-          85.5% { opacity: 0.28; }
-          86.5% { opacity: 0; }
-          87.5% { opacity: 0.22; }
-          89%, 100% { opacity: 0; }
         }
       `}</style>
 
@@ -267,7 +203,8 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
       {/* ───────────────────────────────────────────────────────────── */}
       {(effectType === 'rain' || effectType === 'storm') && (
         <div className="absolute inset-0">
-          <div 
+          {/* 뇌우/비 공통 — 상단 어두운 하늘 대기 그라데이션 */}
+          <div
             className={`absolute inset-0 transition-opacity duration-1000 ${
               isDarkMode
                 ? 'bg-gradient-to-b from-blue-950/35 via-zinc-950/20 to-transparent'
@@ -325,10 +262,7 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
               <div
                 key={sp.id}
                 className="absolute"
-                style={{
-                  left: sp.left,
-                  bottom: sp.bottom,
-                }}
+                style={{ left: sp.left, bottom: sp.bottom }}
               >
                 <span
                   className="block rounded-full border border-blue-400/65 dark:border-blue-300/75"
@@ -361,14 +295,11 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
           </div>
 
           {/* 하단 젖은 지면 반사광 */}
-          <div 
+          <div
             className="absolute inset-x-0 bottom-0 h-28 pointer-events-none"
-            style={{
-              animation: 'tglWetGroundShimmer 4s ease-in-out infinite',
-              willChange: 'opacity',
-            }}
+            style={{ animation: 'tglWetGroundShimmer 4s ease-in-out infinite', willChange: 'opacity' }}
           >
-            <div 
+            <div
               className={`w-full h-full ${
                 isDarkMode
                   ? 'bg-gradient-to-t from-blue-950/40 via-blue-900/15 to-transparent'
@@ -378,92 +309,22 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
             <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-blue-400/30 dark:via-blue-300/40 to-transparent" />
           </div>
 
-          {/* ── 뇌우 전용 번개/벼락 이펙트 ── */}
+          {/* ── 뇌우 전용: Canvas 기반 프로시저럴 번개 ── */}
           {effectType === 'storm' && (
             <>
-              {/* 대기 배경 섬광 (전체 하늘 순간 밝아짐) */}
-              <div 
-                className="absolute inset-0"
+              {/* 대기 배경 섬광 (CSS 주기적 오버레이 — Canvas 번개와 독립적으로 분위기 조성) */}
+              <div
+                className="absolute inset-0 pointer-events-none"
                 style={{
                   background: isDarkMode
-                    ? 'rgba(180, 210, 255, 0.18)'
-                    : 'rgba(255, 255, 220, 0.22)',
-                  animation: 'tglStormFlash 7s infinite',
+                    ? 'rgba(180, 210, 255, 0.16)'
+                    : 'rgba(255, 255, 225, 0.20)',
+                  animation: 'tglStormFlash 8.5s infinite',
                   willChange: 'opacity',
                 }}
               />
-
-              {/* 벼락 볼트 그래픽 (CSS clip-path polygon 지그재그 형태) */}
-              {lightningBolts.map((bolt) => (
-                <div
-                  key={bolt.id}
-                  className="absolute"
-                  style={{
-                    left: bolt.left,
-                    top: bolt.top,
-                    width: bolt.width,
-                    height: bolt.height,
-                    transformOrigin: 'top center',
-                    ['--bolt-skew' as any]: `skewX(${bolt.skewX})`,
-                  }}
-                >
-                  {/* 글로우 헤일로 레이어 (번개 주변 빛 번짐) */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      background: isDarkMode
-                        ? 'linear-gradient(to bottom, rgba(255, 255, 180, 0.95), rgba(200, 220, 255, 0.6))'
-                        : 'linear-gradient(to bottom, rgba(255, 255, 200, 1), rgba(220, 230, 255, 0.7))',
-                      // 지그재그 번개 볼트 형상 (CSS clip-path polygon)
-                      // 상단 오른쪽으로 시작 → 중간 왼쪽 굴곡 → 하단 끝점
-                      clipPath: 'polygon(42% 0%, 66% 0%, 58% 40%, 76% 40%, 40% 100%, 35% 55%, 18% 55%, 30% 40%)',
-                      filter: `blur(${bolt.glow}) brightness(1.4)`,
-                      animation: `tglLightningGlow ${bolt.duration} ease-out infinite`,
-                      animationDelay: bolt.delay,
-                      transform: `skewX(${bolt.skewX})`,
-                      transformOrigin: 'top center',
-                      willChange: 'opacity, transform',
-                    }}
-                  />
-
-                  {/* 번개 코어 레이어 (밝은 흰색-노란색 번개 심볼) */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      background: isDarkMode
-                        ? 'linear-gradient(to bottom, rgba(255, 255, 255, 1), rgba(255, 240, 130, 0.95))'
-                        : 'linear-gradient(to bottom, rgba(255, 255, 255, 1), rgba(255, 235, 80, 0.9))',
-                      clipPath: 'polygon(42% 0%, 66% 0%, 58% 40%, 76% 40%, 40% 100%, 35% 55%, 18% 55%, 30% 40%)',
-                      boxShadow: isDarkMode
-                        ? '0 0 12px 6px rgba(200, 220, 255, 0.55), 0 0 30px 12px rgba(180, 200, 255, 0.3)'
-                        : '0 0 10px 4px rgba(255, 255, 180, 0.6), 0 0 28px 10px rgba(255, 240, 100, 0.3)',
-                      animation: `tglLightningStrike ${bolt.duration} ease-out infinite`,
-                      animationDelay: bolt.delay,
-                      transform: `skewX(${bolt.skewX})`,
-                      transformOrigin: 'top center',
-                      willChange: 'opacity, transform',
-                    }}
-                  />
-                </div>
-              ))}
-
-              {/* 번개 낙뢰 시 하늘 순간 조명 (볼트 별 로컬 스카이 플래시) */}
-              {lightningBolts.slice(0, 4).map((bolt) => (
-                <div
-                  key={`sky-${bolt.id}`}
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    background: isDarkMode
-                      ? `radial-gradient(ellipse 45% 30% at ${bolt.left} ${bolt.top}, rgba(200, 220, 255, 0.32) 0%, transparent 70%)`
-                      : `radial-gradient(ellipse 45% 30% at ${bolt.left} ${bolt.top}, rgba(255, 255, 200, 0.38) 0%, transparent 70%)`,
-                    animation: `tglSkyFlash ${bolt.duration} ease-out infinite`,
-                    animationDelay: bolt.delay,
-                    willChange: 'opacity',
-                  }}
-                />
-              ))}
+              {/* Canvas: 재귀 분기 번개 — rAF 루프, 전류 떨림, 3단 글로우 */}
+              <StormLightningCanvas isDarkMode={isDarkMode} />
             </>
           )}
         </div>
@@ -474,7 +335,7 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
       {/* ───────────────────────────────────────────────────────────── */}
       {effectType === 'snow' && (
         <div className="absolute inset-0">
-          <div 
+          <div
             className={`absolute inset-0 transition-opacity duration-1000 ${
               isDarkMode
                 ? 'bg-gradient-to-b from-sky-950/30 via-zinc-950/15 to-transparent'
@@ -513,25 +374,11 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
 
           {/* 하단 스노우 뱅크 */}
           <div className="absolute inset-x-0 bottom-0 pointer-events-none">
-            <svg 
-              className="w-full h-10 sm:h-14 block" 
-              viewBox="0 0 1440 60" 
-              preserveAspectRatio="none"
-            >
-              <path 
-                d="M0,35 Q 240,15 480,30 T 960,18 T 1440,32 L 1440,60 L 0,60 Z" 
-                className={isDarkMode ? 'fill-blue-100/10' : 'fill-white/70'}
-              />
+            <svg className="w-full h-10 sm:h-14 block" viewBox="0 0 1440 60" preserveAspectRatio="none">
+              <path d="M0,35 Q 240,15 480,30 T 960,18 T 1440,32 L 1440,60 L 0,60 Z" className={isDarkMode ? 'fill-blue-100/10' : 'fill-white/70'} />
             </svg>
-            <svg 
-              className="w-full h-8 sm:h-11 block -mt-5 sm:-mt-7" 
-              viewBox="0 0 1440 50" 
-              preserveAspectRatio="none"
-            >
-              <path 
-                d="M0,25 Q 360,8 720,22 T 1200,12 T 1440,24 L 1440,50 L 0,50 Z" 
-                className={isDarkMode ? 'fill-white/15' : 'fill-white/85'}
-              />
+            <svg className="w-full h-8 sm:h-11 block -mt-5 sm:-mt-7" viewBox="0 0 1440 50" preserveAspectRatio="none">
+              <path d="M0,25 Q 360,8 720,22 T 1200,12 T 1440,24 L 1440,50 L 0,50 Z" className={isDarkMode ? 'fill-white/15' : 'fill-white/85'} />
             </svg>
             <div className="absolute inset-x-0 bottom-8 sm:bottom-11 h-[1px] bg-gradient-to-r from-transparent via-white/50 dark:via-blue-200/30 to-transparent" />
           </div>
@@ -544,15 +391,9 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
       {effectType === 'clear' && (
         <div className="absolute inset-0">
           {isDarkMode ? (
-            /* [다크 모드] 더 밝고 영롱한 딥 인디고 스카이 + 반짝이는 별자리 */
             <div className="absolute inset-0">
-              <div 
-                className="absolute inset-x-0 top-0 h-[70vh] bg-gradient-to-b from-[#1e295d]/90 via-[#131b3e]/55 to-transparent transition-opacity duration-1000" 
-              />
-              <div 
-                className="absolute -top-16 -right-16 w-[480px] h-[480px] rounded-full blur-3xl bg-indigo-400/20" 
-              />
-
+              <div className="absolute inset-x-0 top-0 h-[70vh] bg-gradient-to-b from-[#1e295d]/90 via-[#131b3e]/55 to-transparent transition-opacity duration-1000" />
+              <div className="absolute -top-16 -right-16 w-[480px] h-[480px] rounded-full blur-3xl bg-indigo-400/20" />
               {stars.map((star) => (
                 <span
                   key={star.id}
@@ -571,18 +412,12 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
               ))}
             </div>
           ) : (
-            /* [라이트 모드] 경계선 없는 광활하고 눈부신 자연광 확산 */
             <div className="absolute inset-0 pointer-events-none">
-              <div 
+              <div
                 className="absolute -top-24 -right-24 w-[500px] h-[500px] sm:w-[650px] sm:h-[650px] rounded-full blur-3xl bg-radial from-amber-100/90 via-amber-300/45 to-transparent"
-                style={{
-                  animation: 'tglSunRadiantBloom 7s ease-in-out infinite',
-                  willChange: 'transform, opacity',
-                }}
+                style={{ animation: 'tglSunRadiantBloom 7s ease-in-out infinite', willChange: 'transform, opacity' }}
               />
-              <div 
-                className="absolute -top-10 -right-10 w-[700px] h-[700px] sm:w-[900px] sm:h-[900px] rounded-full blur-[90px] bg-gradient-to-br from-amber-200/40 via-orange-200/20 to-transparent opacity-80" 
-              />
+              <div className="absolute -top-10 -right-10 w-[700px] h-[700px] sm:w-[900px] sm:h-[900px] rounded-full blur-[90px] bg-gradient-to-br from-amber-200/40 via-orange-200/20 to-transparent opacity-80" />
               <div
                 className="absolute top-0 right-0 w-[95vw] h-[95vh] origin-top-right pointer-events-none opacity-70"
                 style={{
@@ -603,11 +438,8 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
       {effectType === 'fair' && (
         <div className="absolute inset-0">
           {isDarkMode ? (
-            /* [다크 모드] 맑음보다 덜 인디고인 차분한 딥 네이비 차콜 톤 + 해 없음 */
             <div className="absolute inset-0">
-              <div 
-                className="absolute inset-x-0 top-0 h-[60vh] bg-gradient-to-b from-[#0f172a]/75 via-[#181d3d]/30 to-transparent transition-opacity duration-1000" 
-              />
+              <div className="absolute inset-x-0 top-0 h-[60vh] bg-gradient-to-b from-[#0f172a]/75 via-[#181d3d]/30 to-transparent transition-opacity duration-1000" />
               {stars.slice(0, 16).map((star) => (
                 <span
                   key={`fair-star-${star.id}`}
@@ -625,47 +457,31 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
               ))}
             </div>
           ) : (
-            /* [라이트 모드] 흐림보다 훨씬 밝고 부드러운 상단 그라데이션 + 은은한 온기 */
             <div className="absolute inset-0 pointer-events-none">
-              {/* 1. 맑은 기운이 섞인 밝은 상단 앰비언트 그라데이션 (흐림보다 확연히 밝음) */}
-              <div 
+              <div
                 className="absolute inset-x-0 top-0 h-[45vh] bg-gradient-to-b from-slate-300/25 via-sky-100/15 to-transparent transition-opacity duration-1000"
-                style={{
-                  animation: 'tglFairGlowBreathe 8s ease-in-out infinite',
-                  willChange: 'opacity, transform',
-                }}
+                style={{ animation: 'tglFairGlowBreathe 8s ease-in-out infinite', willChange: 'opacity, transform' }}
               />
-
-              {/* 2. 상단 중앙-우측에 부드럽게 감도는 밝은 소프트 에어 매스 */}
-              <div 
-                className="absolute -top-16 left-1/4 w-[60vw] h-[35vh] rounded-full blur-[80px] bg-slate-200/40 dark:bg-zinc-700/20"
-              />
-
-              {/* 3. 우상단에 아주 옅게 스며드는 온화한 자연광 블룸 (구름 틈새 은은한 햇빛) */}
-              <div 
-                className="absolute top-0 right-0 w-[45vw] h-[38vh] rounded-full blur-3xl bg-amber-200/20" 
-              />
+              <div className="absolute -top-16 left-1/4 w-[60vw] h-[35vh] rounded-full blur-[80px] bg-slate-200/40 dark:bg-zinc-700/20" />
+              <div className="absolute top-0 right-0 w-[45vw] h-[38vh] rounded-full blur-3xl bg-amber-200/20" />
             </div>
           )}
         </div>
       )}
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* 5. CLOUDS / FOG EFFECT (흐림 — 구름 모양 없이, 어둡게 흐린 덩어리감의 그라데이션) */}
+      {/* 5. CLOUDS / FOG EFFECT (흐림 — 어둡게 흐린 덩어리감의 그라데이션) */}
       {/* ───────────────────────────────────────────────────────────── */}
       {(effectType === 'clouds' || effectType === 'fog') && (
         <div className="absolute inset-0 pointer-events-none">
-          {/* 1. 상단에서 아래로 묵직하게 내려앉는 어두운 오버캐스트 베이스 그라데이션 */}
-          <div 
+          <div
             className={`absolute inset-x-0 top-0 h-[65vh] transition-opacity duration-1000 ${
               isDarkMode
                 ? 'bg-gradient-to-b from-zinc-900/85 via-zinc-950/45 to-transparent'
                 : 'bg-gradient-to-b from-slate-500/40 via-slate-400/20 to-transparent'
             }`}
           />
-
-          {/* 2. 상단 좌측 묵직한 대기 음영 덩어리 (유기적인 소프트 매스) */}
-          <div 
+          <div
             className="absolute -top-20 -left-10 w-[75vw] h-[45vh] rounded-full blur-[90px]"
             style={{
               backgroundColor: isDarkMode ? 'rgba(39, 39, 42, 0.65)' : 'rgba(100, 116, 139, 0.35)',
@@ -673,9 +489,7 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
               willChange: 'transform, opacity',
             }}
           />
-
-          {/* 3. 상단 우측 묵직한 대기 음영 덩어리 (깊이감 형성) */}
-          <div 
+          <div
             className="absolute -top-28 right-0 w-[65vw] h-[42vh] rounded-full blur-[85px]"
             style={{
               backgroundColor: isDarkMode ? 'rgba(24, 24, 27, 0.75)' : 'rgba(71, 85, 105, 0.3)',
@@ -683,9 +497,7 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
               willChange: 'transform, opacity',
             }}
           />
-
-          {/* 4. 전체 화면을 감싸는 차분하고 서늘한 오버캐스트 틴트 */}
-          <div 
+          <div
             className={`absolute inset-0 transition-opacity duration-1000 ${
               isDarkMode ? 'bg-zinc-950/30' : 'bg-slate-300/25'
             }`}
