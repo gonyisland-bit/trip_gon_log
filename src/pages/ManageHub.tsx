@@ -612,11 +612,17 @@ export function ManageHubPage({
   const [currentAdminEmail, setCurrentAdminEmail] = useState<string>(() => localStorage.getItem('cached_super_admin_email') || 'gonyisland@naver.com');
   const [newAdminEmailInput, setNewAdminEmailInput] = useState<string>('');
   const [adminEmailSaving, setAdminEmailSaving] = useState<boolean>(false);
-  // Manual Account Recovery & Registration State
-  const [manualUserEmail, setManualUserEmail] = useState<string>('');
-  const [manualUserLoading, setManualUserLoading] = useState<boolean>(false);
+  // User Table Filter State ('ALL' | 'PENDING' | 'APPROVED')
+  const [userFilterStatus, setUserFilterStatus] = useState<'ALL' | 'PENDING' | 'APPROVED'>('ALL');
   // Always-on pending count (shows badge on USERS tab from any active tab)
   const [pendingUsersCount, setPendingUsersCount] = useState<number>(0);
+
+  // Helper to determine if account is super admin or admin
+  const isTargetAdminAccount = (email?: string, role?: string) => {
+    if (!email) return false;
+    const clean = email.toLowerCase().trim();
+    return clean === 'gonyisland@naver.com' || clean === currentAdminEmail.toLowerCase().trim() || role === 'admin';
+  };
 
   // Always listen to pending user count from public/users (reliable without security rule blocks)
   useEffect(() => {
@@ -627,7 +633,9 @@ export function ManageHubPage({
         let count = 0;
         snapshot.forEach(docSnap => {
           const data = docSnap.data();
-          if (data.status === 'pending') count++;
+          const cleanEmail = (data.email || '').toLowerCase().trim();
+          const isAdminAcc = isTargetAdminAccount(cleanEmail, data.role);
+          if (!isAdminAcc && data.status === 'pending') count++;
         });
         setPendingUsersCount(count);
       },
@@ -636,7 +644,7 @@ export function ManageHubPage({
       }
     );
     return () => unsubPendingPublic();
-  }, [isLoggedIn]);
+  }, [isLoggedIn, currentAdminEmail]);
 
   useEffect(() => {
     if (activeMode !== 'USERS' || !isLoggedIn) return;
@@ -655,6 +663,11 @@ export function ManageHubPage({
       snapshot.forEach(docSnap => {
         const data = docSnap.data();
         if (data.email) {
+          const cleanEmail = data.email.toLowerCase().trim();
+          const isAdminAcc = isTargetAdminAccount(cleanEmail, data.role);
+          const finalRole = isAdminAcc ? 'admin' : (data.role || 'user');
+          const finalStatus = isAdminAcc ? 'approved' : (data.status || 'approved');
+
           usersMap.set(docSnap.id, {
             uid: docSnap.id,
             email: data.email,
@@ -666,10 +679,10 @@ export function ManageHubPage({
             firstName: data.firstName || '',
             birthdate: data.birthdate || '',
             phone: data.phone || '',
-            role: data.role || (data.email === 'gonyisland@naver.com' ? 'admin' : 'user'),
-            status: data.status || 'pending',
+            role: finalRole,
+            status: finalStatus,
             approvalToken: data.approvalToken || '',
-            permissions: data.permissions || { canCreate: true, canEdit: false, canDelete: false },
+            permissions: data.permissions || { canCreate: true, canEdit: isAdminAcc, canDelete: isAdminAcc },
             createdAt: data.createdAt || 0,
           });
         }
@@ -685,7 +698,12 @@ export function ManageHubPage({
         if (docSnap.id === 'public') return; // Skip public root document
         const data = docSnap.data();
         if (data.email) {
+          const cleanEmail = data.email.toLowerCase().trim();
+          const isAdminAcc = isTargetAdminAccount(cleanEmail, data.role);
           const existing = usersMap.get(docSnap.id);
+          const finalRole = isAdminAcc ? 'admin' : (data.role || existing?.role || 'user');
+          const finalStatus = isAdminAcc ? 'approved' : (data.status || existing?.status || 'approved');
+
           usersMap.set(docSnap.id, {
             uid: docSnap.id,
             email: data.email,
@@ -697,10 +715,10 @@ export function ManageHubPage({
             firstName: data.firstName || existing?.firstName || '',
             birthdate: data.birthdate || existing?.birthdate || '',
             phone: data.phone || existing?.phone || '',
-            role: data.role || existing?.role || (data.email === 'gonyisland@naver.com' ? 'admin' : 'user'),
-            status: data.status || existing?.status || 'pending',
+            role: finalRole,
+            status: finalStatus,
             approvalToken: data.approvalToken || existing?.approvalToken || '',
-            permissions: data.permissions || existing?.permissions || { canCreate: true, canEdit: false, canDelete: false },
+            permissions: data.permissions || existing?.permissions || { canCreate: true, canEdit: isAdminAcc, canDelete: isAdminAcc },
             createdAt: data.createdAt || existing?.createdAt || 0,
           });
         }
@@ -727,7 +745,7 @@ export function ManageHubPage({
       unsubRootUsers();
       unsubAdminConfig();
     };
-  }, [activeMode, isLoggedIn]);
+  }, [activeMode, isLoggedIn, currentAdminEmail]);
 
   const handleUpdateAdminEmail = async () => {
     const trimmed = newAdminEmailInput.trim().toLowerCase();
@@ -834,60 +852,6 @@ export function ManageHubPage({
     } catch (err) {
       console.error('Failed to update user:', err);
       alert('유저 정보 수정에 실패했습니다.');
-    }
-  };
-
-  // Manual Register / Recovery for Isolated Auth Accounts
-  const handleManualRegisterUser = async () => {
-    const trimmed = manualUserEmail.trim().toLowerCase();
-    if (!trimmed || !trimmed.includes('@')) {
-      alert('유효한 이메일 주소를 입력해 주세요.');
-      return;
-    }
-    setManualUserLoading(true);
-    try {
-      // Check if already in list
-      const existing = usersList.find(u => u.email.toLowerCase() === trimmed);
-      if (existing) {
-        alert(`[${trimmed}] 계정은 이미 목록에 등록되어 있습니다.\n상태: ${existing.status || 'pending'}`);
-        setManualUserLoading(false);
-        return;
-      }
-
-      // Generate recovery UID (using email slug if actual uid not known)
-      const syntheticUid = `recovered_${trimmed.replace(/[^a-z0-9]/g, '_')}`;
-      const isSuper = trimmed === 'gonyisland@naver.com';
-      const recoveryProfile: UserProfile = {
-        uid: syntheticUid,
-        email: trimmed,
-        username: trimmed.split('@')[0],
-        profileType: 'icon',
-        profileIcon: 'user',
-        lastName: '수동등록',
-        firstName: trimmed.split('@')[0],
-        birthdate: '',
-        phone: '',
-        role: isSuper ? 'admin' : 'user',
-        status: 'pending',
-        approvalToken: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : (Math.random().toString(36).substring(2, 11) + Date.now().toString(36)),
-        permissions: { canCreate: true, canEdit: isSuper, canDelete: isSuper },
-        createdAt: Date.now(),
-      };
-
-      await Promise.allSettled([
-        setDoc(doc(db, 'users', syntheticUid), recoveryProfile, { merge: true }),
-        setDoc(doc(db, 'users', 'public', 'users', syntheticUid), recoveryProfile, { merge: true })
-      ]);
-
-      setUsersList(prev => [recoveryProfile, ...prev]);
-      setManualUserEmail('');
-      setUserActionToast(`[${trimmed}] 계정이 승인 대기 목록에 수동 등록되었습니다.`);
-      setTimeout(() => setUserActionToast(null), 4000);
-    } catch (err: any) {
-      console.error('Failed to manually register user:', err);
-      alert(`수동 등록 오류: ${err?.message || err}`);
-    } finally {
-      setManualUserLoading(false);
     }
   };
 
@@ -8786,44 +8750,44 @@ export function ManageHubPage({
               </div>
             </div>
 
-            {/* Manual Account Registration / Recovery Panel (Swiss Minimal) */}
-            <div className="border border-black/20 dark:border-white/20 p-4 sm:p-5 flex flex-col gap-3 bg-black/[0.02] dark:bg-white/[0.02]">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-black/10 dark:border-white/10 pb-3">
-                <div className="flex items-center gap-2">
-                  <UserCheck className="w-4 h-4 text-black dark:text-white" />
-                  <span className="text-xs font-mono font-black uppercase tracking-wider text-black dark:text-white">
-                    MANUAL ACCOUNT RECOVERY / REGISTER
-                  </span>
-                </div>
-                <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
-                  이메일로 가입했으나 목록에 누락된 계정 수동 복구 및 승인 대기 등록
-                </span>
-              </div>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                <div className="relative flex-1">
-                  <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
-                  <input
-                    type="email"
-                    value={manualUserEmail}
-                    onChange={e => setManualUserEmail(e.target.value)}
-                    placeholder="복구 또는 등록할 유저 이메일 주소 입력 (예: user@example.com)..."
-                    className="w-full pl-9 pr-3 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={handleManualRegisterUser}
-                  disabled={manualUserLoading || !manualUserEmail.trim()}
-                  className="px-4 py-2 bg-black text-white dark:bg-white dark:text-black text-xs font-mono font-bold uppercase tracking-wider hover:opacity-80 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>{manualUserLoading ? 'REGISTERING...' : 'REGISTER ACCOUNT'}</span>
-                </button>
-              </div>
-            </div>
+            {/* Filter Tabs & Search Bar (Swiss Minimal) */}
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+              {/* Swiss Minimal Filter Buttons: ALL / PENDING / APPROVED */}
+              <div className="flex items-center border border-black/20 dark:border-white/20 p-0.5 bg-black/5 dark:bg-white/5 shrink-0">
+                {(['ALL', 'PENDING', 'APPROVED'] as const).map(filterKey => {
+                  const count = filterKey === 'ALL'
+                    ? usersList.length
+                    : filterKey === 'PENDING'
+                    ? usersList.filter(u => u.status === 'pending' && !isTargetAdminAccount(u.email, u.role)).length
+                    : usersList.filter(u => u.status === 'approved' || isTargetAdminAccount(u.email, u.role)).length;
+                  const isActive = userFilterStatus === filterKey;
+                  const label = filterKey === 'ALL' ? 'ALL' : filterKey === 'PENDING' ? 'PENDING' : 'APPROVED';
 
-            {/* Search Bar */}
-            <div className="flex items-center gap-3">
+                  return (
+                    <button
+                      key={filterKey}
+                      type="button"
+                      onClick={() => setUserFilterStatus(filterKey)}
+                      className={`px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5 ${
+                        isActive
+                          ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                          : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                      }`}
+                    >
+                      <span>{label}</span>
+                      <span className={`text-[9.5px] px-1.5 py-0.5 font-mono leading-none ${
+                        isActive 
+                          ? (filterKey === 'PENDING' && count > 0 ? 'bg-red-600 text-white font-bold' : 'bg-white/20 dark:bg-black/20 text-white dark:text-black')
+                          : (filterKey === 'PENDING' && count > 0 ? 'bg-red-600 text-white font-bold animate-pulse' : 'text-black/40 dark:text-white/40')
+                      }`}>
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Search Bar */}
               <div className="relative flex-1">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
                 <input
@@ -8838,96 +8802,32 @@ export function ManageHubPage({
                 <button
                   type="button"
                   onClick={() => setUserSearchQuery('')}
-                  className="px-3 py-2 border border-black/20 dark:border-white/20 text-xs font-mono uppercase hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+                  className="px-3 py-2 border border-black/20 dark:border-white/20 text-xs font-mono uppercase hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer shrink-0"
                 >
                   CLEAR
                 </button>
               )}
             </div>
 
-            {/* Pending Approvals Section */}
-            {(() => {
-              const pendingList = usersList.filter(u => u.status === 'pending');
-              if (pendingList.length === 0) return null;
-              return (
-                <div className="flex flex-col border border-red-600 dark:border-red-500 bg-red-500/5 p-4 sm:p-5 gap-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
-                      <span className="text-xs font-mono font-black uppercase tracking-wider text-red-600 dark:text-red-400">
-                        PENDING APPROVALS ({pendingList.length})
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
-                      신규 회원 가입 승인 대기 목록
-                    </span>
-                  </div>
-
-                  <div className="divide-y divide-black/10 dark:divide-white/10 border border-black/10 dark:border-white/10 bg-white dark:bg-[#161616]">
-                    {pendingList.map(user => {
-                      const fullName = `${user.lastName} ${user.firstName}`.trim() || '미등록';
-                      const applyDate = user.createdAt ? new Date(user.createdAt).toLocaleString() : '-';
-                      return (
-                        <div key={user.uid} className="p-3 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <UserProfileAvatar profile={user} size="md" fallbackName={fullName} />
-                            <div className="flex flex-col gap-0.5 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-sm font-black uppercase text-black dark:text-white font-sans">
-                                  {fullName}
-                                </span>
-                                {user.username && (
-                                  <span className="text-xs font-mono font-bold text-red-600 dark:text-red-400">
-                                    @{user.username}
-                                  </span>
-                                )}
-                                <span className="text-xs font-mono text-black/60 dark:text-white/60">
-                                  ({user.email})
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 text-[10px] font-mono text-black/50 dark:text-white/50 flex-wrap">
-                                {user.phone && <span>전화: {user.phone}</span>}
-                                <span>신청: {applyDate}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => handleApproveUser(user)}
-                              className="px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:bg-green-600 dark:hover:bg-green-600 dark:hover:text-white text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                            >
-                              APPROVE
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleRejectUser(user)}
-                              className="px-3 py-1.5 border border-black/20 dark:border-white/20 hover:border-red-600 hover:text-red-600 text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                            >
-                              REJECT
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })()}
-
             {/* Users List Table / Cards */}
             <div className="flex flex-col border border-black/20 dark:border-white/20 divide-y divide-black/10 dark:divide-white/10 bg-white dark:bg-[#161616]">
               {usersList
                 .filter(u => {
-                  if (u.status === 'pending') return false; // Show only active/rejected in main table
+                  const isAdminAcc = isTargetAdminAccount(u.email, u.role);
+                  const effectiveStatus = isAdminAcc ? 'approved' : (u.status || 'approved');
+                  
+                  if (userFilterStatus === 'PENDING' && effectiveStatus !== 'pending') return false;
+                  if (userFilterStatus === 'APPROVED' && effectiveStatus !== 'approved') return false;
+
                   if (!userSearchQuery.trim()) return true;
                   const q = userSearchQuery.toLowerCase();
                   const name = `${u.lastName} ${u.firstName}`.toLowerCase();
                   return name.includes(q) || u.email.toLowerCase().includes(q) || (u.phone && u.phone.includes(q));
                 })
                 .map((user) => {
-                  const isSuper = user.email.toLowerCase() === 'gonyisland@naver.com';
+                  const isSuper = user.email?.toLowerCase() === 'gonyisland@naver.com';
+                  const isAdminAcc = isTargetAdminAccount(user.email, user.role);
+                  const isPending = user.status === 'pending' && !isAdminAcc;
                   const fullName = `${user.lastName} ${user.firstName}`.trim() || '미등록';
                   const joinDate = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-';
 
@@ -8953,13 +8853,17 @@ export function ManageHubPage({
                               <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-red-600 text-white leading-none">
                                 SUPER ADMIN
                               </span>
+                            ) : isAdminAcc ? (
+                              <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-black text-white dark:bg-white dark:text-black leading-none">
+                                ADMIN
+                              </span>
                             ) : user.status === 'rejected' ? (
                               <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 leading-none">
                                 REJECTED
                               </span>
-                            ) : user.role === 'admin' ? (
-                              <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-black text-white dark:bg-white dark:text-black leading-none">
-                                ADMIN
+                            ) : isPending ? (
+                              <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider border border-red-600 text-red-600 dark:text-red-400 bg-red-500/10 leading-none animate-pulse">
+                                PENDING
                               </span>
                             ) : (
                               <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 leading-none">
@@ -8977,7 +8881,26 @@ export function ManageHubPage({
                       </div>
 
                       {/* Right: Permission Toggles & Actions */}
-                      <div className="flex items-center gap-3 flex-wrap shrink-0">
+                      <div className="flex items-center gap-2 sm:gap-3 flex-wrap shrink-0">
+                        {/* If Pending: Show Instant Approve / Reject Buttons First */}
+                        {isPending && (
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleApproveUser(user)}
+                              className="px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:bg-green-600 dark:hover:bg-green-600 dark:hover:text-white text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                            >
+                              APPROVE
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRejectUser(user)}
+                              className="px-3 py-1.5 border border-black/20 dark:border-white/20 hover:border-red-600 hover:text-red-600 text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                            >
+                              REJECT
+                            </button>
+                          </div>
+                        )}
                         {/* 3 Permission Toggles: Create / Edit / Delete */}
                         <div className="flex items-center gap-1 border border-black/15 dark:border-white/15 p-1 bg-black/[0.02] dark:bg-white/[0.02]">
                           {/* Create Permission Toggle */}

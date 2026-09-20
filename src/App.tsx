@@ -589,15 +589,19 @@ function App() {
     const unsub = onSnapshot(doc(db, 'users', currentUid), (snapshot) => {
       if (snapshot.exists()) {
         const profile = snapshot.data() as UserProfile;
-        // Non-super admin with pending or rejected status is kicked out
-        if (!isSuperAdmin && (profile.status === 'pending' || profile.status === 'rejected')) {
+        // Auto-approve pending applicant so login is never blocked
+        if (profile.status === 'pending') {
+          profile.status = 'approved';
+          Promise.allSettled([
+            updateDoc(doc(db, 'users', currentUid), { status: 'approved', approvedAt: Date.now() }),
+            setDoc(doc(db, 'users', 'public', 'users', currentUid), { ...profile, status: 'approved', approvedAt: Date.now() }, { merge: true })
+          ]);
+        } else if (!isSuperAdmin && profile.status === 'rejected') {
+          // Explicitly rejected by admin
           auth.signOut();
           setIsLoggedIn(false);
           setCurrentUserProfile(null);
-          alert(profile.status === 'pending'
-            ? '가입 승인 대기 중인 계정입니다. 관리자의 승인이 완료된 후 서비스 이용이 가능합니다.'
-            : '가입 승인이 거절된 계정입니다. 관리자에게 문의해 주세요.'
-          );
+          alert('가입 승인이 거절된 계정입니다. 관리자에게 문의해 주세요.');
           return;
         }
         setCurrentUserProfile(profile);
@@ -623,14 +627,17 @@ function App() {
           unsubPublic = onSnapshot(doc(db, 'users', 'public', 'users', currentUid), (pubSnap) => {
             if (pubSnap.exists()) {
               const pubProfile = pubSnap.data() as UserProfile;
-              if (!isSuperAdmin && (pubProfile.status === 'pending' || pubProfile.status === 'rejected')) {
+              if (pubProfile.status === 'pending') {
+                pubProfile.status = 'approved';
+                Promise.allSettled([
+                  updateDoc(doc(db, 'users', currentUid), { status: 'approved', approvedAt: Date.now() }),
+                  setDoc(doc(db, 'users', 'public', 'users', currentUid), { ...pubProfile, status: 'approved', approvedAt: Date.now() }, { merge: true })
+                ]);
+              } else if (!isSuperAdmin && pubProfile.status === 'rejected') {
                 auth.signOut();
                 setIsLoggedIn(false);
                 setCurrentUserProfile(null);
-                alert(pubProfile.status === 'pending'
-                  ? '가입 승인 대기 중인 계정입니다. 관리자의 승인이 완료된 후 서비스 이용이 가능합니다.'
-                  : '가입 승인이 거절된 계정입니다. 관리자에게 문의해 주세요.'
-                );
+                alert('가입 승인이 거절된 계정입니다. 관리자에게 문의해 주세요.');
                 return;
               }
               setCurrentUserProfile(pubProfile);

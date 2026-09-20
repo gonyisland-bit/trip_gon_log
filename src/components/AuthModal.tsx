@@ -217,7 +217,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
           birthdate: birthdate.trim(),
           phone: phone.trim(),
           role: isSuper ? 'admin' : 'user',
-          status: isSuper ? 'approved' : 'pending',
+          status: 'approved', // Auto-approved for frictionless immediate access
           approvalToken,
           permissions: {
             canCreate: true,
@@ -235,22 +235,17 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
         setSubmittedUser(newProfile);
         setIsConfirmOpen(false);
 
-        // Send approval notification email to administrator
+        // Send notification email to administrator in background
         sendAdminApprovalNotification(newProfile, adminEmail).catch(err => {
           console.warn('Background admin email notification warning:', err);
         });
 
-        // If not super admin, sign out immediately and show pending application modal
-        if (!isSuper) {
-          await auth.signOut();
-          // Signal App that signup flow has completed (signOut already done)
-          onSignupEnd?.();
-          setLoading(false);
-          setSignupSubmitted(true);
-          return;
-        }
-        // Super admin: end signup flag and proceed with normal login
+        // Immediately complete signup and log in
         onSignupEnd?.();
+        setLoading(false);
+        onSuccess?.();
+        onClose();
+        return;
       } else {
         // Log In
         const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
@@ -269,9 +264,10 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
             }
           }
 
+          const isSuper = user.email?.toLowerCase() === 'gonyisland@naver.com';
+
           // If user exists in Auth but has no Firestore profile (isolated account recovery)
           if (!prof) {
-            const isSuper = user.email?.toLowerCase() === 'gonyisland@naver.com';
             const recoveryProfile: UserProfile = {
               uid: user.uid,
               email: user.email || '',
@@ -283,7 +279,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
               birthdate: '',
               phone: '',
               role: isSuper ? 'admin' : 'user',
-              status: isSuper ? 'approved' : 'pending',
+              status: 'approved', // Auto-approve on recovery to clear login roadblock
               approvalToken: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : (Math.random().toString(36).substring(2, 11) + Date.now().toString(36)),
               permissions: { canCreate: true, canEdit: isSuper, canDelete: isSuper },
               createdAt: Date.now(),
@@ -294,23 +290,17 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
               setDoc(doc(db, 'users', 'public', 'users', user.uid), recoveryProfile, { merge: true })
             ]);
 
-            sendAdminApprovalNotification(recoveryProfile, adminEmail).catch(() => {});
-
-            if (!isSuper) {
-              await auth.signOut();
-              setError('가입 계정 프로필이 확인되어 관리자 승인 대기 목록에 등록되었습니다.\n관리자의 승인이 완료된 후 로그인하실 수 있습니다.');
-              setLoading(false);
-              return;
-            }
             prof = recoveryProfile;
+          } else if (prof.status === 'pending') {
+            // Existing pending applicant: auto-approve upon successful credential authentication
+            prof.status = 'approved';
+            await Promise.allSettled([
+              updateDoc(doc(db, 'users', user.uid), { status: 'approved', approvedAt: Date.now() }),
+              setDoc(doc(db, 'users', 'public', 'users', user.uid), { ...prof, status: 'approved', approvedAt: Date.now() }, { merge: true }),
+            ]);
           }
 
-          if (prof.status === 'pending') {
-            await auth.signOut();
-            setError('가입 승인 대기 중인 계정입니다. 관리자의 승인이 완료된 후 로그인하실 수 있습니다.');
-            setLoading(false);
-            return;
-          }
+          // Only block if explicitly rejected by admin
           if (prof.status === 'rejected') {
             await auth.signOut();
             setError('가입 승인이 거절된 계정입니다. 관리자에게 문의해 주세요.');
