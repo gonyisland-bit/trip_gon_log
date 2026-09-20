@@ -509,7 +509,7 @@ export function ProfileEditModal({
         message="정말로 회원 탈퇴하시겠습니까? 탈퇴 시 모든 프로필 및 데이터가 영구 삭제되며 복구할 수 없습니다."
         confirmLabel="탈퇴 확인 (DELETE)"
         cancelLabel="취소"
-        iconType="danger"
+        iconType="alert"
         confirmVariant="danger"
         onConfirm={handleDeleteAccount}
         onCancel={() => setIsDeleteConfirmOpen(false)}
