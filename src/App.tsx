@@ -664,6 +664,23 @@ function App() {
     };
   }, [isSuperAdmin, isLoggedIn]);
 
+  // Update lastActiveAt heartbeat periodically (every 5 minutes and on mount)
+  useEffect(() => {
+    if (!isLoggedIn || !auth.currentUser) return;
+    const currentUid = auth.currentUser.uid;
+    const updateActivity = () => {
+      const now = Date.now();
+      Promise.allSettled([
+        updateDoc(doc(db, 'users', currentUid), { lastActiveAt: now }),
+        setDoc(doc(db, 'users', 'public', 'users', currentUid), { lastActiveAt: now }, { merge: true }),
+      ]).catch(() => {});
+    };
+
+    updateActivity();
+    const interval = setInterval(updateActivity, 5 * 60 * 1000); // every 5 minutes
+    return () => clearInterval(interval);
+  }, [isLoggedIn]);
+
   // Trip permission helpers: Super Admin/Admin has all rights; users can edit/delete their own trips, or trips they are delegated to
   const canEditTrip = useCallback((trip?: Trip) => {
     if (!isLoggedIn || !trip) return false;

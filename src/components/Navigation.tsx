@@ -58,7 +58,10 @@ export function Navigation({
       if (v !== undefined) cleanData[k] = v;
     });
 
-    await setDoc(doc(db, 'users', currentUser.uid), cleanData, { merge: true });
+    await Promise.allSettled([
+      setDoc(doc(db, 'users', currentUser.uid), cleanData, { merge: true }),
+      setDoc(doc(db, 'users', 'public', 'users', currentUser.uid), cleanData, { merge: true })
+    ]);
     
     const merged: UserProfile = {
       uid: currentUser.uid,

@@ -614,6 +614,10 @@ export function ManageHubPage({
   const [adminEmailSaving, setAdminEmailSaving] = useState<boolean>(false);
   // User Table Filter State ('ALL' | 'PENDING' | 'APPROVED')
   const [userFilterStatus, setUserFilterStatus] = useState<'ALL' | 'PENDING' | 'APPROVED'>('ALL');
+  // User Table Pagination State (20 per page)
+  const [userCurrentPage, setUserCurrentPage] = useState<number>(1);
+  const USERS_PER_PAGE = 20;
+
   // Always-on pending count (shows badge on USERS tab from any active tab)
   const [pendingUsersCount, setPendingUsersCount] = useState<number>(0);
 
@@ -684,6 +688,7 @@ export function ManageHubPage({
             approvalToken: data.approvalToken || '',
             permissions: data.permissions || { canCreate: true, canEdit: isAdminAcc, canDelete: isAdminAcc },
             createdAt: data.createdAt || 0,
+            lastActiveAt: data.lastActiveAt || 0,
           });
         }
       });
@@ -720,6 +725,7 @@ export function ManageHubPage({
             approvalToken: data.approvalToken || existing?.approvalToken || '',
             permissions: data.permissions || existing?.permissions || { canCreate: true, canEdit: isAdminAcc, canDelete: isAdminAcc },
             createdAt: data.createdAt || existing?.createdAt || 0,
+            lastActiveAt: data.lastActiveAt || existing?.lastActiveAt || 0,
           });
         }
       });
@@ -803,6 +809,29 @@ export function ManageHubPage({
     } catch (err) {
       console.error('Failed to reject user:', err);
       alert('거절 처리 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleDeleteUserByAdmin = async (user: UserProfile) => {
+    if (isTargetAdminAccount(user.email, user.role)) {
+      alert("관리자 계정은 삭제할 수 없습니다.");
+      return;
+    }
+    const fullName = `${user.lastName} ${user.firstName}`.trim() || user.username || user.email;
+    if (!window.confirm(`정말로 회원 [${fullName} (${user.email})] 계정을 영구 삭제하시겠습니까?\n모든 프로필 데이터가 완전히 제거됩니다.`)) return;
+
+    try {
+      await Promise.allSettled([
+        deleteDoc(doc(db, 'users', user.uid)),
+        deleteDoc(doc(db, 'users', 'public', 'users', user.uid)),
+        deleteDoc(doc(db, 'users', 'public', 'settings', `pendingApproval_${user.uid}`))
+      ]);
+      setUsersList(prev => prev.filter(u => u.uid !== user.uid));
+      setUserActionToast(`[${fullName}] 회원 계정이 영구 삭제되었습니다.`);
+      setTimeout(() => setUserActionToast(null), 3000);
+    } catch (err: any) {
+      console.error('Failed to delete user:', err);
+      alert(`회원 삭제 중 오류가 발생했습니다: ${err?.message || err}`);
     }
   };
 
@@ -8750,241 +8779,457 @@ export function ManageHubPage({
               </div>
             </div>
 
-            {/* Filter Tabs & Search Bar (Swiss Minimal) */}
-            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-              {/* Swiss Minimal Filter Buttons: ALL / PENDING / APPROVED */}
-              <div className="flex items-center border border-black/20 dark:border-white/20 p-0.5 bg-black/5 dark:bg-white/5 shrink-0">
-                {(['ALL', 'PENDING', 'APPROVED'] as const).map(filterKey => {
-                  const count = filterKey === 'ALL'
-                    ? usersList.length
-                    : filterKey === 'PENDING'
-                    ? usersList.filter(u => u.status === 'pending' && !isTargetAdminAccount(u.email, u.role)).length
-                    : usersList.filter(u => u.status === 'approved' || isTargetAdminAccount(u.email, u.role)).length;
-                  const isActive = userFilterStatus === filterKey;
-                  const label = filterKey === 'ALL' ? 'ALL' : filterKey === 'PENDING' ? 'PENDING' : 'APPROVED';
+            {/* 1. ADMINISTRATORS SECTION (Separated Top View) */}
+            {(() => {
+              const adminsList = usersList.filter(u => isTargetAdminAccount(u.email, u.role));
+              if (adminsList.length === 0) return null;
 
-                  return (
-                    <button
-                      key={filterKey}
-                      type="button"
-                      onClick={() => setUserFilterStatus(filterKey)}
-                      className={`px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5 ${
-                        isActive
-                          ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
-                          : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
-                      }`}
-                    >
-                      <span>{label}</span>
-                      <span className={`text-[9.5px] px-1.5 py-0.5 font-mono leading-none ${
-                        isActive 
-                          ? (filterKey === 'PENDING' && count > 0 ? 'bg-red-600 text-white font-bold' : 'bg-white/20 dark:bg-black/20 text-white dark:text-black')
-                          : (filterKey === 'PENDING' && count > 0 ? 'bg-red-600 text-white font-bold animate-pulse' : 'text-black/40 dark:text-white/40')
-                      }`}>
-                        {count}
+              return (
+                <div className="flex flex-col border border-black/20 dark:border-white/20 p-4 sm:p-5 gap-3 bg-black/[0.015] dark:bg-white/[0.015]">
+                  <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-red-600 dark:text-red-400" />
+                      <span className="text-xs font-mono font-black uppercase tracking-wider text-black dark:text-white">
+                        ADMINISTRATORS ({adminsList.length})
                       </span>
-                    </button>
-                  );
-                })}
-              </div>
+                    </div>
+                    <span className="text-[10px] font-mono text-black/50 dark:text-white/50">
+                      최고 관리자 및 서브 관리자 계정 그룹
+                    </span>
+                  </div>
 
-              {/* Search Bar */}
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
-                <input
-                  type="text"
-                  value={userSearchQuery}
-                  onChange={e => setUserSearchQuery(e.target.value)}
-                  placeholder="유저 검색 (이름, 이메일, 전화번호)..."
-                  className="w-full pl-9 pr-4 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
-                />
-              </div>
-              {userSearchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setUserSearchQuery('')}
-                  className="px-3 py-2 border border-black/20 dark:border-white/20 text-xs font-mono uppercase hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer shrink-0"
-                >
-                  CLEAR
-                </button>
-              )}
-            </div>
+                  <div className="divide-y divide-black/10 dark:divide-white/10 border border-black/10 dark:border-white/10 bg-white dark:bg-[#161616]">
+                    {adminsList.map((adminUser) => {
+                      const isSuper = adminUser.email?.toLowerCase() === 'gonyisland@naver.com';
+                      const fullName = `${adminUser.lastName} ${adminUser.firstName}`.trim() || '관리자';
+                      const isOnline = adminUser.lastActiveAt && (Date.now() - adminUser.lastActiveAt < 60 * 60 * 1000);
 
-            {/* Users List Table / Cards */}
-            <div className="flex flex-col border border-black/20 dark:border-white/20 divide-y divide-black/10 dark:divide-white/10 bg-white dark:bg-[#161616]">
-              {usersList
-                .filter(u => {
-                  const isAdminAcc = isTargetAdminAccount(u.email, u.role);
-                  const effectiveStatus = isAdminAcc ? 'approved' : (u.status || 'approved');
-                  
-                  if (userFilterStatus === 'PENDING' && effectiveStatus !== 'pending') return false;
-                  if (userFilterStatus === 'APPROVED' && effectiveStatus !== 'approved') return false;
-
-                  if (!userSearchQuery.trim()) return true;
-                  const q = userSearchQuery.toLowerCase();
-                  const name = `${u.lastName} ${u.firstName}`.toLowerCase();
-                  return name.includes(q) || u.email.toLowerCase().includes(q) || (u.phone && u.phone.includes(q));
-                })
-                .map((user) => {
-                  const isSuper = user.email?.toLowerCase() === 'gonyisland@naver.com';
-                  const isAdminAcc = isTargetAdminAccount(user.email, user.role);
-                  const isPending = user.status === 'pending' && !isAdminAcc;
-                  const fullName = `${user.lastName} ${user.firstName}`.trim() || '미등록';
-                  const joinDate = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-';
-
-                  return (
-                    <div key={user.uid} className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-black/[0.01] dark:hover:bg-white/[0.01] transition-colors">
-                      {/* Left: 1x1 Avatar & User Details */}
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <UserProfileAvatar profile={user} size="lg" fallbackName={fullName} />
-                        <div className="flex flex-col gap-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm sm:text-base font-black uppercase tracking-tight text-black dark:text-white font-sans">
-                              {fullName}
-                            </span>
-                            {user.username && (
-                              <span className="text-xs font-mono font-bold text-red-600 dark:text-red-400">
-                                @{user.username}
-                              </span>
-                            )}
-                            <span className="text-xs font-mono text-black/60 dark:text-white/60">
-                              ({user.email})
-                            </span>
-                            {isSuper ? (
-                              <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-red-600 text-white leading-none">
-                                SUPER ADMIN
-                              </span>
-                            ) : isAdminAcc ? (
-                              <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-black text-white dark:bg-white dark:text-black leading-none">
-                                ADMIN
-                              </span>
-                            ) : user.status === 'rejected' ? (
-                              <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 leading-none">
-                                REJECTED
-                              </span>
-                            ) : isPending ? (
-                              <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider border border-red-600 text-red-600 dark:text-red-400 bg-red-500/10 leading-none animate-pulse">
-                                PENDING
-                              </span>
-                            ) : (
-                              <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 leading-none">
-                                USER
-                              </span>
-                            )}
+                      return (
+                        <div key={adminUser.uid} className="p-3.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                          {/* Avatar & Admin Details */}
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            <div className="relative shrink-0">
+                              <UserProfileAvatar profile={adminUser} size="md" fallbackName={fullName} />
+                              {isOnline && (
+                                <span 
+                                  className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#161616] animate-pulse" 
+                                  title="최근 1시간 내 활동 중 (ONLINE)"
+                                />
+                              )}
+                            </div>
+                            <div className="flex flex-col gap-0.5 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-sm font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                                  {fullName}
+                                </span>
+                                {adminUser.username && (
+                                  <span className="text-xs font-mono font-bold text-red-600 dark:text-red-400">
+                                    @{adminUser.username}
+                                  </span>
+                                )}
+                                <span className="text-xs font-mono text-black/60 dark:text-white/60">
+                                  ({adminUser.email})
+                                </span>
+                                {isSuper ? (
+                                  <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-red-600 text-white leading-none">
+                                    SUPER ADMIN
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-black text-white dark:bg-white dark:text-black leading-none">
+                                    ADMIN
+                                  </span>
+                                )}
+                                {isOnline && (
+                                  <span className="px-1.5 py-0.2 text-[9px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 leading-none">
+                                    ONLINE
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-3 text-[10px] font-mono text-black/50 dark:text-white/50 flex-wrap">
+                                {adminUser.phone && <span>전화: {adminUser.phone}</span>}
+                                <span>가입: {adminUser.createdAt ? new Date(adminUser.createdAt).toLocaleDateString() : '-'}</span>
+                              </div>
+                            </div>
                           </div>
 
-                          <div className="flex items-center gap-3 text-[11px] font-mono text-black/50 dark:text-white/50 flex-wrap">
-                            {user.phone && <span>전화: {user.phone}</span>}
-                            {user.birthdate && <span>생일: {user.birthdate}</span>}
-                            <span>가입일: {joinDate}</span>
+                          {/* Right: Permission Toggles & Actions */}
+                          <div className="flex items-center gap-2 sm:gap-3 flex-wrap shrink-0">
+                            {/* 3 Permission Toggles: Create / Edit / Delete */}
+                            <div className="flex items-center gap-1 border border-black/15 dark:border-white/15 p-1 bg-black/[0.02] dark:bg-white/[0.02]">
+                              <button
+                                type="button"
+                                disabled={isSuper}
+                                onClick={() => handleToggleUserPermission(adminUser, 'canCreate')}
+                                className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:cursor-not-allowed ${
+                                  adminUser.permissions?.canCreate
+                                    ? 'bg-black text-white dark:bg-white dark:text-black font-black'
+                                    : 'text-black/40 dark:text-white/40 hover:text-black'
+                                }`}
+                                title="여정 생성(추가) 권한 토글"
+                              >
+                                추가 {adminUser.permissions?.canCreate ? 'ON' : 'OFF'}
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={isSuper}
+                                onClick={() => handleToggleUserPermission(adminUser, 'canEdit')}
+                                className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:cursor-not-allowed ${
+                                  adminUser.permissions?.canEdit
+                                    ? 'bg-black text-white dark:bg-white dark:text-black font-black'
+                                    : 'text-black/40 dark:text-white/40 hover:text-black'
+                                }`}
+                                title="전체 여정 편집 권한 토글"
+                              >
+                                편집 {adminUser.permissions?.canEdit ? 'ON' : 'OFF'}
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={isSuper}
+                                onClick={() => handleToggleUserPermission(adminUser, 'canDelete')}
+                                className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:cursor-not-allowed ${
+                                  adminUser.permissions?.canDelete
+                                    ? 'bg-red-600 text-white font-black'
+                                    : 'text-black/40 dark:text-white/40 hover:text-black'
+                                }`}
+                                title="여정 삭제 권한 토글"
+                              >
+                                삭제 {adminUser.permissions?.canDelete ? 'ON' : 'OFF'}
+                              </button>
+                            </div>
+
+                            {/* Edit Info Button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingUser(adminUser);
+                                setIsUserEditModalOpen(true);
+                              }}
+                              className="p-1.5 border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black transition-colors cursor-pointer"
+                              title="관리자 정보 수정"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* 2. REGULAR USERS SECTION (Filtered, Paginated 20 per page) */}
+            {(() => {
+              const regularUsers = usersList.filter(u => !isTargetAdminAccount(u.email, u.role));
+              
+              const filteredUsers = regularUsers.filter(u => {
+                if (userFilterStatus === 'PENDING' && u.status !== 'pending') return false;
+                if (userFilterStatus === 'APPROVED' && u.status !== 'approved') return false;
+
+                if (!userSearchQuery.trim()) return true;
+                const q = userSearchQuery.toLowerCase();
+                const name = `${u.lastName} ${u.firstName}`.toLowerCase();
+                return name.includes(q) || u.email.toLowerCase().includes(q) || (u.phone && u.phone.includes(q));
+              });
+
+              const totalPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE) || 1;
+              const safePage = Math.min(Math.max(userCurrentPage, 1), totalPages);
+              const paginatedUsers = filteredUsers.slice((safePage - 1) * USERS_PER_PAGE, safePage * USERS_PER_PAGE);
+
+              return (
+                <div className="flex flex-col gap-4">
+                  {/* Filter Tabs & Search Bar (Swiss Minimal) */}
+                  <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                    {/* Filter Buttons: ALL / PENDING / APPROVED */}
+                    <div className="flex items-center border border-black/20 dark:border-white/20 p-0.5 bg-black/5 dark:bg-white/5 shrink-0">
+                      {(['ALL', 'PENDING', 'APPROVED'] as const).map(filterKey => {
+                        const count = filterKey === 'ALL'
+                          ? regularUsers.length
+                          : filterKey === 'PENDING'
+                          ? regularUsers.filter(u => u.status === 'pending').length
+                          : regularUsers.filter(u => u.status === 'approved').length;
+                        const isActive = userFilterStatus === filterKey;
+                        const label = filterKey === 'ALL' ? 'ALL' : filterKey === 'PENDING' ? 'PENDING' : 'APPROVED';
+
+                        return (
+                          <button
+                            key={filterKey}
+                            type="button"
+                            onClick={() => {
+                              setUserFilterStatus(filterKey);
+                              setUserCurrentPage(1);
+                            }}
+                            className={`px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5 ${
+                              isActive
+                                ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                                : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                            }`}
+                          >
+                            <span>{label}</span>
+                            <span className={`text-[9.5px] px-1.5 py-0.5 font-mono leading-none ${
+                              isActive 
+                                ? (filterKey === 'PENDING' && count > 0 ? 'bg-red-600 text-white font-bold' : 'bg-white/20 dark:bg-black/20 text-white dark:text-black')
+                                : (filterKey === 'PENDING' && count > 0 ? 'bg-red-600 text-white font-bold animate-pulse' : 'text-black/40 dark:text-white/40')
+                            }`}>
+                              {count}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Search Bar */}
+                    <div className="relative flex-1">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40" />
+                      <input
+                        type="text"
+                        value={userSearchQuery}
+                        onChange={e => {
+                          setUserSearchQuery(e.target.value);
+                          setUserCurrentPage(1);
+                        }}
+                        placeholder="일반 유저 검색 (이름, 이메일, 전화번호)..."
+                        className="w-full pl-9 pr-4 py-2 text-xs font-mono bg-white dark:bg-[#161616] border border-black/20 dark:border-white/20 outline-none rounded-none focus:border-black dark:focus:border-white"
+                      />
+                    </div>
+                    {userSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUserSearchQuery('');
+                          setUserCurrentPage(1);
+                        }}
+                        className="px-3 py-2 border border-black/20 dark:border-white/20 text-xs font-mono uppercase hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer shrink-0"
+                      >
+                        CLEAR
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Users List Table */}
+                  <div className="flex flex-col border border-black/20 dark:border-white/20 divide-y divide-black/10 dark:divide-white/10 bg-white dark:bg-[#161616]">
+                    {paginatedUsers.map((user) => {
+                      const isPending = user.status === 'pending';
+                      const fullName = `${user.lastName} ${user.firstName}`.trim() || '미등록';
+                      const joinDate = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-';
+                      const isOnline = user.lastActiveAt && (Date.now() - user.lastActiveAt < 60 * 60 * 1000);
+
+                      return (
+                        <div key={user.uid} className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-black/[0.01] dark:hover:bg-white/[0.01] transition-colors">
+                          {/* Left: 1x1 Avatar & User Details */}
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            <div className="relative shrink-0">
+                              <UserProfileAvatar profile={user} size="lg" fallbackName={fullName} />
+                              {isOnline && (
+                                <span 
+                                  className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#161616] animate-pulse" 
+                                  title="최근 1시간 내 활동 중 (ONLINE)"
+                                />
+                              )}
+                            </div>
+                            <div className="flex flex-col gap-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-sm sm:text-base font-black uppercase tracking-tight text-black dark:text-white font-sans">
+                                  {fullName}
+                                </span>
+                                {user.username && (
+                                  <span className="text-xs font-mono font-bold text-red-600 dark:text-red-400">
+                                    @{user.username}
+                                  </span>
+                                )}
+                                <span className="text-xs font-mono text-black/60 dark:text-white/60">
+                                  ({user.email})
+                                </span>
+                                {user.status === 'rejected' ? (
+                                  <span className="px-2 py-0.5 text-[9px] font-mono font-black uppercase tracking-wider bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 leading-none">
+                                    REJECTED
+                                  </span>
+                                ) : isPending ? (
+                                  <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider border border-red-600 text-red-600 dark:text-red-400 bg-red-500/10 leading-none animate-pulse">
+                                    PENDING
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 leading-none">
+                                    USER
+                                  </span>
+                                )}
+                                {isOnline && (
+                                  <span className="px-1.5 py-0.2 text-[9px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 leading-none">
+                                    ONLINE
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-3 text-[11px] font-mono text-black/50 dark:text-white/50 flex-wrap">
+                                {user.phone && <span>전화: {user.phone}</span>}
+                                {user.birthdate && <span>생일: {user.birthdate}</span>}
+                                <span>가입일: {joinDate}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Right: Actions */}
+                          <div className="flex items-center gap-2 sm:gap-3 flex-wrap shrink-0">
+                            {/* If Pending: Show Instant Approve / Reject Buttons First */}
+                            {isPending && (
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleApproveUser(user)}
+                                  className="px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:bg-green-600 dark:hover:bg-green-600 dark:hover:text-white text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                                >
+                                  APPROVE
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRejectUser(user)}
+                                  className="px-3 py-1.5 border border-black/20 dark:border-white/20 hover:border-red-600 hover:text-red-600 text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                                >
+                                  REJECT
+                                </button>
+                              </div>
+                            )}
+
+                            {/* 3 Permission Toggles: Create / Edit / Delete */}
+                            <div className="flex items-center gap-1 border border-black/15 dark:border-white/15 p-1 bg-black/[0.02] dark:bg-white/[0.02]">
+                              {/* Create Permission Toggle */}
+                              <button
+                                type="button"
+                                onClick={() => handleToggleUserPermission(user, 'canCreate')}
+                                className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                                  user.permissions?.canCreate
+                                    ? 'bg-black text-white dark:bg-white dark:text-black font-black'
+                                    : 'text-black/40 dark:text-white/40 hover:text-black'
+                                }`}
+                                title="여정 생성(추가) 권한 토글"
+                              >
+                                추가 {user.permissions?.canCreate ? 'ON' : 'OFF'}
+                              </button>
+
+                              {/* Edit Permission Toggle */}
+                              <button
+                                type="button"
+                                onClick={() => handleToggleUserPermission(user, 'canEdit')}
+                                className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                                  user.permissions?.canEdit
+                                    ? 'bg-black text-white dark:bg-white dark:text-black font-black'
+                                    : 'text-black/40 dark:text-white/40 hover:text-black'
+                                }`}
+                                title="전체 여정 편집 권한 토글"
+                              >
+                                편집 {user.permissions?.canEdit ? 'ON' : 'OFF'}
+                              </button>
+
+                              {/* Delete Permission Toggle */}
+                              <button
+                                type="button"
+                                onClick={() => handleToggleUserPermission(user, 'canDelete')}
+                                className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                                  user.permissions?.canDelete
+                                    ? 'bg-red-600 text-white font-black'
+                                    : 'text-black/40 dark:text-white/40 hover:text-black'
+                                }`}
+                                title="여정 삭제 권한 토글"
+                              >
+                                삭제 {user.permissions?.canDelete ? 'ON' : 'OFF'}
+                              </button>
+                            </div>
+
+                            {/* Delegate Trip Access Button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDelegatingUser(user);
+                                setIsDelegatingModalOpen(true);
+                              }}
+                              className="px-2.5 py-1.5 border border-black/20 dark:border-white/20 text-[10px] font-mono font-bold uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
+                              title="특정 여정 편집 권한 위임"
+                            >
+                              여정 위임
+                            </button>
+
+                            {/* Edit Info Button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingUser(user);
+                                setIsUserEditModalOpen(true);
+                              }}
+                              className="p-1.5 border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black transition-colors cursor-pointer"
+                              title="유저 정보 수정"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+
+                            {/* Delete User Account Button (Admin Forced Delete) */}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteUserByAdmin(user)}
+                              className="p-1.5 border border-black/20 dark:border-white/20 text-black/40 dark:text-white/40 hover:border-red-600 hover:text-red-600 transition-colors cursor-pointer"
+                              title="유저 계정 영구 삭제 (잘못 가입한 계정 제거)"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {filteredUsers.length === 0 && (
+                      <div className="py-12 text-center text-xs font-mono text-black/40 dark:text-white/40">
+                        {userSearchQuery ? '검색 결과와 일치하는 유저가 없습니다.' : '등록된 유저가 없습니다.'}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Pagination Controller (Swiss Minimal - Active when > 20 users or multi-page) */}
+                  {totalPages > 1 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 border border-black/15 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02]">
+                      <div className="text-xs font-mono text-black/60 dark:text-white/60">
+                        SHOWING <span className="font-bold text-black dark:text-white">{(safePage - 1) * USERS_PER_PAGE + 1} - {Math.min(safePage * USERS_PER_PAGE, filteredUsers.length)}</span> OF <span className="font-bold text-black dark:text-white">{filteredUsers.length}</span> USERS
                       </div>
 
-                      {/* Right: Permission Toggles & Actions */}
-                      <div className="flex items-center gap-2 sm:gap-3 flex-wrap shrink-0">
-                        {/* If Pending: Show Instant Approve / Reject Buttons First */}
-                        {isPending && (
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => handleApproveUser(user)}
-                              className="px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:bg-green-600 dark:hover:bg-green-600 dark:hover:text-white text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                            >
-                              APPROVE
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleRejectUser(user)}
-                              className="px-3 py-1.5 border border-black/20 dark:border-white/20 hover:border-red-600 hover:text-red-600 text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                            >
-                              REJECT
-                            </button>
-                          </div>
-                        )}
-                        {/* 3 Permission Toggles: Create / Edit / Delete */}
-                        <div className="flex items-center gap-1 border border-black/15 dark:border-white/15 p-1 bg-black/[0.02] dark:bg-white/[0.02]">
-                          {/* Create Permission Toggle */}
-                          <button
-                            type="button"
-                            disabled={isSuper}
-                            onClick={() => handleToggleUserPermission(user, 'canCreate')}
-                            className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:cursor-not-allowed ${
-                              user.permissions?.canCreate
-                                ? 'bg-black text-white dark:bg-white dark:text-black font-black'
-                                : 'text-black/40 dark:text-white/40 hover:text-black'
-                            }`}
-                            title="여정 생성(추가) 권한 토글"
-                          >
-                            추가 {user.permissions?.canCreate ? 'ON' : 'OFF'}
-                          </button>
-
-                          {/* Edit Permission Toggle */}
-                          <button
-                            type="button"
-                            disabled={isSuper}
-                            onClick={() => handleToggleUserPermission(user, 'canEdit')}
-                            className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:cursor-not-allowed ${
-                              user.permissions?.canEdit
-                                ? 'bg-black text-white dark:bg-white dark:text-black font-black'
-                                : 'text-black/40 dark:text-white/40 hover:text-black'
-                            }`}
-                            title="전체 여정 편집 권한 토글 (OFF일 때는 본인 여정 및 위임된 여정만 수정 가능)"
-                          >
-                            편집 {user.permissions?.canEdit ? 'ON' : 'OFF'}
-                          </button>
-
-                          {/* Delete Permission Toggle */}
-                          <button
-                            type="button"
-                            disabled={isSuper}
-                            onClick={() => handleToggleUserPermission(user, 'canDelete')}
-                            className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:cursor-not-allowed ${
-                              user.permissions?.canDelete
-                                ? 'bg-red-600 text-white font-black'
-                                : 'text-black/40 dark:text-white/40 hover:text-black'
-                            }`}
-                            title="여정 삭제 권한 토글"
-                          >
-                            삭제 {user.permissions?.canDelete ? 'ON' : 'OFF'}
-                          </button>
-                        </div>
-
-                        {/* Delegate Trip Access Button */}
+                      <div className="flex items-center gap-1">
                         <button
                           type="button"
-                          onClick={() => {
-                            setDelegatingUser(user);
-                            setIsDelegatingModalOpen(true);
-                          }}
-                          className="px-2.5 py-1.5 border border-black/20 dark:border-white/20 text-[10px] font-mono font-bold uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
-                          title="특정 여정 편집 권한 위임"
+                          disabled={safePage <= 1}
+                          onClick={() => setUserCurrentPage(prev => Math.max(prev - 1, 1))}
+                          className="px-3 py-1 text-xs font-mono font-bold uppercase border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                         >
-                          여정 위임
+                          PREV
                         </button>
 
-                        {/* Edit Info Button */}
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                          <button
+                            key={pageNum}
+                            type="button"
+                            onClick={() => setUserCurrentPage(pageNum)}
+                            className={`w-7 h-7 text-xs font-mono font-bold transition-colors cursor-pointer flex items-center justify-center border ${
+                              pageNum === safePage
+                                ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-black'
+                                : 'border-black/10 dark:border-white/10 text-black/60 dark:text-white/60 hover:border-black dark:hover:border-white'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        ))}
+
                         <button
                           type="button"
-                          onClick={() => {
-                            setEditingUser(user);
-                            setIsUserEditModalOpen(true);
-                          }}
-                          className="p-1.5 border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black transition-colors cursor-pointer"
-                          title="유저 정보 수정"
+                          disabled={safePage >= totalPages}
+                          onClick={() => setUserCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                          className="px-3 py-1 text-xs font-mono font-bold uppercase border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                         >
-                          <Edit className="w-3.5 h-3.5" />
+                          NEXT
                         </button>
                       </div>
                     </div>
-                  );
-                })}
-
-              {usersList.length === 0 && (
-                <div className="py-12 text-center text-xs font-mono text-black/40 dark:text-white/40">
-                  가입된 유저가 없습니다.
+                  )}
                 </div>
-              )}
-            </div>
+              );
+            })()}
           </div>
         )}
 

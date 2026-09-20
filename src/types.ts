@@ -306,6 +306,7 @@ export interface UserProfile {
   status?: 'pending' | 'approved' | 'rejected';
   approvalToken?: string;
   createdAt: number;
+  lastActiveAt?: number;
 }
 
 export interface CityWeatherConfig {

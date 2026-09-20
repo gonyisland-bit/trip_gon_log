@@ -9,8 +9,9 @@ import { ConfirmModal } from './ConfirmModal';
 import { PROFILE_PRESET_ICONS, UserProfileAvatar } from './UserProfileAvatar';
 import { uploadFileToR2 } from '../utils/storageHelper';
 import { compressImage } from '../utils/imageHelper';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../firebase';
+import { deleteUser } from 'firebase/auth';
+import { doc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { auth, db } from '../firebase';
 
 interface ProfileEditModalProps {
   isOpen: boolean;
@@ -46,6 +47,8 @@ export function ProfileEditModal({
   const [isUploading, setIsUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -66,8 +69,35 @@ export function ProfileEditModal({
       setErrorMsg('');
       setIsSaving(false);
       setIsConfirmOpen(false);
+      setIsDeleteConfirmOpen(false);
+      setIsDeleting(false);
     }
   }, [isOpen, user]);
+
+  const handleDeleteAccount = async () => {
+    if (!auth.currentUser) return;
+    setIsDeleting(true);
+    try {
+      const uid = auth.currentUser.uid;
+      await Promise.allSettled([
+        deleteDoc(doc(db, 'users', uid)),
+        deleteDoc(doc(db, 'users', 'public', 'users', uid))
+      ]);
+      await deleteUser(auth.currentUser);
+      alert('회원 탈퇴가 완료되었습니다. 이용해 주셔서 감사합니다.');
+      window.location.href = '/';
+    } catch (err: any) {
+      console.error('Account deletion error:', err);
+      if (err.code === 'auth/requires-recent-login') {
+        alert('보안을 위해 재로그인이 필요합니다. 로그아웃 후 다시 로그인하여 탈퇴를 진행해 주세요.');
+      } else {
+        alert(`탈퇴 처리 중 오류가 발생했습니다: ${err?.message || err}`);
+      }
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteConfirmOpen(false);
+    }
+  };
 
   // Handle global paste for profile image when modal is open
   useEffect(() => {
@@ -439,6 +469,22 @@ export function ProfileEditModal({
                 )}
               </button>
             </div>
+
+            {/* Account Deletion Area (User Only) */}
+            {!isAdminEditing && (
+              <div className="pt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between">
+                <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                  더 이상 계정을 사용하지 않는 경우
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteConfirmOpen(true)}
+                  className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-red-600 dark:text-red-400 hover:bg-red-500/10 border border-red-500/30 transition-colors cursor-pointer"
+                >
+                  회원 탈퇴 (DELETE ACCOUNT)
+                </button>
+              </div>
+            )}
           </form>
         </div>
       </div>
@@ -454,6 +500,19 @@ export function ProfileEditModal({
         confirmVariant="black"
         onConfirm={handleConfirmSave}
         onCancel={() => setIsConfirmOpen(false)}
+      />
+
+      {/* 2-Step Swiss Minimal ConfirmModal before Deleting Account */}
+      <ConfirmModal
+        isOpen={isDeleteConfirmOpen}
+        title="DELETE ACCOUNT"
+        message="정말로 회원 탈퇴하시겠습니까? 탈퇴 시 모든 프로필 및 데이터가 영구 삭제되며 복구할 수 없습니다."
+        confirmLabel="탈퇴 확인 (DELETE)"
+        cancelLabel="취소"
+        iconType="danger"
+        confirmVariant="danger"
+        onConfirm={handleDeleteAccount}
+        onCancel={() => setIsDeleteConfirmOpen(false)}
       />
 
       {/* Sub-Modal: 1:1 Profile Avatar Picker (Icon Grid or Image Upload) */}
