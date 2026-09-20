@@ -109,6 +109,29 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
     }));
   }, []);
 
+  // 6. 뇌우: 번개 벼락 볼트 (6개 — CSS clip-path polygon 기반, 무작위 위치/타이밍)
+  const lightningBolts = useMemo(() => {
+    return Array.from({ length: 6 }, (_, i) => ({
+      id: `bolt-${i}`,
+      // 화면 좌측 5%~우측 85% 사이 분산 배치
+      left: `${8 + (i * 14 + (i % 3) * 9) % 77}%`,
+      // 화면 상단 2~22% 내에 시작점 분산
+      top: `${2 + (i % 5) * 4}%`,
+      // 번개 볼트 높이: 100px~200px
+      height: `${110 + (i % 4) * 28}px`,
+      // 번개 볼트 폭: 14px~24px (clip-path로 실제 보이는 넓이는 달라짐)
+      width: `${16 + (i % 3) * 6}px`,
+      // 각 볼트 사이클 길이: 3.5초~9초 (분산되어 서로 다른 타이밍)
+      duration: `${3.5 + (i % 5) * 1.3}s`,
+      // 초기 지연: 0~8초 (각각 다르게 시작)
+      delay: `${(i * 1.55 + (i % 4) * 0.9) % 8.5}s`,
+      // 글로우 블러 강도: 8~16px
+      glow: `${9 + (i % 3) * 4}px`,
+      // 약간 다른 기울기로 볼트마다 개성 부여 (-4 ~ +4도)
+      skewX: `${-3 + (i % 4) * 2}deg`,
+    }));
+  }, []);
+
   return (
     <div
       className={`fixed inset-0 pointer-events-none overflow-hidden transition-all duration-700 select-none z-0 ${className}`}
@@ -187,12 +210,55 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
           50% { opacity: 1; transform: scale(1.4); }
         }
 
-        /* ── Storm Flash ── */
+        /* ── Storm Background Flash (대기 번쩍임 오버레이) ── */
         @keyframes tglStormFlash {
           0%, 90%, 100% { opacity: 0; }
-          91% { opacity: 0.55; }
-          92% { opacity: 0.15; }
-          94% { opacity: 0.7; }
+          91% { opacity: 0.45; }
+          92% { opacity: 0.08; }
+          94% { opacity: 0.55; }
+          95% { opacity: 0; }
+        }
+
+        /* ── Lightning Bolt Strike (벼락 볼트 이중 섬광) ── */
+        @keyframes tglLightningStrike {
+          0%, 84%, 100% {
+            opacity: 0;
+            transform: var(--bolt-skew, skewX(0deg)) scaleY(0.85);
+          }
+          85% {
+            opacity: 1;
+            transform: var(--bolt-skew, skewX(0deg)) scaleY(1);
+          }
+          87% {
+            opacity: 0.08;
+            transform: var(--bolt-skew, skewX(0deg)) scaleY(0.98);
+          }
+          88% {
+            opacity: 0.9;
+            transform: var(--bolt-skew, skewX(0deg)) scaleY(1);
+          }
+          90%, 100% {
+            opacity: 0;
+            transform: var(--bolt-skew, skewX(0deg)) scaleY(0.9);
+          }
+        }
+
+        /* ── Lightning Glow Aura (번개 주변 글로우 헤일로) ── */
+        @keyframes tglLightningGlow {
+          0%, 83%, 100% { opacity: 0; }
+          85% { opacity: 0.85; }
+          87% { opacity: 0.05; }
+          88% { opacity: 0.75; }
+          91% { opacity: 0; }
+        }
+
+        /* ── Sky Flash per Bolt (번개칠 때 하늘 밝아지는 순간 조명) ── */
+        @keyframes tglSkyFlash {
+          0%, 84%, 100% { opacity: 0; }
+          85.5% { opacity: 0.28; }
+          86.5% { opacity: 0; }
+          87.5% { opacity: 0.22; }
+          89%, 100% { opacity: 0; }
         }
       `}</style>
 
@@ -312,15 +378,93 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
             <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-blue-400/30 dark:via-blue-300/40 to-transparent" />
           </div>
 
-          {/* 뇌우 플래시 */}
+          {/* ── 뇌우 전용 번개/벼락 이펙트 ── */}
           {effectType === 'storm' && (
-            <div 
-              className="absolute inset-0 bg-blue-100/45 dark:bg-indigo-300/35"
-              style={{
-                animation: 'tglStormFlash 6.5s infinite',
-                willChange: 'opacity',
-              }}
-            />
+            <>
+              {/* 대기 배경 섬광 (전체 하늘 순간 밝아짐) */}
+              <div 
+                className="absolute inset-0"
+                style={{
+                  background: isDarkMode
+                    ? 'rgba(180, 210, 255, 0.18)'
+                    : 'rgba(255, 255, 220, 0.22)',
+                  animation: 'tglStormFlash 7s infinite',
+                  willChange: 'opacity',
+                }}
+              />
+
+              {/* 벼락 볼트 그래픽 (CSS clip-path polygon 지그재그 형태) */}
+              {lightningBolts.map((bolt) => (
+                <div
+                  key={bolt.id}
+                  className="absolute"
+                  style={{
+                    left: bolt.left,
+                    top: bolt.top,
+                    width: bolt.width,
+                    height: bolt.height,
+                    transformOrigin: 'top center',
+                    ['--bolt-skew' as any]: `skewX(${bolt.skewX})`,
+                  }}
+                >
+                  {/* 글로우 헤일로 레이어 (번개 주변 빛 번짐) */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background: isDarkMode
+                        ? 'linear-gradient(to bottom, rgba(255, 255, 180, 0.95), rgba(200, 220, 255, 0.6))'
+                        : 'linear-gradient(to bottom, rgba(255, 255, 200, 1), rgba(220, 230, 255, 0.7))',
+                      // 지그재그 번개 볼트 형상 (CSS clip-path polygon)
+                      // 상단 오른쪽으로 시작 → 중간 왼쪽 굴곡 → 하단 끝점
+                      clipPath: 'polygon(42% 0%, 66% 0%, 58% 40%, 76% 40%, 40% 100%, 35% 55%, 18% 55%, 30% 40%)',
+                      filter: `blur(${bolt.glow}) brightness(1.4)`,
+                      animation: `tglLightningGlow ${bolt.duration} ease-out infinite`,
+                      animationDelay: bolt.delay,
+                      transform: `skewX(${bolt.skewX})`,
+                      transformOrigin: 'top center',
+                      willChange: 'opacity, transform',
+                    }}
+                  />
+
+                  {/* 번개 코어 레이어 (밝은 흰색-노란색 번개 심볼) */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background: isDarkMode
+                        ? 'linear-gradient(to bottom, rgba(255, 255, 255, 1), rgba(255, 240, 130, 0.95))'
+                        : 'linear-gradient(to bottom, rgba(255, 255, 255, 1), rgba(255, 235, 80, 0.9))',
+                      clipPath: 'polygon(42% 0%, 66% 0%, 58% 40%, 76% 40%, 40% 100%, 35% 55%, 18% 55%, 30% 40%)',
+                      boxShadow: isDarkMode
+                        ? '0 0 12px 6px rgba(200, 220, 255, 0.55), 0 0 30px 12px rgba(180, 200, 255, 0.3)'
+                        : '0 0 10px 4px rgba(255, 255, 180, 0.6), 0 0 28px 10px rgba(255, 240, 100, 0.3)',
+                      animation: `tglLightningStrike ${bolt.duration} ease-out infinite`,
+                      animationDelay: bolt.delay,
+                      transform: `skewX(${bolt.skewX})`,
+                      transformOrigin: 'top center',
+                      willChange: 'opacity, transform',
+                    }}
+                  />
+                </div>
+              ))}
+
+              {/* 번개 낙뢰 시 하늘 순간 조명 (볼트 별 로컬 스카이 플래시) */}
+              {lightningBolts.slice(0, 4).map((bolt) => (
+                <div
+                  key={`sky-${bolt.id}`}
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background: isDarkMode
+                      ? `radial-gradient(ellipse 45% 30% at ${bolt.left} ${bolt.top}, rgba(200, 220, 255, 0.32) 0%, transparent 70%)`
+                      : `radial-gradient(ellipse 45% 30% at ${bolt.left} ${bolt.top}, rgba(255, 255, 200, 0.38) 0%, transparent 70%)`,
+                    animation: `tglSkyFlash ${bolt.duration} ease-out infinite`,
+                    animationDelay: bolt.delay,
+                    willChange: 'opacity',
+                  }}
+                />
+              ))}
+            </>
           )}
         </div>
       )}
