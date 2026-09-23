@@ -17,6 +17,9 @@ export const DEFAULT_BGM_TRACKS: BgmTrack[] = [
 
 const STORAGE_KEY_BGM_TRACKS = 'tripgon_bgm_playlist';
 const STORAGE_KEY_BGM_AUTOPLAY = 'tripgon_bgm_autoplay';
+const STORAGE_KEY_BGM_DEFAULT_VOLUME = 'tripgon_bgm_default_volume';
+const STORAGE_KEY_BGM_SHUFFLE = 'tripgon_bgm_shuffle';
+const STORAGE_KEY_SLIDESHOW_INTERVAL = 'tripgon_slideshow_interval';
 
 export function getStoredBgmTracks(): BgmTrack[] {
   try {
@@ -57,6 +60,56 @@ export function saveStoredBgmAutoplay(enabled: boolean) {
   } catch {}
 }
 
+export function getStoredBgmDefaultVolume(): number {
+  try {
+    const val = localStorage.getItem(STORAGE_KEY_BGM_DEFAULT_VOLUME);
+    if (val !== null) {
+      const num = parseInt(val, 10);
+      if (!isNaN(num) && num >= 0 && num <= 100) return num;
+    }
+  } catch {}
+  return 50; // default 50%
+}
+
+export function saveStoredBgmDefaultVolume(vol: number) {
+  try {
+    const clamped = Math.max(0, Math.min(100, Math.round(vol)));
+    localStorage.setItem(STORAGE_KEY_BGM_DEFAULT_VOLUME, String(clamped));
+  } catch {}
+}
+
+export function getStoredBgmShuffle(): boolean {
+  try {
+    const val = localStorage.getItem(STORAGE_KEY_BGM_SHUFFLE);
+    return val === 'true'; // default to false
+  } catch {
+    return false;
+  }
+}
+
+export function saveStoredBgmShuffle(shuffle: boolean) {
+  try {
+    localStorage.setItem(STORAGE_KEY_BGM_SHUFFLE, String(shuffle));
+  } catch {}
+}
+
+export function getStoredSlideshowInterval(): number {
+  try {
+    const val = localStorage.getItem(STORAGE_KEY_SLIDESHOW_INTERVAL);
+    if (val !== null) {
+      const num = parseInt(val, 10);
+      if (!isNaN(num) && num >= 2000 && num <= 20000) return num;
+    }
+  } catch {}
+  return 4000; // default 4 seconds
+}
+
+export function saveStoredSlideshowInterval(ms: number) {
+  try {
+    localStorage.setItem(STORAGE_KEY_SLIDESHOW_INTERVAL, String(ms));
+  } catch {}
+}
+
 /**
  * Singleton Audio Player Controller for seamless BGM playback across lightbox slideshows
  */
@@ -65,9 +118,15 @@ class BgmPlayerManager {
   private currentTrackIndex = 0;
   private currentTrackId: string | null = null;
   private isPlayingState = false;
+  private currentVolume: number = 0.5; // 0.0 ~ 1.0 (default 50%)
+  private isShuffleState: boolean = false;
+  private fadeInterval: ReturnType<typeof setInterval> | null = null;
   private listeners: Set<() => void> = new Set();
 
   constructor() {
+    this.currentVolume = getStoredBgmDefaultVolume() / 100;
+    this.isShuffleState = getStoredBgmShuffle();
+
     if (typeof window !== 'undefined') {
       window.addEventListener('bgmTracksChanged', () => {
         const tracks = this.getPlayableTracks();
@@ -77,6 +136,20 @@ class BgmPlayerManager {
           this.currentTrackIndex = 0;
         }
         this.notify();
+      });
+    }
+  }
+
+  private initAudioIfNeeded() {
+    if (!this.audio) {
+      this.audio = new Audio();
+      this.audio.volume = this.currentVolume;
+      this.audio.addEventListener('ended', () => {
+        this.next();
+      });
+      this.audio.addEventListener('error', (err) => {
+        console.warn('Audio playback error:', err);
+        setTimeout(() => this.next(), 1000);
       });
     }
   }
@@ -110,6 +183,131 @@ class BgmPlayerManager {
     return this.isPlayingState;
   }
 
+  public getVolume(): number {
+    return this.currentVolume;
+  }
+
+  public getVolumePercent(): number {
+    return Math.round(this.currentVolume * 100);
+  }
+
+  public setVolume(vol: number) {
+    this.clearFade();
+    const clamped = Math.max(0, Math.min(1, vol));
+    this.currentVolume = clamped;
+    if (this.audio) {
+      this.audio.volume = clamped;
+    }
+    this.notify();
+  }
+
+  public setVolumePercent(pct: number) {
+    this.setVolume(pct / 100);
+  }
+
+  public isShuffle(): boolean {
+    return this.isShuffleState;
+  }
+
+  public setShuffle(shuffle: boolean) {
+    this.isShuffleState = shuffle;
+    saveStoredBgmShuffle(shuffle);
+    this.notify();
+  }
+
+  public toggleShuffle(): boolean {
+    const next = !this.isShuffleState;
+    this.setShuffle(next);
+    return next;
+  }
+
+  private clearFade() {
+    if (this.fadeInterval) {
+      clearInterval(this.fadeInterval);
+      this.fadeInterval = null;
+    }
+  }
+
+  /**
+   * Smoothly fades in volume from 0 to targetVol (default: currentVolume or default stored volume)
+   */
+  public fadeIn(targetVol?: number, durationMs = 600) {
+    this.clearFade();
+    const target = targetVol !== undefined ? Math.max(0, Math.min(1, targetVol)) : this.currentVolume;
+    this.initAudioIfNeeded();
+    if (!this.audio) return;
+
+    this.audio.volume = 0;
+    this.play();
+
+    const steps = 15;
+    const intervalTime = durationMs / steps;
+    const stepDelta = target / steps;
+    let stepCount = 0;
+
+    this.fadeInterval = setInterval(() => {
+      stepCount++;
+      if (!this.audio) {
+        this.clearFade();
+        return;
+      }
+      const nextVol = Math.min(target, stepCount * stepDelta);
+      this.audio.volume = nextVol;
+      this.currentVolume = nextVol;
+      this.notify();
+
+      if (stepCount >= steps) {
+        this.clearFade();
+        this.audio.volume = target;
+        this.currentVolume = target;
+        this.notify();
+      }
+    }, intervalTime);
+  }
+
+  /**
+   * Smoothly fades out volume from current volume to 0 and stops playback
+   */
+  public fadeOut(durationMs = 600): Promise<void> {
+    this.clearFade();
+    return new Promise((resolve) => {
+      if (!this.audio || !this.isPlayingState) {
+        this.stop();
+        resolve();
+        return;
+      }
+
+      const initialVol = this.currentVolume;
+      const steps = 15;
+      const intervalTime = durationMs / steps;
+      const stepDelta = initialVol / steps;
+      let stepCount = 0;
+
+      this.fadeInterval = setInterval(() => {
+        stepCount++;
+        if (!this.audio) {
+          this.clearFade();
+          resolve();
+          return;
+        }
+        const nextVol = Math.max(0, initialVol - stepCount * stepDelta);
+        this.audio.volume = nextVol;
+
+        if (stepCount >= steps || nextVol <= 0.01) {
+          this.clearFade();
+          this.stop();
+          // Restore volume setting for next playback
+          this.currentVolume = initialVol;
+          if (this.audio) {
+            this.audio.volume = initialVol;
+          }
+          this.notify();
+          resolve();
+        }
+      }, intervalTime);
+    });
+  }
+
   private isSameSource(audioSrc: string, targetUrl: string): boolean {
     if (!audioSrc || !targetUrl) return false;
     if (audioSrc === targetUrl) return true;
@@ -132,18 +330,16 @@ class BgmPlayerManager {
     this.currentTrackIndex = (index + tracks.length) % tracks.length;
     const track = tracks[this.currentTrackIndex];
 
-    if (!this.audio) {
-      this.audio = new Audio();
-      this.audio.addEventListener('ended', () => {
-        this.next();
-      });
-      this.audio.addEventListener('error', (err) => {
-        console.warn('Audio playback error:', err);
-        setTimeout(() => this.next(), 1000);
-      });
-    }
+    this.initAudioIfNeeded();
+    if (!this.audio) return;
 
-    const needNewSource = forceRestart || !this.currentTrackId || this.currentTrackId !== track.id || !this.isSameSource(this.audio.src, track.url);
+    this.audio.volume = this.currentVolume;
+
+    const needNewSource =
+      forceRestart ||
+      !this.currentTrackId ||
+      this.currentTrackId !== track.id ||
+      !this.isSameSource(this.audio.src, track.url);
 
     if (needNewSource) {
       this.currentTrackId = track.id;
@@ -179,7 +375,12 @@ class BgmPlayerManager {
 
     const track = tracks[this.currentTrackIndex % tracks.length];
 
-    if (this.audio && this.audio.src && this.currentTrackId === track?.id) {
+    this.initAudioIfNeeded();
+    if (!this.audio) return;
+
+    this.audio.volume = this.currentVolume;
+
+    if (this.audio.src && this.currentTrackId === track?.id) {
       this.audio
         .play()
         .then(() => {
@@ -195,6 +396,7 @@ class BgmPlayerManager {
   }
 
   public pause() {
+    this.clearFade();
     if (this.audio) {
       this.audio.pause();
     }
@@ -213,7 +415,16 @@ class BgmPlayerManager {
   public next() {
     const tracks = this.getPlayableTracks();
     if (tracks.length === 0) return;
-    this.playTrackAtIndex((this.currentTrackIndex + 1) % tracks.length, true);
+
+    if (this.isShuffleState && tracks.length > 1) {
+      let randIdx = Math.floor(Math.random() * tracks.length);
+      if (randIdx === this.currentTrackIndex) {
+        randIdx = (randIdx + 1) % tracks.length;
+      }
+      this.playTrackAtIndex(randIdx, true);
+    } else {
+      this.playTrackAtIndex((this.currentTrackIndex + 1) % tracks.length, true);
+    }
   }
 
   public prev() {
@@ -223,6 +434,7 @@ class BgmPlayerManager {
   }
 
   public stop() {
+    this.clearFade();
     if (this.audio) {
       this.audio.pause();
       try {

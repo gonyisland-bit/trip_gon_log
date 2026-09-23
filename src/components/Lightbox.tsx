@@ -1,7 +1,37 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, MessageSquare, Play, Pause, SkipBack, MapPin, Music, Volume2, VolumeX, SkipForward, Check } from 'lucide-react';
-import { bgmPlayer, getStoredBgmAutoplay, BgmTrack } from '../utils/audioHelper';
+import {
+  X,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  ChevronDown,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  MessageSquare,
+  Play,
+  Pause,
+  SkipBack,
+  MapPin,
+  Music,
+  Volume1,
+  Volume2,
+  VolumeX,
+  SkipForward,
+  Check,
+  Shuffle,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
+import {
+  bgmPlayer,
+  getStoredBgmAutoplay,
+  getStoredBgmDefaultVolume,
+  getStoredSlideshowInterval,
+  saveStoredSlideshowInterval,
+  BgmTrack,
+} from '../utils/audioHelper';
 
 export interface LightboxImageMeta {
   url: string;
@@ -19,9 +49,6 @@ interface LightboxProps {
   onClose: () => void;
   onNavigate: (index: number) => void;
 }
-
-// Slideshow interval in milliseconds
-const SLIDESHOW_INTERVAL = 4000;
 
 export function Lightbox({
   isOpen,
@@ -41,6 +68,7 @@ export function Lightbox({
   const [isSlideshow, setIsSlideshow] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [slideProgress, setSlideProgress] = useState(0); // 0-100 for progress bar
+  const [slideshowInterval, setSlideshowInterval] = useState(() => getStoredSlideshowInterval());
   const slideshowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const wasFullscreenBeforeSlideshowRef = useRef<boolean>(false);
@@ -48,6 +76,87 @@ export function Lightbox({
   // Auto-hide controls in slideshow mode
   const [isControlsVisible, setIsControlsVisible] = useState(true);
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clean view mode (hide bottom memo/captions in slideshow)
+  const [isCleanView, setIsCleanView] = useState(false);
+
+  // Pulse action feedback HUD on Space key (play/pause)
+  const [pulseAction, setPulseAction] = useState<'play' | 'pause' | null>(null);
+  const pulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerPulse = useCallback((action: 'play' | 'pause') => {
+    setPulseAction(action);
+    if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
+    pulseTimerRef.current = setTimeout(() => {
+      setPulseAction(null);
+    }, 700);
+  }, []);
+
+  // BGM Player & Volume state
+  const [isBgmPlaying, setIsBgmPlaying] = useState(() => bgmPlayer.isPlaying());
+  const [currentBgmTrack, setCurrentBgmTrack] = useState<BgmTrack | null>(() => bgmPlayer.getCurrentTrack());
+  const [isTrackListOpen, setIsTrackListOpen] = useState(false);
+  const [isBgmShuffle, setIsBgmShuffle] = useState(() => bgmPlayer.isShuffle());
+  const bgmPopoverRef = useRef<HTMLDivElement>(null);
+
+  // Volume HUD state
+  const [volume, setVolume] = useState(() => bgmPlayer.getVolumePercent());
+  const [isMuted, setIsMuted] = useState(() => bgmPlayer.getVolumePercent() === 0);
+  const prevVolumeBeforeMuteRef = useRef<number>(getStoredBgmDefaultVolume() || 50);
+  const [isVolumeHudVisible, setIsVolumeHudVisible] = useState(false);
+  const volumeHudTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showVolumeHud = useCallback(() => {
+    setIsVolumeHudVisible(true);
+    if (volumeHudTimerRef.current) clearTimeout(volumeHudTimerRef.current);
+    volumeHudTimerRef.current = setTimeout(() => {
+      setIsVolumeHudVisible(false);
+    }, 1500);
+  }, []);
+
+  const handleVolumeChange = useCallback((newPercent: number) => {
+    const clamped = Math.max(0, Math.min(100, Math.round(newPercent)));
+    bgmPlayer.setVolumePercent(clamped);
+    setVolume(clamped);
+    setIsMuted(clamped === 0);
+    showVolumeHud();
+  }, [showVolumeHud]);
+
+  const handleVolumeUp = useCallback(() => {
+    setVolume(prev => {
+      const next = Math.min(100, prev + 5);
+      handleVolumeChange(next);
+      return next;
+    });
+  }, [handleVolumeChange]);
+
+  const handleVolumeDown = useCallback(() => {
+    setVolume(prev => {
+      const next = Math.max(0, prev - 5);
+      handleVolumeChange(next);
+      return next;
+    });
+  }, [handleVolumeChange]);
+
+  const handleToggleMute = useCallback(() => {
+    if (volume > 0) {
+      prevVolumeBeforeMuteRef.current = volume;
+      handleVolumeChange(0);
+    } else {
+      const restore = prevVolumeBeforeMuteRef.current || getStoredBgmDefaultVolume() || 50;
+      handleVolumeChange(restore);
+    }
+  }, [volume, handleVolumeChange]);
+
+  const handleToggleShuffle = useCallback(() => {
+    const next = bgmPlayer.toggleShuffle();
+    setIsBgmShuffle(next);
+  }, []);
+
+  const handleChangeInterval = useCallback((newInterval: number) => {
+    setSlideshowInterval(newInterval);
+    saveStoredSlideshowInterval(newInterval);
+  }, []);
 
   const resetControlsTimer = useCallback(() => {
     setIsControlsVisible(true);
@@ -59,16 +168,14 @@ export function Lightbox({
     }
   }, [isSlideshow, isPaused]);
 
-  // BGM Player state
-  const [isBgmPlaying, setIsBgmPlaying] = useState(() => bgmPlayer.isPlaying());
-  const [currentBgmTrack, setCurrentBgmTrack] = useState<BgmTrack | null>(() => bgmPlayer.getCurrentTrack());
-  const [isTrackListOpen, setIsTrackListOpen] = useState(false);
-  const bgmPopoverRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     const unsub = bgmPlayer.subscribe(() => {
       setIsBgmPlaying(bgmPlayer.isPlaying());
       setCurrentBgmTrack(bgmPlayer.getCurrentTrack());
+      const curVol = bgmPlayer.getVolumePercent();
+      setVolume(curVol);
+      setIsMuted(curVol === 0);
+      setIsBgmShuffle(bgmPlayer.isShuffle());
     });
     return () => unsub();
   }, []);
@@ -378,7 +485,7 @@ export function Lightbox({
     const startTime = Date.now();
     progressTimerRef.current = setInterval(() => {
       const elapsed = Date.now() - startTime;
-      setSlideProgress(Math.min(100, (elapsed / SLIDESHOW_INTERVAL) * 100));
+      setSlideProgress(Math.min(100, (elapsed / slideshowInterval) * 100));
     }, 50);
 
     slideshowTimerRef.current = setTimeout(() => {
@@ -404,8 +511,8 @@ export function Lightbox({
         setFadeOutSrc(null);
         setFadeOutActive(false);
       }, 900); // slightly longer than CSS transition (700ms)
-    }, SLIDESHOW_INTERVAL);
-  }, [currentIndex, images, onNavigate, stopSlideshow]);
+    }, slideshowInterval);
+  }, [currentIndex, images, onNavigate, stopSlideshow, slideshowInterval]);
 
   // When slideshow is running and not paused, start a cycle on each index change
   useEffect(() => {
@@ -482,8 +589,11 @@ export function Lightbox({
     setIsPaused(false);
     setIsControlsVisible(true);
     resetZoom();
+    triggerPulse('play');
+
     if (getStoredBgmAutoplay()) {
-      bgmPlayer.play();
+      const defaultVol = getStoredBgmDefaultVolume() / 100;
+      bgmPlayer.fadeIn(defaultVol, 600);
     }
   };
 
@@ -492,7 +602,7 @@ export function Lightbox({
     setIsPaused(false);
     setIsControlsVisible(true);
     stopSlideshow();
-    bgmPlayer.stop();
+    await bgmPlayer.fadeOut(400);
 
     // Revert to non-fullscreen only if user wasn't in fullscreen before
     if (!wasFullscreenBeforeSlideshowRef.current) {
@@ -513,6 +623,7 @@ export function Lightbox({
   const handleTogglePause = () => {
     setIsPaused(prev => {
       const next = !prev;
+      triggerPulse(next ? 'pause' : 'play');
       if (next) {
         bgmPlayer.pause();
         setIsControlsVisible(true);
@@ -678,6 +789,26 @@ export function Lightbox({
         e.preventDefault();
         handleNext();
       }
+      // Volume & Slide Controls in Slideshow
+      if (isSlideshow) {
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          handleVolumeUp();
+        }
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          handleVolumeDown();
+        }
+        if (e.key === 'm' || e.key === 'M') {
+          e.preventDefault();
+          handleToggleMute();
+        }
+        if (e.key === 'c' || e.key === 'C') {
+          e.preventDefault();
+          setIsCleanView(prev => !prev);
+        }
+      }
+
       if (!isSlideshow) {
         if (e.key === '+' || e.key === '=' || e.code === 'NumpadAdd') {
           e.preventDefault();
@@ -716,7 +847,19 @@ export function Lightbox({
       document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, handlePrev, handleNext, onClose, isSlideshow, handleStartSlideshow, handleTogglePause, handleStopSlideshow]);
+  }, [
+    isOpen,
+    handlePrev,
+    handleNext,
+    onClose,
+    isSlideshow,
+    handleStartSlideshow,
+    handleTogglePause,
+    handleStopSlideshow,
+    handleVolumeUp,
+    handleVolumeDown,
+    handleToggleMute,
+  ]);
 
   // Reset zoom on image change
   useEffect(() => {
@@ -763,6 +906,16 @@ export function Lightbox({
       resetZoom();
     } else {
       setScale(2.5);
+    }
+  }
+
+  function handleSlideshowWheel(e: React.WheelEvent) {
+    if (!isSlideshow) return;
+    e.preventDefault();
+    if (e.deltaY < 0) {
+      handleVolumeUp();
+    } else if (e.deltaY > 0) {
+      handleVolumeDown();
     }
   }
 
@@ -896,28 +1049,56 @@ export function Lightbox({
 
               <div className="h-4 w-[1px] bg-white/20 mx-1" />
 
-              {/* BGM Toggle, Track Selector Popover, & Next Track Control */}
-              <div className="relative flex items-center bg-white/10 rounded-sm border border-white/20 px-1 py-0.5" ref={bgmPopoverRef}>
-                {/* Mute/Play Toggle */}
+              {/* BGM Controls Group */}
+              <div className="relative flex items-center bg-white/10 rounded-sm border border-white/20 px-1 py-0.5 gap-0.5" ref={bgmPopoverRef}>
+                {/* Mute / Unmute Toggle */}
                 <button
-                  onClick={() => bgmPlayer.toggle()}
+                  onClick={handleToggleMute}
                   className={`p-1 text-[9px] transition-all cursor-pointer ${
-                    isBgmPlaying ? 'text-orange-400 font-black' : 'text-white/50 hover:text-white'
+                    volume > 0 ? 'text-orange-400 font-black' : 'text-white/50 hover:text-white'
                   }`}
-                  title={isBgmPlaying ? '배경음악 일시정지' : '배경음악 재생'}
+                  title={volume === 0 ? '음소거 해제 (M)' : '음소거 (M)'}
                 >
-                  {isBgmPlaying ? <Volume2 className="w-3.5 h-3.5 animate-pulse text-orange-400" /> : <VolumeX className="w-3.5 h-3.5 opacity-60" />}
+                  {volume === 0 ? (
+                    <VolumeX className="w-3.5 h-3.5 opacity-60" />
+                  ) : volume < 50 ? (
+                    <Volume1 className="w-3.5 h-3.5 text-orange-400" />
+                  ) : (
+                    <Volume2 className="w-3.5 h-3.5 text-orange-400" />
+                  )}
+                </button>
+
+                {/* Volume Percent HUD Trigger Button */}
+                <button
+                  type="button"
+                  onClick={showVolumeHud}
+                  className="px-1 py-0.5 font-mono text-[9px] font-bold text-white/80 hover:text-orange-400 transition-colors cursor-pointer border-r border-white/15 pr-1.5"
+                  title="볼륨 조절 (방향키 ↑/↓, 마우스 휠)"
+                >
+                  {volume}%
                 </button>
 
                 {/* Track Title Button: Click to open track list selector */}
                 <button
                   onClick={() => setIsTrackListOpen(prev => !prev)}
-                  className={`flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer max-w-[130px] truncate ${
+                  className={`flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer max-w-[120px] truncate ${
                     isBgmPlaying ? 'text-orange-400' : 'text-white/70 hover:text-white'
                   }`}
                   title="클릭하여 음원 선택"
                 >
                   <span className="truncate">{currentBgmTrack?.title || (isBgmPlaying ? 'BGM ON' : 'BGM OFF')}</span>
+                </button>
+
+                {/* Shuffle Mode Toggle */}
+                <button
+                  type="button"
+                  onClick={handleToggleShuffle}
+                  className={`p-1 transition-colors cursor-pointer border-l border-white/15 ${
+                    isBgmShuffle ? 'text-orange-400 bg-white/10' : 'text-white/60 hover:text-white'
+                  }`}
+                  title={isBgmShuffle ? '셔플 재생 중 (클릭 시 순차 재생)' : '순차 재생 중 (클릭 시 셔플 재생)'}
+                >
+                  <Shuffle className="w-3 h-3" />
                 </button>
 
                 {/* Next Track Button */}
@@ -972,6 +1153,42 @@ export function Lightbox({
                 )}
               </div>
 
+              {/* Slideshow Speed (Interval) Selector */}
+              <div className="hidden sm:flex items-center bg-white/10 rounded-sm border border-white/20 p-0.5">
+                {[
+                  { label: '3s', val: 3000 },
+                  { label: '4s', val: 4000 },
+                  { label: '6s', val: 6000 },
+                  { label: '8s', val: 8000 },
+                ].map((item) => (
+                  <button
+                    key={item.val}
+                    type="button"
+                    onClick={() => handleChangeInterval(item.val)}
+                    className={`px-1.5 py-0.5 font-mono text-[9px] uppercase transition-all rounded-xs cursor-pointer ${
+                      slideshowInterval === item.val
+                        ? 'bg-orange-500 text-white font-bold shadow-xs'
+                        : 'text-white/60 hover:text-white'
+                    }`}
+                    title={`슬라이드 전환 속도 ${item.label}`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Clean View (Caption Toggle) Button */}
+              <button
+                type="button"
+                onClick={() => setIsCleanView((prev) => !prev)}
+                className={`p-2 rounded-full transition-all cursor-pointer ${
+                  isCleanView ? 'bg-orange-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'
+                }`}
+                title={isCleanView ? '자막 보이기 (C)' : '자막 숨기기 (C)'}
+              >
+                {isCleanView ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
+
               <div className="h-4 w-[1px] bg-white/20 mx-1" />
               {/* Stop slideshow */}
               <button
@@ -1004,13 +1221,15 @@ export function Lightbox({
           {/* Bottom info + progress bar */}
           <div className="pointer-events-auto bg-gradient-to-t from-black/85 to-transparent px-6 pb-6 pt-10 flex flex-col items-center gap-3">
             {/* Place & memo without duplicate title/location */}
-            {(() => {
+            {!isCleanView && (() => {
               const primaryTitle = (currentMeta.place || currentMeta.imgNote || '').trim();
               const secondaryLoc = (currentMeta.location && currentMeta.location.trim() !== primaryTitle) ? currentMeta.location.trim() : '';
               const extraNote = (currentMeta.imgNote && currentMeta.imgNote.trim() !== primaryTitle && currentMeta.imgNote.trim() !== secondaryLoc) ? currentMeta.imgNote.trim() : '';
 
+              if (!primaryTitle && !currentMeta.date && !secondaryLoc && !extraNote) return null;
+
               return (
-                <div className="text-center max-w-xl px-4">
+                <div className="text-center max-w-xl px-4 animate-in fade-in duration-200">
                   {primaryTitle && (
                     <div className="text-white font-bold text-sm md:text-base tracking-wide uppercase mb-1 drop-shadow-md">
                       {primaryTitle}
@@ -1064,6 +1283,92 @@ export function Lightbox({
                   />
                 ))}
               </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── SWISS MINIMAL VOLUME HUD INDICATOR ── */}
+      {isSlideshow && (
+        <div
+          className={`fixed right-4 md:right-8 top-1/2 -translate-y-1/2 z-50 pointer-events-auto transition-all duration-300 ${
+            isVolumeHudVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4 pointer-events-none'
+          }`}
+          onMouseEnter={() => {
+            if (volumeHudTimerRef.current) clearTimeout(volumeHudTimerRef.current);
+          }}
+          onMouseLeave={() => {
+            showVolumeHud();
+          }}
+        >
+          <div className="bg-black/90 backdrop-blur-md border border-white/20 px-2.5 py-3.5 flex flex-col items-center gap-2.5 shadow-2xl rounded-xs min-w-[48px]">
+            {/* Volume Up Button */}
+            <button
+              type="button"
+              onClick={handleVolumeUp}
+              className="p-1 text-white/70 hover:text-white hover:bg-white/10 rounded-xs transition-colors cursor-pointer"
+              title="볼륨 올리기 (↑)"
+            >
+              <ChevronUp className="w-4 h-4" />
+            </button>
+
+            {/* Vertical Volume Gauge */}
+            <div
+              className="w-1.5 h-28 bg-white/20 rounded-full overflow-hidden flex flex-col justify-end cursor-pointer relative"
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const clickY = e.clientY - rect.top;
+                const pct = Math.round((1 - clickY / rect.height) * 100);
+                handleVolumeChange(pct);
+              }}
+              title={`볼륨: ${volume}%`}
+            >
+              <div
+                className="w-full bg-orange-500 transition-all duration-75 rounded-full"
+                style={{ height: `${volume}%` }}
+              />
+            </div>
+
+            {/* Volume Down Button */}
+            <button
+              type="button"
+              onClick={handleVolumeDown}
+              className="p-1 text-white/70 hover:text-white hover:bg-white/10 rounded-xs transition-colors cursor-pointer"
+              title="볼륨 내리기 (↓)"
+            >
+              <ChevronDown className="w-4 h-4" />
+            </button>
+
+            {/* Mute/Icon + Percentage */}
+            <button
+              type="button"
+              onClick={handleToggleMute}
+              className="flex flex-col items-center gap-0.5 mt-0.5 text-white/80 hover:text-orange-400 transition-colors cursor-pointer"
+              title={volume === 0 ? '음소거 해제 (M)' : '음소거 (M)'}
+            >
+              {volume === 0 ? (
+                <VolumeX className="w-3.5 h-3.5 opacity-60 text-red-400" />
+              ) : volume < 50 ? (
+                <Volume1 className="w-3.5 h-3.5 text-orange-400" />
+              ) : (
+                <Volume2 className="w-3.5 h-3.5 text-orange-400" />
+              )}
+              <span className="font-mono text-[9px] font-bold text-white tracking-tighter">
+                {volume}%
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── SPACE KEY PLAY/PAUSE PULSE HUD ── */}
+      {isSlideshow && pulseAction && (
+        <div className="pointer-events-none fixed inset-0 flex items-center justify-center z-40 transition-opacity duration-200">
+          <div className="w-16 h-16 rounded-full bg-black/70 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-2xl animate-in zoom-in-75 fade-in duration-150">
+            {pulseAction === 'play' ? (
+              <Play className="w-7 h-7 text-orange-400 fill-orange-400/20 translate-x-0.5" />
+            ) : (
+              <Pause className="w-7 h-7 text-white" />
             )}
           </div>
         </div>
@@ -1176,7 +1481,7 @@ export function Lightbox({
       {/* Main image area */}
       <div
         className="flex-grow flex items-center justify-center relative overflow-hidden w-full"
-        onWheel={isSlideshow ? undefined : handleWheel}
+        onWheel={isSlideshow ? handleSlideshowWheel : handleWheel}
       >
         {/* Left Arrow */}
         {images.length > 1 && (!isSlideshow || isControlsVisible) && (

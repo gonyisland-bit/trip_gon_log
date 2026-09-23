@@ -61,6 +61,9 @@ import {
   BgmTrack,
   saveStoredBgmTracks,
   saveStoredBgmAutoplay,
+  saveStoredBgmDefaultVolume,
+  saveStoredBgmShuffle,
+  saveStoredSlideshowInterval,
 } from './utils/audioHelper';
 import { 
   initialTrips, 
@@ -1203,6 +1206,15 @@ function App() {
         if (data.bgmAutoplay !== undefined) {
           saveStoredBgmAutoplay(data.bgmAutoplay);
         }
+        if (data.bgmDefaultVolume !== undefined) {
+          saveStoredBgmDefaultVolume(data.bgmDefaultVolume);
+        }
+        if (data.bgmShuffle !== undefined) {
+          saveStoredBgmShuffle(data.bgmShuffle);
+        }
+        if (data.slideshowInterval !== undefined) {
+          saveStoredSlideshowInterval(data.slideshowInterval);
+        }
       }
       // Always mark settings as loaded, even if doc doesn't exist (prevents premature hydration)
       setSettingsLoaded(true);
@@ -2005,18 +2017,44 @@ function App() {
     } catch (_) {}
   };
 
-  const handleSaveBgmSettings = async (tracks: BgmTrack[], autoplay?: boolean) => {
+  const handleSaveBgmSettings = async (
+    tracks: BgmTrack[],
+    autoplay?: boolean,
+    defaultVolume?: number,
+    shuffle?: boolean,
+    defaultInterval?: number
+  ) => {
     try {
       saveStoredBgmTracks(tracks);
       if (autoplay !== undefined) {
         saveStoredBgmAutoplay(autoplay);
       }
+      if (defaultVolume !== undefined) {
+        saveStoredBgmDefaultVolume(defaultVolume);
+      }
+      if (shuffle !== undefined) {
+        saveStoredBgmShuffle(shuffle);
+      }
+      if (defaultInterval !== undefined) {
+        saveStoredSlideshowInterval(defaultInterval);
+      }
+
       const dataToSave: any = {
         bgmPlaylist: cleanForFirestore(tracks),
       };
       if (autoplay !== undefined) {
         dataToSave.bgmAutoplay = autoplay;
       }
+      if (defaultVolume !== undefined) {
+        dataToSave.bgmDefaultVolume = defaultVolume;
+      }
+      if (shuffle !== undefined) {
+        dataToSave.bgmShuffle = shuffle;
+      }
+      if (defaultInterval !== undefined) {
+        dataToSave.slideshowInterval = defaultInterval;
+      }
+
       await setDoc(doc(db, 'users', 'public', 'settings', 'home'), cleanForFirestore(dataToSave), { merge: true });
     } catch (err) {
       console.error("Failed to save BGM settings to Firestore:", err);

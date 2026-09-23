@@ -1,7 +1,43 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Save, Settings, Loader2, Trash2, RotateCcw, AlertTriangle, Star, Check, Music, Upload, ArrowUp, ArrowDown, Play, Pause, RefreshCw, Volume2 } from 'lucide-react';
+import {
+  X,
+  Save,
+  Settings,
+  Loader2,
+  Trash2,
+  RotateCcw,
+  AlertTriangle,
+  Star,
+  Check,
+  Music,
+  Upload,
+  ArrowUp,
+  ArrowDown,
+  Play,
+  Pause,
+  RefreshCw,
+  Volume1,
+  Volume2,
+  VolumeX,
+  Shuffle,
+  Clock,
+} from 'lucide-react';
 import { Trip } from '../types';
-import { BgmTrack, DEFAULT_BGM_TRACKS, getStoredBgmTracks, saveStoredBgmTracks, getStoredBgmAutoplay, saveStoredBgmAutoplay, bgmPlayer } from '../utils/audioHelper';
+import {
+  BgmTrack,
+  DEFAULT_BGM_TRACKS,
+  getStoredBgmTracks,
+  saveStoredBgmTracks,
+  getStoredBgmAutoplay,
+  saveStoredBgmAutoplay,
+  getStoredBgmDefaultVolume,
+  saveStoredBgmDefaultVolume,
+  getStoredBgmShuffle,
+  saveStoredBgmShuffle,
+  getStoredSlideshowInterval,
+  saveStoredSlideshowInterval,
+  bgmPlayer,
+} from '../utils/audioHelper';
 import { uploadFileToR2 } from '../utils/storageHelper';
 
 interface SettingsModalProps {
@@ -31,7 +67,13 @@ interface SettingsModalProps {
   marqueeShow: boolean;
   marqueeMessage: string;
   marqueeSpeed: number;
-  onSaveBgmSettings?: (tracks: BgmTrack[], autoplay?: boolean) => Promise<void>;
+  onSaveBgmSettings?: (
+    tracks: BgmTrack[],
+    autoplay?: boolean,
+    defaultVolume?: number,
+    shuffle?: boolean,
+    defaultInterval?: number
+  ) => Promise<void>;
 }
 
 type SettingsTab = 'general' | 'music' | 'trash';
@@ -69,9 +111,12 @@ export function SettingsModal({
   const [loadingId, setLoadingId] = useState<number | null>(null);
   const [playVideoOnActivate, setPlayVideoOnActivate] = useState(() => localStorage.getItem('playVideoOnActivate') !== 'false');
 
-  // BGM Playlist state
+  // BGM Playlist & Audio Settings state
   const [bgmTracks, setBgmTracks] = useState<BgmTrack[]>(() => getStoredBgmTracks());
   const [bgmAutoplay, setBgmAutoplay] = useState<boolean>(() => getStoredBgmAutoplay());
+  const [bgmDefaultVolume, setBgmDefaultVolume] = useState<number>(() => getStoredBgmDefaultVolume());
+  const [bgmShuffle, setBgmShuffle] = useState<boolean>(() => getStoredBgmShuffle());
+  const [slideshowInterval, setSlideshowInterval] = useState<number>(() => getStoredSlideshowInterval());
   const [isUploadingBgm, setIsUploadingBgm] = useState<boolean>(false);
   const [previewTrackId, setPreviewTrackId] = useState<string | null>(null);
   const [isDraggingFile, setIsDraggingFile] = useState<boolean>(false);
@@ -102,6 +147,9 @@ export function SettingsModal({
       setActiveTab('general');
       setBgmTracks(getStoredBgmTracks());
       setBgmAutoplay(getStoredBgmAutoplay());
+      setBgmDefaultVolume(getStoredBgmDefaultVolume());
+      setBgmShuffle(getStoredBgmShuffle());
+      setSlideshowInterval(getStoredSlideshowInterval());
     }
   }, [
     isOpen,
@@ -218,6 +266,14 @@ export function SettingsModal({
     setBgmAutoplay(val);
   };
 
+  const handleDefaultVolumeChange = (newVol: number) => {
+    const clamped = Math.max(0, Math.min(100, Math.round(newVol)));
+    setBgmDefaultVolume(clamped);
+    if (previewAudioRef.current) {
+      previewAudioRef.current.volume = clamped / 100;
+    }
+  };
+
   const handleTogglePreviewTrack = (track: BgmTrack) => {
     if (previewTrackId === track.id) {
       if (previewAudioRef.current) {
@@ -231,6 +287,7 @@ export function SettingsModal({
       previewAudioRef.current.pause();
     }
     const audio = new Audio(track.url);
+    audio.volume = bgmDefaultVolume / 100;
     previewAudioRef.current = audio;
     audio.addEventListener('ended', () => setPreviewTrackId(null));
     audio.play().then(() => {
@@ -573,29 +630,138 @@ export function SettingsModal({
           {/* MUSIC (BGM) TAB */}
           {activeTab === 'music' && (
             <div className="p-6 md:p-8 space-y-6">
-              {/* Autoplay setting */}
-              <div className="flex items-center justify-between p-3.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider">
-                    슬라이드쇼 시작 시 BGM 자동 재생
-                  </span>
-                  <span className="text-[10px] text-black/50 dark:text-white/50">
-                    라이트박스 슬라이드쇼 재생 버튼을 누를 때 선택된 배경음악을 자동으로 시작합니다.
+              {/* Default Volume setting */}
+              <div className="p-4 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Volume2 className="w-4 h-4 text-orange-500" />
+                    <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider">
+                      슬라이드쇼 음악 기본 볼륨
+                    </span>
+                  </div>
+                  <span className="font-mono text-xs font-black text-orange-500">
+                    {bgmDefaultVolume}%
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleToggleAutoplay(!bgmAutoplay)}
-                  className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
-                    bgmAutoplay ? 'bg-orange-500' : 'bg-black/20 dark:bg-white/20'
-                  }`}
-                >
-                  <span
-                    className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                      bgmAutoplay ? 'translate-x-5' : 'translate-x-0'
-                    }`}
+                <p className="text-[10px] text-black/50 dark:text-white/50">
+                  라이트박스 슬라이드쇼 실행 시 시작되는 배경음악 기본 음량입니다. (기본값: 50%)
+                </p>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={bgmDefaultVolume}
+                    onChange={(e) => handleDefaultVolumeChange(Number(e.target.value))}
+                    className="w-full accent-orange-500 cursor-pointer h-1.5 bg-black/20 dark:bg-white/20 rounded-lg appearance-none"
                   />
-                </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {[30, 50, 70, 100].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => handleDefaultVolumeChange(preset)}
+                        className={`px-2 py-0.5 text-[9px] font-mono rounded-xs border transition-colors cursor-pointer ${
+                          bgmDefaultVolume === preset
+                            ? 'bg-orange-500 text-white border-orange-500 font-bold'
+                            : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'
+                        }`}
+                      >
+                        {preset}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Autoplay & Shuffle settings (Grid) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Autoplay setting */}
+                <div className="flex items-center justify-between p-3.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider">
+                      BGM 자동 재생
+                    </span>
+                    <span className="text-[10px] text-black/50 dark:text-white/50">
+                      슬라이드쇼 시작 시 자동 재생
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleAutoplay(!bgmAutoplay)}
+                    className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                      bgmAutoplay ? 'bg-orange-500' : 'bg-black/20 dark:bg-white/20'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                        bgmAutoplay ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Shuffle setting */}
+                <div className="flex items-center justify-between p-3.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider">
+                      BGM 셔플(무작위) 재생
+                    </span>
+                    <span className="text-[10px] text-black/50 dark:text-white/50">
+                      플레이리스트를 랜덤하게 순환
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setBgmShuffle((prev) => !prev)}
+                    className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                      bgmShuffle ? 'bg-orange-500' : 'bg-black/20 dark:bg-white/20'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                        bgmShuffle ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+
+              {/* Slideshow Interval setting */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 gap-2">
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
+                    <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider">
+                      슬라이드쇼 기본 전환 간격
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-black/50 dark:text-white/50">
+                    한 사진이 머무르는 시간입니다. (라이트박스 상단에서도 즉시 변경 가능)
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  {[
+                    { label: '3초', val: 3000 },
+                    { label: '4초', val: 4000 },
+                    { label: '6초', val: 6000 },
+                    { label: '8초', val: 8000 },
+                  ].map((item) => (
+                    <button
+                      key={item.val}
+                      type="button"
+                      onClick={() => setSlideshowInterval(item.val)}
+                      className={`px-2.5 py-1 text-xs font-mono rounded-xs border transition-colors cursor-pointer ${
+                        slideshowInterval === item.val
+                          ? 'bg-orange-500 text-white border-orange-500 font-bold'
+                          : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Upload Zone (Drag & Drop + File Selector) */}
@@ -760,11 +926,16 @@ export function SettingsModal({
                 <button
                   type="button"
                   onClick={async () => {
+                    saveStoredBgmTracks(bgmTracks);
+                    saveStoredBgmAutoplay(bgmAutoplay);
+                    saveStoredBgmDefaultVolume(bgmDefaultVolume);
+                    saveStoredBgmShuffle(bgmShuffle);
+                    saveStoredSlideshowInterval(slideshowInterval);
+                    bgmPlayer.setVolumePercent(bgmDefaultVolume);
+                    bgmPlayer.setShuffle(bgmShuffle);
+
                     if (onSaveBgmSettings) {
-                      await onSaveBgmSettings(bgmTracks, bgmAutoplay);
-                    } else {
-                      saveStoredBgmTracks(bgmTracks);
-                      saveStoredBgmAutoplay(bgmAutoplay);
+                      await onSaveBgmSettings(bgmTracks, bgmAutoplay, bgmDefaultVolume, bgmShuffle, slideshowInterval);
                     }
                     onClose();
                   }}

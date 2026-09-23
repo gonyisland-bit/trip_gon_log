@@ -80,6 +80,12 @@ import {
   saveStoredBgmTracks,
   getStoredBgmAutoplay,
   saveStoredBgmAutoplay,
+  getStoredBgmDefaultVolume,
+  saveStoredBgmDefaultVolume,
+  getStoredBgmShuffle,
+  saveStoredBgmShuffle,
+  getStoredSlideshowInterval,
+  saveStoredSlideshowInterval,
   bgmPlayer
 } from '../utils/audioHelper';
 import {
@@ -167,7 +173,13 @@ interface ManageHubPageProps {
   isDarkMode: boolean;
   onDirtyChange?: (isDirty: boolean) => void;
   saveRef?: React.MutableRefObject<((showModal?: boolean) => Promise<void>) | null>;
-  onSaveBgmSettings?: (tracks: BgmTrack[], autoplay?: boolean) => Promise<void>;
+  onSaveBgmSettings?: (
+    tracks: BgmTrack[],
+    autoplay?: boolean,
+    defaultVolume?: number,
+    shuffle?: boolean,
+    defaultInterval?: number
+  ) => Promise<void>;
 }
 
 export function ManageHubPage({
@@ -902,6 +914,9 @@ export function ManageHubPage({
   // BGM Playlist Management State
   const [bgmTracks, setBgmTracks] = useState<BgmTrack[]>(() => getStoredBgmTracks());
   const [bgmAutoplay, setBgmAutoplay] = useState<boolean>(() => getStoredBgmAutoplay());
+  const [bgmDefaultVolume, setBgmDefaultVolume] = useState<number>(() => getStoredBgmDefaultVolume());
+  const [bgmShuffle, setBgmShuffle] = useState<boolean>(() => getStoredBgmShuffle());
+  const [slideshowInterval, setSlideshowInterval] = useState<number>(() => getStoredSlideshowInterval());
   const [isUploadingBgm, setIsUploadingBgm] = useState<boolean>(false);
   const [previewTrackId, setPreviewTrackId] = useState<string | null>(null);
   const [isDraggingBgmFile, setIsDraggingBgmFile] = useState<boolean>(false);
@@ -909,9 +924,18 @@ export function ManageHubPage({
   const bgmFileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Snapshot of saved BGM state for dirty checking and rollback
-  const savedBgmSnapshotRef = useRef<{ tracksJson: string; autoplay: boolean }>({
+  const savedBgmSnapshotRef = useRef<{
+    tracksJson: string;
+    autoplay: boolean;
+    defaultVolume: number;
+    shuffle: boolean;
+    interval: number;
+  }>({
     tracksJson: JSON.stringify(getStoredBgmTracks()),
     autoplay: getStoredBgmAutoplay(),
+    defaultVolume: getStoredBgmDefaultVolume(),
+    shuffle: getStoredBgmShuffle(),
+    interval: getStoredSlideshowInterval(),
   });
 
   // Stop preview audio when unmounting
@@ -2369,9 +2393,12 @@ export function ManageHubPage({
     const snap = savedBgmSnapshotRef.current;
     return (
       (snap.tracksJson || '[]') !== JSON.stringify(bgmTracks) ||
-      snap.autoplay !== bgmAutoplay
+      snap.autoplay !== bgmAutoplay ||
+      snap.defaultVolume !== bgmDefaultVolume ||
+      snap.shuffle !== bgmShuffle ||
+      snap.interval !== slideshowInterval
     );
-  }, [bgmTracks, bgmAutoplay, saveRevision]);
+  }, [bgmTracks, bgmAutoplay, bgmDefaultVolume, bgmShuffle, slideshowInterval, saveRevision]);
 
   // Dirty tracking for PRESETS list
   const isPresetsDirty = useMemo(() => {
@@ -2389,6 +2416,9 @@ export function ManageHubPage({
     savedBgmSnapshotRef.current = {
       tracksJson: JSON.stringify(bgmTracks),
       autoplay: bgmAutoplay,
+      defaultVolume: bgmDefaultVolume,
+      shuffle: bgmShuffle,
+      interval: slideshowInterval,
     };
     savedPresetsSnapshotRef.current = JSON.stringify(presetsList);
     savedCalendarCitiesSnapshotRef.current = JSON.stringify(calendarWeatherCities);
@@ -4031,11 +4061,16 @@ export function ManageHubPage({
 
       // 6. Save BGM settings to Firestore & localStorage
       try {
+        saveStoredBgmTracks(bgmTracks);
+        saveStoredBgmAutoplay(bgmAutoplay);
+        saveStoredBgmDefaultVolume(bgmDefaultVolume);
+        saveStoredBgmShuffle(bgmShuffle);
+        saveStoredSlideshowInterval(slideshowInterval);
+        bgmPlayer.setVolumePercent(bgmDefaultVolume);
+        bgmPlayer.setShuffle(bgmShuffle);
+
         if (onSaveBgmSettings) {
-          await onSaveBgmSettings(bgmTracks, bgmAutoplay);
-        } else {
-          saveStoredBgmTracks(bgmTracks);
-          saveStoredBgmAutoplay(bgmAutoplay);
+          await onSaveBgmSettings(bgmTracks, bgmAutoplay, bgmDefaultVolume, bgmShuffle, slideshowInterval);
         }
       } catch (err) {
         console.warn('BGM save notice:', err);
@@ -8194,27 +8229,95 @@ export function ManageHubPage({
                   </div>
                 </div>
 
-                {/* Autoplay Option */}
-                <div className="flex items-center justify-between p-3.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/15 dark:border-white/15">
-                  <div className="flex flex-col gap-0.5 min-w-0 pr-2">
-                    <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-sans truncate">
-                      슬라이드쇼 BGM 자동 재생
-                    </span>
-                    <span className="text-[10px] text-black/50 dark:text-white/50 font-mono truncate">
-                      슬라이드쇼 시작 시 활성 BGM 트랙 자동 재생
-                    </span>
+                {/* Volume & Options Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* Default Volume Option */}
+                  <div className="flex flex-col gap-2 p-3.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/15 dark:border-white/15">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-sans truncate">
+                        BGM 기본 볼륨
+                      </span>
+                      <span className="font-mono text-xs font-black text-orange-500">
+                        {bgmDefaultVolume}%
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={bgmDefaultVolume}
+                        onChange={(e) => setBgmDefaultVolume(Number(e.target.value))}
+                        className="w-full accent-orange-500 cursor-pointer h-1.5 bg-black/20 dark:bg-white/20 rounded-lg appearance-none"
+                      />
+                      <div className="flex items-center gap-1 shrink-0">
+                        {[30, 50, 70, 100].map((preset) => (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => setBgmDefaultVolume(preset)}
+                            className={`px-1.5 py-0.5 text-[9px] font-mono border transition-colors cursor-pointer ${
+                              bgmDefaultVolume === preset
+                                ? 'bg-orange-500 text-white border-orange-500 font-bold'
+                                : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:bg-black/5'
+                            }`}
+                          >
+                            {preset}%
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleToggleBgmAutoplay(!bgmAutoplay)}
-                    className={`px-3 py-1 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer ${
-                      bgmAutoplay
-                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                        : 'border-black/20 dark:border-white/20 text-black/40 dark:text-white/40'
-                    }`}
-                  >
-                    {bgmAutoplay ? 'ON' : 'OFF'}
-                  </button>
+
+                  {/* Autoplay & Shuffle Subgrid */}
+                  <div className="flex flex-col gap-2">
+                    {/* Autoplay Option */}
+                    <div className="flex items-center justify-between p-3.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/15 dark:border-white/15">
+                      <div className="flex flex-col gap-0.5 min-w-0 pr-2">
+                        <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-sans truncate">
+                          슬라이드쇼 BGM 자동 재생
+                        </span>
+                        <span className="text-[10px] text-black/50 dark:text-white/50 font-mono truncate">
+                          쇼 시작 시 자동 재생
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleBgmAutoplay(!bgmAutoplay)}
+                        className={`px-3 py-1 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer ${
+                          bgmAutoplay
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                            : 'border-black/20 dark:border-white/20 text-black/40 dark:text-white/40'
+                        }`}
+                      >
+                        {bgmAutoplay ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+
+                    {/* Shuffle Option */}
+                    <div className="flex items-center justify-between p-3.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/15 dark:border-white/15">
+                      <div className="flex flex-col gap-0.5 min-w-0 pr-2">
+                        <span className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-sans truncate">
+                          BGM 셔플(무작위) 재생
+                        </span>
+                        <span className="text-[10px] text-black/50 dark:text-white/50 font-mono truncate">
+                          랜덤 순서 순환
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setBgmShuffle((prev) => !prev)}
+                        className={`px-3 py-1 text-xs font-mono font-bold uppercase border transition-colors cursor-pointer ${
+                          bgmShuffle
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                            : 'border-black/20 dark:border-white/20 text-black/40 dark:text-white/40'
+                        }`}
+                      >
+                        {bgmShuffle ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Add Track */}
