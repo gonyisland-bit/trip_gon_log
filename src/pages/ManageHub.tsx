@@ -7,6 +7,7 @@ import {
   RotateCcw,
   RotateCw,
   Copy, 
+  ClipboardPaste,
   ArrowRightLeft, 
   ArrowLeft,
   ArrowUp,
@@ -5839,6 +5840,95 @@ export function ManageHubPage({
                                 className="hidden"
                               />
                             </label>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const currentUrl = editVideoUrl || editImg;
+                                if (!currentUrl) return alert('복사할 미디어가 없습니다.');
+                                try {
+                                  await navigator.clipboard.writeText(currentUrl);
+                                  alert('MAIN 미디어 URL이 클립보드에 복사되었습니다.');
+                                } catch (err) {
+                                  console.error(err);
+                                  alert('클립보드 복사 실패');
+                                }
+                              }}
+                              className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                              title="현재 MAIN 미디어 URL 복사"
+                            >
+                              <Copy className="w-3 h-3" />
+                              <span>COPY</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  if (navigator.clipboard && navigator.clipboard.read) {
+                                    const items = await navigator.clipboard.read();
+                                    for (const item of items) {
+                                      const imageType = item.types.find(t => t.startsWith('image/'));
+                                      if (imageType) {
+                                        const blob = await item.getType(imageType);
+                                        const ext = imageType.split('/')[1] || 'png';
+                                        const file = new File([blob], `pasted_${Date.now()}.${ext}`, { type: imageType });
+                                        setIsUploading(true);
+                                        try {
+                                          const compressedBlob = await compressImage(file, 1920, 1080, 0.85);
+                                          const url = await uploadFileToR2(compressedBlob, `covers/${Date.now()}_${file.name}`);
+                                          setEditImg(url);
+                                          setEditVideoUrl('');
+                                        } finally {
+                                          setIsUploading(false);
+                                        }
+                                        return;
+                                      }
+                                    }
+                                  }
+                                  if (navigator.clipboard && navigator.clipboard.readText) {
+                                    const text = await navigator.clipboard.readText();
+                                    if (text && text.trim()) {
+                                      const val = text.trim();
+                                      if (val.match(/\.(mp4|webm|mov)(\?.*)?$/i)) {
+                                        setEditVideoUrl(val);
+                                        setEditImg('');
+                                      } else {
+                                        setEditImg(val);
+                                        setEditVideoUrl('');
+                                      }
+                                      return;
+                                    }
+                                  }
+                                  alert('클립보드에 이미지 또는 URL이 없습니다.');
+                                } catch (err) {
+                                  console.warn(err);
+                                  alert('클립보드 붙여넣기에 실패했습니다. URL 입력창에서 Ctrl+V를 사용해주세요.');
+                                }
+                              }}
+                              className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                              title="클립보드 미디어 붙여넣기"
+                            >
+                              <ClipboardPaste className="w-3 h-3" />
+                              <span>PASTE</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const currentUrl = editVideoUrl || editImg;
+                                if (!currentUrl) return alert('복사할 MAIN 미디어가 없습니다.');
+                                if (editVideoUrl) {
+                                  setEditHeroVideoUrl(editVideoUrl);
+                                  setEditHeroImg('');
+                                } else {
+                                  setEditHeroImg(editImg);
+                                  setEditHeroVideoUrl('');
+                                }
+                                alert('MAIN 미디어가 HERO로 복사되었습니다.');
+                              }}
+                              className="px-2.5 bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                              title="MAIN 미디어를 HERO로 복사"
+                            >
+                              <span>TO HERO</span>
+                            </button>
                           </div>
 
                           {/* MAIN Drag & Drop Box */}
@@ -5990,6 +6080,95 @@ export function ManageHubPage({
                                 className="hidden"
                               />
                             </label>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const currentUrl = editHeroVideoUrl || editHeroImg;
+                                if (!currentUrl) return alert('복사할 HERO 미디어가 없습니다.');
+                                try {
+                                  await navigator.clipboard.writeText(currentUrl);
+                                  alert('HERO 미디어 URL이 클립보드에 복사되었습니다.');
+                                } catch (err) {
+                                  console.error(err);
+                                  alert('클립보드 복사 실패');
+                                }
+                              }}
+                              className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                              title="현재 HERO 미디어 URL 복사"
+                            >
+                              <Copy className="w-3 h-3" />
+                              <span>COPY</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  if (navigator.clipboard && navigator.clipboard.read) {
+                                    const items = await navigator.clipboard.read();
+                                    for (const item of items) {
+                                      const imageType = item.types.find(t => t.startsWith('image/'));
+                                      if (imageType) {
+                                        const blob = await item.getType(imageType);
+                                        const ext = imageType.split('/')[1] || 'png';
+                                        const file = new File([blob], `hero_pasted_${Date.now()}.${ext}`, { type: imageType });
+                                        setIsUploading(true);
+                                        try {
+                                          const compressedBlob = await compressImage(file, 2048, 2048, 0.85);
+                                          const url = await uploadFileToR2(compressedBlob, `covers/hero_${Date.now()}_${file.name}`);
+                                          setEditHeroImg(url);
+                                          setEditHeroVideoUrl('');
+                                        } finally {
+                                          setIsUploading(false);
+                                        }
+                                        return;
+                                      }
+                                    }
+                                  }
+                                  if (navigator.clipboard && navigator.clipboard.readText) {
+                                    const text = await navigator.clipboard.readText();
+                                    if (text && text.trim()) {
+                                      const val = text.trim();
+                                      if (val.match(/\.(mp4|webm|mov)(\?.*)?$/i)) {
+                                        setEditHeroVideoUrl(val);
+                                        setEditHeroImg('');
+                                      } else {
+                                        setEditHeroImg(val);
+                                        setEditHeroVideoUrl('');
+                                      }
+                                      return;
+                                    }
+                                  }
+                                  alert('클립보드에 이미지 또는 URL이 없습니다.');
+                                } catch (err) {
+                                  console.warn(err);
+                                  alert('클립보드 붙여넣기에 실패했습니다. URL 입력창에서 Ctrl+V를 사용해주세요.');
+                                }
+                              }}
+                              className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                              title="클립보드 미디어 붙여넣기"
+                            >
+                              <ClipboardPaste className="w-3 h-3" />
+                              <span>PASTE</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const currentUrl = editHeroVideoUrl || editHeroImg;
+                                if (!currentUrl) return alert('복사할 HERO 미디어가 없습니다.');
+                                if (editHeroVideoUrl) {
+                                  setEditVideoUrl(editHeroVideoUrl);
+                                  setEditImg('');
+                                } else {
+                                  setEditImg(editHeroImg);
+                                  setEditVideoUrl('');
+                                }
+                                alert('HERO 미디어가 MAIN으로 복사되었습니다.');
+                              }}
+                              className="px-2.5 bg-black text-white dark:bg-white dark:text-black text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                              title="HERO 미디어를 MAIN으로 복사"
+                            >
+                              <span>TO MAIN</span>
+                            </button>
                           </div>
 
                           {/* HERO Drag & Drop Box */}

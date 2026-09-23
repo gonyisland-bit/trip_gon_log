@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Save, Edit2, Loader2, Upload, Tag, MapPin, ClipboardPaste } from 'lucide-react';
+import { X, Save, Edit2, Loader2, Upload, Tag, MapPin, ClipboardPaste, Copy } from 'lucide-react';
 import { Trip } from '../types';
 import { uploadFileToR2, deleteFileFromR2, getEffectiveImageUrl } from '../utils/storageHelper';
 import { compressImage } from '../utils/imageHelper';
@@ -480,6 +480,17 @@ export function EditTripModal({
     }
   };
 
+  const handleCopyMedia = async (url: string, label: string) => {
+    if (!url) return alert(`복사할 ${label} 미디어가 없습니다.`);
+    try {
+      await navigator.clipboard.writeText(url);
+      alert(`${label} 미디어 URL이 클립보드에 복사되었습니다.`);
+    } catch (err) {
+      console.error(err);
+      alert('클립보드 복사에 실패했습니다.');
+    }
+  };
+
   const handlePasteImage = async (target: 'main' | 'hero' = coverTab) => {
     try {
       if (navigator.clipboard && navigator.clipboard.read) {
@@ -499,7 +510,31 @@ export function EditTripModal({
           }
         }
       }
-      alert("클립보드에 복사된 이미지가 없습니다. 이미지를 복사한 후 다시 시도해 주세요.");
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text && text.trim()) {
+          const val = text.trim();
+          if (target === 'hero') {
+            if (val.match(/\.(mp4|webm|mov)(\?.*)?$/i)) {
+              setHeroVideoUrl(val);
+              setHeroImgUrl('');
+            } else {
+              setHeroImgUrl(val);
+              setHeroVideoUrl('');
+            }
+          } else {
+            if (val.match(/\.(mp4|webm|mov)(\?.*)?$/i)) {
+              setVideoUrl(val);
+              setImgUrl('');
+            } else {
+              setImgUrl(val);
+              setVideoUrl('');
+            }
+          }
+          return;
+        }
+      }
+      alert("클립보드에 복사된 이미지 또는 URL이 없습니다. 이미지를 복사한 후 다시 시도해 주세요.");
     } catch (err) {
       console.warn("Clipboard read error:", err);
       alert("클립보드 이미지를 붙여넣으려면 키보드 단축키 Ctrl+V를 사용해주세요.");
@@ -981,13 +1016,40 @@ export function EditTripModal({
                     </button>
                     <button
                       type="button"
+                      onClick={() => handleCopyMedia(videoUrl || imgUrl, 'MAIN')}
+                      className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                      title="현재 MAIN 미디어 URL 복사"
+                    >
+                      <Copy className="w-3 h-3" />
+                      <span>COPY</span>
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handlePasteImage('main')}
                       disabled={uploading || videoUploading}
                       className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1.5 disabled:opacity-50 shrink-0 cursor-pointer"
-                      title="클립보드에 복사된 이미지 붙여넣기 (Ctrl+V)"
+                      title="클립보드에 복사된 이미지 또는 URL 붙여넣기 (Ctrl+V)"
                     >
                       <ClipboardPaste className="w-3 h-3" />
-                      PASTE
+                      <span>PASTE</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!videoUrl && !imgUrl) return alert('복사할 MAIN 미디어가 없습니다.');
+                        if (videoUrl) {
+                          setHeroVideoUrl(videoUrl);
+                          setHeroImgUrl('');
+                        } else {
+                          setHeroImgUrl(imgUrl);
+                          setHeroVideoUrl('');
+                        }
+                        alert('MAIN 미디어가 HERO로 복사되었습니다.');
+                      }}
+                      className="px-2.5 bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                      title="MAIN 미디어를 HERO로 복사"
+                    >
+                      <span>TO HERO</span>
                     </button>
                   </div>
                 </div>
@@ -1136,13 +1198,40 @@ export function EditTripModal({
                     </button>
                     <button
                       type="button"
+                      onClick={() => handleCopyMedia(heroVideoUrl || heroImgUrl, 'HERO')}
+                      className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                      title="현재 HERO 미디어 URL 복사"
+                    >
+                      <Copy className="w-3 h-3" />
+                      <span>COPY</span>
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handlePasteImage('hero')}
                       disabled={heroUploading || heroVideoUploading}
                       className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1.5 disabled:opacity-50 shrink-0 cursor-pointer"
-                      title="클립보드에 복사된 이미지 붙여넣기 (Ctrl+V)"
+                      title="클립보드에 복사된 이미지 또는 URL 붙여넣기 (Ctrl+V)"
                     >
                       <ClipboardPaste className="w-3 h-3" />
-                      PASTE
+                      <span>PASTE</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!heroVideoUrl && !heroImgUrl) return alert('복사할 HERO 미디어가 없습니다.');
+                        if (heroVideoUrl) {
+                          setVideoUrl(heroVideoUrl);
+                          setImgUrl('');
+                        } else {
+                          setImgUrl(heroImgUrl);
+                          setVideoUrl('');
+                        }
+                        alert('HERO 미디어가 MAIN으로 복사되었습니다.');
+                      }}
+                      className="px-2.5 bg-black text-white dark:bg-white dark:text-black text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                      title="HERO 미디어를 MAIN으로 복사"
+                    >
+                      <span>TO MAIN</span>
                     </button>
                   </div>
                 </div>

@@ -5,7 +5,7 @@ import {
   ExternalLink, MapPinOff, Maximize2, Star, ChevronLeft, ChevronRight, ArrowUp, ArrowDown,
   Sun, Cloud, Cloudy, CloudRain, Snowflake, CloudLightning, ArrowRight, Calculator, FileText, Share2, GripVertical,
   Play, Pause, SkipForward, SkipBack, X as CloseIcon, Check, Edit3, DollarSign,
-  Columns2, LayoutGrid, ArrowRightLeft, X, Coins, Undo2, Redo2, Calendar
+  Columns2, LayoutGrid, ArrowRightLeft, X, Coins, Undo2, Redo2, Calendar, Upload
 } from 'lucide-react';
 import { MapArea } from '../components/MapArea';
 import { ImageEditOverlay } from '../components/ImageEditOverlay';
@@ -1028,6 +1028,81 @@ export function JourneyDetailPage({
   const { start: minDate, end: maxDate } = parseDateRange(tripToUse?.date || '');
   const [airportGeocodedCoords, setAirportGeocodedCoords] = useState<{ [code: string]: { lat: number; lng: number } }>({});
   const tabContentRef = useRef<HTMLDivElement | null>(null);
+
+  // ─── Cover Image Change Modal States & Handlers ───
+  const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
+  const [coverInputUrl, setCoverInputUrl] = useState('');
+  const [isCoverUploading, setIsCoverUploading] = useState(false);
+  const coverFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleUpdateTripCover = async (newCoverUrl: string) => {
+    if (!newCoverUrl.trim() || !trip) return;
+    const cleanUrl = newCoverUrl.trim();
+    if (isEditing && draftTrip) {
+      recordHistory();
+      setDraftTrip({ ...draftTrip, img: cleanUrl });
+      setIsCoverModalOpen(false);
+      return;
+    }
+    try {
+      setIsCoverUploading(true);
+      const isPlan = (trip.tags || []).includes('Plan');
+      const coll = isPlan ? 'plans' : 'trips';
+      await setDoc(doc(db, 'users', 'public', coll, String(trip.id)), { img: cleanUrl }, { merge: true });
+      if (draftTrip) setDraftTrip({ ...draftTrip, img: cleanUrl });
+      trip.img = cleanUrl;
+      setIsCoverModalOpen(false);
+    } catch (err) {
+      console.error("Failed to update trip cover:", err);
+      alert("커버 변경 저장에 실패했습니다.");
+    } finally {
+      setIsCoverUploading(false);
+    }
+  };
+
+  const handleUploadCoverFile = async (file: File) => {
+    setIsCoverUploading(true);
+    try {
+      const compressed = await compressImage(file, 2560, 2560, 0.82);
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const storagePath = `users/public/covers/${Date.now()}_${safeName}`;
+      const url = await uploadFileToR2(compressed, storagePath);
+      setCoverInputUrl(url);
+    } catch (err) {
+      console.error("Cover upload error:", err);
+      alert("커버 이미지 업로드 실패");
+    } finally {
+      setIsCoverUploading(false);
+    }
+  };
+
+  const handlePasteCoverFromClipboard = async () => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.read) {
+        const items = await navigator.clipboard.read();
+        for (const item of items) {
+          const imageType = item.types.find(t => t.startsWith('image/'));
+          if (imageType) {
+            const blob = await item.getType(imageType);
+            const ext = imageType.split('/')[1] || 'png';
+            const file = new File([blob], `cover_pasted_${Date.now()}.${ext}`, { type: imageType });
+            await handleUploadCoverFile(file);
+            return;
+          }
+        }
+      }
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text && text.trim().startsWith('http')) {
+          setCoverInputUrl(text.trim());
+          return;
+        }
+      }
+      alert("클립보드에 이미지나 이미지 URL이 없습니다.");
+    } catch (err) {
+      console.warn("Clipboard paste error:", err);
+    }
+  };
 
   // ─── Cinematic Tour Mode ("Play Log") States & Logic ───
   const [isCinematicMode, setIsCinematicMode] = useState(false);
@@ -2734,7 +2809,7 @@ export function JourneyDetailPage({
           newMin = targetMin + 5;
         }
       } else {
-        newMin = targetMin + 60;
+        newMin = targetMin + 30;
       }
     }
 
@@ -2916,15 +2991,15 @@ export function JourneyDetailPage({
   const handleAddTimelineItem = (date: string) => {
     const newId = Date.now();
 
-    // 해당 날짜의 기존 일정 중에서 가장 늦은 시간 계산하여 10분 뒤로 기본 지정
+    // 해당 날짜의 기존 일정 중에서 가장 늦은 시간 계산하여 30분 뒤로 기본 지정 (없으면 07:00 AM 기상시간)
     const sameDateItems = (isEditing ? draftTimeline : baseTimeline).filter(item => item.date === date);
-    let defaultTime = '12:00 PM';
+    let defaultTime = '07:00 AM';
     if (sameDateItems.length > 0) {
       const sortedTimes = sameDateItems
         .map(item => parseTimeToMinutes(item.time))
         .sort((a, b) => b - a); // 내림차순 정렬
       const maxMinutes = sortedTimes[0];
-      const newMinutes = Math.min(1439, maxMinutes + 10);
+      const newMinutes = Math.min(1439, maxMinutes + 30);
       defaultTime = minutesToTimeStr(newMinutes);
     }
 
@@ -3044,10 +3119,20 @@ export function JourneyDetailPage({
       defaultPnr = lastFlight.pnr || '000000';
     }
 
+    const tripStartDot = minDate ? minDate.replace(/-/g, '.') : '';
+    const tripEndDot = maxDate ? maxDate.replace(/-/g, '.') : '';
+    let defaultFlightDate = 'YYYY.MM.DD';
+
+    if (title.toUpperCase().includes('INBOUND')) {
+      defaultFlightDate = tripEndDot || tripStartDot || 'YYYY.MM.DD';
+    } else {
+      defaultFlightDate = tripStartDot || 'YYYY.MM.DD';
+    }
+
     const newFlight: FlightItem = {
       id: Date.now(),
       title: title,
-      date: 'YYYY.MM.DD',
+      date: defaultFlightDate,
       fromCode: defaultFrom,
       fromTerminal: defaultFromTerminal,
       fromTime: '08:00 AM',
@@ -3057,7 +3142,7 @@ export function JourneyDetailPage({
       flightNo: 'KE000',
       seat: '00A',
       pnr: defaultPnr,
-      tripId: trip.id
+      tripId: trip?.id
     };
     recordHistory();
     setDraftFlights(prev => [...prev, newFlight]);
@@ -3085,11 +3170,63 @@ export function JourneyDetailPage({
     setDraftStays(prev => prev.filter(s => s.id !== id));
   };
   const handleAddStay = () => {
+    const tripStartDot = minDate ? minDate.replace(/-/g, '.') : '';
+    const tripEndDot = maxDate ? maxDate.replace(/-/g, '.') : '';
+
+    let stayCheckIn = tripStartDot;
+    let stayCheckOut = tripEndDot;
+
+    if (draftStays.length > 0 && tripStartDot && tripEndDot) {
+      const parseStayDates = (dr: string) => {
+        const parts = dr.split('-').map(p => p.trim());
+        if (parts.length >= 2) {
+          const matchStart = parts[0].match(/(\d{4}\.\d{1,2}\.\d{1,2})/);
+          const matchEnd = parts[1].match(/(\d{4}\.\d{1,2}\.\d{1,2})/);
+          return {
+            start: matchStart ? matchStart[1] : '',
+            end: matchEnd ? matchEnd[1] : ''
+          };
+        }
+        return { start: '', end: '' };
+      };
+
+      const existingCheckouts = draftStays
+        .map(s => parseStayDates(s.dateRange).end)
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b));
+
+      if (existingCheckouts.length > 0) {
+        const latestCheckout = existingCheckouts[existingCheckouts.length - 1];
+        if (latestCheckout < tripEndDot) {
+          stayCheckIn = latestCheckout;
+          stayCheckOut = tripEndDot;
+        } else {
+          stayCheckIn = latestCheckout;
+          const [y, m, d] = latestCheckout.split('.').map(Number);
+          const nextDay = new Date(y, m - 1, d + 1);
+          stayCheckOut = `${nextDay.getFullYear()}.${String(nextDay.getMonth() + 1).padStart(2, '0')}.${String(nextDay.getDate()).padStart(2, '0')}`;
+        }
+      }
+    }
+
+    let nightsCount = 1;
+    if (stayCheckIn && stayCheckOut) {
+      const d1 = new Date(stayCheckIn.replace(/\./g, '-'));
+      const d2 = new Date(stayCheckOut.replace(/\./g, '-'));
+      if (!isNaN(d1.getTime()) && !isNaN(d2.getTime())) {
+        nightsCount = Math.max(1, Math.round((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24)));
+      }
+    }
+
+    const defaultDateRange = stayCheckIn && stayCheckOut
+      ? `${stayCheckIn} - ${stayCheckOut} (${nightsCount} Nights)`
+      : 'YYYY.MM.DD - YYYY.MM.DD (0 Nights)';
+
     const newStay: StayItem = {
       id: Date.now(),
       status: 'BOOKING CONFIRMED',
       title: '새로운 숙소',
-      dateRange: 'YYYY.MM.DD - YYYY.MM.DD (0 Nights)',
+      dateRange: defaultDateRange,
       address: '',
       memo: '',
       confNo: 'HTL-0000',
@@ -3599,6 +3736,21 @@ export function JourneyDetailPage({
             </button>
           )}
 
+          {/* Quick Cover Change Button (Logged in) */}
+          {isLoggedIn && (
+            <button
+              type="button"
+              onClick={() => {
+                setCoverInputUrl(tripToUse?.img || '');
+                setIsCoverModalOpen(true);
+              }}
+              className="p-1.5 rounded border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 text-black/80 dark:text-white/80 transition-colors cursor-pointer flex items-center justify-center"
+              title="카드 커버 이미지 변경"
+            >
+              <ImageIcon className="w-3.5 h-3.5" />
+            </button>
+          )}
+
           {/* Accordion Menu Toggle Button */}
           <button
             onClick={() => setIsBannerMenuOpen(p => !p)}
@@ -3670,6 +3822,19 @@ export function JourneyDetailPage({
               >
                 <Calendar className="w-3 h-3" />
                 <span>Calendar</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setCoverInputUrl(tripToUse?.img || '');
+                  setIsCoverModalOpen(true);
+                }}
+                className="px-2.5 py-1 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 rounded text-[9px] font-bold uppercase tracking-wider text-black/70 dark:text-white/70 transition-colors flex items-center gap-1 cursor-pointer"
+                title="카드 커버 이미지 변경"
+              >
+                <ImageIcon className="w-3 h-3" />
+                <span>Cover</span>
               </button>
 
               {isEditing && (
@@ -6164,6 +6329,121 @@ export function JourneyDetailPage({
             >
               CLOSE [ESC]
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Swiss Minimal Cover Image Change Modal ── */}
+      {isCoverModalOpen && (
+        <div 
+          className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={() => setIsCoverModalOpen(false)}
+        >
+          <div 
+            className="w-full max-w-md bg-[#FAF9F6] dark:bg-[#161616] border border-black/20 dark:border-white/20 p-5 shadow-2xl flex flex-col gap-4 font-sans select-none"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-red-600 dark:text-red-400" />
+                <span className="text-sm font-black uppercase tracking-wider text-black dark:text-white font-mono">
+                  CHANGE CARD COVER
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCoverModalOpen(false)}
+                className="p-1 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-black/50 dark:text-white/50 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Current / New Preview */}
+            <div className="aspect-[16/9] w-full bg-black/5 dark:bg-white/5 border border-black/15 dark:border-white/15 overflow-hidden relative flex items-center justify-center">
+              {coverInputUrl ? (
+                <img 
+                  src={getEffectiveImageUrl(coverInputUrl)} 
+                  alt="Cover Preview" 
+                  className="w-full h-full object-cover" 
+                />
+              ) : (
+                <div className="text-center text-xs font-mono text-black/40 dark:text-white/40">
+                  미리보기 이미지가 없습니다.
+                </div>
+              )}
+              {isCoverUploading && (
+                <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-2 text-white text-xs font-mono">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>업로드 중...</span>
+                </div>
+              )}
+            </div>
+
+            {/* URL Input & Action Buttons */}
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
+                IMAGE URL / UPLOAD / PASTE
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={coverInputUrl}
+                  onChange={e => setCoverInputUrl(e.target.value)}
+                  placeholder="이미지 URL 직접 입력..."
+                  className="flex-1 px-3 py-2 text-xs font-mono bg-white dark:bg-[#202020] border border-black/20 dark:border-white/20 outline-none text-black dark:text-white focus:border-black dark:focus:border-white"
+                />
+                <input
+                  type="file"
+                  ref={coverFileInputRef}
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async e => {
+                    const file = e.target.files?.[0];
+                    if (file) await handleUploadCoverFile(file);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => coverFileInputRef.current?.click()}
+                  disabled={isCoverUploading}
+                  className="px-3 bg-black text-white dark:bg-white dark:text-black text-[10px] font-mono font-bold uppercase tracking-wider hover:opacity-85 transition-opacity flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  title="사진 파일 업로드"
+                >
+                  <Upload className="w-3 h-3" />
+                  <span>UPLOAD</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePasteCoverFromClipboard}
+                  disabled={isCoverUploading}
+                  className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                  title="클립보드 이미지 또는 URL 붙여넣기"
+                >
+                  <span>PASTE</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Bottom Action Buttons */}
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-black/10 dark:border-white/10">
+              <button
+                type="button"
+                onClick={() => setIsCoverModalOpen(false)}
+                className="px-4 py-2 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 text-xs font-mono font-bold uppercase transition-colors cursor-pointer"
+              >
+                CANCEL
+              </button>
+              <button
+                type="button"
+                onClick={() => handleUpdateTripCover(coverInputUrl)}
+                disabled={!coverInputUrl.trim() || isCoverUploading}
+                className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>APPLY COVER</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

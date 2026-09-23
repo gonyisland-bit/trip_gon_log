@@ -2209,7 +2209,8 @@ function App() {
         const batch = writeBatch(db);
         templateDays.forEach(({ date, items }) => {
           items.forEach(item => {
-            batch.set(doc(db, 'users', 'public', 'timeline', String(item.id)), cleanForFirestore({ ...item, tripId: newId }));
+            const finalDate = item.date || date;
+            batch.set(doc(db, 'users', 'public', 'timeline', String(item.id)), cleanForFirestore({ ...item, date: finalDate, tripId: newId }));
           });
         });
         await batch.commit();

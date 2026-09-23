@@ -978,6 +978,8 @@ export function TripBuilderPanel({
 
     const targetCityName = smartCity?.nameKo || (locations[0]?.name || '');
 
+    const naturalTimeSlots = ['10:00 AM', '01:30 PM', '04:30 PM', '07:30 PM', '09:30 PM'];
+
     const customTimelineItems = Array.from({ length: totalDays }).map((_, dIdx) => {
       const curDate = new Date(startD);
       curDate.setDate(curDate.getDate() + dIdx);
@@ -987,23 +989,26 @@ export function TripBuilderPanel({
       const daySpots = locations.filter((_, lIdx) => lIdx % totalDays === dIdx);
       const items = daySpots.map((sp, sIdx) => ({
         id: Date.now() + dIdx * 100 + sIdx,
-        time: sIdx === 0 ? '11:00' : '15:30',
+        time: naturalTimeSlots[sIdx % naturalTimeSlots.length],
         title: `${sp.name} 방문`,
         location: sp.name,
         memo: '사용자 지정 희망 방문 스팟',
         category: '관광',
-        type: 'activity' as const
+        type: 'activity' as const,
+        date: curStr
       }));
 
-      if (items.length === 0) {
+      // 사용자가 등록한 LOCATIONS가 전혀 없는 경우에만 1일차에 자유 일정 1개 기본 생성
+      if (locations.length === 0 && dIdx === 0) {
         items.push({
           id: Date.now() + dIdx * 100,
-          time: '11:00',
-          title: `${targetCityName || '도심'} 투어 & 일정`,
+          time: '10:00 AM',
+          title: `${targetCityName || '도심'} 자유 일정`,
           location: targetCityName || '',
           memo: '자유 일정 및 로컬 탐방',
           category: '관광',
-          type: 'activity' as const
+          type: 'activity' as const,
+          date: curStr
         });
       }
 
@@ -1018,6 +1023,7 @@ export function TripBuilderPanel({
       .filter(p => selectedPocketIds.has(p.id));
     if (selectedPocketsList.length > 0 && customTimelineItems.length > 0) {
       const defaultTimeSlots = ['10:00 AM', '01:00 PM', '04:00 PM', '07:00 PM', '09:00 PM'];
+      const firstDayDate = customTimelineItems[0].date;
       const pocketTimelineItems = selectedPocketsList.map((p, idx) => ({
         id: Date.now() + 5000 + idx,
         time: defaultTimeSlots[idx % defaultTimeSlots.length],
@@ -1027,7 +1033,8 @@ export function TripBuilderPanel({
         category: p.category === 'food' || p.category === 'cafe' ? '식사' : p.category === 'shopping' ? '쇼핑' : '관광',
         type: (p.category === 'food' || p.category === 'cafe' ? 'dining' : p.category === 'shopping' ? 'shopping' : 'activity') as any,
         cost: '-',
-        img: p.thumbnailUrl || ''
+        img: p.thumbnailUrl || '',
+        date: firstDayDate
       }));
       customTimelineItems[0].items = [
         ...pocketTimelineItems,
@@ -1373,19 +1380,21 @@ export function TripBuilderPanel({
         items: [
           {
             id: Date.now() + dIdx * 10 + 1,
-            time: '10:00',
+            time: '10:00 AM',
             title: `${spotName} 방문`,
             memo: `${selectedTheme !== 'all' ? selectedTheme.toUpperCase() + ' 테마' : '추천 코스'} 도심 투어`,
             category: '관광',
-            type: 'activity'
+            type: 'activity',
+            date: cDateStr
           },
           {
             id: Date.now() + dIdx * 10 + 2,
-            time: '13:00',
+            time: '01:00 PM',
             title: `${finalCity} 로컬 미식 탐방`,
             memo: '현지 인기 다이닝 및 카페 브레이크',
             category: '식사',
-            type: 'dining'
+            type: 'dining',
+            date: cDateStr
           }
         ]
       };
