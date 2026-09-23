@@ -1314,7 +1314,7 @@ export function HomePage({
                   {/* Mobile Compact Hero Bottom (Shown only on mobile < md: removes excessive vertical scrolling) */}
                   <div className="w-full block md:hidden px-2 pt-4 pb-2 font-['Inter',sans-serif]">
                     {/* Row 1: Brand/Category + Slide Indicator & Arrows */}
-                    <div className="flex items-center justify-between text-xs mb-1.5">
+                    <div className="flex items-center justify-between text-xs mb-1.5 h-6">
                       <span className="text-[10px] font-bold tracking-[0.2em] text-black/40 dark:text-white/40 uppercase">
                         {homeTitle ? homeTitle.replace(/\\n|\n/g, ' ') : 'JOURNAL'}
                       </span>
@@ -1345,28 +1345,30 @@ export function HomePage({
                       )}
                     </div>
 
-                    {/* Row 2: Big Title */}
-                    <h2
-                      onClick={() => onNavigate('detail', currentHero.id)}
-                      className="text-2xl sm:text-3xl font-black uppercase tracking-tight leading-tight text-black dark:text-white cursor-pointer active:opacity-80 mb-2.5"
-                      style={{ wordBreak: 'keep-all' }}
-                    >
-                      {currentHero.title}
-                    </h2>
+                    {/* Row 2: Big Title (Fixed 2-line height to prevent CLS layout shift) */}
+                    <div className="min-h-[3.75rem] sm:min-h-[4.5rem] flex items-start mb-2.5">
+                      <h2
+                        onClick={() => onNavigate('detail', currentHero.id)}
+                        className="text-2xl sm:text-3xl font-black uppercase tracking-tight leading-tight text-black dark:text-white cursor-pointer active:opacity-80 line-clamp-2"
+                        style={{ wordBreak: 'keep-all' }}
+                      >
+                        {currentHero.title}
+                      </h2>
+                    </div>
 
                     {/* Row 3: Meta & Action in compact 2-side flex */}
                     <div className="flex items-end justify-between gap-3 pt-2.5 border-t border-black/10 dark:border-white/10">
                       <div className="flex flex-col gap-1 min-w-0 flex-1">
                         <div className="flex items-baseline gap-1.5 flex-wrap">
-                          <span className="text-xs sm:text-sm font-black tracking-tight text-black dark:text-white uppercase">
+                          <span className="text-xs sm:text-sm font-black tracking-tight text-black dark:text-white uppercase shrink-0">
                             {month} {year}
                           </span>
-                          <span className="text-black/30 dark:text-white/30 text-xs">·</span>
-                          <span className="text-xs sm:text-sm font-black tracking-tight text-black dark:text-white">
+                          <span className="text-black/30 dark:text-white/30 text-xs shrink-0">·</span>
+                          <span className="text-xs sm:text-sm font-black tracking-tight text-black dark:text-white shrink-0">
                             {dateRange}
                           </span>
                           {days && (
-                            <span className="text-[10px] font-mono font-bold text-red-600 dark:text-red-400 uppercase">
+                            <span className="text-[10px] font-mono font-bold text-red-600 dark:text-red-400 uppercase shrink-0">
                               ({days})
                             </span>
                           )}
@@ -1374,10 +1376,12 @@ export function HomePage({
                         <div className="text-[11px] sm:text-xs font-bold text-black/70 dark:text-white/70 uppercase tracking-wider truncate">
                           {cities}
                         </div>
-                        {/* Auto Journey Message */}
-                        <p className="text-[10.5px] sm:text-[11px] font-medium text-black/60 dark:text-white/60 leading-snug break-keep mt-0.5 line-clamp-2">
-                          {generateJourneyMessage(currentHero.locationStr, currentHero.date, getHeroDetails(currentHero).daysCount)}
-                        </p>
+                        {/* Auto Journey Message (Fixed 2-line height for layout stability) */}
+                        <div className="min-h-[29px] sm:min-h-[31px] mt-0.5 flex items-start">
+                          <p className="text-[10.5px] sm:text-[11px] font-medium text-black/60 dark:text-white/60 leading-snug break-keep line-clamp-2">
+                            {generateJourneyMessage(currentHero.locationStr, currentHero.date, getHeroDetails(currentHero).daysCount)}
+                          </p>
+                        </div>
                       </div>
 
                       {/* Direct View Trip Button */}
