@@ -189,11 +189,32 @@ function getInitialNavigationState(): { view: string; tripId: number | null; isS
   return { view: 'home', tripId: null, isShare: false };
 }
 
+export type NightModeSetting = 'auto' | 'light' | 'dark';
+
+export const isNightTimeNow = (): boolean => {
+  const hour = new Date().getHours();
+  return hour >= 18 || hour < 6;
+};
+
 function App() {
   const [initialNavState] = useState(() => getInitialNavigationState());
   const [currentView, setCurrentView] = useState<string>(() => initialNavState.view); 
+  const [nightModeSetting, setNightModeSetting] = useState<NightModeSetting>(() => {
+    const saved = localStorage.getItem('nightModeSetting');
+    if (saved === 'auto' || saved === 'light' || saved === 'dark') return saved;
+    const legacyDark = localStorage.getItem('isDarkMode');
+    if (legacyDark === 'true') return 'dark';
+    if (legacyDark === 'false') return 'light';
+    return 'auto';
+  });
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    return localStorage.getItem('isDarkMode') === 'true';
+    const savedSetting = localStorage.getItem('nightModeSetting');
+    if (savedSetting === 'dark') return true;
+    if (savedSetting === 'light') return false;
+    if (savedSetting === 'auto') return isNightTimeNow();
+    const legacyDark = localStorage.getItem('isDarkMode');
+    if (legacyDark !== null) return legacyDark === 'true';
+    return isNightTimeNow();
   });
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
     return localStorage.getItem('isLoggedIn') === 'true' || Boolean(auth.currentUser);
@@ -734,13 +755,13 @@ function App() {
       // 3. Night Mode Toggle shortcut: Ctrl + Shift + L (Cmd + Shift + L)
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'l' || e.key === 'L')) {
         e.preventDefault();
-        setIsDarkMode(prev => {
-          const next = !prev;
-          try {
-            localStorage.setItem('isDarkMode', String(next));
-          } catch (_) {}
-          return next;
-        });
+        const nextMode = !isDarkMode;
+        setIsDarkMode(nextMode);
+        setNightModeSetting(nextMode ? 'dark' : 'light');
+        try {
+          localStorage.setItem('nightModeSetting', nextMode ? 'dark' : 'light');
+          localStorage.setItem('isDarkMode', String(nextMode));
+        } catch (_) {}
         return;
       }
 
@@ -835,6 +856,44 @@ function App() {
     if (!isLoggedIn) setIsEditMode(false);
   }, [isLoggedIn]);
 
+  // Synchronize nightModeSetting with isDarkMode and set up auto timer (18:00 ~ 06:00)
+  useEffect(() => {
+    try {
+      localStorage.setItem('nightModeSetting', nightModeSetting);
+    } catch (_) {}
+
+    if (nightModeSetting === 'dark') {
+      setIsDarkMode(true);
+      return;
+    }
+    if (nightModeSetting === 'light') {
+      setIsDarkMode(false);
+      return;
+    }
+
+    // 'auto' mode: sync immediately and setup periodic check + visibility listener
+    const updateAutoNight = () => {
+      setIsDarkMode(isNightTimeNow());
+    };
+    updateAutoNight();
+
+    const intervalId = setInterval(updateAutoNight, 60000); // Check every minute
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        updateAutoNight();
+      }
+    };
+
+    window.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+    };
+  }, [nightModeSetting]);
+
   // Sync isDarkMode to html element classlist for Tailwind dark: modifiers and save to localStorage
   useEffect(() => {
     if (isDarkMode) {
@@ -842,7 +901,9 @@ function App() {
     } else {
       document.documentElement.classList.remove('dark');
     }
-    localStorage.setItem('isDarkMode', isDarkMode.toString());
+    try {
+      localStorage.setItem('isDarkMode', isDarkMode.toString());
+    } catch (_) {}
   }, [isDarkMode]);
 
   // Firestore seeding script (stores all mock data under 'public')
@@ -2840,6 +2901,8 @@ function App() {
             setIsLoggedIn={setIsLoggedIn}
             isDarkMode={isDarkMode}
             setIsDarkMode={setIsDarkMode}
+            nightModeSetting={nightModeSetting}
+            setNightModeSetting={setNightModeSetting}
             showSettings={showSettings}
             setShowSettings={setShowSettings}
             openAuthModal={(mode) => { setAuthModalMode(mode); setIsAuthModalOpen(true); }}

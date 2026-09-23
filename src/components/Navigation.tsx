@@ -16,6 +16,8 @@ interface NavigationProps {
   setIsLoggedIn: (value: boolean) => void;
   isDarkMode: boolean;
   setIsDarkMode: (value: boolean) => void;
+  nightModeSetting?: 'auto' | 'light' | 'dark';
+  setNightModeSetting?: (setting: 'auto' | 'light' | 'dark') => void;
   showSettings: boolean;
   setShowSettings: (value: boolean) => void;
   openAuthModal: (mode: 'login' | 'signup') => void;
@@ -34,6 +36,8 @@ export function Navigation({
   setIsLoggedIn,
   isDarkMode,
   setIsDarkMode,
+  nightModeSetting = 'auto',
+  setNightModeSetting,
   showSettings,
   setShowSettings,
   openAuthModal,
@@ -406,22 +410,59 @@ export function Navigation({
               </button>
             )}
 
-            <button
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-2"
-            >
-              <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-4 sm:mr-6 select-none">
-                {isLoggedIn && isAdmin ? '08' : '07'}
-              </span>
-              <div className="flex items-center gap-3">
-                <span className="font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white transition-colors">
+            {/* Swiss Minimal 3-Way Segmented Control for Night Mode */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-1">
+              <div className="flex items-baseline">
+                <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-4 sm:mr-6 select-none">
+                  {isLoggedIn && isAdmin ? '08' : '07'}
+                </span>
+                <span className="font-['Inter',sans-serif] text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black/80 dark:text-white/80">
                   NIGHT MODE
                 </span>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-black/10 dark:bg-white/15 text-black dark:text-white uppercase">
-                  {isDarkMode ? 'ON' : 'OFF'}
-                </span>
               </div>
-            </button>
+              <div className="flex items-center self-start sm:self-auto p-1 bg-black/5 dark:bg-white/10 rounded border border-black/10 dark:border-white/15 font-mono text-[11px] sm:text-xs font-bold tracking-wider">
+                <button
+                  type="button"
+                  onClick={() => setNightModeSetting ? setNightModeSetting('auto') : setIsDarkMode(!isDarkMode)}
+                  className={`px-3 py-1 rounded transition-colors ${
+                    nightModeSetting === 'auto'
+                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                      : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                  }`}
+                  title="저녁 18시 ~ 익일 06시 나이트 모드 자동 적용"
+                >
+                  AUTO
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (setNightModeSetting) setNightModeSetting('light');
+                    setIsDarkMode(false);
+                  }}
+                  className={`px-3 py-1 rounded transition-colors ${
+                    nightModeSetting === 'light'
+                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                      : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                  }`}
+                >
+                  LIGHT
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (setNightModeSetting) setNightModeSetting('dark');
+                    setIsDarkMode(true);
+                  }}
+                  className={`px-3 py-1 rounded transition-colors ${
+                    nightModeSetting === 'dark'
+                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+                      : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                  }`}
+                >
+                  DARK
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Footer */}

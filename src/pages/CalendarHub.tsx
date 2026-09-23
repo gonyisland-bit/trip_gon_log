@@ -2221,9 +2221,9 @@ export function CalendarHubPage({
                 const trip = tripItem ? tripItem.trip : null;
                 const isPlan = tripItem ? tripItem.isPlan : false;
 
-                // Multi-day trip ribbon connection logic for current row
-                const prevInRowHasSameTrip = hasTrip && col > 0 && calendarGrid[cellIdx - 1]?.overlappingTrips.some(t => t.trip.id === trip?.id);
-                const nextInRowHasSameTrip = hasTrip && col < 6 && calendarGrid[cellIdx + 1]?.overlappingTrips.some(t => t.trip.id === trip?.id);
+                // Multi-day trip ribbon connection logic (전날/다음날 연속성 및 주/행 경계 틈새 없는 연결)
+                const hasPrevTrip = hasTrip && cellIdx > 0 && calendarGrid[cellIdx - 1]?.overlappingTrips.some(t => t.trip.id === trip?.id);
+                const hasNextTrip = hasTrip && cellIdx < calendarGrid.length - 1 && calendarGrid[cellIdx + 1]?.overlappingTrips.some(t => t.trip.id === trip?.id);
 
                 const hasEvent = cell.overlappingEvents.length > 0;
                 const eventItem = hasEvent ? cell.overlappingEvents[0].event : null;
@@ -2239,6 +2239,9 @@ export function CalendarHubPage({
 
                 if (!cell.isCurrentMonth) {
                   circleClasses += ' opacity-20 text-black/40 dark:text-white/40 hover:opacity-40';
+                  if (hasTrip) {
+                    circleClasses += ' !opacity-60 text-white font-bold';
+                  }
                 } else if (cell.isToday) {
                   // 오늘 날짜: 예전처럼 테두리 없는 반전 상태 (블랙)
                   circleClasses += ' bg-black text-white dark:bg-white dark:text-black font-black shadow-sm';
@@ -2281,33 +2284,20 @@ export function CalendarHubPage({
                     className="relative flex items-center justify-center h-14 sm:h-16 md:h-20 lg:h-22 w-full"
                   >
                     {/* Multi-day Trip Capsule Ribbon (날짜 원형과 100% 일치하는 정원 + 연결 바로 틈 없는 완벽 핏) */}
-                    {hasTrip && cell.isCurrentMonth && (
-                      <div className="absolute inset-0 pointer-events-none z-0">
-                        {/* 1. 단일일 여정: 날짜 원형과 동일한 단일 정원 */}
-                        {!prevInRowHasSameTrip && !nextInRowHasSameTrip && (
-                          <div className={`absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-10 sm:w-12 md:w-14 lg:w-16 h-10 sm:h-12 md:h-14 lg:h-16 rounded-full ${ribbonColor}`} />
+                    {hasTrip && (
+                      <div className={`absolute inset-0 pointer-events-none z-0 ${cell.isCurrentMonth ? '' : 'opacity-35'}`}>
+                        {/* 1. 좌측 연결 바: 어제에도 동일 여정이 있을 때 셀 왼쪽 끝(left-0)부터 중앙까지 확장 */}
+                        {hasPrevTrip && (
+                          <div className={`absolute top-1/2 -translate-y-1/2 left-0 right-1/2 h-10 sm:h-12 md:h-14 lg:h-16 ${ribbonColor}`} />
                         )}
 
-                        {/* 2. 여정 시작일: 원형 버튼과 100% 동일한 정원 베이스 + 오른쪽 확장 바 */}
-                        {!prevInRowHasSameTrip && nextInRowHasSameTrip && (
-                          <>
-                            <div className={`absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-10 sm:w-12 md:w-14 lg:w-16 h-10 sm:h-12 md:h-14 lg:h-16 rounded-full ${ribbonColor}`} />
-                            <div className={`absolute top-1/2 -translate-y-1/2 left-1/2 right-0 h-10 sm:h-12 md:h-14 lg:h-16 ${ribbonColor}`} />
-                          </>
+                        {/* 2. 우측 연결 바: 내일에도 동일 여정이 있을 때 중앙부터 셀 오른쪽 끝(right-0)까지 확장 */}
+                        {hasNextTrip && (
+                          <div className={`absolute top-1/2 -translate-y-1/2 left-1/2 right-0 h-10 sm:h-12 md:h-14 lg:h-16 ${ribbonColor}`} />
                         )}
 
-                        {/* 3. 여정 종료일: 왼쪽 확장 바 + 원형 버튼과 100% 동일한 정원 베이스 */}
-                        {prevInRowHasSameTrip && !nextInRowHasSameTrip && (
-                          <>
-                            <div className={`absolute top-1/2 -translate-y-1/2 left-0 right-1/2 h-10 sm:h-12 md:h-14 lg:h-16 ${ribbonColor}`} />
-                            <div className={`absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-10 sm:w-12 md:w-14 lg:w-16 h-10 sm:h-12 md:h-14 lg:h-16 rounded-full ${ribbonColor}`} />
-                          </>
-                        )}
-
-                        {/* 4. 여정 중간일: 셀 전체를 채우는 직사각형 바 */}
-                        {prevInRowHasSameTrip && nextInRowHasSameTrip && (
-                          <div className={`absolute top-1/2 -translate-y-1/2 left-0 right-0 h-10 sm:h-12 md:h-14 lg:h-16 ${ribbonColor}`} />
-                        )}
+                        {/* 3. 중앙 정원: 날짜 원형 버튼과 100% 일치하는 라운드 베이스 */}
+                        <div className={`absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-10 sm:w-12 md:w-14 lg:w-16 h-10 sm:h-12 md:h-14 lg:h-16 rounded-full ${ribbonColor}`} />
                       </div>
                     )}
 
@@ -2834,9 +2824,9 @@ export function CalendarHubPage({
                       const isSun = day.dayOfWeek === 0;
                       const isSat = day.dayOfWeek === 6;
 
-                      // 이전/다음 날짜와 동일한 여정 연속성 판별 (주 단위 가로 알약 리본 생성)
-                      const prevInRowHasTrip = day.hasTrip && col > 0 && m.days[dIdx - 1]?.hasTrip && (!day.tripId || !m.days[dIdx - 1]?.tripId || day.tripId === m.days[dIdx - 1]?.tripId);
-                      const nextInRowHasTrip = day.hasTrip && col < 6 && m.days[dIdx + 1]?.hasTrip && (!day.tripId || !m.days[dIdx + 1]?.tripId || day.tripId === m.days[dIdx + 1]?.tripId);
+                      // 이전/다음 날짜와 동일한 여정 연속성 판별 (전체 날짜 인덱스 기반 연속 밴드 생성)
+                      const hasPrevTrip = day.hasTrip && dIdx > 0 && m.days[dIdx - 1]?.hasTrip && (!day.tripId || !m.days[dIdx - 1]?.tripId || day.tripId === m.days[dIdx - 1]?.tripId);
+                      const hasNextTrip = day.hasTrip && dIdx < m.days.length - 1 && m.days[dIdx + 1]?.hasTrip && (!day.tripId || !m.days[dIdx + 1]?.tripId || day.tripId === m.days[dIdx + 1]?.tripId);
 
                       // 날씨 데이터 획득 (예보 및 기후 통계 시뮬레이터)
                       const exactWeather = isWeatherMode ? cityWeatherData?.forecast?.find(f => f.date === day.dateStr) : null;
@@ -2875,19 +2865,22 @@ export function CalendarHubPage({
                           key={day.dateStr}
                           className="relative flex items-center justify-center w-full h-7 sm:h-8 md:h-8.5"
                         >
-                          {/* Continuous Trip Pill Ribbon (인접 셀 간 틈새 없이 완벽 결합) */}
+                          {/* Continuous Trip Pill Ribbon (원형 높이 h-6 sm:h-7 md:h-8 와 100% 동일 핏 & 주간 연속 밴드) */}
                           {day.hasTrip && (
-                            <div
-                              className={`absolute top-0.5 bottom-0.5 sm:top-1 sm:bottom-1 md:top-1 md:bottom-1 z-0 ${
-                                !prevInRowHasTrip && !nextInRowHasTrip
-                                  ? 'inset-x-0.5 sm:inset-x-1 rounded-full'
-                                  : !prevInRowHasTrip && nextInRowHasTrip
-                                    ? 'left-0.5 sm:left-1 right-0 rounded-l-full'
-                                    : prevInRowHasTrip && !nextInRowHasTrip
-                                      ? 'left-0 right-0.5 sm:right-1 rounded-r-full'
-                                      : 'left-0 right-0 rounded-none'
-                              } ${day.isPlan ? 'bg-amber-500' : 'bg-[#FF4500]'}`}
-                            />
+                            <div className="absolute inset-0 pointer-events-none z-0">
+                              {/* 1. 좌측 연결 바 */}
+                              {hasPrevTrip && (
+                                <div className={`absolute top-1/2 -translate-y-1/2 left-0 right-1/2 h-6 sm:h-7 md:h-8 ${day.isPlan ? 'bg-amber-500' : 'bg-[#FF4500]'}`} />
+                              )}
+
+                              {/* 2. 우측 연결 바 */}
+                              {hasNextTrip && (
+                                <div className={`absolute top-1/2 -translate-y-1/2 left-1/2 right-0 h-6 sm:h-7 md:h-8 ${day.isPlan ? 'bg-amber-500' : 'bg-[#FF4500]'}`} />
+                              )}
+
+                              {/* 3. 중앙 정원 (날짜 버튼 원형과 100% 동일 크기) */}
+                              <div className={`absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-6 sm:w-7 md:w-8 h-6 sm:h-7 md:h-8 rounded-full ${day.isPlan ? 'bg-amber-500' : 'bg-[#FF4500]'}`} />
+                            </div>
                           )}
 
                           <button
