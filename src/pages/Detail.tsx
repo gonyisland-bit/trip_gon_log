@@ -2727,7 +2727,7 @@ export function JourneyDetailPage({
   // Early Return (conditional render)
   if (!trip) {
     return (
-      <div className="flex-grow flex items-center justify-center bg-[#F9F8F6] dark:bg-[#111111] h-[80vh] text-xs font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
+      <div className="flex-grow flex items-center justify-center bg-transparent h-[80vh] text-xs font-bold uppercase tracking-widest text-black/40 dark:text-white/40">
         Loading Journey Details...
       </div>
     );
@@ -3592,7 +3592,7 @@ export function JourneyDetailPage({
 
   // Render Info Header ("여정배너"): Single-line compact top banner with collapsible accordion menu
   const renderInfoHeader = () => (
-    <div className="w-full border-b border-black/15 dark:border-white/15 z-20 bg-white dark:bg-[#0A0A0A] transition-colors shrink-0 select-none">
+    <div className="w-full border-b border-black/15 dark:border-white/15 z-20 bg-white/85 dark:bg-[#0A0A0A]/85 backdrop-blur-md transition-colors shrink-0 select-none">
       {/* 1. Compact Banner with Flexible Height (min-h-[52px] sm:min-h-[58px] py-1.5 sm:py-2) */}
       <div className="flex items-center justify-between px-3 md:px-5 min-h-[52px] sm:min-h-[58px] py-1.5 sm:py-2 gap-2">
         {/* Left: Back button + Divider + Issue badge + Title & Date */}
@@ -4023,7 +4023,7 @@ export function JourneyDetailPage({
   );
 
   return (
-    <main className="animate-in slide-in-from-right-8 duration-500 flex flex-col md:flex-row h-full w-full overflow-hidden relative">
+    <main className="animate-in slide-in-from-right-8 duration-500 flex flex-col md:flex-row h-full w-full overflow-hidden relative bg-transparent">
       {/* ── 300m Hotspot Radar Minimal Floating Chip ── */}
       {nearbySpotAlert && (
         <div className="absolute top-16 right-4 sm:right-6 z-50 bg-black/95 dark:bg-white/95 text-white dark:text-black backdrop-blur-md px-3.5 py-2 border border-red-500 shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-200 select-none">
@@ -4277,13 +4277,13 @@ export function JourneyDetailPage({
       
       {/* Right: Record / Tabs Section (Responsive Bottom Sheet on Mobile) */}
       <section 
-        className={`w-full md:w-1/2 flex flex-col bg-white dark:bg-[#0A0A0A] transition-all duration-300 flex-grow md:h-full overflow-hidden relative ${
+        className={`w-full md:w-1/2 flex flex-col bg-white/80 dark:bg-[#0A0A0A]/85 backdrop-blur-md transition-all duration-300 flex-grow md:h-full overflow-hidden relative ${
           mobileSheetSnap === 'expanded' ? 'max-md:h-full max-md:flex-1' : 'max-md:h-[64dvh]'
         }`}
       >
         {/* Mobile Bottom Sheet Grab Handle */}
         <div 
-          className="md:hidden flex flex-col items-center justify-center py-2 px-4 bg-white dark:bg-[#0A0A0A] border-b border-black/10 dark:border-white/10 cursor-pointer select-none touch-none shrink-0 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group/grab"
+          className="md:hidden flex flex-col items-center justify-center py-2 px-4 bg-white/90 dark:bg-[#0A0A0A]/90 backdrop-blur-md border-b border-black/10 dark:border-white/10 cursor-pointer select-none touch-none shrink-0 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group/grab"
           onTouchStart={handleSheetTouchStart}
           onTouchEnd={handleSheetTouchEnd}
           onClick={() => {
@@ -4302,7 +4302,7 @@ export function JourneyDetailPage({
         </div>
         
         {/* Tab Headers - Unified Single-line Sleek Design (SUM, TIME, FLIGHT, STAY, TRANS, PHOTO) */}
-        <div className="flex overflow-x-hidden flex-nowrap border-b border-black/15 dark:border-white/15 bg-white dark:bg-[#0A0A0A] transition-colors shrink-0 w-full h-9 sm:h-10">
+        <div className="flex overflow-x-hidden flex-nowrap border-b border-black/15 dark:border-white/15 bg-white/90 dark:bg-[#0A0A0A]/90 backdrop-blur-md transition-colors shrink-0 w-full h-9 sm:h-10">
           {[ 
             { id: 'summary', label: 'SUM' },
             { id: 'timeline', label: 'TIME' }, 
@@ -4331,7 +4331,7 @@ export function JourneyDetailPage({
         {/* Tab Contents */}
         <div 
           ref={tabContentRef}
-          className="flex-grow flex flex-col relative overflow-y-auto overflow-x-hidden w-full h-full bg-white dark:bg-[#0A0A0A]"
+          className="flex-grow flex flex-col relative overflow-y-auto overflow-x-hidden w-full h-full bg-transparent"
         >
           {/* SUMMARY TAB */}
           <div className={activeTab === 'summary' ? 'contents' : 'hidden'}>
@@ -4354,7 +4354,7 @@ export function JourneyDetailPage({
             {visitedTabs.has('timeline') && (
               <>
                 {/* Day filter selector bar - Slim and Sticky */}
-                <div className="sticky top-0 z-[35] border-b border-black/15 dark:border-white/15 bg-white dark:bg-[#0A0A0A] transition-colors shrink-0 w-full flex items-center shadow-xs">
+                <div className="sticky top-0 z-[35] border-b border-black/15 dark:border-white/15 bg-white/90 dark:bg-[#0A0A0A]/90 backdrop-blur-md transition-colors shrink-0 w-full flex items-center shadow-xs">
                 {/* Scroll buttons for desktop/web */}
                 <button 
                   onClick={() => scrollDays('left')}
@@ -4528,7 +4528,7 @@ export function JourneyDetailPage({
                                 setCollapsedDays(prev => [...prev, dVal]);
                               }
                             }}
-                            className={`bg-white dark:bg-[#0A0A0A] py-3.5 px-4 md:px-6 border-b border-t border-black/15 dark:border-white/15 flex items-center justify-between cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors select-none ${
+                            className={`bg-white/70 dark:bg-[#0A0A0A]/70 backdrop-blur-xs py-3.5 px-4 md:px-6 border-b border-t border-black/15 dark:border-white/15 flex items-center justify-between cursor-pointer hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors select-none ${
                               highlightedDateSection === item.date ? 'day-section-highlight' : ''
                             }`}
                           >

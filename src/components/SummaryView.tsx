@@ -637,12 +637,12 @@ export function SummaryView({
   const recordedSpotsCount = Object.values(timelineData).flat().length;
 
   return (
-    <div className="w-full flex flex-col text-left text-black dark:text-white bg-white dark:bg-[#0A0A0A] animate-in fade-in duration-300">
+    <div className="w-full flex flex-col text-left text-black dark:text-white bg-transparent animate-in fade-in duration-300">
       
       {/* Full-bleed Minimal Editorial Canvas */}
       <div 
         ref={printRef}
-        className="w-full max-w-4xl mx-auto flex-grow p-5 sm:p-8 md:p-12 flex flex-col gap-8 text-black dark:text-white font-sans relative bg-white dark:bg-[#0A0A0A]"
+        className="w-full max-w-4xl mx-auto flex-grow p-5 sm:p-8 md:p-12 flex flex-col gap-8 text-black dark:text-white font-sans relative bg-transparent"
       >
         {/* 1. Masthead & Inverted Tag Pill */}
         <div className="flex flex-col items-start gap-3">
