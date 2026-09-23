@@ -75,7 +75,7 @@ const MONTH_TABS = [
   { num: 12, short: 'DEC', full: 'DECEMBER' }
 ];
 
-const WEEKDAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
 const EVENT_CATEGORIES = [
   { id: 'work', label: '출장/업무', icon: Briefcase, color: '#2563eb', badgeClass: 'bg-blue-600 text-white' },
@@ -89,7 +89,7 @@ interface DayCellData {
   dayNum: number;
   isCurrentMonth: boolean;
   isToday: boolean;
-  dayOfWeek: number; // 0: Mon, ..., 6: Sun
+  dayOfWeek: number; // 0: Sun, 1: Mon, ..., 6: Sat
   holiday: KoreanHoliday | null;
   overlappingTrips: {
     trip: Trip | Plan;
@@ -620,6 +620,9 @@ export function CalendarHubPage({
   // 여정 퀵 프리뷰 모달 상태 (클릭 시 바로 이동하지 않고 미니멀 모달 노출)
   const [viewingTrip, setViewingTrip] = useState<{ trip: Trip | Plan; isPlan: boolean; dateStr: string } | null>(null);
 
+  // 연간 달력 여정 카운터 클릭 시 팝업되는 여정 리스트 모달 상태
+  const [isYearTripsModalOpen, setIsYearTripsModalOpen] = useState<boolean>(false);
+
   // 일정 등록/수정 모달 상태
   const [isEventModalOpen, setIsEventModalOpen] = useState<boolean>(false);
   const [editingEvent, setEditingEvent] = useState<CalendarCustomEvent | null>(null);
@@ -766,6 +769,10 @@ export function CalendarHubPage({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        if (isYearTripsModalOpen) {
+          setIsYearTripsModalOpen(false);
+          return;
+        }
         if (quickViewDate) {
           setQuickViewDate(null);
           return;
@@ -834,7 +841,7 @@ export function CalendarHubPage({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isEditingYear, isEditingMonth, isEventModalOpen, viewingEvent, viewingTrip, quickViewDate, isMonthStripOpen, isYearDropdownOpen, currentYear, currentMonth, viewMode, selectedRange]);
+  }, [isEditingYear, isEditingMonth, isEventModalOpen, isYearTripsModalOpen, viewingEvent, viewingTrip, quickViewDate, isMonthStripOpen, isYearDropdownOpen, currentYear, currentMonth, viewMode, selectedRange]);
 
   // 전역 마우스업 리스너 (드래그 종료)
   useEffect(() => {
@@ -871,14 +878,24 @@ export function CalendarHubPage({
     }[];
   }, [trips, plans]);
 
+  // 현재 연도에 속하거나 걸쳐 있는 여정 목록 (연간 달력 카운터 및 목록 모달용)
+  const currentYearJourneys = useMemo(() => {
+    const yearStr = String(currentYear);
+    return parsedJourneys.filter(pj => {
+      const sYear = pj.range.start.slice(0, 4);
+      const eYear = pj.range.end.slice(0, 4);
+      return sYear === yearStr || eYear === yearStr || (sYear < yearStr && eYear > yearStr);
+    }).sort((a, b) => a.range.start.localeCompare(b.range.start));
+  }, [parsedJourneys, currentYear]);
+
   // 현재 월의 7열 그리드 셀 데이터 생성
   const calendarGrid = useMemo(() => {
     const cells: DayCellData[] = [];
     const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
     const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
     
-    // 0: Mon, 1: Tue, ..., 6: Sun (월요일 시작 기준)
-    let startDayOfWeek = (firstDayOfMonth.getDay() + 6) % 7; 
+    // 0: Sun, 1: Mon, ..., 6: Sat (일요일 시작 표준 기준)
+    let startDayOfWeek = firstDayOfMonth.getDay(); 
     const totalDaysInMonth = lastDayOfMonth.getDate();
 
     // 이전 달 패딩 일수
@@ -889,7 +906,7 @@ export function CalendarHubPage({
       const y = prevDate.getFullYear();
       const m = String(prevDate.getMonth() + 1).padStart(2, '0');
       const dateStr = `${y}-${m}-${String(d).padStart(2, '0')}`;
-      const dayOfWeek = (prevDate.getDay() + 6) % 7;
+      const dayOfWeek = prevDate.getDay();
       
       cells.push({
         dateStr,
@@ -911,7 +928,7 @@ export function CalendarHubPage({
     for (let d = 1; d <= totalDaysInMonth; d++) {
       const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const currDate = new Date(currentYear, currentMonth, d);
-      const dayOfWeek = (currDate.getDay() + 6) % 7;
+      const dayOfWeek = currDate.getDay();
       const isToday = (currentYear === todayY && currentMonth === todayM && d === todayD);
 
       cells.push({
@@ -933,7 +950,7 @@ export function CalendarHubPage({
       const y = nextDate.getFullYear();
       const m = String(nextDate.getMonth() + 1).padStart(2, '0');
       const dateStr = `${y}-${m}-${String(d).padStart(2, '0')}`;
-      const dayOfWeek = (nextDate.getDay() + 6) % 7;
+      const dayOfWeek = nextDate.getDay();
 
       cells.push({
         dateStr,
@@ -1078,7 +1095,7 @@ export function CalendarHubPage({
     return Array.from({ length: 12 }, (_, monthIdx) => {
       const firstDay = new Date(currentYear, monthIdx, 1);
       const lastDay = new Date(currentYear, monthIdx + 1, 0);
-      const startDayOfWeek = (firstDay.getDay() + 6) % 7; // 0: Mon, ..., 6: Sun
+      const startDayOfWeek = firstDay.getDay(); // 0: Sun, 1: Mon, ..., 6: Sat
       const totalDays = lastDay.getDate();
 
       const days: {
@@ -1877,10 +1894,10 @@ export function CalendarHubPage({
           ) : (
             <div className="flex flex-col items-center py-2 sm:py-4">
               <span className="text-4xl sm:text-6xl lg:text-7xl font-black font-satoshi tracking-tight leading-none uppercase text-black/80 dark:text-white/80">
-                ANNUAL 12M
+                {currentYear}
               </span>
               <span className="text-xs sm:text-sm font-mono tracking-widest text-black/40 dark:text-white/40 mt-1 uppercase">
-                FULL YEAR OVERVIEW
+                ANNUAL CALENDAR
               </span>
             </div>
           )}
@@ -2160,11 +2177,11 @@ export function CalendarHubPage({
               </div>
             )}
 
-            {/* Weekday Header Row: MON TUE WED THU FRI SAT SUN */}
+            {/* Weekday Header Row: SUN MON TUE WED THU FRI SAT */}
             <div className="grid grid-cols-7 border-b border-black/15 dark:border-white/15 pb-2.5 sm:pb-3 text-center text-xs sm:text-sm font-black tracking-widest font-mono select-none">
               {WEEKDAYS.map((day, idx) => {
-                const isSunday = idx === 6;
-                const isSaturday = idx === 5;
+                const isSunday = idx === 0;
+                const isSaturday = idx === 6;
                 return (
                   <div 
                     key={day} 
@@ -2194,8 +2211,8 @@ export function CalendarHubPage({
             >
               {calendarGrid.map((cell, cellIdx) => {
                 const col = cellIdx % 7;
-                const isSunday = cell.dayOfWeek === 6;
-                const isSaturday = cell.dayOfWeek === 5;
+                const isSunday = cell.dayOfWeek === 0;
+                const isSaturday = cell.dayOfWeek === 6;
                 const isHoliday = !!cell.holiday;
                 const isInRange = !!(selectedRange && cell.dateStr >= selectedRange.start && cell.dateStr <= selectedRange.end);
 
@@ -2716,14 +2733,19 @@ export function CalendarHubPage({
         ) : (
           /* ──────────────── YEAR VIEW (3-Column Desktop / 2-Column Mobile Swiss Minimal) ──────────────── */
           <div className="max-w-5xl xl:max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 mt-5 sm:mt-6">
-            {/* Year View Minimal Header (불필요한 설명 제거) */}
+            {/* Year View Minimal Header */}
             <div className="flex items-center justify-between pb-2.5 sm:pb-3 text-xs font-mono text-black/60 dark:text-white/60 border-b border-black/10 dark:border-white/10 mb-4 sm:mb-6">
               <span className="font-bold text-black/40 dark:text-white/40 tracking-wider uppercase">
                 ANNUAL CALENDAR
               </span>
-              <span className="font-bold text-red-600 dark:text-red-400 tracking-wider">
-                {currentYear} OVERVIEW (12M)
-              </span>
+              <button
+                type="button"
+                onClick={() => setIsYearTripsModalOpen(true)}
+                className="font-bold text-red-600 dark:text-red-400 tracking-wider hover:underline flex items-center gap-1 cursor-pointer transition-colors"
+                title={`${currentYear}년 여정 목록 보기 (클릭 시 모달)`}
+              >
+                <span>{currentYearJourneys.length === 1 ? '1 Trip' : `${currentYearJourneys.length} Trips`}</span>
+              </button>
             </div>
 
             {/* Restored 3-Column Desktop / 2-Column Mobile Grid (3 cols x 4 rows = 12M) */}
@@ -2789,12 +2811,12 @@ export function CalendarHubPage({
                     </div>
                   </div>
 
-                  {/* Mini Weekday Headers (M T W T F S S) */}
+                  {/* Mini Weekday Headers (S M T W T F S) */}
                   <div className="grid grid-cols-7 text-center text-[10px] sm:text-xs font-mono font-bold mb-1.5 select-none">
                     {WEEKDAYS.map((wd, wIdx) => (
                       <div
                         key={wd}
-                        className={wIdx === 6 ? 'text-red-500' : wIdx === 5 ? 'text-blue-500' : 'text-black/40 dark:text-white/40'}
+                        className={wIdx === 0 ? 'text-red-500' : wIdx === 6 ? 'text-blue-500' : 'text-black/40 dark:text-white/40'}
                       >
                         {wd[0]}
                       </div>
@@ -2809,8 +2831,8 @@ export function CalendarHubPage({
                       }
 
                       const col = dIdx % 7;
-                      const isSun = day.dayOfWeek === 6;
-                      const isSat = day.dayOfWeek === 5;
+                      const isSun = day.dayOfWeek === 0;
+                      const isSat = day.dayOfWeek === 6;
 
                       // 이전/다음 날짜와 동일한 여정 연속성 판별 (주 단위 가로 알약 리본 생성)
                       const prevInRowHasTrip = day.hasTrip && col > 0 && m.days[dIdx - 1]?.hasTrip && (!day.tripId || !m.days[dIdx - 1]?.tripId || day.tripId === m.days[dIdx - 1]?.tripId);
@@ -3577,6 +3599,109 @@ export function CalendarHubPage({
                 type="button"
                 onClick={closeQuickView}
                 className="px-4 h-9 rounded-full border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10 text-xs font-mono font-bold transition-colors cursor-pointer"
+              >
+                CLOSE
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────── YEAR TRIPS LIST MODAL (Swiss Minimal) ──────────────── */}
+      {isYearTripsModalOpen && (
+        <div 
+          onClick={() => setIsYearTripsModalOpen(false)}
+          className="fixed inset-0 z-[120] bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200 select-none"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg bg-white dark:bg-[#141414] border border-black/20 dark:border-white/20 shadow-2xl p-6 sm:p-7 flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-black/10 dark:border-white/10 shrink-0">
+              <div className="flex items-baseline gap-2.5">
+                <span className="text-xl sm:text-2xl font-black font-satoshi tracking-tight text-black dark:text-white uppercase">
+                  {currentYear} JOURNEYS
+                </span>
+                <span className="text-xs font-mono font-bold text-red-600 dark:text-red-400">
+                  {currentYearJourneys.length === 1 ? '1 TRIP' : `${currentYearJourneys.length} TRIPS`}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsYearTripsModalOpen(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                title="닫기"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Content: Journeys List */}
+            <div className="py-4 overflow-y-auto divide-y divide-black/10 dark:divide-white/10 flex-1">
+              {currentYearJourneys.length === 0 ? (
+                <div className="py-12 text-center text-xs font-mono text-black/40 dark:text-white/40 uppercase">
+                  NO JOURNEYS RECORDED IN {currentYear}
+                </div>
+              ) : (
+                currentYearJourneys.map((item, idx) => {
+                  const sParts = item.range.start.split('-');
+                  const eParts = item.range.end.split('-');
+                  const sFormatted = `${sParts[0]}.${sParts[1]}.${sParts[2]}`;
+                  const eFormatted = `${eParts[0]}.${eParts[1]}.${eParts[2]}`;
+                  const dateRangeStr = sFormatted === eFormatted ? sFormatted : `${sFormatted} - ${eFormatted}`;
+                  const daysCount = Math.max(1, Math.round((new Date(item.range.end).getTime() - new Date(item.range.start).getTime()) / (1000 * 60 * 60 * 24)) + 1);
+
+                  const targetYear = parseInt(sParts[0], 10);
+                  const targetMonth = parseInt(sParts[1], 10) - 1;
+
+                  return (
+                    <div
+                      key={`year-modal-trip-${item.journey.id || idx}`}
+                      onClick={() => {
+                        setCurrentYear(targetYear);
+                        setCurrentMonth(targetMonth);
+                        toggleViewMode('month');
+                        setIsYearTripsModalOpen(false);
+                      }}
+                      className="py-3.5 first:pt-1 last:pb-1 flex items-center justify-between gap-4 cursor-pointer group hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors"
+                      title="클릭하여 해당 월 달력으로 이동"
+                    >
+                      <div className="flex flex-col gap-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm sm:text-base font-bold font-satoshi text-black dark:text-white group-hover:text-red-600 transition-colors truncate">
+                            {item.journey.title}
+                          </span>
+                          {item.isPlan && (
+                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-600/10 text-blue-600 dark:text-blue-400 shrink-0">
+                              PLAN
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs font-mono text-black/50 dark:text-white/50">
+                          {dateRangeStr}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-red-600 text-white">
+                          {daysCount === 1 ? '1 DAY' : `${daysCount} DAYS`}
+                        </span>
+                        <ChevronRight className="w-4 h-4 text-black/30 dark:text-white/30 group-hover:text-red-600 group-hover:translate-x-0.5 transition-all" />
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="pt-4 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-xs font-mono text-black/40 dark:text-white/40 shrink-0">
+              <span>클릭 시 해당 월 달력으로 이동합니다</span>
+              <button
+                type="button"
+                onClick={() => setIsYearTripsModalOpen(false)}
+                className="px-4 py-1.5 border border-black/15 dark:border-white/15 text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 font-bold transition-colors cursor-pointer uppercase tracking-wider"
               >
                 CLOSE
               </button>

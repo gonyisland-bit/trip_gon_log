@@ -2163,8 +2163,8 @@ export function HomePage({
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
         const totalDays = lastDay.getDate();
-        // 0: Mon, 1: Tue, ..., 6: Sun (월요일 시작 그리드)
-        const startDayOfWeek = (firstDay.getDay() + 6) % 7;
+        // 0: Sun, 1: Mon, ..., 6: Sat (일요일 시작 표준 그리드)
+        const startDayOfWeek = firstDay.getDay();
 
         // 공휴일 정보
         const holidays = getKoreanHolidays(year);
@@ -2460,15 +2460,15 @@ export function HomePage({
               {/* 3. Large Circular Calendar Grid Column (lg:col-span-4 xl:col-span-4) - Snug & Right Aligned */}
               <div className="lg:col-span-4 xl:col-span-4 flex flex-col items-center lg:items-end justify-start w-full border-t lg:border-t-0 lg:border-l border-black/10 dark:border-white/10 pt-6 lg:pt-0 lg:pl-7 lg:pr-0">
                 <div className="w-full max-w-[380px] lg:max-w-full mx-auto lg:mr-0 lg:ml-auto">
-                  {/* Weekday Headers */}
+                  {/* Weekday Headers: SUN ~ SAT */}
                   <div className="grid grid-cols-7 gap-2 sm:gap-3 mb-3 text-center text-xs sm:text-sm font-black font-mono select-none text-black/40 dark:text-white/40">
+                    <div className="text-red-500">S</div>
                     <div>M</div>
                     <div>T</div>
                     <div>W</div>
                     <div>T</div>
                     <div>F</div>
                     <div className="text-blue-500">S</div>
-                    <div className="text-red-500">S</div>
                   </div>
 
                   {/* Circular Dot Grid (Larger responsive circles) */}
