@@ -138,10 +138,13 @@ export function Navigation({
           <button 
             onClick={() => navigateTo('home')} 
             className="flex items-center cursor-pointer group shrink-0"
+            title="Tripgon log 홈으로 이동"
           >
-            <span className="font-black text-lg sm:text-xl md:text-2xl tracking-tight font-['Inter',sans-serif] leading-none text-black dark:text-white group-hover:opacity-80 transition-opacity">
-              Tripgon log
-            </span>
+            <img 
+              src="/logo-logotype.png" 
+              alt="Tripgon log" 
+              className="h-5 sm:h-6 md:h-6.5 w-auto object-contain dark:invert transition-opacity group-hover:opacity-80 select-none" 
+            />
           </button>
 
           {/* Desktop Nav Links (HOME / TRIP / MAGAZINE / MAP in Inter Font, Uppercase, Larger) */}
@@ -271,10 +274,12 @@ export function Navigation({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-5">
           <div className="flex items-center">
-            <span className="font-black text-2xl tracking-tight font-['Inter',sans-serif] text-black dark:text-white">
-                Tripgon log
-              </span>
-            </div>
+            <img 
+              src="/logo-logotype.png" 
+              alt="Tripgon log" 
+              className="h-6 sm:h-7 w-auto object-contain dark:invert select-none" 
+            />
+          </div>
             <button
               type="button"
               onClick={() => setShowSettings(false)}
