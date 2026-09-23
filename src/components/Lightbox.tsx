@@ -995,12 +995,10 @@ export function Lightbox({
         <div className="absolute inset-0 bg-black/20" />
       </div>
 
-      {/* ── SLIDESHOW MODE OVERLAY (Auto-hide on idle) ── */}
+      {/* ── SLIDESHOW MODE OVERLAY (Auto-hide controls on idle) ── */}
       {isSlideshow && (
         <div
-          className={`absolute inset-0 z-30 flex flex-col justify-between pointer-events-none transition-opacity duration-300 ${
-            isControlsVisible ? 'opacity-100' : 'opacity-0'
-          }`}
+          className="absolute inset-0 z-30 flex flex-col justify-between pointer-events-none select-none"
           onMouseEnter={() => {
             if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
           }}
@@ -1008,8 +1006,12 @@ export function Lightbox({
             resetControlsTimer();
           }}
         >
-          {/* Top gradient + controls */}
-          <div className="pointer-events-auto flex justify-between items-center px-5 py-4 bg-gradient-to-b from-black/75 to-transparent">
+          {/* Top gradient + controls (Auto-hide on idle) */}
+          <div
+            className={`pointer-events-auto flex justify-between items-center px-5 py-4 bg-gradient-to-b from-black/80 via-black/40 to-transparent transition-opacity duration-300 ${
+              isControlsVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+          >
             <div className="flex items-center gap-2">
               {/* Image counter */}
               <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest">
@@ -1212,15 +1214,22 @@ export function Lightbox({
             </div>
           </div>
 
-          {/* Spacer: click to toggle pause/play */}
+          {/* Center Spacer: click to toggle pause/play */}
           <div
             onClick={handleTogglePause}
             className="flex-grow pointer-events-auto cursor-pointer"
           />
 
-          {/* Bottom info + progress bar */}
-          <div className="pointer-events-auto bg-gradient-to-t from-black/85 to-transparent px-6 pb-6 pt-10 flex flex-col items-center gap-3">
-            {/* Place & memo without duplicate title/location */}
+          {/* Bottom Area: Persistent Caption + Auto-hiding Dimmer & Progress */}
+          <div className="relative w-full flex flex-col items-center">
+            {/* 1. Bottom Dark Dimmer Gradient (Auto-hide on idle) */}
+            <div
+              className={`absolute inset-0 -top-24 bg-gradient-to-t from-black/85 via-black/40 to-transparent transition-opacity duration-300 pointer-events-none ${
+                isControlsVisible ? 'opacity-100' : 'opacity-0'
+              }`}
+            />
+
+            {/* 2. Persistent Caption (Stays visible even when controls auto-hide, hidden only in Clean View) */}
             {!isCleanView && (() => {
               const primaryTitle = (currentMeta.place || currentMeta.imgNote || '').trim();
               const secondaryLoc = (currentMeta.location && currentMeta.location.trim() !== primaryTitle) ? currentMeta.location.trim() : '';
@@ -1229,27 +1238,27 @@ export function Lightbox({
               if (!primaryTitle && !currentMeta.date && !secondaryLoc && !extraNote) return null;
 
               return (
-                <div className="text-center max-w-xl px-4 animate-in fade-in duration-200">
+                <div className="relative z-10 text-center max-w-xl px-4 pb-3 transition-all duration-300 pointer-events-none select-none">
                   {primaryTitle && (
-                    <div className="text-white font-bold text-sm md:text-base tracking-wide uppercase mb-1 drop-shadow-md">
+                    <div className="text-white font-bold text-sm md:text-base tracking-wide uppercase mb-1 drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)]">
                       {primaryTitle}
                     </div>
                   )}
                   {currentMeta.date && (
                     <div
-                      className="font-mono font-bold tracking-widest"
+                      className="font-mono font-bold tracking-widest drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)]"
                       style={{ color: '#f97316', fontSize: 'clamp(11px, 1.4vw, 16px)', letterSpacing: '0.12em' }}
                     >
                       {formatFilmDate(currentMeta.date)}
                     </div>
                   )}
                   {secondaryLoc ? (
-                    <div className="text-white/80 text-xs mt-1 max-w-lg truncate flex items-center justify-center gap-1 font-sans">
-                      <MapPin className="w-3 h-3 text-orange-400 shrink-0" />
+                    <div className="text-white/90 text-xs mt-1 max-w-lg truncate flex items-center justify-center gap-1 font-sans drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)]">
+                      <MapPin className="w-3 h-3 text-orange-400 shrink-0 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]" />
                       <span>{secondaryLoc}</span>
                     </div>
                   ) : extraNote ? (
-                    <div className="text-white/70 text-xs mt-1 max-w-lg truncate">
+                    <div className="text-white/80 text-xs mt-1 max-w-lg truncate drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)]">
                       {extraNote}
                     </div>
                   ) : null}
@@ -1257,33 +1266,40 @@ export function Lightbox({
               );
             })()}
 
-            {/* Progress bar */}
-            <div className="w-full max-w-xs h-[2px] bg-white/15 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-orange-500 rounded-full transition-none"
-                style={{ width: `${isPaused ? slideProgress : slideProgress}%` }}
-              />
-            </div>
-
-            {/* Dot indicators - 멈추었을 때(isPaused)에만 등장 */}
-            {isPaused && (
-              <div className="flex gap-1.5 flex-wrap justify-center max-w-sm max-h-16 overflow-y-auto px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-full border border-white/10 animate-in fade-in duration-200 hide-scrollbar">
-                {images.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onNavigate(idx);
-                    }}
-                    className={`rounded-full transition-all duration-200 cursor-pointer ${
-                      idx === currentIndex
-                        ? 'w-4 h-1.5 bg-orange-500'
-                        : 'w-1.5 h-1.5 bg-white/30 hover:bg-white/70'
-                    }`}
-                  />
-                ))}
+            {/* 3. Progress bar & Dot indicators (Auto-hide on idle) */}
+            <div
+              className={`relative z-10 w-full flex flex-col items-center gap-3 pb-6 transition-opacity duration-300 ${
+                isControlsVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+              }`}
+            >
+              {/* Progress bar */}
+              <div className="w-full max-w-xs h-[2px] bg-white/20 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-orange-500 rounded-full transition-none"
+                  style={{ width: `${isPaused ? slideProgress : slideProgress}%` }}
+                />
               </div>
-            )}
+
+              {/* Dot indicators - 멈추었을 때(isPaused)에만 등장 */}
+              {isPaused && (
+                <div className="flex gap-1.5 flex-wrap justify-center max-w-sm max-h-16 overflow-y-auto px-3 py-1.5 bg-black/50 backdrop-blur-md rounded-full border border-white/15 animate-in fade-in duration-200 hide-scrollbar pointer-events-auto">
+                  {images.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onNavigate(idx);
+                      }}
+                      className={`rounded-full transition-all duration-200 cursor-pointer ${
+                        idx === currentIndex
+                          ? 'w-4 h-1.5 bg-orange-500'
+                          : 'w-1.5 h-1.5 bg-white/30 hover:bg-white/70'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
