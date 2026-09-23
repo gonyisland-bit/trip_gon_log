@@ -210,31 +210,39 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
 
         /* ── Shooting Stars (Night Sky Clear) ── */
         @keyframes tglShootingStar1 {
-          0%, 82%, 100% {
+          0%, 82% {
             opacity: 0;
-            transform: translate3d(0, 0, 0) rotate(-35deg) scaleX(0.1);
+            transform: translate3d(50px, -35px, 0) rotate(-35deg) scaleX(0.1);
           }
           84% {
             opacity: 1;
             transform: translate3d(0, 0, 0) rotate(-35deg) scaleX(1);
           }
-          88% {
+          87% {
             opacity: 0;
-            transform: translate3d(-260px, 180px, 0) rotate(-35deg) scaleX(1.4);
+            transform: translate3d(-240px, 168px, 0) rotate(-35deg) scaleX(1.3);
+          }
+          100% {
+            opacity: 0;
+            transform: translate3d(-240px, 168px, 0) rotate(-35deg) scaleX(0.1);
           }
         }
         @keyframes tglShootingStar2 {
-          0%, 86%, 100% {
+          0%, 86% {
             opacity: 0;
-            transform: translate3d(0, 0, 0) rotate(-32deg) scaleX(0.1);
+            transform: translate3d(50px, -32px, 0) rotate(-32deg) scaleX(0.1);
           }
           88% {
             opacity: 0.95;
             transform: translate3d(0, 0, 0) rotate(-32deg) scaleX(1);
           }
-          92% {
+          91% {
             opacity: 0;
-            transform: translate3d(-310px, 195px, 0) rotate(-32deg) scaleX(1.5);
+            transform: translate3d(-280px, 175px, 0) rotate(-32deg) scaleX(1.4);
+          }
+          100% {
+            opacity: 0;
+            transform: translate3d(-280px, 175px, 0) rotate(-32deg) scaleX(0.1);
           }
         }
 
@@ -467,8 +475,8 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
               <div className="absolute inset-x-0 top-0 h-[70vh] bg-gradient-to-b from-[#1b2554]/90 via-[#111738]/55 to-transparent transition-opacity duration-1000" />
               <div className="absolute -top-16 -right-16 w-[480px] h-[480px] rounded-full blur-3xl bg-indigo-400/20" />
 
-              {/* 스위스 미니멀 초승달 (Crescent Moon) */}
-              <div className="absolute top-6 right-10 sm:top-10 sm:right-16 pointer-events-none flex items-center justify-center">
+              {/* 스위스 미니멀 초승달 (Crescent Moon: 헤더 아래 여유 배치) */}
+              <div className="absolute top-20 right-8 sm:top-24 sm:right-16 pointer-events-none flex items-center justify-center">
                 <div className="absolute w-16 h-16 rounded-full bg-amber-100/20 blur-xl pointer-events-none" />
                 <svg
                   className="w-7 h-7 sm:w-8 sm:h-8 text-amber-100/90 drop-shadow-[0_0_8px_rgba(254,240,138,0.45)]"
@@ -479,16 +487,25 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
                 </svg>
               </div>
 
-              {/* 간헐적 별똥별 (Shooting Stars) */}
+              {/* 간헐적 별똥별 (Shooting Stars: 초기 정지 잔상 방지용 opacity-0 및 animation-fill-mode both) */}
               <div
-                className="absolute top-10 right-28 sm:top-14 sm:right-48 pointer-events-none"
-                style={{ animation: 'tglShootingStar1 16s ease-out infinite' }}
+                className="absolute top-24 right-28 sm:top-28 sm:right-48 pointer-events-none opacity-0"
+                style={{
+                  opacity: 0,
+                  animation: 'tglShootingStar1 16s ease-out infinite',
+                  animationFillMode: 'both',
+                }}
               >
                 <div className="w-28 sm:w-36 h-[1.5px] bg-gradient-to-r from-transparent via-indigo-200 to-white rounded-full shadow-[0_0_6px_#fff]" />
               </div>
               <div
-                className="absolute top-24 right-52 sm:top-32 sm:right-96 pointer-events-none"
-                style={{ animation: 'tglShootingStar2 22s ease-out infinite', animationDelay: '9s' }}
+                className="absolute top-36 right-48 sm:top-44 sm:right-80 pointer-events-none opacity-0"
+                style={{
+                  opacity: 0,
+                  animation: 'tglShootingStar2 22s ease-out infinite',
+                  animationDelay: '9s',
+                  animationFillMode: 'both',
+                }}
               >
                 <div className="w-24 sm:w-32 h-[1.2px] bg-gradient-to-r from-transparent via-cyan-200 to-white rounded-full shadow-[0_0_6px_#fff]" />
               </div>
@@ -627,22 +644,23 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
       )}
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* 5. CLOUDS / FOG EFFECT (흐림 — 저채도 짙은 구름기, 별 0개)     */}
+      {/* 5. CLOUDS / FOG EFFECT (흐림 — 저채도 짙은 먹구름 그라데이션)   */}
       {/* ───────────────────────────────────────────────────────────── */}
       {(effectType === 'clouds' || effectType === 'fog') && (
         <div className="absolute inset-0 pointer-events-none">
+          {/* 상단 먹구름 낀 차콜-딥슬레이트 대기 그라데이션 */}
           <div
             className={`absolute inset-x-0 top-0 h-[65vh] transition-opacity duration-1000 ${
               isDarkMode
-                ? 'bg-gradient-to-b from-[#0b0c0f]/95 via-[#121316]/65 to-transparent'
+                ? 'bg-gradient-to-b from-[#1c222e]/85 via-[#141822]/55 to-transparent'
                 : 'bg-gradient-to-b from-slate-500/40 via-slate-400/20 to-transparent'
             }`}
           />
-          {/* 어둡고 묵직한 구름 덩어리 레이어 */}
+          {/* 어둡고 묵직한 구름 덩어리 레이어 (완전 블랙 대신 실제 먹구름 차콜 톤 적용) */}
           <div
             className="absolute -top-20 -left-10 w-[75vw] h-[45vh] rounded-full blur-[90px]"
             style={{
-              backgroundColor: isDarkMode ? 'rgba(18, 19, 23, 0.85)' : 'rgba(100, 116, 139, 0.35)',
+              backgroundColor: isDarkMode ? 'rgba(32, 40, 54, 0.65)' : 'rgba(100, 116, 139, 0.35)',
               animation: 'tglOvercastMassBreathe 12s ease-in-out infinite',
               willChange: 'transform, opacity',
             }}
@@ -650,14 +668,14 @@ export const WeatherEffectLayer: React.FC<WeatherEffectLayerProps> = ({
           <div
             className="absolute -top-28 right-0 w-[65vw] h-[42vh] rounded-full blur-[85px]"
             style={{
-              backgroundColor: isDarkMode ? 'rgba(12, 13, 16, 0.90)' : 'rgba(71, 85, 105, 0.3)',
+              backgroundColor: isDarkMode ? 'rgba(24, 30, 42, 0.70)' : 'rgba(71, 85, 105, 0.3)',
               animation: 'tglOvercastMassBreathe 10s ease-in-out infinite reverse',
               willChange: 'transform, opacity',
             }}
           />
           <div
             className={`absolute inset-0 transition-opacity duration-1000 ${
-              isDarkMode ? 'bg-[#090a0c]/45' : 'bg-slate-300/25'
+              isDarkMode ? 'bg-slate-950/20' : 'bg-slate-300/25'
             }`}
           />
         </div>

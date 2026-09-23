@@ -684,6 +684,27 @@ export function CalendarHubPage({
     }
   }, []);
 
+  // 모든 여정(Archive)과 계획(Plan) 파싱
+  const parsedJourneys = useMemo(() => {
+    const all = [
+      ...trips.map(t => ({ ...t, isPlan: false })),
+      ...plans.map(p => ({ ...p, isPlan: true }))
+    ];
+
+    return all.map(j => {
+      const range = parseTripDateRange(j.date);
+      return {
+        journey: j,
+        isPlan: j.isPlan,
+        range,
+      };
+    }).filter(item => item.range !== null) as {
+      journey: Trip | Plan;
+      isPlan: boolean;
+      range: { start: string; end: string };
+    }[];
+  }, [trips, plans]);
+
   // 현재 연도의 한국 공휴일 계산 (메모이제이션)
   const currentHolidays = useMemo(() => {
     return getKoreanHolidays(currentYear);
@@ -709,13 +730,79 @@ export function CalendarHubPage({
   };
 
   const handleGoToday = () => {
-    setCurrentYear(today.getFullYear());
-    setCurrentMonth(today.getMonth());
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const todayY = today.getFullYear();
+    const todayM = today.getMonth();
+    const todayStr = `${todayY}-${String(todayM + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    
+    setCurrentYear(todayY);
+    setCurrentMonth(todayM);
     setSelectedRange({ start: todayStr, end: todayStr });
     setDragAnchorDate(todayStr);
-    // 오늘 날짜로 돌아올 때 오늘 기준 실시간 날씨로 배경 복귀
-    window.dispatchEvent(new CustomEvent('weatherAmbienceOverride', { detail: null }));
+    setSelectedScheduleId(null);
+
+    // 날씨 모드인 경우 오늘 날씨 항목으로 선택 동기화하여 날씨 선택 링과 카드가 오늘로 즉시 이동
+    if (isWeatherMode) {
+      const exact = cityWeatherData?.forecast?.find(f => f.date === todayStr);
+      const w = exact || getSimulatedWeatherForDate(selectedWeatherCity.nameEn, todayStr);
+      if (w) {
+        setSelectedWeatherDay({
+          dateStr: todayStr,
+          city: selectedWeatherCity,
+          weather: w
+        });
+        window.dispatchEvent(new CustomEvent('weatherAmbienceOverride', {
+          detail: { weatherCode: w.weatherCode, precipitationProb: w.precipitationProb }
+        }));
+      } else {
+        setSelectedWeatherDay(null);
+        window.dispatchEvent(new CustomEvent('weatherAmbienceOverride', { detail: null }));
+      }
+    } else {
+      setSelectedWeatherDay(null);
+      // 일반 모드: 오늘 날짜 기준 실시간 날씨 배경으로 복귀
+      window.dispatchEvent(new CustomEvent('weatherAmbienceOverride', { detail: null }));
+    }
+
+    // 오늘 날짜에 속한 여정(Trip) 및 커스텀 일정(Event) 추출
+    const matchingTrips: any[] = [];
+    parsedJourneys.forEach(({ journey, isPlan, range }) => {
+      if (todayStr >= range.start && todayStr <= range.end) {
+        matchingTrips.push({
+          title: journey.title,
+          type: 'trip' as const,
+          isPlan,
+          days: getDaysDifference(range.start, range.end),
+          categoryColor: isPlan ? '#3b82f6' : '#ef4444',
+          itemObj: journey
+        });
+      }
+    });
+
+    const matchingEvents: any[] = [];
+    customEvents.forEach((ev) => {
+      const evEnd = ev.endDate || ev.startDate;
+      if (todayStr >= ev.startDate && todayStr <= evEnd) {
+        const cat = EVENT_CATEGORIES.find(c => c.id === ev.category);
+        matchingEvents.push({
+          title: ev.title,
+          type: 'event' as const,
+          categoryColor: cat?.color || '#10b981',
+          days: getDaysDifference(ev.startDate, evEnd),
+          itemObj: ev
+        });
+      }
+    });
+
+    const exactWeather = cityWeatherData?.forecast?.find(f => f.date === todayStr);
+    const todayWeather = exactWeather || (isWeatherMode ? getSimulatedWeatherForDate(selectedWeatherCity.nameEn, todayStr) : undefined);
+
+    setQuickViewDate({
+      dateStr: todayStr,
+      holidayName: getHolidayInfo(todayStr)?.name,
+      weather: todayWeather,
+      items: [...matchingTrips, ...matchingEvents]
+    });
+
     if (viewMode !== 'month') {
       toggleViewMode('month');
     }
@@ -857,26 +944,7 @@ export function CalendarHubPage({
     };
   }, [isDragging]);
 
-  // 모든 여정(Archive)과 계획(Plan) 파싱
-  const parsedJourneys = useMemo(() => {
-    const all = [
-      ...trips.map(t => ({ ...t, isPlan: false })),
-      ...plans.map(p => ({ ...p, isPlan: true }))
-    ];
 
-    return all.map(j => {
-      const range = parseTripDateRange(j.date);
-      return {
-        journey: j,
-        isPlan: j.isPlan,
-        range,
-      };
-    }).filter(item => item.range !== null) as {
-      journey: Trip | Plan;
-      isPlan: boolean;
-      range: { start: string; end: string };
-    }[];
-  }, [trips, plans]);
 
   // 현재 연도에 속하거나 걸쳐 있는 여정 목록 (연간 달력 카운터 및 목록 모달용)
   const currentYearJourneys = useMemo(() => {
@@ -2243,10 +2311,10 @@ export function CalendarHubPage({
                     circleClasses += ' !opacity-60 text-white font-bold';
                   }
                 } else if (cell.isToday) {
-                  // 오늘 날짜: 예전처럼 테두리 없는 반전 상태 (블랙)
+                  // 오늘 날짜: 스위스 미니멀 반전 상태 (블랙/화이트) + 선택 시 선명한 듀얼 링 인디케이터
                   circleClasses += ' bg-black text-white dark:bg-white dark:text-black font-black shadow-sm';
                   if (isSelected) {
-                    circleClasses += ' ring-[2.5px] ring-black dark:ring-white ring-offset-2 scale-105 z-20';
+                    circleClasses += ' ring-[2.5px] ring-black dark:ring-white ring-offset-2 ring-offset-[#fcfbf9] dark:ring-offset-[#121316] scale-105 shadow-md z-20';
                   }
                   textClasses = 'text-xs sm:text-base md:text-lg lg:text-xl font-black leading-none';
                 } else if (hasTrip) {
