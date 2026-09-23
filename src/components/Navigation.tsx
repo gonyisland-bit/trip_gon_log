@@ -215,7 +215,7 @@ export function Navigation({
           </div>
         </div>
 
-        {/* Right: Action Icons (Search, Edit, Night Mode, LogIn/Out) & Mobile Hamburger */}
+        {/* Right: Action Icons (Search, Weather Widget, Hamburger Menu) */}
         <div className="flex items-center gap-1 sm:gap-2 shrink-0" ref={dropdownRef}>
           {/* Search Button */}
           <button 
@@ -227,86 +227,14 @@ export function Navigation({
             <Search className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
           </button>
 
-          {/* Edit (Management Hub) Symbol Button - Desktop Admin Only */}
-          {isLoggedIn && isAdmin && (
-            <button
-              type="button"
-              onClick={() => {
-                if (currentView === 'manage') {
-                  const returnView = sessionStorage.getItem('lastNonManageView') || 'home';
-                  navigateTo(returnView);
-                } else {
-                  sessionStorage.setItem('lastNonManageView', currentView);
-                  sessionStorage.setItem('initialManageTab', currentView.toUpperCase());
-                  navigateTo('manage');
-                }
-              }}
-              className={`hidden md:flex p-2 sm:p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer items-center justify-center ${
-                currentView === 'manage'
-                  ? 'text-red-600 dark:text-red-500 bg-black/5 dark:bg-white/5'
-                  : 'text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white'
-              }`}
-              title={currentView === 'manage' ? "홈으로 돌아가기 (Ctrl + ,)" : "설정 / 관리자 허브 (Ctrl + ,)"}
-            >
-              <SlidersHorizontal className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-            </button>
-          )}
-
           {/* Mini Weather Widget Pill (All Hubs Persistent) */}
           <MiniWeatherWidget className="mr-0.5 sm:mr-1 shrink-0" />
 
-          {/* Night Mode Button - Visible on both Mobile & Desktop (Left of Mobile Menu) */}
-          <button
-            type="button"
-            onClick={() => setIsDarkMode(!isDarkMode)}
-            className="flex p-2 sm:p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors cursor-pointer items-center justify-center"
-            title={isDarkMode ? "나이트 모드 (클릭 시 라이트 모드로 전환, Ctrl + Shift + L)" : "라이트 모드 (클릭 시 나이트 모드로 전환, Ctrl + Shift + L)"}
-          >
-            {isDarkMode ? (
-              <Moon className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-indigo-400" />
-            ) : (
-              <Sun className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-amber-500" />
-            )}
-          </button>
-
-          {/* Profile Avatar Button - Desktop Only (암호 확인 후 프로필 수정) */}
-          {isLoggedIn && (
-            <button
-              type="button"
-              onClick={() => setIsPasswordVerifyOpen(true)}
-              className="hidden md:flex p-1 hover:ring-2 hover:ring-black/30 dark:hover:ring-white/30 transition-all cursor-pointer items-center justify-center"
-              title={`프로필 관리 (${displayName})`}
-            >
-              <UserProfileAvatar profile={currentUserProfile} size="sm" fallbackName={displayName} />
-            </button>
-          )}
-
-          {/* Log In / Out Button - Desktop Only */}
-          {isLoggedIn ? (
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="hidden md:flex p-2 sm:p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-black/70 hover:text-red-600 dark:text-white/70 dark:hover:text-red-400 transition-colors cursor-pointer items-center justify-center"
-              title="로그아웃 (Sign Out)"
-            >
-              <LogOut className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => openAuthModal('login')}
-              className="hidden md:flex p-2 sm:p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors cursor-pointer items-center justify-center"
-              title="로그인 (Sign In)"
-            >
-              <User className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-            </button>
-          )}
-
-          {/* Mobile Hamburger Menu Toggle Button - Simple modern circular icon */}
+          {/* Hamburger Menu Toggle Button - Clean Swiss Minimal icon */}
           <button 
             type="button"
             onClick={() => setShowSettings(!showSettings)}
-            className={`md:hidden p-2 sm:p-2.5 rounded-full transition-colors cursor-pointer flex items-center justify-center ${
+            className={`p-2 sm:p-2.5 rounded-full transition-colors cursor-pointer flex items-center justify-center ${
               showSettings 
                 ? 'bg-black text-white dark:bg-white dark:text-black' 
                 : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white'
@@ -323,13 +251,21 @@ export function Navigation({
         </div>
       </div>
 
-      {/* Editorial Typography Hamburger Menu (Smooth 200ms Fade & Slide In/Out) */}
+      {/* Backdrop for Desktop Drawer & Mobile Overlay */}
+      <div 
+        onClick={() => setShowSettings(false)}
+        className={`fixed inset-0 z-[99] bg-black/40 backdrop-blur-xs transition-opacity duration-300 ease-out ${
+          showSettings ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+      />
+
+      {/* Swiss Minimal Typography Drawer Menu (Mobile Fullscreen / Desktop Slide-over Drawer) */}
       <div 
         style={{ backgroundColor: isDarkMode ? '#111111' : '#FFFFFF' }}
-        className={`fixed inset-0 z-[100] !bg-white dark:!bg-[#111111] flex flex-col justify-between p-8 sm:p-12 md:hidden transition-all duration-200 ease-out shadow-2xl ${
+        className={`fixed inset-y-0 right-0 z-[100] w-full sm:max-w-md !bg-white dark:!bg-[#111111] border-l border-black/15 dark:border-white/15 flex flex-col justify-between p-6 sm:p-10 transition-transform duration-300 ease-out shadow-2xl ${
           showSettings 
-            ? 'opacity-100 translate-y-0 pointer-events-auto' 
-            : 'opacity-0 -translate-y-2 pointer-events-none'
+            ? 'translate-x-0 pointer-events-auto' 
+            : 'translate-x-full pointer-events-none'
         }`}
       >
         {/* Header */}

@@ -2005,6 +2005,7 @@ export function MapHubPage({
   const flightPreTimeoutRef = useRef<any>(null);
   const flightLandingTimeoutRef = useRef<any>(null);
   const flightSessionIdRef = useRef<number>(0);
+  const updateNightClipRef = useRef<(() => void) | null>(null);
 
   // Clean up flight animation on unmount
   useEffect(() => {
@@ -2700,6 +2701,8 @@ export function MapHubPage({
           } catch (_) {}
 
           setIsFlyingToCountry(false);
+          // 비행 완료 후 낮/밤 명암 경계선 최종 위치 즉각 1회 동기화
+          updateNightClipRef.current?.();
           setSelectedCountry(targetCountry);
           setSearchQuery(targetCountry.name);
         }, 920);
@@ -2911,6 +2914,7 @@ export function MapHubPage({
     }
 
     setIsFlyingToCountry(false);
+    updateNightClipRef.current?.();
     setSelectedCountry(null);
     setSearchQuery('');
   };
@@ -3184,6 +3188,9 @@ export function MapHubPage({
     ]);
 
     // 1. Function to update CSS clipPath polygon projection directly using Leaflet LayerPoints
+    let cachedContinuousPoints: [number, number][] | null = null;
+    let cachedPointsMinute = -1;
+
     const updateNightClip = () => {
       const currentMap = mapRef.current;
       if (!currentMap) return;
@@ -3196,12 +3203,19 @@ export function MapHubPage({
         return;
       }
 
+      // 비행기 활공 중 60fps 불필요한 고비용 clipPath 재계산 및 GPU 재래스터화 원천 차단
+      if (isFlyingToCountryRef.current) return;
+
       const now = new Date();
-      // Generate wide continuous polygon covering -540 to +540 degrees (3 full world spans)
-      const continuousPoints = getContinuousNightPolygon(now, 2, -540, 540);
+      const currentMinute = Math.floor(now.getTime() / 60000);
+      if (!cachedContinuousPoints || cachedPointsMinute !== currentMinute) {
+        // Generate wide continuous polygon covering -540 to +540 degrees (3 full world spans)
+        cachedContinuousPoints = getContinuousNightPolygon(now, 2, -540, 540);
+        cachedPointsMinute = currentMinute;
+      }
 
       // Convert geo-coordinates to Leaflet LayerPoint (matches nightTilePane's local coordinate system)
-      const layerPoints = continuousPoints.map(([lat, lng]) => {
+      const layerPoints = cachedContinuousPoints.map(([lat, lng]) => {
         const pt = currentMap.latLngToLayerPoint([lat, lng]);
         return `${Math.round(pt.x)}px ${Math.round(pt.y)}px`;
       });
@@ -3210,6 +3224,7 @@ export function MapHubPage({
       nightPane.style.clipPath = polygonCss;
       nightPane.style.webkitClipPath = polygonCss;
     };
+    updateNightClipRef.current = updateNightClip;
 
     const renderTerminatorAndLights = () => {
       const currentMap = mapRef.current;
@@ -4035,7 +4050,7 @@ export function MapHubPage({
         </div>
 
         {/* Mobile: Single Integrated Icon with Smooth Horizontal Expand */}
-        <div ref={mobileControlsRef} className="sm:hidden flex items-center bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/20 dark:border-white/20 shadow-2xl z-20 shrink-0">
+        <div ref={mobileControlsRef} className="sm:hidden flex items-stretch h-8 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border border-black/20 dark:border-white/20 shadow-2xl z-20 shrink-0">
           {/* Master Toggle Button */}
           <button
             type="button"
@@ -4052,7 +4067,7 @@ export function MapHubPage({
                 setIsMobileControlsOpen(true);
               }
             }}
-            className={`p-2 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+            className={`h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
               isMobileControlsOpen
                 ? 'bg-black text-white dark:bg-white dark:text-black'
                 : 'text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5'
@@ -4063,17 +4078,17 @@ export function MapHubPage({
           </button>
 
           {/* Smooth Horizontal Expandable Toolbar */}
-          <div className={`flex items-center divide-x divide-black/15 dark:divide-white/15 transition-all duration-300 ease-in-out overflow-hidden border-l border-black/15 dark:border-white/15 ${
+          <div className={`flex items-stretch h-full divide-x divide-black/15 dark:divide-white/15 transition-all duration-300 ease-in-out overflow-hidden border-l border-black/15 dark:border-white/15 ${
             isMobileControlsOpen ? 'max-w-[320px] opacity-100' : 'max-w-0 opacity-0 pointer-events-none border-l-0'
           }`}>
             {/* 1. Label Toggle (Tag) */}
             <button
               type="button"
               onClick={togglePinLabels}
-              className={`p-2 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+              className={`h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
                 showPinLabels
                   ? 'bg-black text-white dark:bg-white dark:text-black'
-                  : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
+                  : 'text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
               }`}
               title="TOGGLE LABELS"
             >
@@ -4084,10 +4099,10 @@ export function MapHubPage({
             <button
               type="button"
               onClick={toggleVisitedPins}
-              className={`p-2 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+              className={`h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
                 showVisitedPins
                   ? 'bg-black text-white dark:bg-white dark:text-black'
-                  : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
+                  : 'text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
               }`}
               title="TOGGLE VISITED PINS"
             >
@@ -4098,10 +4113,10 @@ export function MapHubPage({
             <button
               type="button"
               onClick={toggleWishlistPins}
-              className={`p-2 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+              className={`h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
                 showWishlistPins
                   ? 'bg-black text-white dark:bg-white dark:text-black'
-                  : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
+                  : 'text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
               }`}
               title="TOGGLE WISHLIST PINS"
             >
@@ -4112,10 +4127,10 @@ export function MapHubPage({
             <button
               type="button"
               onClick={togglePlaneAnim}
-              className={`p-2 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+              className={`h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
                 isPlaneAnimEnabled
                   ? 'bg-black text-white dark:bg-white dark:text-black'
-                  : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
+                  : 'text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
               }`}
               title={isPlaneAnimEnabled ? "비행기 모션 켜짐" : "비행기 모션 꺼짐"}
             >
@@ -4126,10 +4141,10 @@ export function MapHubPage({
             <button
               type="button"
               onClick={() => setIsDayNightEnabled(prev => !prev)}
-              className={`p-2 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+              className={`h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
                 isDayNightEnabled
-                  ? 'bg-black text-amber-400 dark:bg-white dark:text-amber-500'
-                  : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
+                  ? 'bg-black text-white dark:bg-white dark:text-black'
+                  : 'text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
               }`}
               title={isDayNightEnabled ? "낮/밤 명암 경계선 켜짐" : "낮/밤 명암 경계선 꺼짐"}
             >
@@ -4143,7 +4158,7 @@ export function MapHubPage({
                 handleResetToDefaultView();
                 setIsMobileControlsOpen(false);
               }}
-              className="p-2 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors cursor-pointer flex items-center justify-center shrink-0"
+              className="h-full px-2.5 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
               title="RESET VIEW (H)"
             >
               <HomeIcon className="w-3.5 h-3.5" />
@@ -4156,7 +4171,7 @@ export function MapHubPage({
                 setIsPlaceListModalOpen(true);
                 setIsMobileControlsOpen(false);
               }}
-              className="p-2 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors cursor-pointer flex items-center justify-center shrink-0"
+              className="h-full px-2.5 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
               title="PLACES LIST"
             >
               <List className="w-3.5 h-3.5" />
@@ -4173,7 +4188,7 @@ export function MapHubPage({
                 }
                 setIsMobileControlsOpen(false);
               }}
-              className={`p-2 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+              className={`h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
                 isBuilderOpen
                   ? 'bg-red-600 text-white dark:bg-red-500 dark:text-black'
                   : 'bg-black text-white dark:bg-white dark:text-black'
@@ -4191,7 +4206,7 @@ export function MapHubPage({
                   handleReCenterBuilderTarget();
                   setIsMobileControlsOpen(false);
                 }}
-                className="p-2 text-black/70 dark:text-white/70 hover:text-red-600 dark:hover:text-red-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+                className="h-full px-2.5 text-black/70 dark:text-white/70 hover:text-red-600 dark:hover:text-red-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
                 title={`RE-CENTER TO: ${builderTargetName}`}
               >
                 <LocateFixed className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
@@ -4201,15 +4216,15 @@ export function MapHubPage({
         </div>
 
         {/* Desktop Swiss Minimal Monochrome Icon Toggles */}
-        <div className="hidden sm:flex items-center border border-black/20 dark:border-white/20 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md shadow-2xl divide-x divide-black/15 dark:divide-white/15 z-10">
+        <div className="hidden sm:flex items-stretch h-8 sm:h-9 border border-black/20 dark:border-white/20 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md shadow-2xl divide-x divide-black/15 dark:divide-white/15 z-10">
           {/* 1. Label Toggle (Tag) */}
           <button
             type="button"
             onClick={togglePinLabels}
-            className={`p-2 sm:px-2.5 sm:py-2 transition-colors cursor-pointer flex items-center justify-center ${
+            className={`h-full px-2.5 sm:px-3 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
               showPinLabels
                 ? 'bg-black text-white dark:bg-white dark:text-black'
-                : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
+                : 'text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
             }`}
             title="TOGGLE LABELS"
           >
@@ -4220,10 +4235,10 @@ export function MapHubPage({
           <button
             type="button"
             onClick={toggleVisitedPins}
-            className={`p-2 sm:px-2.5 sm:py-2 transition-colors cursor-pointer flex items-center justify-center ${
+            className={`h-full px-2.5 sm:px-3 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
               showVisitedPins
                 ? 'bg-black text-white dark:bg-white dark:text-black'
-                : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
+                : 'text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
             }`}
             title="TOGGLE VISITED PINS"
           >
@@ -4234,10 +4249,10 @@ export function MapHubPage({
           <button
             type="button"
             onClick={toggleWishlistPins}
-            className={`p-2 sm:px-2.5 sm:py-2 transition-colors cursor-pointer flex items-center justify-center ${
+            className={`h-full px-2.5 sm:px-3 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
               showWishlistPins
                 ? 'bg-black text-white dark:bg-white dark:text-black'
-                : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
+                : 'text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
             }`}
             title="TOGGLE WISHLIST PINS"
           >
@@ -4248,10 +4263,10 @@ export function MapHubPage({
           <button
             type="button"
             onClick={togglePlaneAnim}
-            className={`p-2 sm:px-2.5 sm:py-2 transition-colors cursor-pointer flex items-center justify-center ${
+            className={`h-full px-2.5 sm:px-3 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
               isPlaneAnimEnabled
                 ? 'bg-black text-white dark:bg-white dark:text-black'
-                : 'text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white'
+                : 'text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
             }`}
             title={isPlaneAnimEnabled ? "비행기 비행 모션 켜짐 (클릭 시 끄기)" : "비행기 비행 모션 꺼짐 (즉시 확대 착륙)"}
           >
@@ -4262,23 +4277,23 @@ export function MapHubPage({
           <button
             type="button"
             onClick={handleResetToDefaultView}
-            className="p-2 sm:px-2.5 sm:py-2 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center"
+            className="h-full px-2.5 sm:px-3 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
             title="RESET VIEW (H)"
           >
             <HomeIcon className="w-3.5 h-3.5" />
           </button>
 
-          {/* 5. Registered Journey Places List Button */}
+          {/* 6. Registered Journey Places List Button */}
           <button
             type="button"
             onClick={() => setIsPlaceListModalOpen(true)}
-            className="p-2 sm:px-2.5 sm:py-2 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center border-l border-black/15 dark:border-white/15"
+            className="h-full px-2.5 sm:px-3 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
             title="PLACES LIST"
           >
             <List className="w-3.5 h-3.5" />
           </button>
 
-          {/* 6. In-place Trip Builder Toggle Button */}
+          {/* 7. In-place Trip Builder Toggle Button */}
           <button
             type="button"
             onClick={() => {
@@ -4288,7 +4303,7 @@ export function MapHubPage({
                 handleOpenTripBuilder();
               }
             }}
-            className={`p-2 sm:px-3 sm:py-2 text-xs font-mono font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer border-l border-black/15 dark:border-white/15 ${
+            className={`h-full px-2.5 sm:px-3 text-xs font-mono font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 ${
               isBuilderOpen
                 ? 'bg-red-600 text-white dark:bg-red-500 dark:text-black'
                 : 'bg-black text-white dark:bg-white dark:text-black hover:opacity-85'
@@ -4299,12 +4314,12 @@ export function MapHubPage({
             <span className="hidden sm:inline">TRIP</span>
           </button>
 
-          {/* 7. Re-Center to Active Builder Target Button */}
+          {/* 8. Re-Center to Active Builder Target Button */}
           {isBuilderOpen && builderTargetName && (
             <button
               type="button"
               onClick={handleReCenterBuilderTarget}
-              className="p-2 sm:px-2.5 sm:py-2 text-black/70 dark:text-white/70 hover:text-red-600 dark:hover:text-red-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center border-l border-black/15 dark:border-white/15"
+              className="h-full px-2.5 sm:px-3 text-black/70 dark:text-white/70 hover:text-red-600 dark:hover:text-red-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
               title={`RE-CENTER TO: ${builderTargetName}`}
             >
               <LocateFixed className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
