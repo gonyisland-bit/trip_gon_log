@@ -182,6 +182,7 @@ export function FloatingPocketWidget({
             )}
           </div>
         </div>
+      )}
     </div>
   );
 }
