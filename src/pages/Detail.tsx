@@ -1024,7 +1024,7 @@ export function JourneyDetailPage({
   const defaultCurrency = useMemo(() => {
     return getDefaultCurrencyForLocation(tripToUse?.locationStr);
   }, [tripToUse?.locationStr]);
-  const generatedDates = generateDateList(tripToUse?.date || '');
+  const generatedDates = useMemo(() => generateDateList(tripToUse?.date || ''), [tripToUse?.date]);
   const { start: minDate, end: maxDate } = parseDateRange(tripToUse?.date || '');
   const [airportGeocodedCoords, setAirportGeocodedCoords] = useState<{ [code: string]: { lat: number; lng: number } }>({});
   const tabContentRef = useRef<HTMLDivElement | null>(null);
@@ -2344,24 +2344,26 @@ export function JourneyDetailPage({
 
 
 
-  const filteredTimeline = selectedDate === 'ALL'
-    ? baseTimeline
-    : baseTimeline.filter(item => item.date === selectedDate);
-
   // Sort chronologically: by date, then by parsed time
-  const currentTimeline = [...filteredTimeline].sort((a, b) => {
-    const dateA = a.date || '';
-    const dateB = b.date || '';
-    if (dateA !== dateB) {
-      return dateA.localeCompare(dateB);
-    }
-    const timeA = parseTimeToMinutes(a.time);
-    const timeB = parseTimeToMinutes(b.time);
-    if (timeA !== timeB) {
-      return timeA - timeB;
-    }
-    return a.id - b.id;
-  });
+  const currentTimeline = useMemo(() => {
+    const filtered = selectedDate === 'ALL'
+      ? baseTimeline
+      : baseTimeline.filter(item => item.date === selectedDate);
+
+    return [...filtered].sort((a, b) => {
+      const dateA = a.date || '';
+      const dateB = b.date || '';
+      if (dateA !== dateB) {
+        return dateA.localeCompare(dateB);
+      }
+      const timeA = parseTimeToMinutes(a.time);
+      const timeB = parseTimeToMinutes(b.time);
+      if (timeA !== timeB) {
+        return timeA - timeB;
+      }
+      return a.id - b.id;
+    });
+  }, [baseTimeline, selectedDate]);
 
   // Handle pending detail jump (e.g. from Magazine moment click on Home page)
   useEffect(() => {
@@ -2406,20 +2408,23 @@ export function JourneyDetailPage({
 
   // Helper to determine the best starting spot index for Playlog
   const getPlaylogStartIndex = () => {
-    if (cinematicItems.length === 0) return 0;
+    const items = cinematicItemsRef.current;
+    if (items.length === 0) return 0;
+
+    const currentExpandedId = expandedItemIdRef.current;
 
     // 1. 직접 선택된 타임라인 스팟인 경우
-    if (expandedItemId !== null) {
-      const directIdx = cinematicItems.findIndex(i => i.id === expandedItemId);
+    if (currentExpandedId !== null) {
+      const directIdx = items.findIndex(i => i.id === currentExpandedId);
       if (directIdx !== -1) {
         return directIdx;
       }
 
       // 2. 포토 탭 사진 또는 핀(500000대)이 선택된 경우
-      const selectedPhoto = allGalleryImages.find(g => g.id === expandedItemId);
+      const selectedPhoto = allGalleryImages.find(g => g.id === currentExpandedId);
       if (selectedPhoto && selectedPhoto.date) {
         const photoTimeMin = selectedPhoto.time ? parseTimeToMinutes(selectedPhoto.time) : 0;
-        const sameDateItems = cinematicItems
+        const sameDateItems = items
           .map((item, idx) => ({ item, idx }))
           .filter(({ item }) => item.dateKey === selectedPhoto.date);
 
@@ -2443,14 +2448,7 @@ export function JourneyDetailPage({
       }
     }
 
-    // 3. 날짜 탭(selectedDate)이 ALL이 아닌 특정 일자로 선택되어 있는 경우
-    if (selectedDate && selectedDate !== 'ALL') {
-      const dateIdx = cinematicItems.findIndex(i => i.dateKey === selectedDate);
-      if (dateIdx !== -1) {
-        return dateIdx;
-      }
-    }
-
+    // 2. 선택 비활성화(null) 시에는 날짜 필터와 무관하게 무조건 처음(0)부터 재생
     return 0;
   };
 
@@ -4202,7 +4200,7 @@ export function JourneyDetailPage({
         {renderInfoHeader()}
         
         {/* Dynamic Map Area */}
-        <div className="w-full relative flex flex-col flex-grow h-full overflow-hidden">
+        <div className="w-full relative flex flex-col flex-grow h-full overflow-hidden" style={{ contain: 'layout paint', isolation: 'isolate' }}>
           {/* Magazine Cover Typography Overlay (Only in Summary tab) */}
           {activeTab === 'summary' && (() => {
             const loc = tripToUse?.locationStr || '';
