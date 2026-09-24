@@ -2486,18 +2486,54 @@ export function JourneyDetailPage({
       );
       if (isInput) return;
 
-      // 3. Space shortcut: Play / Pause toggle or start playback
-      if (e.code === 'Space' || e.key === ' ') {
-        if (cinematicItems.length === 0) return;
+      // 3. Space / P / K shortcut: Play / Pause toggle or start playback
+      if (e.code === 'Space' || e.key === ' ' || e.key === 'p' || e.key === 'P' || e.key === 'k' || e.key === 'K') {
         e.preventDefault();
+        e.stopPropagation();
         if (!isCinematicMode) {
           handleStartPlaylog();
         } else {
           setIsCinematicPaused(prev => !prev);
         }
+        return;
       }
 
-      // 4. ArrowLeft / ArrowRight shortcut: Previous / Next spot in tour
+      // 4. PageUp / PageDown shortcut: Navigate previous / next spot (창 밀림 원천 방지 및 스팟 점프)
+      if (e.key === 'PageUp' || e.key === 'PageDown') {
+        e.preventDefault();
+        e.stopPropagation();
+        const isNext = e.key === 'PageDown';
+
+        if (isCinematicMode && cinematicItems.length > 0) {
+          setCinematicIndex(prev => {
+            const nextIdx = isNext 
+              ? (prev + 1) % cinematicItems.length 
+              : (prev - 1 + cinematicItems.length) % cinematicItems.length;
+            return nextIdx;
+          });
+        } else if (currentTimeline.length > 0) {
+          const currentIdx = currentTimeline.findIndex(item => item.id === expandedItemId);
+          let targetIdx = 0;
+          if (currentIdx === -1) {
+            targetIdx = isNext ? 0 : currentTimeline.length - 1;
+          } else {
+            targetIdx = isNext ? currentIdx + 1 : currentIdx - 1;
+            if (targetIdx < 0) targetIdx = 0;
+            if (targetIdx >= currentTimeline.length) targetIdx = currentTimeline.length - 1;
+          }
+          const targetItem = currentTimeline[targetIdx];
+          if (targetItem) {
+            setExpandedItemId(targetItem.id);
+            setTimeout(() => {
+              const el = itemRefs.current[targetItem.id];
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 50);
+          }
+        }
+        return;
+      }
+
+      // 5. ArrowLeft / ArrowRight shortcut: Previous / Next spot in tour
       if (e.key === 'ArrowLeft') {
         if (isCinematicMode && cinematicItems.length > 0) {
           e.preventDefault();
@@ -2510,7 +2546,7 @@ export function JourneyDetailPage({
         }
       }
 
-      // 5. ArrowUp / ArrowDown shortcut: Navigate timeline items
+      // 6. ArrowUp / ArrowDown shortcut: Navigate timeline items
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         if (currentTimeline.length > 0) {
           e.preventDefault();
@@ -2539,7 +2575,7 @@ export function JourneyDetailPage({
           }
         }
       }
-      // 6. F key: Toggle browser fullscreen
+      // 7. F key: Toggle browser fullscreen
       if (e.key === 'f' || e.key === 'F') {
         e.preventDefault();
         if (!document.fullscreenElement) {
@@ -4051,7 +4087,7 @@ export function JourneyDetailPage({
   );
 
   return (
-    <main className="animate-in slide-in-from-right-8 duration-500 flex flex-col md:flex-row h-full w-full overflow-hidden relative bg-transparent">
+    <main className="flex flex-col md:flex-row h-full w-full max-w-full overflow-hidden overflow-x-hidden overscroll-none relative bg-transparent">
       {/* ── 300m Hotspot Radar Minimal Floating Chip ── */}
       {nearbySpotAlert && (
         <div className="absolute top-16 right-4 sm:right-6 z-50 bg-black/95 dark:bg-white/95 text-white dark:text-black backdrop-blur-md px-3.5 py-2 border border-red-500 shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-200 select-none">
@@ -4344,7 +4380,7 @@ export function JourneyDetailPage({
       
       {/* Right: Record / Tabs Section (Responsive Bottom Sheet on Mobile) */}
       <section 
-        className={`w-full md:w-1/2 flex flex-col bg-white/80 dark:bg-[#0A0A0A]/85 backdrop-blur-md transition-all duration-300 flex-grow md:h-full overflow-hidden relative ${
+        className={`w-full md:w-1/2 flex flex-col bg-white/80 dark:bg-[#0A0A0A]/85 backdrop-blur-md transition-all duration-300 flex-grow md:h-full overflow-hidden overflow-x-hidden max-w-full relative ${
           mobileSheetSnap === 'expanded' ? 'max-md:h-full max-md:flex-1' : 'max-md:h-[64dvh]'
         }`}
       >

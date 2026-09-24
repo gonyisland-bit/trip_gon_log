@@ -776,12 +776,42 @@ export function MapArea({
       } else if (item.isPhoto) {
         pinColor = '#f97316';
         pinTextPrefix = '📷 ';
+      } else if (activeTab === 'stays') {
+        pinColor = '#e11d48'; // Swiss Minimal Rose/Red for Stays
+        pinTextPrefix = '';
       } else {
         const dayIndex = item.dayIndex || 0;
         const colorIndex = (dayIndex ? dayIndex - 1 : 0) % dayColors.length;
         pinColor = dayColors[colorIndex];
         pinTextPrefix = '';
       }
+
+      const isSelectedStay = activeTab === 'stays' && isActive;
+
+      // Swiss Minimal Hotel Building SVG for actively selected stay item
+      const hotelSvgHtml = isSelectedStay ? `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 4px; pointer-events: none; contain: layout paint; isolation: isolate; animation: cardEntrance 220ms ease-out both;">
+          <svg viewBox="0 0 38 30" width="38" height="30" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));">
+            <!-- Minimalist Swiss Hotel Building -->
+            <rect x="5" y="5" width="28" height="23" rx="1.5" fill="#18181B" stroke="#FFFFFF" stroke-width="1.3" stroke-linejoin="round" />
+            <!-- Roof Sign Plate with 'H' & Swiss Red Accent -->
+            <rect x="14" y="1" width="10" height="4.5" rx="1" fill="#E11D48" stroke="#FFFFFF" stroke-width="1" />
+            <path d="M17 2.5V4M21 2.5V4M17 3.25H21" stroke="#FFFFFF" stroke-width="0.9" stroke-linecap="round" />
+            <!-- Minimal Windows Grid -->
+            <rect x="8.5" y="8.5" width="3.5" height="3" rx="0.5" fill="#FFFFFF" fill-opacity="0.9" />
+            <rect x="14.5" y="8.5" width="3.5" height="3" rx="0.5" fill="#FFFFFF" fill-opacity="0.9" />
+            <rect x="20.5" y="8.5" width="3.5" height="3" rx="0.5" fill="#FFFFFF" fill-opacity="0.9" />
+            <rect x="26.5" y="8.5" width="3.5" height="3" rx="0.5" fill="#FFFFFF" fill-opacity="0.9" />
+            <rect x="8.5" y="14.5" width="3.5" height="3" rx="0.5" fill="#FFFFFF" fill-opacity="0.9" />
+            <rect x="14.5" y="14.5" width="3.5" height="3" rx="0.5" fill="#FFFFFF" fill-opacity="0.9" />
+            <rect x="20.5" y="14.5" width="3.5" height="3" rx="0.5" fill="#FFFFFF" fill-opacity="0.9" />
+            <rect x="26.5" y="14.5" width="3.5" height="3" rx="0.5" fill="#FFFFFF" fill-opacity="0.9" />
+            <!-- Entrance Canopy Door -->
+            <path d="M15 28V21.5H23V28" fill="#FFFFFF" fill-opacity="0.95" />
+          </svg>
+          <div style="width: 28px; height: 4px; background: radial-gradient(ellipse at center, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0) 75%); border-radius: 50%; margin-top: -1px;"></div>
+        </div>
+      ` : '';
 
       let htmlContent = '';
       if (isSummaryMode) {
@@ -795,7 +825,8 @@ export function MapArea({
       } else {
         const showPulse = isActive || isHovered;
         htmlContent = `
-          <div class="pin-wrapper" style="opacity: ${isTransitFaded ? '0.25' : '1'}; transition: opacity 0.3s;">
+          <div class="pin-wrapper" style="opacity: ${isTransitFaded ? '0.25' : '1'}; transition: opacity 0.3s; display: flex; flex-direction: column; align-items: center;">
+            ${hotelSvgHtml}
             <div style="position: relative; display: flex; align-items: center; justify-content: center;">
               ${showPulse ? `
                 <div class="pin-radar-ring" style="background-color: ${pinColor}25; border: 1.5px solid ${pinColor}80;"></div>
@@ -811,8 +842,8 @@ export function MapArea({
       const icon = L.divIcon({
         className: 'custom-leaflet-pin-icon',
         html: htmlContent,
-        iconSize: isSummaryMode ? [120, 35] : [140, 60],
-        iconAnchor: isSummaryMode ? [60, 17] : [70, isActive ? 12 : 9],
+        iconSize: isSummaryMode ? [120, 35] : isSelectedStay ? [140, 96] : [140, 60],
+        iconAnchor: isSummaryMode ? [60, 17] : isSelectedStay ? [70, 48] : [70, isActive ? 12 : 9],
       });
 
       const marker = L.marker([lat, lng], { icon, zIndexOffset: (isActive || isHovered) ? 100000 : 1000 }).addTo(map);
