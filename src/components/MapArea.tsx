@@ -990,7 +990,7 @@ export function MapArea({
         }
       }
 
-      const shouldFitAll = tabChanged || !isInteractive || !hasFitRef.current || isGalleryTab || (itemIdChanged && expandedItemId === null);
+      const shouldFitAll = tabChanged || dateChanged || !isInteractive || !hasFitRef.current || isGalleryTab || (itemIdChanged && expandedItemId === null);
       if (activeTab !== 'summary' && expandedItemId === null && coords.length > 0 && shouldFitAll) {
         const bounds = L.latLngBounds(coords);
         if (coords.length === 1 || bounds.getNorthEast().equals(bounds.getSouthWest())) {

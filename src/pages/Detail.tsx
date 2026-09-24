@@ -1213,16 +1213,29 @@ export function JourneyDetailPage({
     prevCinematicIndexRef.current = cinematicIndex;
   }, [cinematicIndex]);
 
-  // Reset timeline scroll to top (start of day) when switching dates in normal view
+  // Reset timeline scroll to top when switching dates, and sync playlog index to the new date
   const prevSelectedDateRef = useRef<string>(selectedDate);
   useEffect(() => {
     if (prevSelectedDateRef.current !== selectedDate) {
       prevSelectedDateRef.current = selectedDate;
+
+      // When date changes while cinematic mode is active, reset cinematic index to the new date's first spot
+      if (isCinematicMode && cinematicItems.length > 0) {
+        if (selectedDate === 'ALL') {
+          setCinematicIndex(0);
+        } else {
+          const foundIdx = cinematicItems.findIndex(i => i.dateKey === selectedDate);
+          if (foundIdx !== -1) {
+            setCinematicIndex(foundIdx);
+          }
+        }
+      }
+
       if (!isCinematicMode && tabContentRef.current) {
         tabContentRef.current.scrollTo({ top: 0, behavior: 'instant' });
       }
     }
-  }, [selectedDate, isCinematicMode]);
+  }, [selectedDate, isCinematicMode, cinematicItems]);
 
   // Perfectly safe vertical-only scroll that never alters parent scrollLeft or flex container boundaries
   const scrollToTimelineItemSafe = useCallback((itemId: number, align: 'center' | 'top' = 'center') => {
@@ -4538,6 +4551,16 @@ export function JourneyDetailPage({
                           if (!hasMovedRef.current) {
                             setSelectedDate(d.date); 
                             setExpandedItemId(null); 
+                            if (isCinematicMode && cinematicItems.length > 0) {
+                              if (d.date === 'ALL') {
+                                setCinematicIndex(0);
+                              } else {
+                                const foundIdx = cinematicItems.findIndex(i => i.dateKey === d.date);
+                                if (foundIdx !== -1) {
+                                  setCinematicIndex(foundIdx);
+                                }
+                              }
+                            }
                             if (tabContentRef.current) {
                               tabContentRef.current.scrollTo({ top: 0, behavior: 'instant' });
                             }
