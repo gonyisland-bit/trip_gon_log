@@ -269,10 +269,10 @@ export function Navigation({
       {/* Swiss Minimal Typography Drawer Menu (Mobile Fullscreen / Desktop Slide-over Drawer) */}
       <div 
         style={{ backgroundColor: isDarkMode ? '#111111' : '#FFFFFF' }}
-        className={`fixed inset-y-0 right-0 z-[100] w-full sm:max-w-md !bg-white dark:!bg-[#111111] border-l border-black/15 dark:border-white/15 flex flex-col justify-between p-5 sm:p-7 md:p-8 transition-transform duration-300 ease-out shadow-2xl overflow-y-auto ${
+        className={`fixed inset-y-0 right-0 z-[100] w-full sm:max-w-md !bg-white dark:!bg-[#111111] border-l border-black/15 dark:border-white/15 flex flex-col justify-between p-5 sm:p-7 md:p-8 transition-all duration-300 ease-out shadow-2xl overflow-y-auto ${
           showSettings 
-            ? 'translate-x-0 pointer-events-auto' 
-            : 'translate-x-full pointer-events-none'
+            ? 'translate-x-0 pointer-events-auto opacity-100 visible' 
+            : 'translate-x-full pointer-events-none opacity-0 invisible'
         }`}
       >
         {/* Header */}

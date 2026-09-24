@@ -2074,12 +2074,14 @@ export function JourneyDetailPage({
     }
   }, [highlightedDateSection]);
 
-  // Center active day chip inside Quick Jump bar
+  // Center active day chip inside Quick Jump bar (Container-isolated scrollTo, prevents window horizontal shift)
   useEffect(() => {
     if (activeSpyDate && quickJumpChipsRef.current) {
-      const activeEl = quickJumpChipsRef.current.querySelector(`[data-quick-date="${activeSpyDate}"]`) as HTMLElement;
+      const chipsContainer = quickJumpChipsRef.current;
+      const activeEl = chipsContainer.querySelector(`[data-quick-date="${activeSpyDate}"]`) as HTMLElement;
       if (activeEl) {
-        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        const targetScrollLeft = activeEl.offsetLeft - (chipsContainer.clientWidth / 2) + (activeEl.clientWidth / 2);
+        chipsContainer.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
       }
     }
   }, [activeSpyDate]);
@@ -2156,8 +2158,9 @@ export function JourneyDetailPage({
       if (container && el) {
         const containerRect = container.getBoundingClientRect();
         const elRect = el.getBoundingClientRect();
-        const targetScrollTop = container.scrollTop + (elRect.top - containerRect.top);
-        container.scrollTo({ top: Math.max(0, targetScrollTop - 6), behavior: 'smooth' });
+        // Offset for top sticky date bar (44px) so section header lands cleanly at top
+        const targetScrollTop = container.scrollTop + (elRect.top - containerRect.top) - 44;
+        container.scrollTo({ top: Math.max(0, targetScrollTop), behavior: 'smooth' });
         setHighlightedDateSection(date);
       }
     };
@@ -2166,7 +2169,7 @@ export function JourneyDetailPage({
       setSelectedDate('ALL');
       setTimeout(() => {
         scrollToDateSection(targetDate);
-      }, 120);
+      }, 60);
     } else {
       scrollToDateSection(targetDate);
     }
@@ -2739,11 +2742,14 @@ export function JourneyDetailPage({
     return [];
   })();
 
+  // Center active date tab in top sticky date bar (Container-isolated scrollTo, prevents window horizontal shift)
   useEffect(() => {
     if (!dateBarRef.current) return;
-    const activeBtn = dateBarRef.current.querySelector('[data-active="true"]');
+    const dateBarContainer = dateBarRef.current;
+    const activeBtn = dateBarContainer.querySelector('[data-active="true"]') as HTMLElement;
     if (activeBtn) {
-      activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      const targetScrollLeft = activeBtn.offsetLeft - (dateBarContainer.clientWidth / 2) + (activeBtn.clientWidth / 2);
+      dateBarContainer.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
     }
   }, [selectedDate]);
 
