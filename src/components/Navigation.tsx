@@ -410,9 +410,9 @@ export function Navigation({
             </button>
           )}
 
-          {/* Swiss Minimal 3-Way Segmented Control for Night Mode with Shortcut Tooltip */}
+          {/* Swiss Minimal 3-Way Segmented Control for Night Mode with Hover Shortcut Tooltip */}
           <div 
-            className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2 sm:pt-3 border-t border-black/5 dark:border-white/5"
+            className="group flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2 sm:pt-3 border-t border-black/5 dark:border-white/5"
             title="나이트 모드 전환 (단축키: ⌘+Shift+L / Ctrl+Shift+L)"
           >
             <div className="flex items-center">
@@ -422,7 +422,10 @@ export function Navigation({
               <span className="font-['Inter',sans-serif] text-lg sm:text-xl md:text-2xl font-black uppercase tracking-tight text-black/80 dark:text-white/80">
                 NIGHT MODE
               </span>
-              <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 ml-2.5 select-none" title="키보드 단축키">
+              <span 
+                className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 ml-2.5 select-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none" 
+                title="키보드 단축키 (순환: AUTO → DAY → NIGHT)"
+              >
                 ⌘⇧L
               </span>
             </div>

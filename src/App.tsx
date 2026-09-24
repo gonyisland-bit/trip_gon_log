@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense, startTransition } from 'react';
+import { Compass, Sun, Moon } from 'lucide-react';
 import { Navigation } from './components/Navigation';
 import { Footer } from './components/Footer';
 import { HomePage } from './pages/Home';
@@ -219,6 +220,40 @@ function App() {
     if (legacyDark !== null) return legacyDark === 'true';
     return isNightTimeNow();
   });
+
+  // Swiss Minimal Night Mode 3-Tier Cycle & Floating HUD Indicator State
+  const nightModeSettingRef = useRef<NightModeSetting>(nightModeSetting);
+  useEffect(() => {
+    nightModeSettingRef.current = nightModeSetting;
+  }, [nightModeSetting]);
+
+  const [nightModeHud, setNightModeHud] = useState<{ visible: boolean; mode: NightModeSetting }>({
+    visible: false,
+    mode: 'auto',
+  });
+  const nightModeHudTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerNightModeHud = useCallback((mode: NightModeSetting) => {
+    setNightModeHud({ visible: true, mode });
+    if (nightModeHudTimerRef.current) clearTimeout(nightModeHudTimerRef.current);
+    nightModeHudTimerRef.current = setTimeout(() => {
+      setNightModeHud(prev => ({ ...prev, visible: false }));
+    }, 1300);
+  }, []);
+
+  const handleCycleNightMode = useCallback(() => {
+    const current = nightModeSettingRef.current;
+    let next: NightModeSetting;
+    if (current === 'auto') {
+      next = 'light';
+    } else if (current === 'light') {
+      next = 'dark';
+    } else {
+      next = 'auto';
+    }
+    setNightModeSetting(next);
+    triggerNightModeHud(next);
+  }, [triggerNightModeHud]);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
     return localStorage.getItem('isLoggedIn') === 'true' || Boolean(auth.currentUser);
   });
@@ -761,16 +796,11 @@ function App() {
         return;
       }
 
-      // 3. Night Mode Toggle shortcut: Ctrl + Shift + L (Cmd + Shift + L)
+      // 3. Night Mode 3-Tier Cycle shortcut: Ctrl + Shift + L (Cmd + Shift + L)
+      // 순환: AUTO -> DAY(LIGHT) -> NIGHT(DARK) -> AUTO
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'l' || e.key === 'L')) {
         e.preventDefault();
-        const nextMode = !isDarkMode;
-        setIsDarkMode(nextMode);
-        setNightModeSetting(nextMode ? 'dark' : 'light');
-        try {
-          localStorage.setItem('nightModeSetting', nextMode ? 'dark' : 'light');
-          localStorage.setItem('isDarkMode', String(nextMode));
-        } catch (_) {}
+        handleCycleNightMode();
         return;
       }
 
@@ -2950,7 +2980,10 @@ function App() {
             isDarkMode={isDarkMode}
             setIsDarkMode={setIsDarkMode}
             nightModeSetting={nightModeSetting}
-            setNightModeSetting={setNightModeSetting}
+            setNightModeSetting={(setting) => {
+              setNightModeSetting(setting);
+              triggerNightModeHud(setting);
+            }}
             showSettings={showSettings}
             setShowSettings={setShowSettings}
             openAuthModal={(mode) => { setAuthModalMode(mode); setIsAuthModalOpen(true); }}
@@ -3446,6 +3479,37 @@ function App() {
 
         {/* Global Floating Scroll To Top Navigator (Hidden on Detail, Map, and Guest Landing View) */}
         {(isLoggedIn || isShareMode) && currentView !== 'detail' && currentView !== 'map' && <ScrollToTop />}
+
+        {/* Swiss Minimal Night Mode 3-Tier Cycle HUD Indicator */}
+        <div
+          className={`fixed top-6 left-1/2 -translate-x-1/2 z-[999999] pointer-events-none transition-all duration-300 ease-out ${
+            nightModeHud.visible
+              ? 'opacity-100 translate-y-0 scale-100'
+              : 'opacity-0 -translate-y-3 scale-95'
+          }`}
+          aria-live="polite"
+        >
+          <div className="flex items-center gap-2.5 px-4 py-2 rounded-full border border-black/15 dark:border-white/20 bg-white/95 dark:bg-[#121214]/95 text-black dark:text-white shadow-xl backdrop-blur-md">
+            {nightModeHud.mode === 'auto' && (
+              <>
+                <Compass className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 stroke-[2.5]" />
+                <span className="font-mono text-xs font-black tracking-wider uppercase">AUTO (18:00 - 06:00)</span>
+              </>
+            )}
+            {nightModeHud.mode === 'light' && (
+              <>
+                <Sun className="w-3.5 h-3.5 text-amber-500 stroke-[2.5]" />
+                <span className="font-mono text-xs font-black tracking-wider uppercase">DAY MODE</span>
+              </>
+            )}
+            {nightModeHud.mode === 'dark' && (
+              <>
+                <Moon className="w-3.5 h-3.5 text-indigo-400 stroke-[2.5]" />
+                <span className="font-mono text-xs font-black tracking-wider uppercase">NIGHT MODE</span>
+              </>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
