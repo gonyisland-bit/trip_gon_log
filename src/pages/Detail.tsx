@@ -1224,6 +1224,27 @@ export function JourneyDetailPage({
     }
   }, [selectedDate, isCinematicMode]);
 
+  // Perfectly safe vertical-only scroll that never alters parent scrollLeft or flex container boundaries
+  const scrollToTimelineItemSafe = useCallback((itemId: number, align: 'center' | 'top' = 'center') => {
+    const container = tabContentRef.current;
+    if (!container) return;
+    const el = itemRefs.current[itemId] || document.getElementById(`timeline-item-${itemId}`);
+    if (!el) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    const relativeTop = elRect.top - containerRect.top + container.scrollTop;
+
+    const targetTop = align === 'center'
+      ? relativeTop - (container.clientHeight / 2) + (elRect.height / 2)
+      : relativeTop - 24;
+
+    container.scrollTo({
+      top: Math.max(0, targetTop),
+      behavior: 'smooth'
+    });
+  }, []);
+
   // Sync active step to timeline and map
   useEffect(() => {
     if (!isCinematicMode || !currentCinematicItem) return;
@@ -1233,13 +1254,10 @@ export function JourneyDetailPage({
     // Smoothly scroll timeline item into view only in timeline tab
     if (activeTab === 'timeline') {
       setTimeout(() => {
-        const el = document.getElementById(`timeline-item-${currentCinematicItem.id}`);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
+        scrollToTimelineItemSafe(currentCinematicItem.id, 'center');
       }, 150);
     }
-  }, [isCinematicMode, cinematicIndex, currentCinematicItem, activeTab]);
+  }, [isCinematicMode, cinematicIndex, currentCinematicItem, activeTab, scrollToTimelineItemSafe]);
 
   // Reset remaining playback duration when index or speed changes
   useEffect(() => {
@@ -1296,13 +1314,10 @@ export function JourneyDetailPage({
   // Smooth scroll and flash highlight when expandedItemId changes
   useEffect(() => {
     if (expandedItemId !== null && activeTab === 'timeline' && !isCinematicMode) {
-      const el = itemRefs.current[expandedItemId] || document.getElementById(`timeline-item-${expandedItemId}`);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setFlashedItemId(expandedItemId);
-      }
+      scrollToTimelineItemSafe(expandedItemId, 'center');
+      setFlashedItemId(expandedItemId);
     }
-  }, [expandedItemId, activeTab, isCinematicMode]);
+  }, [expandedItemId, activeTab, isCinematicMode, scrollToTimelineItemSafe]);
 
   const handlePlayFromItem = (itemId: number) => {
     setActiveTab('timeline');
@@ -2476,7 +2491,7 @@ export function JourneyDetailPage({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // 0. If Lightbox is open, delegate all keyboard shortcuts to Lightbox component
-      if (lightboxIndex !== null) return;
+      if (isLightboxOpen) return;
 
       // 1. mapConfirm shortcut: Y (confirm) / N or Escape (cancel)
       if (mapConfirm) {
@@ -2505,6 +2520,11 @@ export function JourneyDetailPage({
         return;
       }
 
+      // De-focus buttons on keyboard shortcut to avoid double-toggle / virtual click
+      if (document.activeElement instanceof HTMLElement && document.activeElement.tagName === 'BUTTON') {
+        document.activeElement.blur();
+      }
+
       // Escape: exit cinematic mode
       if (e.key === 'Escape') {
         if (isCinematicModeRef.current) {
@@ -2527,17 +2547,17 @@ export function JourneyDetailPage({
         return;
       }
 
-      // 4. PageUp / PageDown shortcut: Navigate previous / next spot (창 밀림 원천 방지 및 스팟 점프)
-      if (e.key === 'PageUp' || e.code === 'PageUp' || e.key === 'PageDown' || e.code === 'PageDown') {
+      // 4. ArrowLeft / ArrowRight shortcut: Move previous / next spot (사용자 지정: 플레이로그 재생 시 좌우 버튼으로 스팟 이동)
+      if (e.key === 'ArrowLeft' || e.code === 'ArrowLeft' || e.key === 'ArrowRight' || e.code === 'ArrowRight') {
         e.preventDefault();
         e.stopPropagation();
-        const isNext = e.key === 'PageDown' || e.code === 'PageDown';
+        const isRight = e.key === 'ArrowRight' || e.code === 'ArrowRight';
         const cItems = cinematicItemsRef.current;
         const cTimeline = currentTimelineRef.current;
 
         if (isCinematicModeRef.current && cItems.length > 0) {
           setCinematicIndex(prev => {
-            const nextIdx = isNext 
+            const nextIdx = isRight 
               ? (prev + 1) % cItems.length 
               : (prev - 1 + cItems.length) % cItems.length;
             return nextIdx;
@@ -2546,42 +2566,37 @@ export function JourneyDetailPage({
           const currentIdx = cTimeline.findIndex(item => item.id === expandedItemIdRef.current);
           let targetIdx = 0;
           if (currentIdx === -1) {
-            targetIdx = isNext ? 0 : cTimeline.length - 1;
+            targetIdx = isRight ? 0 : cTimeline.length - 1;
           } else {
-            targetIdx = isNext ? currentIdx + 1 : currentIdx - 1;
+            targetIdx = isRight ? currentIdx + 1 : currentIdx - 1;
             if (targetIdx < 0) targetIdx = 0;
             if (targetIdx >= cTimeline.length) targetIdx = cTimeline.length - 1;
           }
           const targetItem = cTimeline[targetIdx];
           if (targetItem) {
             setExpandedItemId(targetItem.id);
-            setTimeout(() => {
-              const el = itemRefs.current[targetItem.id] || document.getElementById(`timeline-item-${targetItem.id}`);
-              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }, 50);
+            scrollToTimelineItemSafe(targetItem.id, 'center');
           }
         }
         return;
       }
 
-      // 5. ArrowLeft / ArrowRight shortcut: Previous / Next spot in tour
-      if (e.key === 'ArrowLeft' || e.code === 'ArrowLeft') {
-        const cItems = cinematicItemsRef.current;
-        if (isCinematicModeRef.current && cItems.length > 0) {
-          e.preventDefault();
-          e.stopPropagation();
-          setCinematicIndex(prev => (prev - 1 + cItems.length) % cItems.length);
+      // 5. PageUp / PageDown shortcut: Pure page scroll up / down without window horizontal displacement (사용자 지정: 평소대로 스크롤 업다운)
+      if (e.key === 'PageUp' || e.code === 'PageUp' || e.key === 'PageDown' || e.code === 'PageDown') {
+        e.preventDefault();
+        e.stopPropagation();
+        const isDown = e.key === 'PageDown' || e.code === 'PageDown';
+        if (tabContentRef.current) {
+          const scrollDistance = (tabContentRef.current.clientHeight || 500) * 0.8;
+          tabContentRef.current.scrollBy({
+            top: isDown ? scrollDistance : -scrollDistance,
+            behavior: 'smooth'
+          });
         }
-      } else if (e.key === 'ArrowRight' || e.code === 'ArrowRight') {
-        const cItems = cinematicItemsRef.current;
-        if (isCinematicModeRef.current && cItems.length > 0) {
-          e.preventDefault();
-          e.stopPropagation();
-          setCinematicIndex(prev => (prev + 1) % cItems.length);
-        }
+        return;
       }
 
-      // 6. ArrowUp / ArrowDown shortcut: Navigate timeline items
+      // 6. ArrowUp / ArrowDown shortcut: Navigate timeline items vertically
       if (e.key === 'ArrowUp' || e.code === 'ArrowUp' || e.key === 'ArrowDown' || e.code === 'ArrowDown') {
         const cTimeline = currentTimelineRef.current;
         const cItems = cinematicItemsRef.current;
@@ -2607,10 +2622,7 @@ export function JourneyDetailPage({
                 setCinematicIndex(cIdx);
               }
             }
-            setTimeout(() => {
-              const el = itemRefs.current[targetItem.id] || document.getElementById(`timeline-item-${targetItem.id}`);
-              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 60);
+            scrollToTimelineItemSafe(targetItem.id, 'center');
           }
         }
       }
@@ -2630,7 +2642,7 @@ export function JourneyDetailPage({
 
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [mapConfirm, lightboxIndex, allGalleryImages, selectedDate]);
+  }, [mapConfirm, isLightboxOpen, allGalleryImages, selectedDate, scrollToTimelineItemSafe]);
 
   const mapPoints = (() => {
     // Collect gallery photo points that have valid coordinates
@@ -4128,7 +4140,14 @@ export function JourneyDetailPage({
   );
 
   return (
-    <main className="flex flex-col md:flex-row h-full w-full max-w-full overflow-hidden overflow-x-hidden overscroll-none relative bg-transparent">
+    <main 
+      onScroll={(e) => {
+        if (e.currentTarget.scrollLeft !== 0) {
+          e.currentTarget.scrollLeft = 0;
+        }
+      }}
+      className="flex flex-col md:flex-row h-full w-full max-w-full overflow-hidden overflow-x-hidden overscroll-none relative bg-transparent"
+    >
       {/* ── 300m Hotspot Radar Minimal Floating Chip ── */}
       {nearbySpotAlert && (
         <div className="absolute top-16 right-4 sm:right-6 z-50 bg-black/95 dark:bg-white/95 text-white dark:text-black backdrop-blur-md px-3.5 py-2 border border-red-500 shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-200 select-none">
@@ -6102,7 +6121,7 @@ export function JourneyDetailPage({
           )}
         </div>
 
-        {/* Floating Pocket Widget (Positioned at Timeline Bottom-Right, neatly stacked above Quick Day Jump) */}
+        {/* Floating Pocket Widget (Positioned at Bottom-Left, perfectly aligned across from Quick Day Jump) */}
         {activeTab === 'timeline' && tripToUse && (
           <FloatingPocketWidget
             trip={tripToUse}

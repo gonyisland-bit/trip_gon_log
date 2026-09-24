@@ -65,10 +65,10 @@ export function FloatingPocketWidget({
   }, [displayList, selectedCategory]);
 
   return (
-    <div className={className || "fixed bottom-20 right-5 sm:right-6 z-40 flex flex-col items-end font-sans select-none pointer-events-auto"}>
-      {/* Expanded Widget Panel (Drop-up: positioned right above toggle button) */}
+    <div className={className || "fixed bottom-6 left-6 z-40 flex flex-col items-start font-sans select-none pointer-events-auto"}>
+      {/* Expanded Widget Panel (Drop-up: positioned right above toggle button, expands rightward) */}
       {isOpen && (
-        <div className="absolute bottom-12 right-0 mb-1 w-[290px] sm:w-[330px] max-h-[420px] bg-white dark:bg-[#111111] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-200 overflow-hidden rounded-xl z-50">
+        <div className="absolute bottom-12 left-0 mb-1 w-[290px] sm:w-[330px] max-h-[420px] bg-white dark:bg-[#111111] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-200 overflow-hidden rounded-xl z-50">
           {/* Widget Header */}
           <div className="px-3.5 py-2.5 bg-black text-white dark:bg-white dark:text-black flex items-center justify-between border-b border-black/10">
             <div className="flex items-center gap-1.5 text-xs font-mono font-black tracking-widest uppercase">
