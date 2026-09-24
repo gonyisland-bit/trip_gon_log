@@ -14,6 +14,7 @@ interface FloatingPocketWidgetProps {
   isOpen: boolean;
   onToggle: () => void;
   isEditing: boolean;
+  className?: string;
 }
 
 const CATEGORY_ICONS: Record<PocketCategory, React.ElementType> = {
@@ -32,6 +33,7 @@ export function FloatingPocketWidget({
   isOpen,
   onToggle,
   isEditing,
+  className,
 }: FloatingPocketWidgetProps) {
   const [spots] = useState<SpotPocketItem[]>(() => getSavedPockets());
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
@@ -63,26 +65,10 @@ export function FloatingPocketWidget({
   }, [displayList, selectedCategory]);
 
   return (
-    <div className="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 z-30 flex flex-col items-end font-sans select-none pointer-events-auto">
-      {/* Floating Toggle Button (Swiss Minimal Circular Icon Button in Map Top-Right) */}
-      <button
-        type="button"
-        onClick={onToggle}
-        className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/95 text-black dark:bg-[#1A1A1C]/95 dark:text-white border border-black/20 dark:border-white/20 shadow-lg hover:border-black dark:hover:border-white transition-all flex items-center justify-center cursor-pointer active:scale-95 relative backdrop-blur-md"
-        title="포켓 위젯 열기"
-        aria-label="Toggle pocket widget"
-      >
-        <Bookmark className="w-4 h-4 text-red-500 fill-red-500 shrink-0" />
-        {displayList.length > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-red-600 text-white text-[9px] font-mono font-bold flex items-center justify-center shadow-xs">
-            {displayList.length > 99 ? '99+' : displayList.length}
-          </span>
-        )}
-      </button>
-
-      {/* Expanded Widget Panel */}
+    <div className={className || "fixed bottom-20 right-5 sm:right-6 z-40 flex flex-col items-end font-sans select-none pointer-events-auto"}>
+      {/* Expanded Widget Panel (Drop-up: positioned right above toggle button) */}
       {isOpen && (
-        <div className="mt-2 w-[290px] sm:w-[330px] max-h-[400px] bg-white dark:bg-[#111111] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden rounded-xl">
+        <div className="absolute bottom-12 right-0 mb-1 w-[290px] sm:w-[330px] max-h-[420px] bg-white dark:bg-[#111111] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-200 overflow-hidden rounded-xl z-50">
           {/* Widget Header */}
           <div className="px-3.5 py-2.5 bg-black text-white dark:bg-white dark:text-black flex items-center justify-between border-b border-black/10">
             <div className="flex items-center gap-1.5 text-xs font-mono font-black tracking-widest uppercase">
@@ -183,6 +169,22 @@ export function FloatingPocketWidget({
           </div>
         </div>
       )}
+
+      {/* Floating Toggle Button (Swiss Minimal Circular Icon Button in Timeline Bottom-Right) */}
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-10 h-10 rounded-full bg-white/95 text-black dark:bg-[#18181B]/95 dark:text-white border border-black/20 dark:border-white/20 shadow-xl hover:border-black dark:hover:border-white transition-all flex items-center justify-center cursor-pointer active:scale-95 relative backdrop-blur-md"
+        title="포켓 위젯 열기"
+        aria-label="Toggle pocket widget"
+      >
+        <Bookmark className="w-4 h-4 text-red-500 fill-red-500 shrink-0" />
+        {displayList.length > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-red-600 text-white text-[9px] font-mono font-bold flex items-center justify-center shadow-xs">
+            {displayList.length > 99 ? '99+' : displayList.length}
+          </span>
+        )}
+      </button>
     </div>
   );
 }
