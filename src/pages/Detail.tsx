@@ -4837,12 +4837,10 @@ export function JourneyDetailPage({
                         <div 
                           id={`timeline-item-${item.id}`}
                           ref={el => { itemRefs.current[item.id] = el; }} 
-                          onMouseEnter={() => setHoveredItemId(item.id)}
-                          onMouseLeave={() => setHoveredItemId(null)}
                           className={`flex flex-col transition-colors w-full border-b border-black/15 dark:border-white/15 ${
                             isActive 
                               ? 'bg-black/[0.06] dark:bg-white/[0.09] ring-1 ring-inset ring-black/25 dark:ring-white/30 border-b-black/30 dark:border-b-white/30 shadow-xs' 
-                              : (hoveredItemId === item.id ? 'bg-black/[0.015] dark:bg-white/[0.02]' : '')
+                              : 'hover:bg-black/[0.015] dark:hover:bg-white/[0.02]'
                           } ${collapsedDays.includes(item.date || '') && selectedDate === 'ALL' ? 'hidden' : ''}`}
                           draggable={isEditing}
                           onDragStart={(e) => {

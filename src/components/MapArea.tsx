@@ -818,6 +818,10 @@ export function MapArea({
       }
 
       const isSelectedStay = activeTab === 'stays' && isActive;
+      const isSelectedCarTransit = activeTab === 'transit' && isActive && (() => {
+        const tr = transits.find(t => t.id === (item.transitId ?? expandedItemId));
+        return getTransitVehicleType(tr) === 'car';
+      })();
 
       // Swiss Minimal Hotel Building SVG for actively selected stay item
       const hotelSvgHtml = isSelectedStay ? `
@@ -844,6 +848,27 @@ export function MapArea({
         </div>
       ` : '';
 
+      // Swiss Minimal Clean White Car SVG for actively selected rental car transit item
+      const carSvgHtml = isSelectedCarTransit ? `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 4px; pointer-events: none; contain: layout paint; isolation: isolate; animation: cardEntrance 220ms ease-out both;">
+          <svg viewBox="0 0 38 24" width="38" height="24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));">
+            <!-- Minimalist Pure White Car Silhouette (Side View) -->
+            <path d="M5 16L9 9H23L29 16H34C35.1 16 36 16.9 36 18V20H2V18C2 16.9 2.9 16 4 16H5Z" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.3" stroke-linejoin="round" />
+            <!-- Windows -->
+            <path d="M10 10H16V15H6.5L10 10Z" fill="#1E293B" />
+            <path d="M17.5 10H22.5L26.5 15H17.5V10Z" fill="#1E293B" />
+            <!-- Wheels with Swiss Red Hub -->
+            <circle cx="9" cy="19.5" r="3.5" fill="#18181B" stroke="#FFFFFF" stroke-width="1" />
+            <circle cx="9" cy="19.5" r="1.2" fill="#E11D48" />
+            <circle cx="27" cy="19.5" r="3.5" fill="#18181B" stroke="#FFFFFF" stroke-width="1" />
+            <circle cx="27" cy="19.5" r="1.2" fill="#E11D48" />
+            <!-- Front Headlight Accent -->
+            <rect x="34" y="16.5" width="2" height="1.8" rx="0.5" fill="#FBBF24" />
+          </svg>
+          <div style="width: 26px; height: 3.5px; background: radial-gradient(ellipse at center, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0) 75%); border-radius: 50%; margin-top: -1px;"></div>
+        </div>
+      ` : '';
+
       let htmlContent = '';
       if (isSummaryMode) {
         htmlContent = `
@@ -858,6 +883,7 @@ export function MapArea({
         htmlContent = `
           <div class="pin-wrapper" style="opacity: ${isTransitFaded ? '0.25' : '1'}; transition: opacity 0.3s; display: flex; flex-direction: column; align-items: center;">
             ${hotelSvgHtml}
+            ${carSvgHtml}
             <div style="position: relative; display: flex; align-items: center; justify-content: center;">
               ${showPulse ? `
                 <div class="pin-radar-ring" style="background-color: ${pinColor}25; border: 1.5px solid ${pinColor}80;"></div>
@@ -1123,7 +1149,7 @@ export function MapArea({
       }
     }
 
-  }, [mapPoints, expandedItemId, isDarkMode, mapReady, isInteractive, activeTab, transitFocusType, transits, selectedDate, isCinematicMode, hoveredItemId, cinematicSpeed, cinematicVehicleType]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mapPoints, expandedItemId, isDarkMode, mapReady, isInteractive, activeTab, transitFocusType, transits, selectedDate, isCinematicMode, cinematicSpeed, cinematicVehicleType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Effect 3b: Google Places POIs Fetcher ──────────────────────────────────
   useEffect(() => {
@@ -1455,6 +1481,8 @@ export function MapArea({
 
         // Calculate arc control point for flights (curved great-circle like route)
         const isFlight = activeTab === 'flights';
+        const transit = transits.find(t => t.id === expandedItemId);
+        const isCar = activeTab === 'transit' && getTransitVehicleType(transit) === 'car';
         const midLat = (startLat + endLat) / 2;
         const midLng = (startLng + endLng) / 2;
         const perpLat = -(endLng - startLng) * 0.18;
@@ -1483,6 +1511,37 @@ export function MapArea({
               `,
               iconSize: [44, 44],
               iconAnchor: [22, 22]
+            });
+          }
+
+          if (isCar) {
+            return L.divIcon({
+              className: 'sleek-car-marker',
+              html: `
+                <div class="animated-vehicle-wrapper" style="transform: rotate(${rot}deg) scale(${scaleVal}); width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; position: relative; z-index: 500000; pointer-events: none; transition: transform 0.04s linear;">
+                  <svg viewBox="0 0 28 42" width="28" height="42" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block; filter: drop-shadow(0 3px 8px rgba(0,0,0,0.55));">
+                    <!-- Clean White Vehicle Body -->
+                    <rect x="2" y="2" width="24" height="38" rx="6.5" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.4" />
+                    <!-- Front Windshield -->
+                    <path d="M5 12.5C5 9.5 7.5 7.5 14 7.5C20.5 7.5 23 9.5 23 12.5V14.5H5V12.5Z" fill="#1E293B" />
+                    <!-- Rear Windshield -->
+                    <path d="M6 29.5C6 31.5 8 32.5 14 32.5C20 32.5 22 31.5 22 29.5V28.5H6V29.5Z" fill="#1E293B" />
+                    <!-- Side Windows -->
+                    <rect x="4.5" y="16.5" width="2.5" height="10.5" rx="0.5" fill="#1E293B" />
+                    <rect x="21" y="16.5" width="2.5" height="10.5" rx="0.5" fill="#1E293B" />
+                    <!-- Roof Panel -->
+                    <rect x="7" y="16.5" width="14" height="10.5" rx="1.2" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="0.7" />
+                    <!-- Front Headlights (Warm Amber) -->
+                    <rect x="4" y="2.2" width="4.5" height="2" rx="0.8" fill="#FBBF24" />
+                    <rect x="19.5" y="2.2" width="4.5" height="2" rx="0.8" fill="#FBBF24" />
+                    <!-- Rear Tail Lights (Swiss Minimal Red) -->
+                    <rect x="4" y="37.8" width="4.5" height="2" rx="0.8" fill="#EF4444" />
+                    <rect x="19.5" y="37.8" width="4.5" height="2" rx="0.8" fill="#EF4444" />
+                  </svg>
+                </div>
+              `,
+              iconSize: [34, 34],
+              iconAnchor: [17, 17]
             });
           }
 
