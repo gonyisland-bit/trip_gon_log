@@ -424,7 +424,13 @@ function App() {
   });
   const [homeTitle, setHomeTitle] = useState("Your Personal Travel Magazine.");
   const [homeSubtitle, setHomeSubtitle] = useState("나만의 감성으로 기록하고 보관하는 여행 아카이브.");
-  const [heroJourneyIds, setHeroJourneyIds] = useState<number[]>([]);
+  const [heroJourneyIds, setHeroJourneyIds] = useState<number[]>(() => {
+    try {
+      const saved = localStorage.getItem('heroJourneyIds');
+      if (saved) return JSON.parse(saved);
+    } catch (_) {}
+    return [];
+  });
   const [editingTripId, setEditingTripId] = useState<number | null>(null);
   const [heroMediaType, setHeroMediaType] = useState<'image' | 'video'>('image');
   
@@ -1112,7 +1118,10 @@ function App() {
         const data = docSnap.data();
         if (data.title) setHomeTitle(data.title);
         if (data.subtitle) setHomeSubtitle(data.subtitle);
-        if (Array.isArray(data.heroJourneyIds)) setHeroJourneyIds(data.heroJourneyIds);
+        if (Array.isArray(data.heroJourneyIds)) {
+          setHeroJourneyIds(data.heroJourneyIds);
+          localStorage.setItem('heroJourneyIds', JSON.stringify(data.heroJourneyIds));
+        }
         if (data.heroAutoSlide !== undefined) setHeroAutoSlide(data.heroAutoSlide);
         if (data.heroMediaType !== undefined) setHeroMediaType(data.heroMediaType);
         if (data.marqueeShow !== undefined) {
@@ -1867,6 +1876,7 @@ function App() {
       setHomeTitle(title);
       setHomeSubtitle(subtitle);
       setHeroJourneyIds(heroIds);
+      localStorage.setItem('heroJourneyIds', JSON.stringify(heroIds));
       if (landingHeroImageParam !== undefined) {
         setLandingHeroImage(landingHeroImageParam);
         localStorage.setItem('landing_hero_image', landingHeroImageParam);

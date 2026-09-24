@@ -112,49 +112,40 @@ export const StormLightningCanvas: React.FC<StormLightningCanvasProps> = ({ isDa
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
+    // ── Build complete lightning vector path in a single pass (Ultra-low CPU overhead) ──
+    ctx.beginPath();
     for (const seg of strike.segments) {
-      // Per-segment jitter: simulates electrical current trembling
-      // Each segment endpoint gets an independent tiny random offset
       const jx1 = jitter > 0 ? (Math.random() - 0.5) * jitter : 0;
       const jy1 = jitter > 0 ? (Math.random() - 0.5) * jitter * 0.28 : 0;
       const jx2 = jitter > 0 ? (Math.random() - 0.5) * jitter : 0;
       const jy2 = jitter > 0 ? (Math.random() - 0.5) * jitter * 0.28 : 0;
 
-      const x1 = seg.x1 + jx1, y1 = seg.y1 + jy1;
-      const x2 = seg.x2 + jx2, y2 = seg.y2 + jy2;
-
-      // ── Layer 1: Outer glow aura (wide, blurred, low alpha) ──
-      ctx.globalAlpha = flashAlpha * seg.alpha * 0.16;
-      ctx.strokeStyle = isDark ? 'rgba(140, 180, 255, 1)' : 'rgba(255, 235, 100, 1)';
-      ctx.lineWidth = 16;
-      ctx.shadowColor = isDark ? 'rgba(130, 170, 255, 1)' : 'rgba(255, 220, 80, 1)';
-      ctx.shadowBlur = 24;
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
-
-      // ── Layer 2: Mid glow (medium width, strong emission) ──
-      ctx.globalAlpha = flashAlpha * seg.alpha * 0.44;
-      ctx.strokeStyle = isDark ? 'rgba(200, 225, 255, 1)' : 'rgba(255, 248, 185, 1)';
-      ctx.lineWidth = 4.5;
-      ctx.shadowBlur = 13;
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
-
-      // ── Layer 3: Bright white core (thin, sharp, full alpha) ──
-      ctx.globalAlpha = flashAlpha * seg.alpha;
-      ctx.strokeStyle = 'rgba(255, 255, 255, 1)';
-      ctx.lineWidth = 1.5;
-      ctx.shadowColor = 'rgba(255, 255, 255, 1)';
-      ctx.shadowBlur = 6;
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
+      ctx.moveTo(seg.x1 + jx1, seg.y1 + jy1);
+      ctx.lineTo(seg.x2 + jx2, seg.y2 + jy2);
     }
+
+    // ── Layer 1: Outer glow aura (Single combined stroke, blurred aura) ──
+    ctx.globalAlpha = flashAlpha * 0.18;
+    ctx.strokeStyle = isDark ? 'rgba(140, 180, 255, 0.85)' : 'rgba(255, 235, 100, 0.85)';
+    ctx.lineWidth = 14;
+    ctx.shadowColor = isDark ? 'rgba(130, 170, 255, 0.85)' : 'rgba(255, 220, 80, 0.85)';
+    ctx.shadowBlur = 18;
+    ctx.stroke();
+
+    // ── Layer 2: Mid glow (Single combined stroke, medium emission) ──
+    ctx.globalAlpha = flashAlpha * 0.45;
+    ctx.strokeStyle = isDark ? 'rgba(200, 225, 255, 1)' : 'rgba(255, 248, 185, 1)';
+    ctx.lineWidth = 4;
+    ctx.shadowBlur = 10;
+    ctx.stroke();
+
+    // ── Layer 3: Bright white core (Single combined stroke, sharp center) ──
+    ctx.globalAlpha = flashAlpha;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 1)';
+    ctx.lineWidth = 1.6;
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.9)';
+    ctx.shadowBlur = 4;
+    ctx.stroke();
 
     ctx.restore();
   }, []);

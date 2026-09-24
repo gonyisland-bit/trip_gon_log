@@ -2150,21 +2150,25 @@ export function JourneyDetailPage({
       setCollapsedDays(prev => prev.filter(d => d !== targetDate));
     }
 
+    const scrollToDateSection = (date: string) => {
+      const container = tabContentRef.current;
+      const el = document.getElementById(`date-section-${date}`);
+      if (container && el) {
+        const containerRect = container.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        const targetScrollTop = container.scrollTop + (elRect.top - containerRect.top);
+        container.scrollTo({ top: Math.max(0, targetScrollTop - 6), behavior: 'smooth' });
+        setHighlightedDateSection(date);
+      }
+    };
+
     if (selectedDate !== 'ALL') {
       setSelectedDate('ALL');
       setTimeout(() => {
-        const el = document.getElementById(`date-section-${targetDate}`);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          setHighlightedDateSection(targetDate);
-        }
+        scrollToDateSection(targetDate);
       }, 120);
     } else {
-      const el = document.getElementById(`date-section-${targetDate}`);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        setHighlightedDateSection(targetDate);
-      }
+      scrollToDateSection(targetDate);
     }
   };
 
@@ -4163,6 +4167,19 @@ export function JourneyDetailPage({
             />
           </ErrorBoundary>
 
+          {/* Floating Pocket Widget (Positioned cleanly at Map Top-Right) */}
+          {activeTab === 'timeline' && tripToUse && (
+            <FloatingPocketWidget
+              trip={tripToUse}
+              selectedDate={selectedDate}
+              allTripDates={allTripDates}
+              isOpen={isPocketWidgetOpen}
+              onToggle={() => setIsPocketWidgetOpen(!isPocketWidgetOpen)}
+              onAddSpotToTimeline={(spot) => handleDirectAddFromPocket(spot)}
+              isEditing={isEditing}
+            />
+          )}
+
           {/* Floating Morphing Player (Swiss Minimal Floating Widget <-> Expanded Editorial Bar) */}
           {cinematicItems.length > 0 && (activeTab === 'timeline' || activeTab === 'gallery') && (
             <div
@@ -5257,35 +5274,6 @@ export function JourneyDetailPage({
                     </button>
                   </div>
                 )}
-                {/* Floating Day Quick Index (Swiss Minimal Capsule Indexer for Multi-Day Trips) */}
-                {activeTab === 'timeline' && selectedDate === 'ALL' && allTripDates.length > 1 && !isEditing && (
-                  <aside 
-                    aria-label="일차별 빠른 이동"
-                    className="sticky bottom-4 z-20 self-end mr-3 sm:mr-6 pointer-events-auto"
-                  >
-                    <div className="flex items-center gap-1 bg-white/95 dark:bg-[#1A1A1C]/95 backdrop-blur-md border border-black/20 dark:border-white/20 p-1 rounded-full shadow-[0_8px_20px_rgba(0,0,0,0.15)] select-none">
-                      <span className="text-[9px] font-mono font-bold text-black/40 dark:text-white/40 pl-2 pr-1 uppercase">
-                        DAY
-                      </span>
-                      {allTripDates.map((dateStr, dIdx) => (
-                        <button
-                          key={dateStr}
-                          type="button"
-                          onClick={() => {
-                            const el = document.getElementById(`date-section-${dateStr}`);
-                            if (el) {
-                              el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            }
-                          }}
-                          className="w-6 h-6 rounded-full text-[10px] font-mono font-black flex items-center justify-center hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer text-black/75 dark:text-white/75"
-                          title={`${dateStr} (Day ${dIdx + 1})로 이동`}
-                        >
-                          {dIdx + 1}
-                        </button>
-                      ))}
-                    </div>
-                  </aside>
-                )}
               </div>
               </>
             )}
@@ -6043,23 +6031,10 @@ export function JourneyDetailPage({
             </div>
           )}
         </div>
-        {/* Floating Pocket Widget (Timeline Context) */}
-        {activeTab === 'timeline' && tripToUse && (
-          <FloatingPocketWidget
-            trip={tripToUse}
-            selectedDate={selectedDate}
-            allTripDates={allTripDates}
-            isOpen={isPocketWidgetOpen}
-            onToggle={() => setIsPocketWidgetOpen(!isPocketWidgetOpen)}
-            onAddSpotToTimeline={(spot) => handleDirectAddFromPocket(spot)}
-            isEditing={isEditing}
-          />
-        )}
-
-        {/* Floating Smart Day Quick Jump Indicator & Bar (Swiss Minimal, positioned at bottom-20 right-6 without overlapping) */}
+        {/* Floating Smart Day Quick Jump Indicator & Bar (Swiss Minimal, positioned at bottom-6 right-6) */}
         {activeTab === 'timeline' && allTripDates.length >= 2 && (
           <div 
-            className={`fixed bottom-20 right-6 z-40 transition-all duration-300 pointer-events-auto select-none ${
+            className={`fixed bottom-6 right-6 z-40 transition-all duration-300 pointer-events-auto select-none ${
               showQuickJump ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
             }`}
           >

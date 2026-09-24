@@ -1155,9 +1155,25 @@ export function HomePage({
   // Resolve hero journeys from heroJourneyIds. Fallback to trips[0] if nothing selected.
   const heroJourneys = useMemo(() => {
     const all = [...localTrips, ...localPlans];
-    if (heroJourneyIds.length > 0) {
-      const filtered = heroJourneyIds.map(id => all.find(j => j.id === id)).filter(Boolean) as (Trip | Plan)[];
+    let targetIds = heroJourneyIds;
+    if (!targetIds || targetIds.length === 0) {
+      try {
+        const saved = localStorage.getItem('heroJourneyIds');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            targetIds = parsed;
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (targetIds && targetIds.length > 0) {
+      const filtered = targetIds.map(id => all.find(j => j.id === id)).filter(Boolean) as (Trip | Plan)[];
       if (filtered.length > 0) return filtered;
+      // If hero journeys are configured but items are still loading from Firestore/cache,
+      // prevent flashing localTrips[0] prematurely.
+      if (all.length === 0) return [];
     }
     return localTrips[0] ? [localTrips[0]] : [];
   }, [localTrips, localPlans, heroJourneyIds]);
