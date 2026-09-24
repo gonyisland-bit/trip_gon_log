@@ -5,7 +5,7 @@ import {
   ExternalLink, MapPinOff, Maximize2, Star, ChevronLeft, ChevronRight, ArrowUp, ArrowDown,
   Sun, Cloud, Cloudy, CloudRain, Snowflake, CloudLightning, ArrowRight, Calculator, FileText, Share2, GripVertical,
   Play, Pause, SkipForward, SkipBack, X as CloseIcon, Check, Edit3, DollarSign,
-  Columns2, LayoutGrid, ArrowRightLeft, X, Coins, Undo2, Redo2, Calendar, Upload
+  Columns2, LayoutGrid, ArrowRightLeft, X, Coins, Undo2, Redo2, Calendar, Upload, Copy
 } from 'lucide-react';
 import { MapArea } from '../components/MapArea';
 import { ImageEditOverlay } from '../components/ImageEditOverlay';
@@ -1109,8 +1109,18 @@ export function JourneyDetailPage({
   const [cinematicIndex, setCinematicIndex] = useState(0);
   const [isCinematicPaused, setIsCinematicPaused] = useState(false);
   const [cinematicSpeed, setCinematicSpeed] = useState<number>(3600); // ms per step (default 1X = 3600ms)
-  const [cinematicProgress, setCinematicProgress] = useState(0);
   const [isMobilePlayCollapsed, setIsMobilePlayCollapsed] = useState(true);
+
+  // Cinematic single-timeout references (Zero-Re-render architecture)
+  const cinematicStartTimeRef = useRef<number>(0);
+  const cinematicRemainingRef = useRef<number>(3600);
+  const cinematicTimerRef = useRef<any>(null);
+
+  // Mobile swipe gesture for playlog bar
+  const playSwipeStartXRef = useRef<number | null>(null);
+
+  // Quick Spot Inspector copy feedback state
+  const [copiedSpotId, setCopiedSpotId] = useState<number | null>(null);
 
   // ─── Mobile Bottom Sheet States & Gesture Logic ───
   const [mobileSheetSnap, setMobileSheetSnap] = useState<'half' | 'expanded'>('half');
@@ -1231,27 +1241,39 @@ export function JourneyDetailPage({
     }
   }, [isCinematicMode, cinematicIndex, currentCinematicItem, activeTab]);
 
-  // Cinematic timer loop
+  // Reset remaining playback duration when index or speed changes
   useEffect(() => {
-    if (!isCinematicMode || isCinematicPaused || cinematicItems.length === 0) {
+    cinematicRemainingRef.current = cinematicSpeed;
+  }, [cinematicIndex, cinematicSpeed]);
+
+  // Cinematic single-timeout loop (Zero-Re-render architecture: eliminates 50ms interval completely)
+  useEffect(() => {
+    if (!isCinematicMode || cinematicItems.length === 0) {
+      if (cinematicTimerRef.current) clearTimeout(cinematicTimerRef.current);
       return;
     }
 
-    const interval = 50;
-    const totalTicks = cinematicSpeed / interval;
-    let currentTick = 0;
-    setCinematicProgress(0);
-
-    const timer = setInterval(() => {
-      currentTick++;
-      setCinematicProgress(Math.min(100, (currentTick / totalTicks) * 100));
-      if (currentTick >= totalTicks) {
-        currentTick = 0;
-        setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
+    if (isCinematicPaused) {
+      if (cinematicTimerRef.current) {
+        clearTimeout(cinematicTimerRef.current);
+        cinematicTimerRef.current = null;
+        const elapsed = Date.now() - cinematicStartTimeRef.current;
+        cinematicRemainingRef.current = Math.max(0, cinematicRemainingRef.current - elapsed);
       }
-    }, interval);
+      return;
+    }
 
-    return () => clearInterval(timer);
+    cinematicStartTimeRef.current = Date.now();
+    const delay = Math.max(100, cinematicRemainingRef.current);
+
+    cinematicTimerRef.current = setTimeout(() => {
+      cinematicRemainingRef.current = cinematicSpeed;
+      setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
+    }, delay);
+
+    return () => {
+      if (cinematicTimerRef.current) clearTimeout(cinematicTimerRef.current);
+    };
   }, [isCinematicMode, isCinematicPaused, cinematicIndex, cinematicItems.length, cinematicSpeed]);
 
   // Turn off cinematic mode when user edits or changes tab away from timeline or gallery
@@ -2473,13 +2495,11 @@ export function JourneyDetailPage({
         if (isCinematicMode && cinematicItems.length > 0) {
           e.preventDefault();
           setCinematicIndex(prev => (prev - 1 + cinematicItems.length) % cinematicItems.length);
-          setCinematicProgress(0);
         }
       } else if (e.key === 'ArrowRight') {
         if (isCinematicMode && cinematicItems.length > 0) {
           e.preventDefault();
           setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
-          setCinematicProgress(0);
         }
       }
 
@@ -2503,7 +2523,6 @@ export function JourneyDetailPage({
               const cIdx = cinematicItems.findIndex(i => i.id === targetItem.id);
               if (cIdx !== -1) {
                 setCinematicIndex(cIdx);
-                setCinematicProgress(0);
               }
             }
             setTimeout(() => {
@@ -2753,7 +2772,6 @@ export function JourneyDetailPage({
       const targetIdx = cinematicItems.findIndex(i => i.id === targetId);
       if (targetIdx !== -1) {
         setCinematicIndex(targetIdx);
-        setCinematicProgress(0);
       }
     }
 
@@ -4150,7 +4168,25 @@ export function JourneyDetailPage({
             <div
               onMouseEnter={() => setIsPlayFabIdle(false)}
               onMouseLeave={resetPlayFabIdleTimer}
-              onTouchStart={() => { setIsPlayFabIdle(false); resetPlayFabIdleTimer(); }}
+              onTouchStart={(e) => {
+                playSwipeStartXRef.current = e.touches[0].clientX;
+                setIsPlayFabIdle(false);
+                resetPlayFabIdleTimer();
+              }}
+              onTouchEnd={(e) => {
+                if (playSwipeStartXRef.current === null) return;
+                const deltaX = e.changedTouches[0].clientX - playSwipeStartXRef.current;
+                playSwipeStartXRef.current = null;
+                if (isCinematicMode && cinematicItems.length > 0) {
+                  if (deltaX > 40) {
+                    // Swiped Right -> Previous Spot
+                    setCinematicIndex(prev => (prev - 1 + cinematicItems.length) % cinematicItems.length);
+                  } else if (deltaX < -40) {
+                    // Swiped Left -> Next Spot
+                    setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
+                  }
+                }
+              }}
               className={`absolute bottom-3 md:bottom-6 lg:bottom-8 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-auto flex items-center rounded-full overflow-hidden opacity-100 bg-[#2E2E33] text-white border border-white/20 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur-md p-1 ${
                 isCinematicMode
                   ? 'h-9.5 sm:h-10 w-[calc(100%-1.5rem)] max-w-[480px] justify-between'
@@ -4206,13 +4242,23 @@ export function JourneyDetailPage({
                               background: 'repeating-linear-gradient(-45deg, rgba(255,255,255,0.15), rgba(255,255,255,0.15) 2.5px, rgba(255,255,255,0.3) 2.5px, rgba(255,255,255,0.3) 5px)' 
                             }}
                           />
+                          {/* Hardware-Accelerated Progress Track (Zero React Re-render) */}
                           <div 
-                            className="absolute top-0 bottom-0 left-0 bg-white rounded-l-full transition-all duration-75"
-                            style={{ width: `${Math.max(4, cinematicProgress)}%` }}
+                            key={`progress-${cinematicIndex}-${cinematicSpeed}`}
+                            className="absolute top-0 bottom-0 left-0 bg-white rounded-l-full animate-cinematic-progress"
+                            style={{
+                              animationDuration: `${cinematicSpeed}ms`,
+                              animationPlayState: isCinematicPaused ? 'paused' : 'running'
+                            }}
                           />
+                          {/* Hardware-Accelerated Walker Runner (Zero React Re-render) */}
                           <div 
-                            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 transition-all duration-75 flex items-center justify-center pointer-events-none"
-                            style={{ left: `${Math.max(4, Math.min(96, cinematicProgress))}%` }}
+                            key={`walker-${cinematicIndex}-${cinematicSpeed}`}
+                            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 animate-cinematic-walker flex items-center justify-center pointer-events-none"
+                            style={{
+                              animationDuration: `${cinematicSpeed}ms`,
+                              animationPlayState: isCinematicPaused ? 'paused' : 'running'
+                            }}
                           >
                             <div className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-white border border-neutral-900 shadow-xs flex items-center justify-center">
                               <img src="/walker.png" alt="Walker" className="w-2 h-2 object-contain" />
@@ -4238,7 +4284,6 @@ export function JourneyDetailPage({
                         <button
                           onClick={() => {
                             setCinematicIndex(prev => (prev - 1 + cinematicItems.length) % cinematicItems.length);
-                            setCinematicProgress(0);
                           }}
                           className="p-1 text-black/70 hover:text-black transition-colors cursor-pointer"
                           title="이전 스팟 (←)"
@@ -4249,7 +4294,6 @@ export function JourneyDetailPage({
                         <button
                           onClick={() => {
                             setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
-                            setCinematicProgress(0);
                           }}
                           className="p-1 text-black/70 hover:text-black transition-colors cursor-pointer"
                           title="다음 스팟 (→)"
@@ -4711,7 +4755,6 @@ export function JourneyDetailPage({
                                   const targetIdx = cinematicItems.findIndex(i => i.id === item.id);
                                   if (targetIdx !== -1) {
                                     setCinematicIndex(targetIdx);
-                                    setCinematicProgress(0);
                                   }
                                 }
                               } else if (!isEditing) {
@@ -5018,13 +5061,35 @@ export function JourneyDetailPage({
                                   </div>
                                 </div>
                               ) : (
-                                /* View Mode: Location text & isolated Google Maps link (prevents accidental clicks on mobile) */
+                                /* View Mode: Location text, One-Touch Copy & Google Maps link */
                                 item.location && item.location.trim() !== '' && (
                                   <div className="mt-0.5 flex items-center gap-1.5 text-xs font-sans text-black/65 dark:text-white/65">
                                     <MapPin className="w-3.5 h-3.5 text-red-500/70 dark:text-red-400/70 shrink-0" />
                                     <span className="truncate max-w-[170px] sm:max-w-md font-medium text-black/75 dark:text-white/75">
                                       {item.location}
                                     </span>
+                                    {/* One-Touch Copy Button */}
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const textToCopy = item.location || item.place || '';
+                                        if (textToCopy) {
+                                          navigator.clipboard.writeText(textToCopy);
+                                          setCopiedSpotId(item.id);
+                                          setTimeout(() => setCopiedSpotId(null), 1500);
+                                        }
+                                      }}
+                                      className="p-1 -m-1 text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white transition-colors cursor-pointer shrink-0 rounded hover:bg-black/5 dark:hover:bg-white/5"
+                                      title="주소/장소명 복사"
+                                      aria-label="주소 복사"
+                                    >
+                                      {copiedSpotId === item.id ? (
+                                        <Check className="w-3 h-3 text-emerald-500" />
+                                      ) : (
+                                        <Copy className="w-3 h-3" />
+                                      )}
+                                    </button>
                                     <button
                                       type="button"
                                       onClick={(e) => {
@@ -5191,6 +5256,35 @@ export function JourneyDetailPage({
                       <Plus className="w-4 h-4" /> Add Timeline Event
                     </button>
                   </div>
+                )}
+                {/* Floating Day Quick Index (Swiss Minimal Capsule Indexer for Multi-Day Trips) */}
+                {activeTab === 'timeline' && selectedDate === 'ALL' && allTripDates.length > 1 && !isEditing && (
+                  <aside 
+                    aria-label="일차별 빠른 이동"
+                    className="sticky bottom-4 z-20 self-end mr-3 sm:mr-6 pointer-events-auto"
+                  >
+                    <div className="flex items-center gap-1 bg-white/95 dark:bg-[#1A1A1C]/95 backdrop-blur-md border border-black/20 dark:border-white/20 p-1 rounded-full shadow-[0_8px_20px_rgba(0,0,0,0.15)] select-none">
+                      <span className="text-[9px] font-mono font-bold text-black/40 dark:text-white/40 pl-2 pr-1 uppercase">
+                        DAY
+                      </span>
+                      {allTripDates.map((dateStr, dIdx) => (
+                        <button
+                          key={dateStr}
+                          type="button"
+                          onClick={() => {
+                            const el = document.getElementById(`date-section-${dateStr}`);
+                            if (el) {
+                              el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
+                          }}
+                          className="w-6 h-6 rounded-full text-[10px] font-mono font-black flex items-center justify-center hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer text-black/75 dark:text-white/75"
+                          title={`${dateStr} (Day ${dIdx + 1})로 이동`}
+                        >
+                          {dIdx + 1}
+                        </button>
+                      ))}
+                    </div>
+                  </aside>
                 )}
               </div>
               </>

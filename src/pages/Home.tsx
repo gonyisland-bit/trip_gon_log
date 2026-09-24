@@ -165,6 +165,48 @@ export function formatNonRepeatingDate(dateRangeStr?: string): string {
   return dateRangeStr;
 }
 
+// Helper to detect if today is within the trip date range
+export function getLiveTripStatus(dateRangeStr?: string): { isLive: boolean; currentDay: number; totalDays: number } {
+  if (!dateRangeStr) return { isLive: false, currentDay: 0, totalDays: 0 };
+  const parts = dateRangeStr.split(/\s*[-—–~]\s*/).map(p => p.trim());
+  const yearMatch = dateRangeStr.match(/(\d{4})/);
+  const commonYear = yearMatch ? yearMatch[1] : String(new Date().getFullYear());
+
+  const parsePart = (str: string, fallbackYear: string) => {
+    if (!str) return null;
+    const ymdMatch = str.match(/(\d{4})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})/);
+    if (ymdMatch) {
+      return new Date(parseInt(ymdMatch[1], 10), parseInt(ymdMatch[2], 10) - 1, parseInt(ymdMatch[3], 10));
+    }
+    const mdMatch = str.match(/(\d{1,2})\s*[-./]\s*(\d{1,2})/);
+    if (mdMatch) {
+      return new Date(parseInt(fallbackYear, 10), parseInt(mdMatch[1], 10) - 1, parseInt(mdMatch[2], 10));
+    }
+    return null;
+  };
+
+  const startDate = parts[0] ? parsePart(parts[0], commonYear) : null;
+  const endDate = parts[1] ? parsePart(parts[1], startDate ? String(startDate.getFullYear()) : commonYear) : startDate;
+
+  if (!startDate) return { isLive: false, currentDay: 0, totalDays: 0 };
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const startOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  const endOnly = endDate ? new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()) : startOnly;
+
+  if (today >= startOnly && today <= endOnly) {
+    const diffTime = today.getTime() - startOnly.getTime();
+    const currentDay = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    const totalTime = endOnly.getTime() - startOnly.getTime();
+    const totalDays = Math.max(1, Math.floor(totalTime / (1000 * 60 * 60 * 24)) + 1);
+    return { isLive: true, currentDay, totalDays };
+  }
+
+  return { isLive: false, currentDay: 0, totalDays: 0 };
+}
+
 const COUNTRY_NAME_EN: Record<string, string> = {
   '대한민국': 'KOREA',
   '한국': 'KOREA',
@@ -1481,6 +1523,40 @@ export function HomePage({
       )}
 
       {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* LIVE TRIP 1-LINE PINNED QUICK BAR (스위스 미니멀 실시간 여정 퀵 바) */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {(() => {
+        const liveTrip = trips.find(t => getLiveTripStatus(t.date).isLive);
+        if (!liveTrip) return null;
+        const liveStatus = getLiveTripStatus(liveTrip.date);
+        return (
+          <aside 
+            aria-label="현재 진행 중인 여행 바로가기"
+            className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 pt-3 sm:pt-4"
+          >
+            <div 
+              onClick={() => onNavigate('detail', liveTrip.id)}
+              className="w-full py-2.5 px-4 sm:px-5 bg-red-600/[0.08] dark:bg-red-500/[0.12] border border-red-600/30 dark:border-red-500/40 rounded-xl sm:rounded-2xl flex items-center justify-between cursor-pointer hover:bg-red-600/[0.14] dark:hover:bg-red-500/[0.18] transition-all group select-none shadow-xs"
+            >
+              <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+                <span className="w-2 h-2 rounded-full bg-red-600 dark:bg-red-500 animate-live-pulse shrink-0" />
+                <span className="text-[10.5px] sm:text-xs font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-400 shrink-0">
+                  LIVE · DAY {liveStatus.currentDay}/{liveStatus.totalDays}
+                </span>
+                <span className="text-xs sm:text-sm font-sans font-bold text-black dark:text-white truncate">
+                  {liveTrip.title}
+                </span>
+              </div>
+              <div className="flex items-center gap-1 text-[10.5px] sm:text-xs font-mono font-bold text-red-600 dark:text-red-400 shrink-0 group-hover:translate-x-1 transition-transform">
+                <span className="hidden sm:inline">VIEW TRIP</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </div>
+            </div>
+          </aside>
+        );
+      })()}
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
       {/* 01. TRIP (통합 여정 목록 섹션)                                       */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       <section className="flex flex-col w-full overflow-hidden transition-colors border-t border-black/10 dark:border-white/10">
@@ -1672,17 +1748,34 @@ export function HomePage({
                           {month && <span className="opacity-30">/</span>}
                           {month && <span className="font-bold text-red-600 dark:text-red-500 uppercase tracking-tight">{month}</span>}
                         </div>
-                        {isItemPlan || trip.statusBadge === 'PLAN' ? (
-                          <span className="px-2 py-0.5 text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider font-mono bg-blue-600 text-white rounded-none leading-none">
-                            PLAN
-                          </span>
-                        ) : trip.statusBadge ? (
-                          <span className={`px-2 py-0.5 text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider font-mono rounded-none leading-none ${
-                            trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
-                          }`}>
-                            {trip.statusBadge}
-                          </span>
-                        ) : null}
+                        {(() => {
+                          const liveStatus = getLiveTripStatus(trip.date);
+                          if (liveStatus.isLive) {
+                            return (
+                              <span className="px-2 py-0.5 text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider font-mono bg-black text-white dark:bg-white dark:text-black border border-red-500/50 flex items-center gap-1.5 leading-none">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-live-pulse" />
+                                <span>LIVE · DAY {liveStatus.currentDay}/{liveStatus.totalDays}</span>
+                              </span>
+                            );
+                          }
+                          if (isItemPlan || trip.statusBadge === 'PLAN') {
+                            return (
+                              <span className="px-2 py-0.5 text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider font-mono bg-blue-600 text-white rounded-none leading-none">
+                                PLAN
+                              </span>
+                            );
+                          }
+                          if (trip.statusBadge) {
+                            return (
+                              <span className={`px-2 py-0.5 text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider font-mono rounded-none leading-none ${
+                                trip.statusBadge === 'NEW' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
+                              }`}>
+                                {trip.statusBadge}
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
 
                       {/* Prominent Title */}
@@ -1761,8 +1854,18 @@ export function HomePage({
                       isActive={isCardActive}
                     />
 
-                    {/* 좌측 상단 반투명 알약 뱃지: NEW, EDITING, PLAN 만 표기 (TRIP 넘버 제거, 빨간 점 제거) */}
+                    {/* 좌측 상단 반투명 알약 뱃지: LIVE, NEW, EDITING, PLAN */}
                     {(() => {
+                      const liveStatus = getLiveTripStatus(trip.date);
+                      if (liveStatus.isLive) {
+                        return (
+                          <div className="absolute top-3 left-3 sm:top-3.5 sm:left-3.5 px-2.5 sm:px-3 py-1 backdrop-blur-md font-mono text-[9px] sm:text-[10px] font-bold tracking-wider uppercase rounded-full shadow-xs bg-black/85 dark:bg-black/90 text-white border border-red-500/40 flex items-center gap-1.5 z-10">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-live-pulse" />
+                            <span>LIVE · DAY {liveStatus.currentDay}/{liveStatus.totalDays}</span>
+                          </div>
+                        );
+                      }
+
                       const isPlanBadge = isItemPlan || trip.statusBadge === 'PLAN';
                       const isNewBadge = trip.statusBadge === 'NEW';
                       const isEditingBadge = trip.statusBadge === 'EDITING';

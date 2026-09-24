@@ -958,25 +958,16 @@ export function MapArea({
 
               const startTime = performance.now();
               const animDuration = 1600 * ((cinematicSpeed || 3600) / 3600); // Equal baseline 1X speed for both walker and vehicles
+              const distance = Math.hypot(nextCoords.lat - prevCoords.lat, nextCoords.lng - prevCoords.lng);
 
-              const step = (now: number) => {
-                const elapsed = now - startTime;
-                const progress = Math.min(1, elapsed / animDuration);
-                // EaseInOutQuad
-                const ease = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
-
-                const curLat = prevCoords.lat + (nextCoords.lat - prevCoords.lat) * ease;
-                const curLng = prevCoords.lng + (nextCoords.lng - prevCoords.lng) * ease;
-
-                if (travelerMarkerRef.current) {
-                  travelerMarkerRef.current.setLatLng([curLat, curLng]);
-                }
-                map.panTo([curLat, curLng], { animate: false });
-
-                if (progress < 1) {
-                  travelerAnimRef.current = requestAnimationFrame(step);
-                } else {
-                  // 목적지 도착 완료: 제자리 정지 실루엣으로 전환
+              // 장거리(도시 간 15km 이상) 이동의 경우 Leaflet 최적화 flyTo 연계로 타일 끊김 방지
+              if (distance > 0.15) {
+                map.flyTo([nextCoords.lat, nextCoords.lng], Math.max(map.getZoom(), targetZoom), {
+                  duration: animDuration / 1000,
+                  easeLinearity: 0.25
+                });
+                
+                setTimeout(() => {
                   if (travelerMarkerRef.current) {
                     const standingIcon = L.divIcon({
                       className: 'traveler-icon-container',
@@ -985,12 +976,51 @@ export function MapArea({
                       iconAnchor
                     });
                     travelerMarkerRef.current.setIcon(standingIcon);
+                    travelerMarkerRef.current.setLatLng([nextCoords.lat, nextCoords.lng]);
                   }
-                  map.setView([nextCoords.lat, nextCoords.lng], Math.max(map.getZoom(), targetZoom), { animate: true });
-                }
-              };
+                }, animDuration);
+              } else {
+                let lastPanTime = 0;
+                const step = (now: number) => {
+                  const elapsed = now - startTime;
+                  const progress = Math.min(1, elapsed / animDuration);
+                  // Smooth Swiss EaseInOutCubic
+                  const ease = progress < 0.5 
+                    ? 4 * progress * progress * progress 
+                    : 1 - Math.pow(-2 * progress + 2, 3) / 2;
 
-              travelerAnimRef.current = requestAnimationFrame(step);
+                  const curLat = prevCoords.lat + (nextCoords.lat - prevCoords.lat) * ease;
+                  const curLng = prevCoords.lng + (nextCoords.lng - prevCoords.lng) * ease;
+
+                  if (travelerMarkerRef.current) {
+                    travelerMarkerRef.current.setLatLng([curLat, curLng]);
+                  }
+
+                  // 24ms 쓰로틀링으로 모바일 타일 DOM 렌더링 부하 절감 및 60fps 부드러움 보장
+                  if (now - lastPanTime > 24 || progress === 1) {
+                    lastPanTime = now;
+                    map.panTo([curLat, curLng], { animate: false });
+                  }
+
+                  if (progress < 1) {
+                    travelerAnimRef.current = requestAnimationFrame(step);
+                  } else {
+                    // 목적지 도착 완료: 제자리 정지 실루엣으로 전환
+                    if (travelerMarkerRef.current) {
+                      const standingIcon = L.divIcon({
+                        className: 'traveler-icon-container',
+                        html: getTravelerHtml(cinematicVehicleType, isHeadingWest, false),
+                        iconSize,
+                        iconAnchor
+                      });
+                      travelerMarkerRef.current.setIcon(standingIcon);
+                    }
+                    map.setView([nextCoords.lat, nextCoords.lng], Math.max(map.getZoom(), targetZoom), { animate: true });
+                  }
+                };
+
+                travelerAnimRef.current = requestAnimationFrame(step);
+              }
             } else {
               map.setView(latLng, Math.max(map.getZoom(), targetZoom), { animate: true });
             }
