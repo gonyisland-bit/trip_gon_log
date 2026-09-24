@@ -179,6 +179,25 @@ const getTravelerHtml = (vehicleType: 'car' | 'train' | 'ship' | 'flight' | null
   `;
 };
 
+const getTransitVehicleType = (transit?: any): 'bus' | 'car' | 'train' => {
+  if (!transit) return 'train';
+  const tt = (transit.transitType || '').toLowerCase();
+  const ticket = (transit.ticketType || '').toLowerCase();
+  const title = (transit.title || '').toLowerCase();
+  
+  if (tt === 'bus' || ticket.includes('bus') || ticket.includes('버스') || title.includes('버스') || title.includes('bus')) {
+    return 'bus';
+  }
+  if (
+    tt === 'car' || tt === 'taxi' ||
+    ticket.includes('car') || ticket.includes('taxi') || ticket.includes('렌트') || ticket.includes('렌터') || ticket.includes('rent') || ticket.includes('택시') ||
+    title.includes('렌트') || title.includes('렌터') || title.includes('rent') || title.includes('car') || title.includes('taxi') || title.includes('택시')
+  ) {
+    return 'car';
+  }
+  return 'train';
+};
+
 export function MapArea({
   trip,
   isEditMode,
@@ -224,6 +243,18 @@ export function MapArea({
   const travelerMarkerRef = useRef<any>(null);
   const travelerAnimRef = useRef<number | null>(null);
   const lastActiveSpotCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
+
+  // Invalidate map size on tab change to prevent grey/broken tiles and flickering
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    const timer = setTimeout(() => {
+      try {
+        map.invalidateSize({ animate: false });
+      } catch (_) {}
+    }, 60);
+    return () => clearTimeout(timer);
+  }, [activeTab, mapReady]);
 
   // ─── Close open popup on Escape key ───
   useEffect(() => {
@@ -396,10 +427,10 @@ export function MapArea({
     let src = '/airplane.png';
     if (activeTab === 'transit') {
       const transit = transits.find(t => t.id === expandedItemId);
-      const ticketType = (transit?.ticketType || '').toUpperCase();
-      if (ticketType.includes('BUS')) {
+      const vehicle = getTransitVehicleType(transit);
+      if (vehicle === 'bus') {
         src = '/bus.png';
-      } else if (ticketType.includes('TAXI') || ticketType.includes('CAR')) {
+      } else if (vehicle === 'car') {
         src = '/car.png';
       } else {
         src = '/train.png';
@@ -627,12 +658,12 @@ export function MapArea({
           
           // Find the transit type for this group
           const transit = transits.find(t => t.id === tId);
-          const tType = transit?.transitType || 'train';
+          const vehicle = getTransitVehicleType(transit);
           let pathColor = '#4f46e5'; // Train: Indigo
-          if (tType === 'bus') {
+          if (vehicle === 'bus') {
             pathColor = '#10b981'; // Bus: Green
-          } else if (tType === 'taxi') {
-            pathColor = '#f59e0b'; // Taxi: Yellow
+          } else if (vehicle === 'car') {
+            pathColor = '#f59e0b'; // Car/Taxi: Amber/Yellow
           }
 
           if (group.depart && group.arrive) {
@@ -762,7 +793,7 @@ export function MapArea({
         const tType = item.transitType || 'train';
         if (tType === 'bus') {
           pinColor = '#10b981'; // Green
-        } else if (tType === 'taxi') {
+        } else if (tType === 'taxi' || tType === 'car') {
           pinColor = '#f59e0b'; // Amber/Yellow
         } else {
           pinColor = '#4f46e5'; // Indigo/Blue
@@ -1403,12 +1434,12 @@ export function MapArea({
 
         if (activeTab === 'transit') {
           const transit = transits.find(t => t.id === expandedItemId);
-          const ticketType = (transit?.ticketType || '').toUpperCase();
-          if (ticketType.includes('BUS')) {
+          const vehicle = getTransitVehicleType(transit);
+          if (vehicle === 'bus') {
             src = '/bus.png';
             width = 24;
             height = 48;
-          } else if (ticketType.includes('TAXI') || ticketType.includes('CAR')) {
+          } else if (vehicle === 'car') {
             src = '/car.png';
             width = 28;
             height = 40;

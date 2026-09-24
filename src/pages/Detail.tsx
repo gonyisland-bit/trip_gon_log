@@ -2644,7 +2644,7 @@ export function JourneyDetailPage({
     return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [mapConfirm, isLightboxOpen, allGalleryImages, selectedDate, scrollToTimelineItemSafe]);
 
-  const mapPoints = (() => {
+  const mapPoints = useMemo(() => {
     // Collect gallery photo points that have valid coordinates
     const galleryMetaImages = (tripToUse?.gallery || []).map(img => {
       if (typeof img === 'string') return { url: img };
@@ -2783,6 +2783,13 @@ export function JourneyDetailPage({
       const transitsToUse = isEditing ? draftTransits : transits;
       const transitPoints: any[] = [];
       transitsToUse.forEach(t => {
+        const ticketLower = (t.ticketType || '').toLowerCase();
+        const titleLower = (t.title || '').toLowerCase();
+        const isCar = (t.transitType === 'car' || t.transitType === 'taxi') ||
+          ticketLower.includes('car') || ticketLower.includes('렌트') || ticketLower.includes('렌터') || ticketLower.includes('rent') || ticketLower.includes('taxi') || ticketLower.includes('택시') ||
+          titleLower.includes('렌트') || titleLower.includes('렌터') || titleLower.includes('rent') || titleLower.includes('car');
+        const resolvedType = isCar ? 'car' : (t.transitType || 'train');
+
         if (t.departLat !== undefined && t.departLng !== undefined) {
           transitPoints.push({
             id: t.id * 10,
@@ -2793,7 +2800,7 @@ export function JourneyDetailPage({
             memo: `${t.title || 'Transit'} - Departure from ${t.departPlace || ''}`,
             type: 'transit_depart',
             transitId: t.id,
-            transitType: t.transitType || 'train'
+            transitType: resolvedType
           });
         }
         if (t.arriveLat !== undefined && t.arriveLng !== undefined) {
@@ -2806,7 +2813,7 @@ export function JourneyDetailPage({
             memo: `${t.title || 'Transit'} - Arrival at ${t.arrivePlace || ''}`,
             type: 'transit_arrive',
             transitId: t.id,
-            transitType: t.transitType || 'train'
+            transitType: resolvedType
           });
         }
 
@@ -2829,7 +2836,7 @@ export function JourneyDetailPage({
       return allTimelinePoints;
     }
     return [];
-  })();
+  }, [tripToUse?.gallery, allTripDates, activeTab, currentTimeline, selectedDate, timelinePhotoPoints, isCinematicMode, isEditing, draftFlights, flights, airportCoords, airportGeocodedCoords, draftStays, stays, stayCoords, draftTransits, transits, baseTimeline]);
 
   // Center active date tab in top sticky date bar (Container-isolated scrollTo, prevents window horizontal shift)
   useEffect(() => {
@@ -4832,12 +4839,10 @@ export function JourneyDetailPage({
                           ref={el => { itemRefs.current[item.id] = el; }} 
                           onMouseEnter={() => setHoveredItemId(item.id)}
                           onMouseLeave={() => setHoveredItemId(null)}
-                          className={`flex flex-col transition-all w-full ${
-                            flashedItemId === item.id ? 'timeline-flash-highlight' : ''
-                          } ${
+                          className={`flex flex-col transition-colors w-full border-b border-black/15 dark:border-white/15 ${
                             isActive 
-                              ? 'bg-black/[0.05] dark:bg-white/[0.08] ring-1 ring-inset ring-black/20 dark:ring-white/25 border-b-black/30 dark:border-b-white/30 shadow-xs' 
-                              : (hoveredItemId === item.id ? 'bg-black/[0.015] dark:bg-white/[0.02] border-b border-black/15 dark:border-white/15' : 'border-b border-black/15 dark:border-white/15')
+                              ? 'bg-black/[0.06] dark:bg-white/[0.09] ring-1 ring-inset ring-black/25 dark:ring-white/30 border-b-black/30 dark:border-b-white/30 shadow-xs' 
+                              : (hoveredItemId === item.id ? 'bg-black/[0.015] dark:bg-white/[0.02]' : '')
                           } ${collapsedDays.includes(item.date || '') && selectedDate === 'ALL' ? 'hidden' : ''}`}
                           draggable={isEditing}
                           onDragStart={(e) => {
