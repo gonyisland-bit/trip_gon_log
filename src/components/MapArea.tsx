@@ -171,7 +171,7 @@ const getTravelerHtml = (vehicleType: 'car' | 'train' | 'ship' | 'flight' | null
         <img 
           src="/walker.png" 
           alt="Walker" 
-          style="width: 38px; height: 38px; object-fit: contain; display: block; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));" 
+          style="width: 38px; height: 38px; object-fit: contain; display: block; filter: drop-shadow(1.5px 0 0 #FFFFFF) drop-shadow(-1.5px 0 0 #FFFFFF) drop-shadow(0 1.5px 0 #FFFFFF) drop-shadow(0 -1.5px 0 #FFFFFF) drop-shadow(0 2px 4px rgba(0,0,0,0.65));" 
         />
       </div>
       <div style="width: 24px; height: 5px; background: radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 75%); border-radius: 50%; ${isMoving ? 'animation: walkerShadowPulse 0.44s ease-in-out infinite;' : ''} margin-top: -2px;"></div>
@@ -958,22 +958,12 @@ export function MapArea({
 
               const startTime = performance.now();
               const animDuration = 1600 * ((cinematicSpeed || 3600) / 3600); // Equal baseline 1X speed for both walker and vehicles
-              const distance = Math.hypot(nextCoords.lat - prevCoords.lat, nextCoords.lng - prevCoords.lng);
-              const isLongDistance = distance > 0.15;
 
-              // 장거리(도시 간 15km 이상) 이동의 경우 Leaflet 최적화 flyTo 연계로 타일 끊김 방지
-              if (isLongDistance) {
-                map.flyTo([nextCoords.lat, nextCoords.lng], Math.max(map.getZoom(), targetZoom), {
-                  duration: animDuration / 1000,
-                  easeLinearity: 0.25
-                });
-              }
-
-              let lastPanTime = 0;
+              // 예전 방식으로 완벽 복원: 지도의 줌 레벨을 일정하게 유지하며 카메라가 이동객체를 부드럽게 연속 추적
               const step = (now: number) => {
                 const elapsed = now - startTime;
                 const progress = Math.min(1, elapsed / animDuration);
-                // Smooth Swiss EaseInOutCubic
+                // Smooth Swiss EaseInOutCubic (비단결 같은 가감속 곡선)
                 const ease = progress < 0.5 
                   ? 4 * progress * progress * progress 
                   : 1 - Math.pow(-2 * progress + 2, 3) / 2;
@@ -985,11 +975,8 @@ export function MapArea({
                   travelerMarkerRef.current.setLatLng([curLat, curLng]);
                 }
 
-                // 단거리 이동 시 24ms 쓰로틀링 panTo (장거리는 map.flyTo가 주도)
-                if (!isLongDistance && (now - lastPanTime > 24 || progress === 1)) {
-                  lastPanTime = now;
-                  map.panTo([curLat, curLng], { animate: false });
-                }
+                // 줌 레벨 변동 없이 부드러운 연속 카메라 중심 트래킹 (60~120fps 완벽 동기화)
+                map.panTo([curLat, curLng], { animate: false });
 
                 if (progress < 1) {
                   travelerAnimRef.current = requestAnimationFrame(step);
@@ -1005,9 +992,7 @@ export function MapArea({
                     travelerMarkerRef.current.setIcon(standingIcon);
                     travelerMarkerRef.current.setLatLng([nextCoords.lat, nextCoords.lng]);
                   }
-                  if (!isLongDistance) {
-                    map.setView([nextCoords.lat, nextCoords.lng], Math.max(map.getZoom(), targetZoom), { animate: true });
-                  }
+                  map.panTo([nextCoords.lat, nextCoords.lng], { animate: false });
                   travelerAnimRef.current = null;
                 }
               };
