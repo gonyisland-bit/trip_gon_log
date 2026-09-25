@@ -647,7 +647,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
               </label>
               <button
                 type="button"
-                onClick={handleRunOcr}
+                onClick={() => handleRunOcr(false)}
                 disabled={isOcrRunning || !selectedImage}
                 className="text-[10px] font-mono text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:underline flex items-center gap-1 cursor-pointer"
               >
