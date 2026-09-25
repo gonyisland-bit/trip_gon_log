@@ -175,7 +175,7 @@ export interface TransitItem {
 export type TabType = 'summary' | 'timeline' | 'flights' | 'stays' | 'transit' | 'gallery' | 'settlement' | 'pocket';
 
 export type PocketCategory = 'food' | 'cafe' | 'spot' | 'shopping' | 'tip';
-export type SpotPocketPlatform = 'instagram' | 'youtube' | 'blog' | 'maps' | 'web';
+export type SpotPocketPlatform = 'instagram' | 'threads' | 'x' | 'youtube' | 'blog' | 'maps' | 'web';
 
 export interface PocketComment {
   id: string;

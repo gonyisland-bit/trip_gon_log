@@ -14,6 +14,8 @@ import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { PocketScheduleModal } from '../components/PocketScheduleModal';
 import { PocketDetailModal } from '../components/PocketDetailModal';
+import { PocketScrapModal } from '../components/PocketScrapModal';
+import { scrapeSnsMetadata, ScrapedSpotData } from '../utils/snsScraper';
 import { compressImage } from '../utils/imageHelper';
 import { uploadFileToR2 } from '../utils/storageHelper';
 import { auth } from '../firebase';
@@ -58,7 +60,23 @@ const renderPlatformIcon = (platform?: string) => {
       </svg>
     );
   }
-  if (p.includes('thread') || p.includes('blog') || p.includes('naver') || p.includes('tistory')) {
+  if (p.includes('thread')) {
+    return (
+      <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z" style={{ display: 'none' }} />
+        <path d="M14.5 12c0 2.2-1.3 3.5-3.2 3.5-1.7 0-3-1.3-3-3.3 0-2.2 1.5-3.6 3.4-3.6 1.8 0 2.8 1.1 2.8 2.2v1.2zm-2.8 1.8c.8 0 1.4-.6 1.4-1.6v-.6c0-.8-.5-1.4-1.4-1.4-.9 0-1.5.8-1.5 1.8 0 1.1.6 1.8 1.5 1.8z" />
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      </svg>
+    );
+  }
+  if (p === 'x' || p.includes('twitter')) {
+    return (
+      <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+      </svg>
+    );
+  }
+  if (p.includes('blog') || p.includes('naver') || p.includes('tistory')) {
     return <FileText className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />;
   }
   if (p.includes('map')) {
@@ -236,6 +254,59 @@ export function PocketHubPage({
   const [newAddress, setNewAddress] = useState<string>('');
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState<boolean>(false);
   const [isDraggingThumbnail, setIsDraggingThumbnail] = useState<boolean>(false);
+
+  // Smart SNS Quick Scrap state
+  const [scrapInputUrl, setScrapInputUrl] = useState<string>('');
+  const [isScraping, setIsScraping] = useState<boolean>(false);
+  const [scrapedResult, setScrapedResult] = useState<ScrapedSpotData | null>(null);
+  const [isScrapModalOpen, setIsScrapModalOpen] = useState<boolean>(false);
+
+  const handleQuickScrapSubmit = async (urlToScrap?: string) => {
+    const targetUrl = (urlToScrap || scrapInputUrl).trim();
+    if (!targetUrl) {
+      alert('SNS 또는 웹 링크(Instagram, Threads, X, YouTube 등)를 입력해주세요.');
+      return;
+    }
+
+    try {
+      setIsScraping(true);
+      const data = await scrapeSnsMetadata(targetUrl);
+      setScrapedResult(data);
+      setIsScrapModalOpen(true);
+      setScrapInputUrl('');
+    } catch (err: any) {
+      console.error('[PocketHub] Scrap failed:', err);
+      alert(err.message || '링크 메타데이터를 파싱하지 못했습니다. 링크를 확인해주세요.');
+    } finally {
+      setIsScraping(false);
+    }
+  };
+
+  const handlePasteFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text && text.trim()) {
+        const trimmed = text.trim();
+        setScrapInputUrl(trimmed);
+        if (/^https?:\/\//i.test(trimmed)) {
+          handleQuickScrapSubmit(trimmed);
+        }
+      } else {
+        alert('클립보드에 복사된 텍스트가 없습니다.');
+      }
+    } catch (err) {
+      console.warn('Clipboard read failed:', err);
+      alert('클립보드 읽기 권한이 필요합니다. 입력창에 직접 붙여넣기(Cmd+V)를 해주세요.');
+    }
+  };
+
+  const handleSaveScrapedSpot = async (newItem: SpotPocketItem) => {
+    const updated = [newItem, ...spots];
+    setSpots(updated);
+    await savePockets(updated);
+    setActionSuccessToast(`'${newItem.title}' 포켓에 보관 완료`);
+    setTimeout(() => setActionSuccessToast(null), 3000);
+  };
 
   // Detail Modal state
   const [selectedSpotForModal, setSelectedSpotForModal] = useState<SpotPocketItem | null>(null);
@@ -788,6 +859,80 @@ export function PocketHubPage({
           <p className="text-xs sm:text-sm md:text-base font-['Noto_Sans_KR',sans-serif] font-medium text-black/60 dark:text-white/60 max-w-2xl leading-relaxed pt-1 break-keep">
             SNS 스크랩 & 숨은 핫플 꿀팁을 지역별 갤러리로 보관하고, 여정 작성 시 즉시 꺼내어 활용하세요.
           </p>
+        </div>
+      </section>
+
+      {/* 1.5 Swiss Minimal Smart SNS Quick Scrap Bar */}
+      <section className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-3.5 sm:py-4 border-b border-black/10 dark:border-white/10 bg-black/[0.015] dark:bg-white/[0.02]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          {/* Input & Action Strip */}
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleQuickScrapSubmit();
+            }}
+            className="flex-1 flex items-center border border-black/20 dark:border-white/20 bg-white dark:bg-[#18181A] shadow-xs focus-within:border-black dark:focus-within:border-white transition-colors"
+          >
+            <div className="pl-3 sm:pl-3.5 pr-2 text-black/40 dark:text-white/40 flex items-center shrink-0">
+              <Sparkles className="w-4 h-4 text-red-600 dark:text-red-400" />
+            </div>
+            <input 
+              type="text"
+              value={scrapInputUrl}
+              onChange={(e) => setScrapInputUrl(e.target.value)}
+              placeholder="SNS 링크를 붙여넣으세요 (Instagram, Threads, X, YouTube, 블로그...)"
+              className="flex-1 min-w-0 py-2 sm:py-2.5 text-xs sm:text-sm font-sans font-medium bg-transparent text-black dark:text-white outline-none placeholder:text-black/35 dark:placeholder:text-white/35"
+            />
+            {scrapInputUrl && (
+              <button
+                type="button"
+                onClick={() => setScrapInputUrl('')}
+                className="p-1.5 text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white mr-1 cursor-pointer"
+                title="지우기"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handlePasteFromClipboard}
+              className="px-2.5 sm:px-3 py-1.5 text-[11px] font-mono font-bold tracking-wider text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border-l border-black/10 dark:border-white/10 transition-colors shrink-0 cursor-pointer hidden xs:flex items-center gap-1"
+              title="클립보드 링크 붙여넣기"
+            >
+              <span>붙여넣기</span>
+            </button>
+            <button
+              type="submit"
+              disabled={isScraping || !scrapInputUrl.trim()}
+              className="px-3.5 sm:px-5 py-2 sm:py-2.5 bg-black text-white dark:bg-white dark:text-black text-[11px] sm:text-xs font-mono font-black tracking-widest uppercase transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0 flex items-center gap-1.5"
+            >
+              {isScraping ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span className="hidden sm:inline">분석 중...</span>
+                </>
+              ) : (
+                <>
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>SCRAP</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Supported platform minimal pill hints */}
+          <div className="flex items-center gap-2 text-[10px] font-mono text-black/40 dark:text-white/40 shrink-0 self-end sm:self-center select-none">
+            <span className="font-bold tracking-wider">SUPPORT:</span>
+            <span>INSTA</span>
+            <span>·</span>
+            <span>THREADS</span>
+            <span>·</span>
+            <span>X</span>
+            <span>·</span>
+            <span>YOUTUBE</span>
+            <span>·</span>
+            <span>BLOG</span>
+          </div>
         </div>
       </section>
 
@@ -1741,6 +1886,19 @@ export function PocketHubPage({
         onCancel={() => setSpotToDelete(null)}
         confirmVariant="danger"
       />
+
+      {/* ── SMART SNS QUICK SCRAP MODAL ── */}
+      {isScrapModalOpen && scrapedResult && (
+        <PocketScrapModal
+          isOpen={isScrapModalOpen}
+          onClose={() => {
+            setIsScrapModalOpen(false);
+            setScrapedResult(null);
+          }}
+          scrapedData={scrapedResult}
+          onSave={handleSaveScrapedSpot}
+        />
+      )}
     </div>
   );
 }

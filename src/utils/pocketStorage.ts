@@ -167,6 +167,8 @@ export function detectPlatform(url?: string): SpotPocketPlatform {
   if (!url) return 'web';
   const lower = url.toLowerCase();
   if (lower.includes('instagram.com') || lower.includes('instagr.am')) return 'instagram';
+  if (lower.includes('threads.net') || lower.includes('threads.com')) return 'threads';
+  if (lower.includes('twitter.com') || lower.includes('x.com')) return 'x';
   if (lower.includes('youtube.com') || lower.includes('youtu.be')) return 'youtube';
   if (lower.includes('blog.naver.com') || lower.includes('tistory.com') || lower.includes('brunch.co.kr')) return 'blog';
   if (lower.includes('maps.google.') || lower.includes('goo.gl/maps') || lower.includes('maps.app.goo.gl')) return 'maps';
