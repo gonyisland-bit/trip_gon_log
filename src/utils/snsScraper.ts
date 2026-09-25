@@ -339,20 +339,51 @@ export async function scrapeSnsMetadata(rawUrl: string): Promise<ScrapedSpotData
 
             if (!title) title = getMeta('og:title') || doc.querySelector('title')?.textContent || '';
             if (!memo) memo = getMeta('og:description') || getMeta('description') || '';
-            const img = getMeta('og:image') || getMeta('twitter:image');
+            // Collect all og:image and twitter:image meta tags
+            const metaImages = doc.querySelectorAll('meta[property="og:image"], meta[name="twitter:image"], meta[property="twitter:image"]');
+            metaImages.forEach((m) => {
+              const content = m.getAttribute('content');
+              if (content && /^https?:\/\//i.test(content) && !allImages.includes(content)) {
+                allImages.push(content);
+              }
+            });
+
+            const img = allImages[0] || getMeta('og:image') || getMeta('twitter:image');
             if (img && !thumbnailUrl) {
               thumbnailUrl = img;
-              allImages.push(img);
             }
 
-            // Look for additional images in page
-            const imgElements = doc.querySelectorAll('article img, main img, img');
+            // Look for additional images in page articles/main/media
+            const imgElements = doc.querySelectorAll('article img, main img, figure img, img');
             imgElements.forEach((el) => {
               const src = el.getAttribute('src');
-              if (src && /^https?:\/\//i.test(src) && !allImages.includes(src)) {
+              if (
+                src && 
+                /^https?:\/\//i.test(src) && 
+                !src.includes('profile') && 
+                !src.includes('avatar') && 
+                !src.includes('logo') && 
+                !src.endsWith('.svg') &&
+                !allImages.includes(src)
+              ) {
                 allImages.push(src);
               }
             });
+
+            // Instagram carousel regex extraction from JSON scripts if present
+            if (platform === 'instagram' || platform === 'threads') {
+              const displayUrlMatches = json.contents.match(/"display_url":"(https:[^"]+)"/g);
+              if (displayUrlMatches) {
+                displayUrlMatches.forEach((m: string) => {
+                  try {
+                    const matchedUrl = m.replace(/"display_url":"/, '').replace(/"$/, '').replace(/\\u0026/g, '&');
+                    if (matchedUrl && !allImages.includes(matchedUrl)) {
+                      allImages.push(matchedUrl);
+                    }
+                  } catch (_) {}
+                });
+              }
+            }
           }
         }
       } catch (e) {

@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { X, Calendar, Clock, Check, Plane, Utensils, Coffee, Moon, Sparkles } from 'lucide-react';
 import { SpotPocketItem, Trip } from '../types';
 
@@ -56,14 +56,33 @@ export function PocketScheduleModal({
 
   const currentSlot = QUICK_TIME_SLOTS.find(s => s.id === selectedSlotId) || QUICK_TIME_SLOTS[2];
 
+  // Global ESC key listener to safely close modal
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.key === 'Esc') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   const handleApply = () => {
     onConfirm(selectedDate, currentSlot.time);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-[#111111] border border-black dark:border-white w-full max-w-md p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 font-sans">
+    <div 
+      className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 pt-16 sm:pt-20 pb-8 overflow-y-auto"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white dark:bg-[#111111] border border-black dark:border-white w-full max-w-md p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 font-sans my-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-3 mb-4">
           <div>

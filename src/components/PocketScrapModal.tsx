@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  X, Check, ExternalLink, Image as ImageIcon, MapPin, 
-  Utensils, Coffee, Camera, ShoppingBag, Lightbulb, Upload, Sparkles, Layers
+  X, Check, ExternalLink, Image as ImageIcon,
+  Utensils, Coffee, Camera, ShoppingBag, Lightbulb, Upload, Sparkles, Layers,
+  ScanText, Loader2, Link2
 } from 'lucide-react';
 import { ScrapedSpotData, ScrapedSpotCandidate } from '../utils/snsScraper';
 import { PocketCategory, SpotPocketItem, SpotPocketPlatform } from '../types';
 import { compressImage } from '../utils/imageHelper';
 import { uploadFileToR2 } from '../utils/storageHelper';
+import { extractTextFromImageUrl } from '../utils/ocrHelper';
 
 interface PocketScrapModalProps {
   isOpen: boolean;
@@ -73,6 +75,11 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
     scrapedData.targetImgIndex ? scrapedData.targetImgIndex - 1 : null
   );
 
+  // OCR state for image text extraction
+  const [isOcrRunning, setIsOcrRunning] = useState<boolean>(false);
+  const [ocrCandidates, setOcrCandidates] = useState<string[]>([]);
+  const [ocrError, setOcrError] = useState<string | null>(null);
+
   useEffect(() => {
     setTitle(scrapedData.title);
     setCategory(scrapedData.category);
@@ -81,7 +88,50 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
     setCity(scrapedData.city || '');
     setCountry(scrapedData.country || '');
     setActiveCandidateIndex(scrapedData.targetImgIndex ? scrapedData.targetImgIndex - 1 : null);
+    setOcrCandidates([]);
+    setOcrError(null);
   }, [scrapedData]);
+
+  // Global ESC key listener to safely close modal
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.key === 'Esc') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  // OCR handler: Extract text from selected thumbnail image
+  const handleRunOcr = async () => {
+    if (!selectedImage) {
+      alert('분석할 이미지가 없습니다.');
+      return;
+    }
+
+    try {
+      setIsOcrRunning(true);
+      setOcrError(null);
+      const res = await extractTextFromImageUrl(selectedImage, 'kor');
+      if (res.candidates && res.candidates.length > 0) {
+        setOcrCandidates(res.candidates);
+        // If current title is default or empty, auto-pick first candidate
+        if (!title.trim() || title === '추천 여행 스팟' || title.length < 3) {
+          setTitle(res.candidates[0]);
+        }
+      } else {
+        setOcrError('이미지에서 인식 가능한 텍스트를 찾지 못했습니다.');
+      }
+    } catch (err: any) {
+      console.warn('[PocketScrapModal] OCR error:', err);
+      setOcrError('이미지 텍스트 인식 중 통신 오류가 발생했습니다. 직접 입력해주세요.');
+    } finally {
+      setIsOcrRunning(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -153,7 +203,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
 
   return (
     <div 
-      className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto"
+      className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 pt-16 sm:pt-20 pb-8 overflow-y-auto"
       onClick={onClose}
     >
       <div 
@@ -219,20 +269,42 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
 
           {/* Thumbnail Preview & Carousel Image Selector */}
           <div className="flex flex-col gap-2">
-            <label className="text-[11px] font-mono font-bold text-black/60 dark:text-white/60 uppercase tracking-wider flex items-center justify-between">
+            <div className="flex items-center justify-between text-[11px] font-mono font-bold text-black/60 dark:text-white/60 uppercase tracking-wider">
               <span>썸네일 이미지</span>
-              <label className="text-[10px] font-mono text-blue-600 dark:text-blue-400 hover:underline cursor-pointer flex items-center gap-1">
-                <Upload className="w-3 h-3" />
-                <span>{isUploading ? '업로드 중...' : '사진 직접 교체'}</span>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handleCustomImageUpload} 
-                  disabled={isUploading} 
-                  className="hidden" 
-                />
-              </label>
-            </label>
+              <div className="flex items-center gap-3">
+                {/* OCR text extraction button */}
+                <button
+                  type="button"
+                  onClick={handleRunOcr}
+                  disabled={isOcrRunning || !selectedImage}
+                  className="text-[10px] font-mono font-bold text-red-600 dark:text-red-400 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                  title="사진 속 글씨(장소명/간판)를 자동으로 읽어옵니다"
+                >
+                  {isOcrRunning ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>텍스트 읽는 중...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ScanText className="w-3 h-3" />
+                      <span>이미지 텍스트 파밍 (OCR)</span>
+                    </>
+                  )}
+                </button>
+                <label className="text-[10px] font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:underline cursor-pointer flex items-center gap-1">
+                  <Upload className="w-3 h-3" />
+                  <span>{isUploading ? '업로드 중...' : '사진 교체'}</span>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={handleCustomImageUpload} 
+                    disabled={isUploading} 
+                    className="hidden" 
+                  />
+                </label>
+              </div>
+            </div>
 
             {/* Main Image Frame */}
             <div className="relative aspect-[16/9] w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 overflow-hidden flex items-center justify-center">
@@ -251,35 +323,77 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
               )}
             </div>
 
+            {/* OCR Detected Candidate Chips */}
+            {ocrCandidates.length > 0 && (
+              <div className="p-2.5 bg-black/[0.03] dark:bg-white/[0.03] border border-black/15 dark:border-white/15 flex flex-col gap-1.5 animate-in fade-in duration-150">
+                <span className="text-[10px] font-mono font-bold text-black/60 dark:text-white/60 flex items-center gap-1">
+                  <ScanText className="w-3 h-3 text-red-600 dark:text-red-400" />
+                  이미지에서 감지된 장소명 후보 (터치하여 제목에 적용):
+                </span>
+                <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+                  {ocrCandidates.map((cand, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setTitle(cand)}
+                      className={`px-2 py-0.5 text-[11px] font-mono border transition-all cursor-pointer ${
+                        title === cand
+                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                          : 'bg-white dark:bg-[#1A1A1C] border-black/15 dark:border-white/15 text-black/80 dark:text-white/80 hover:border-black'
+                      }`}
+                    >
+                      {cand}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {ocrError && (
+              <div className="text-[10px] font-mono text-black/50 dark:text-white/50 px-1">
+                {ocrError}
+              </div>
+            )}
+
             {/* Carousel images strip if multiple images found */}
             {scrapedData.allImages && scrapedData.allImages.length > 1 && (
-              <div className="flex flex-col gap-1 pt-1">
-                <div className="flex items-center justify-between text-[10px] font-mono text-black/50 dark:text-white/50">
-                  <span className="flex items-center gap-1">
-                    <Layers className="w-3 h-3" />
+              <div className="flex flex-col gap-1.5 pt-1">
+                <div className="flex items-center justify-between text-[10px] font-mono text-black/60 dark:text-white/60">
+                  <span className="flex items-center gap-1 font-bold">
+                    <Layers className="w-3 h-3 text-red-600 dark:text-red-400" />
                     슬라이드 사진 선택 ({scrapedData.allImages.length}장):
                   </span>
-                  <span>원하는 사진을 클릭하세요</span>
+                  <span>클릭 시 대표 썸네일 변경</span>
                 </div>
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
+                <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none">
                   {scrapedData.allImages.map((imgUrl, imgIdx) => {
                     const isPicked = selectedImage === imgUrl;
                     return (
                       <button
                         key={imgIdx}
                         type="button"
-                        onClick={() => setSelectedImage(imgUrl)}
-                        className={`relative w-14 h-14 shrink-0 border transition-all cursor-pointer overflow-hidden ${
+                        onClick={() => {
+                          setSelectedImage(imgUrl);
+                          setOcrCandidates([]);
+                          setOcrError(null);
+                        }}
+                        className={`relative w-16 h-16 shrink-0 border-2 transition-all cursor-pointer overflow-hidden group ${
                           isPicked 
-                            ? 'border-red-600 ring-2 ring-red-600/40' 
-                            : 'border-black/15 dark:border-white/15 opacity-60 hover:opacity-100'
+                            ? 'border-red-600 shadow-md ring-1 ring-red-600/30' 
+                            : 'border-black/15 dark:border-white/15 opacity-60 hover:opacity-100 hover:border-black/40'
                         }`}
                         title={`${imgIdx + 1}번째 슬라이드`}
                       >
                         <img src={imgUrl} alt={`Slide ${imgIdx + 1}`} className="w-full h-full object-cover" />
-                        <span className="absolute bottom-0 right-0 bg-black/75 text-white font-mono text-[8.5px] px-1 font-bold">
-                          {imgIdx + 1}
+                        <span className={`absolute bottom-0 right-0 font-mono text-[9px] px-1 font-bold ${
+                          isPicked ? 'bg-red-600 text-white' : 'bg-black/80 text-white'
+                        }`}>
+                          #{imgIdx + 1}
                         </span>
+                        {isPicked && (
+                          <div className="absolute top-0 left-0 bg-red-600 text-white p-0.5">
+                            <Check className="w-2.5 h-2.5" />
+                          </div>
+                        )}
                       </button>
                     );
                   })}
@@ -290,9 +404,20 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
 
           {/* Title Field */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-mono font-bold text-black/60 dark:text-white/60 uppercase tracking-wider">
-              장소명 (제목) *
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-mono font-bold text-black/60 dark:text-white/60 uppercase tracking-wider">
+                장소명 (제목) *
+              </label>
+              <button
+                type="button"
+                onClick={handleRunOcr}
+                disabled={isOcrRunning || !selectedImage}
+                className="text-[10px] font-mono text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <ScanText className="w-3 h-3 text-red-600 dark:text-red-400" />
+                <span>사진 글씨 읽기</span>
+              </button>
+            </div>
             <input 
               type="text"
               value={title}
@@ -375,8 +500,9 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
 
           {/* Source Link Preview */}
           <div className="flex items-center justify-between text-[11px] font-mono text-black/50 dark:text-white/50 pt-1 border-t border-black/10 dark:border-white/10">
-            <span className="truncate max-w-[320px]">
-              🔗 {scrapedData.sourceUrl}
+            <span className="truncate max-w-[320px] flex items-center gap-1">
+              <Link2 className="w-3 h-3 shrink-0" />
+              <span className="truncate">{scrapedData.sourceUrl}</span>
             </span>
             <a 
               href={scrapedData.sourceUrl} 
@@ -404,7 +530,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
               className="px-5 py-2 text-xs font-mono font-bold tracking-wider uppercase bg-red-600 hover:bg-red-700 text-white transition-all cursor-pointer shadow-xs disabled:opacity-50 flex items-center gap-1.5"
             >
               <Check className="w-3.5 h-3.5" />
-              <span>{isSubmitting ? '보관 중...' : '＋ 포켓에 담기'}</span>
+              <span>{isSubmitting ? '보관 중...' : '포켓에 담기'}</span>
             </button>
           </div>
         </form>

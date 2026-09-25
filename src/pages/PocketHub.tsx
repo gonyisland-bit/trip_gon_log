@@ -6,7 +6,7 @@ import {
   Upload, Image as ImageIcon, Loader2, Heart, MessageSquare,
   Globe, FileText, CheckSquare, Square,
   SlidersHorizontal, ArrowUpDown, ChevronDown, GripVertical, ArrowUp, ArrowDown,
-  Tag
+  Tag, Link2
 } from 'lucide-react';
 import { SpotPocketItem, PocketCategory, Trip, Plan, TimelineItem, PocketComment, UserProfile } from '../types';
 import { getSavedPockets, savePockets, detectPlatform, subscribePockets, getOrCreateGuestId, toggleSpotLike } from '../utils/pocketStorage';
@@ -359,14 +359,42 @@ export function PocketHubPage({
     });
   };
 
-  // ESC 키로 선택 해제 및 셀렉트 모드 종료 제어
+  // ESC 키로 열려있는 모달 닫기
+  useEffect(() => {
+    const handleModalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.key === 'Esc') {
+        if (isAddModalOpen) {
+          e.preventDefault();
+          handleCloseModal();
+        } else if (isScrapModalOpen) {
+          e.preventDefault();
+          setIsScrapModalOpen(false);
+          setScrapedResult(null);
+        } else if (spotToDelete) {
+          e.preventDefault();
+          setSpotToDelete(null);
+        } else if (scheduleTargetTrip) {
+          e.preventDefault();
+          setScheduleTargetTrip(null);
+        } else if (spotToUseInTrip) {
+          e.preventDefault();
+          setSpotToUseInTrip(null);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleModalKeyDown);
+    return () => window.removeEventListener('keydown', handleModalKeyDown);
+  }, [isAddModalOpen, isScrapModalOpen, spotToDelete, scheduleTargetTrip, spotToUseInTrip]);
+
+  // ESC 키로 선택 해제 및 셀렉트 모드 종료 제어 (모달이 닫혀있을 때만)
   useEffect(() => {
     if (!isSelectionMode) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' || e.key === 'Esc') {
         // 모달이나 팝오버가 열려있지 않은 상태일 때만 반응
-        if (isAddModalOpen || selectedSpotForModal || spotToDelete || spotToUseInTrip) return;
+        if (isAddModalOpen || isScrapModalOpen || selectedSpotForModal || spotToDelete || spotToUseInTrip || scheduleTargetTrip) return;
 
         if (selectedSpotIds.size > 0) {
           e.preventDefault();
@@ -380,7 +408,7 @@ export function PocketHubPage({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isSelectionMode, selectedSpotIds.size, isAddModalOpen, selectedSpotForModal, spotToDelete, spotToUseInTrip]);
+  }, [isSelectionMode, selectedSpotIds.size, isAddModalOpen, isScrapModalOpen, selectedSpotForModal, spotToDelete, spotToUseInTrip, scheduleTargetTrip]);
 
   const handleCreateTripFromSelectedPockets = () => {
     const selectedList = spots.filter(s => selectedSpotIds.has(s.id));
@@ -862,58 +890,67 @@ export function PocketHubPage({
         </div>
       </section>
 
-      {/* 1.5 Swiss Minimal Smart SNS Quick Scrap Bar */}
-      <section className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-3.5 sm:py-4 border-b border-black/10 dark:border-white/10 bg-black/[0.015] dark:bg-white/[0.02]">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-          {/* Input & Action Strip */}
+      {/* 1.5 Swiss Minimal Smart SNS Quick Scrap Bar (Pill Design) */}
+      <section className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-3 sm:py-3.5 border-b border-black/10 dark:border-white/10 bg-black/[0.015] dark:bg-white/[0.02]">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
+          {/* Pill Container */}
           <form 
             onSubmit={(e) => {
               e.preventDefault();
               handleQuickScrapSubmit();
             }}
-            className="flex-1 flex items-center border border-black/20 dark:border-white/20 bg-white dark:bg-[#18181A] shadow-xs focus-within:border-black dark:focus-within:border-white transition-colors"
+            className="flex-1 w-full flex items-center rounded-full border border-black/20 dark:border-white/20 bg-white dark:bg-[#141416] p-1 sm:p-1.5 shadow-xs focus-within:border-black dark:focus-within:border-white transition-all"
           >
-            <div className="pl-3 sm:pl-3.5 pr-2 text-black/40 dark:text-white/40 flex items-center shrink-0">
-              <Sparkles className="w-4 h-4 text-red-600 dark:text-red-400" />
+            {/* Left Icon: Link2 */}
+            <div className="pl-2.5 sm:pl-3 pr-1 text-black/40 dark:text-white/40 flex items-center shrink-0">
+              <Link2 className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
             </div>
+
+            {/* Input */}
             <input 
               type="text"
               value={scrapInputUrl}
               onChange={(e) => setScrapInputUrl(e.target.value)}
-              placeholder="SNS 링크를 붙여넣으세요 (Instagram, Threads, X, YouTube, 블로그...)"
-              className="flex-1 min-w-0 py-2 sm:py-2.5 text-xs sm:text-sm font-sans font-medium bg-transparent text-black dark:text-white outline-none placeholder:text-black/35 dark:placeholder:text-white/35"
+              placeholder="SNS 링크 붙여넣기 (Instagram, Threads, X, YouTube, 웹...)"
+              className="flex-1 min-w-0 px-2 py-1 text-xs sm:text-sm font-sans font-medium bg-transparent text-black dark:text-white outline-none placeholder:text-black/35 dark:placeholder:text-white/35"
             />
+
+            {/* Clear Button */}
             {scrapInputUrl && (
               <button
                 type="button"
                 onClick={() => setScrapInputUrl('')}
-                className="p-1.5 text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white mr-1 cursor-pointer"
+                className="p-1 text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white mr-1 cursor-pointer shrink-0"
                 title="지우기"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3 h-3" />
               </button>
             )}
+
+            {/* Paste Button */}
             <button
               type="button"
               onClick={handlePasteFromClipboard}
-              className="px-2.5 sm:px-3 py-1.5 text-[11px] font-mono font-bold tracking-wider text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border-l border-black/10 dark:border-white/10 transition-colors shrink-0 cursor-pointer hidden xs:flex items-center gap-1"
+              className="px-2.5 py-1 text-[11px] font-mono font-bold tracking-wider text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors shrink-0 cursor-pointer hidden sm:flex items-center gap-1"
               title="클립보드 링크 붙여넣기"
             >
               <span>붙여넣기</span>
             </button>
+
+            {/* Scrap Submit Button (Pill shaped) */}
             <button
               type="submit"
               disabled={isScraping || !scrapInputUrl.trim()}
-              className="px-3.5 sm:px-5 py-2 sm:py-2.5 bg-black text-white dark:bg-white dark:text-black text-[11px] sm:text-xs font-mono font-black tracking-widest uppercase transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0 flex items-center gap-1.5"
+              className="rounded-full px-3.5 sm:px-4 py-1.5 bg-black text-white dark:bg-white dark:text-black text-[10px] sm:text-xs font-mono font-bold tracking-wider uppercase transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0 flex items-center gap-1 active:scale-95 shadow-xs"
             >
               {isScraping ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span className="hidden sm:inline">분석 중...</span>
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <span className="hidden xs:inline">분석 중</span>
                 </>
               ) : (
                 <>
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-3 h-3" />
                   <span>SCRAP</span>
                 </>
               )}
@@ -921,17 +958,13 @@ export function PocketHubPage({
           </form>
 
           {/* Supported platform minimal pill hints */}
-          <div className="flex items-center gap-2 text-[10px] font-mono text-black/40 dark:text-white/40 shrink-0 self-end sm:self-center select-none">
-            <span className="font-bold tracking-wider">SUPPORT:</span>
-            <span>INSTA</span>
-            <span>·</span>
-            <span>THREADS</span>
-            <span>·</span>
-            <span>X</span>
-            <span>·</span>
-            <span>YOUTUBE</span>
-            <span>·</span>
-            <span>BLOG</span>
+          <div className="hidden lg:flex items-center gap-1.5 text-[10px] font-mono text-black/40 dark:text-white/40 shrink-0 select-none">
+            <span className="font-bold tracking-wider text-[9px] uppercase">SUPPORT:</span>
+            <span className="px-1.5 py-0.5 rounded-full border border-black/10 dark:border-white/10">INSTAGRAM</span>
+            <span className="px-1.5 py-0.5 rounded-full border border-black/10 dark:border-white/10">THREADS</span>
+            <span className="px-1.5 py-0.5 rounded-full border border-black/10 dark:border-white/10">X</span>
+            <span className="px-1.5 py-0.5 rounded-full border border-black/10 dark:border-white/10">YOUTUBE</span>
+            <span className="px-1.5 py-0.5 rounded-full border border-black/10 dark:border-white/10">WEB</span>
           </div>
         </div>
       </section>
@@ -1605,8 +1638,14 @@ export function PocketHubPage({
 
       {/* ── CREATE OR EDIT SPOT MODAL (Swiss Minimal) ── */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-[#111111] border border-black/20 dark:border-white/20 w-full max-w-lg p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 my-auto">
+        <div 
+          className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 pt-16 sm:pt-20 pb-8 overflow-y-auto"
+          onClick={handleCloseModal}
+        >
+          <div 
+            className="bg-white dark:bg-[#111111] border border-black/20 dark:border-white/20 w-full max-w-lg p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between border-b border-black/15 dark:border-white/15 pb-3 mb-5">
               <div>
                 <span className="text-[10px] font-mono tracking-widest text-red-500 uppercase">
