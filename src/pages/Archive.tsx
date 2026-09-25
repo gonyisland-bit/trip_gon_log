@@ -1219,12 +1219,6 @@ export function ArchiveHubPage({
                               );
                             })()}
 
-                            {/* 하단 중앙 4개 도트 인디케이터 */}
-                            <div className="absolute bottom-2.5 inset-x-0 flex justify-center items-center gap-1 pointer-events-none">
-                              <span className="w-3.5 h-1 rounded-full bg-white shadow-xs"></span>
-                              <span className="w-1 h-1 rounded-full bg-white/60"></span>
-                              <span className="w-1 h-1 rounded-full bg-white/60"></span>
-                            </div>
                           </div>
 
                           {/* 2. Card Body: Typography & Description (매거진 스타일 일체화) */}
