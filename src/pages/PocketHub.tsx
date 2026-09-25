@@ -300,7 +300,11 @@ export function PocketHubPage({
         allImages: [publicUrl],
         city: detectedCity,
         country: detectedCountry,
-        candidates: []
+        candidates: candidates.map((cand, idx) => ({
+          index: idx + 1,
+          title: cand,
+          category: inferCategory(cand)
+        }))
       };
 
       setScrapedResult(scrapedData);
@@ -995,10 +999,14 @@ export function PocketHubPage({
 
   return (
     <div className="min-h-screen bg-transparent text-black dark:text-white flex flex-col font-sans">
-      {/* Toast Notification */}
+      {/* Toast Notification (Placed safely below global nav header with highest z-index) */}
       {actionSuccessToast && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-black text-white dark:bg-white dark:text-black px-4 py-2 text-xs font-mono tracking-widest uppercase shadow-2xl flex items-center gap-2 border border-black/20 dark:border-white/20 animate-in fade-in slide-in-from-top-4 duration-200">
-          <Check className="w-3.5 h-3.5 text-red-500" />
+        <div className="fixed top-20 sm:top-24 left-1/2 -translate-x-1/2 z-[99999] bg-black text-white dark:bg-white dark:text-black px-4 py-2 text-xs font-mono tracking-widest uppercase shadow-2xl flex items-center gap-2 border border-black/20 dark:border-white/20 animate-in fade-in slide-in-from-top-4 duration-200 pointer-events-none">
+          {actionSuccessToast.includes('...') ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-red-500" />
+          ) : (
+            <Check className="w-3.5 h-3.5 text-red-500" />
+          )}
           <span>{actionSuccessToast}</span>
         </div>
       )}

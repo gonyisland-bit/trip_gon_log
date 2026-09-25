@@ -78,6 +78,9 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
   // Full-size Lightbox modal state
   const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
 
+  // User manual edit tracker to prevent background OCR from overwriting user's typed title
+  const [isUserEditedTitle, setIsUserEditedTitle] = useState(false);
+
   // OCR cache & state
   const [ocrCache, setOcrCache] = useState<Record<string, { candidates: string[]; descriptionText: string }>>({});
   const [isOcrRunning, setIsOcrRunning] = useState<boolean>(false);
@@ -96,7 +99,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
       setOcrDescription(cached.descriptionText);
       setOcrError(null);
 
-      if (autoApply) {
+      if (autoApply && !isUserEditedTitle) {
         if (cached.candidates.length > 0) {
           setTitle(cached.candidates[0]);
         }
@@ -126,7 +129,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
         setOcrError('이미지에서 인식 가능한 텍스트를 찾지 못했습니다.');
       }
 
-      if (autoApply) {
+      if (autoApply && !isUserEditedTitle) {
         if (candidates.length > 0) {
           setTitle(candidates[0]);
         }
@@ -140,9 +143,10 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
     } finally {
       setIsOcrRunning(false);
     }
-  }, [ocrCache]);
+  }, [ocrCache, isUserEditedTitle]);
 
   useEffect(() => {
+    if (!isOpen) return;
     setTitle(scrapedData.title);
     setCategory(scrapedData.category);
     setMemo(scrapedData.memo);
@@ -150,17 +154,20 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
     setCity(scrapedData.city || '');
     setCountry(scrapedData.country || '');
     setActiveCandidateIndex(scrapedData.targetImgIndex ? scrapedData.targetImgIndex - 1 : null);
-    setOcrCandidates([]);
+    setIsUserEditedTitle(false);
+
+    // Initial candidates from scrapedData
+    const initialCandidates = scrapedData.candidates?.map(c => c.title) || [];
+    setOcrCandidates(initialCandidates);
     setOcrDescription('');
     setOcrError(null);
-    setOcrCache({});
     setIsLightboxOpen(false);
 
-    // 스크린샷으로 생성되었거나 제목이 기본값인 경우 자동으로 OCR 가동하여 장소명/메모 채우기
-    if (scrapedData.thumbnailUrl && (!scrapedData.title || scrapedData.title === '스크린샷 스크랩' || scrapedData.title === '추천 여행 스팟')) {
+    // If title is default generic and no candidates yet, run OCR once
+    if (initialCandidates.length === 0 && scrapedData.thumbnailUrl && (!scrapedData.title || scrapedData.title === '스크린샷 스크랩' || scrapedData.title === '추천 여행 스팟')) {
       runOcrForImage(scrapedData.thumbnailUrl, true);
     }
-  }, [scrapedData, runOcrForImage]);
+  }, [isOpen, scrapedData.sourceUrl, scrapedData.thumbnailUrl]);
 
   // Clipboard Paste handler (Ctrl+V) for instant image scraping/replacement
   const processImageFile = useCallback(async (file: File) => {
@@ -169,6 +176,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
       const compressed = await compressImage(file, 2560, 2560, 0.88);
       const publicUrl = await uploadFileToR2(compressed, `pocket_scraps/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`);
       setSelectedImage(publicUrl);
+      setIsUserEditedTitle(false);
       // 업로드 즉시 OCR을 실행하여 제목과 메모 자동 반영!
       await runOcrForImage(publicUrl, true);
     } catch (err) {
@@ -480,7 +488,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
 
                 {/* Description Extraction Card */}
                 {ocrDescription && (
-                  <div className="pt-2 border-t border-black/10 dark:border-white/10 flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-1.5">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-mono font-bold text-black/70 dark:text-white/70 flex items-center gap-1">
                         <FileText className="w-3 h-3 text-amber-600 dark:text-amber-400" />
@@ -510,8 +518,8 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
             )}
           </div>
 
-          {/* Title Field */}
-          <div className="flex flex-col gap-1.5">
+          {/* Title Field & Candidate Chips */}
+          <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <label className="text-[11px] font-mono font-bold text-black/60 dark:text-white/60 uppercase tracking-wider">
                 장소명 (제목) *
@@ -521,19 +529,64 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
                 onClick={() => handleRunOcr(false)}
                 disabled={isOcrRunning || !selectedImage}
                 className="text-[10px] font-mono text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:underline flex items-center gap-1 cursor-pointer"
+                title="사진에서 글씨를 다시 읽어 장소명 후보와 설명을 추출합니다"
               >
-                <ScanText className="w-3 h-3 text-red-600 dark:text-red-400" />
-                <span>사진 글씨 읽기</span>
+                {isOcrRunning ? (
+                  <Loader2 className="w-3 h-3 animate-spin text-red-500" />
+                ) : (
+                  <ScanText className="w-3 h-3 text-red-600 dark:text-red-400" />
+                )}
+                <span>사진 글씨 다시 읽기</span>
               </button>
             </div>
+
             <input 
               type="text"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="예: 멘야무사시 신주쿠 본점"
+              onChange={(e) => {
+                setTitle(e.target.value);
+                setIsUserEditedTitle(true);
+              }}
+              placeholder="예: 멘야무사시 신주쿠 본점 (직접 수정 가능)"
               required
               className="w-full px-3 py-2 text-sm font-bold bg-white dark:bg-[#1A1A1C] border border-black/20 dark:border-white/20 text-black dark:text-white outline-none focus:border-black dark:focus:border-white transition-colors"
             />
+
+            {/* OCR Extracted Place Name Candidates (One-touch select) */}
+            {ocrCandidates.length > 0 && (
+              <div className="flex flex-col gap-1.5 p-2.5 bg-black/[0.025] dark:bg-white/[0.03] border border-black/15 dark:border-white/15 animate-in fade-in duration-150">
+                <div className="flex items-center justify-between text-[10px] font-mono font-bold text-black/60 dark:text-white/60">
+                  <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
+                    <ScanText className="w-3 h-3" />
+                    추천 장소명 후보 키워드 ({ocrCandidates.length}개):
+                  </span>
+                  <span className="text-[9px] font-normal text-black/40 dark:text-white/40">클릭 시 제목에 즉시 입력</span>
+                </div>
+                <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pt-0.5">
+                  {ocrCandidates.map((cand, idx) => {
+                    const isSelected = title === cand;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setTitle(cand);
+                          setIsUserEditedTitle(true);
+                        }}
+                        className={`px-2.5 py-1 text-xs font-mono border transition-all cursor-pointer flex items-center gap-1 ${
+                          isSelected
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold shadow-xs'
+                            : 'bg-white dark:bg-[#1A1A1C] border-black/15 dark:border-white/15 text-black/80 dark:text-white/80 hover:border-black/50 dark:hover:border-white/50'
+                        }`}
+                      >
+                        {isSelected && <Check className="w-3 h-3 text-red-500" />}
+                        <span>{cand}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Category Pill Buttons */}
