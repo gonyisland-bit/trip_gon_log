@@ -263,7 +263,6 @@ export function PocketHubPage({
   const [modalOcrError, setModalOcrError] = useState<string | null>(null);
 
   // Smart SNS Quick Scrap state
-  const [scrapInputUrl, setScrapInputUrl] = useState<string>('');
   const [isScraping, setIsScraping] = useState<boolean>(false);
   const [scrapedResult, setScrapedResult] = useState<ScrapedSpotData | null>(null);
   const [isScrapModalOpen, setIsScrapModalOpen] = useState<boolean>(false);
@@ -318,8 +317,8 @@ export function PocketHubPage({
     }
   };
 
-  const handleQuickScrapSubmit = async (urlToScrap?: string) => {
-    const targetUrl = (urlToScrap || scrapInputUrl).trim();
+  const handleQuickScrapSubmit = async (urlToScrap: string) => {
+    const targetUrl = urlToScrap.trim();
     if (!targetUrl) {
       alert('SNS 또는 웹 링크(Instagram, Threads, X, YouTube 등)를 입력해주세요.');
       return;
@@ -330,7 +329,6 @@ export function PocketHubPage({
       const data = await scrapeSnsMetadata(targetUrl);
       setScrapedResult(data);
       setIsScrapModalOpen(true);
-      setScrapInputUrl('');
     } catch (err: any) {
       console.error('[PocketHub] Scrap failed:', err);
       alert(err.message || '링크 메타데이터를 파싱하지 못했습니다. 링크를 확인해주세요.');
@@ -339,9 +337,12 @@ export function PocketHubPage({
     }
   };
 
-  const handlePasteFromClipboard = async () => {
+  // One-click Auto Scrap (Triggered by SCRAP button or global paste)
+  const handleOneClickScrap = async () => {
+    if (isScraping) return;
+
     try {
-      // 1. Try reading clipboard items for image file first
+      // 1. Try reading clipboard items for image file first (Screenshots)
       if (navigator.clipboard && 'read' in navigator.clipboard) {
         try {
           const items = await navigator.clipboard.read();
@@ -357,20 +358,41 @@ export function PocketHubPage({
         } catch (_) {}
       }
 
-      // 2. If no image found, fallback to text/URL
-      const text = await navigator.clipboard.readText();
+      // 2. Fallback: read clipboard text (SNS / Web links)
+      let text = '';
+      try {
+        text = await navigator.clipboard.readText();
+      } catch (_) {}
+
       if (text && text.trim()) {
         const trimmed = text.trim();
-        setScrapInputUrl(trimmed);
         if (/^https?:\/\//i.test(trimmed)) {
-          handleQuickScrapSubmit(trimmed);
+          await handleQuickScrapSubmit(trimmed);
+          return;
+        } else {
+          // Plain text title/memo
+          const scrapedData: ScrapedSpotData = {
+            sourceUrl: '',
+            platform: 'web',
+            title: trimmed.slice(0, 40),
+            category: inferCategory(trimmed),
+            memo: trimmed,
+            thumbnailUrl: '',
+            allImages: [],
+            candidates: []
+          };
+          setScrapedResult(scrapedData);
+          setIsScrapModalOpen(true);
+          return;
         }
-      } else {
-        alert('클립보드에 복사된 텍스트나 이미지가 없습니다.');
       }
+
+      setActionSuccessToast('클립보드에 복사된 링크나 스크린샷이 없습니다. 복사 후 SCRAP을 눌러주세요.');
+      setTimeout(() => setActionSuccessToast(null), 3500);
     } catch (err) {
       console.warn('Clipboard read failed:', err);
-      alert('클립보드 읽기 권한이 필요합니다. 화면에서 키보드 Ctrl+V (Cmd+V)를 눌러주세요.');
+      setActionSuccessToast('화면에서 키보드 Ctrl+V (Cmd+V)를 눌러 붙여넣어 주세요.');
+      setTimeout(() => setActionSuccessToast(null), 3500);
     }
   };
 
@@ -566,8 +588,18 @@ export function PocketHubPage({
           if (file) {
             e.preventDefault();
             handleImageFileToScrap(file);
-            break;
+            return;
           }
+        }
+      }
+
+      // If URL text paste on general screen (not inside input/textarea)
+      const targetTag = (e.target as HTMLElement)?.tagName;
+      if (targetTag !== 'INPUT' && targetTag !== 'TEXTAREA') {
+        const text = e.clipboardData?.getData('text');
+        if (text && /^https?:\/\//i.test(text.trim())) {
+          e.preventDefault();
+          handleQuickScrapSubmit(text.trim());
         }
       }
     };
@@ -1040,86 +1072,6 @@ export function PocketHubPage({
         </div>
       </section>
 
-      {/* 1.5 Swiss Minimal Smart SNS Quick Scrap Bar (Pill Design) */}
-      <section className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-3 sm:py-3.5 border-b border-black/10 dark:border-white/10 bg-black/[0.015] dark:bg-white/[0.02]">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
-          {/* Pill Container */}
-          <form 
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleQuickScrapSubmit();
-            }}
-            className="flex-1 w-full flex items-center rounded-full border border-black/20 dark:border-white/20 bg-white dark:bg-[#141416] p-1 sm:p-1.5 shadow-xs focus-within:border-black dark:focus-within:border-white transition-all"
-          >
-            {/* Left Icon: Link2 */}
-            <div className="pl-2.5 sm:pl-3 pr-1 text-black/40 dark:text-white/40 flex items-center shrink-0">
-              <Link2 className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
-            </div>
-
-            {/* Input */}
-            <input 
-              type="text"
-              value={scrapInputUrl}
-              onChange={(e) => setScrapInputUrl(e.target.value)}
-              placeholder="SNS 링크 입력 또는 스크린샷 이미지 붙여넣기 (Ctrl+V)"
-              className="flex-1 min-w-0 px-2 py-1 text-xs sm:text-sm font-sans font-medium bg-transparent text-black dark:text-white outline-none placeholder:text-black/40 dark:placeholder:text-white/40"
-            />
-
-            {/* Clear Button */}
-            {scrapInputUrl && (
-              <button
-                type="button"
-                onClick={() => setScrapInputUrl('')}
-                className="p-1 text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white mr-1 cursor-pointer shrink-0"
-                title="지우기"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            )}
-
-            {/* Paste Button */}
-            <button
-              type="button"
-              onClick={handlePasteFromClipboard}
-              className="px-2.5 py-1 text-[11px] font-mono font-bold tracking-wider text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors shrink-0 cursor-pointer hidden sm:flex items-center gap-1.5"
-              title="클립보드 링크 또는 스크린샷 이미지 붙여넣기"
-            >
-              <Clipboard className="w-3 h-3" />
-              <span>붙여넣기</span>
-            </button>
-
-            {/* Scrap Submit Button (Pill shaped) */}
-            <button
-              type="submit"
-              disabled={isScraping || !scrapInputUrl.trim()}
-              className="rounded-full px-3.5 sm:px-4 py-1.5 bg-black text-white dark:bg-white dark:text-black text-[10px] sm:text-xs font-mono font-bold tracking-wider uppercase transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0 flex items-center gap-1 active:scale-95 shadow-xs"
-            >
-              {isScraping ? (
-                <>
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  <span className="hidden xs:inline">분석 중</span>
-                </>
-              ) : (
-                <>
-                  <Plus className="w-3 h-3" />
-                  <span>SCRAP</span>
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Supported platform minimal pill hints */}
-          <div className="hidden lg:flex items-center gap-1.5 text-[10px] font-mono text-black/40 dark:text-white/40 shrink-0 select-none">
-            <span className="font-bold tracking-wider text-[9px] uppercase">SUPPORT:</span>
-            <span className="px-1.5 py-0.5 rounded-full border border-red-500/30 text-red-600 dark:text-red-400 font-bold bg-red-500/5">SCREENSHOT (Ctrl+V)</span>
-            <span className="px-1.5 py-0.5 rounded-full border border-black/10 dark:border-white/10">INSTAGRAM</span>
-            <span className="px-1.5 py-0.5 rounded-full border border-black/10 dark:border-white/10">THREADS</span>
-            <span className="px-1.5 py-0.5 rounded-full border border-black/10 dark:border-white/10">X</span>
-            <span className="px-1.5 py-0.5 rounded-full border border-black/10 dark:border-white/10">YOUTUBE</span>
-            <span className="px-1.5 py-0.5 rounded-full border border-black/10 dark:border-white/10">WEB</span>
-          </div>
-        </div>
-      </section>
 
       {/* 2. Controls & Toolbar Bar (Trip Standard Height py-4 & border-b) */}
       <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-8 md:px-12 py-4 border-b border-black/10 dark:border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
@@ -1232,14 +1184,38 @@ export function PocketHubPage({
             )}
           </div>
 
-          {/* ADD (Primary CTA) - Standardized with Trip Hub, full width on mobile */}
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="w-full sm:w-auto flex items-center justify-center gap-1.5 text-[9px] sm:text-[10px] md:text-xs font-mono font-black uppercase tracking-widest border border-black dark:border-white px-3 py-1.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors shrink-0 cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>ADD</span>
-          </button>
+          {/* Action Buttons: SCRAP & ADD */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {/* SCRAP Button (One-click Clipboard auto scrap: links or screenshots) */}
+            <button
+              type="button"
+              onClick={handleOneClickScrap}
+              disabled={isScraping}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 text-[9px] sm:text-[10px] md:text-xs font-mono font-black uppercase tracking-widest border border-red-600 bg-red-600/10 text-red-600 hover:bg-red-600 hover:text-white dark:border-red-500 dark:text-red-400 dark:hover:bg-red-500 dark:hover:text-white px-3 py-1.5 transition-colors shrink-0 cursor-pointer disabled:opacity-50"
+              title="클립보드의 링크나 스크린샷 이미지를 붙여넣어 자동으로 포켓을 생성합니다 (화면 어디서든 Ctrl+V 지원)"
+            >
+              {isScraping ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>SCRAPING...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>SCRAP</span>
+                </>
+              )}
+            </button>
+
+            {/* ADD (Primary CTA) - Standardized with Trip Hub, full width on mobile */}
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 text-[9px] sm:text-[10px] md:text-xs font-mono font-black uppercase tracking-widest border border-black dark:border-white px-3 py-1.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors shrink-0 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>ADD</span>
+            </button>
+          </div>
         </div>
       </div>
 
