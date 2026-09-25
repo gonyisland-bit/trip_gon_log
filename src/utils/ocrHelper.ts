@@ -6,6 +6,7 @@
 export interface OcrResult {
   fullText: string;
   candidates: string[];
+  descriptionText: string;
 }
 
 /**
@@ -16,7 +17,7 @@ export async function extractTextFromImageUrl(
   language: 'kor' | 'eng' | 'jpn' = 'kor'
 ): Promise<OcrResult> {
   if (!imageUrl || !imageUrl.trim()) {
-    return { fullText: '', candidates: [] };
+    return { fullText: '', candidates: [], descriptionText: '' };
   }
 
   try {
@@ -44,24 +45,35 @@ export async function extractTextFromImageUrl(
 
     const parsedResults = data.ParsedResults;
     if (!parsedResults || parsedResults.length === 0) {
-      return { fullText: '', candidates: [] };
+      return { fullText: '', candidates: [], descriptionText: '' };
     }
 
     const rawText: string = parsedResults[0]?.ParsedText || '';
+    
+    // 1. Extract short spot title candidates
     const cleanLines = rawText
       .split('\n')
       .map(line => line.trim())
       .filter(line => line.length >= 2 && !/^[0-9\s.,\/#!$%\^&\*;:{}=\-_`~()]+$/.test(line))
-      // Filter out overly long noise sentences, keep spot-like lines
       .map(line => line.replace(/[^\w\s가-힣ㄱ-ㅎㅏ-ㅣぁ-んァ-ヶー一-龠·•-]/g, '').trim())
       .filter(line => line.length >= 2 && line.length <= 40);
 
-    // Deduplicate candidates
     const candidates = Array.from(new Set(cleanLines)).slice(0, 8);
+
+    // 2. Extract clean description / note text (preserving meaningful sentences)
+    const descLines = rawText
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 1 && !/^[0-9\s.,\/#!$%\^&\*;:{}=\-_`~()]+$/.test(line))
+      // Filter out pure single digits or OCR artifacts like "1", "2"
+      .filter(line => !/^\d+$/.test(line));
+
+    const descriptionText = descLines.join('\n').slice(0, 600).trim();
 
     return {
       fullText: rawText.trim(),
-      candidates
+      candidates,
+      descriptionText
     };
   } catch (err: any) {
     console.warn('[ocrHelper] OCR extraction error:', err);

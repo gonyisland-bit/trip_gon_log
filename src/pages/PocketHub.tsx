@@ -6,7 +6,7 @@ import {
   Upload, Image as ImageIcon, Loader2, Heart, MessageSquare,
   Globe, FileText, CheckSquare, Square,
   SlidersHorizontal, ArrowUpDown, ChevronDown, GripVertical, ArrowUp, ArrowDown,
-  Tag, Link2
+  Tag, Link2, ScanText
 } from 'lucide-react';
 import { SpotPocketItem, PocketCategory, Trip, Plan, TimelineItem, PocketComment, UserProfile } from '../types';
 import { getSavedPockets, savePockets, detectPlatform, subscribePockets, getOrCreateGuestId, toggleSpotLike } from '../utils/pocketStorage';
@@ -18,6 +18,7 @@ import { PocketScrapModal } from '../components/PocketScrapModal';
 import { scrapeSnsMetadata, ScrapedSpotData } from '../utils/snsScraper';
 import { compressImage } from '../utils/imageHelper';
 import { uploadFileToR2 } from '../utils/storageHelper';
+import { extractTextFromImageUrl } from '../utils/ocrHelper';
 import { auth } from '../firebase';
 
 interface PocketHubPageProps {
@@ -254,6 +255,12 @@ export function PocketHubPage({
   const [newAddress, setNewAddress] = useState<string>('');
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState<boolean>(false);
   const [isDraggingThumbnail, setIsDraggingThumbnail] = useState<boolean>(false);
+
+  // Edit/Add Modal OCR state
+  const [isModalOcrRunning, setIsModalOcrRunning] = useState<boolean>(false);
+  const [modalOcrCandidates, setModalOcrCandidates] = useState<string[]>([]);
+  const [modalOcrDescription, setModalOcrDescription] = useState<string>('');
+  const [modalOcrError, setModalOcrError] = useState<string | null>(null);
 
   // Smart SNS Quick Scrap state
   const [scrapInputUrl, setScrapInputUrl] = useState<string>('');
@@ -682,6 +689,10 @@ export function PocketHubPage({
     setNewLng(spot.lng);
     setNewAddress(spot.address || '');
     setActiveMenuSpotId(null);
+    setModalOcrCandidates([]);
+    setModalOcrDescription('');
+    setModalOcrError(null);
+    setIsModalOcrRunning(false);
     setIsAddModalOpen(true);
   };
 
@@ -700,7 +711,48 @@ export function PocketHubPage({
     setNewAddress('');
     setIsUploadingThumbnail(false);
     setIsDraggingThumbnail(false);
+    setModalOcrCandidates([]);
+    setModalOcrDescription('');
+    setModalOcrError(null);
+    setIsModalOcrRunning(false);
     setIsAddModalOpen(false);
+  };
+
+  // Run OCR on current thumbnail image in modal
+  const handleRunOcrInModal = async () => {
+    if (!newThumbnailUrl) {
+      alert('분석할 썸네일 이미지가 없습니다. 이미지를 먼저 등록해주세요.');
+      return;
+    }
+
+    try {
+      setIsModalOcrRunning(true);
+      setModalOcrError(null);
+      const res = await extractTextFromImageUrl(newThumbnailUrl, 'kor');
+      if (res.candidates && res.candidates.length > 0) {
+        setModalOcrCandidates(res.candidates);
+        if (!newTitle.trim() || newTitle.length < 3) {
+          setNewTitle(res.candidates[0]);
+        }
+      } else {
+        setModalOcrError('이미지에서 인식 가능한 텍스트를 찾지 못했습니다.');
+      }
+
+      if (res.descriptionText) {
+        setModalOcrDescription(res.descriptionText);
+      }
+    } catch (err: any) {
+      console.warn('[PocketHub] Modal OCR error:', err);
+      setModalOcrError('이미지 텍스트 인식 중 오류가 발생했습니다.');
+    } finally {
+      setIsModalOcrRunning(false);
+    }
+  };
+
+  // Replace memo with OCR description text in modal
+  const handleApplyDescriptionToNewMemo = () => {
+    if (!modalOcrDescription) return;
+    setNewMemo(modalOcrDescription);
   };
 
   // Create or Update spot
@@ -1667,9 +1719,32 @@ export function PocketHubPage({
             <form onSubmit={handleSaveSpot} className="space-y-5">
               {/* Title / Spot Name or Tip Title */}
               <div>
-                <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
-                  제목 (장소명 또는 꿀팁 제목) *
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70">
+                    제목 (장소명 또는 꿀팁 제목) *
+                  </label>
+                  {newThumbnailUrl && (
+                    <button
+                      type="button"
+                      onClick={handleRunOcrInModal}
+                      disabled={isModalOcrRunning}
+                      className="text-[10px] font-mono font-bold text-red-600 dark:text-red-400 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                      title="썸네일 사진 속 글씨(장소명)를 읽어옵니다"
+                    >
+                      {isModalOcrRunning ? (
+                        <>
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          <span>텍스트 읽는 중...</span>
+                        </>
+                      ) : (
+                        <>
+                          <ScanText className="w-3 h-3" />
+                          <span>사진 글씨 읽기 (OCR)</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
                 <PlaceAutocompleteInput
                   value={newTitle}
                   onChange={setNewTitle}
@@ -1684,6 +1759,35 @@ export function PocketHubPage({
                   placeholder="장소 검색 또는 직접 꿀팁 제목 입력 (예: 시부야 환전 꿀팁)"
                   className="w-full h-8 px-0 bg-transparent border-b border-black/20 dark:border-white/20 rounded-none text-xs font-mono focus:border-black dark:focus:border-white focus:outline-none transition-colors"
                 />
+
+                {/* OCR Candidates Chips in Modal */}
+                {modalOcrCandidates.length > 0 && (
+                  <div className="mt-2 p-2 bg-black/[0.03] dark:bg-white/[0.03] border border-black/15 dark:border-white/15 flex flex-col gap-1.5 animate-in fade-in duration-150">
+                    <span className="text-[9.5px] font-mono font-bold text-black/60 dark:text-white/60 flex items-center gap-1">
+                      <ScanText className="w-3 h-3 text-red-600 dark:text-red-400" />
+                      인식된 제목 후보 (터치하여 자동완성 위치에 적용):
+                    </span>
+                    <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+                      {modalOcrCandidates.map((cand, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setNewTitle(cand)}
+                          className={`px-2 py-0.5 text-[10.5px] font-mono border transition-all cursor-pointer ${
+                            newTitle === cand
+                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold'
+                              : 'bg-white dark:bg-[#1A1A1C] border-black/15 dark:border-white/15 text-black/80 dark:text-white/80 hover:border-black'
+                          }`}
+                        >
+                          {cand}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {modalOcrError && (
+                  <p className="text-[9.5px] font-mono text-red-500 mt-1">{modalOcrError}</p>
+                )}
                 <p className="text-[9.5px] font-mono text-black/40 dark:text-white/40 mt-1">
                   구글 장소 자동완성을 사용하거나, 꿀팁인 경우 제목을 직접 입력하세요.
                 </p>
@@ -1745,9 +1849,54 @@ export function PocketHubPage({
 
               {/* Memo & Tips */}
               <div>
-                <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70 mb-1">
-                  핵심 꿀팁 / 할인 / 웨이팅 정보
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[10px] font-mono uppercase font-bold tracking-widest text-black/70 dark:text-white/70">
+                    핵심 꿀팁 / 할인 / 웨이팅 정보
+                  </label>
+                  {modalOcrDescription ? (
+                    <button
+                      type="button"
+                      onClick={handleApplyDescriptionToNewMemo}
+                      className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
+                      title="사진 속 설명 텍스트로 기존 메모를 대체합니다"
+                    >
+                      <FileText className="w-3 h-3" />
+                      <span>사진 설명 추출 덮어쓰기</span>
+                    </button>
+                  ) : newThumbnailUrl && !isModalOcrRunning ? (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await handleRunOcrInModal();
+                      }}
+                      className="text-[10px] font-mono text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white hover:underline flex items-center gap-1 cursor-pointer"
+                      title="사진에서 본문 설명을 찾아 메모에 넣습니다"
+                    >
+                      <FileText className="w-3 h-3" />
+                      <span>사진 설명 추출</span>
+                    </button>
+                  ) : null}
+                </div>
+
+                {/* Modal OCR Description preview card if detected */}
+                {modalOcrDescription && (
+                  <div className="mb-2 p-2 bg-amber-500/[0.05] border border-amber-500/20 text-[10.5px] flex flex-col gap-1 animate-in fade-in duration-150">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono font-bold text-amber-700 dark:text-amber-400 text-[9.5px]">
+                        사진에서 추출된 설명 ({modalOcrDescription.length}자):
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleApplyDescriptionToNewMemo}
+                        className="px-1.5 py-0.5 bg-black dark:bg-white text-white dark:text-black text-[9px] font-mono font-bold uppercase tracking-wider hover:opacity-90 cursor-pointer"
+                      >
+                        덮어쓰기 적용
+                      </button>
+                    </div>
+                    <p className="line-clamp-2 text-black/70 dark:text-white/70">{modalOcrDescription}</p>
+                  </div>
+                )}
+
                 <textarea
                   value={newMemo}
                   onChange={e => setNewMemo(e.target.value)}
@@ -1790,6 +1939,16 @@ export function PocketHubPage({
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleRunOcrInModal}
+                        disabled={isModalOcrRunning}
+                        className="h-7 px-3 bg-red-600 text-white text-[10px] font-mono uppercase font-bold flex items-center gap-1 cursor-pointer hover:bg-red-700"
+                        title="사진 속 글씨(장소명/설명)를 읽어옵니다"
+                      >
+                        <ScanText className="w-3.5 h-3.5" />
+                        OCR 읽기
+                      </button>
                       <label className="h-7 px-3 bg-white text-black text-[10px] font-mono uppercase font-bold flex items-center gap-1 cursor-pointer hover:bg-white/90">
                         <Upload className="w-3.5 h-3.5" />
                         CHANGE
@@ -1806,7 +1965,7 @@ export function PocketHubPage({
                       <button
                         type="button"
                         onClick={() => setNewThumbnailUrl('')}
-                        className="h-7 px-3 bg-red-600 text-white text-[10px] font-mono uppercase font-bold flex items-center gap-1 cursor-pointer hover:bg-red-700"
+                        className="h-7 px-3 bg-black/80 text-white text-[10px] font-mono uppercase font-bold flex items-center gap-1 cursor-pointer hover:bg-black"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         REMOVE
