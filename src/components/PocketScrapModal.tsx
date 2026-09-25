@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   X, Check, ExternalLink, Image as ImageIcon,
-  Utensils, Coffee, Camera, ShoppingBag, Lightbulb, Upload, Sparkles, Layers,
-  ScanText, Loader2, Link2, ChevronLeft, ChevronRight, Clipboard, FileText, ZoomIn
+  Utensils, Coffee, Camera, ShoppingBag, Lightbulb, Upload, Sparkles,
+  ScanText, Loader2, Link2, Clipboard, FileText, ZoomIn
 } from 'lucide-react';
 import { ScrapedSpotData, ScrapedSpotCandidate } from '../utils/snsScraper';
 import { PocketCategory, SpotPocketItem, SpotPocketPlatform } from '../types';
@@ -67,7 +67,6 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
   const [category, setCategory] = useState<PocketCategory>(scrapedData.category);
   const [memo, setMemo] = useState(scrapedData.memo);
   const [selectedImage, setSelectedImage] = useState(scrapedData.thumbnailUrl);
-  const [imagesList, setImagesList] = useState<string[]>(scrapedData.allImages || []);
   const [city, setCity] = useState(scrapedData.city || '');
   const [country, setCountry] = useState(scrapedData.country || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -79,31 +78,12 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
   // Full-size Lightbox modal state
   const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
 
-  // Per-slide OCR cache & state
+  // OCR cache & state
   const [ocrCache, setOcrCache] = useState<Record<string, { candidates: string[]; descriptionText: string }>>({});
   const [isOcrRunning, setIsOcrRunning] = useState<boolean>(false);
   const [ocrCandidates, setOcrCandidates] = useState<string[]>([]);
   const [ocrDescription, setOcrDescription] = useState<string>('');
   const [ocrError, setOcrError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setTitle(scrapedData.title);
-    setCategory(scrapedData.category);
-    setMemo(scrapedData.memo);
-    setSelectedImage(scrapedData.thumbnailUrl);
-    setImagesList(scrapedData.allImages || (scrapedData.thumbnailUrl ? [scrapedData.thumbnailUrl] : []));
-    setCity(scrapedData.city || '');
-    setCountry(scrapedData.country || '');
-    setActiveCandidateIndex(scrapedData.targetImgIndex ? scrapedData.targetImgIndex - 1 : null);
-    setOcrCandidates([]);
-    setOcrDescription('');
-    setOcrError(null);
-    setOcrCache({});
-    setIsLightboxOpen(false);
-  }, [scrapedData]);
-
-  // Current image index in carousel
-  const currentImageIdx = imagesList.findIndex(img => img === selectedImage);
 
   // Dedicated OCR runner for any target image URL
   const runOcrForImage = useCallback(async (targetImg: string, autoApply: boolean = false) => {
@@ -156,58 +136,50 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
       }
     } catch (err: any) {
       console.warn('[PocketScrapModal] OCR error:', err);
-      setOcrError('이미지 텍스트 인식 중 통신 오류가 발생했습니다.');
+      setOcrError('이미지 텍스트 인식 중 오류가 발생했습니다.');
     } finally {
       setIsOcrRunning(false);
     }
   }, [ocrCache]);
 
-  const handleSelectImage = useCallback((newImg: string) => {
-    setSelectedImage(newImg);
-    const cached = ocrCache[newImg];
-    if (cached) {
-      setOcrCandidates(cached.candidates);
-      setOcrDescription(cached.descriptionText);
-      setOcrError(null);
-    } else {
-      setOcrCandidates([]);
-      setOcrDescription('');
-      setOcrError(null);
+  useEffect(() => {
+    setTitle(scrapedData.title);
+    setCategory(scrapedData.category);
+    setMemo(scrapedData.memo);
+    setSelectedImage(scrapedData.thumbnailUrl);
+    setCity(scrapedData.city || '');
+    setCountry(scrapedData.country || '');
+    setActiveCandidateIndex(scrapedData.targetImgIndex ? scrapedData.targetImgIndex - 1 : null);
+    setOcrCandidates([]);
+    setOcrDescription('');
+    setOcrError(null);
+    setOcrCache({});
+    setIsLightboxOpen(false);
+
+    // 스크린샷으로 생성되었거나 제목이 기본값인 경우 자동으로 OCR 가동하여 장소명/메모 채우기
+    if (scrapedData.thumbnailUrl && (!scrapedData.title || scrapedData.title === '스크린샷 스크랩' || scrapedData.title === '추천 여행 스팟')) {
+      runOcrForImage(scrapedData.thumbnailUrl, true);
     }
-  }, [ocrCache]);
-
-  const handlePrevImage = useCallback(() => {
-    if (imagesList.length <= 1) return;
-    const nextIdx = currentImageIdx <= 0 ? imagesList.length - 1 : currentImageIdx - 1;
-    handleSelectImage(imagesList[nextIdx]);
-  }, [imagesList, currentImageIdx, handleSelectImage]);
-
-  const handleNextImage = useCallback(() => {
-    if (imagesList.length <= 1) return;
-    const nextIdx = currentImageIdx >= imagesList.length - 1 ? 0 : currentImageIdx + 1;
-    handleSelectImage(imagesList[nextIdx]);
-  }, [imagesList, currentImageIdx, handleSelectImage]);
+  }, [scrapedData, runOcrForImage]);
 
   // Clipboard Paste handler (Ctrl+V) for instant image scraping/replacement
   const processImageFile = useCallback(async (file: File) => {
     try {
       setIsUploading(true);
-      const compressed = await compressImage(file, 1200, 1200, 0.85);
-      const publicUrl = await uploadFileToR2(compressed, `pocket_scraps/${Date.now()}_${file.name}`);
+      const compressed = await compressImage(file, 2560, 2560, 0.88);
+      const publicUrl = await uploadFileToR2(compressed, `pocket_scraps/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`);
       setSelectedImage(publicUrl);
-      setImagesList(prev => [publicUrl, ...prev.filter(u => u !== publicUrl)]);
-      setOcrCandidates([]);
-      setOcrDescription('');
-      setOcrError(null);
+      // 업로드 즉시 OCR을 실행하여 제목과 메모 자동 반영!
+      await runOcrForImage(publicUrl, true);
     } catch (err) {
-      console.error('[PocketScrapModal] Image upload failed:', err);
-      alert('이미지 업로드/붙여넣기에 실패했습니다.');
+      console.error('[PocketScrapModal] Image upload/OCR failed:', err);
+      alert('이미지 업로드 및 글씨 인식에 실패했습니다.');
     } finally {
       setIsUploading(false);
     }
-  }, []);
+  }, [runOcrForImage]);
 
-  // Global ESC & Paste & Arrow keys listener
+  // Global ESC & Paste listener
   useEffect(() => {
     if (!isOpen) return;
 
@@ -218,18 +190,6 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
           setIsLightboxOpen(false);
         } else {
           onClose();
-        }
-      } else if (e.key === 'ArrowLeft') {
-        const tag = (e.target as HTMLElement)?.tagName;
-        if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
-          e.preventDefault();
-          handlePrevImage();
-        }
-      } else if (e.key === 'ArrowRight') {
-        const tag = (e.target as HTMLElement)?.tagName;
-        if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
-          e.preventDefault();
-          handleNextImage();
         }
       }
     };
@@ -256,7 +216,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('paste', handlePaste);
     };
-  }, [isOpen, isLightboxOpen, onClose, handlePrevImage, handleNextImage, processImageFile]);
+  }, [isOpen, isLightboxOpen, onClose, processImageFile]);
 
   // OCR handler: Extract text from selected thumbnail image
   const handleRunOcr = async (autoApply: boolean = false) => {
@@ -296,17 +256,8 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
   const handleCustomImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    try {
-      setIsUploading(true);
-      const compressed = await compressImage(file, 1200, 1200, 0.85);
-      const publicUrl = await uploadFileToR2(compressed, `pocket_scraps/${Date.now()}_${file.name}`);
-      setSelectedImage(publicUrl);
-    } catch (err) {
-      console.error('[PocketScrapModal] Image upload failed:', err);
-      alert('이미지 업로드에 실패했습니다.');
-    } finally {
-      setIsUploading(false);
-    }
+    await processImageFile(file);
+    e.target.value = '';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -407,16 +358,12 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
             </div>
           )}
 
-          {/* Thumbnail Preview & Carousel Image Selector */}
+          {/* Thumbnail / Screenshot Preview */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between text-[11px] font-mono font-bold text-black/60 dark:text-white/60 uppercase tracking-wider">
               <span className="flex items-center gap-1.5">
-                <span>피드 이미지</span>
-                {imagesList.length > 1 && (
-                  <span className="px-1.5 py-0.2 bg-black/5 dark:bg-white/10 text-black dark:text-white border border-black/15 dark:border-white/15 text-[9px] font-mono font-bold">
-                    {currentImageIdx >= 0 ? currentImageIdx + 1 : 1} / {imagesList.length}
-                  </span>
-                )}
+                <ImageIcon className="w-3.5 h-3.5 text-black/50 dark:text-white/50" />
+                <span>스크랩 이미지 (스크린샷)</span>
               </span>
               <div className="flex items-center gap-2 sm:gap-3">
                 {/* Fullsize image zoom trigger */}
@@ -434,7 +381,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
 
                 <label className="text-[10px] font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:underline cursor-pointer flex items-center gap-1">
                   <Upload className="w-3 h-3" />
-                  <span>{isUploading ? '업로드 중...' : '사진 교체'}</span>
+                  <span>{isUploading ? '업로드 및 분석 중...' : '사진 교체'}</span>
                   <input 
                     type="file" 
                     accept="image/*" 
@@ -456,47 +403,14 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
                 <img 
                   src={selectedImage} 
                   alt={title} 
-                  className="block w-full h-auto max-h-[72vh] object-contain select-none transition-transform duration-200 group-hover:scale-[1.01]" 
+                  className="block w-full h-auto max-h-[70vh] object-contain select-none transition-transform duration-200 group-hover:scale-[1.01]" 
                   crossOrigin="anonymous"
                 />
               ) : (
                 <div className="flex flex-col items-center gap-1.5 text-black/30 dark:text-white/30 font-mono text-xs py-16">
                   <ImageIcon className="w-8 h-8" />
-                  <span>이미지 없음 (사진 업로드 또는 Ctrl+V 붙여넣기)</span>
+                  <span>이미지 없음 (스크린샷 복사 후 Ctrl+V 붙여넣기)</span>
                 </div>
-              )}
-
-              {/* Carousel Left / Right Arrow Controls */}
-              {imagesList.length > 1 && (
-                <>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePrevImage();
-                    }}
-                    className="absolute left-2.5 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/70 hover:bg-black text-white flex items-center justify-center backdrop-blur-xs transition-all cursor-pointer opacity-90 sm:opacity-0 group-hover:opacity-100 shadow-lg border border-white/20 z-10"
-                    title="이전 사진 (좌측 방향키)"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleNextImage();
-                    }}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/70 hover:bg-black text-white flex items-center justify-center backdrop-blur-xs transition-all cursor-pointer opacity-90 sm:opacity-0 group-hover:opacity-100 shadow-lg border border-white/20 z-10"
-                    title="다음 사진 (우측 방향키)"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-
-                  {/* Slide Counter Overlay Badge */}
-                  <div className="absolute bottom-2.5 right-2.5 px-2 py-0.5 bg-black/75 backdrop-blur-xs text-white text-[10px] font-mono font-bold tracking-wider border border-white/20 pointer-events-none z-10">
-                    {currentImageIdx >= 0 ? currentImageIdx + 1 : 1} / {imagesList.length}
-                  </div>
-                </>
               )}
 
               {/* Zoom & Paste helper badges */}
@@ -507,29 +421,29 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
                 </span>
                 <span className="hidden sm:flex items-center gap-1 px-2 py-0.5 bg-black/65 backdrop-blur-xs text-white/90 text-[9.5px] font-mono border border-white/15">
                   <Clipboard className="w-2.5 h-2.5" />
-                  <span>Ctrl+V 붙여넣기</span>
+                  <span>스크린샷 Ctrl+V 교체</span>
                 </span>
               </div>
             </div>
 
-            {/* Smart Slide OCR Action: Extract Title & Note for the CURRENT Slide */}
+            {/* Smart OCR Action: Extract Title & Note for the CURRENT Image */}
             <div className="flex items-center justify-between gap-2 pt-0.5">
               <button
                 type="button"
                 onClick={() => handleRunOcr(true)}
                 disabled={isOcrRunning || !selectedImage}
                 className="flex-1 py-1.5 px-3 bg-black dark:bg-white text-white dark:text-black hover:opacity-90 transition-opacity font-mono text-[11px] font-bold tracking-wider uppercase flex items-center justify-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
-                title="현재 선택된 사진에서 장소명과 설명 텍스트를 읽어 제목과 메모에 즉시 반영합니다"
+                title="사진 속 장소명과 설명 텍스트를 읽어 제목과 메모에 즉시 반영합니다"
               >
                 {isOcrRunning ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>사진 분석 중...</span>
+                    <span>사진 글씨 읽는 중...</span>
                   </>
                 ) : (
                   <>
                     <ScanText className="w-3.5 h-3.5 text-red-500" />
-                    <span>현재 사진에서 타이틀 & 노트 읽기 (OCR 자동 추출)</span>
+                    <span>사진에서 장소명 & 본문 다시 읽기 (OCR 자동 추출)</span>
                   </>
                 )}
               </button>
@@ -592,49 +506,6 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
             {ocrError && (
               <div className="text-[10px] font-mono text-black/50 dark:text-white/50 px-1">
                 {ocrError}
-              </div>
-            )}
-
-            {/* Carousel images strip if multiple images found */}
-            {imagesList.length > 1 && (
-              <div className="flex flex-col gap-1.5 pt-1">
-                <div className="flex items-center justify-between text-[10px] font-mono text-black/60 dark:text-white/60">
-                  <span className="flex items-center gap-1 font-bold">
-                    <Layers className="w-3 h-3 text-red-600 dark:text-red-400" />
-                    슬라이드 사진 선택 ({imagesList.length}장):
-                  </span>
-                  <span>클릭 시 해당 사진 선택 (선택된 1장만 저장)</span>
-                </div>
-                <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none">
-                  {imagesList.map((imgUrl, imgIdx) => {
-                    const isPicked = selectedImage === imgUrl;
-                    return (
-                      <button
-                        key={imgIdx}
-                        type="button"
-                        onClick={() => handleSelectImage(imgUrl)}
-                        className={`relative w-16 h-16 shrink-0 border-2 transition-all cursor-pointer overflow-hidden group ${
-                          isPicked 
-                            ? 'border-red-600 shadow-md ring-1 ring-red-600/30' 
-                            : 'border-black/15 dark:border-white/15 opacity-60 hover:opacity-100 hover:border-black/40'
-                        }`}
-                        title={`${imgIdx + 1}번째 슬라이드`}
-                      >
-                        <img src={imgUrl} alt={`Slide ${imgIdx + 1}`} className="w-full h-full object-contain bg-black/5 dark:bg-white/5" />
-                        <span className={`absolute bottom-0 right-0 font-mono text-[9px] px-1 font-bold ${
-                          isPicked ? 'bg-red-600 text-white' : 'bg-black/80 text-white'
-                        }`}>
-                          #{imgIdx + 1}
-                        </span>
-                        {isPicked && (
-                          <div className="absolute top-0 left-0 bg-red-600 text-white p-0.5">
-                            <Check className="w-2.5 h-2.5" />
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
               </div>
             )}
           </div>
@@ -795,7 +666,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
           <div className="relative max-w-5xl max-h-[92vh] flex flex-col items-center justify-center" onClick={(e) => e.stopPropagation()}>
             <div className="w-full flex items-center justify-between pb-2 text-white/80">
               <span className="text-[11px] font-mono tracking-widest uppercase">
-                ORIGINAL FULL-RES IMAGE {imagesList.length > 1 && `(${currentImageIdx + 1} / ${imagesList.length})`}
+                ORIGINAL FULL-RES IMAGE
               </span>
               <button
                 type="button"

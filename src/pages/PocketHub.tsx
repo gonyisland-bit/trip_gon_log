@@ -15,7 +15,7 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { PocketScheduleModal } from '../components/PocketScheduleModal';
 import { PocketDetailModal } from '../components/PocketDetailModal';
 import { PocketScrapModal } from '../components/PocketScrapModal';
-import { scrapeSnsMetadata, ScrapedSpotData } from '../utils/snsScraper';
+import { scrapeSnsMetadata, ScrapedSpotData, inferCategory, detectCityAndCountry } from '../utils/snsScraper';
 import { compressImage } from '../utils/imageHelper';
 import { uploadFileToR2 } from '../utils/storageHelper';
 import { extractTextFromImageUrl } from '../utils/ocrHelper';
@@ -268,6 +268,52 @@ export function PocketHubPage({
   const [scrapedResult, setScrapedResult] = useState<ScrapedSpotData | null>(null);
   const [isScrapModalOpen, setIsScrapModalOpen] = useState<boolean>(false);
 
+  // Handle direct screenshot/image file to OCR quick scrap
+  const handleImageFileToScrap = async (file: File) => {
+    if (!file || !file.type.startsWith('image/')) return;
+
+    try {
+      setIsScraping(true);
+      setActionSuccessToast('스크린샷 업로드 및 글씨(OCR) 읽는 중...');
+      const compressed = await compressImage(file, 2560, 2560, 0.88);
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_') || 'screenshot.jpg';
+      const storagePath = `pocket_scraps/${Date.now()}_${safeName}`;
+      const publicUrl = await uploadFileToR2(compressed, storagePath);
+
+      // Run OCR on the uploaded image
+      const ocrRes = await extractTextFromImageUrl(publicUrl, 'kor');
+      const candidates = ocrRes.candidates || [];
+      const descText = ocrRes.descriptionText || '';
+
+      const detectedTitle = candidates[0] || (descText ? descText.slice(0, 30).trim() : '스크린샷 스크랩');
+      const combined = `${detectedTitle} ${descText}`;
+      const inferredCat = inferCategory(combined);
+      const { city: detectedCity, country: detectedCountry } = detectCityAndCountry(combined);
+
+      const scrapedData: ScrapedSpotData = {
+        sourceUrl: 'clipboard://screenshot',
+        platform: 'web',
+        title: detectedTitle,
+        category: inferredCat,
+        memo: descText.slice(0, 400),
+        thumbnailUrl: publicUrl,
+        allImages: [publicUrl],
+        city: detectedCity,
+        country: detectedCountry,
+        candidates: []
+      };
+
+      setScrapedResult(scrapedData);
+      setIsScrapModalOpen(true);
+      setActionSuccessToast(null);
+    } catch (err: any) {
+      console.error('[PocketHub] Image scrap failed:', err);
+      alert('스크린샷 이미지 분석에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsScraping(false);
+    }
+  };
+
   const handleQuickScrapSubmit = async (urlToScrap?: string) => {
     const targetUrl = (urlToScrap || scrapInputUrl).trim();
     if (!targetUrl) {
@@ -291,6 +337,23 @@ export function PocketHubPage({
 
   const handlePasteFromClipboard = async () => {
     try {
+      // 1. Try reading clipboard items for image file first
+      if (navigator.clipboard && 'read' in navigator.clipboard) {
+        try {
+          const items = await navigator.clipboard.read();
+          for (const item of items) {
+            const imageType = item.types.find(t => t.startsWith('image/'));
+            if (imageType) {
+              const blob = await item.getType(imageType);
+              const file = new File([blob], `screenshot_${Date.now()}.png`, { type: imageType });
+              await handleImageFileToScrap(file);
+              return;
+            }
+          }
+        } catch (_) {}
+      }
+
+      // 2. If no image found, fallback to text/URL
       const text = await navigator.clipboard.readText();
       if (text && text.trim()) {
         const trimmed = text.trim();
@@ -299,11 +362,11 @@ export function PocketHubPage({
           handleQuickScrapSubmit(trimmed);
         }
       } else {
-        alert('클립보드에 복사된 텍스트가 없습니다.');
+        alert('클립보드에 복사된 텍스트나 이미지가 없습니다.');
       }
     } catch (err) {
       console.warn('Clipboard read failed:', err);
-      alert('클립보드 읽기 권한이 필요합니다. 입력창에 직접 붙여넣기(Cmd+V)를 해주세요.');
+      alert('클립보드 읽기 권한이 필요합니다. 화면에서 키보드 Ctrl+V (Cmd+V)를 눌러주세요.');
     }
   };
 
@@ -481,6 +544,33 @@ export function PocketHubPage({
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
   }, [isAddModalOpen]);
+
+  // Global Clipboard paste listener for direct screenshot scrap anywhere on PocketHub
+  useEffect(() => {
+    const handleGlobalPaste = (e: ClipboardEvent) => {
+      // If any modal is open, let modal handle its own paste
+      if (isAddModalOpen || isScrapModalOpen || selectedSpotForModal || spotToDelete || spotToUseInTrip || scheduleTargetTrip) {
+        return;
+      }
+
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          if (file) {
+            e.preventDefault();
+            handleImageFileToScrap(file);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handleGlobalPaste);
+    return () => window.removeEventListener('paste', handleGlobalPaste);
+  }, [isAddModalOpen, isScrapModalOpen, selectedSpotForModal, spotToDelete, spotToUseInTrip, scheduleTargetTrip]);
 
 
   // Real-time sync with Firestore server on mount (multi-device synchronization)
@@ -963,8 +1053,8 @@ export function PocketHubPage({
               type="text"
               value={scrapInputUrl}
               onChange={(e) => setScrapInputUrl(e.target.value)}
-              placeholder="SNS 링크 붙여넣기 (Instagram, Threads, X, YouTube, 웹...)"
-              className="flex-1 min-w-0 px-2 py-1 text-xs sm:text-sm font-sans font-medium bg-transparent text-black dark:text-white outline-none placeholder:text-black/35 dark:placeholder:text-white/35"
+              placeholder="SNS 링크 입력 또는 스크린샷 이미지 붙여넣기 (Ctrl+V)"
+              className="flex-1 min-w-0 px-2 py-1 text-xs sm:text-sm font-sans font-medium bg-transparent text-black dark:text-white outline-none placeholder:text-black/40 dark:placeholder:text-white/40"
             />
 
             {/* Clear Button */}
@@ -983,9 +1073,10 @@ export function PocketHubPage({
             <button
               type="button"
               onClick={handlePasteFromClipboard}
-              className="px-2.5 py-1 text-[11px] font-mono font-bold tracking-wider text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors shrink-0 cursor-pointer hidden sm:flex items-center gap-1"
-              title="클립보드 링크 붙여넣기"
+              className="px-2.5 py-1 text-[11px] font-mono font-bold tracking-wider text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors shrink-0 cursor-pointer hidden sm:flex items-center gap-1.5"
+              title="클립보드 링크 또는 스크린샷 이미지 붙여넣기"
             >
+              <Clipboard className="w-3 h-3" />
               <span>붙여넣기</span>
             </button>
 
@@ -1012,6 +1103,7 @@ export function PocketHubPage({
           {/* Supported platform minimal pill hints */}
           <div className="hidden lg:flex items-center gap-1.5 text-[10px] font-mono text-black/40 dark:text-white/40 shrink-0 select-none">
             <span className="font-bold tracking-wider text-[9px] uppercase">SUPPORT:</span>
+            <span className="px-1.5 py-0.5 rounded-full border border-red-500/30 text-red-600 dark:text-red-400 font-bold bg-red-500/5">SCREENSHOT (Ctrl+V)</span>
             <span className="px-1.5 py-0.5 rounded-full border border-black/10 dark:border-white/10">INSTAGRAM</span>
             <span className="px-1.5 py-0.5 rounded-full border border-black/10 dark:border-white/10">THREADS</span>
             <span className="px-1.5 py-0.5 rounded-full border border-black/10 dark:border-white/10">X</span>
