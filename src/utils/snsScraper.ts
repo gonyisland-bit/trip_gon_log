@@ -323,35 +323,119 @@ export async function scrapeSnsMetadata(rawUrl: string): Promise<ScrapedSpotData
     console.warn('[snsScraper] Microlink API failed:', e);
   }
 
-  // Step 3B: Instagram Carousel & SNS Full Image Scraping (Always run for Instagram/Threads or when more images needed)
+  // Step 3B: High-speed Instagram Carousel & Full Image Scraping with parallel proxy racing
   const isInstagramOrThreads = platform === 'instagram' || platform === 'threads';
   const shouldScrapeCarousel = isInstagramOrThreads || allImages.length <= 1;
 
   if (shouldScrapeCarousel) {
-    // Extract shortcode for Instagram posts
     const shortcodeMatch = fullUrl.match(/\/(?:p|reel|reels)\/([A-Za-z0-9_-]+)/);
     const shortcode = shortcodeMatch ? shortcodeMatch[1] : '';
 
-    const helperUrlsToTry: string[] = [];
-    if (platform === 'instagram' && shortcode) {
-      // 1. ddinstagram OpenGraph proxy (serves multiple og:image tags for Instagram carousels)
-      helperUrlsToTry.push(`https://www.ddinstagram.com/p/${shortcode}/`);
-      // 2. Instagram official embed endpoint (contains media images without login redirect)
-      helperUrlsToTry.push(`https://www.instagram.com/p/${shortcode}/embed/captioned/`);
-    }
-    helperUrlsToTry.push(fullUrl);
-
-    for (const targetUrl of helperUrlsToTry) {
+    // Fast fetch helper with strict 4s timeout
+    const fetchWithTimeout = async (url: string, timeoutMs: number = 4000): Promise<string> => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
       try {
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-        const res = await fetch(proxyUrl);
-        if (!res.ok) continue;
-        const json = await res.json();
-        const html = json.contents || '';
-        if (!html) continue;
+        const res = await fetch(url, { signal: controller.signal });
+        if (!res.ok) return '';
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const json = await res.json();
+          return json.contents || JSON.stringify(json);
+        }
+        return await res.text();
+      } catch {
+        return '';
+      } finally {
+        clearTimeout(timer);
+      }
+    };
 
+    // Candidates to fetch concurrently
+    const scrapeTasks: Promise<string>[] = [];
+
+    if (platform === 'instagram' && shortcode) {
+      // 1. Instagram official embed endpoint via corsproxy.io & allorigins
+      const embedUrl = `https://www.instagram.com/p/${shortcode}/embed/captioned/`;
+      scrapeTasks.push(fetchWithTimeout(`https://corsproxy.io/?url=${encodeURIComponent(embedUrl)}`, 3500));
+      scrapeTasks.push(fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(embedUrl)}`, 4000));
+
+      // 2. ddinstagram API & HTML proxy
+      scrapeTasks.push(fetchWithTimeout(`https://api.ddinstagram.com/p/${shortcode}`, 3500));
+      const ddUrl = `https://www.ddinstagram.com/p/${shortcode}/`;
+      scrapeTasks.push(fetchWithTimeout(`https://corsproxy.io/?url=${encodeURIComponent(ddUrl)}`, 3500));
+      scrapeTasks.push(fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(ddUrl)}`, 4000));
+    } else {
+      // General web / Threads
+      scrapeTasks.push(fetchWithTimeout(`https://corsproxy.io/?url=${encodeURIComponent(fullUrl)}`, 3500));
+      scrapeTasks.push(fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(fullUrl)}`, 4000));
+    }
+
+    // Run concurrently with Promise.allSettled
+    const results = await Promise.allSettled(scrapeTasks);
+
+    for (const r of results) {
+      if (r.status !== 'fulfilled' || !r.value) continue;
+      const htmlOrJson = r.value;
+
+      // Check if it's ddinstagram JSON API response
+      if (htmlOrJson.startsWith('{') && htmlOrJson.includes('"media"')) {
+        try {
+          const apiData = JSON.parse(htmlOrJson);
+          if (apiData?.post?.caption && !memo) {
+            memo = apiData.post.caption;
+            if (!title) title = cleanSnsTitle(memo, 'instagram');
+          }
+          if (Array.isArray(apiData?.post?.carousel_media)) {
+            apiData.post.carousel_media.forEach((item: any) => {
+              const u = item.image_url || item.url;
+              if (u && !allImages.includes(u)) allImages.push(u);
+            });
+          } else if (apiData?.post?.image_url && !allImages.includes(apiData.post.image_url)) {
+            allImages.push(apiData.post.image_url);
+          }
+        } catch (_) {}
+      }
+
+      // Regex Extraction 1: High-res "display_url":"https:..."
+      const displayUrlMatches = htmlOrJson.match(/"display_url"\s*:\s*"(https:[^"]+)"/g);
+      if (displayUrlMatches) {
+        displayUrlMatches.forEach((m: string) => {
+          try {
+            const rawUrl = m.replace(/"display_url"\s*:\s*"/, '').replace(/"$/, '');
+            const clean = rawUrl.replace(/\\u0026/g, '&').replace(/\\/g, '');
+            if (clean && /^https?:\/\//i.test(clean) && !allImages.includes(clean)) {
+              allImages.push(clean);
+            }
+          } catch (_) {}
+        });
+      }
+
+      // Regex Extraction 2: "display_resources":[{"src":"https:..."
+      const resourceMatches = htmlOrJson.match(/"src"\s*:\s*"(https:[^"]+)"/g);
+      if (resourceMatches) {
+        resourceMatches.forEach((m: string) => {
+          try {
+            const rawUrl = m.replace(/"src"\s*:\s*"/, '').replace(/"$/, '');
+            const clean = rawUrl.replace(/\\u0026/g, '&').replace(/\\/g, '');
+            if (
+              clean && 
+              /^https?:\/\//i.test(clean) && 
+              !clean.includes('150x150') && 
+              !clean.includes('320x320') && 
+              !clean.includes('profile') && 
+              !allImages.includes(clean)
+            ) {
+              allImages.push(clean);
+            }
+          } catch (_) {}
+        });
+      }
+
+      // DOM Parser for HTML tags (og:image, EmbeddedMediaImage, srcset)
+      try {
         const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
+        const doc = parser.parseFromString(htmlOrJson, 'text/html');
 
         const getMeta = (prop: string) => 
           doc.querySelector(`meta[property="${prop}"]`)?.getAttribute('content') ||
@@ -360,7 +444,7 @@ export async function scrapeSnsMetadata(rawUrl: string): Promise<ScrapedSpotData
         if (!title) title = getMeta('og:title') || doc.querySelector('title')?.textContent || '';
         if (!memo) memo = getMeta('og:description') || getMeta('description') || '';
 
-        // Collect all og:image and twitter:image meta tags
+        // Collect all og:image meta tags
         const metaImages = doc.querySelectorAll('meta[property="og:image"], meta[name="twitter:image"], meta[property="twitter:image"]');
         metaImages.forEach((m) => {
           let content = m.getAttribute('content');
@@ -372,55 +456,19 @@ export async function scrapeSnsMetadata(rawUrl: string): Promise<ScrapedSpotData
           }
         });
 
-        // Instagram carousel regex extraction from JSON scripts if present (e.g. edge_sidecar_to_children, display_url, display_resources)
-        if (isInstagramOrThreads) {
-          // Pattern A: "display_url":"https:..."
-          const displayUrlMatches = html.match(/"display_url"\s*:\s*"(https:[^"]+)"/g);
-          if (displayUrlMatches) {
-            displayUrlMatches.forEach((m: string) => {
-              try {
-                const rawUrl = m.replace(/"display_url"\s*:\s*"/, '').replace(/"$/, '');
-                const clean = rawUrl.replace(/\\u0026/g, '&').replace(/\\/g, '');
-                if (clean && /^https?:\/\//i.test(clean) && !allImages.includes(clean)) {
-                  allImages.push(clean);
-                }
-              } catch (_) {}
-            });
-          }
-
-          // Pattern B: "display_resources":[{"src":"https:..."
-          const resourceMatches = html.match(/"src"\s*:\s*"(https:[^"]+)"/g);
-          if (resourceMatches) {
-            resourceMatches.forEach((m: string) => {
-              try {
-                const rawUrl = m.replace(/"src"\s*:\s*"/, '').replace(/"$/, '');
-                const clean = rawUrl.replace(/\\u0026/g, '&').replace(/\\/g, '');
-                // Filter out small icons or thumbnails (check dimensions in URL or length)
-                if (
-                  clean && 
-                  /^https?:\/\//i.test(clean) && 
-                  !clean.includes('150x150') && 
-                  !clean.includes('profile') && 
-                  !allImages.includes(clean)
-                ) {
-                  allImages.push(clean);
-                }
-              } catch (_) {}
-            });
-          }
-
-          // Pattern C: HTML img tags with EmbeddedMediaImage or srcset
-          const embeddedImages = doc.querySelectorAll('img.EmbeddedMediaImage, img');
-          embeddedImages.forEach((el) => {
+        // Collect high-res from EmbeddedMediaImage srcset
+        const embeddedImages = doc.querySelectorAll('img.EmbeddedMediaImage, img');
+        embeddedImages.forEach((el) => {
+          const srcset = el.getAttribute('srcset');
+          if (srcset) {
+            const parts = srcset.split(',').map(s => s.trim().split(' ')[0]);
+            const largest = parts[parts.length - 1];
+            if (largest && /^https?:\/\//i.test(largest) && !allImages.includes(largest)) {
+              allImages.push(largest);
+            }
+          } else {
             const src = el.getAttribute('src');
-            const srcset = el.getAttribute('srcset');
-            if (srcset) {
-              const parts = srcset.split(',').map(s => s.trim().split(' ')[0]);
-              const largest = parts[parts.length - 1];
-              if (largest && /^https?:\/\//i.test(largest) && !allImages.includes(largest)) {
-                allImages.push(largest);
-              }
-            } else if (
+            if (
               src && 
               /^https?:\/\//i.test(src) && 
               !src.includes('avatar') && 
@@ -431,15 +479,13 @@ export async function scrapeSnsMetadata(rawUrl: string): Promise<ScrapedSpotData
             ) {
               allImages.push(src);
             }
-          });
-        }
+          }
+        });
+      } catch (_) {}
 
-        // If we found multiple images from this target, we can break
-        if (allImages.length >= 2) {
-          break;
-        }
-      } catch (e) {
-        console.warn(`[snsScraper] Scrape attempt failed for ${targetUrl}:`, e);
+      // If we found 2 or more carousel images, we have succeeded
+      if (allImages.length >= 2) {
+        break;
       }
     }
 

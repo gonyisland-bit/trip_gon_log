@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { 
   X, MapPin, Heart, Plus, ExternalLink, Edit3, Trash2, 
   Navigation, Utensils, Coffee, Camera, ShoppingBag, Lightbulb,
-  MessageSquare, Send, Check
+  MessageSquare, Send, Check, ZoomIn
 } from 'lucide-react';
 import { SpotPocketItem, PocketCategory, PocketComment, UserProfile } from '../types';
 
@@ -52,6 +52,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
   const leafletMapRef = useRef<any>(null);
   const [quickCommentText, setQuickCommentText] = useState('');
   const [isCommentsExpanded, setIsCommentsExpanded] = useState<boolean>(true);
+  const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
 
   const hasCoordinates = typeof spot?.lat === 'number' && typeof spot?.lng === 'number' && !isNaN(spot.lat) && !isNaN(spot.lng);
 
@@ -70,11 +71,17 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
   // ESC key handler
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        if (isLightboxOpen) {
+          setIsLightboxOpen(false);
+        } else {
+          onClose();
+        }
+      }
     };
     if (isOpen) window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, isLightboxOpen, onClose]);
 
   // Initialize Google Maps Tiles via Leaflet (Identical to Trip Detail MapArea)
   useEffect(() => {
@@ -174,14 +181,28 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
           <X className="w-4 h-4 stroke-[2.5]" />
         </button>
 
-        {/* Top Media Frame (16:10 aspect ratio) */}
-        <div className="relative w-full aspect-[16/10] bg-black/5 dark:bg-white/5 overflow-hidden shrink-0 border-b border-black/10 dark:border-white/10">
+        {/* Top Media Frame (Click to open fullsize Lightbox) */}
+        <div 
+          className={`relative w-full aspect-[16/10] bg-black/5 dark:bg-white/5 overflow-hidden shrink-0 border-b border-black/10 dark:border-white/10 ${
+            spot.thumbnailUrl ? 'cursor-zoom-in group' : ''
+          }`}
+          onClick={() => {
+            if (spot.thumbnailUrl) setIsLightboxOpen(true);
+          }}
+          title={spot.thumbnailUrl ? "클릭하여 원본 크기로 확대 보기" : undefined}
+        >
           {spot.thumbnailUrl ? (
-            <img 
-              src={spot.thumbnailUrl} 
-              alt={spot.title}
-              className="w-full h-full object-cover"
-            />
+            <>
+              <img 
+                src={spot.thumbnailUrl} 
+                alt={spot.title}
+                className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+              />
+              <div className="absolute top-3.5 right-14 z-20 flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-mono opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                <ZoomIn className="w-3 h-3" />
+                <span>원본 확대</span>
+              </div>
+            </>
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center text-black/30 dark:text-white/30">
               <Camera className="w-12 h-12 mb-2" />
@@ -500,6 +521,37 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Full-size High-Res Image Lightbox Popup */}
+      {isLightboxOpen && spot.thumbnailUrl && (
+        <div 
+          className="fixed inset-0 z-[100000] bg-black/95 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in zoom-in-95 duration-150"
+          onClick={() => setIsLightboxOpen(false)}
+        >
+          <div className="relative max-w-5xl max-h-[92vh] flex flex-col items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <div className="w-full flex items-center justify-between pb-2 text-white/80">
+              <span className="text-[11px] font-mono tracking-widest uppercase">
+                ORIGINAL FULL-RES IMAGE
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsLightboxOpen(false)}
+                className="p-1.5 hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer"
+                title="닫기 (ESC)"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="relative max-h-[85vh] max-w-full overflow-hidden flex items-center justify-center border border-white/20 shadow-2xl bg-black">
+              <img 
+                src={spot.thumbnailUrl} 
+                alt={spot.title} 
+                className="max-h-[84vh] max-w-full w-auto h-auto object-contain select-none"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>,
     document.body
   );

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   X, Check, ExternalLink, Image as ImageIcon,
   Utensils, Coffee, Camera, ShoppingBag, Lightbulb, Upload, Sparkles, Layers,
-  ScanText, Loader2, Link2, ChevronLeft, ChevronRight, Clipboard, FileText
+  ScanText, Loader2, Link2, ChevronLeft, ChevronRight, Clipboard, FileText, ZoomIn
 } from 'lucide-react';
 import { ScrapedSpotData, ScrapedSpotCandidate } from '../utils/snsScraper';
 import { PocketCategory, SpotPocketItem, SpotPocketPlatform } from '../types';
@@ -76,7 +76,11 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
     scrapedData.targetImgIndex ? scrapedData.targetImgIndex - 1 : null
   );
 
-  // OCR state for image text extraction
+  // Full-size Lightbox modal state
+  const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
+
+  // Per-slide OCR cache & state
+  const [ocrCache, setOcrCache] = useState<Record<string, { candidates: string[]; descriptionText: string }>>({});
   const [isOcrRunning, setIsOcrRunning] = useState<boolean>(false);
   const [ocrCandidates, setOcrCandidates] = useState<string[]>([]);
   const [ocrDescription, setOcrDescription] = useState<string>('');
@@ -94,28 +98,94 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
     setOcrCandidates([]);
     setOcrDescription('');
     setOcrError(null);
+    setOcrCache({});
+    setIsLightboxOpen(false);
   }, [scrapedData]);
 
   // Current image index in carousel
   const currentImageIdx = imagesList.findIndex(img => img === selectedImage);
 
+  // Dedicated OCR runner for any target image URL
+  const runOcrForImage = useCallback(async (targetImg: string, autoApply: boolean = false) => {
+    if (!targetImg) return;
+
+    // Check cache first for instant retrieval
+    if (ocrCache[targetImg]) {
+      const cached = ocrCache[targetImg];
+      setOcrCandidates(cached.candidates);
+      setOcrDescription(cached.descriptionText);
+      setOcrError(null);
+
+      if (autoApply) {
+        if (cached.candidates.length > 0) {
+          setTitle(cached.candidates[0]);
+        }
+        if (cached.descriptionText) {
+          setMemo(cached.descriptionText);
+        }
+      }
+      return;
+    }
+
+    try {
+      setIsOcrRunning(true);
+      setOcrError(null);
+      const res = await extractTextFromImageUrl(targetImg, 'kor');
+      const candidates = res.candidates || [];
+      const descriptionText = res.descriptionText || '';
+
+      setOcrCache(prev => ({
+        ...prev,
+        [targetImg]: { candidates, descriptionText }
+      }));
+
+      setOcrCandidates(candidates);
+      setOcrDescription(descriptionText);
+
+      if (candidates.length === 0 && !descriptionText) {
+        setOcrError('이미지에서 인식 가능한 텍스트를 찾지 못했습니다.');
+      }
+
+      if (autoApply) {
+        if (candidates.length > 0) {
+          setTitle(candidates[0]);
+        }
+        if (descriptionText) {
+          setMemo(descriptionText);
+        }
+      }
+    } catch (err: any) {
+      console.warn('[PocketScrapModal] OCR error:', err);
+      setOcrError('이미지 텍스트 인식 중 통신 오류가 발생했습니다.');
+    } finally {
+      setIsOcrRunning(false);
+    }
+  }, [ocrCache]);
+
+  const handleSelectImage = useCallback((newImg: string) => {
+    setSelectedImage(newImg);
+    if (ocrCache[newImg]) {
+      setOcrCandidates(ocrCache[newImg].candidates);
+      setOcrDescription(ocrCache[newImg].descriptionText);
+      setOcrError(null);
+    } else {
+      setOcrCandidates([]);
+      setOcrDescription('');
+      setOcrError(null);
+    }
+  }, [ocrCache]);
+
   const handlePrevImage = useCallback(() => {
     if (imagesList.length <= 1) return;
     const nextIdx = currentImageIdx <= 0 ? imagesList.length - 1 : currentImageIdx - 1;
-    setSelectedImage(imagesList[nextIdx]);
-    setOcrCandidates([]);
-    setOcrDescription('');
-    setOcrError(null);
-  }, [imagesList, currentImageIdx]);
+    handleSelectImage(imagesList[nextIdx]);
+  }, [imagesList, currentImageIdx, handleSelectImage]);
 
   const handleNextImage = useCallback(() => {
     if (imagesList.length <= 1) return;
     const nextIdx = currentImageIdx >= imagesList.length - 1 ? 0 : currentImageIdx + 1;
-    setSelectedImage(imagesList[nextIdx]);
-    setOcrCandidates([]);
-    setOcrDescription('');
-    setOcrError(null);
-  }, [imagesList, currentImageIdx]);
+    handleSelectImage(imagesList[nextIdx]);
+  }, [imagesList, currentImageIdx, handleSelectImage]);
 
   // Clipboard Paste handler (Ctrl+V) for instant image scraping/replacement
   const processImageFile = useCallback(async (file: File) => {
@@ -143,9 +213,12 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' || e.key === 'Esc') {
         e.preventDefault();
-        onClose();
+        if (isLightboxOpen) {
+          setIsLightboxOpen(false);
+        } else {
+          onClose();
+        }
       } else if (e.key === 'ArrowLeft') {
-        // Only if not typing in input/textarea
         const tag = (e.target as HTMLElement)?.tagName;
         if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
           e.preventDefault();
@@ -182,38 +255,15 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('paste', handlePaste);
     };
-  }, [isOpen, onClose, handlePrevImage, handleNextImage, processImageFile]);
+  }, [isOpen, isLightboxOpen, onClose, handlePrevImage, handleNextImage, processImageFile]);
 
   // OCR handler: Extract text from selected thumbnail image
-  const handleRunOcr = async () => {
+  const handleRunOcr = async (autoApply: boolean = false) => {
     if (!selectedImage) {
       alert('분석할 이미지가 없습니다.');
       return;
     }
-
-    try {
-      setIsOcrRunning(true);
-      setOcrError(null);
-      const res = await extractTextFromImageUrl(selectedImage, 'kor');
-      if (res.candidates && res.candidates.length > 0) {
-        setOcrCandidates(res.candidates);
-        // If current title is default or empty, auto-pick first candidate
-        if (!title.trim() || title === '추천 여행 스팟' || title.length < 3) {
-          setTitle(res.candidates[0]);
-        }
-      } else {
-        setOcrError('이미지에서 인식 가능한 제목 텍스트를 찾지 못했습니다.');
-      }
-
-      if (res.descriptionText) {
-        setOcrDescription(res.descriptionText);
-      }
-    } catch (err: any) {
-      console.warn('[PocketScrapModal] OCR error:', err);
-      setOcrError('이미지 텍스트 인식 중 통신 오류가 발생했습니다. 직접 입력해주세요.');
-    } finally {
-      setIsOcrRunning(false);
-    }
+    await runOcrForImage(selectedImage, autoApply);
   };
 
   // Replace memo with OCR description text
@@ -360,7 +410,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between text-[11px] font-mono font-bold text-black/60 dark:text-white/60 uppercase tracking-wider">
               <span className="flex items-center gap-1.5">
-                <span>썸네일 이미지</span>
+                <span>피드 이미지</span>
                 {imagesList.length > 1 && (
                   <span className="px-1.5 py-0.2 bg-black/5 dark:bg-white/10 text-black dark:text-white border border-black/15 dark:border-white/15 text-[9px] font-mono font-bold">
                     {currentImageIdx >= 0 ? currentImageIdx + 1 : 1} / {imagesList.length}
@@ -368,26 +418,19 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
                 )}
               </span>
               <div className="flex items-center gap-2 sm:gap-3">
-                {/* OCR text extraction button */}
-                <button
-                  type="button"
-                  onClick={handleRunOcr}
-                  disabled={isOcrRunning || !selectedImage}
-                  className="text-[10px] font-mono font-bold text-red-600 dark:text-red-400 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                  title="사진 속 글씨(장소명/설명)를 자동으로 읽어옵니다"
-                >
-                  {isOcrRunning ? (
-                    <>
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      <span>텍스트 읽는 중...</span>
-                    </>
-                  ) : (
-                    <>
-                      <ScanText className="w-3 h-3" />
-                      <span>이미지 OCR 파밍</span>
-                    </>
-                  )}
-                </button>
+                {/* Fullsize image zoom trigger */}
+                {selectedImage && (
+                  <button
+                    type="button"
+                    onClick={() => setIsLightboxOpen(true)}
+                    className="text-[10px] font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:underline flex items-center gap-1 cursor-pointer"
+                    title="클릭하여 원본 크기로 크게 확대해 봅니다"
+                  >
+                    <ZoomIn className="w-3 h-3" />
+                    <span>원본 확대</span>
+                  </button>
+                )}
+
                 <label className="text-[10px] font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:underline cursor-pointer flex items-center gap-1">
                   <Upload className="w-3 h-3" />
                   <span>{isUploading ? '업로드 중...' : '사진 교체'}</span>
@@ -402,19 +445,23 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
               </div>
             </div>
 
-            {/* Main Image Frame with Carousel Arrows & Paste Indicator */}
-            <div className="relative aspect-[16/9] w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 overflow-hidden flex items-center justify-center group">
+            {/* Main Image Frame (Full Aspect Ratio Preserved, No Crop) */}
+            <div 
+              className="relative w-full h-[320px] sm:h-[400px] bg-black/[0.03] dark:bg-white/[0.03] border border-black/15 dark:border-white/15 overflow-hidden flex items-center justify-center group cursor-zoom-in"
+              onClick={() => setIsLightboxOpen(true)}
+              title="클릭하여 원본 크기로 확대 보기"
+            >
               {selectedImage ? (
                 <img 
                   src={selectedImage} 
                   alt={title} 
-                  className="w-full h-full object-cover select-none" 
+                  className="max-h-full max-w-full w-auto h-auto object-contain select-none transition-transform duration-200 group-hover:scale-[1.01]" 
                   crossOrigin="anonymous"
                 />
               ) : (
                 <div className="flex flex-col items-center gap-1.5 text-black/30 dark:text-white/30 font-mono text-xs">
                   <ImageIcon className="w-8 h-8" />
-                  <span>썸네일 없음 (사진 업로드 또는 Ctrl+V 붙여넣기)</span>
+                  <span>이미지 없음 (사진 업로드 또는 Ctrl+V 붙여넣기)</span>
                 </div>
               )}
 
@@ -427,7 +474,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
                       e.stopPropagation();
                       handlePrevImage();
                     }}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/60 hover:bg-black text-white flex items-center justify-center backdrop-blur-xs transition-all cursor-pointer opacity-80 sm:opacity-0 group-hover:opacity-100 shadow-md border border-white/20"
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/70 hover:bg-black text-white flex items-center justify-center backdrop-blur-xs transition-all cursor-pointer opacity-90 sm:opacity-0 group-hover:opacity-100 shadow-lg border border-white/20 z-10"
                     title="이전 사진 (좌측 방향키)"
                   >
                     <ChevronLeft className="w-5 h-5" />
@@ -438,24 +485,53 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
                       e.stopPropagation();
                       handleNextImage();
                     }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/60 hover:bg-black text-white flex items-center justify-center backdrop-blur-xs transition-all cursor-pointer opacity-80 sm:opacity-0 group-hover:opacity-100 shadow-md border border-white/20"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/70 hover:bg-black text-white flex items-center justify-center backdrop-blur-xs transition-all cursor-pointer opacity-90 sm:opacity-0 group-hover:opacity-100 shadow-lg border border-white/20 z-10"
                     title="다음 사진 (우측 방향키)"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
 
                   {/* Slide Counter Overlay Badge */}
-                  <div className="absolute bottom-2 right-2 px-2 py-0.5 bg-black/70 backdrop-blur-xs text-white text-[10px] font-mono font-bold tracking-wider border border-white/20 pointer-events-none">
+                  <div className="absolute bottom-2.5 right-2.5 px-2 py-0.5 bg-black/75 backdrop-blur-xs text-white text-[10px] font-mono font-bold tracking-wider border border-white/20 pointer-events-none z-10">
                     {currentImageIdx >= 0 ? currentImageIdx + 1 : 1} / {imagesList.length}
                   </div>
                 </>
               )}
 
-              {/* Paste notification helper badge */}
-              <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 bg-black/60 backdrop-blur-xs text-white/80 text-[9.5px] font-mono border border-white/15 pointer-events-none">
-                <Clipboard className="w-2.5 h-2.5" />
-                <span>Ctrl+V 붙여넣기 지원</span>
+              {/* Zoom & Paste helper badges */}
+              <div className="absolute top-2.5 left-2.5 flex items-center gap-2 pointer-events-none z-10">
+                <span className="flex items-center gap-1 px-2 py-0.5 bg-black/65 backdrop-blur-xs text-white/90 text-[9.5px] font-mono border border-white/15">
+                  <ZoomIn className="w-2.5 h-2.5" />
+                  <span>클릭 시 원본 확대</span>
+                </span>
+                <span className="hidden sm:flex items-center gap-1 px-2 py-0.5 bg-black/65 backdrop-blur-xs text-white/90 text-[9.5px] font-mono border border-white/15">
+                  <Clipboard className="w-2.5 h-2.5" />
+                  <span>Ctrl+V 붙여넣기</span>
+                </span>
               </div>
+            </div>
+
+            {/* Smart Slide OCR Action: Extract Title & Note for the CURRENT Slide */}
+            <div className="flex items-center justify-between gap-2 pt-0.5">
+              <button
+                type="button"
+                onClick={() => handleRunOcr(true)}
+                disabled={isOcrRunning || !selectedImage}
+                className="flex-1 py-1.5 px-3 bg-black dark:bg-white text-white dark:text-black hover:opacity-90 transition-opacity font-mono text-[11px] font-bold tracking-wider uppercase flex items-center justify-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
+                title="현재 선택된 사진에서 장소명과 설명 텍스트를 읽어 제목과 메모에 즉시 반영합니다"
+              >
+                {isOcrRunning ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>사진 분석 중...</span>
+                  </>
+                ) : (
+                  <>
+                    <ScanText className="w-3.5 h-3.5 text-red-500" />
+                    <span>현재 사진에서 타이틀 & 노트 읽기 (OCR 자동 추출)</span>
+                  </>
+                )}
+              </button>
             </div>
 
             {/* OCR Detected Candidate Chips & Description Overwrite */}
@@ -466,7 +542,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
                   <div className="flex flex-col gap-1.5">
                     <span className="text-[10px] font-mono font-bold text-black/60 dark:text-white/60 flex items-center gap-1">
                       <ScanText className="w-3 h-3 text-red-600 dark:text-red-400" />
-                      이미지에서 감지된 장소명 후보 (터치하여 제목에 적용):
+                      인식된 장소명 후보 (터치하여 제목에 적용):
                     </span>
                     <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
                       {ocrCandidates.map((cand, idx) => (
@@ -526,7 +602,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
                     <Layers className="w-3 h-3 text-red-600 dark:text-red-400" />
                     슬라이드 사진 선택 ({imagesList.length}장):
                   </span>
-                  <span>클릭 시 대표 썸네일 변경</span>
+                  <span>클릭 시 해당 사진 선택 (선택된 1장만 저장)</span>
                 </div>
                 <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none">
                   {imagesList.map((imgUrl, imgIdx) => {
@@ -535,12 +611,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
                       <button
                         key={imgIdx}
                         type="button"
-                        onClick={() => {
-                          setSelectedImage(imgUrl);
-                          setOcrCandidates([]);
-                          setOcrDescription('');
-                          setOcrError(null);
-                        }}
+                        onClick={() => handleSelectImage(imgUrl)}
                         className={`relative w-16 h-16 shrink-0 border-2 transition-all cursor-pointer overflow-hidden group ${
                           isPicked 
                             ? 'border-red-600 shadow-md ring-1 ring-red-600/30' 
@@ -713,6 +784,37 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
           </div>
         </form>
       </div>
+
+      {/* Full-size High-Res Image Lightbox Popup */}
+      {isLightboxOpen && selectedImage && (
+        <div 
+          className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in zoom-in-95 duration-150"
+          onClick={() => setIsLightboxOpen(false)}
+        >
+          <div className="relative max-w-5xl max-h-[92vh] flex flex-col items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <div className="w-full flex items-center justify-between pb-2 text-white/80">
+              <span className="text-[11px] font-mono tracking-widest uppercase">
+                ORIGINAL FULL-RES IMAGE {imagesList.length > 1 && `(${currentImageIdx + 1} / ${imagesList.length})`}
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsLightboxOpen(false)}
+                className="p-1.5 hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer"
+                title="닫기 (ESC)"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="relative max-h-[85vh] max-w-full overflow-hidden flex items-center justify-center border border-white/20 shadow-2xl bg-black">
+              <img 
+                src={selectedImage} 
+                alt="Full resolution preview" 
+                className="max-h-[84vh] max-w-full w-auto h-auto object-contain select-none"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
