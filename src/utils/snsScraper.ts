@@ -300,36 +300,109 @@ export async function scrapeSnsMetadata(rawUrl: string): Promise<ScrapedSpotData
   }
 
   // 3. Instagram / Threads / Blog / General Web
-  // Step 3A: Microlink API (High quality OpenGraph parser for title/memo/first image)
-  try {
-    const microlinkUrl = `https://api.microlink.io?url=${encodeURIComponent(fullUrl)}&screenshot=false`;
-    const res = await fetch(microlinkUrl, { headers: { 'Accept': 'application/json' } });
-    if (res.ok) {
+  // ──────────────────────────────────────────────────────────────────────────
+  // Step 3A: Microlink API — img_index=1~8 병렬 호출로 슬라이드별 이미지 수집
+  // Instagram 서버는 ?img_index=N URL마다 해당 슬라이드 이미지를 og:image로 반환.
+  // Microlink는 서버사이드 렌더링으로 이를 안정적으로 파싱함 (CORS 없음).
+  // ──────────────────────────────────────────────────────────────────────────
+
+  const shortcodeForCarousel = platform === 'instagram'
+    ? (fullUrl.match(/\/(?:p|reel|reels)\/([A-Za-z0-9_-]+)/)?.[1] || '')
+    : '';
+
+  // Base URL without img_index (always the /p/{shortcode}/ form)
+  const basePostUrl = shortcodeForCarousel
+    ? `https://www.instagram.com/p/${shortcodeForCarousel}/`
+    : fullUrl;
+
+  // Helper: call Microlink for a given URL and extract image URL + metadata
+  const fetchMicrolinkImage = async (url: string, timeoutMs = 7000): Promise<{ imageUrl: string; title: string; desc: string }> => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const apiUrl = `https://api.microlink.io?url=${encodeURIComponent(url)}&screenshot=false`;
+      const res = await fetch(apiUrl, { signal: controller.signal, headers: { 'Accept': 'application/json' } });
+      if (!res.ok) return { imageUrl: '', title: '', desc: '' };
       const json = await res.json();
       const data = json?.data;
-      if (data) {
-        if (!title && data.title) title = data.title;
-        if (!memo && data.description) memo = data.description;
-        if (data.image?.url) {
-          thumbnailUrl = data.image.url;
-          if (!allImages.includes(data.image.url)) {
-            allImages.push(data.image.url);
-          }
-        }
-        if (data.publisher) authorName = data.publisher;
+      return {
+        imageUrl: data?.image?.url || data?.logo?.url || '',
+        title: data?.title || '',
+        desc: data?.description || '',
+      };
+    } catch {
+      return { imageUrl: '', title: '', desc: '' };
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
+  if (platform === 'instagram' && shortcodeForCarousel) {
+    // --- Primary: Microlink img_index=1~8 병렬 호출 ---
+    const MAX_SLIDES = 8;
+    const slideUrls = Array.from({ length: MAX_SLIDES }, (_, i) =>
+      `${basePostUrl}?img_index=${i + 1}`
+    );
+
+    const microlinkResults = await Promise.allSettled(
+      slideUrls.map(u => fetchMicrolinkImage(u, 7000))
+    );
+
+    let firstImageUrl = '';
+    for (const r of microlinkResults) {
+      if (r.status !== 'fulfilled') continue;
+      const { imageUrl, title: t, desc: d } = r.value;
+
+      // Capture metadata from first slide
+      if (!title && t) title = t;
+      if (!memo && d) memo = d;
+
+      if (!imageUrl) continue;
+
+      // Deduplicate: skip if this URL is already collected (same image = carousel ended)
+      if (!allImages.includes(imageUrl)) {
+        allImages.push(imageUrl);
+        if (!firstImageUrl) firstImageUrl = imageUrl;
       }
     }
-  } catch (e) {
-    console.warn('[snsScraper] Microlink API failed:', e);
+
+    // Set thumbnail from first valid image
+    if (!thumbnailUrl && firstImageUrl) thumbnailUrl = firstImageUrl;
+
+    // If Microlink returned nothing at all, try the bare post URL once more
+    if (allImages.length === 0) {
+      const fallback = await fetchMicrolinkImage(basePostUrl, 8000);
+      if (fallback.imageUrl) {
+        allImages.push(fallback.imageUrl);
+        thumbnailUrl = fallback.imageUrl;
+      }
+      if (!title && fallback.title) title = fallback.title;
+      if (!memo && fallback.desc) memo = fallback.desc;
+    }
+
+  } else {
+    // Non-Instagram: single Microlink call
+    try {
+      const { imageUrl, title: t, desc: d } = await fetchMicrolinkImage(fullUrl, 8000);
+      if (!title && t) title = t;
+      if (!memo && d) memo = d;
+      if (imageUrl && !allImages.includes(imageUrl)) {
+        allImages.push(imageUrl);
+        if (!thumbnailUrl) thumbnailUrl = imageUrl;
+      }
+    } catch (e) {
+      console.warn('[snsScraper] Microlink fallback failed:', e);
+    }
   }
 
-  // Step 3B: High-speed Instagram Carousel & Full Image Scraping with parallel proxy racing
+  // ──────────────────────────────────────────────────────────────────────────
+  // Step 3B: HTML Proxy Scraping — 보조 폴백 (이미지가 부족하거나 Instagram 비일반 URL일 때)
+  // ──────────────────────────────────────────────────────────────────────────
   const isInstagramOrThreads = platform === 'instagram' || platform === 'threads';
-  const shouldScrapeCarousel = isInstagramOrThreads || allImages.length <= 1;
+  const needsFallbackScrape = isInstagramOrThreads || allImages.length <= 1;
 
-  if (shouldScrapeCarousel) {
-    const shortcodeMatch = fullUrl.match(/\/(?:p|reel|reels)\/([A-Za-z0-9_-]+)/);
-    const shortcode = shortcodeMatch ? shortcodeMatch[1] : '';
+  if (needsFallbackScrape) {
+    const shortcode = shortcodeForCarousel;
 
     // Fast fetch helper with configurable timeout
     const fetchWithTimeout = async (url: string, timeoutMs: number = 5000): Promise<string> => {
@@ -351,54 +424,33 @@ export async function scrapeSnsMetadata(rawUrl: string): Promise<ScrapedSpotData
       }
     };
 
-    // Helper: extract all CDN image URLs from a raw text blob (HTML or JSON)
+    // Helper: validate carousel image URL
     const isValidCarouselUrl = (u: string): boolean => {
       if (!u || !/^https?:\/\//i.test(u)) return false;
-      // Filter out small thumbnails and profile/avatar images
-      if (/\bs(\d{2,3})x\1\b/.test(u)) return false; // s150x150, s320x320 etc.
+      if (/\bs(\d{2,3})x\1\b/.test(u)) return false;
       if (/\/?(150x150|90x90|avatar|profile|logo|sprite|favicon|icon)/i.test(u)) return false;
       if (u.endsWith('.svg') || u.endsWith('.gif')) return false;
       return true;
     };
 
-    // Per-source image collection: collect from all sources, keep the set with the most images
     const sourceImageSets: string[][] = [];
-
-    // Candidates to fetch concurrently
     const scrapeTasks: Promise<string>[] = [];
 
     if (platform === 'instagram' && shortcode) {
-      // Source A: Instagram official embed endpoint via corsproxy.io & allorigins
+      // Source A: Instagram official embed endpoint
       const embedUrl = `https://www.instagram.com/p/${shortcode}/embed/captioned/`;
       scrapeTasks.push(fetchWithTimeout(`https://corsproxy.io/?url=${encodeURIComponent(embedUrl)}`, 4000));
       scrapeTasks.push(fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(embedUrl)}`, 5000));
 
-      // Source B: ddinstagram JSON API & HTML proxy
+      // Source B: ddinstagram JSON API
       scrapeTasks.push(fetchWithTimeout(`https://api.ddinstagram.com/p/${shortcode}`, 4000));
       const ddUrl = `https://www.ddinstagram.com/p/${shortcode}/`;
       scrapeTasks.push(fetchWithTimeout(`https://corsproxy.io/?url=${encodeURIComponent(ddUrl)}`, 4000));
-      scrapeTasks.push(fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(ddUrl)}`, 5000));
-
-      // Source C: imginn (public mirror, shows all carousel slides)
-      const imginnUrl = `https://imginn.com/p/${shortcode}/`;
-      scrapeTasks.push(fetchWithTimeout(`https://corsproxy.io/?url=${encodeURIComponent(imginnUrl)}`, 4000));
-      scrapeTasks.push(fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(imginnUrl)}`, 5000));
-
-      // Source D: picuki (high-res public mirror)
-      const picukiUrl = `https://www.picuki.com/media/${shortcode}`;
-      scrapeTasks.push(fetchWithTimeout(`https://corsproxy.io/?url=${encodeURIComponent(picukiUrl)}`, 4000));
-      scrapeTasks.push(fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(picukiUrl)}`, 5000));
-
-      // Source E: instagramdl / savedeo style endpoints
-      const instaSaverApiUrl = `https://instagram-downloader-download-instagram-videos-stories1.p.rapidapi.com/index?url=${encodeURIComponent(fullUrl)}`;
-      scrapeTasks.push(fetchWithTimeout(instaSaverApiUrl, 4000));
     } else {
-      // General web / Threads
       scrapeTasks.push(fetchWithTimeout(`https://corsproxy.io/?url=${encodeURIComponent(fullUrl)}`, 4000));
       scrapeTasks.push(fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(fullUrl)}`, 5000));
     }
 
-    // Run ALL concurrently — NO early break, collect maximum possible images
     const results = await Promise.allSettled(scrapeTasks);
 
     for (const r of results) {
@@ -408,12 +460,10 @@ export async function scrapeSnsMetadata(rawUrl: string): Promise<ScrapedSpotData
 
       const sourceImages: string[] = [];
 
-      // Parse JSON-based API responses (ddinstagram, rapidapi downloader variants)
+      // JSON API parsing (ddinstagram)
       if (htmlOrJson.trimStart().startsWith('{') || htmlOrJson.trimStart().startsWith('[')) {
         try {
           const apiData = JSON.parse(htmlOrJson);
-
-          // ddinstagram post format
           if (apiData?.post?.caption && !memo) {
             memo = apiData.post.caption;
             if (!title) title = cleanSnsTitle(memo, 'instagram');
@@ -426,24 +476,10 @@ export async function scrapeSnsMetadata(rawUrl: string): Promise<ScrapedSpotData
           } else if (apiData?.post?.image_url && isValidCarouselUrl(apiData.post.image_url)) {
             if (!sourceImages.includes(apiData.post.image_url)) sourceImages.push(apiData.post.image_url);
           }
-
-          // RapidAPI / instaSaver format: { items: [{url, type}] } or { url, items }
-          const items = apiData?.items || apiData?.result?.items || apiData?.data?.items;
-          if (Array.isArray(items)) {
-            items.forEach((item: any) => {
-              const u = item.url || item.image_url || item.thumbnail || item.src;
-              if (u && isValidCarouselUrl(u) && !sourceImages.includes(u)) sourceImages.push(u);
-            });
-          }
-
-          // allorigins wrapped response
           if (apiData?.contents && typeof apiData.contents === 'string') {
-            // Will be processed as HTML below
-            const wrapped = apiData.contents;
-            // Extract URLs from the inner content string
-            const innerDisplayMatches = wrapped.match(/"display_url"\s*:\s*"(https:[^"]+)"/g);
-            if (innerDisplayMatches) {
-              innerDisplayMatches.forEach((m: string) => {
+            const innerMatches = apiData.contents.match(/"display_url"\s*:\s*"(https:[^"]+)"/g);
+            if (innerMatches) {
+              innerMatches.forEach((m: string) => {
                 try {
                   const raw = m.replace(/"display_url"\s*:\s*"/, '').replace(/"$/, '');
                   const clean = raw.replace(/\\u0026/g, '&').replace(/\\/g, '');
@@ -455,7 +491,7 @@ export async function scrapeSnsMetadata(rawUrl: string): Promise<ScrapedSpotData
         } catch (_) {}
       }
 
-      // Regex Extraction 1: "display_url":"https:..."  (Instagram internal JSON)
+      // Regex: display_url
       const displayUrlMatches = htmlOrJson.match(/"display_url"\s*:\s*"(https:[^"]+)"/g);
       if (displayUrlMatches) {
         displayUrlMatches.forEach((m: string) => {
@@ -467,44 +503,10 @@ export async function scrapeSnsMetadata(rawUrl: string): Promise<ScrapedSpotData
         });
       }
 
-      // Regex Extraction 2: "src":"https:..." (display_resources)
-      const srcMatches = htmlOrJson.match(/"src"\s*:\s*"(https:[^"]{20,})"/g);
-      if (srcMatches) {
-        srcMatches.forEach((m: string) => {
-          try {
-            const raw = m.replace(/"src"\s*:\s*"/, '').replace(/"$/, '');
-            const clean = raw.replace(/\\u0026/g, '&').replace(/\\/g, '');
-            if (isValidCarouselUrl(clean) && !sourceImages.includes(clean)) sourceImages.push(clean);
-          } catch (_) {}
-        });
-      }
-
-      // Regex Extraction 3: data-src or data-original attributes (imginn, picuki style)
-      const dataSrcMatches = htmlOrJson.match(/data-(?:src|original|lazy|bg)="(https:[^"]+)"/gi);
-      if (dataSrcMatches) {
-        dataSrcMatches.forEach((m: string) => {
-          try {
-            const clean = m.replace(/data-(?:src|original|lazy|bg)="/i, '').replace(/"$/, '');
-            if (isValidCarouselUrl(clean) && !sourceImages.includes(clean)) sourceImages.push(clean);
-          } catch (_) {}
-        });
-      }
-
-      // Regex Extraction 4: direct Instagram CDN URLs in any attribute (imginn, picuki HTML)
-      const cdnMatches = htmlOrJson.match(/https:\/\/(?:scontent|instagram|cdninstagram)[^"'\s>]+\.(?:jpg|jpeg|webp|png)[^"'\s>]*/gi);
-      if (cdnMatches) {
-        cdnMatches.forEach((u: string) => {
-          // Decode HTML entities
-          const clean = u.replace(/&amp;/g, '&').replace(/\\u0026/g, '&');
-          if (isValidCarouselUrl(clean) && !sourceImages.includes(clean)) sourceImages.push(clean);
-        });
-      }
-
-      // DOM Parser for HTML tags (og:image, EmbeddedMediaImage, srcset)
+      // DOM parsing
       try {
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlOrJson, 'text/html');
-
         const getMeta = (prop: string) =>
           doc.querySelector(`meta[property="${prop}"]`)?.getAttribute('content') ||
           doc.querySelector(`meta[name="${prop}"]`)?.getAttribute('content') || '';
@@ -512,9 +514,7 @@ export async function scrapeSnsMetadata(rawUrl: string): Promise<ScrapedSpotData
         if (!title) title = getMeta('og:title') || doc.querySelector('title')?.textContent || '';
         if (!memo) memo = getMeta('og:description') || getMeta('description') || '';
 
-        // All og:image / twitter:image meta tags
-        const metaImages = doc.querySelectorAll('meta[property="og:image"], meta[name="twitter:image"], meta[property="twitter:image"]');
-        metaImages.forEach((m) => {
+        doc.querySelectorAll('meta[property="og:image"], meta[name="twitter:image"]').forEach((m) => {
           let content = m.getAttribute('content');
           if (content) {
             content = content.replace(/&amp;/g, '&');
@@ -522,14 +522,10 @@ export async function scrapeSnsMetadata(rawUrl: string): Promise<ScrapedSpotData
           }
         });
 
-        // EmbeddedMediaImage srcset (official IG embed)
-        const embeddedImages = doc.querySelectorAll('img.EmbeddedMediaImage, img[srcset], img[data-src]');
-        embeddedImages.forEach((el) => {
+        doc.querySelectorAll('img.EmbeddedMediaImage, img[srcset], img[data-src]').forEach((el) => {
           const srcset = el.getAttribute('srcset');
           if (srcset) {
-            // Pick the largest from srcset
             const parts = srcset.split(',').map(s => s.trim().split(/\s+/));
-            // Sort by width descriptor descending
             parts.sort((a, b) => {
               const wa = parseInt((a[1] || '0').replace('w', ''), 10);
               const wb = parseInt((b[1] || '0').replace('w', ''), 10);
@@ -544,33 +540,14 @@ export async function scrapeSnsMetadata(rawUrl: string): Promise<ScrapedSpotData
           if (dataSrc && isValidCarouselUrl(dataSrc) && !sourceImages.includes(dataSrc)) {
             sourceImages.push(dataSrc);
           }
-          const src = el.getAttribute('src');
-          if (src && isValidCarouselUrl(src) && !sourceImages.includes(src)) {
-            sourceImages.push(src);
-          }
-        });
-
-        // imginn / picuki: look for swiper slides or carousel items
-        const slideImgs = doc.querySelectorAll(
-          '.swiper-slide img, .carousel-item img, .slide img, [class*="slide"] img, [class*="carousel"] img, .post-img img, .media img'
-        );
-        slideImgs.forEach((el) => {
-          const src = (el as HTMLImageElement).src || el.getAttribute('data-src') || el.getAttribute('data-original') || '';
-          if (src && isValidCarouselUrl(src) && !sourceImages.includes(src)) {
-            sourceImages.push(src);
-          }
         });
       } catch (_) {}
 
-      // Record this source's image set
-      if (sourceImages.length > 0) {
-        sourceImageSets.push(sourceImages);
-      }
+      if (sourceImages.length > 0) sourceImageSets.push(sourceImages);
     }
 
-    // Merge strategy: start with the source that has the most images, then add any unique URLs from others
+    // Merge: richest source first
     if (sourceImageSets.length > 0) {
-      // Sort descending by image count so we start with the richest source
       sourceImageSets.sort((a, b) => b.length - a.length);
       for (const imgSet of sourceImageSets) {
         for (const u of imgSet) {
