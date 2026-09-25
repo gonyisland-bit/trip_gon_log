@@ -375,8 +375,9 @@ export async function scrapeSnsMetadata(rawUrl: string): Promise<ScrapedSpotData
     const results = await Promise.allSettled(scrapeTasks);
 
     for (const r of results) {
-      if (r.status !== 'fulfilled' || !r.value) continue;
+      if (r.status !== 'fulfilled') continue;
       const htmlOrJson = r.value;
+      if (!htmlOrJson) continue;
 
       // Check if it's ddinstagram JSON API response
       if (htmlOrJson.startsWith('{') && htmlOrJson.includes('"media"')) {

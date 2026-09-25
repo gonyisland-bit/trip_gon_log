@@ -110,8 +110,8 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
     if (!targetImg) return;
 
     // Check cache first for instant retrieval
-    if (ocrCache[targetImg]) {
-      const cached = ocrCache[targetImg];
+    const cached = ocrCache[targetImg];
+    if (cached) {
       setOcrCandidates(cached.candidates);
       setOcrDescription(cached.descriptionText);
       setOcrError(null);
@@ -164,9 +164,10 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
 
   const handleSelectImage = useCallback((newImg: string) => {
     setSelectedImage(newImg);
-    if (ocrCache[newImg]) {
-      setOcrCandidates(ocrCache[newImg].candidates);
-      setOcrDescription(ocrCache[newImg].descriptionText);
+    const cached = ocrCache[newImg];
+    if (cached) {
+      setOcrCandidates(cached.candidates);
+      setOcrDescription(cached.descriptionText);
       setOcrError(null);
     } else {
       setOcrCandidates([]);
