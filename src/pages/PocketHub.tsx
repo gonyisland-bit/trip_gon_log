@@ -6,7 +6,7 @@ import {
   Upload, Image as ImageIcon, Loader2, Heart, MessageSquare,
   Globe, FileText, CheckSquare, Square,
   SlidersHorizontal, ArrowUpDown, ChevronDown, GripVertical, ArrowUp, ArrowDown,
-  Tag, Link2, ScanText
+  Tag, Link2, ScanText, Clipboard
 } from 'lucide-react';
 import { SpotPocketItem, PocketCategory, Trip, Plan, TimelineItem, PocketComment, UserProfile } from '../types';
 import { getSavedPockets, savePockets, detectPlatform, subscribePockets, getOrCreateGuestId, toggleSpotLike } from '../utils/pocketStorage';
