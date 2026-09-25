@@ -6,8 +6,8 @@
 ## 2. 작업 프로세스 (원스톱 프로세스)
 1. **계획 수립**: 작업 착수 전 한국어로 상세 구현 계획서(Implementation Plan)를 아티팩트(Artifact) 파일로 작성하여 토글 공간에 제시 (`RequestFeedback: true`로 설정하여 Proceed 버튼 제공).
 2. **승인 대기**: 사용자 승인(Proceed) 전 임의 코드 수정 엄격 금지.
-3. **구현 및 검증**: 승인 즉시 작업 수행 (주의: 터미널에서 `npm run build` 명령어는 제외하며 실행하지 않음).
-4. **Git 반영**: 작업 완료 즉시 `git add`, `commit`, `push`까지 일괄 완료.
+3. **구현 및 검증**: 승인 즉시 작업 수행 (주의: 터미널에서 `npm run build` 명령어는 제외하며 실행하지 않음. 단, Vercel 배포 에러 방지를 위해 Git 반영 직전 `npx tsc -b` 증분 컴파일러 검증을 필수 실행하여 빌드 에러를 사전에 감지하고, 에러 발견 시 스스로 코드를 즉시 수정하여 무결점을 확인한 뒤 진행).
+4. **Git 반영**: `npx tsc -b` 무결점 검증 완료 즉시 `git add`, `commit`, `push`까지 일괄 완료.
 5. **결과 보고 (Walkthrough)**: 작업 완료 즉시 구현 결과 및 변경 사항을 한국어로 정리한 Walkthrough 아티팩트(Artifact) 파일을 작성하여 토글 공간에 제시.
 
 ## 3. 디자인 원칙 (Swiss Minimal Design)

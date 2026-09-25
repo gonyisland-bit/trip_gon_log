@@ -108,7 +108,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
     if (!file) return;
     try {
       setIsUploading(true);
-      const compressed = await compressImage(file, { maxWidth: 1200, quality: 0.85 });
+      const compressed = await compressImage(file, 1200, 1200, 0.85);
       const publicUrl = await uploadFileToR2(compressed, `pocket_scraps/${Date.now()}_${file.name}`);
       setSelectedImage(publicUrl);
     } catch (err) {

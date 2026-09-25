@@ -3,12 +3,30 @@
  * Resizes the image to fit within maxWidth/maxHeight (maintaining aspect ratio)
  * and compresses it using JPEG format with the specified quality.
  */
+export interface CompressImageOptions {
+  maxWidth?: number;
+  maxHeight?: number;
+  quality?: number;
+}
+
 export function compressImage(
   file: File,
-  maxWidth = 2560,
+  maxWidthOrOptions: number | CompressImageOptions = 2560,
   maxHeight = 2560,
   quality = 0.75
 ): Promise<Blob> {
+  let targetMaxWidth = 2560;
+  let targetMaxHeight = maxHeight;
+  let targetQuality = quality;
+
+  if (typeof maxWidthOrOptions === 'object' && maxWidthOrOptions !== null) {
+    if (maxWidthOrOptions.maxWidth !== undefined) targetMaxWidth = maxWidthOrOptions.maxWidth;
+    if (maxWidthOrOptions.maxHeight !== undefined) targetMaxHeight = maxWidthOrOptions.maxHeight;
+    if (maxWidthOrOptions.quality !== undefined) targetQuality = maxWidthOrOptions.quality;
+  } else if (typeof maxWidthOrOptions === 'number') {
+    targetMaxWidth = maxWidthOrOptions;
+  }
+
   return new Promise<Blob>((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -20,8 +38,8 @@ export function compressImage(
         let height = img.height;
 
         // Calculate new dimensions while keeping aspect ratio mathematically perfect
-        if (width > maxWidth || height > maxHeight) {
-          const ratio = Math.min(maxWidth / width, maxHeight / height);
+        if (width > targetMaxWidth || height > targetMaxHeight) {
+          const ratio = Math.min(targetMaxWidth / width, targetMaxHeight / height);
           width = Math.round(width * ratio);
           height = Math.round(height * ratio);
         }
@@ -47,7 +65,7 @@ export function compressImage(
             }
           },
           'image/jpeg',
-          quality
+          targetQuality
         );
       };
       img.onerror = (err) => {
