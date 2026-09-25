@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   X, Check, ExternalLink, Image as ImageIcon,
   Utensils, Coffee, Camera, ShoppingBag, Lightbulb, Upload, Sparkles,
-  ScanText, Loader2, Link2, Clipboard, FileText, ZoomIn
+  ScanText, Loader2, Link2, Clipboard, FileText, ZoomIn, MapPin
 } from 'lucide-react';
+import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { ScrapedSpotData, ScrapedSpotCandidate } from '../utils/snsScraper';
 import { PocketCategory, SpotPocketItem, SpotPocketPlatform } from '../types';
 import { compressImage } from '../utils/imageHelper';
@@ -69,6 +70,9 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
   const [selectedImage, setSelectedImage] = useState(scrapedData.thumbnailUrl);
   const [city, setCity] = useState(scrapedData.city || '');
   const [country, setCountry] = useState(scrapedData.country || '');
+  const [address, setAddress] = useState('');
+  const [lat, setLat] = useState<number | undefined>(undefined);
+  const [lng, setLng] = useState<number | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [activeCandidateIndex, setActiveCandidateIndex] = useState<number | null>(
@@ -153,6 +157,9 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
     setSelectedImage(scrapedData.thumbnailUrl);
     setCity(scrapedData.city || '');
     setCountry(scrapedData.country || '');
+    setAddress('');
+    setLat(undefined);
+    setLng(undefined);
     setActiveCandidateIndex(scrapedData.targetImgIndex ? scrapedData.targetImgIndex - 1 : null);
     setIsUserEditedTitle(false);
 
@@ -287,6 +294,9 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
         thumbnailUrl: selectedImage.trim() || undefined,
         city: city.trim() || undefined,
         country: country.trim() || undefined,
+        address: address.trim() || undefined,
+        lat,
+        lng,
         createdAt: Date.now()
       };
 
@@ -540,17 +550,32 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
               </button>
             </div>
 
-            <input 
-              type="text"
+            <PlaceAutocompleteInput 
               value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
+              onChange={(val) => {
+                setTitle(val);
                 setIsUserEditedTitle(true);
               }}
-              placeholder="예: 멘야무사시 신주쿠 본점 (직접 수정 가능)"
-              required
+              onSelectPlace={(placeName, coords, fullAddress, countryName, cityName) => {
+                if (placeName) setTitle(placeName);
+                if (coords?.lat) setLat(coords.lat);
+                if (coords?.lng) setLng(coords.lng);
+                if (fullAddress) setAddress(fullAddress);
+                if (countryName) setCountry(countryName);
+                if (cityName) setCity(cityName);
+                setIsUserEditedTitle(true);
+              }}
+              placeholder="장소 검색 (구글 자동완성) 또는 직접 입력"
               className="w-full px-3 py-2 text-sm font-bold bg-white dark:bg-[#1A1A1C] border border-black/20 dark:border-white/20 text-black dark:text-white outline-none focus:border-black dark:focus:border-white transition-colors"
             />
+
+            {/* Selected Address & Location Info Badge */}
+            {address && (
+              <div className="flex items-center gap-1.5 text-[10.5px] font-mono text-black/60 dark:text-white/60 bg-black/[0.02] dark:bg-white/[0.02] px-2.5 py-1 border border-black/10 dark:border-white/10 animate-in fade-in duration-150">
+                <MapPin className="w-3 h-3 text-red-600 dark:text-red-400 shrink-0" />
+                <span className="truncate">{address}</span>
+              </div>
+            )}
 
             {/* OCR Extracted Place Name Candidates (One-touch select) */}
             {ocrCandidates.length > 0 && (
