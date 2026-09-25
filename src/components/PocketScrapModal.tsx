@@ -448,7 +448,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
 
             {/* Main Image Frame (Full Aspect Ratio Preserved, No Crop) */}
             <div 
-              className="relative w-full h-[320px] sm:h-[400px] bg-black/[0.03] dark:bg-white/[0.03] border border-black/15 dark:border-white/15 overflow-hidden flex items-center justify-center group cursor-zoom-in"
+              className="relative w-full bg-black/[0.03] dark:bg-white/[0.03] border border-black/15 dark:border-white/15 overflow-hidden group cursor-zoom-in"
               onClick={() => setIsLightboxOpen(true)}
               title="클릭하여 원본 크기로 확대 보기"
             >
@@ -456,11 +456,11 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
                 <img 
                   src={selectedImage} 
                   alt={title} 
-                  className="max-h-full max-w-full w-auto h-auto object-contain select-none transition-transform duration-200 group-hover:scale-[1.01]" 
+                  className="block w-full h-auto max-h-[72vh] object-contain select-none transition-transform duration-200 group-hover:scale-[1.01]" 
                   crossOrigin="anonymous"
                 />
               ) : (
-                <div className="flex flex-col items-center gap-1.5 text-black/30 dark:text-white/30 font-mono text-xs">
+                <div className="flex flex-col items-center gap-1.5 text-black/30 dark:text-white/30 font-mono text-xs py-16">
                   <ImageIcon className="w-8 h-8" />
                   <span>이미지 없음 (사진 업로드 또는 Ctrl+V 붙여넣기)</span>
                 </div>
@@ -620,7 +620,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
                         }`}
                         title={`${imgIdx + 1}번째 슬라이드`}
                       >
-                        <img src={imgUrl} alt={`Slide ${imgIdx + 1}`} className="w-full h-full object-cover" />
+                        <img src={imgUrl} alt={`Slide ${imgIdx + 1}`} className="w-full h-full object-contain bg-black/5 dark:bg-white/5" />
                         <span className={`absolute bottom-0 right-0 font-mono text-[9px] px-1 font-bold ${
                           isPicked ? 'bg-red-600 text-white' : 'bg-black/80 text-white'
                         }`}>

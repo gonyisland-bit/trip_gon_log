@@ -331,8 +331,8 @@ export async function scrapeSnsMetadata(rawUrl: string): Promise<ScrapedSpotData
     const shortcodeMatch = fullUrl.match(/\/(?:p|reel|reels)\/([A-Za-z0-9_-]+)/);
     const shortcode = shortcodeMatch ? shortcodeMatch[1] : '';
 
-    // Fast fetch helper with strict 4s timeout
-    const fetchWithTimeout = async (url: string, timeoutMs: number = 4000): Promise<string> => {
+    // Fast fetch helper with configurable timeout
+    const fetchWithTimeout = async (url: string, timeoutMs: number = 5000): Promise<string> => {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
       try {
@@ -351,85 +351,152 @@ export async function scrapeSnsMetadata(rawUrl: string): Promise<ScrapedSpotData
       }
     };
 
+    // Helper: extract all CDN image URLs from a raw text blob (HTML or JSON)
+    const isValidCarouselUrl = (u: string): boolean => {
+      if (!u || !/^https?:\/\//i.test(u)) return false;
+      // Filter out small thumbnails and profile/avatar images
+      if (/\bs(\d{2,3})x\1\b/.test(u)) return false; // s150x150, s320x320 etc.
+      if (/\/?(150x150|90x90|avatar|profile|logo|sprite|favicon|icon)/i.test(u)) return false;
+      if (u.endsWith('.svg') || u.endsWith('.gif')) return false;
+      return true;
+    };
+
+    // Per-source image collection: collect from all sources, keep the set with the most images
+    const sourceImageSets: string[][] = [];
+
     // Candidates to fetch concurrently
     const scrapeTasks: Promise<string>[] = [];
 
     if (platform === 'instagram' && shortcode) {
-      // 1. Instagram official embed endpoint via corsproxy.io & allorigins
+      // Source A: Instagram official embed endpoint via corsproxy.io & allorigins
       const embedUrl = `https://www.instagram.com/p/${shortcode}/embed/captioned/`;
-      scrapeTasks.push(fetchWithTimeout(`https://corsproxy.io/?url=${encodeURIComponent(embedUrl)}`, 3500));
-      scrapeTasks.push(fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(embedUrl)}`, 4000));
+      scrapeTasks.push(fetchWithTimeout(`https://corsproxy.io/?url=${encodeURIComponent(embedUrl)}`, 4000));
+      scrapeTasks.push(fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(embedUrl)}`, 5000));
 
-      // 2. ddinstagram API & HTML proxy
-      scrapeTasks.push(fetchWithTimeout(`https://api.ddinstagram.com/p/${shortcode}`, 3500));
+      // Source B: ddinstagram JSON API & HTML proxy
+      scrapeTasks.push(fetchWithTimeout(`https://api.ddinstagram.com/p/${shortcode}`, 4000));
       const ddUrl = `https://www.ddinstagram.com/p/${shortcode}/`;
-      scrapeTasks.push(fetchWithTimeout(`https://corsproxy.io/?url=${encodeURIComponent(ddUrl)}`, 3500));
-      scrapeTasks.push(fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(ddUrl)}`, 4000));
+      scrapeTasks.push(fetchWithTimeout(`https://corsproxy.io/?url=${encodeURIComponent(ddUrl)}`, 4000));
+      scrapeTasks.push(fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(ddUrl)}`, 5000));
+
+      // Source C: imginn (public mirror, shows all carousel slides)
+      const imginnUrl = `https://imginn.com/p/${shortcode}/`;
+      scrapeTasks.push(fetchWithTimeout(`https://corsproxy.io/?url=${encodeURIComponent(imginnUrl)}`, 4000));
+      scrapeTasks.push(fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(imginnUrl)}`, 5000));
+
+      // Source D: picuki (high-res public mirror)
+      const picukiUrl = `https://www.picuki.com/media/${shortcode}`;
+      scrapeTasks.push(fetchWithTimeout(`https://corsproxy.io/?url=${encodeURIComponent(picukiUrl)}`, 4000));
+      scrapeTasks.push(fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(picukiUrl)}`, 5000));
+
+      // Source E: instagramdl / savedeo style endpoints
+      const instaSaverApiUrl = `https://instagram-downloader-download-instagram-videos-stories1.p.rapidapi.com/index?url=${encodeURIComponent(fullUrl)}`;
+      scrapeTasks.push(fetchWithTimeout(instaSaverApiUrl, 4000));
     } else {
       // General web / Threads
-      scrapeTasks.push(fetchWithTimeout(`https://corsproxy.io/?url=${encodeURIComponent(fullUrl)}`, 3500));
-      scrapeTasks.push(fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(fullUrl)}`, 4000));
+      scrapeTasks.push(fetchWithTimeout(`https://corsproxy.io/?url=${encodeURIComponent(fullUrl)}`, 4000));
+      scrapeTasks.push(fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(fullUrl)}`, 5000));
     }
 
-    // Run concurrently with Promise.allSettled
+    // Run ALL concurrently — NO early break, collect maximum possible images
     const results = await Promise.allSettled(scrapeTasks);
 
     for (const r of results) {
       if (r.status !== 'fulfilled') continue;
       const htmlOrJson = r.value;
-      if (!htmlOrJson) continue;
+      if (!htmlOrJson || htmlOrJson.length < 100) continue;
 
-      // Check if it's ddinstagram JSON API response
-      if (htmlOrJson.startsWith('{') && htmlOrJson.includes('"media"')) {
+      const sourceImages: string[] = [];
+
+      // Parse JSON-based API responses (ddinstagram, rapidapi downloader variants)
+      if (htmlOrJson.trimStart().startsWith('{') || htmlOrJson.trimStart().startsWith('[')) {
         try {
           const apiData = JSON.parse(htmlOrJson);
+
+          // ddinstagram post format
           if (apiData?.post?.caption && !memo) {
             memo = apiData.post.caption;
             if (!title) title = cleanSnsTitle(memo, 'instagram');
           }
           if (Array.isArray(apiData?.post?.carousel_media)) {
             apiData.post.carousel_media.forEach((item: any) => {
-              const u = item.image_url || item.url;
-              if (u && !allImages.includes(u)) allImages.push(u);
+              const u = item.image_url || item.display_url || item.url;
+              if (u && isValidCarouselUrl(u) && !sourceImages.includes(u)) sourceImages.push(u);
             });
-          } else if (apiData?.post?.image_url && !allImages.includes(apiData.post.image_url)) {
-            allImages.push(apiData.post.image_url);
+          } else if (apiData?.post?.image_url && isValidCarouselUrl(apiData.post.image_url)) {
+            if (!sourceImages.includes(apiData.post.image_url)) sourceImages.push(apiData.post.image_url);
+          }
+
+          // RapidAPI / instaSaver format: { items: [{url, type}] } or { url, items }
+          const items = apiData?.items || apiData?.result?.items || apiData?.data?.items;
+          if (Array.isArray(items)) {
+            items.forEach((item: any) => {
+              const u = item.url || item.image_url || item.thumbnail || item.src;
+              if (u && isValidCarouselUrl(u) && !sourceImages.includes(u)) sourceImages.push(u);
+            });
+          }
+
+          // allorigins wrapped response
+          if (apiData?.contents && typeof apiData.contents === 'string') {
+            // Will be processed as HTML below
+            const wrapped = apiData.contents;
+            // Extract URLs from the inner content string
+            const innerDisplayMatches = wrapped.match(/"display_url"\s*:\s*"(https:[^"]+)"/g);
+            if (innerDisplayMatches) {
+              innerDisplayMatches.forEach((m: string) => {
+                try {
+                  const raw = m.replace(/"display_url"\s*:\s*"/, '').replace(/"$/, '');
+                  const clean = raw.replace(/\\u0026/g, '&').replace(/\\/g, '');
+                  if (isValidCarouselUrl(clean) && !sourceImages.includes(clean)) sourceImages.push(clean);
+                } catch (_) {}
+              });
+            }
           }
         } catch (_) {}
       }
 
-      // Regex Extraction 1: High-res "display_url":"https:..."
+      // Regex Extraction 1: "display_url":"https:..."  (Instagram internal JSON)
       const displayUrlMatches = htmlOrJson.match(/"display_url"\s*:\s*"(https:[^"]+)"/g);
       if (displayUrlMatches) {
         displayUrlMatches.forEach((m: string) => {
           try {
-            const rawUrl = m.replace(/"display_url"\s*:\s*"/, '').replace(/"$/, '');
-            const clean = rawUrl.replace(/\\u0026/g, '&').replace(/\\/g, '');
-            if (clean && /^https?:\/\//i.test(clean) && !allImages.includes(clean)) {
-              allImages.push(clean);
-            }
+            const raw = m.replace(/"display_url"\s*:\s*"/, '').replace(/"$/, '');
+            const clean = raw.replace(/\\u0026/g, '&').replace(/\\/g, '');
+            if (isValidCarouselUrl(clean) && !sourceImages.includes(clean)) sourceImages.push(clean);
           } catch (_) {}
         });
       }
 
-      // Regex Extraction 2: "display_resources":[{"src":"https:..."
-      const resourceMatches = htmlOrJson.match(/"src"\s*:\s*"(https:[^"]+)"/g);
-      if (resourceMatches) {
-        resourceMatches.forEach((m: string) => {
+      // Regex Extraction 2: "src":"https:..." (display_resources)
+      const srcMatches = htmlOrJson.match(/"src"\s*:\s*"(https:[^"]{20,})"/g);
+      if (srcMatches) {
+        srcMatches.forEach((m: string) => {
           try {
-            const rawUrl = m.replace(/"src"\s*:\s*"/, '').replace(/"$/, '');
-            const clean = rawUrl.replace(/\\u0026/g, '&').replace(/\\/g, '');
-            if (
-              clean && 
-              /^https?:\/\//i.test(clean) && 
-              !clean.includes('150x150') && 
-              !clean.includes('320x320') && 
-              !clean.includes('profile') && 
-              !allImages.includes(clean)
-            ) {
-              allImages.push(clean);
-            }
+            const raw = m.replace(/"src"\s*:\s*"/, '').replace(/"$/, '');
+            const clean = raw.replace(/\\u0026/g, '&').replace(/\\/g, '');
+            if (isValidCarouselUrl(clean) && !sourceImages.includes(clean)) sourceImages.push(clean);
           } catch (_) {}
+        });
+      }
+
+      // Regex Extraction 3: data-src or data-original attributes (imginn, picuki style)
+      const dataSrcMatches = htmlOrJson.match(/data-(?:src|original|lazy|bg)="(https:[^"]+)"/gi);
+      if (dataSrcMatches) {
+        dataSrcMatches.forEach((m: string) => {
+          try {
+            const clean = m.replace(/data-(?:src|original|lazy|bg)="/i, '').replace(/"$/, '');
+            if (isValidCarouselUrl(clean) && !sourceImages.includes(clean)) sourceImages.push(clean);
+          } catch (_) {}
+        });
+      }
+
+      // Regex Extraction 4: direct Instagram CDN URLs in any attribute (imginn, picuki HTML)
+      const cdnMatches = htmlOrJson.match(/https:\/\/(?:scontent|instagram|cdninstagram)[^"'\s>]+\.(?:jpg|jpeg|webp|png)[^"'\s>]*/gi);
+      if (cdnMatches) {
+        cdnMatches.forEach((u: string) => {
+          // Decode HTML entities
+          const clean = u.replace(/&amp;/g, '&').replace(/\\u0026/g, '&');
+          if (isValidCarouselUrl(clean) && !sourceImages.includes(clean)) sourceImages.push(clean);
         });
       }
 
@@ -438,55 +505,77 @@ export async function scrapeSnsMetadata(rawUrl: string): Promise<ScrapedSpotData
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlOrJson, 'text/html');
 
-        const getMeta = (prop: string) => 
+        const getMeta = (prop: string) =>
           doc.querySelector(`meta[property="${prop}"]`)?.getAttribute('content') ||
           doc.querySelector(`meta[name="${prop}"]`)?.getAttribute('content') || '';
 
         if (!title) title = getMeta('og:title') || doc.querySelector('title')?.textContent || '';
         if (!memo) memo = getMeta('og:description') || getMeta('description') || '';
 
-        // Collect all og:image meta tags
+        // All og:image / twitter:image meta tags
         const metaImages = doc.querySelectorAll('meta[property="og:image"], meta[name="twitter:image"], meta[property="twitter:image"]');
         metaImages.forEach((m) => {
           let content = m.getAttribute('content');
-          if (content && /^https?:\/\//i.test(content)) {
+          if (content) {
             content = content.replace(/&amp;/g, '&');
-            if (!allImages.includes(content)) {
-              allImages.push(content);
-            }
+            if (isValidCarouselUrl(content) && !sourceImages.includes(content)) sourceImages.push(content);
           }
         });
 
-        // Collect high-res from EmbeddedMediaImage srcset
-        const embeddedImages = doc.querySelectorAll('img.EmbeddedMediaImage, img');
+        // EmbeddedMediaImage srcset (official IG embed)
+        const embeddedImages = doc.querySelectorAll('img.EmbeddedMediaImage, img[srcset], img[data-src]');
         embeddedImages.forEach((el) => {
           const srcset = el.getAttribute('srcset');
           if (srcset) {
-            const parts = srcset.split(',').map(s => s.trim().split(' ')[0]);
-            const largest = parts[parts.length - 1];
-            if (largest && /^https?:\/\//i.test(largest) && !allImages.includes(largest)) {
-              allImages.push(largest);
+            // Pick the largest from srcset
+            const parts = srcset.split(',').map(s => s.trim().split(/\s+/));
+            // Sort by width descriptor descending
+            parts.sort((a, b) => {
+              const wa = parseInt((a[1] || '0').replace('w', ''), 10);
+              const wb = parseInt((b[1] || '0').replace('w', ''), 10);
+              return wb - wa;
+            });
+            const largest = parts[0]?.[0];
+            if (largest && isValidCarouselUrl(largest) && !sourceImages.includes(largest)) {
+              sourceImages.push(largest);
             }
-          } else {
-            const src = el.getAttribute('src');
-            if (
-              src && 
-              /^https?:\/\//i.test(src) && 
-              !src.includes('avatar') && 
-              !src.includes('profile') && 
-              !src.includes('logo') && 
-              !src.endsWith('.svg') &&
-              !allImages.includes(src)
-            ) {
-              allImages.push(src);
-            }
+          }
+          const dataSrc = el.getAttribute('data-src') || el.getAttribute('data-original');
+          if (dataSrc && isValidCarouselUrl(dataSrc) && !sourceImages.includes(dataSrc)) {
+            sourceImages.push(dataSrc);
+          }
+          const src = el.getAttribute('src');
+          if (src && isValidCarouselUrl(src) && !sourceImages.includes(src)) {
+            sourceImages.push(src);
+          }
+        });
+
+        // imginn / picuki: look for swiper slides or carousel items
+        const slideImgs = doc.querySelectorAll(
+          '.swiper-slide img, .carousel-item img, .slide img, [class*="slide"] img, [class*="carousel"] img, .post-img img, .media img'
+        );
+        slideImgs.forEach((el) => {
+          const src = (el as HTMLImageElement).src || el.getAttribute('data-src') || el.getAttribute('data-original') || '';
+          if (src && isValidCarouselUrl(src) && !sourceImages.includes(src)) {
+            sourceImages.push(src);
           }
         });
       } catch (_) {}
 
-      // If we found 2 or more carousel images, we have succeeded
-      if (allImages.length >= 2) {
-        break;
+      // Record this source's image set
+      if (sourceImages.length > 0) {
+        sourceImageSets.push(sourceImages);
+      }
+    }
+
+    // Merge strategy: start with the source that has the most images, then add any unique URLs from others
+    if (sourceImageSets.length > 0) {
+      // Sort descending by image count so we start with the richest source
+      sourceImageSets.sort((a, b) => b.length - a.length);
+      for (const imgSet of sourceImageSets) {
+        for (const u of imgSet) {
+          if (!allImages.includes(u)) allImages.push(u);
+        }
       }
     }
 
@@ -494,6 +583,7 @@ export async function scrapeSnsMetadata(rawUrl: string): Promise<ScrapedSpotData
       thumbnailUrl = allImages[0];
     }
   }
+
 
   // Clean title & infer fields
   const cleanedTitle = cleanSnsTitle(title || memo, platform);
@@ -528,7 +618,7 @@ export async function scrapeSnsMetadata(rawUrl: string): Promise<ScrapedSpotData
     category: finalCategory,
     memo: finalMemo,
     thumbnailUrl,
-    allImages: allImages.slice(0, 10),
+    allImages: allImages.slice(0, 15),
     targetImgIndex,
     city,
     country,
