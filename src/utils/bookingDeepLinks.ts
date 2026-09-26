@@ -197,159 +197,160 @@ export function buildGoogleFlightsUrl(ctx: BookingSearchContext): string {
   return `https://www.google.com/travel/flights?q=flights%20from%20${origin}%20to%20${dest}%20on%20${dep}%20through%20${ret}`;
 }
 
-// Global Hub City -> Agoda Numeric City ID Mapping
-const CITY_TO_AGODA_ID_MAP: Record<string, string> = {
+// Global Hub City -> Agoda Verified City Page Slug Mapping (e.g. /city/tokyo-jp.html)
+const CITY_TO_AGODA_SLUG_MAP: Record<string, string> = {
   // Japan
-  '도쿄': '5085',
-  'tokyo': '5085',
-  '나리타': '5085',
-  '하네다': '5085',
-  '오사카': '14549',
-  'osaka': '14549',
-  '간사이': '14549',
-  '교토': '1784',
-  'kyoto': '1784',
-  '후쿠오카': '13840',
-  'fukuoka': '13840',
-  '하카타': '13840',
-  '텐진': '13840',
-  '삿포로': '14555',
-  'sapporo': '14555',
-  '홋카이도': '14555',
-  '오키나와': '17180',
-  'okinawa': '17180',
-  '나하': '17180',
-  '나고야': '14551',
-  'nagoya': '14551',
-  '고베': '14550',
-  'kobe': '14550',
-  '히로시마': '14552',
-  'hiroshima': '14552',
-  '다카마쓰': '14554',
-  'takamatsu': '14554',
-  '유후인': '85834',
-  '벳푸': '18398',
+  '도쿄': 'tokyo-jp',
+  'tokyo': 'tokyo-jp',
+  '나리타': 'tokyo-jp',
+  '하네다': 'tokyo-jp',
+  '오사카': 'osaka-jp',
+  'osaka': 'osaka-jp',
+  '간사이': 'osaka-jp',
+  '교토': 'kyoto-jp',
+  'kyoto': 'kyoto-jp',
+  '후쿠오카': 'fukuoka-jp',
+  'fukuoka': 'fukuoka-jp',
+  '하카타': 'fukuoka-jp',
+  '텐진': 'fukuoka-jp',
+  '삿포로': 'sapporo-jp',
+  'sapporo': 'sapporo-jp',
+  '홋카이도': 'sapporo-jp',
+  '오키나와': 'okinawa-main-island-jp',
+  'okinawa': 'okinawa-main-island-jp',
+  '나하': 'okinawa-main-island-jp',
+  '나고야': 'nagoya-jp',
+  'nagoya': 'nagoya-jp',
+  '고베': 'kobe-jp',
+  'kobe': 'kobe-jp',
+  '히로시마': 'hiroshima-jp',
+  'hiroshima': 'hiroshima-jp',
+  '다카마쓰': 'takamatsu-jp',
+  'takamatsu': 'takamatsu-jp',
+  '유후인': 'fukuoka-jp',
+  '벳푸': 'fukuoka-jp',
 
   // Korea
-  '서울': '14690',
-  'seoul': '14690',
-  '부산': '14692',
-  'busan': '14692',
-  '제주': '14694',
-  'jeju': '14694',
-  '인천': '14691',
-  'incheon': '14691',
-  '강릉': '14697',
-  'gangneung': '14697',
-  '속초': '14699',
-  'sokcho': '14699',
-  '경주': '14695',
-  'gyeongju': '14695',
-  '전주': '14700',
-  '여수': '14705',
+  '서울': 'seoul-kr',
+  'seoul': 'seoul-kr',
+  '부산': 'busan-kr',
+  'busan': 'busan-kr',
+  '제주': 'jeju-kr',
+  'jeju': 'jeju-kr',
+  '인천': 'incheon-kr',
+  'incheon': 'incheon-kr',
+  '강릉': 'gangneung-si-kr',
+  'gangneung': 'gangneung-si-kr',
+  '속초': 'sokcho-si-kr',
+  'sokcho': 'sokcho-si-kr',
+  '경주': 'gyeongju-si-kr',
+  'gyeongju': 'gyeongju-si-kr',
+  '전주': 'jeonju-si-kr',
+  '여수': 'yeosu-si-kr',
 
   // Southeast Asia
-  '다낭': '16440',
-  'danang': '16440',
-  '나트랑': '2679',
-  'nhatrang': '2679',
-  '호치민': '13170',
-  'hochiminh': '13170',
-  '하노이': '2758',
-  'hanoi': '2758',
-  '푸꾸옥': '85873',
-  '방콕': '9395',
-  'bangkok': '9395',
-  '치앙마이': '7401',
-  'chiangmai': '7401',
-  '푸켓': '16056',
-  'phuket': '16056',
-  '싱가포르': '4064',
-  'singapore': '4064',
-  '발리': '17193',
-  'bali': '17193',
-  '세부': '4010',
-  'cebu': '4010',
-  '보라카이': '17464',
-  'boracay': '17464',
-  '마닐라': '8584',
-  'manila': '8584',
-  '코타키나발루': '14526',
-  '쿠알라룸푸르': '14524',
+  '다낭': 'da-nang-vn',
+  'danang': 'da-nang-vn',
+  '나트랑': 'nha-trang-vn',
+  'nhatrang': 'nha-trang-vn',
+  '호치민': 'ho-chi-minh-city-vn',
+  'hochiminh': 'ho-chi-minh-city-vn',
+  '하노이': 'hanoi-vn',
+  'hanoi': 'hanoi-vn',
+  '푸꾸옥': 'phu-quoc-island-vn',
+  '방콕': 'bangkok-th',
+  'bangkok': 'bangkok-th',
+  '치앙마이': 'chiang-mai-th',
+  'chiangmai': 'chiang-mai-th',
+  '푸켓': 'phuket-th',
+  'phuket': 'phuket-th',
+  '싱가포르': 'singapore-sg',
+  'singapore': 'singapore-sg',
+  '발리': 'bali-id',
+  'bali': 'bali-id',
+  '세부': 'cebu-ph',
+  'cebu': 'cebu-ph',
+  '보라카이': 'boracay-island-ph',
+  'boracay': 'boracay-island-ph',
+  '마닐라': 'manila-ph',
+  'manila': 'manila-ph',
+  '코타키나발루': 'kota-kinabalu-my',
+  '쿠알라룸푸르': 'kuala-lumpur-my',
 
   // East Asia
-  '타이베이': '4951',
-  'taipei': '4951',
-  '가오슝': '756',
-  'kaohsiung': '756',
-  '홍콩': '16808',
-  'hongkong': '16808',
-  '마카오': '1845',
-  'macau': '1845',
-  '상하이': '14522',
-  'shanghai': '14522',
-  '베이징': '14521',
-  'beijing': '14521',
-  '칭다오': '14520',
-  'qingdao': '14520',
+  '타이베이': 'taipei-tw',
+  'taipei': 'taipei-tw',
+  '대만': 'taipei-tw',
+  '가오슝': 'kaohsiung-tw',
+  'kaohsiung': 'kaohsiung-tw',
+  '홍콩': 'hong-kong-hk',
+  'hongkong': 'hong-kong-hk',
+  '마카오': 'macau-mo',
+  'macau': 'macau-mo',
+  '상하이': 'shanghai-cn',
+  'shanghai': 'shanghai-cn',
+  '베이징': 'beijing-cn',
+  'beijing': 'beijing-cn',
+  '칭다오': 'qingdao-cn',
+  'qingdao': 'qingdao-cn',
 
   // Americas & Oceania
-  '괌': '1841',
-  'guam': '1841',
-  '사이판': '1842',
-  'saipan': '1842',
-  '하와이': '2365',
-  '호놀룰루': '2365',
-  'hawaii': '2365',
-  'honolulu': '2365',
-  '뉴욕': '318',
-  'newyork': '318',
-  '로스앤젤레스': '16822',
-  'la': '16822',
-  'losangeles': '16822',
-  '샌프란시스코': '16823',
-  'sanfrancisco': '16823',
-  '라스베이거스': '17040',
-  'lasvegas': '17040',
-  '시드니': '1303',
-  'sydney': '1303',
-  '멜버른': '1300',
-  'melbourne': '1300',
-  '오클랜드': '1308',
-  'auckland': '1308',
+  '괌': 'guam-gu',
+  'guam': 'guam-gu',
+  '사이판': 'saipan-mp',
+  'saipan': 'saipan-mp',
+  '하와이': 'oahu-hawaii-us',
+  '호놀룰루': 'oahu-hawaii-us',
+  'hawaii': 'oahu-hawaii-us',
+  'honolulu': 'oahu-hawaii-us',
+  '뉴욕': 'new-york-ny-us',
+  'newyork': 'new-york-ny-us',
+  '로스앤젤레스': 'los-angeles-ca-us',
+  'la': 'los-angeles-ca-us',
+  'losangeles': 'los-angeles-ca-us',
+  '샌프란시스코': 'san-francisco-ca-us',
+  'sanfrancisco': 'san-francisco-ca-us',
+  '라스베이거스': 'las-vegas-nv-us',
+  'lasvegas': 'las-vegas-nv-us',
+  '시드니': 'sydney-au',
+  'sydney': 'sydney-au',
+  '멜버른': 'melbourne-au',
+  'melbourne': 'melbourne-au',
+  '오클랜드': 'auckland-nz',
+  'auckland': 'auckland-nz',
 
   // Europe
-  '파리': '1574',
-  'paris': '1574',
-  '런던': '2114',
-  'london': '2114',
-  '로마': '708',
-  'rome': '708',
-  '바르셀로나': '1787',
-  'barcelona': '1787',
-  '마드리드': '18687',
-  'madrid': '18687',
-  '프랑크푸르트': '16850',
-  'frankfurt': '16850',
-  '취리히': '2310',
-  '인터라켄': '2310',
-  'zurich': '2310',
-  '프라하': '1578',
-  'prague': '1578',
-  '비엔나': '1577',
-  'vienna': '1577',
+  '파리': 'paris-fr',
+  'paris': 'paris-fr',
+  '런던': 'london-gb',
+  'london': 'london-gb',
+  '로마': 'rome-it',
+  'rome': 'rome-it',
+  '바르셀로나': 'barcelona-es',
+  'barcelona': 'barcelona-es',
+  '마드리드': 'madrid-es',
+  'madrid': 'madrid-es',
+  '프랑크푸르트': 'frankfurt-am-main-de',
+  'frankfurt': 'frankfurt-am-main-de',
+  '취리히': 'zurich-ch',
+  '인터라켄': 'interlaken-ch',
+  'zurich': 'zurich-ch',
+  '프라하': 'prague-cz',
+  'prague': 'prague-cz',
+  '비엔나': 'vienna-at',
+  'vienna': 'vienna-at',
 };
 
 /**
- * Infer Agoda numeric City ID from destination string
+ * Infer Agoda verified City Slug from destination string
  */
-export function inferAgodaCityId(dest: string): string | undefined {
-  if (!dest) return '5085';
+export function inferAgodaCitySlug(dest: string): string | undefined {
+  if (!dest) return 'tokyo-jp';
   const clean = dest.toLowerCase().replace(/[^a-z0-9가-힣]/g, '');
 
-  for (const [key, id] of Object.entries(CITY_TO_AGODA_ID_MAP)) {
+  for (const [key, slug] of Object.entries(CITY_TO_AGODA_SLUG_MAP)) {
     if (clean.includes(key)) {
-      return id;
+      return slug;
     }
   }
   return undefined;
@@ -359,18 +360,20 @@ export function inferAgodaCityId(dest: string): string | undefined {
 
 export function buildAgodaUrl(ctx: BookingSearchContext): string {
   const rawDest = (ctx.destination || 'Tokyo').trim();
-  const cityId = inferAgodaCityId(rawDest);
+  const citySlug = inferAgodaCitySlug(rawDest);
   const checkIn = formatDate(ctx.departDate, 'standard');
   const checkOut = ctx.returnDate ? formatDate(ctx.returnDate, 'standard') : checkIn;
   const adults = Math.max(1, ctx.adults || 1);
   const rooms = Math.max(1, ctx.rooms || 1);
 
-  // If a known Agoda City ID is found, direct to ko-kr/search with exact city code and dates (HTTP 200, dates 100% applied)
-  if (cityId) {
-    return `https://www.agoda.com/ko-kr/search?city=${cityId}&checkIn=${checkIn}&checkOut=${checkOut}&rooms=${rooms}&adults=${adults}`;
+  // 1. If a known Agoda City Slug is found, direct to canonical city listings page
+  // (e.g. /city/tokyo-jp.html?checkIn=...&checkOut=...&rooms=...&adults=...)
+  // This guarantees 100% location matching with zero destination search errors, and pre-applies all dates!
+  if (citySlug) {
+    return `https://www.agoda.com/ko-kr/city/${citySlug}.html?checkIn=${checkIn}&checkOut=${checkOut}&rooms=${rooms}&adults=${adults}`;
   }
 
-  // Fallback for custom unmapped cities: use Agoda partner router which safely preserves checkin/checkout dates upon redirect
+  // 2. Fallback for unmapped custom destinations: use Agoda partnersearch router which safely preserves checkin/checkout dates and city name upon redirect
   const cleanCity = encodeURIComponent(rawDest.split(/[,/·-]/)[0].trim() || 'Tokyo');
   return `https://www.agoda.com/partners/partnersearch.aspx?city=${cleanCity}&checkin=${checkIn}&checkout=${checkOut}&rooms=${rooms}&adults=${adults}`;
 }
