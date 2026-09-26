@@ -129,24 +129,27 @@ export function inferCategory(text: string): PocketCategory {
 export function detectCityAndCountry(text: string): { city?: string; country?: string } {
   const combined = text.toLowerCase();
 
-  // Japan
-  if (/도쿄|tokyo|시부야|신주쿠|긴자|아사쿠사|롯폰기|하라주쿠|오모테산도|우에노|아키하바라/.test(combined)) {
-    return { city: '도쿄', country: 'JAPAN' };
-  }
-  if (/오사카|osaka|도톤보리|난바|우메다|신사이바시|유니버셜/.test(combined)) {
-    return { city: '오사카', country: 'JAPAN' };
-  }
-  if (/교토|kyoto|기요미즈|아라시야마|기온|후시미이나리/.test(combined)) {
-    return { city: '교토', country: 'JAPAN' };
-  }
-  if (/후쿠오카|fukuoka|하카타|텐진|나카스|유후인|벳푸/.test(combined)) {
+  // Japan (Prioritize distinct regional cities first)
+  if (/후쿠오카|fukuoka|하카타|hakata|텐진|tenjin|나카스|nakasu|다이묘|daimyo|야쿠인|yakuin|이토시마|itoshima|유후인|yufuin|벳푸|beppu|기타큐슈|kitakyushu|규슈|kyushu/.test(combined)) {
     return { city: '후쿠오카', country: 'JAPAN' };
   }
-  if (/삿포로|sapporo|오타루|비에이|후라노|홋카이도|hokkaido/.test(combined)) {
+  if (/오사카|osaka|도톤보리|난바|namba|nanba|우메다|umeda|신사이바시|shinsaibashi|유니버셜|usj/.test(combined)) {
+    return { city: '오사카', country: 'JAPAN' };
+  }
+  if (/교토|kyoto|기요미즈|아라시야마|기온|gion|후시미이나리|가와라마치/.test(combined)) {
+    return { city: '교토', country: 'JAPAN' };
+  }
+  if (/삿포로|sapporo|오타루|otaru|비에이|biei|후라노|furano|홋카이도|hokkaido|스스키노|susukino/.test(combined)) {
     return { city: '삿포로', country: 'JAPAN' };
   }
-  if (/오키나와|okinawa|나하|국제거리/.test(combined)) {
+  if (/오키나와|okinawa|나하|naha|국제거리|이시가키|미야코/.test(combined)) {
     return { city: '오키나와', country: 'JAPAN' };
+  }
+  if (/나고야|nagoya|사카에/.test(combined)) {
+    return { city: '나고야', country: 'JAPAN' };
+  }
+  if (/도쿄|tokyo|시부야|shibuya|신주쿠|shinjuku|긴자|ginza|아사쿠사|asakusa|롯폰기|roppongi|하라주쿠|harajuku|오모테산도|omotesando|우에노|ueno|아키하바라|akihabara|이케부쿠로|ikebukuro|오다이바|odaiba|시나가와|shinagawa|메구로|meguro|세타가야|다이칸야마/.test(combined)) {
+    return { city: '도쿄', country: 'JAPAN' };
   }
 
   // Korea

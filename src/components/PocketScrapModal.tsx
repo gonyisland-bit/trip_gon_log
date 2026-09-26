@@ -5,7 +5,8 @@ import {
   ScanText, Loader2, Link2, Clipboard, FileText, ZoomIn, MapPin
 } from 'lucide-react';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
-import { ScrapedSpotData, ScrapedSpotCandidate } from '../utils/snsScraper';
+import { ConfirmModal } from './ConfirmModal';
+import { ScrapedSpotData, ScrapedSpotCandidate, scrapeSnsMetadata } from '../utils/snsScraper';
 import { PocketCategory, SpotPocketItem, SpotPocketPlatform } from '../types';
 import { compressImage } from '../utils/imageHelper';
 import { uploadFileToR2 } from '../utils/storageHelper';
@@ -73,6 +74,8 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
   const [address, setAddress] = useState('');
   const [lat, setLat] = useState<number | undefined>(undefined);
   const [lng, setLng] = useState<number | undefined>(undefined);
+  const [sourceUrlInput, setSourceUrlInput] = useState(scrapedData.sourceUrl || '');
+  const [isFetchingUrl, setIsFetchingUrl] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [activeCandidateIndex, setActiveCandidateIndex] = useState<number | null>(
@@ -82,8 +85,22 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
   // Full-size Lightbox modal state
   const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
 
+  // 2-step confirmation modal on discard/exit
+  const [showDiscardConfirmModal, setShowDiscardConfirmModal] = useState<boolean>(false);
+
   // User manual edit tracker to prevent background OCR from overwriting user's typed title
   const [isUserEditedTitle, setIsUserEditedTitle] = useState(false);
+
+  // Check if form has modified/unsaved content
+  const isDirty = Boolean(title.trim() || memo.trim() || selectedImage || address.trim() || sourceUrlInput.trim());
+
+  const handleAttemptClose = useCallback(() => {
+    if (isDirty) {
+      setShowDiscardConfirmModal(true);
+    } else {
+      onClose();
+    }
+  }, [isDirty, onClose]);
 
   // OCR cache & state
   const [ocrCache, setOcrCache] = useState<Record<string, { candidates: string[]; descriptionText: string }>>({});
@@ -176,6 +193,38 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
     }
   }, [isOpen, scrapedData.sourceUrl, scrapedData.thumbnailUrl]);
 
+  // Fetch metadata directly from URL inside modal
+  const handleFetchUrl = async () => {
+    if (!sourceUrlInput.trim() || !/^https?:\/\//i.test(sourceUrlInput.trim())) {
+      alert('유효한 웹/SNS 링크 URL(https://...)을 입력해주세요.');
+      return;
+    }
+    try {
+      setIsFetchingUrl(true);
+      const res = await scrapeSnsMetadata(sourceUrlInput.trim());
+      if (res.title) {
+        setTitle(res.title);
+        setIsUserEditedTitle(false);
+      }
+      if (res.category) setCategory(res.category);
+      if (res.memo) setMemo(res.memo);
+      if (res.city) setCity(res.city);
+      if (res.country) setCountry(res.country);
+      if (res.thumbnailUrl) {
+        setSelectedImage(res.thumbnailUrl);
+        await runOcrForImage(res.thumbnailUrl, false);
+      }
+      if (res.candidates && res.candidates.length > 0) {
+        setOcrCandidates(res.candidates.map(c => c.title));
+      }
+    } catch (err) {
+      console.warn('[PocketScrapModal] Fetch URL error:', err);
+      alert('링크 정보를 불러오는데 실패했습니다. 스크린샷 이미지를 붙여넣어주세요.');
+    } finally {
+      setIsFetchingUrl(false);
+    }
+  };
+
   // Clipboard Paste handler (Ctrl+V) for instant image scraping/replacement
   const processImageFile = useCallback(async (file: File) => {
     try {
@@ -204,7 +253,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
         if (isLightboxOpen) {
           setIsLightboxOpen(false);
         } else {
-          onClose();
+          handleAttemptClose();
         }
       }
     };
@@ -231,7 +280,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('paste', handlePaste);
     };
-  }, [isOpen, isLightboxOpen, onClose, processImageFile]);
+  }, [isOpen, isLightboxOpen, handleAttemptClose, processImageFile]);
 
   // OCR handler: Extract text from selected thumbnail image
   const handleRunOcr = async (autoApply: boolean = false) => {
@@ -313,23 +362,24 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
   return (
     <div 
       className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 pt-16 sm:pt-20 pb-8 overflow-y-auto"
-      onClick={onClose}
+      onClick={handleAttemptClose}
     >
       <div 
         className="w-full max-w-xl bg-white dark:bg-[#121214] border border-black/20 dark:border-white/20 shadow-2xl flex flex-col my-auto animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="px-5 py-4 border-b border-black/10 dark:border-white/10 flex items-center justify-between shrink-0 bg-black/[0.02] dark:bg-white/[0.02]">
+        <div className="px-5 py-3.5 border-b border-black/10 dark:border-white/10 flex items-center justify-between shrink-0 bg-black/[0.02] dark:bg-white/[0.02]">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className="font-mono text-xs font-black tracking-widest uppercase text-black dark:text-white">
-              POCKET QUICK SCRAP
+            <span className="font-mono text-xs font-black tracking-widest uppercase text-black dark:text-white flex items-center gap-1.5">
+              <Bookmark className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+              POCKET SCRAP
             </span>
-            {renderPlatformBadge(scrapedData.platform)}
+            {scrapedData.platform && renderPlatformBadge(scrapedData.platform)}
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleAttemptClose}
             className="p-1.5 text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white transition-colors cursor-pointer"
             title="닫기 (ESC)"
           >
@@ -339,67 +389,55 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
 
         {/* Modal Body */}
         <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4 overflow-y-auto max-h-[78vh]">
-          {/* Multi-spot Candidates (If feed contains multiple recommendations like Best 5) */}
-          {scrapedData.candidates && scrapedData.candidates.length > 0 && (
-            <div className="p-3 bg-red-600/[0.04] dark:bg-red-500/[0.06] border border-red-500/20 rounded-none flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-mono font-bold text-red-600 dark:text-red-400 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  피드 내 {scrapedData.candidates.length}개 장소 감지됨 (터치하여 선택):
-                </span>
-                {scrapedData.targetImgIndex && (
-                  <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
-                    인스타 {scrapedData.targetImgIndex}번 슬라이드
-                  </span>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
-                {scrapedData.candidates.map((cand, idx) => {
-                  const isSelected = activeCandidateIndex === idx;
-                  return (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => handleSelectCandidate(cand, idx)}
-                      className={`px-2.5 py-1 text-xs font-mono font-bold border transition-all cursor-pointer flex items-center gap-1 ${
-                        isSelected
-                          ? 'bg-red-600 text-white border-red-600 shadow-xs scale-102'
-                          : 'bg-white dark:bg-[#1A1A1C] border-black/15 dark:border-white/15 text-black/80 dark:text-white/80 hover:border-black'
-                      }`}
-                    >
-                      {cand.index && <span className="opacity-60 text-[10px]">#{cand.index}</span>}
-                      <span>{cand.title}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          {/* STEP 1: SOURCE LOADING (URL or Screenshot Image) */}
+          <div className="flex flex-col gap-2 p-3 bg-black/[0.02] dark:bg-white/[0.02] border border-black/10 dark:border-white/10">
+            <span className="text-[10px] font-mono font-bold tracking-widest text-black/50 dark:text-white/50 uppercase">
+              01 SOURCE (링크 또는 이미지 불러오기)
+            </span>
 
-          {/* Thumbnail / Screenshot Preview */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between text-[11px] font-mono font-bold text-black/60 dark:text-white/60 uppercase tracking-wider">
+            {/* URL Input Row */}
+            <div className="flex items-center gap-1.5">
+              <div className="relative flex-1">
+                <input
+                  type="url"
+                  value={sourceUrlInput}
+                  onChange={(e) => setSourceUrlInput(e.target.value)}
+                  placeholder="https://... (인스타그램, 유튜브, 블로그 등 링크)"
+                  className="w-full pl-7 pr-3 py-1.5 text-xs font-mono bg-white dark:bg-[#1A1A1C] border border-black/20 dark:border-white/20 text-black dark:text-white outline-none focus:border-black dark:focus:border-white transition-colors placeholder:text-black/30 dark:placeholder:text-white/30"
+                />
+                <Link2 className="w-3.5 h-3.5 text-black/40 dark:text-white/40 absolute left-2 top-2" />
+              </div>
+              <button
+                type="button"
+                onClick={handleFetchUrl}
+                disabled={isFetchingUrl || !sourceUrlInput.trim()}
+                className="px-3 py-1.5 bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90 font-mono text-[10px] font-bold tracking-wider uppercase transition-colors shrink-0 disabled:opacity-40 cursor-pointer flex items-center gap-1"
+              >
+                {isFetchingUrl ? <Loader2 className="w-3 h-3 animate-spin" /> : <ExternalLink className="w-3 h-3" />}
+                <span>{isFetchingUrl ? 'FETCHING' : 'FETCH'}</span>
+              </button>
+            </div>
+
+            {/* Image Loading Options Bar */}
+            <div className="flex items-center justify-between pt-1 text-[11px] font-mono text-black/60 dark:text-white/60">
               <span className="flex items-center gap-1.5">
                 <ImageIcon className="w-3.5 h-3.5 text-black/50 dark:text-white/50" />
-                <span>스크랩 이미지 (스크린샷)</span>
+                <span>스크린샷 이미지</span>
               </span>
-              <div className="flex items-center gap-2 sm:gap-3">
-                {/* Fullsize image zoom trigger */}
+              <div className="flex items-center gap-2">
                 {selectedImage && (
                   <button
                     type="button"
                     onClick={() => setIsLightboxOpen(true)}
                     className="text-[10px] font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:underline flex items-center gap-1 cursor-pointer"
-                    title="클릭하여 원본 크기로 크게 확대해 봅니다"
                   >
                     <ZoomIn className="w-3 h-3" />
                     <span>원본 확대</span>
                   </button>
                 )}
-
-                <label className="text-[10px] font-mono text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:underline cursor-pointer flex items-center gap-1">
+                <label className="text-[10px] font-mono text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:underline cursor-pointer flex items-center gap-1">
                   <Upload className="w-3 h-3" />
-                  <span>{isUploading ? '업로드 및 분석 중...' : '사진 교체'}</span>
+                  <span>{isUploading ? '분석 중...' : '이미지 불러오기'}</span>
                   <input 
                     type="file" 
                     accept="image/*" 
@@ -411,119 +449,150 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
               </div>
             </div>
 
-            {/* Main Image Frame (Full Aspect Ratio Preserved, No Crop) */}
+            {/* Image Frame Preview */}
             <div 
-              className="relative w-full bg-black/[0.03] dark:bg-white/[0.03] border border-black/15 dark:border-white/15 overflow-hidden group cursor-zoom-in"
-              onClick={() => setIsLightboxOpen(true)}
-              title="클릭하여 원본 크기로 확대 보기"
+              className="relative w-full bg-black/[0.04] dark:bg-white/[0.04] border border-black/15 dark:border-white/15 overflow-hidden group cursor-zoom-in"
+              onClick={() => selectedImage && setIsLightboxOpen(true)}
             >
               {selectedImage ? (
                 <img 
                   src={selectedImage} 
                   alt={title} 
-                  className="block w-full h-auto max-h-[70vh] object-contain select-none transition-transform duration-200 group-hover:scale-[1.01]" 
+                  className="block w-full h-auto max-h-[60vh] object-contain select-none transition-transform duration-200 group-hover:scale-[1.01]" 
                   crossOrigin="anonymous"
                 />
               ) : (
-                <div className="flex flex-col items-center gap-1.5 text-black/30 dark:text-white/30 font-mono text-xs py-16">
-                  <ImageIcon className="w-8 h-8" />
-                  <span>이미지 없음 (스크린샷 복사 후 Ctrl+V 붙여넣기)</span>
+                <div className="flex flex-col items-center justify-center gap-1.5 text-black/35 dark:text-white/35 font-mono text-xs py-12">
+                  <ImageIcon className="w-7 h-7 stroke-1" />
+                  <span>이미지 없음 (클립보드 스크린샷 Ctrl+V 붙여넣기 지원)</span>
                 </div>
               )}
-
-              {/* Zoom & Paste helper badges */}
-              <div className="absolute top-2.5 left-2.5 flex items-center gap-2 pointer-events-none z-10">
-                <span className="flex items-center gap-1 px-2 py-0.5 bg-black/65 backdrop-blur-xs text-white/90 text-[9.5px] font-mono border border-white/15">
-                  <ZoomIn className="w-2.5 h-2.5" />
-                  <span>클릭 시 원본 확대</span>
-                </span>
-                <span className="hidden sm:flex items-center gap-1 px-2 py-0.5 bg-black/65 backdrop-blur-xs text-white/90 text-[9.5px] font-mono border border-white/15">
-                  <Clipboard className="w-2.5 h-2.5" />
-                  <span>스크린샷 Ctrl+V 교체</span>
-                </span>
-              </div>
+              {selectedImage && (
+                <div className="absolute top-2 left-2 flex items-center gap-1.5 pointer-events-none z-10">
+                  <span className="flex items-center gap-1 px-2 py-0.5 bg-black/70 backdrop-blur-xs text-white/90 text-[9px] font-mono border border-white/15">
+                    <Clipboard className="w-2.5 h-2.5" />
+                    <span>Ctrl+V 붙여넣기 지원</span>
+                  </span>
+                </div>
+              )}
             </div>
+          </div>
 
-            {/* Smart OCR Action: Extract Title & Note for the CURRENT Image */}
-            <div className="flex items-center justify-between gap-2 pt-0.5">
+          {/* STEP 2: EXTRACT & EDIT */}
+          <div className="flex flex-col gap-3">
+            <span className="text-[10px] font-mono font-bold tracking-widest text-black/50 dark:text-white/50 uppercase">
+              02 EXTRACT & EDIT (장소명·노트 추출 및 편집)
+            </span>
+
+            {/* Unified Minimal OCR Extract Button */}
+            {selectedImage && (
               <button
                 type="button"
                 onClick={() => handleRunOcr(true)}
                 disabled={isOcrRunning || !selectedImage}
-                className="flex-1 py-1.5 px-3 bg-black dark:bg-white text-white dark:text-black hover:opacity-90 transition-opacity font-mono text-[11px] font-bold tracking-wider uppercase flex items-center justify-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
-                title="사진 속 장소명과 설명 텍스트를 읽어 제목과 메모에 즉시 반영합니다"
+                className="w-full py-2 px-4 bg-black dark:bg-white text-white dark:text-black hover:opacity-90 transition-opacity font-mono text-xs font-bold tracking-widest uppercase flex items-center justify-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
+                title="이미지에서 텍스트를 자동 인식하여 제목과 메모에 채웁니다"
               >
                 {isOcrRunning ? (
                   <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>사진 글씨 읽는 중...</span>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-red-500" />
+                    <span>EXTRACTING...</span>
                   </>
                 ) : (
                   <>
                     <ScanText className="w-3.5 h-3.5 text-red-500" />
-                    <span>사진에서 장소명 & 본문 다시 읽기 (OCR 자동 추출)</span>
+                    <span>EXTRACT (OCR 추출)</span>
                   </>
                 )}
               </button>
-            </div>
+            )}
 
-            {/* OCR Detected Candidate Chips & Description Overwrite */}
-            {(ocrCandidates.length > 0 || ocrDescription) && (
-              <div className="p-3 bg-black/[0.03] dark:bg-white/[0.03] border border-black/15 dark:border-white/15 flex flex-col gap-2.5 animate-in fade-in duration-150">
-                {/* Title Candidates */}
-                {ocrCandidates.length > 0 && (
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-[10px] font-mono font-bold text-black/60 dark:text-white/60 flex items-center gap-1">
-                      <ScanText className="w-3 h-3 text-red-600 dark:text-red-400" />
-                      인식된 장소명 후보 (터치하여 제목에 적용):
+            {/* Multi-spot Candidates (If feed contains multiple recommendations) */}
+            {scrapedData.candidates && scrapedData.candidates.length > 0 && (
+              <div className="p-2.5 bg-red-600/[0.04] dark:bg-red-500/[0.06] border border-red-500/20 flex flex-col gap-1.5">
+                <div className="flex items-center justify-between text-[10px] font-mono font-bold text-red-600 dark:text-red-400">
+                  <span className="flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" />
+                    FEED SPOTS ({scrapedData.candidates.length})
+                  </span>
+                  {scrapedData.targetImgIndex && (
+                    <span className="text-[9px] font-normal text-black/40 dark:text-white/40">
+                      SLIDE #{scrapedData.targetImgIndex}
                     </span>
-                    <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
-                      {ocrCandidates.map((cand, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => setTitle(cand)}
-                          className={`px-2 py-0.5 text-[11px] font-mono border transition-all cursor-pointer ${
-                            title === cand
-                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold'
-                              : 'bg-white dark:bg-[#1A1A1C] border-black/15 dark:border-white/15 text-black/80 dark:text-white/80 hover:border-black'
-                          }`}
-                        >
-                          {cand}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Description Extraction Card */}
-                {ocrDescription && (
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono font-bold text-black/70 dark:text-white/70 flex items-center gap-1">
-                        <FileText className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                        사진 속 설명 텍스트 감지됨 ({ocrDescription.length}자):
-                      </span>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                  {scrapedData.candidates.map((cand, idx) => {
+                    const isSelected = activeCandidateIndex === idx;
+                    return (
                       <button
+                        key={idx}
                         type="button"
-                        onClick={handleApplyDescriptionToMemo}
-                        className="px-2 py-0.5 bg-black dark:bg-white text-white dark:text-black text-[10px] font-mono font-bold uppercase tracking-wider hover:opacity-90 transition-opacity flex items-center gap-1 cursor-pointer"
-                        title="기존 메모를 지우고 사진에서 읽은 설명으로 채웁니다"
+                        onClick={() => handleSelectCandidate(cand, idx)}
+                        className={`px-2 py-0.5 text-[11px] font-mono border transition-all cursor-pointer flex items-center gap-1 ${
+                          isSelected
+                            ? 'bg-red-600 text-white border-red-600 font-bold'
+                            : 'bg-white dark:bg-[#1A1A1C] border-black/15 dark:border-white/15 text-black/80 dark:text-white/80 hover:border-black'
+                        }`}
                       >
-                        <Check className="w-3 h-3" />
-                        <span>설명 메모에 덮어쓰기</span>
+                        {cand.index && <span className="opacity-60 text-[9px]">#{cand.index}</span>}
+                        <span>{cand.title}</span>
                       </button>
-                    </div>
-                    <p className="text-[10.5px] font-sans text-black/60 dark:text-white/60 line-clamp-3 bg-white dark:bg-[#1A1A1C] p-2 border border-black/10 dark:border-white/10 leading-relaxed font-normal">
-                      {ocrDescription}
-                    </p>
-                  </div>
-                )}
+                    );
+                  })}
+                </div>
               </div>
             )}
-            {ocrError && (
-              <div className="text-[10px] font-mono text-black/50 dark:text-white/50 px-1">
-                {ocrError}
+
+            {/* Detected Place Candidates Chips */}
+            {ocrCandidates.length > 0 && (
+              <div className="p-2.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/10 dark:border-white/10 flex flex-col gap-1.5 animate-in fade-in duration-150">
+                <div className="flex items-center justify-between text-[10px] font-mono font-bold text-black/60 dark:text-white/60">
+                  <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
+                    <ScanText className="w-3 h-3" />
+                    DETECTED PLACES ({ocrCandidates.length})
+                  </span>
+                  <span className="text-[9px] font-normal text-black/40 dark:text-white/40">클릭 시 제목 적용</span>
+                </div>
+                <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                  {ocrCandidates.map((cand, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => { setTitle(cand); setIsUserEditedTitle(true); }}
+                      className={`px-2.5 py-1 text-xs font-mono border transition-all cursor-pointer ${
+                        title === cand
+                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white font-bold'
+                          : 'bg-white dark:bg-[#1A1A1C] border-black/15 dark:border-white/15 text-black/80 dark:text-white/80 hover:border-black'
+                      }`}
+                    >
+                      {cand}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Detected Description Note */}
+            {ocrDescription && (
+              <div className="p-2.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/10 dark:border-white/10 flex flex-col gap-1.5 animate-in fade-in duration-150">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono font-bold text-black/60 dark:text-white/60 flex items-center gap-1">
+                    <FileText className="w-3 h-3 text-red-600 dark:text-red-400" />
+                    DETECTED NOTE ({ocrDescription.length})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleApplyDescriptionToMemo}
+                    className="px-2 py-0.5 bg-black dark:bg-white text-white dark:text-black text-[10px] font-mono font-bold uppercase tracking-wider hover:opacity-90 transition-opacity flex items-center gap-1 cursor-pointer"
+                  >
+                    <Check className="w-2.5 h-2.5" />
+                    <span>APPLY TO MEMO</span>
+                  </button>
+                </div>
+                <p className="text-[10.5px] font-sans text-black/60 dark:text-white/60 line-clamp-3 leading-relaxed">
+                  {ocrDescription}
+                </p>
               </div>
             )}
           </div>
@@ -718,7 +787,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
           <div className="pt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-end gap-2.5">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleAttemptClose}
               className="px-4 py-2 text-xs font-mono font-bold tracking-wider uppercase border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
             >
               취소
@@ -726,10 +795,10 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2 text-xs font-mono font-bold tracking-wider uppercase bg-red-600 hover:bg-red-700 text-white transition-all cursor-pointer shadow-xs disabled:opacity-50 flex items-center gap-1.5"
+              className="px-5 py-2 text-xs font-mono font-bold tracking-wider uppercase bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90 transition-all cursor-pointer shadow-xs disabled:opacity-50 flex items-center gap-1.5"
             >
-              <Check className="w-3.5 h-3.5" />
-              <span>{isSubmitting ? '보관 중...' : '포켓에 담기'}</span>
+              <Check className="w-3.5 h-3.5 text-red-500" />
+              <span>{isSubmitting ? 'SAVING...' : 'SAVE SPOT (포켓 저장)'}</span>
             </button>
           </div>
         </form>
@@ -765,6 +834,21 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
           </div>
         </div>
       )}
+
+      {/* 2-Step Confirmation Modal on Unsaved Exit */}
+      <ConfirmModal
+        isOpen={showDiscardConfirmModal}
+        onClose={() => setShowDiscardConfirmModal(false)}
+        onConfirm={() => {
+          setShowDiscardConfirmModal(false);
+          onClose();
+        }}
+        title="작성 취소"
+        message="작성 중인 내용이 있습니다. 저장을 취소하고 닫으시겠습니까?"
+        confirmText="저장 취소 (닫기)"
+        cancelText="계속 작성"
+        isDanger={true}
+      />
     </div>
   );
 }

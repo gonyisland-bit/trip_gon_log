@@ -153,26 +153,26 @@ export function getNormalizedCity(spot: { country?: string; city?: string; addre
   const combined = `${c} ${addr}`.toLowerCase();
 
   if (country === 'JAPAN' || combined.includes('japan') || combined.includes('일본')) {
-    if (/도쿄|tokyo|시부야|shibuya|치요다|chiyoda|신주쿠|shinjuku|미나토|minato|긴자|ginza|아사쿠사|asakusa|우에노|ueno|롯폰기|roppongi|아키하바라|akihabara|주오구|chuo|메구로|meguro|세타가야|setagaya|도시마|toshima|이케부쿠로|ikebukuro|하라주쿠|harajuku|오모테산도|omotesando|다이칸야마|daikanyama|스미다|sumida|오다이바|odaiba|시나가와|shinagawa|분쿄|bunkyo|고토|koto/.test(combined)) {
-      return '도쿄';
-    }
-    if (/오사카|osaka|난바|nanba|namba|우메다|umeda|도톤보리|dotonbori|신사이바시|shinsaibashi|나니와|naniwa/.test(combined)) {
-      return '오사카';
-    }
-    if (/교토|kyoto|기온|gion|아라시야마|arashiyama/.test(combined)) {
-      return '교토';
-    }
-    if (/후쿠오카|fukuoka|하카타|hakata|텐진|tenjin/.test(combined)) {
+    if (/후쿠오카|fukuoka|하카타|hakata|텐진|tenjin|다이묘|daimyo|야쿠인|yakuin|나카스|nakasu|이토시마|itoshima|유후인|yufuin|벳푸|beppu|기타큐슈|kitakyushu|규슈|kyushu/.test(combined)) {
       return '후쿠오카';
     }
-    if (/삿포로|sapporo|오타루|otaru|스스키노|susukino/.test(combined)) {
+    if (/오사카|osaka|난바|nanba|namba|우메다|umeda|도톤보리|dotonbori|신사이바시|shinsaibashi|나니와|naniwa|유니버셜|usj/.test(combined)) {
+      return '오사카';
+    }
+    if (/교토|kyoto|기온|gion|아라시야마|arashiyama|후시미이나리|가와라마치/.test(combined)) {
+      return '교토';
+    }
+    if (/삿포로|sapporo|오타루|otaru|스스키노|susukino|비에이|biei|후라노|furano|홋카이도|hokkaido/.test(combined)) {
       return '삿포로';
     }
-    if (/오키나와|okinawa|나하|naha/.test(combined)) {
+    if (/오키나와|okinawa|나하|naha|국제거리|이시가키|미야코/.test(combined)) {
       return '오키나와';
     }
-    if (/나고야|nagoya/.test(combined)) {
+    if (/나고야|nagoya|사카에/.test(combined)) {
       return '나고야';
+    }
+    if (/도쿄|tokyo|시부야|shibuya|치요다|chiyoda|신주쿠|shinjuku|긴자|ginza|아사쿠사|asakusa|우에노|ueno|롯폰기|roppongi|아키하바라|akihabara|메구로|meguro|세타가야|setagaya|도시마|toshima|이케부쿠로|ikebukuro|하라주쿠|harajuku|오모테산도|omotesando|다이칸야마|daikanyama|스미다|sumida|오다이바|odaiba|시나가와|shinagawa|분쿄|bunkyo|고토|koto/.test(combined)) {
+      return '도쿄';
     }
   }
 
@@ -407,10 +407,15 @@ export function PocketHubPage({
   // Detail Modal state
   const [selectedSpotForModal, setSelectedSpotForModal] = useState<SpotPocketItem | null>(null);
 
-  // User/Guest identifier for Likes
+  // User/Guest identifier for Likes (Ensures 1 account = 1 like across all devices)
   const currentUserId = useMemo(() => {
+    if (auth.currentUser?.uid) return auth.currentUser.uid;
+    if (auth.currentUser?.email) return auth.currentUser.email;
+    if (currentUserProfile?.email) return currentUserProfile.email;
+    const cachedEmail = localStorage.getItem('currentUserEmail') || localStorage.getItem('cached_user_email');
+    if (cachedEmail) return cachedEmail;
     return getOrCreateGuestId();
-  }, []);
+  }, [isLoggedIn, currentUserProfile]);
 
   const handleToggleLike = async (spotId: string) => {
     const updated = await toggleSpotLike(spotId, currentUserId);
@@ -656,16 +661,26 @@ export function PocketHubPage({
     return Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([country, count]) => ({ country, count }));
   }, [spots]);
 
-  // City options for the selected country (normalized to major cities)
+  // All distinct city options from all spots (sorted by count)
+  const allCityOptions = useMemo(() => {
+    const counts: Record<string, number> = {};
+    spots.forEach(s => {
+      const city = getNormalizedCity(s);
+      if (city) counts[city] = (counts[city] || 0) + 1;
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([city, count]) => ({ city, count }));
+  }, [spots]);
+
+  // City options for the selected country, or all cities if ALL countries
   const cityOptions = useMemo(() => {
-    if (selectedCountry === 'ALL') return [];
+    if (selectedCountry === 'ALL') return allCityOptions;
     const counts: Record<string, number> = {};
     spots.filter(s => getNormalizedCountry(s.country) === selectedCountry).forEach(s => {
       const city = getNormalizedCity(s);
       if (city) counts[city] = (counts[city] || 0) + 1;
     });
     return Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([city, count]) => ({ city, count }));
-  }, [spots, selectedCountry]);
+  }, [spots, selectedCountry, allCityOptions]);
 
   // Favorite count
   const favoriteCount = useMemo(() => {
@@ -688,7 +703,9 @@ export function PocketHubPage({
       if (isFavoriteFilter && !s.isFavorite) return false;
       if (selectedCountry !== 'ALL') {
         if (getNormalizedCountry(s.country) !== selectedCountry) return false;
-        if (selectedCity !== 'ALL' && getNormalizedCity(s) !== selectedCity) return false;
+      }
+      if (selectedCity !== 'ALL') {
+        if (getNormalizedCity(s) !== selectedCity) return false;
       }
       if (selectedCategory !== 'ALL' && s.category !== selectedCategory) return false;
       if (searchQuery.trim()) {
@@ -1184,36 +1201,28 @@ export function PocketHubPage({
             )}
           </div>
 
-          {/* Action Buttons: SCRAP & ADD */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            {/* SCRAP Button (One-click Clipboard auto scrap: links or screenshots) */}
+          {/* Action Button: Unified Swiss Minimal SCRAP Pill Button */}
+          <div className="flex items-center w-full sm:w-auto">
             <button
               type="button"
-              onClick={handleOneClickScrap}
-              disabled={isScraping}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 text-[9px] sm:text-[10px] md:text-xs font-mono font-black uppercase tracking-widest border border-red-600 bg-red-600/10 text-red-600 hover:bg-red-600 hover:text-white dark:border-red-500 dark:text-red-400 dark:hover:bg-red-500 dark:hover:text-white px-3 py-1.5 transition-colors shrink-0 cursor-pointer disabled:opacity-50"
-              title="클립보드의 링크나 스크린샷 이미지를 붙여넣어 자동으로 포켓을 생성합니다 (화면 어디서든 Ctrl+V 지원)"
+              onClick={() => {
+                setScrapedDataForModal({
+                  title: '',
+                  category: 'spot',
+                  memo: '',
+                  sourceUrl: '',
+                  platform: 'web',
+                  thumbnailUrl: '',
+                  allImages: [],
+                  candidates: []
+                });
+                setIsScrapModalOpen(true);
+              }}
+              className="w-full sm:w-auto px-4 sm:px-5 py-1.5 sm:py-2 rounded-full bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90 font-mono text-[11px] sm:text-xs font-bold tracking-widest uppercase transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer shrink-0"
+              title="포켓 스크랩 & 추가 (URL / 스크린샷 이미지 OCR)"
             >
-              {isScraping ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>SCRAPING...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>SCRAP</span>
-                </>
-              )}
-            </button>
-
-            {/* ADD (Primary CTA) - Standardized with Trip Hub, full width on mobile */}
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 text-[9px] sm:text-[10px] md:text-xs font-mono font-black uppercase tracking-widest border border-black dark:border-white px-3 py-1.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors shrink-0 cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>ADD</span>
+              <Bookmark className="w-3.5 h-3.5 fill-current" />
+              <span>SCRAP</span>
             </button>
           </div>
         </div>
@@ -1230,7 +1239,16 @@ export function PocketHubPage({
                   onClick={() => { setSelectedCountry('ALL'); setSelectedCity('ALL'); }}
                   className="h-7 px-2 flex items-center gap-1 text-[10px] sm:text-[11px] font-mono font-bold tracking-wider uppercase border border-black dark:border-white bg-black/5 dark:bg-white/5 cursor-pointer hover:bg-red-500/10 hover:border-red-500 transition-colors shrink-0"
                 >
-                  <span>{selectedCountry}{selectedCity !== 'ALL' ? ` · ${selectedCity}` : ''}</span>
+                  <span>{selectedCountry}</span>
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              )}
+              {selectedCity !== 'ALL' && (
+                <button
+                  onClick={() => setSelectedCity('ALL')}
+                  className="h-7 px-2 flex items-center gap-1 text-[10px] sm:text-[11px] font-mono font-bold tracking-wider uppercase border border-red-600 bg-red-600/10 text-red-600 dark:border-red-400 dark:text-red-400 cursor-pointer hover:bg-red-600 hover:text-white transition-colors shrink-0"
+                >
+                  <span>{selectedCity}</span>
                   <X className="w-2.5 h-2.5" />
                 </button>
               )}
@@ -1296,8 +1314,8 @@ export function PocketHubPage({
                 </div>
               </div>
 
-              {/* CITY (Visible when country selected) */}
-              {selectedCountry !== 'ALL' && cityOptions.length > 0 && (
+              {/* CITY (Direct Major City Filtering: Always available if spots have cities) */}
+              {cityOptions.length > 0 && (
                 <div className="flex items-start gap-2 flex-wrap pt-2 border-t border-black/10 dark:border-white/10">
                   <span className="text-[9px] font-mono tracking-widest text-black/40 dark:text-white/40 uppercase pt-1.5 shrink-0 w-16">CITY</span>
                   <div className="flex flex-wrap gap-1.5 flex-1">
