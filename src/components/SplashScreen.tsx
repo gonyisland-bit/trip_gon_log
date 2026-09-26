@@ -91,7 +91,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
           {/* LOG in Red Swiss accent */}
           <span
-            className="inline-block ml-2 sm:ml-3 font-['Inter',sans-serif] text-4xl sm:text-6xl md:text-7xl font-extrabold text-red-600 dark:text-red-500"
+            className="relative inline-block ml-2 sm:ml-3 font-['Inter',sans-serif] text-4xl sm:text-6xl md:text-7xl font-extrabold text-red-600 dark:text-red-500"
             style={{
               animation: `tglLetterPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
               animationDelay: `580ms`,
@@ -100,23 +100,23 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
             }}
           >
             log
-          </span>
 
-          {/* Paper Plane Flying Arc Motion */}
-          <div
-            className={`absolute -top-3 left-0 transition-transform duration-1000 ease-out pointer-events-none ${
-              planeFlown ? 'opacity-100' : 'opacity-0'
-            }`}
-            style={{
-              transform: planeFlown
-                ? 'translate(280px, -24px) rotate(15deg) scale(1)'
-                : 'translate(-40px, 20px) rotate(-25deg) scale(0.7)',
-              transitionProperty: 'transform, opacity',
-              transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
-            }}
-          >
-            <Send className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 fill-red-600" />
-          </div>
+            {/* Paper Plane Flying Arc Motion - Accurately Lands on 'log' on all devices */}
+            <div
+              className={`absolute -top-3 sm:-top-4.5 -right-2.5 sm:-right-4 transition-all duration-900 pointer-events-none ${
+                planeFlown ? 'opacity-100 scale-100' : 'opacity-0 scale-50'
+              }`}
+              style={{
+                transform: planeFlown
+                  ? 'translate(0, 0) rotate(15deg)'
+                  : 'translate(-90px, 45px) rotate(-35deg)',
+                transitionProperty: 'transform, opacity',
+                transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
+            >
+              <Send className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-red-600 fill-red-600" />
+            </div>
+          </span>
         </div>
 
         {/* Minimal Flight Path Arc Indicator */}

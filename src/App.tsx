@@ -250,6 +250,20 @@ function App() {
     } catch (_) {}
   }, []);
 
+  // Listen for logo click splash trigger
+  useEffect(() => {
+    const handleTriggerSplash = () => {
+      setShowSplash(true);
+      setCurrentView('home');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.addEventListener('triggerSplashScreen', handleTriggerSplash);
+    return () => {
+      window.removeEventListener('triggerSplashScreen', handleTriggerSplash);
+    };
+  }, []);
+
   const triggerNightModeHud = useCallback((mode: NightModeSetting) => {
     setNightModeHud({ visible: true, mode });
     if (nightModeHudTimerRef.current) clearTimeout(nightModeHudTimerRef.current);

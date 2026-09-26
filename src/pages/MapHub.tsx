@@ -3262,8 +3262,12 @@ export function MapHubPage({
       }
       terminatorLayerRef.current = fg;
 
-      // 2. Night Earth City Lights on Continents
-      const nightCities = WORLD_CITIES.filter(c => isLocationInNight(c.lat, c.lng, now, -3));
+      // 2. Night Earth City Lights on Continents (Excludes invalid 0,0 null coordinates)
+      const nightCities = WORLD_CITIES.filter(c => 
+        (Math.abs(c.lat) > 0.1 || Math.abs(c.lng) > 0.1) && 
+        c.lat >= -90 && c.lat <= 90 && 
+        isLocationInNight(c.lat, c.lng, now, -3)
+      );
       const lightMarkers: any[] = [];
 
       nightCities.forEach(city => {

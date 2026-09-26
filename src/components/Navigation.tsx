@@ -140,9 +140,12 @@ export function Navigation({
         {/* Left: Brand Logo & Links */}
         <div className="flex items-center gap-6 md:gap-10 min-w-0">
           <button 
-            onClick={() => navigateTo('home')} 
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('triggerSplashScreen'));
+              navigateTo('home');
+            }} 
             className="flex items-center cursor-pointer group shrink-0"
-            title="Tripgon log 홈으로 이동"
+            title="Tripgon log 홈으로 이동 (스플래시 실행)"
           >
             <img 
               src="/logo-logotype.png" 
@@ -277,11 +280,19 @@ export function Navigation({
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-4 shrink-0">
-          <div className="flex items-center">
+          <div 
+            onClick={() => {
+              setShowSettings(false);
+              window.dispatchEvent(new CustomEvent('triggerSplashScreen'));
+              navigateTo('home');
+            }}
+            className="flex items-center cursor-pointer group"
+            title="Tripgon log 홈으로 이동 (스플래시 실행)"
+          >
             <img 
               src="/logo-logotype.png" 
               alt="Tripgon log" 
-              className="h-5 sm:h-6 w-auto object-contain dark:invert select-none" 
+              className="h-5 sm:h-6 w-auto object-contain dark:invert transition-opacity group-hover:opacity-80 select-none" 
             />
           </div>
           <button
@@ -295,7 +306,7 @@ export function Navigation({
         </div>
 
         {/* Editorial Menu List - Enhanced App Style Swiss Typography */}
-        <div className="flex flex-col space-y-3.5 sm:space-y-4 md:space-y-5 my-auto py-4 sm:py-5 shrink min-h-0">
+        <div className="flex flex-col space-y-3 sm:space-y-4 md:space-y-4.5 my-auto py-3 sm:py-4 shrink min-h-0">
           <button
             onClick={() => handleMenuNavigate('home')}
             className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-1.5"
@@ -303,7 +314,7 @@ export function Navigation({
             <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
               01
             </span>
-            <span className={`font-['Inter',sans-serif] text-2xl sm:text-3xl md:text-[32px] font-extrabold uppercase tracking-tight transition-colors ${
+            <span className={`font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-[36px] font-extrabold uppercase tracking-tight transition-colors ${
               currentView === 'home' 
                 ? 'text-black dark:text-white underline decoration-2 underline-offset-6' 
                 : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
@@ -319,7 +330,7 @@ export function Navigation({
             <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
               02
             </span>
-            <span className={`font-['Inter',sans-serif] text-2xl sm:text-3xl md:text-[32px] font-extrabold uppercase tracking-tight transition-colors ${
+            <span className={`font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-[36px] font-extrabold uppercase tracking-tight transition-colors ${
               currentView === 'archive' 
                 ? 'text-black dark:text-white underline decoration-2 underline-offset-6' 
                 : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
@@ -335,7 +346,7 @@ export function Navigation({
             <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
               03
             </span>
-            <span className={`font-['Inter',sans-serif] text-2xl sm:text-3xl md:text-[32px] font-extrabold uppercase tracking-tight transition-colors ${
+            <span className={`font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-[36px] font-extrabold uppercase tracking-tight transition-colors ${
               currentView === 'magazine' 
                 ? 'text-black dark:text-white underline decoration-2 underline-offset-6' 
                 : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
@@ -351,7 +362,7 @@ export function Navigation({
             <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
               04
             </span>
-            <span className={`font-['Inter',sans-serif] text-2xl sm:text-3xl md:text-[32px] font-extrabold uppercase tracking-tight transition-colors ${
+            <span className={`font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-[36px] font-extrabold uppercase tracking-tight transition-colors ${
               currentView === 'map' 
                 ? 'text-black dark:text-white underline decoration-2 underline-offset-6' 
                 : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
@@ -367,7 +378,7 @@ export function Navigation({
             <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
               05
             </span>
-            <span className={`font-['Inter',sans-serif] text-2xl sm:text-3xl md:text-[32px] font-extrabold uppercase tracking-tight transition-colors ${
+            <span className={`font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-[36px] font-extrabold uppercase tracking-tight transition-colors ${
               currentView === 'calendar' 
                 ? 'text-black dark:text-white underline decoration-2 underline-offset-6' 
                 : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
@@ -383,7 +394,7 @@ export function Navigation({
             <span className="font-mono text-xs sm:text-sm font-bold text-red-600 dark:text-red-400 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
               06
             </span>
-            <span className={`font-['Inter',sans-serif] text-2xl sm:text-3xl md:text-[32px] font-extrabold uppercase tracking-tight transition-colors ${
+            <span className={`font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-[36px] font-extrabold uppercase tracking-tight transition-colors ${
               currentView === 'pocket' 
                 ? 'text-black dark:text-white underline decoration-2 underline-offset-6' 
                 : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
@@ -400,7 +411,7 @@ export function Navigation({
               <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
                 07
               </span>
-              <span className={`font-['Inter',sans-serif] text-2xl sm:text-3xl md:text-[32px] font-extrabold uppercase tracking-tight transition-colors ${
+              <span className={`font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-[36px] font-extrabold uppercase tracking-tight transition-colors ${
                 currentView === 'manage' 
                   ? 'text-black dark:text-white underline decoration-2 underline-offset-6' 
                   : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
@@ -412,14 +423,14 @@ export function Navigation({
 
           {/* Swiss Minimal 3-Way Segmented Control for Night Mode with Hover Shortcut Tooltip */}
           <div 
-            className="group flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2 sm:pt-3 border-t border-black/5 dark:border-white/5"
+            className="group flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2.5 sm:pt-3.5 border-t border-black/5 dark:border-white/5"
             title="나이트 모드 전환 (단축키: ⌘+Shift+L / Ctrl+Shift+L)"
           >
             <div className="flex items-center">
               <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
                 {isLoggedIn && isAdmin ? '08' : '07'}
               </span>
-              <span className="font-['Inter',sans-serif] text-xl sm:text-2xl md:text-[26px] font-extrabold uppercase tracking-tight text-black/80 dark:text-white/80">
+              <span className="font-['Inter',sans-serif] text-3xl sm:text-4xl md:text-[36px] font-extrabold uppercase tracking-tight text-black/80 dark:text-white/80">
                 NIGHT MODE
               </span>
               <span 
