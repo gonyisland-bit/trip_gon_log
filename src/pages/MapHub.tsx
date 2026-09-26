@@ -4065,7 +4065,7 @@ export function MapHubPage({
                       setIsSearchExpanded(false);
                       setIsSearchDropdownOpen(false);
                       if (isBuilderOpenRef.current) {
-                        const targetCity = c.popularCities?.[0] || c.cities?.[0] || '';
+                        const targetCity = c.cities?.[0] || '';
                         if (targetCity) {
                           requestChangeBuilderCityRef.current(targetCity, c.name, c.code);
                         }

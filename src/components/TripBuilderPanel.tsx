@@ -304,8 +304,6 @@ export function TripBuilderPanel({
   const [locationInput, setLocationInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
-  const [members, setMembers] = useState<string[]>([]);
-  const [memberInput, setMemberInput] = useState('');
   const [statusBadge, setStatusBadge] = useState<'NEW' | 'EDITING' | ''>('');
   const [country, setCountry] = useState('');
   const [countrySearchInput, setCountrySearchInput] = useState('');

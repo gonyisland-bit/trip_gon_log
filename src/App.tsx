@@ -3555,7 +3555,7 @@ function App() {
               setIsMapBuilderActive(false);
               setPendingLeaveBuilderModal({ isOpen: false });
               if (targetView) {
-                navigateTo(targetView, targetTripId, pushHistory, true, tagFilter);
+                navigateTo(targetView, targetTripId, pushHistory, tagFilter || null, true);
               }
             }}
             onCancel={() => setPendingLeaveBuilderModal({ isOpen: false })}
