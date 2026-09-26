@@ -1035,7 +1035,7 @@ export function TripBuilderPanel({
       
       // 일자별 스팟 분배 (예: 1일차, 2일차...)
       const daySpots = locations.filter((_, lIdx) => lIdx % totalDays === dIdx);
-      const items = daySpots.map((sp, sIdx) => ({
+      const items: any[] = daySpots.map((sp, sIdx) => ({
         id: Date.now() + dIdx * 100 + sIdx,
         time: naturalTimeSlots[sIdx % naturalTimeSlots.length],
         place: sp.name,
@@ -1057,6 +1057,8 @@ export function TripBuilderPanel({
           place: `${targetCityName || '도심'} 자유 일정`,
           title: `${targetCityName || '도심'} 자유 일정`,
           location: targetCityName || '',
+          lat: undefined,
+          lng: undefined,
           memo: '자유 일정 및 로컬 탐방',
           category: '관광',
           type: 'activity' as const,
