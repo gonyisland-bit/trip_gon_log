@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   X, Plane, Building, ExternalLink, Calendar, Users, 
@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { 
   BookingSearchContext, 
+  extractCleanCityName,
   inferAirportCode, 
   buildSkyscannerFlightUrl, 
   buildNaverFlightUrl, 
@@ -38,12 +39,24 @@ export function QuickBookingModal({
 }: QuickBookingModalProps) {
   if (!isOpen) return null;
 
-  // Local editable state for quick fine-tuning
-  const [dest, setDest] = useState<string>(destination || 'Tokyo');
+  // Local editable state for quick fine-tuning (always extract pure city name e.g. "후쿠오카", excluding country prefixes like "JAPAN, ")
+  const initialCleanCity = extractCleanCityName(destination) || 'Tokyo';
+  const [dest, setDest] = useState<string>(initialCleanCity);
   const [originAirport, setOriginAirport] = useState<string>(initialFromCode || 'ICN');
   const [destAirport, setDestAirport] = useState<string>(
-    initialToCode || inferAirportCode(destination || 'Tokyo')
+    initialToCode || inferAirportCode(initialCleanCity)
   );
+
+  // Sync state if destination prop updates
+  useEffect(() => {
+    if (destination) {
+      const cleaned = extractCleanCityName(destination) || 'Tokyo';
+      setDest(cleaned);
+      if (!initialToCode) {
+        setDestAirport(inferAirportCode(cleaned));
+      }
+    }
+  }, [destination, initialToCode]);
   const [depDate, setDepDate] = useState<string>(() => {
     if (startDate) return startDate.replace(/\./g, '-');
     const today = new Date();

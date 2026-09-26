@@ -128,12 +128,97 @@ const CITY_TO_AIRPORT_MAP: Record<string, string> = {
   'seoul': 'ICN',
 };
 
+// Common country names in English and Korean to strip from composite locations (e.g., "JAPAN, 후쿠오카")
+const KNOWN_COUNTRIES = new Set([
+  'SOUTH KOREA', 'KOREA', 'REPUBLIC OF KOREA', '대한민국', '한국',
+  'JAPAN', '일본',
+  'VIETNAM', '베트남',
+  'THAILAND', '태국',
+  'TAIWAN', '대만',
+  'CHINA', '중국',
+  'USA', 'UNITED STATES', 'UNITED STATES OF AMERICA', '미국',
+  'FRANCE', '프랑스',
+  'ITALY', '이탈리아',
+  'UK', 'UNITED KINGDOM', '영국',
+  'SPAIN', '스페인',
+  'GERMANY', '독일',
+  'SWITZERLAND', '스위스',
+  'CZECH', 'CZECH REPUBLIC', '체코',
+  'AUSTRIA', '오스트리아',
+  'PHILIPPINES', '필리핀',
+  'INDONESIA', '인도네시아',
+  'MALAYSIA', '말레이시아',
+  'SINGAPORE', '싱가포르',
+  'AUSTRALIA', '호주',
+  'NEW ZEALAND', '뉴질랜드',
+]);
+
+const KNOWN_CITY_NAMES = [
+  '도쿄', '동경', '후쿠오카', '오사카', '교토', '삿포로', '오키나와', '나하', '나고야', '고베', '히로시마', '다카마쓰', '유후인', '벳푸',
+  '서울', '부산', '제주', '인천', '강릉', '속초', '경주', '전주', '여수',
+  '다낭', '나트랑', '호치민', '하노이', '푸꾸옥', '방콕', '치앙마이', '푸켓', '싱가포르', '발리', '세부', '보라카이', '마닐라', '코타키나발루', '쿠알라룸푸르',
+  '타이베이', '가오슝', '홍콩', '마카오', '상하이', '베이징', '칭다오',
+  '괌', '사이판', '하와이', '호놀룰루', '뉴욕', '로스앤젤레스', '샌프란시스코', '라스베이거스', '시드니', '멜버른', '오클랜드',
+  '파리', '런던', '로마', '바르셀로나', '마드리드', '프랑크푸르트', '취리히', '인터라켄', '프라하', '비엔나'
+];
+
+/**
+ * Cleanly extracts pure city name from composite trip location strings
+ * (e.g. "JAPAN, 후쿠오카" -> "후쿠오카", "일본, 도쿄" -> "도쿄", "SOUTH KOREA, 서울특별시" -> "서울")
+ */
+export function extractCleanCityName(raw?: string): string {
+  if (!raw) return 'Tokyo';
+  const trimmed = raw.trim();
+  if (!trimmed) return 'Tokyo';
+
+  // 1. First priority: Check if any known popular city is explicitly contained
+  const lower = trimmed.toLowerCase();
+  for (const city of KNOWN_CITY_NAMES) {
+    if (lower.includes(city.toLowerCase())) {
+      return city;
+    }
+  }
+
+  // 2. Split by common delimiters (, / · | - ~)
+  const parts = trimmed.split(/[,/·|—–~]+/).map(p => p.trim()).filter(Boolean);
+  const nonCountryParts = parts.filter(p => !KNOWN_COUNTRIES.has(p.toUpperCase()));
+
+  if (nonCountryParts.length > 0) {
+    let candidate = nonCountryParts[0];
+    // Strip common Korean administrative district suffixes
+    candidate = candidate.replace(/(특별자치시|특별자치도|특별시|광역시|자치시|자치도)$/, '');
+    if (candidate.length > 2) {
+      candidate = candidate.replace(/(시|군|구|도|부|현)$/, '');
+    }
+    const result = candidate.trim();
+    if (result) return result;
+    return nonCountryParts[0];
+  }
+
+  // 3. Fallback: if entire string was just a country name, fallback to primary hub city
+  if (parts[0]) {
+    const pUpper = parts[0].toUpperCase();
+    if (pUpper.includes('JAPAN') || pUpper.includes('일본')) return '도쿄';
+    if (pUpper.includes('KOREA') || pUpper.includes('한국') || pUpper.includes('대한민국')) return '서울';
+    if (pUpper.includes('FRANCE') || pUpper.includes('프랑스')) return '파리';
+    if (pUpper.includes('VIETNAM') || pUpper.includes('베트남')) return '다낭';
+    if (pUpper.includes('THAILAND') || pUpper.includes('태국')) return '방콕';
+    if (pUpper.includes('TAIWAN') || pUpper.includes('대만')) return '타이베이';
+    if (pUpper.includes('ITALY') || pUpper.includes('이탈리아')) return '로마';
+    if (pUpper.includes('UK') || pUpper.includes('영국')) return '런던';
+    if (pUpper.includes('USA') || pUpper.includes('미국')) return '뉴욕';
+  }
+
+  return trimmed;
+}
+
 /**
  * Infer destination IATA airport code from destination text
  */
 export function inferAirportCode(dest: string): string {
   if (!dest) return 'TYO';
-  const clean = dest.toLowerCase().replace(/[^a-z가-힣]/g, '');
+  const cleanCity = extractCleanCityName(dest);
+  const clean = cleanCity.toLowerCase().replace(/[^a-z가-힣]/g, '');
   
   for (const [key, code] of Object.entries(CITY_TO_AIRPORT_MAP)) {
     if (clean.includes(key)) {
@@ -346,7 +431,8 @@ const CITY_TO_AGODA_ID_MAP: Record<string, string> = {
  */
 export function inferAgodaCityId(dest: string): string | undefined {
   if (!dest) return '5085';
-  const clean = dest.toLowerCase().replace(/[^a-z0-9가-힣]/g, '');
+  const cleanCity = extractCleanCityName(dest);
+  const clean = cleanCity.toLowerCase().replace(/[^a-z0-9가-힣]/g, '');
 
   for (const [key, id] of Object.entries(CITY_TO_AGODA_ID_MAP)) {
     if (clean.includes(key)) {
@@ -359,7 +445,7 @@ export function inferAgodaCityId(dest: string): string | undefined {
 // ── ACCOMMODATION DEEP LINKS ──────────────────────────────────────────────────
 
 export function buildAgodaUrl(ctx: BookingSearchContext): string {
-  const rawDest = (ctx.destination || 'Tokyo').trim();
+  const rawDest = extractCleanCityName(ctx.destination || 'Tokyo');
   const cityId = inferAgodaCityId(rawDest);
   const checkIn = formatDate(ctx.departDate, 'standard');
   const checkOut = ctx.returnDate ? formatDate(ctx.returnDate, 'standard') : checkIn;
@@ -390,7 +476,7 @@ export function buildAgodaUrl(ctx: BookingSearchContext): string {
 }
 
 export function buildBookingComUrl(ctx: BookingSearchContext): string {
-  const city = encodeURIComponent(ctx.destination || 'Tokyo');
+  const city = encodeURIComponent(extractCleanCityName(ctx.destination || 'Tokyo'));
   const checkIn = formatDate(ctx.departDate, 'standard');
   const checkOut = ctx.returnDate ? formatDate(ctx.returnDate, 'standard') : checkIn;
   const adults = Math.max(1, ctx.adults || 1);
@@ -400,7 +486,7 @@ export function buildBookingComUrl(ctx: BookingSearchContext): string {
 }
 
 export function buildAirbnbUrl(ctx: BookingSearchContext): string {
-  const city = encodeURIComponent(ctx.destination || 'Tokyo');
+  const city = encodeURIComponent(extractCleanCityName(ctx.destination || 'Tokyo'));
   const checkIn = formatDate(ctx.departDate, 'standard');
   const checkOut = ctx.returnDate ? formatDate(ctx.returnDate, 'standard') : checkIn;
   const adults = Math.max(1, ctx.adults || 1);
