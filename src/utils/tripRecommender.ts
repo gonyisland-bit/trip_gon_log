@@ -359,90 +359,6 @@ const THEME_PRESETS_META: Record<string, {
   }
 };
 
-/**
- * 도시와 테마에 맞는 추천 여정 제안 생성기
- */
-export function generateCuratedTripProposals(criteria: TripCriteria): CuratedTripProposal[] {
-  const {
-    theme = 'all',
-    continent = 'all',
-    country = null,
-    city = null,
-    targetYear,
-    targetMonth,
-    durationDays: rawDuration,
-    seedOffset = 0
-  } = criteria;
-
-  // 1. 후보 도시 선별 풀(Pool) 생성
-  let candidateCities: DestinationCity[] = [];
-
-  if (city) {
-    // 특정 도시가 지정된 경우 해당 도시 단독
-    candidateCities = [city];
-  } else if (country) {
-    // 국가가 지정된 경우 해당 국가의 도시들
-    candidateCities = WORLD_CITIES.filter(c => 
-      c.countryEn.toLowerCase() === country.nameEn.toLowerCase() ||
-      c.countryKo === country.nameKo
-    );
-  } else {
-    // 국가/도시 미지정: 대륙 필터 반영
-    if (continent && continent !== 'all') {
-      const allowedCountries = CONTINENT_COUNTRY_MAP[continent] || [];
-      candidateCities = WORLD_CITIES.filter(c => allowedCountries.includes(c.countryEn.toUpperCase()));
-    } else {
-      candidateCities = [...WORLD_CITIES];
-    }
-  }
-
-  // 2. 테마 필터링 (all이 아닌 경우 태그 일치 우선)
-  if (theme !== 'all' && !city) {
-    const themeKeyword = theme.toLowerCase();
-    const matched = candidateCities.filter(c => 
-      (c.tags || []).some(t => t.toLowerCase().includes(themeKeyword))
-    );
-    if (matched.length >= 3) {
-      candidateCities = matched;
-    }
-  }
-
-  // 3. 시기(targetMonth) 필터링 우선 정렬
-  if (targetMonth && targetMonth >= 1 && targetMonth <= 12 && !city) {
-    const bestInMonth = candidateCities.filter(c => (c.bestMonths || []).includes(targetMonth));
-    if (bestInMonth.length >= 3) {
-      candidateCities = bestInMonth;
-    }
-  }
-
-  // 후보 도시가 부족할 경우 fallback
-  if (candidateCities.length === 0) {
-    candidateCities = [...WORLD_CITIES];
-  }
-
-  // 4. 상황별 3개 여정 조합 생성
-  const proposals: CuratedTripProposal[] = [];
-
-  // 상황 A: 단일 도시가 정해진 경우 (사례 2의 도시 선택 시) -> 3가지 다른 테마의 여정 제안
-  if (city) {
-    const themeList = ['food', 'shopping', 'nature', 'art', 'activity'];
-    const chosenThemes = theme !== 'all' 
-      ? [theme, ...themeList.filter(t => t !== theme).slice(0, 2)]
-      : ['food', 'shopping', 'nature'];
-
-    const durations = rawDuration ? [rawDuration, rawDuration, rawDuration] : [3, 4, 5];
-
-    chosenThemes.forEach((tKey, idx) => {
-      const dur = durations[idx % durations.length];
-      const dateCalc = calculateNearestBestDate(city, targetYear, targetMonth, dur);
-      const meta = THEME_PRESETS_META[tKey] || THEME_PRESETS_META.all;
-      const title = meta.titleTemplates[(idx + seedOffset) % meta.titleTemplates.length](city.nameKo);
-      const subtitle = meta.subtitleTemplates[(idx + seedOffset) % meta.subtitleTemplates.length];
-
-      const spots = [...(city.iconicSpots || []), ...(city.hiddenGems || [])];
-      const highlights = spots.slice(idx * 2, idx * 2 + 3);
-      if (highlights.length === 0) highlights.push(`${city.nameKo} 중심가`, `${city.nameKo} 대표 랜드마크`);
-
 function buildRichCuratedTimeline(
   city: DestinationCity,
   startDateStr: string,
@@ -599,6 +515,90 @@ function buildRichCuratedTimeline(
     };
   });
 }
+
+/**
+ * 도시와 테마에 맞는 추천 여정 제안 생성기
+ */
+export function generateCuratedTripProposals(criteria: TripCriteria): CuratedTripProposal[] {
+  const {
+    theme = 'all',
+    continent = 'all',
+    country = null,
+    city = null,
+    targetYear,
+    targetMonth,
+    durationDays: rawDuration,
+    seedOffset = 0
+  } = criteria;
+
+  // 1. 후보 도시 선별 풀(Pool) 생성
+  let candidateCities: DestinationCity[] = [];
+
+  if (city) {
+    // 특정 도시가 지정된 경우 해당 도시 단독
+    candidateCities = [city];
+  } else if (country) {
+    // 국가가 지정된 경우 해당 국가의 도시들
+    candidateCities = WORLD_CITIES.filter(c => 
+      c.countryEn.toLowerCase() === country.nameEn.toLowerCase() ||
+      c.countryKo === country.nameKo
+    );
+  } else {
+    // 국가/도시 미지정: 대륙 필터 반영
+    if (continent && continent !== 'all') {
+      const allowedCountries = CONTINENT_COUNTRY_MAP[continent] || [];
+      candidateCities = WORLD_CITIES.filter(c => allowedCountries.includes(c.countryEn.toUpperCase()));
+    } else {
+      candidateCities = [...WORLD_CITIES];
+    }
+  }
+
+  // 2. 테마 필터링 (all이 아닌 경우 태그 일치 우선)
+  if (theme !== 'all' && !city) {
+    const themeKeyword = theme.toLowerCase();
+    const matched = candidateCities.filter(c => 
+      (c.tags || []).some(t => t.toLowerCase().includes(themeKeyword))
+    );
+    if (matched.length >= 3) {
+      candidateCities = matched;
+    }
+  }
+
+  // 3. 시기(targetMonth) 필터링 우선 정렬
+  if (targetMonth && targetMonth >= 1 && targetMonth <= 12 && !city) {
+    const bestInMonth = candidateCities.filter(c => (c.bestMonths || []).includes(targetMonth));
+    if (bestInMonth.length >= 3) {
+      candidateCities = bestInMonth;
+    }
+  }
+
+  // 후보 도시가 부족할 경우 fallback
+  if (candidateCities.length === 0) {
+    candidateCities = [...WORLD_CITIES];
+  }
+
+  // 4. 상황별 3개 여정 조합 생성
+  const proposals: CuratedTripProposal[] = [];
+
+  // 상황 A: 단일 도시가 정해진 경우 (사례 2의 도시 선택 시) -> 3가지 다른 테마의 여정 제안
+  if (city) {
+    const themeList = ['food', 'shopping', 'nature', 'art', 'activity'];
+    const chosenThemes = theme !== 'all' 
+      ? [theme, ...themeList.filter(t => t !== theme).slice(0, 2)]
+      : ['food', 'shopping', 'nature'];
+
+    const durations = rawDuration ? [rawDuration, rawDuration, rawDuration] : [3, 4, 5];
+
+    chosenThemes.forEach((tKey, idx) => {
+      const dur = durations[idx % durations.length];
+      const dateCalc = calculateNearestBestDate(city, targetYear, targetMonth, dur);
+      const meta = THEME_PRESETS_META[tKey] || THEME_PRESETS_META.all;
+      const title = meta.titleTemplates[(idx + seedOffset) % meta.titleTemplates.length](city.nameKo);
+      const subtitle = meta.subtitleTemplates[(idx + seedOffset) % meta.subtitleTemplates.length];
+
+      const spots = [...(city.iconicSpots || []), ...(city.hiddenGems || [])];
+      const highlights = spots.slice(idx * 2, idx * 2 + 3);
+      if (highlights.length === 0) highlights.push(`${city.nameKo} 중심가`, `${city.nameKo} 대표 랜드마크`);
 
       const timeline = buildRichCuratedTimeline(city, dateCalc.startDate, dur, tKey, highlights);
 
