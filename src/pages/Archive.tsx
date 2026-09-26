@@ -1053,7 +1053,7 @@ export function ArchiveHubPage({
                         const formattedDate = formatNonRepeatingDate(trip.date);
                         const issueNumber = String((trip.displayOrder ?? index) + 1).padStart(2, '0');
                         const days = calculateDays(trip.date);
-                        const planInfo = getUpcomingPlanInfo({ ...trip, isPlan: isPlan || (trip as any).isPlan });
+                        const planInfo = getUpcomingPlanInfo(trip);
                         const isPlanOrFuture = planInfo.isPlanOrFuture;
 
                         return (
@@ -1103,7 +1103,7 @@ export function ArchiveHubPage({
                                   {month && <span className="opacity-30">/</span>}
                                   {month && <span className="font-bold text-red-600 dark:text-red-500 uppercase tracking-tight">{month}</span>}
                                 </div>
-                                {isPlan || trip.statusBadge === 'PLAN' ? (
+                                {isPlanOrFuture || trip.statusBadge === 'PLAN' ? (
                                   <span className="px-2 py-0.5 text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider font-mono bg-blue-600 text-white rounded-none leading-none">
                                     PLAN
                                   </span>
@@ -1156,10 +1156,9 @@ export function ArchiveHubPage({
                     {group.items.map((trip, index) => {
                       const { issueNumber, topYearMonth, line2DateDays, line3CountryCity, editorialSubtitle } = getTripCardDisplayData(trip, index);
                       const isCardActive = activeCardId === trip.id;
-                      const isPlan = Boolean(
-                        const planInfo = getUpcomingPlanInfo({ ...trip, isPlan: isPlan || (trip as any).isPlan });
-                        const isPlanOrFuture = planInfo.isPlanOrFuture;
-                        const isWide = cardViewMode === 'wide';
+                      const planInfo = getUpcomingPlanInfo(trip);
+                      const isPlanOrFuture = planInfo.isPlanOrFuture;
+                      const isWide = cardViewMode === 'wide';
 
                         const [dateRangeOnly, durationBadge] = line2DateDays.includes(',') 
                           ? line2DateDays.split(',').map(s => s.trim()) 
@@ -1250,7 +1249,7 @@ export function ArchiveHubPage({
                             <div>
                               {/* Region & Duration Meta Tag */}
                               <div className={`flex items-center justify-between text-[9.5px] sm:text-[10.5px] font-mono font-bold uppercase tracking-wider mb-1 truncate ${
-                                (trip.statusBadge === 'PLAN' || isPlan) ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'
+                                (trip.statusBadge === 'PLAN' || isPlanOrFuture) ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'
                               }`}>
                                 <span>{dateRangeOnly || trip.date}</span>
                                 {durationBadge && <span className="text-black/50 dark:text-white/50">{durationBadge}</span>}
@@ -1258,7 +1257,7 @@ export function ArchiveHubPage({
 
                               {/* 메인 타이틀: 2줄로 다 보이게 표기 (line-clamp-2) */}
                               <h3 className={`font-black tracking-tight text-black dark:text-white leading-snug break-keep line-clamp-2 transition-colors ${
-                                (trip.statusBadge === 'PLAN' || isPlan) ? 'group-hover:text-blue-600 dark:group-hover:text-blue-400' : 'group-hover:text-red-600 dark:group-hover:text-red-400'
+                                (trip.statusBadge === 'PLAN' || isPlanOrFuture) ? 'group-hover:text-blue-600 dark:group-hover:text-blue-400' : 'group-hover:text-red-600 dark:group-hover:text-red-500'
                               } ${isWide ? 'text-base sm:text-lg md:text-xl' : 'text-sm sm:text-base md:text-lg'}`}>
                                 {trip.title}
                               </h3>
@@ -1280,7 +1279,7 @@ export function ArchiveHubPage({
                               {/* 좌측 알약 뱃지: 장소명 웹/모바일 온전 표기 최적화 (생략 방지) */}
                               <div className="flex-1 min-w-0 mr-1 sm:mr-1.5">
                                 <div className={`min-h-[26px] sm:min-h-[30px] px-2 sm:px-3 py-0.5 sm:py-1 rounded-full inline-flex items-center gap-1 font-mono text-[9.5px] sm:text-[11px] font-bold max-w-full leading-tight ${
-                                  (trip.statusBadge === 'PLAN' || isPlan)
+                                  (trip.statusBadge === 'PLAN' || isPlanOrFuture)
                                     ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
                                     : 'bg-black/5 dark:bg-white/10 text-black/80 dark:text-white/80'
                                 }`}>
@@ -1291,11 +1290,11 @@ export function ArchiveHubPage({
 
                               {/* 우측 원형 액션 버튼: 웹과 모바일 모두 원형 아이콘 버튼으로 통일하여 좌측 공간 극대화 */}
                               <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-colors shadow-xs shrink-0 ${
-                                (trip.statusBadge === 'PLAN' || isPlan)
+                                (trip.statusBadge === 'PLAN' || isPlanOrFuture)
                                   ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                                  : 'bg-black dark:bg-white text-white dark:text-black group-hover:bg-red-600 dark:group-hover:bg-red-500 group-hover:text-white dark:group-hover:text-white'
+                                  : 'bg-black dark:bg-white text-white dark:text-black group-hover:bg-red-600 dark:group-hover:text-red-500 group-hover:text-white dark:group-hover:text-white'
                               }`}
-                              title={(trip.statusBadge === 'PLAN' || isPlan) ? "PLAN VIEW" : "TRIP LOG"}
+                              title={(trip.statusBadge === 'PLAN' || isPlanOrFuture) ? "PLAN VIEW" : "TRIP LOG"}
                               >
                                 <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.2]" />
                               </div>
