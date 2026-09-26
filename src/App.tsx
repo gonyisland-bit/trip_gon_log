@@ -8,6 +8,7 @@ import { MagazineHubPage } from './pages/MagazineHub';
 import { ScrollToTop } from './components/ScrollToTop';
 import { DetailSkeleton, TopProgressBar } from './components/EditorialSkeleton';
 import { FlightTransitionOverlay } from './components/FlightTransitionOverlay';
+import { SplashScreen } from './components/SplashScreen';
 import { preloadDetailPage, preloadMapPage, preloadManagePage, scheduleIdlePrefetch } from './utils/prefetchHelper';
 
 // Resilient lazy import with automatic retry on chunk loading failure (e.g. browser reconnect or new deploy)
@@ -232,6 +233,22 @@ function App() {
     mode: 'auto',
   });
   const nightModeHudTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Editorial Kinetic Splash Screen state (Option 2: Kinetic Typography & Flight Motion)
+  const [showSplash, setShowSplash] = useState<boolean>(() => {
+    try {
+      return !sessionStorage.getItem('splash_screen_viewed');
+    } catch (_) {
+      return true;
+    }
+  });
+
+  const handleFinishSplash = useCallback(() => {
+    setShowSplash(false);
+    try {
+      sessionStorage.setItem('splash_screen_viewed', 'true');
+    } catch (_) {}
+  }, []);
 
   const triggerNightModeHud = useCallback((mode: NightModeSetting) => {
     setNightModeHud({ visible: true, mode });
@@ -2933,6 +2950,11 @@ function App() {
 
   return (
     <div className={`${isDarkMode ? 'dark' : ''} overflow-x-hidden w-full`}>
+      {/* Editorial Kinetic Typography Splash Screen */}
+      {showSplash && (
+        <SplashScreen onFinish={handleFinishSplash} minDurationMs={1700} />
+      )}
+
       {/* Seamless Top Progress Indicator during route transitions (hidden during flight sweep) */}
       <TopProgressBar isNavigating={isNavigating && !flightTransition.isActive} />
 

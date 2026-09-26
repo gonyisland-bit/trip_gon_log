@@ -1347,16 +1347,15 @@ export function MapArea({
 
       const htmlContent = `
         <div class="poi-pin-wrapper">
-          <div class="poi-card" style="border-left: 3.5px solid ${accentColor};">
-            <div class="poi-header">
-              <span class="poi-type-badge" style="background-color: ${accentColor}; color: #ffffff;">
-                ${svgIcon}
-                <span>${typeLabel}</span>
-              </span>
-            </div>
-            <div class="poi-name" title="${poi.name || ''}">${poi.name || ''}</div>
+          <!-- Circular Core Pin (Identical to high-contrast pocket pin) -->
+          <div class="poi-pin-core" style="background-color: ${accentColor};">
+            ${svgIcon}
           </div>
-          <div class="poi-anchor-dot" style="background-color: ${accentColor};"></div>
+          <!-- Swiss Minimal Label with category tag and title -->
+          <div class="poi-pin-label">
+            <span class="poi-type-tag" style="background-color: ${accentColor};">${typeLabel}</span>
+            <span class="poi-name-text" title="${poi.name || ''}">${poi.name || ''}</span>
+          </div>
         </div>
       `;
 
@@ -1364,10 +1363,23 @@ export function MapArea({
         className: 'custom-poi-pin-icon',
         html: htmlContent,
         iconSize: [140, 52],
-        iconAnchor: [70, 52],
+        iconAnchor: [70, 12],
       });
 
       const marker = L.marker([poi.lat, poi.lng], { icon, zIndexOffset: 500 }).addTo(map);
+
+      // Mouseover / Mouseout: Elevate z-index so overlapping names jump to the top
+      marker.on('mouseover', () => {
+        marker.setZIndexOffset(10000);
+        const el = marker.getElement();
+        if (el) el.classList.add('poi-marker-hovered');
+      });
+
+      marker.on('mouseout', () => {
+        marker.setZIndexOffset(500);
+        const el = marker.getElement();
+        if (el) el.classList.remove('poi-marker-hovered');
+      });
       
       const googleSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(poi.name)}`;
       

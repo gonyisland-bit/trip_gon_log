@@ -523,85 +523,99 @@
 }
 
 .poi-pin-wrapper {
-  display: inline-flex;
+  position: relative;
+  display: flex;
   flex-direction: column;
   align-items: center;
   pointer-events: auto;
   cursor: pointer;
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.22));
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform;
 }
 
-.poi-pin-wrapper:hover {
-  transform: translateY(-2px) scale(1.05);
-  z-index: 1000 !important;
-}
-
-.poi-card {
+.poi-pin-core {
+  position: relative;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35), 0 1px 4px rgba(0, 0, 0, 0.2);
   display: flex;
-  flex-direction: column;
-  background: #FFFFFF;
-  border: 1.5px solid #111111;
-  padding: 3px 6px;
-  gap: 2px;
-  border-radius: 2px;
-  max-width: 140px;
-  white-space: nowrap;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
 }
 
-.dark .poi-card {
-  background: #18181B;
-  border-color: #E4E4E7;
-}
-
-.poi-header {
+.poi-pin-label {
+  position: relative;
+  z-index: 1;
+  margin-top: 2px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  padding: 2px 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.08);
   display: flex;
   align-items: center;
   gap: 4px;
+  max-width: 140px;
+  white-space: nowrap;
+  pointer-events: auto;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.poi-type-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
+.dark .poi-pin-label {
+  background: rgba(24, 24, 27, 0.96);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.poi-type-tag {
   font-family: 'JetBrains Mono', 'SF Mono', monospace;
-  font-size: 8.5px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
   line-height: 1;
-  padding: 1.5px 4px;
-  border-radius: 1px;
+  padding: 1px 3px;
+  border-radius: 2px;
+  color: #ffffff;
   text-transform: uppercase;
+  shrink: 0;
 }
 
-.poi-name {
+.poi-name-text {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
-  font-size: 10.5px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 700;
   letter-spacing: -0.01em;
   color: #111111;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 128px;
-  line-height: 1.25;
+  max-width: 105px;
+  line-height: 1.2;
 }
 
-.dark .poi-name {
+.dark .poi-name-text {
   color: #F4F4F5;
 }
 
-.poi-anchor-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  border: 1.5px solid #FFFFFF;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
-  margin-top: 2px;
+/* Hover state: Elevate z-index and scale up */
+.poi-marker-hovered .poi-pin-core {
+  transform: scale(1.15);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
 }
 
-.dark .poi-anchor-dot {
-  border-color: #18181B;
+.poi-marker-hovered .poi-pin-label {
+  z-index: 10001 !important;
+  transform: scale(1.08) translateY(-1px);
+  border-color: #000000;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+.dark .poi-marker-hovered .poi-pin-label {
+  border-color: #FFFFFF;
 }
 
 /* Premium Leaflet Scale Control styling */

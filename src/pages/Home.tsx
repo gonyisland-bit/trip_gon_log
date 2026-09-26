@@ -1274,7 +1274,7 @@ export function HomePage({
               <span className="text-[11px] font-mono tracking-[0.3em] uppercase opacity-75">
                 CURATED TRAVEL ARCHIVE & EDITORIAL JOURNAL
               </span>
-              <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-none font-['Inter',sans-serif] drop-shadow-md">
+              <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight leading-none font-['Inter',sans-serif] drop-shadow-md">
                 Tripgon log
               </h1>
             </div>
@@ -1290,14 +1290,14 @@ export function HomePage({
                 <button
                   type="button"
                   onClick={() => onOpenAuthModal ? onOpenAuthModal('login') : onNavigate('archive')}
-                  className="px-7 sm:px-8 py-3 sm:py-3.5 bg-white text-black hover:bg-black hover:text-white border border-white text-xs sm:text-sm font-mono font-black uppercase tracking-widest transition-all cursor-pointer shadow-xl rounded-none"
+                  className="px-7 sm:px-8 py-3 sm:py-3.5 bg-white text-black hover:bg-black hover:text-white border border-white text-xs sm:text-sm font-mono font-bold uppercase tracking-widest transition-all cursor-pointer shadow-xl rounded-none"
                 >
                   SIGN IN
                 </button>
                 <button
                   type="button"
                   onClick={() => onOpenAuthModal ? onOpenAuthModal('signup') : onNavigate('archive')}
-                  className="px-7 sm:px-8 py-3 sm:py-3.5 border border-white/60 text-white hover:border-white hover:bg-white hover:text-black text-xs sm:text-sm font-mono font-black uppercase tracking-widest transition-all cursor-pointer backdrop-blur-xs rounded-none"
+                  className="px-7 sm:px-8 py-3 sm:py-3.5 border border-white/60 text-white hover:border-white hover:bg-white hover:text-black text-xs sm:text-sm font-mono font-bold uppercase tracking-widest transition-all cursor-pointer backdrop-blur-xs rounded-none"
                 >
                   JOIN
                 </button>
@@ -1326,7 +1326,7 @@ export function HomePage({
                       onClick={() => onNavigate('detail', currentHero.id)}
                       onMouseEnter={preloadDetailPage}
                       onTouchStart={preloadDetailPage}
-                      className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-black font-['Inter',sans-serif] uppercase tracking-tighter leading-[0.9] text-black dark:text-white cursor-pointer hover:opacity-85 transition-opacity select-none drop-shadow-sm pointer-events-auto"
+                      className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-extrabold font-['Inter',sans-serif] uppercase tracking-tighter leading-[0.9] text-black dark:text-white cursor-pointer hover:opacity-85 transition-opacity select-none drop-shadow-sm pointer-events-auto"
                       style={{ wordBreak: 'keep-all' }}
                     >
                       {currentHero.title}
@@ -1335,7 +1335,7 @@ export function HomePage({
 
                   {/* Year & Month with tight tracking + Auto Journey Sentence (Does NOT overlap hero media) */}
                   <div className="mt-4 sm:mt-6 md:mt-10 lg:mt-12 flex flex-col gap-1.5 pointer-events-auto font-['Inter',sans-serif] max-w-[260px] lg:max-w-[300px]">
-                    <div className="text-base sm:text-lg md:text-xl font-black tracking-tight text-black dark:text-white uppercase leading-none">
+                    <div className="text-base sm:text-lg md:text-xl font-extrabold tracking-tight text-black dark:text-white uppercase leading-none">
                       {month} {year}
                     </div>
                     {/* Auto journey generated sentence */}
@@ -1407,7 +1407,7 @@ export function HomePage({
                     <div className="min-h-[3.75rem] sm:min-h-[4.5rem] flex items-start mb-2.5">
                       <h2
                         onClick={() => onNavigate('detail', currentHero.id)}
-                        className="text-2xl sm:text-3xl font-black uppercase tracking-tight leading-tight text-black dark:text-white cursor-pointer active:opacity-80 line-clamp-2"
+                        className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight leading-tight text-black dark:text-white cursor-pointer active:opacity-80 line-clamp-2"
                         style={{ wordBreak: 'keep-all' }}
                       >
                         {currentHero.title}
@@ -1418,11 +1418,11 @@ export function HomePage({
                     <div className="flex items-end justify-between gap-3 pt-2.5 border-t border-black/10 dark:border-white/10">
                       <div className="flex flex-col gap-1 min-w-0 flex-1">
                         <div className="flex items-baseline gap-1.5 flex-wrap">
-                          <span className="text-xs sm:text-sm font-black tracking-tight text-black dark:text-white uppercase shrink-0">
+                          <span className="text-xs sm:text-sm font-extrabold tracking-tight text-black dark:text-white uppercase shrink-0">
                             {month} {year}
                           </span>
                           <span className="text-black/30 dark:text-white/30 text-xs shrink-0">·</span>
-                          <span className="text-xs sm:text-sm font-black tracking-tight text-black dark:text-white shrink-0">
+                          <span className="text-xs sm:text-sm font-extrabold tracking-tight text-black dark:text-white shrink-0">
                             {dateRange}
                           </span>
                           {days && (
@@ -1460,7 +1460,7 @@ export function HomePage({
                   {/* Top Slide Indicator (e.g. 01 / 03) with minimal gauge & arrows */}
                   {heroJourneys.length > 1 ? (
                     <div className="flex items-center gap-2.5 mb-4 sm:mb-6">
-                      <span className="text-xs font-black tracking-widest text-black dark:text-white">
+                      <span className="text-xs font-extrabold tracking-widest text-black dark:text-white">
                         {String(heroSlide + 1).padStart(2, '0')}
                       </span>
                       <div className="flex items-center gap-1">
@@ -1487,7 +1487,7 @@ export function HomePage({
                           type="button"
                           onClick={(e) => { e.stopPropagation(); goToPrev(); }}
                           className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
-                          title="Prev"
+                          title="이전 슬라이드"
                         >
                           <ChevronLeft className="w-3.5 h-3.5" />
                         </button>
@@ -1495,7 +1495,7 @@ export function HomePage({
                           type="button"
                           onClick={(e) => { e.stopPropagation(); goToNext(); }}
                           className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
-                          title="Next"
+                          title="다음 슬라이드"
                         >
                           <ChevronRight className="w-3.5 h-3.5" />
                         </button>
@@ -1505,7 +1505,7 @@ export function HomePage({
 
                   {/* Middle: Duration & Dates (e.g. 18 — 20 / 3 DAYS) */}
                   <div className="my-auto flex flex-col items-start md:items-end">
-                    <div className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-black tracking-tighter text-black dark:text-white leading-none font-['Inter',sans-serif]">
+                    <div className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tighter text-black dark:text-white leading-none font-['Inter',sans-serif]">
                       {dateRange}
                     </div>
                     {days && (

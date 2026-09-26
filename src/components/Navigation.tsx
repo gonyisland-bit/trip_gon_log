@@ -229,7 +229,7 @@ export function Navigation({
             type="button"
             onClick={onSearchClick}
             className="p-2 sm:p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors cursor-pointer flex items-center justify-center"
-            title="통합 검색 (Ctrl + K)"
+            title="통합 검색 (⌘K / Ctrl+K)"
           >
             <Search className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
           </button>
@@ -246,7 +246,7 @@ export function Navigation({
                 ? 'bg-black text-white dark:bg-white dark:text-black' 
                 : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white'
             }`}
-            title={showSettings ? "메뉴 닫기" : "메뉴 열기"}
+            title={showSettings ? "메뉴 닫기 (ESC)" : "메뉴 열기"}
             aria-label="Toggle navigation menu"
           >
             {showSettings ? (
@@ -288,22 +288,22 @@ export function Navigation({
             type="button"
             onClick={() => setShowSettings(false)}
             className="p-1.5 sm:p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black dark:text-white transition-colors cursor-pointer"
-            title="메뉴 닫기"
+            title="메뉴 닫기 (ESC)"
           >
             <X className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
           </button>
         </div>
 
-        {/* Editorial Menu List - Compact Fit-to-Screen Swiss Typography */}
-        <div className="flex flex-col space-y-2.5 sm:space-y-3.5 md:space-y-4 my-auto py-4 sm:py-5 shrink min-h-0">
+        {/* Editorial Menu List - Enhanced App Style Swiss Typography */}
+        <div className="flex flex-col space-y-3.5 sm:space-y-4 md:space-y-5 my-auto py-4 sm:py-5 shrink min-h-0">
           <button
             onClick={() => handleMenuNavigate('home')}
             className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-1.5"
           >
-            <span className="font-mono text-[11px] sm:text-xs font-bold text-blue-600 dark:text-blue-400 mr-3 sm:mr-4 select-none w-5 shrink-0">
+            <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
               01
             </span>
-            <span className={`font-['Inter',sans-serif] text-xl sm:text-2xl md:text-[26px] font-black uppercase tracking-tight transition-colors ${
+            <span className={`font-['Inter',sans-serif] text-2xl sm:text-3xl md:text-[32px] font-extrabold uppercase tracking-tight transition-colors ${
               currentView === 'home' 
                 ? 'text-black dark:text-white underline decoration-2 underline-offset-6' 
                 : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
@@ -316,10 +316,10 @@ export function Navigation({
             onClick={() => handleMenuNavigate('archive')}
             className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-1.5"
           >
-            <span className="font-mono text-[11px] sm:text-xs font-bold text-blue-600 dark:text-blue-400 mr-3 sm:mr-4 select-none w-5 shrink-0">
+            <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
               02
             </span>
-            <span className={`font-['Inter',sans-serif] text-xl sm:text-2xl md:text-[26px] font-black uppercase tracking-tight transition-colors ${
+            <span className={`font-['Inter',sans-serif] text-2xl sm:text-3xl md:text-[32px] font-extrabold uppercase tracking-tight transition-colors ${
               currentView === 'archive' 
                 ? 'text-black dark:text-white underline decoration-2 underline-offset-6' 
                 : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
@@ -332,10 +332,10 @@ export function Navigation({
             onClick={() => handleMenuNavigate('magazine')}
             className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-1.5"
           >
-            <span className="font-mono text-[11px] sm:text-xs font-bold text-blue-600 dark:text-blue-400 mr-3 sm:mr-4 select-none w-5 shrink-0">
+            <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
               03
             </span>
-            <span className={`font-['Inter',sans-serif] text-xl sm:text-2xl md:text-[26px] font-black uppercase tracking-tight transition-colors ${
+            <span className={`font-['Inter',sans-serif] text-2xl sm:text-3xl md:text-[32px] font-extrabold uppercase tracking-tight transition-colors ${
               currentView === 'magazine' 
                 ? 'text-black dark:text-white underline decoration-2 underline-offset-6' 
                 : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
@@ -348,10 +348,10 @@ export function Navigation({
             onClick={() => handleMenuNavigate('map')}
             className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-1.5"
           >
-            <span className="font-mono text-[11px] sm:text-xs font-bold text-blue-600 dark:text-blue-400 mr-3 sm:mr-4 select-none w-5 shrink-0">
+            <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
               04
             </span>
-            <span className={`font-['Inter',sans-serif] text-xl sm:text-2xl md:text-[26px] font-black uppercase tracking-tight transition-colors ${
+            <span className={`font-['Inter',sans-serif] text-2xl sm:text-3xl md:text-[32px] font-extrabold uppercase tracking-tight transition-colors ${
               currentView === 'map' 
                 ? 'text-black dark:text-white underline decoration-2 underline-offset-6' 
                 : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
@@ -364,10 +364,10 @@ export function Navigation({
             onClick={() => handleMenuNavigate('calendar')}
             className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-1.5"
           >
-            <span className="font-mono text-[11px] sm:text-xs font-bold text-blue-600 dark:text-blue-400 mr-3 sm:mr-4 select-none w-5 shrink-0">
+            <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
               05
             </span>
-            <span className={`font-['Inter',sans-serif] text-xl sm:text-2xl md:text-[26px] font-black uppercase tracking-tight transition-colors ${
+            <span className={`font-['Inter',sans-serif] text-2xl sm:text-3xl md:text-[32px] font-extrabold uppercase tracking-tight transition-colors ${
               currentView === 'calendar' 
                 ? 'text-black dark:text-white underline decoration-2 underline-offset-6' 
                 : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
@@ -380,10 +380,10 @@ export function Navigation({
             onClick={() => handleMenuNavigate('pocket')}
             className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-1.5"
           >
-            <span className="font-mono text-[11px] sm:text-xs font-bold text-red-600 dark:text-red-400 mr-3 sm:mr-4 select-none w-5 shrink-0">
+            <span className="font-mono text-xs sm:text-sm font-bold text-red-600 dark:text-red-400 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
               06
             </span>
-            <span className={`font-['Inter',sans-serif] text-xl sm:text-2xl md:text-[26px] font-black uppercase tracking-tight transition-colors ${
+            <span className={`font-['Inter',sans-serif] text-2xl sm:text-3xl md:text-[32px] font-extrabold uppercase tracking-tight transition-colors ${
               currentView === 'pocket' 
                 ? 'text-black dark:text-white underline decoration-2 underline-offset-6' 
                 : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
@@ -397,10 +397,10 @@ export function Navigation({
               onClick={() => handleMenuNavigate(currentView === 'manage' ? 'home' : 'manage')}
               className="flex items-baseline group cursor-pointer text-left transition-transform duration-200 hover:translate-x-1.5"
             >
-              <span className="font-mono text-[11px] sm:text-xs font-bold text-blue-600 dark:text-blue-400 mr-3 sm:mr-4 select-none w-5 shrink-0">
+              <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
                 07
               </span>
-              <span className={`font-['Inter',sans-serif] text-xl sm:text-2xl md:text-[26px] font-black uppercase tracking-tight transition-colors ${
+              <span className={`font-['Inter',sans-serif] text-2xl sm:text-3xl md:text-[32px] font-extrabold uppercase tracking-tight transition-colors ${
                 currentView === 'manage' 
                   ? 'text-black dark:text-white underline decoration-2 underline-offset-6' 
                   : 'text-black/80 dark:text-white/80 group-hover:text-black dark:group-hover:text-white'
@@ -416,10 +416,10 @@ export function Navigation({
             title="나이트 모드 전환 (단축키: ⌘+Shift+L / Ctrl+Shift+L)"
           >
             <div className="flex items-center">
-              <span className="font-mono text-[11px] sm:text-xs font-bold text-blue-600 dark:text-blue-400 mr-3 sm:mr-4 select-none w-5 shrink-0">
+              <span className="font-mono text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 mr-3.5 sm:mr-4 select-none w-5 shrink-0">
                 {isLoggedIn && isAdmin ? '08' : '07'}
               </span>
-              <span className="font-['Inter',sans-serif] text-lg sm:text-xl md:text-2xl font-black uppercase tracking-tight text-black/80 dark:text-white/80">
+              <span className="font-['Inter',sans-serif] text-xl sm:text-2xl md:text-[26px] font-extrabold uppercase tracking-tight text-black/80 dark:text-white/80">
                 NIGHT MODE
               </span>
               <span 
