@@ -443,32 +443,164 @@ export function generateCuratedTripProposals(criteria: TripCriteria): CuratedTri
       const highlights = spots.slice(idx * 2, idx * 2 + 3);
       if (highlights.length === 0) highlights.push(`${city.nameKo} 중심가`, `${city.nameKo} 대표 랜드마크`);
 
-      const timeline = Array.from({ length: dur + 1 }).map((_, dIdx) => {
-        const d = new Date(dateCalc.startDate);
-        d.setDate(d.getDate() + dIdx);
-        const dStr = formatDateToIso(d);
-        return {
-          date: dStr,
-          items: [
-            {
-              time: '10:30',
-              title: `${city.nameKo} ${highlights[dIdx % highlights.length] || '시티 투어'}`,
-              location: highlights[dIdx % highlights.length] || city.nameKo,
-              memo: `${meta.label} 맞춤 추천 명소 탐방`,
-              category: '관광',
-              type: 'activity' as const
-            },
-            {
-              time: '18:30',
-              title: `${city.nameKo} 추천 디너`,
-              location: city.nameKo,
-              memo: '현지 식재료로 완성하는 로컬 미식 디너',
-              category: '식사',
-              type: 'dining' as const
-            }
-          ]
-        };
-      });
+function buildRichCuratedTimeline(
+  city: DestinationCity,
+  startDateStr: string,
+  durationDays: number,
+  themeKey: string,
+  highlights: string[]
+): { date: string; items: { time: string; title: string; location: string; memo: string; category: string; type: 'activity' | 'dining' | 'stay' | 'transit' }[] }[] {
+  const totalDays = durationDays + 1;
+  const meta = THEME_PRESETS_META[themeKey] || THEME_PRESETS_META.all;
+  const spots = [...highlights, ...(city.iconicSpots || []), ...(city.hiddenGems || [])];
+
+  return Array.from({ length: totalDays }).map((_, dIdx) => {
+    const d = new Date(startDateStr);
+    d.setDate(d.getDate() + dIdx);
+    const dStr = formatDateToIso(d);
+    const isFirstDay = dIdx === 0;
+    const isLastDay = dIdx === totalDays - 1;
+
+    const spotA = spots[dIdx % spots.length] || `${city.nameKo} 대표 명소`;
+    const spotB = spots[(dIdx + 1) % spots.length] || `${city.nameKo} 테마 스팟`;
+
+    if (isFirstDay) {
+      return {
+        date: dStr,
+        items: [
+          {
+            time: '10:00 AM',
+            title: `${city.nameKo} 도착 및 이동`,
+            location: `${city.nameKo} 공항 / 중심역`,
+            memo: '현지 도착 후 도심 이동 및 교통편 확인',
+            category: '교통',
+            type: 'transit' as const
+          },
+          {
+            time: '12:00 PM',
+            title: '호텔 체크인 & 짐 보관',
+            location: `${city.nameKo} 도심 숙소`,
+            memo: '숙소 체크인 또는 짐 보관 후 가벼운 복장으로 출발',
+            category: '숙소',
+            type: 'stay' as const
+          },
+          {
+            time: '01:30 PM',
+            title: `${city.nameKo} 로컬 런치`,
+            location: `${city.nameKo} 미식 거리`,
+            memo: '현지인들이 즐겨 찾는 첫 번째 로컬 다이닝',
+            category: '식사',
+            type: 'dining' as const
+          },
+          {
+            time: '03:30 PM',
+            title: spotA,
+            location: spotA,
+            memo: `${meta.label} 큐레이터 추천 핵심 랜드마크 탐방`,
+            category: '관광',
+            type: 'activity' as const
+          },
+          {
+            time: '07:00 PM',
+            title: `${city.nameKo} 시그니처 디너`,
+            location: `${city.nameKo} 야경 거리`,
+            memo: '첫날의 여독을 푸는 여유로운 정찬 및 야경 산책',
+            category: '식사',
+            type: 'dining' as const
+          }
+        ]
+      };
+    }
+
+    if (isLastDay) {
+      return {
+        date: dStr,
+        items: [
+          {
+            time: '09:30 AM',
+            title: '호텔 체크아웃',
+            location: `${city.nameKo} 숙소`,
+            memo: '체크아웃 후 짐 정리 및 마지막 날 일정 준비',
+            category: '숙소',
+            type: 'stay' as const
+          },
+          {
+            time: '11:00 AM',
+            title: spotA,
+            location: spotA,
+            memo: '여행을 마무리하는 감성 명소 및 기념품 쇼핑',
+            category: '관광',
+            type: 'activity' as const
+          },
+          {
+            time: '01:00 PM',
+            title: '마지막 로컬 런치 & 카페',
+            location: `${city.nameKo} 카페거리`,
+            memo: '현지 스페셜티 커피와 함께 여정 기록 정리',
+            category: '식사',
+            type: 'dining' as const
+          },
+          {
+            time: '04:00 PM',
+            title: `${city.nameKo} 공항 이동 & 출국 수속`,
+            location: `${city.nameKo} 국제공항`,
+            memo: '공항 도착, 면세점 쇼핑 및 귀국 항공편 탑승',
+            category: '교통',
+            type: 'transit' as const
+          }
+        ]
+      };
+    }
+
+    return {
+      date: dStr,
+      items: [
+        {
+          time: '09:30 AM',
+          title: '모닝 브런치 & 베이커리',
+          location: `${city.nameKo} 감성 카페`,
+          memo: '신선한 로컬 브런치로 상쾌하게 시작하는 아침',
+          category: '식사',
+          type: 'dining' as const
+        },
+        {
+          time: '11:00 AM',
+          title: spotA,
+          location: spotA,
+          memo: `${meta.label} 테마를 온전히 느끼는 대표 명소 투어`,
+          category: '관광',
+          type: 'activity' as const
+        },
+        {
+          time: '01:30 PM',
+          title: `${city.nameKo} 숨은 맛집 탐방`,
+          location: `${city.nameKo} 골목 맛집`,
+          memo: '큐레이터가 엄선한 현지식 오리지널 미식',
+          category: '식사',
+          type: 'dining' as const
+        },
+        {
+          time: '03:30 PM',
+          title: spotB,
+          location: spotB,
+          memo: '도심 속 여유와 이국적인 정취를 즐기는 스팟',
+          category: '관광',
+          type: 'activity' as const
+        },
+        {
+          time: '07:30 PM',
+          title: `${city.nameKo} 로컬 나이트 라이프`,
+          location: `${city.nameKo} 야간 명소`,
+          memo: '아름다운 야경과 함께하는 디너 & 바 타임',
+          category: '식사',
+          type: 'dining' as const
+        }
+      ]
+    };
+  });
+}
+
+      const timeline = buildRichCuratedTimeline(city, dateCalc.startDate, dur, tKey, highlights);
 
       proposals.push({
         id: `proposal-${city.nameEn}-${tKey}-${idx}`,
@@ -550,32 +682,7 @@ export function generateCuratedTripProposals(criteria: TripCriteria): CuratedTri
     const highlights = spots.slice(0, 3);
     if (highlights.length === 0) highlights.push(`${cObj.nameKo} 중심가`, `${cObj.nameKo} 대표 명소`);
 
-    const timeline = Array.from({ length: durToUse + 1 }).map((_, dIdx) => {
-      const d = new Date(dateCalc.startDate);
-      d.setDate(d.getDate() + dIdx);
-      const dStr = formatDateToIso(d);
-      return {
-        date: dStr,
-        items: [
-          {
-            time: '11:00',
-            title: `${cObj.nameKo} ${highlights[dIdx % highlights.length] || '랜드마크'}`,
-            location: highlights[dIdx % highlights.length] || cObj.nameKo,
-            memo: '추천 스팟 탐방 및 여유로운 산책',
-            category: '관광',
-            type: 'activity' as const
-          },
-          {
-            time: '19:00',
-            title: `${cObj.nameKo} 디너 & 야경`,
-            location: cObj.nameKo,
-            memo: '대표 야경 명소 조망 및 로컬 디너',
-            category: '식사',
-            type: 'dining' as const
-          }
-        ]
-      };
-    });
+    const timeline = buildRichCuratedTimeline(cObj, dateCalc.startDate, durToUse, activeTheme, highlights);
 
     proposals.push({
       id: `proposal-${cObj.nameEn}-${activeTheme}-${idx}`,

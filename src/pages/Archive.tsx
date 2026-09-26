@@ -6,6 +6,7 @@ import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
 import { preloadDetailPage } from '../utils/prefetchHelper';
 import { getUpcomingPlanInfo } from '../utils/tripPlanHelper';
+import { sortJourneysByOrder } from '../utils/journeyOrderHelper';
 
 interface CardMediaProps {
   img: string;
@@ -436,20 +437,7 @@ export function ArchiveHubPage({
       });
     }
 
-    try {
-      const saved = localStorage.getItem('journey_order');
-      if (saved) {
-        const order: number[] = JSON.parse(saved);
-        const idMap = new Map(order.map((id, idx) => [id, idx]));
-        return list.sort((a, b) => {
-          const orderA = idMap.has(a.id) ? idMap.get(a.id)! : (a.displayOrder ?? 999999);
-          const orderB = idMap.has(b.id) ? idMap.get(b.id)! : (b.displayOrder ?? 999999);
-          return orderA - orderB;
-        });
-      }
-    } catch (_) {}
-
-    return list.sort((a, b) => (a.displayOrder ?? 999999) - (b.displayOrder ?? 999999));
+    return sortJourneysByOrder(list);
   }, [trips, plans]);
 
   const [localTrips, setLocalTrips] = useState<Trip[]>(combinedTrips);

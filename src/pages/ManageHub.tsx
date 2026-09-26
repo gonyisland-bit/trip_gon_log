@@ -63,6 +63,7 @@ import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { UserProfileAvatar } from '../components/UserProfileAvatar';
 import { ProfileEditModal } from '../components/ProfileEditModal';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
+import { sortJourneysByOrder } from '../utils/journeyOrderHelper';
 import { getEffectiveImageUrl, uploadFileToR2, deleteFileFromR2 } from '../utils/storageHelper';
 import { compressImage } from '../utils/imageHelper';
 import { inspectAndPrepareVideo } from '../utils/videoHelper';
@@ -2642,23 +2643,7 @@ export function ManageHubPage({
       isPlan: false,
       tags: Array.from(new Set((t.tags || []).filter(t => t !== 'Archived'))),
     }));
-    let combined = [...tripsClean, ...plansWithFlag];
-    try {
-      const saved = localStorage.getItem('journey_order');
-      if (saved) {
-        const order: number[] = JSON.parse(saved);
-        const idMap = new Map(order.map((id, idx) => [id, idx]));
-        combined = combined.sort((a, b) => {
-          const orderA = idMap.has(a.id) ? idMap.get(a.id)! : (a.displayOrder ?? 999999);
-          const orderB = idMap.has(b.id) ? idMap.get(b.id)! : (b.displayOrder ?? 999999);
-          return orderA - orderB;
-        });
-      } else {
-        combined = combined.sort((a, b) => (a.displayOrder ?? 999999) - (b.displayOrder ?? 999999));
-      }
-    } catch (_) {
-      combined = combined.sort((a, b) => (a.displayOrder ?? 999999) - (b.displayOrder ?? 999999));
-    }
+    const combined = sortJourneysByOrder([...tripsClean, ...plansWithFlag]);
 
     setLocalJourneys(combined);
     if (!savedTripOrderRef.current && combined.length > 0) {

@@ -356,9 +356,8 @@ export function TripBuilderPanel({
 
     const hasTargetFilter = countryTokens.size > 0 || cityTokens.size > 0;
 
-    // 1단계: 명시적 선택 또는 현재 국가/도시 매칭 필터링
+    // 1단계: 현재 국가/도시 매칭 필터링 (무관한 타 지역 포켓 누출 원천 차단)
     const matchedSpots = allPockets.filter(s => {
-      if (selectedPocketIds.has(s.id)) return true;
       if (!hasTargetFilter) return false;
 
       const sCountry = (s.country || '').toLowerCase().trim();
@@ -964,8 +963,9 @@ export function TripBuilderPanel({
 
   const mergePocketsIntoTimeline = (timelineItems: { date: string; items: any[] }[]) => {
     if (timelineItems.length === 0) return timelineItems;
+    const allowedPocketIds = relevantPocketSpots.length > 0 ? new Set(relevantPocketSpots.map(s => s.id)) : null;
     const selectedPocketsList = (savedPockets.length > 0 ? savedPockets : getSavedPockets())
-      .filter(p => selectedPocketIds.has(p.id));
+      .filter(p => selectedPocketIds.has(p.id) && (!allowedPocketIds || allowedPocketIds.has(p.id)));
     if (selectedPocketsList.length === 0) return timelineItems;
 
     const defaultTimeSlots = ['10:00 AM', '01:00 PM', '04:00 PM', '07:00 PM', '09:00 PM'];
@@ -1013,7 +1013,7 @@ export function TripBuilderPanel({
     
     const combinedLocationStr = locations.length > 0 
       ? locations.map(loc => loc.name).join(', ') 
-      : (smartCity?.nameKo || smartCountry?.nameKo || country || '자유 여정');
+      : (smartCity?.nameKo || '자유 여정');
 
     const firstLat = locations[0]?.lat || smartCity?.lat;
     const firstLng = locations[0]?.lng || smartCity?.lng;
@@ -1156,7 +1156,7 @@ export function TripBuilderPanel({
         onCreate(
           preset.title,
           dateRange,
-          `${preset.country}, ${preset.city}`,
+          preset.city,
           [preset.country, ...preset.tags],
           lat,
           lng,
@@ -1248,7 +1248,7 @@ export function TripBuilderPanel({
         onCreate(
           prop.title,
           dateRange,
-          `${prop.countryEn}, ${prop.cityName}`,
+          prop.cityName,
           [prop.countryEn, prop.theme.toUpperCase(), `${prop.durationDays}박${prop.durationDays + 1}일`],
           prop.cityObj.lat,
           prop.cityObj.lng,
@@ -1392,39 +1392,186 @@ export function TripBuilderPanel({
     const endStr = `${endObj.getFullYear()}.${String(endObj.getMonth() + 1).padStart(2, '0')}.${String(endObj.getDate()).padStart(2, '0')}`;
     const dateRange = `${startStr} - ${endStr}`;
 
-    const spots = cityObj ? [...cityObj.iconicSpots, ...cityObj.hiddenGems] : ['도심 랜드마크 탐방'];
-    let generatedTimeline = Array.from({ length: smartDurationDays + 1 }).map((_, dIdx) => {
+    const spots = cityObj ? [...cityObj.iconicSpots, ...cityObj.hiddenGems] : [`${finalCity} 도심 랜드마크`];
+    const totalDays = smartDurationDays + 1;
+    let generatedTimeline = Array.from({ length: totalDays }).map((_, dIdx) => {
       const cDate = new Date(startObj);
       cDate.setDate(cDate.getDate() + dIdx);
       const cDateStr = `${cDate.getFullYear()}.${String(cDate.getMonth() + 1).padStart(2, '0')}.${String(cDate.getDate()).padStart(2, '0')}`;
-      const spotName = spots[dIdx % spots.length] || `${finalCity} 도심 명소`;
+      const spotNameA = spots[dIdx % spots.length] || `${finalCity} 도심 명소`;
+      const spotNameB = spots[(dIdx + 1) % spots.length] || `${finalCity} 테마 스팟`;
+      const isFirst = dIdx === 0;
+      const isLast = dIdx === totalDays - 1;
 
-      return {
-        date: cDateStr,
-        items: [
+      let items: any[] = [];
+      if (isFirst) {
+        items = [
           {
-            id: Date.now() + dIdx * 10 + 1,
+            id: Date.now() + dIdx * 100 + 1,
             time: '10:00 AM',
-            place: spotName,
-            title: `${spotName} 방문`,
-            location: spotName,
-            memo: `${selectedTheme !== 'all' ? selectedTheme.toUpperCase() + ' 테마' : '추천 코스'} 도심 투어`,
+            place: `${finalCity} 도착 및 이동`,
+            title: `${finalCity} 도착 및 이동`,
+            location: `${finalCity} 중심역`,
+            memo: '현지 도착 후 도심 이동 및 교통편 확인',
+            category: '교통',
+            type: 'transit',
+            date: cDateStr
+          },
+          {
+            id: Date.now() + dIdx * 100 + 2,
+            time: '12:00 PM',
+            place: '호텔 체크인 & 짐 보관',
+            title: '호텔 체크인 & 짐 보관',
+            location: `${finalCity} 도심 숙소`,
+            memo: '숙소 체크인 또는 짐 보관 후 출발',
+            category: '숙소',
+            type: 'stay',
+            date: cDateStr
+          },
+          {
+            id: Date.now() + dIdx * 100 + 3,
+            time: '01:30 PM',
+            place: `${finalCity} 로컬 런치`,
+            title: `${finalCity} 로컬 런치`,
+            location: `${finalCity} 미식 거리`,
+            memo: '현지인들이 즐겨 찾는 첫 번째 로컬 다이닝',
+            category: '식사',
+            type: 'dining',
+            date: cDateStr
+          },
+          {
+            id: Date.now() + dIdx * 100 + 4,
+            time: '03:30 PM',
+            place: spotNameA,
+            title: `${spotNameA} 탐방`,
+            location: spotNameA,
+            memo: `${selectedTheme !== 'all' ? selectedTheme.toUpperCase() + ' 테마' : '추천 코스'} 핵심 명소`,
             category: '관광',
             type: 'activity',
             date: cDateStr
           },
           {
-            id: Date.now() + dIdx * 10 + 2,
-            time: '01:00 PM',
-            place: `${finalCity} 로컬 미식 탐방`,
-            title: `${finalCity} 로컬 미식 탐방`,
-            location: `${finalCity} 로컬 미식 탐방`,
-            memo: '현지 인기 다이닝 및 카페 브레이크',
+            id: Date.now() + dIdx * 100 + 5,
+            time: '07:00 PM',
+            place: `${finalCity} 시그니처 디너`,
+            title: `${finalCity} 시그니처 디너`,
+            location: `${finalCity} 야경 거리`,
+            memo: '첫날의 여독을 푸는 여유로운 정찬 및 야경 산책',
             category: '식사',
             type: 'dining',
             date: cDateStr
           }
-        ]
+        ];
+      } else if (isLast) {
+        items = [
+          {
+            id: Date.now() + dIdx * 100 + 1,
+            time: '09:30 AM',
+            place: '호텔 체크아웃',
+            title: '호텔 체크아웃',
+            location: `${finalCity} 숙소`,
+            memo: '체크아웃 후 짐 정리 및 마지막 날 일정 준비',
+            category: '숙소',
+            type: 'stay',
+            date: cDateStr
+          },
+          {
+            id: Date.now() + dIdx * 100 + 2,
+            time: '11:00 AM',
+            place: spotNameA,
+            title: `${spotNameA} 기념 투어`,
+            location: spotNameA,
+            memo: '여행을 마무리하는 감성 명소 및 기념품 쇼핑',
+            category: '관광',
+            type: 'activity',
+            date: cDateStr
+          },
+          {
+            id: Date.now() + dIdx * 100 + 3,
+            time: '01:00 PM',
+            place: '마지막 로컬 런치 & 카페',
+            title: '마지막 로컬 런치 & 카페',
+            location: `${finalCity} 카페거리`,
+            memo: '현지 스페셜티 커피와 함께 여정 기록 정리',
+            category: '식사',
+            type: 'dining',
+            date: cDateStr
+          },
+          {
+            id: Date.now() + dIdx * 100 + 4,
+            time: '04:00 PM',
+            place: `${finalCity} 공항 이동 & 출국 수속`,
+            title: `${finalCity} 공항 이동 & 출국 수속`,
+            location: `${finalCity} 국제공항`,
+            memo: '공항 도착, 면세점 쇼핑 및 귀국 항공편 탑승',
+            category: '교통',
+            type: 'transit',
+            date: cDateStr
+          }
+        ];
+      } else {
+        items = [
+          {
+            id: Date.now() + dIdx * 100 + 1,
+            time: '09:30 AM',
+            place: '모닝 브런치 & 베이커리',
+            title: '모닝 브런치 & 베이커리',
+            location: `${finalCity} 감성 카페`,
+            memo: '신선한 로컬 브런치로 상쾌하게 시작하는 아침',
+            category: '식사',
+            type: 'dining',
+            date: cDateStr
+          },
+          {
+            id: Date.now() + dIdx * 100 + 2,
+            time: '11:00 AM',
+            place: spotNameA,
+            title: `${spotNameA} 방문`,
+            location: spotNameA,
+            memo: '테마를 온전히 느끼는 대표 명소 투어',
+            category: '관광',
+            type: 'activity',
+            date: cDateStr
+          },
+          {
+            id: Date.now() + dIdx * 100 + 3,
+            time: '01:30 PM',
+            place: `${finalCity} 숨은 맛집 탐방`,
+            title: `${finalCity} 숨은 맛집 탐방`,
+            location: `${finalCity} 골목 맛집`,
+            memo: '엄선된 현지식 오리지널 미식 런치',
+            category: '식사',
+            type: 'dining',
+            date: cDateStr
+          },
+          {
+            id: Date.now() + dIdx * 100 + 4,
+            time: '03:30 PM',
+            place: spotNameB,
+            title: `${spotNameB} 탐방`,
+            location: spotNameB,
+            memo: '도심 속 여유와 이국적인 정취를 즐기는 스팟',
+            category: '관광',
+            type: 'activity',
+            date: cDateStr
+          },
+          {
+            id: Date.now() + dIdx * 100 + 5,
+            time: '07:30 PM',
+            place: `${finalCity} 로컬 나이트 라이프`,
+            title: `${finalCity} 로컬 나이트 라이프`,
+            location: `${finalCity} 야간 명소`,
+            memo: '아름다운 야경과 함께하는 디너 & 바 타임',
+            category: '식사',
+            type: 'dining',
+            date: cDateStr
+          }
+        ];
+      }
+
+      return {
+        date: cDateStr,
+        items
       };
     });
 
@@ -1439,7 +1586,7 @@ export function TripBuilderPanel({
         onCreate(
           tripTitle,
           dateRange,
-          `${finalCountry}, ${finalCity}`,
+          finalCity,
           [finalCountry, selectedTheme !== 'all' ? selectedTheme : 'Travel'],
           cityObj?.lat,
           cityObj?.lng,

@@ -10,6 +10,7 @@ import { DetailSkeleton, TopProgressBar } from './components/EditorialSkeleton';
 import { FlightTransitionOverlay } from './components/FlightTransitionOverlay';
 import { SplashScreen } from './components/SplashScreen';
 import { preloadDetailPage, preloadMapPage, preloadManagePage, scheduleIdlePrefetch } from './utils/prefetchHelper';
+import { sortJourneysByOrder } from './utils/journeyOrderHelper';
 
 // Resilient lazy import with automatic retry on chunk loading failure (e.g. browser reconnect or new deploy)
 function lazyWithRetry<T extends React.ComponentType<any>>(
@@ -128,19 +129,7 @@ function cleanForFirestore(obj: any): any {
 }
 
 function applyJourneyOrder<T extends { id: number; displayOrder?: number }>(items: T[]): T[] {
-  try {
-    const saved = localStorage.getItem('journey_order');
-    if (saved) {
-      const order: number[] = JSON.parse(saved);
-      const idMap = new Map(order.map((id, idx) => [id, idx]));
-      return [...items].sort((a, b) => {
-        const orderA = idMap.has(a.id) ? idMap.get(a.id)! : (a.displayOrder ?? 999999);
-        const orderB = idMap.has(b.id) ? idMap.get(b.id)! : (b.displayOrder ?? 999999);
-        return orderA - orderB;
-      });
-    }
-  } catch (_) {}
-  return [...items].sort((a, b) => (a.displayOrder ?? a.id) - (b.displayOrder ?? b.id));
+  return sortJourneysByOrder(items);
 }
 
 const SUPER_ADMIN_EMAIL = 'gonyisland@naver.com';
@@ -2256,11 +2245,13 @@ function App() {
     const collectionName = createModalType === 'archive' ? 'trips' : 'plans';
 
     // Calculate front-most display order
-    const allExisting = [...trips, ...plans];
-    const minOrder = allExisting.length > 0 
-      ? Math.min(...allExisting.map(t => t.displayOrder ?? 9999)) 
-      : 0;
-    const newDisplayOrder = Math.min(-1, minOrder - 1);
+    // 신규 여정은 무조건 맨 앞(인덱스 0)에 위치하며, 기존 여정들은 뒤로 차례대로 순차 정렬
+    const saved = localStorage.getItem('journey_order');
+    const existingOrder: number[] = saved ? JSON.parse(saved) : [];
+    const updatedOrder = [newId, ...existingOrder.filter(id => id !== newId)];
+    try {
+      localStorage.setItem('journey_order', JSON.stringify(updatedOrder));
+    } catch (_) {}
 
     const newJourney: any = {
       id: newId,
@@ -2277,22 +2268,30 @@ function App() {
       members: members || [],
       statusBadge: statusBadge || '',
       country: country || '',
-      displayOrder: newDisplayOrder,
+      displayOrder: 0,
       ownerId: user.uid,
       ownerEmail: user.email || '',
       allowedEditors: []
     };
 
-    // Prepend to localStorage journey_order immediately so UI renders it at the top
-    try {
-      const saved = localStorage.getItem('journey_order');
-      const order: number[] = saved ? JSON.parse(saved) : [];
-      localStorage.setItem('journey_order', JSON.stringify([newId, ...order.filter(id => id !== newId)]));
-    } catch (_) {}
-
     try {
       // 1. Save journey doc immediately with cleanForFirestore to purge undefined values
       await setDoc(doc(db, 'users', 'public', collectionName, String(newId)), cleanForFirestore(newJourney));
+
+      // 1-1. 기존 여정들의 displayOrder를 배치 업데이트하여 클라우드 서버 영속성 보장 (일관된 최신순 정렬)
+      try {
+        const batch = writeBatch(db);
+        const allOther = [...trips, ...plans].filter(t => t.id !== newId);
+        allOther.forEach((it) => {
+          const newIdx = updatedOrder.indexOf(it.id);
+          const effectiveIdx = newIdx !== -1 ? newIdx : ((it.displayOrder ?? 0) + 1);
+          const col = plans.some(p => p.id === it.id) ? 'plans' : 'trips';
+          batch.update(doc(db, 'users', 'public', col, String(it.id)), { displayOrder: effectiveIdx });
+        });
+        await batch.commit();
+      } catch (orderErr) {
+        console.warn('Batch displayOrder sync warning:', orderErr);
+      }
 
       // 2. Generate template or custom timeline items
       const generateTemplateDays = (): { date: string; items: any[] }[] => {
