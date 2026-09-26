@@ -88,8 +88,9 @@ export function FloatingPocketWidget({
           {/* Destination Context & Category filter */}
           <div className="p-2.5 border-b border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02]">
             <div className="flex items-center justify-between text-[10px] font-mono text-black/50 dark:text-white/50 mb-1.5">
-              <span className="truncate">
-                {relevantSpots.length > 0 ? `📍 ${trip.locationStr || trip.title}` : '📍 전체 킵 스팟'}
+              <span className="truncate flex items-center gap-1">
+                <MapPin className="w-3 h-3 shrink-0" />
+                <span>{relevantSpots.length > 0 ? (trip.locationStr || trip.title) : '전체 킵 스팟'}</span>
               </span>
               <span className="font-bold text-red-500">
                 타깃: {selectedDate === 'ALL' ? (allTripDates[0] || 'DAY 1') : selectedDate}

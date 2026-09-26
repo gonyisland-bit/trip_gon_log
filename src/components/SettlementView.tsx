@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { 
   UserPlus, Coins, ArrowRight, AlertCircle, Plus, Trash2,
-  ChevronRight, ChevronDown, Paperclip, Loader2, X, ExternalLink, Share2, Download
+  ChevronRight, ChevronDown, Paperclip, Loader2, X, ExternalLink, Share2, Download,
+  Lightbulb, ClipboardList, User, Send
 } from 'lucide-react';
 import { Trip, TimelineItem, FlightItem, StayItem, TransitItem, TabType, CustomExpenseItem } from '../types';
 import { uploadFileToR2, getEffectiveImageUrl } from '../utils/storageHelper';
@@ -473,8 +474,9 @@ export function SettlementView({
               <img src={capturedImg} alt="정산 결과" className="max-w-full h-auto object-contain max-h-[70vh] shadow-md bg-white" />
             </div>
             
-            <p className="text-[9px] text-black/50 dark:text-white/50 text-center leading-relaxed">
-              💡 모바일 기기(카카오톡 등)에서는 이미지를 길게 누르면 저장하거나 공유할 수 있습니다.
+            <p className="text-[9px] text-black/50 dark:text-white/50 text-center leading-relaxed flex items-center justify-center gap-1">
+              <Lightbulb className="w-3 h-3 text-black/40 dark:text-white/40" />
+              <span>모바일 기기(카카오톡 등)에서는 이미지를 길게 누르면 저장하거나 공유할 수 있습니다.</span>
             </p>
             
             <div className="flex gap-2">
@@ -513,7 +515,7 @@ export function SettlementView({
         {isCapturing && (
           <div className="text-center pb-4 border-b border-dashed border-black/25 dark:border-white/25 mb-2">
             <span className="text-[9px] uppercase tracking-widest opacity-60 font-black text-black/60 dark:text-white/60">Receipt / 정산 결과</span>
-            <h1 className="text-base md:text-lg font-black text-black dark:text-white mt-1">✈️ {trip.title || '여행'}</h1>
+            <h1 className="text-base md:text-lg font-black text-black dark:text-white mt-1">{trip.title || '여행'}</h1>
             <p className="text-[9px] text-black/55 dark:text-white/55 mt-1">
               기간: {trip.date || '여정 일정'}
             </p>
@@ -544,8 +546,9 @@ export function SettlementView({
       {/* 3. Expense Ledger */}
       <div className="bg-white dark:bg-[#1a1a1a] border border-black/10 dark:border-white/10 shadow-sm overflow-hidden">
         <div className="py-2 px-3 bg-black/3 dark:bg-white/3 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
-          <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-black/55 dark:text-white/55">
-            📋 결제 기록 ({expenseItems.length}건)
+          <span className="flex items-center gap-1.5 text-[10px] md:text-xs font-extrabold uppercase tracking-widest text-black/55 dark:text-white/55">
+            <ClipboardList className="w-3.5 h-3.5" />
+            <span>결제 기록 ({expenseItems.length}건)</span>
           </span>
           <div className="flex items-center gap-2">
             {!isCapturing && (
@@ -643,7 +646,9 @@ export function SettlementView({
                   <th className="py-2 px-1.5 whitespace-nowrap">결제자</th>
                   <th className="py-2 px-1.5 text-right whitespace-nowrap">PAY</th>
                   <th className="py-2 px-1.5 text-right whitespace-nowrap">PAY(₩)</th>
-                  <th className="py-2 px-1.5 text-center whitespace-nowrap">📎</th>
+                  <th className="py-2 px-1.5 text-center whitespace-nowrap" title="첨부파일">
+                    <Paperclip className="w-3 h-3 mx-auto text-black/50 dark:text-white/50" />
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -856,8 +861,9 @@ export function SettlementView({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 border-t border-dashed border-black/20 dark:border-white/20 pt-4">
         {/* 개인별 지출 현황 */}
         <div className="flex flex-col gap-2.5">
-          <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-black/55 dark:text-white/55 border-b border-dashed border-black/10 dark:border-white/10 pb-1.5 flex items-center gap-1">
-            👤 개인별 (INDIVIDUAL)
+          <span className="text-[9px] md:text-[10px] font-extrabold uppercase tracking-widest text-black/55 dark:text-white/55 border-b border-dashed border-black/10 dark:border-white/10 pb-1.5 flex items-center gap-1.5">
+            <User className="w-3.5 h-3.5" />
+            <span>개인별 (INDIVIDUAL)</span>
           </span>
           <div className="flex flex-col gap-2">
             {members.map(name => {
@@ -880,8 +886,9 @@ export function SettlementView({
 
         {/* 추천 송금 */}
         <div className="flex flex-col gap-2.5">
-          <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-emerald-800 dark:text-emerald-400 border-b border-dashed border-emerald-500/20 pb-1.5 flex items-center gap-1">
-            <Coins className="w-3.5 h-3.5 text-emerald-600" /> 💸 송금 (SEND)
+          <span className="text-[9px] md:text-[10px] font-extrabold uppercase tracking-widest text-emerald-800 dark:text-emerald-400 border-b border-dashed border-emerald-500/20 pb-1.5 flex items-center gap-1.5">
+            <Send className="w-3.5 h-3.5 text-emerald-600" />
+            <span>송금 (SEND)</span>
           </span>
           {transfers.length === 0 ? (
             <div className="text-center py-4 text-[10px] text-black/40 dark:text-white/40 font-bold border border-dashed border-black/10 dark:border-white/10">

@@ -5,8 +5,10 @@ import {
   ExternalLink, MapPinOff, Maximize2, Star, ChevronLeft, ChevronRight, ArrowUp, ArrowDown,
   Sun, Cloud, Cloudy, CloudRain, Snowflake, CloudLightning, ArrowRight, Calculator, FileText, Share2, GripVertical,
   Play, Pause, SkipForward, SkipBack, X as CloseIcon, Check, Edit3, DollarSign,
-  Columns2, LayoutGrid, ArrowRightLeft, X, Coins, Undo2, Redo2, Calendar, Upload, Copy
+  Columns2, LayoutGrid, ArrowRightLeft, X, Coins, Undo2, Redo2, Calendar, Upload, Copy,
+  Sparkles, Users
 } from 'lucide-react';
+import { QuickBookingModal } from '../components/QuickBookingModal';
 import { MapArea } from '../components/MapArea';
 import { ImageEditOverlay } from '../components/ImageEditOverlay';
 import { FlightCard } from '../components/FlightCard';
@@ -783,6 +785,7 @@ export function JourneyDetailPage({
   const [switcherSearch, setSwitcherSearch] = useState('');
   const [showTripDeleteConfirm, setShowTripDeleteConfirm] = useState(false);
   const [costModalItem, setCostModalItem] = useState<TimelineItem | null>(null);
+  const [isQuickBookingOpen, setIsQuickBookingOpen] = useState(false);
 
   // ── 300m Hotspot Radar State ──
   const [nearbySpotAlert, setNearbySpotAlert] = useState<{ spot: SpotPocketItem; distance: number } | null>(null);
@@ -4068,10 +4071,29 @@ export function JourneyDetailPage({
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2 flex-wrap text-black/60 dark:text-white/60">
-                <span>🗓 {trip.date}</span>
-                <span>•</span>
-                <span>📍 {formatDestinations(trip.locationStr)}</span>
+              <div className="flex items-center justify-between gap-2 flex-wrap text-black/70 dark:text-white/70 w-full">
+                <div className="flex items-center gap-3 flex-wrap text-xs font-mono">
+                  <span className="flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+                    <span>{trip.date}</span>
+                  </span>
+                  <span className="text-black/30 dark:text-white/30">•</span>
+                  <span className="flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+                    <span className="font-sans font-bold">{formatDestinations(trip.locationStr)}</span>
+                  </span>
+                </div>
+
+                {/* 1-Click Smart Booking Shortcut Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsQuickBookingOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 border border-black/15 dark:border-white/15 text-[10px] font-mono font-bold uppercase tracking-wider text-black dark:text-white transition-all active:scale-[0.98] cursor-pointer"
+                  title="항공권 & 숙소 원클릭 스마트 예약 비교"
+                >
+                  <Sparkles className="w-3 h-3 text-emerald-500" />
+                  <span>RESERVE SHORTCUT</span>
+                </button>
               </div>
             )}
           </div>
@@ -4080,7 +4102,9 @@ export function JourneyDetailPage({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-t border-black/10 dark:border-white/10 pt-2.5">
             {/* Members */}
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] uppercase tracking-widest text-black/50 dark:text-white/50 font-bold shrink-0">👥 Members:</span>
+              <span className="flex items-center gap-1 text-[10px] uppercase tracking-widest text-black/50 dark:text-white/50 font-bold shrink-0">
+                <Users className="w-3 h-3" /> MEMBERS:
+              </span>
               {isEditing && draftTrip ? (
                 <div className="flex flex-wrap gap-2 items-center">
                   {(draftTrip.members || []).map(m => (
@@ -4101,7 +4125,7 @@ export function JourneyDetailPage({
                         className="hover:text-red-500 text-red-600 font-bold text-[10px] ml-1 leading-none"
                         title="삭제"
                       >
-                        ✕
+                        <X className="w-2.5 h-2.5" />
                       </button>
                     </span>
                   ))}
@@ -4189,10 +4213,10 @@ export function JourneyDetailPage({
           </button>
           <button
             onClick={() => setNearbySpotAlert(null)}
-            className="text-white/50 dark:text-black/50 hover:text-white dark:hover:text-black text-xs ml-0.5 cursor-pointer"
+            className="text-white/50 dark:text-black/50 hover:text-white dark:hover:text-black p-0.5 ml-0.5 cursor-pointer"
             title="닫기"
           >
-            ✕
+            <X className="w-3 h-3" />
           </button>
         </div>
       )}
@@ -4485,9 +4509,9 @@ export function JourneyDetailPage({
                 setActiveTab(tab.id as TabType);
                 setExpandedItemId(null);
               }} 
-              className={`flex-1 h-full px-0.5 sm:px-2 flex items-center justify-center text-[10px] sm:text-[11px] md:text-xs font-black uppercase tracking-wider border-r border-black/15 dark:border-white/15 last:border-r-0 transition-colors whitespace-nowrap cursor-pointer font-sans select-none ${
+              className={`flex-1 h-full px-0.5 sm:px-2 flex items-center justify-center text-[10px] sm:text-[11px] md:text-xs font-extrabold uppercase tracking-wider border-r border-black/15 dark:border-white/15 last:border-r-0 transition-all active:scale-[0.98] whitespace-nowrap cursor-pointer font-sans select-none ${
                 activeTab === tab.id 
-                  ? 'bg-black text-white dark:bg-white dark:text-black font-black' 
+                  ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
                   : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70'
               }`}
             >
@@ -5396,6 +5420,24 @@ export function JourneyDetailPage({
           <div className={`w-full flex flex-col ${activeTab === 'flights' ? 'block' : 'hidden'}`}>
             {visitedTabs.has('flights') && (
               <>
+                {/* 1-Click Flight Search Banner */}
+                <div className="flex items-center justify-between px-4 py-2.5 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/10 dark:border-white/10 text-xs">
+                  <div className="flex items-center gap-2 font-mono">
+                    <Plane className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
+                    <span className="font-bold tracking-wider text-[11px] uppercase text-black/70 dark:text-white/70">
+                      실시간 최저가 항공권 비교
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsQuickBookingOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90 font-mono text-[10px] font-bold tracking-widest uppercase transition-all active:scale-[0.98] shadow-xs cursor-pointer"
+                  >
+                    <Sparkles className="w-3 h-3 text-emerald-400" />
+                    <span>ONE-CLICK SEARCH</span>
+                  </button>
+                </div>
+
                 {(() => {
                   const flightsToUse = isEditing ? draftFlights : flights;
                   if (flightsToUse.length === 0) {
@@ -5459,8 +5501,9 @@ export function JourneyDetailPage({
                             >
                               {prevFlight && layoverTimeStr && (
                                 <div className="py-2 px-4 md:px-6 flex items-center justify-center bg-red-50/60 dark:bg-red-950/20 border-b border-red-500/20 w-full" onClick={(e) => e.stopPropagation()}>
-                                  <span className="text-[9px] sm:text-[10px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-400">
-                                    ✈️ Layover at {prevFlight.toCode} · {layoverTimeStr}
+                                  <span className="flex items-center gap-1.5 text-[9px] sm:text-[10px] font-mono font-extrabold uppercase tracking-widest text-red-600 dark:text-red-400">
+                                    <Plane className="w-3 h-3" />
+                                    <span>LAYOVER AT {prevFlight.toCode} · {layoverTimeStr}</span>
                                   </span>
                                 </div>
                               )}
@@ -5525,6 +5568,23 @@ export function JourneyDetailPage({
           <div className={`w-full flex flex-col ${activeTab === 'stays' ? 'block' : 'hidden'}`}>
             {visitedTabs.has('stays') && (
               <>
+                {/* 1-Click Stay Search Banner */}
+                <div className="flex items-center justify-between px-4 py-2.5 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/10 dark:border-white/10 text-xs">
+                  <div className="flex items-center gap-2 font-mono">
+                    <Bed className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
+                    <span className="font-bold tracking-wider text-[11px] uppercase text-black/70 dark:text-white/70">
+                      실시간 숙소 특가 비교
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsQuickBookingOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90 font-mono text-[10px] font-bold tracking-widest uppercase transition-all active:scale-[0.98] shadow-xs cursor-pointer"
+                  >
+                    <Sparkles className="w-3 h-3 text-emerald-400" />
+                    <span>ONE-CLICK SEARCH</span>
+                  </button>
+                </div>
                 {(isEditing ? draftStays : stays).length === 0 ? (
                   <div className="text-center py-16 text-black/40 dark:text-white/40 text-xs md:text-sm font-bold tracking-widest uppercase">
                     등록된 숙소 정보가 없습니다.
@@ -6643,6 +6703,18 @@ export function JourneyDetailPage({
           </div>
         </div>
       )}
+
+      {/* ── 1-CLICK SMART BOOKING SHORTCUT MODAL ── */}
+      <QuickBookingModal
+        isOpen={isQuickBookingOpen}
+        onClose={() => setIsQuickBookingOpen(false)}
+        destination={tripToUse?.locationStr || tripToUse?.title || ''}
+        startDate={minDate}
+        endDate={maxDate}
+        memberCount={tripToUse?.members?.length || 1}
+        initialFromCode={flights[0]?.fromCode || 'ICN'}
+        initialToCode={flights[0]?.toCode || ''}
+      />
     </main>
   );
 }

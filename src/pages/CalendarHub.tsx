@@ -1611,7 +1611,7 @@ export function CalendarHubPage({
     const periodStr = evt.startDate === (evt.endDate || evt.startDate)
       ? evt.startDate
       : `${evt.startDate} ~ ${evt.endDate}`;
-    const shareText = `[Trip Gon Log 일정]\n📌 ${evt.title}\n📅 ${periodStr}\n🏷️ ${categoryInfo.label}${evt.memo ? `\n📝 ${evt.memo}` : ''}`;
+    const shareText = `[TRIPGON LOG]\n· 일정: ${evt.title}\n· 기간: ${periodStr}\n· 분류: ${categoryInfo.label}${evt.memo ? `\n· 메모: ${evt.memo}` : ''}`;
 
     if (navigator.share) {
       try {

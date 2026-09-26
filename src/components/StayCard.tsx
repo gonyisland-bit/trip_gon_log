@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bed, Trash2, ImagePlus, Loader2, X, ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
+import { Bed, Trash2, ImagePlus, Loader2, X, ChevronDown, ChevronUp, Copy, Check, Camera } from 'lucide-react';
 import { StayItem } from '../types';
 import { ImageEditOverlay } from './ImageEditOverlay';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
@@ -431,8 +431,9 @@ export function StayCard({
               </span>
             )}
             {stay.additionalImages && stay.additionalImages.length > 0 && (
-              <span className="px-1.5 py-0.2 rounded bg-black/10 dark:bg-white/10 text-[8px] font-mono font-bold">
-                📷 {stay.additionalImages.length}
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-black/10 dark:bg-white/10 text-[8px] font-mono font-bold">
+                <Camera className="w-2.5 h-2.5" />
+                <span>{stay.additionalImages.length}</span>
               </span>
             )}
           </span>

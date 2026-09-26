@@ -489,13 +489,13 @@ export function SummaryView({
 
   const getWeatherInfo = (type: string) => {
     switch (type) {
-      case 'sunny': return { label: 'Sunny', icon: '☀️' };
-      case 'cloudy': return { label: 'Cloudy', icon: '☁️' };
-      case 'overcast': return { label: 'Overcast', icon: '⛅' };
-      case 'rainy': return { label: 'Rainy', icon: '🌧️' };
-      case 'snowy': return { label: 'Snowy', icon: '❄️' };
-      case 'stormy': return { label: 'Stormy', icon: '⛈️' };
-      default: return { label: type, icon: '🌤️' };
+      case 'sunny': return { label: 'Sunny' };
+      case 'cloudy': return { label: 'Cloudy' };
+      case 'overcast': return { label: 'Overcast' };
+      case 'rainy': return { label: 'Rainy' };
+      case 'snowy': return { label: 'Snowy' };
+      case 'stormy': return { label: 'Stormy' };
+      default: return { label: type || 'Clear' };
     }
   };
 

@@ -508,7 +508,7 @@ function App() {
   const [marqueeShow, setMarqueeShow] = useState<boolean>(() => {
     return localStorage.getItem('marqueeShow') === 'true';
   });
-  const [marqueeMessage, setMarqueeMessage] = useState<string>("🎉 WELCOME TO TRIPGON LOG! PLAN YOUR JOURNEY OR EXPLORE ARCHIVED LOGS.");
+  const [marqueeMessage, setMarqueeMessage] = useState<string>("WELCOME TO TRIPGON LOG — PLAN YOUR JOURNEY OR EXPLORE ARCHIVED LOGS.");
   const [marqueeSpeed, setMarqueeSpeed] = useState<number>(30);
   const [homeGradientEnabled, setHomeGradientEnabled] = useState<boolean>(() => localStorage.getItem('home_gradient_enabled') === 'true');
   const [homeGradientFrom, setHomeGradientFrom] = useState<string>(() => localStorage.getItem('home_gradient_from') || '#F7F2EB');
@@ -894,9 +894,9 @@ function App() {
         .map(s => s.title)
         .join(', ');
 
-      text = `✈️ ${title} • 📍 ${location} • 📅 ${duration}`;
-      if (flightInfo) text += ` • 🛫 ${flightInfo}`;
-      if (stayInfo) text += ` • 🏨 ${stayInfo}`;
+      text = `${title} • ${location} • ${duration}`;
+      if (flightInfo) text += ` • FLIGHT: ${flightInfo}`;
+      if (stayInfo) text += ` • STAY: ${stayInfo}`;
       if (tagsStr) text += ` • ${tagsStr.toUpperCase()}`;
     } else {
       text = marqueeMessage || '';
@@ -2600,7 +2600,7 @@ function App() {
         }
       }
 
-      setMarqueeOverrideText("🎉 JOURNEY SAVED SUCCESSFULLY!");
+      setMarqueeOverrideText("JOURNEY SAVED SUCCESSFULLY!");
       setTimeout(() => {
         setMarqueeOverrideText(null);
       }, 5000);
@@ -2997,12 +2997,12 @@ function App() {
         {/* Firebase Error/Status Banners */}
         {dbError && (
           <div className="bg-red-500/10 border-b border-red-500/20 backdrop-blur-md px-6 py-3 text-center text-xs tracking-wide text-red-600 dark:text-red-400 font-medium z-50">
-            ⚠️ Firebase 연결 오류: {dbError}. Firestore의 보안 규칙(Security Rules)이나 Config 키가 올바른지 확인해 주세요.
+            [ERROR] Firebase 연결 오류: {dbError}. Firestore의 보안 규칙(Security Rules)이나 Config 키가 올바른지 확인해 주세요.
           </div>
         )}
         {!dbError && tripsLoaded && plansLoaded && trips.length === 0 && plans.length === 0 && (
           <div className="bg-amber-500/10 border-b border-amber-500/20 backdrop-blur-md px-6 py-3 text-center text-xs tracking-wide text-amber-700 dark:text-amber-400 font-medium z-50">
-            ℹ️ 현재 Firebase(Public 경로)에 데이터가 없습니다. <strong>우측 상단의 로그인 버튼을 통해 로그인해 주시면</strong>, 기존의 기본 목업 데이터가 Firestore로 자동 업로드(Seed)됩니다.
+            [NOTICE] 현재 Firebase(Public 경로)에 데이터가 없습니다. <strong>우측 상단의 로그인 버튼을 통해 로그인해 주시면</strong>, 기존의 기본 목업 데이터가 Firestore로 자동 업로드(Seed)됩니다.
           </div>
         )}
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { CreditCard } from 'lucide-react';
 
 interface SettlementExpenseInputProps {
   cost?: string;
@@ -260,7 +261,8 @@ export function SettlementExpenseInput({
 
   return (
     <div className={`inline-flex items-center flex-wrap gap-1 px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 text-[9px] md:text-[10px] font-bold text-emerald-600 dark:text-emerald-400 normal-case ${className}`}>
-      <span>💳 {cost} {activeCurrency}</span>
+      <CreditCard className="w-3 h-3 shrink-0" />
+      <span>{cost} {activeCurrency}</span>
       {paidBy && <span className="text-black/40 dark:text-white/40 font-normal">({paidBy} 결제)</span>}
     </div>
   );

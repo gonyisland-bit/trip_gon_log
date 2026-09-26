@@ -1466,9 +1466,10 @@ export function MagazineHubPage({
                   <button
                     type="button"
                     onClick={() => setIsAccordionOpen(false)}
-                    className="text-[10px] font-mono font-bold uppercase text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white cursor-pointer"
+                    className="inline-flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white cursor-pointer"
                   >
-                    닫기 ✕
+                    <span>닫기</span>
+                    <X className="w-3 h-3" />
                   </button>
                 </div>
 

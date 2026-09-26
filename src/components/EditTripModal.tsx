@@ -867,10 +867,10 @@ export function EditTripModal({
                           setMembers(prev => prev.filter(x => x !== m));
                         }
                       }}
-                      className="text-red-500 hover:text-red-700 transition-colors font-bold text-[10px] ml-0.5 leading-none"
+                      className="text-red-500 hover:text-red-700 transition-colors font-bold text-[10px] ml-0.5 leading-none p-0.5"
                       title="인원 삭제"
                     >
-                      ✕
+                      <X className="w-2.5 h-2.5" />
                     </button>
                   </span>
                 ))
