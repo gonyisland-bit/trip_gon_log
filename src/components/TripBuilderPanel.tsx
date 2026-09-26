@@ -1968,6 +1968,7 @@ export function TripBuilderPanel({
                         ))}
                       </div>
                     </div>
+                  )}
                   {/* Trip Members */}
                   {renderMembersSection()}
                 </div>
@@ -3077,6 +3078,8 @@ export function TripBuilderPanel({
                   ))}
                 </div>
               )}
+            </div>
+
             {/* Trip Members */}
             {renderMembersSection()}
 

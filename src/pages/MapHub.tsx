@@ -5183,6 +5183,8 @@ export function MapHubPage({
             </div>
           </div>
         </div>
+      )}
+
       {/* 2단계 확인: 여정 대상 도시 변경 모달 (실수 방지) */}
       <ConfirmModal
         isOpen={confirmChangeCityModal.isOpen}
