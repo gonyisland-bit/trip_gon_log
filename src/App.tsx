@@ -2380,7 +2380,16 @@ function App() {
         templateDays.forEach(({ date, items }) => {
           items.forEach(item => {
             const finalDate = item.date || date;
-            batch.set(doc(db, 'users', 'public', 'timeline', String(item.id)), cleanForFirestore({ ...item, date: finalDate, tripId: newId }));
+            const placeVal = (item.place || item.title || '').trim() || '일정 스팟';
+            const locationVal = (item.location || item.place || item.title || '').trim();
+            batch.set(doc(db, 'users', 'public', 'timeline', String(item.id)), cleanForFirestore({
+              ...item,
+              place: placeVal,
+              title: item.title || placeVal,
+              location: locationVal,
+              date: finalDate,
+              tripId: newId
+            }));
           });
         });
         await batch.commit();

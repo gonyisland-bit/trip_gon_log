@@ -5150,7 +5150,7 @@ export function JourneyDetailPage({
                                     />
                                   ) : (
                                     <h3 className="break-keep font-sans font-bold text-sm sm:text-base text-black dark:text-white leading-snug tracking-normal">
-                                      {item.place}
+                                      {item.place || (item as any).title}
                                     </h3>
                                   )}
                                 </div>

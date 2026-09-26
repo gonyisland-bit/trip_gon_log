@@ -937,6 +937,54 @@ export function TripBuilderPanel({
     );
   }, [smartCountry, builderCitySearch, selectedContinent]);
 
+  // Standard helper to convert SpotPocketItem to TimelineItem format
+  const createPocketTimelineItem = (p: SpotPocketItem, idx: number, date: string, timeSlot: string) => {
+    const rawTitle = (p.title || '').trim();
+    const cleanAddress = (p.address || '').trim();
+    const cityCountry = [p.city, p.country].filter(Boolean).join(' · ').trim();
+    const locationVal = cleanAddress || cityCountry || rawTitle;
+
+    return {
+      id: Date.now() + 5000 + idx,
+      time: timeSlot,
+      place: rawTitle,
+      title: rawTitle,
+      location: locationVal,
+      lat: typeof p.lat === 'number' ? p.lat : undefined,
+      lng: typeof p.lng === 'number' ? p.lng : undefined,
+      memo: p.memo ? p.memo.trim() : (cleanAddress ? `주소: ${cleanAddress}` : '보관된 포켓 장소'),
+      category: p.category === 'food' || p.category === 'cafe' ? '식사' : p.category === 'shopping' ? '쇼핑' : '관광',
+      type: (p.category === 'food' || p.category === 'cafe' ? 'dining' : p.category === 'shopping' ? 'shopping' : 'activity') as any,
+      cost: '-',
+      img: p.thumbnailUrl || '',
+      link: p.sourceUrl || '',
+      date
+    };
+  };
+
+  const mergePocketsIntoTimeline = (timelineItems: { date: string; items: any[] }[]) => {
+    if (timelineItems.length === 0) return timelineItems;
+    const selectedPocketsList = (savedPockets.length > 0 ? savedPockets : getSavedPockets())
+      .filter(p => selectedPocketIds.has(p.id));
+    if (selectedPocketsList.length === 0) return timelineItems;
+
+    const defaultTimeSlots = ['10:00 AM', '01:00 PM', '04:00 PM', '07:00 PM', '09:00 PM'];
+    const firstDayDate = timelineItems[0].date;
+    const pocketTimelineItems = selectedPocketsList.map((p, idx) => 
+      createPocketTimelineItem(p, idx, firstDayDate, defaultTimeSlots[idx % defaultTimeSlots.length])
+    );
+
+    const updated = [...timelineItems];
+    updated[0] = {
+      ...updated[0],
+      items: [
+        ...pocketTimelineItems,
+        ...updated[0].items.filter(it => !pocketTimelineItems.some(pi => (pi.place && pi.place === (it.place || it.title))))
+      ]
+    };
+    return updated;
+  };
+
   // Handlers
   const handleAddCityToLocations = (cityName: string, coords?: { lat: number; lng: number }, countryEn?: string) => {
     if (!cityName) return;
@@ -980,7 +1028,7 @@ export function TripBuilderPanel({
 
     const naturalTimeSlots = ['10:00 AM', '01:30 PM', '04:30 PM', '07:30 PM', '09:30 PM'];
 
-    const customTimelineItems = Array.from({ length: totalDays }).map((_, dIdx) => {
+    let customTimelineItems = Array.from({ length: totalDays }).map((_, dIdx) => {
       const curDate = new Date(startD);
       curDate.setDate(curDate.getDate() + dIdx);
       const curStr = `${curDate.getFullYear()}.${String(curDate.getMonth() + 1).padStart(2, '0')}.${String(curDate.getDate()).padStart(2, '0')}`;
@@ -990,8 +1038,11 @@ export function TripBuilderPanel({
       const items = daySpots.map((sp, sIdx) => ({
         id: Date.now() + dIdx * 100 + sIdx,
         time: naturalTimeSlots[sIdx % naturalTimeSlots.length],
+        place: sp.name,
         title: `${sp.name} 방문`,
         location: sp.name,
+        lat: sp.lat,
+        lng: sp.lng,
         memo: '사용자 지정 희망 방문 스팟',
         category: '관광',
         type: 'activity' as const,
@@ -1003,6 +1054,7 @@ export function TripBuilderPanel({
         items.push({
           id: Date.now() + dIdx * 100,
           time: '10:00 AM',
+          place: `${targetCityName || '도심'} 자유 일정`,
           title: `${targetCityName || '도심'} 자유 일정`,
           location: targetCityName || '',
           memo: '자유 일정 및 로컬 탐방',
@@ -1018,29 +1070,8 @@ export function TripBuilderPanel({
       };
     });
 
-    // 선택된 포켓들을 1일차 타임라인에 적절한 시간대(10:00, 13:00, 16:00...)로 자동 배치
-    const selectedPocketsList = (savedPockets.length > 0 ? savedPockets : getSavedPockets())
-      .filter(p => selectedPocketIds.has(p.id));
-    if (selectedPocketsList.length > 0 && customTimelineItems.length > 0) {
-      const defaultTimeSlots = ['10:00 AM', '01:00 PM', '04:00 PM', '07:00 PM', '09:00 PM'];
-      const firstDayDate = customTimelineItems[0].date;
-      const pocketTimelineItems = selectedPocketsList.map((p, idx) => ({
-        id: Date.now() + 5000 + idx,
-        time: defaultTimeSlots[idx % defaultTimeSlots.length],
-        title: p.title,
-        location: [p.city, p.country].filter(Boolean).join(' · ') || p.title,
-        memo: p.memo || (p.address ? `주소: ${p.address}` : '보관된 포켓 장소'),
-        category: p.category === 'food' || p.category === 'cafe' ? '식사' : p.category === 'shopping' ? '쇼핑' : '관광',
-        type: (p.category === 'food' || p.category === 'cafe' ? 'dining' : p.category === 'shopping' ? 'shopping' : 'activity') as any,
-        cost: '-',
-        img: p.thumbnailUrl || '',
-        date: firstDayDate
-      }));
-      customTimelineItems[0].items = [
-        ...pocketTimelineItems,
-        ...customTimelineItems[0].items.filter(it => !pocketTimelineItems.some(pi => pi.title === it.title))
-      ];
-    }
+    // 선택된 포켓들을 1일차 타임라인에 정확한 장소명, 주소, 좌표로 자동 병합
+    customTimelineItems = mergePocketsIntoTimeline(customTimelineItems);
 
     const finalLocations = locations.length > 0 
       ? locations 
@@ -1091,7 +1122,7 @@ export function TripBuilderPanel({
     const lat = cityObj?.lat;
     const lng = cityObj?.lng;
 
-    const timelineItemsToCreate = preset.schedule.map(day => {
+    let timelineItemsToCreate = preset.schedule.map(day => {
       const curDate = new Date(baseDate);
       curDate.setDate(curDate.getDate() + day.dayOffset);
       const curStr = `${curDate.getFullYear()}.${String(curDate.getMonth() + 1).padStart(2, '0')}.${String(curDate.getDate()).padStart(2, '0')}`;
@@ -1100,14 +1131,20 @@ export function TripBuilderPanel({
         items: day.items.map((it, idx) => ({
           id: Date.now() + day.dayOffset * 100 + idx,
           time: it.time,
+          place: it.place,
           title: it.place,
+          location: it.place,
           memo: it.memo,
           category: it.type === 'transit' ? '교통' : it.type === 'dining' ? '식사' : it.type === 'stay' ? '숙소' : '관광',
           type: it.type,
           cost: it.cost || '',
+          date: curStr
         }))
       };
     });
+
+    // 선택된 포켓들을 1일차 타임라인에 자동 병합
+    timelineItemsToCreate = mergePocketsIntoTimeline(timelineItemsToCreate);
 
     setConfirmModalState({
       isOpen: true,
@@ -1183,38 +1220,23 @@ export function TripBuilderPanel({
 
   const handleConfirmProposalGeneration = (prop: CuratedTripProposal) => {
     const dateRange = `${prop.startDate.replace(/-/g, '.')} - ${prop.endDate.replace(/-/g, '.')}`;
-    const timelineItems = prop.timeline.map((day, dIdx) => ({
+    let timelineItems = prop.timeline.map((day, dIdx) => ({
       date: day.date.replace(/-/g, '.'),
       items: day.items.map((item, iIdx) => ({
         id: Date.now() + dIdx * 100 + iIdx,
         time: item.time,
+        place: item.title,
         title: item.title,
+        location: item.title,
         memo: item.memo,
         category: item.category,
-        type: item.type
+        type: item.type,
+        date: day.date.replace(/-/g, '.')
       }))
     }));
-    // 선택된 포켓들을 1일차 타임라인에 적절한 시간대로 자동 배치
-    const selectedPocketsList = (savedPockets.length > 0 ? savedPockets : getSavedPockets())
-      .filter(p => selectedPocketIds.has(p.id));
-    if (selectedPocketsList.length > 0 && timelineItems.length > 0) {
-      const defaultTimeSlots = ['10:00 AM', '01:00 PM', '04:00 PM', '07:00 PM', '09:00 PM'];
-      const pocketTimelineItems = selectedPocketsList.map((p, idx) => ({
-        id: Date.now() + 5000 + idx,
-        time: defaultTimeSlots[idx % defaultTimeSlots.length],
-        title: p.title,
-        location: [p.city, p.country].filter(Boolean).join(' · ') || p.title,
-        memo: p.memo || (p.address ? `주소: ${p.address}` : '보관된 포켓 장소'),
-        category: p.category === 'food' || p.category === 'cafe' ? '식사' : p.category === 'shopping' ? '쇼핑' : '관광',
-        type: (p.category === 'food' || p.category === 'cafe' ? 'dining' : p.category === 'shopping' ? 'shopping' : 'activity') as any,
-        cost: '-',
-        img: p.thumbnailUrl || ''
-      }));
-      timelineItems[0].items = [
-        ...pocketTimelineItems,
-        ...timelineItems[0].items.filter(it => !pocketTimelineItems.some(pi => pi.title === it.title))
-      ];
-    }
+
+    // 선택된 포켓들을 1일차 타임라인에 정확한 장소명, 주소, 좌표로 자동 병합
+    timelineItems = mergePocketsIntoTimeline(timelineItems);
 
     setConfirmModalState({
       isOpen: true,
@@ -1369,7 +1391,7 @@ export function TripBuilderPanel({
     const dateRange = `${startStr} - ${endStr}`;
 
     const spots = cityObj ? [...cityObj.iconicSpots, ...cityObj.hiddenGems] : ['도심 랜드마크 탐방'];
-    const generatedTimeline = Array.from({ length: smartDurationDays + 1 }).map((_, dIdx) => {
+    let generatedTimeline = Array.from({ length: smartDurationDays + 1 }).map((_, dIdx) => {
       const cDate = new Date(startObj);
       cDate.setDate(cDate.getDate() + dIdx);
       const cDateStr = `${cDate.getFullYear()}.${String(cDate.getMonth() + 1).padStart(2, '0')}.${String(cDate.getDate()).padStart(2, '0')}`;
@@ -1381,7 +1403,9 @@ export function TripBuilderPanel({
           {
             id: Date.now() + dIdx * 10 + 1,
             time: '10:00 AM',
+            place: spotName,
             title: `${spotName} 방문`,
+            location: spotName,
             memo: `${selectedTheme !== 'all' ? selectedTheme.toUpperCase() + ' 테마' : '추천 코스'} 도심 투어`,
             category: '관광',
             type: 'activity',
@@ -1390,7 +1414,9 @@ export function TripBuilderPanel({
           {
             id: Date.now() + dIdx * 10 + 2,
             time: '01:00 PM',
+            place: `${finalCity} 로컬 미식 탐방`,
             title: `${finalCity} 로컬 미식 탐방`,
+            location: `${finalCity} 로컬 미식 탐방`,
             memo: '현지 인기 다이닝 및 카페 브레이크',
             category: '식사',
             type: 'dining',
@@ -1399,6 +1425,9 @@ export function TripBuilderPanel({
         ]
       };
     });
+
+    // 선택된 포켓들을 1일차 타임라인에 자동 병합
+    generatedTimeline = mergePocketsIntoTimeline(generatedTimeline);
 
     setConfirmModalState({
       isOpen: true,
