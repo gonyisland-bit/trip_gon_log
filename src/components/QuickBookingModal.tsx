@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, Plane, Building, ExternalLink, Calendar, Users, 
-  MapPin, ArrowRight, Sparkles 
+  Sparkles 
 } from 'lucide-react';
 import { 
   BookingSearchContext, 
@@ -57,27 +58,34 @@ export function QuickBookingModal({
   });
   const [adults, setAdults] = useState<number>(Math.max(1, memberCount));
 
-  const searchCtx: BookingSearchContext = {
+  const searchCtx: BookingSearchContext = useMemo(() => ({
     destination: dest,
     originAirport,
     destinationAirport: destAirport,
     departDate: depDate,
     returnDate: retDate,
     adults,
-  };
+  }), [dest, originAirport, destAirport, depDate, retDate, adults]);
 
-  const handleOpenLink = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
+  const skyscannerUrl = useMemo(() => buildSkyscannerFlightUrl(searchCtx), [searchCtx]);
+  const naverFlightUrl = useMemo(() => buildNaverFlightUrl(searchCtx), [searchCtx]);
+  const googleFlightUrl = useMemo(() => buildGoogleFlightsUrl(searchCtx), [searchCtx]);
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+  const agodaUrl = useMemo(() => buildAgodaUrl(searchCtx), [searchCtx]);
+  const bookingComUrl = useMemo(() => buildBookingComUrl(searchCtx), [searchCtx]);
+  const airbnbUrl = useMemo(() => buildAirbnbUrl(searchCtx), [searchCtx]);
+
+  const modalNode = (
+    <div 
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/65 backdrop-blur-xs animate-in fade-in duration-200"
+      onClick={onClose}
+    >
       <div 
-        className="w-full max-w-xl bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 rounded-xl shadow-2xl flex flex-col overflow-hidden text-black dark:text-white"
+        className="w-full max-w-xl bg-white dark:bg-[#121212] border border-black/20 dark:border-white/20 rounded-xl shadow-2xl flex flex-col overflow-hidden text-black dark:text-white max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02]">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] shrink-0">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <h2 className="font-mono text-xs md:text-sm font-bold tracking-widest uppercase">
@@ -87,7 +95,7 @@ export function QuickBookingModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white transition-colors"
+            className="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white transition-colors cursor-pointer"
             title="닫기 (ESC)"
           >
             <X className="w-4 h-4" />
@@ -95,15 +103,15 @@ export function QuickBookingModal({
         </div>
 
         {/* Content Body */}
-        <div className="p-5 md:p-6 space-y-5 overflow-y-auto max-h-[82vh]">
+        <div className="p-4 sm:p-6 space-y-5 overflow-y-auto">
           {/* Preset Context Summary & Fast Adjusters */}
-          <div className="p-3.5 bg-black/[0.03] dark:bg-white/[0.03] border border-black/10 dark:border-white/10 rounded-lg space-y-3">
+          <div className="p-3 sm:p-4 bg-black/[0.03] dark:bg-white/[0.03] border border-black/10 dark:border-white/10 rounded-lg space-y-3">
             <div className="flex items-center justify-between text-[11px] font-mono uppercase tracking-wider text-black/60 dark:text-white/60">
-              <span className="flex items-center gap-1.5 font-bold">
-                <Sparkles className="w-3.5 h-3.5 text-black dark:text-white" />
+              <span className="flex items-center gap-1.5 font-bold text-black dark:text-white">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
                 자동 감지된 여정 파라미터
               </span>
-              <span>1클릭 즉시 비교</span>
+              <span className="text-[10px]">수정 시 링크 즉시 반영</span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
@@ -129,9 +137,7 @@ export function QuickBookingModal({
                 <input
                   type="text"
                   value={destAirport}
-                  onChange={(e) => {
-                    setDestAirport(e.target.value.toUpperCase());
-                  }}
+                  onChange={(e) => setDestAirport(e.target.value.toUpperCase())}
                   className="w-full px-2.5 py-1.5 font-mono font-bold uppercase text-xs bg-white dark:bg-[#1a1a1a] border border-black/15 dark:border-white/15 rounded focus:border-black dark:focus:border-white outline-none"
                   placeholder="TYO"
                 />
@@ -200,12 +206,12 @@ export function QuickBookingModal({
             </div>
           </div>
 
-          {/* Section 1: Flight Booking Links */}
+          {/* Section 1: Flight Booking Links (Native <a> for 100% Popup Block Bypass) */}
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 flex items-center gap-1.5">
                 <Plane className="w-3.5 h-3.5 text-black dark:text-white" />
-                항공권 실시간 비교 예약
+                항공권 실시간 비교 예약 (새 탭)
               </span>
               <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
                 {originAirport} ➔ {destAirport} • 성인 {adults}명
@@ -213,10 +219,12 @@ export function QuickBookingModal({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => handleOpenLink(buildSkyscannerFlightUrl(searchCtx))}
-                className="group p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98]"
+              <a
+                href={skyscannerUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="group p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer"
               >
                 <div className="flex items-center justify-between w-full mb-1.5">
                   <span className="text-xs font-bold font-mono tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400">
@@ -227,12 +235,14 @@ export function QuickBookingModal({
                 <span className="text-[10px] text-black/50 dark:text-white/50">
                   전 세계 최저가 항공권 비교
                 </span>
-              </button>
+              </a>
 
-              <button
-                type="button"
-                onClick={() => handleOpenLink(buildNaverFlightUrl(searchCtx))}
-                className="group p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98]"
+              <a
+                href={naverFlightUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="group p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer"
               >
                 <div className="flex items-center justify-between w-full mb-1.5">
                   <span className="text-xs font-bold font-mono tracking-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
@@ -243,12 +253,14 @@ export function QuickBookingModal({
                 <span className="text-[10px] text-black/50 dark:text-white/50">
                   국내 카드사 할인 혜택 비교
                 </span>
-              </button>
+              </a>
 
-              <button
-                type="button"
-                onClick={() => handleOpenLink(buildGoogleFlightsUrl(searchCtx))}
-                className="group p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98]"
+              <a
+                href={googleFlightUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="group p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer"
               >
                 <div className="flex items-center justify-between w-full mb-1.5">
                   <span className="text-xs font-bold font-mono tracking-tight group-hover:text-rose-600 dark:group-hover:text-rose-400">
@@ -259,16 +271,16 @@ export function QuickBookingModal({
                 <span className="text-[10px] text-black/50 dark:text-white/50">
                   실시간 가격 변동 트렌드
                 </span>
-              </button>
+              </a>
             </div>
           </div>
 
-          {/* Section 2: Accommodation Booking Links */}
+          {/* Section 2: Accommodation Booking Links (Native <a> for 100% Popup Block Bypass) */}
           <div className="space-y-2.5 pt-2 border-t border-black/10 dark:border-white/10">
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono font-bold uppercase tracking-wider text-black/70 dark:text-white/70 flex items-center gap-1.5">
                 <Building className="w-3.5 h-3.5 text-black dark:text-white" />
-                숙소 실시간 검색 예약
+                숙소 실시간 검색 예약 (새 탭)
               </span>
               <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
                 {dest} • {depDate} ~ {retDate}
@@ -276,10 +288,12 @@ export function QuickBookingModal({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => handleOpenLink(buildAgodaUrl(searchCtx))}
-                className="group p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98]"
+              <a
+                href={agodaUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="group p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer"
               >
                 <div className="flex items-center justify-between w-full mb-1.5">
                   <span className="text-xs font-bold font-mono tracking-tight group-hover:text-amber-600 dark:group-hover:text-amber-400">
@@ -290,12 +304,14 @@ export function QuickBookingModal({
                 <span className="text-[10px] text-black/50 dark:text-white/50">
                   아시아권 호텔 & 리조트 특가
                 </span>
-              </button>
+              </a>
 
-              <button
-                type="button"
-                onClick={() => handleOpenLink(buildBookingComUrl(searchCtx))}
-                className="group p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98]"
+              <a
+                href={bookingComUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="group p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer"
               >
                 <div className="flex items-center justify-between w-full mb-1.5">
                   <span className="text-xs font-bold font-mono tracking-tight group-hover:text-blue-700 dark:group-hover:text-blue-400">
@@ -306,12 +322,14 @@ export function QuickBookingModal({
                 <span className="text-[10px] text-black/50 dark:text-white/50">
                   무료 취소 & 전 세계 숙소
                 </span>
-              </button>
+              </a>
 
-              <button
-                type="button"
-                onClick={() => handleOpenLink(buildAirbnbUrl(searchCtx))}
-                className="group p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98]"
+              <a
+                href={airbnbUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="group p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer"
               >
                 <div className="flex items-center justify-between w-full mb-1.5">
                   <span className="text-xs font-bold font-mono tracking-tight group-hover:text-rose-500">
@@ -322,18 +340,18 @@ export function QuickBookingModal({
                 <span className="text-[10px] text-black/50 dark:text-white/50">
                   현지 감성 독채 및 아파트
                 </span>
-              </button>
+              </a>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] flex items-center justify-between text-[11px] font-mono text-black/50 dark:text-white/50">
-          <span>새 탭에서 실시간 검색 페이지가 열립니다.</span>
+        <div className="px-5 py-3 border-t border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] flex items-center justify-between text-[11px] font-mono text-black/50 dark:text-white/50 shrink-0">
+          <span>각 버튼을 누르면 새 탭에서 즉시 실시간 검색 결과가 열립니다.</span>
           <button
             type="button"
             onClick={onClose}
-            className="px-3.5 py-1.5 bg-black text-white dark:bg-white dark:text-black rounded text-xs font-bold uppercase active:scale-[0.98] transition-transform"
+            className="px-3.5 py-1.5 bg-black text-white dark:bg-white dark:text-black rounded text-xs font-bold uppercase active:scale-[0.98] transition-transform cursor-pointer"
           >
             닫기
           </button>
@@ -341,4 +359,6 @@ export function QuickBookingModal({
       </div>
     </div>
   );
+
+  return createPortal(modalNode, document.body);
 }

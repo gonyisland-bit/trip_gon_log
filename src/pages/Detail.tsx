@@ -9,6 +9,7 @@ import {
   Sparkles, Users
 } from 'lucide-react';
 import { QuickBookingModal } from '../components/QuickBookingModal';
+import { getUpcomingPlanInfo } from '../utils/tripPlanHelper';
 import { MapArea } from '../components/MapArea';
 import { ImageEditOverlay } from '../components/ImageEditOverlay';
 import { FlightCard } from '../components/FlightCard';
@@ -4073,6 +4074,20 @@ export function JourneyDetailPage({
             ) : (
               <div className="flex items-center justify-between gap-2 flex-wrap text-black/70 dark:text-white/70 w-full">
                 <div className="flex items-center gap-3 flex-wrap text-xs font-mono">
+                  {(() => {
+                    const planInfo = getUpcomingPlanInfo(trip);
+                    if (planInfo.isPlanOrFuture) {
+                      return (
+                        <span className="px-2.5 py-0.5 rounded-full bg-blue-600/90 text-white font-sans text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1 shadow-xs">
+                          <span>PLAN</span>
+                          {planInfo.dDayLabel && planInfo.dDayLabel !== 'PLAN' && (
+                            <span className="font-mono font-bold opacity-90">· {planInfo.dDayLabel}</span>
+                          )}
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
                   <span className="flex items-center gap-1.5">
                     <Calendar className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
                     <span>{trip.date}</span>

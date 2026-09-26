@@ -5,6 +5,7 @@ import { JourneyCardMenu, getEnglishCityName } from './Home';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
 import { preloadDetailPage } from '../utils/prefetchHelper';
+import { getUpcomingPlanInfo } from '../utils/tripPlanHelper';
 
 interface CardMediaProps {
   img: string;
@@ -1052,12 +1053,8 @@ export function ArchiveHubPage({
                         const formattedDate = formatNonRepeatingDate(trip.date);
                         const issueNumber = String((trip.displayOrder ?? index) + 1).padStart(2, '0');
                         const days = calculateDays(trip.date);
-                        const isPlan = Boolean(
-                          (trip as any).isPlan ||
-                          (plans && plans.some(p => String(p.id) === String(trip.id))) ||
-                          trip.tags?.includes('Plan') ||
-                          trip.title?.includes('(Plan)')
-                        );
+                        const planInfo = getUpcomingPlanInfo({ ...trip, isPlan: isPlan || (trip as any).isPlan });
+                        const isPlanOrFuture = planInfo.isPlanOrFuture;
 
                         return (
                           <div
@@ -1080,9 +1077,21 @@ export function ArchiveHubPage({
                               {issueNumber}
                             </div>
 
-                            {/* Thumbnail: Unobstructed Clean Photo */}
+                            {/* Thumbnail: Unobstructed Clean Photo with Editorial PLAN Overlay */}
                             <div className="w-24 sm:w-32 aspect-[4/3] self-stretch shrink-0 border-r border-black/10 dark:border-white/10 overflow-hidden rounded-none relative bg-black/10">
                               <img src={getEffectiveImageUrl(trip.img)} alt={trip.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none" />
+                              {planInfo.isPlanOrFuture && (
+                                <div className="absolute inset-0 pointer-events-none flex items-end justify-between p-1.5 bg-gradient-to-t from-black/70 via-transparent to-transparent">
+                                  <span className="font-sans font-extrabold text-xs sm:text-sm text-white/90 tracking-tighter leading-none select-none">
+                                    PLAN
+                                  </span>
+                                  {planInfo.dDayLabel && planInfo.dDayLabel !== 'PLAN' && (
+                                    <span className="font-mono text-[8px] font-bold text-white px-1 rounded bg-blue-600/90 leading-tight">
+                                      {planInfo.dDayLabel}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                             </div>
 
                             {/* Meta Information Stack */}
@@ -1148,78 +1157,93 @@ export function ArchiveHubPage({
                       const { issueNumber, topYearMonth, line2DateDays, line3CountryCity, editorialSubtitle } = getTripCardDisplayData(trip, index);
                       const isCardActive = activeCardId === trip.id;
                       const isPlan = Boolean(
-                        (trip as any).isPlan ||
-                        (plans && plans.some(p => String(p.id) === String(trip.id))) ||
-                        trip.tags?.includes('Plan') ||
-                        trip.title?.includes('(Plan)')
-                      );
-                      const isWide = cardViewMode === 'wide';
+                        const planInfo = getUpcomingPlanInfo({ ...trip, isPlan: isPlan || (trip as any).isPlan });
+                        const isPlanOrFuture = planInfo.isPlanOrFuture;
+                        const isWide = cardViewMode === 'wide';
 
-                      const [dateRangeOnly, durationBadge] = line2DateDays.includes(',') 
-                        ? line2DateDays.split(',').map(s => s.trim()) 
-                        : [line2DateDays, ''];
+                        const [dateRangeOnly, durationBadge] = line2DateDays.includes(',') 
+                          ? line2DateDays.split(',').map(s => s.trim()) 
+                          : [line2DateDays, ''];
 
-                      return (
-                        <article
-                          key={trip.id}
-                          style={{
-                            animation: 'cardEntrance 260ms cubic-bezier(0.16, 1, 0.3, 1) both',
-                            animationDelay: `${Math.min(index * 30, 240)}ms`
-                          }}
-                          onClick={() => onNavigate('detail', trip.id)}
-                          onMouseEnter={preloadDetailPage}
-                          onTouchStart={preloadDetailPage}
-                          className={`group relative flex flex-col border border-black/10 dark:border-white/15 bg-white dark:bg-[#1A1A1C] rounded-[28px] sm:rounded-[32px] overflow-hidden shadow-xs hover:shadow-2xl hover:border-black/30 dark:hover:border-white/35 transition-all duration-300 cursor-pointer select-none ${
-                            isCardActive ? 'ring-2 ring-red-600/50 dark:ring-red-500/50' : ''
-                          }`}
-                          draggable={isLoggedIn && sortBy === 'user'}
-                          onDragStart={(e) => handleTripDragStart(e, trip.id)}
-                          onDragOver={(e) => handleTripDragOver(e, trip.id)}
-                          onDrop={handleTripDrop}
-                          onDragEnd={() => setDraggedTripId(null)}
-                        >
-                          {/* 1. Flush Photo Frame: 상단 32px 곡률에 꽉 차는 일체형 프레임 (이중 라운드 박스 없음) */}
-                          <div className={`relative ${isWide ? 'aspect-[16/10]' : 'aspect-[4/5]'} w-full overflow-hidden bg-black/5 dark:bg-white/5 border-b border-black/10 dark:border-white/10 shrink-0`}>
-                            <CardMedia
-                              img={trip.img}
-                              title={trip.title}
-                              videoUrl={trip.videoUrl}
-                              isActive={isCardActive}
-                            />
+                        return (
+                          <article
+                            key={trip.id}
+                            style={{
+                              animation: 'cardEntrance 260ms cubic-bezier(0.16, 1, 0.3, 1) both',
+                              animationDelay: `${Math.min(index * 30, 240)}ms`
+                            }}
+                            onClick={() => onNavigate('detail', trip.id)}
+                            onMouseEnter={preloadDetailPage}
+                            onTouchStart={preloadDetailPage}
+                            className={`group relative flex flex-col border border-black/10 dark:border-white/15 bg-white dark:bg-[#1A1A1C] rounded-[28px] sm:rounded-[32px] overflow-hidden shadow-xs hover:shadow-2xl hover:border-black/30 dark:hover:border-white/35 transition-all duration-300 cursor-pointer select-none ${
+                              isCardActive ? 'ring-2 ring-red-600/50 dark:ring-red-500/50' : ''
+                            }`}
+                            draggable={isLoggedIn && sortBy === 'user'}
+                            onDragStart={(e) => handleTripDragStart(e, trip.id)}
+                            onDragOver={(e) => handleTripDragOver(e, trip.id)}
+                            onDrop={handleTripDrop}
+                            onDragEnd={() => setDraggedTripId(null)}
+                          >
+                            {/* 1. Flush Photo Frame: 상단 32px 곡률에 꽉 차는 일체형 프레임 (이중 라운드 박스 없음) */}
+                            <div className={`relative ${isWide ? 'aspect-[16/10]' : 'aspect-[4/5]'} w-full overflow-hidden bg-black/5 dark:bg-white/5 border-b border-black/10 dark:border-white/10 shrink-0`}>
+                              <CardMedia
+                                img={trip.img}
+                                title={trip.title}
+                                videoUrl={trip.videoUrl}
+                                isActive={isCardActive}
+                              />
 
-                            {/* 좌측 상단 반투명 알약 뱃지: NEW, EDITING, PLAN 만 표기 (TRIP 넘버 제거, 빨간 점 제거) */}
-                            {(() => {
-                              const isPlanBadge = trip.statusBadge === 'PLAN' || isPlan;
-                              const isNewBadge = trip.statusBadge === 'NEW';
-                              const isEditingBadge = trip.statusBadge === 'EDITING';
-                              if (!isPlanBadge && !isNewBadge && !isEditingBadge) return null;
-
-                              const badgeText = isPlanBadge ? 'PLAN' : (isNewBadge ? 'NEW' : 'EDITING');
-                              const badgeBg = isPlanBadge 
-                                ? 'bg-blue-600/90 text-white' 
-                                : (isNewBadge ? 'bg-red-600/90 text-white' : 'bg-amber-600/90 text-white');
-
-                              return (
-                                <div className={`absolute top-3 left-3 sm:top-3.5 sm:left-3.5 px-2.5 sm:px-3 py-1 backdrop-blur-md font-mono text-[9px] sm:text-[10px] font-bold tracking-wider uppercase rounded-full shadow-xs ${badgeBg}`}>
-                                  <span>{badgeText}</span>
+                              {/* 감각적인 에디토리얼 매거진 대형 PLAN 워터마크 오버레이 */}
+                              {planInfo.isPlanOrFuture && (
+                                <div className="absolute inset-0 pointer-events-none flex flex-col justify-end p-3.5 sm:p-5 bg-gradient-to-t from-black/75 via-black/20 to-transparent z-[5]">
+                                  <div className="flex items-end justify-between w-full">
+                                    <span className="font-sans font-extrabold tracking-tighter text-3xl sm:text-4xl lg:text-5xl text-white/90 drop-shadow-sm select-none leading-none opacity-90 group-hover:opacity-100 transition-opacity">
+                                      PLAN
+                                    </span>
+                                    {planInfo.dDayLabel && planInfo.dDayLabel !== 'PLAN' && (
+                                      <span className="font-mono text-[9px] sm:text-[11px] font-bold text-white px-2 py-0.5 rounded-full bg-blue-600/90 backdrop-blur-md shadow-xs uppercase tracking-widest leading-normal">
+                                        {planInfo.dDayLabel}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                              );
-                            })()}
+                              )}
 
-                            {/* 우측 상단 원형 심볼 뱃지 (해당 여정 년도 표기) */}
-                            {(() => {
-                              const tripYear = getYearAndMonth(trip.date).year || (trip.date ? trip.date.match(/\b(19\d\d|20\d\d)\b/)?.[0] : '') || String(new Date().getFullYear());
-                              return (
-                                <div 
-                                  className="absolute top-3 right-3 sm:top-3.5 sm:right-3.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 text-black dark:text-white shadow-xs flex items-center justify-center font-mono text-[9.5px] sm:text-[10.5px] font-black tracking-tight group-hover:rotate-12 transition-transform duration-300"
-                                  title={`${tripYear}년 여정`}
-                                >
-                                  <span>{tripYear}</span>
-                                </div>
-                              );
-                            })()}
+                              {/* 좌측 상단 반투명 알약 뱃지: NEW, EDITING, PLAN 만 표기 (TRIP 넘버 제거, 빨간 점 제거) */}
+                              {(() => {
+                                const isPlanBadge = planInfo.isPlanOrFuture || trip.statusBadge === 'PLAN';
+                                const isNewBadge = trip.statusBadge === 'NEW';
+                                const isEditingBadge = trip.statusBadge === 'EDITING';
+                                if (!isPlanBadge && !isNewBadge && !isEditingBadge) return null;
 
-                          </div>
+                                const badgeText = isPlanBadge 
+                                  ? (planInfo.dDayLabel && planInfo.dDayLabel !== 'PLAN' ? `PLAN · ${planInfo.dDayLabel}` : 'PLAN') 
+                                  : (isNewBadge ? 'NEW' : 'EDITING');
+                                const badgeBg = isPlanBadge 
+                                  ? 'bg-blue-600/90 text-white' 
+                                  : (isNewBadge ? 'bg-red-600/90 text-white' : 'bg-amber-600/90 text-white');
+
+                                return (
+                                  <div className={`absolute top-3 left-3 sm:top-3.5 sm:left-3.5 px-2.5 sm:px-3 py-1 backdrop-blur-md font-mono text-[9px] sm:text-[10px] font-bold tracking-wider uppercase rounded-full shadow-xs z-10 ${badgeBg}`}>
+                                    <span>{badgeText}</span>
+                                  </div>
+                                );
+                              })()}
+
+                              {/* 우측 상단 원형 심볼 뱃지 (해당 여정 년도 표기) */}
+                              {(() => {
+                                const tripYear = getYearAndMonth(trip.date).year || (trip.date ? trip.date.match(/\b(19\d\d|20\d\d)\b/)?.[0] : '') || String(new Date().getFullYear());
+                                return (
+                                  <div 
+                                    className="absolute top-3 right-3 sm:top-3.5 sm:right-3.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 text-black dark:text-white shadow-xs flex items-center justify-center font-mono text-[9.5px] sm:text-[10.5px] font-black tracking-tight group-hover:rotate-12 transition-transform duration-300 z-10"
+                                    title={`${tripYear}년 여정`}
+                                  >
+                                    <span>{tripYear}</span>
+                                  </div>
+                                );
+                              })()}
+
+                            </div>
 
                           {/* 2. Card Body: Typography & Description (매거진 스타일 일체화) */}
                           <div className="p-3.5 sm:p-5 flex-1 flex flex-col justify-between">

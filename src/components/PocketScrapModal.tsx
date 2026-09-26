@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, Check, ExternalLink, Image as ImageIcon,
   Utensils, Coffee, Camera, ShoppingBag, Lightbulb, Upload, Sparkles,
@@ -360,9 +361,9 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
     }
   };
 
-  return (
+  return createPortal(
     <div 
-      className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 pt-16 sm:pt-20 pb-8 overflow-y-auto"
+      className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 pt-16 sm:pt-20 pb-8 overflow-y-auto"
       onClick={handleAttemptClose}
     >
       <div 
@@ -850,6 +851,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
         cancelLabel="계속 작성"
         confirmVariant="danger"
       />
-    </div>
+    </div>,
+    document.body
   );
 }

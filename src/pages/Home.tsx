@@ -9,6 +9,7 @@ import { cleanAdministrativeDistricts, generateJourneyMessage } from '../compone
 import { preloadDetailPage } from '../utils/prefetchHelper';
 import { getKoreanHolidays } from '../utils/koreanHolidays';
 import { HomeWeatherWidget } from '../components/HomeWeatherWidget';
+import { getUpcomingPlanInfo } from '../utils/tripPlanHelper';
 
 interface HomePageProps {
   onNavigate: (view: string, tripId?: number | null) => void;
@@ -1731,7 +1732,8 @@ export function HomePage({
                 const formattedDate = formatNonRepeatingDate(trip.date);
                 const issueNumber = String((trip.displayOrder ?? index) + 1).padStart(2, '0');
                 const days = calculateDays(trip.date);
-                const isItemPlan = Boolean((trip as any).isPlan || (plans && plans.some(p => String(p.id) === String(trip.id))) || trip.tags?.includes('Plan') || trip.title.includes('(Plan)'));
+                const planInfo = getUpcomingPlanInfo(trip);
+                const isItemPlan = planInfo.isPlanOrFuture;
 
                 return (
                   <div
@@ -1750,9 +1752,21 @@ export function HomePage({
                       {issueNumber}
                     </div>
 
-                    {/* Thumbnail: Unobstructed Clean Photo */}
+                    {/* Thumbnail: Unobstructed Clean Photo with Editorial PLAN Overlay */}
                     <div className="w-24 sm:w-32 aspect-[4/3] self-stretch shrink-0 border-r border-black/10 dark:border-white/10 overflow-hidden rounded-none relative bg-black/10">
                       <img src={getEffectiveImageUrl(trip.img)} alt={trip.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none" />
+                      {planInfo.isPlanOrFuture && (
+                        <div className="absolute inset-0 pointer-events-none flex items-end justify-between p-1.5 bg-gradient-to-t from-black/70 via-transparent to-transparent">
+                          <span className="font-sans font-extrabold text-xs sm:text-sm text-white/90 tracking-tighter leading-none select-none">
+                            PLAN
+                          </span>
+                          {planInfo.dDayLabel && planInfo.dDayLabel !== 'PLAN' && (
+                            <span className="font-mono text-[8px] font-bold text-white px-1 rounded bg-blue-600/90 leading-tight">
+                              {planInfo.dDayLabel}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Meta Information Stack */}
@@ -1834,12 +1848,8 @@ export function HomePage({
             {filteredTrips.slice(0, journeyLimit).map((trip, index) => {
               const { issueNumber, topYearMonth, line2DateDays, line3CountryCity, editorialSubtitle } = getTripCardDisplayData(trip, index);
               const isCardActive = activeCardId === trip.id;
-              const isItemPlan = Boolean(
-                (trip as any).isPlan ||
-                (plans && plans.some(p => String(p.id) === String(trip.id))) ||
-                trip.tags?.includes('Plan') ||
-                trip.title?.includes('(Plan)')
-              );
+              const planInfo = getUpcomingPlanInfo(trip);
+              const isItemPlan = planInfo.isPlanOrFuture;
               const isWide = cardViewMode === 'wide';
 
               const [dateRangeOnly, durationBadge] = line2DateDays.includes(',') 
@@ -1870,6 +1880,22 @@ export function HomePage({
                       isActive={isCardActive}
                     />
 
+                    {/* 감각적인 에디토리얼 매거진 대형 PLAN 워터마크 오버레이 */}
+                    {planInfo.isPlanOrFuture && (
+                      <div className="absolute inset-0 pointer-events-none flex flex-col justify-end p-3.5 sm:p-5 bg-gradient-to-t from-black/75 via-black/20 to-transparent z-[5]">
+                        <div className="flex items-end justify-between w-full">
+                          <span className="font-sans font-extrabold tracking-tighter text-3xl sm:text-4xl lg:text-5xl text-white/90 drop-shadow-sm select-none leading-none opacity-90 group-hover:opacity-100 transition-opacity">
+                            PLAN
+                          </span>
+                          {planInfo.dDayLabel && planInfo.dDayLabel !== 'PLAN' && (
+                            <span className="font-mono text-[9px] sm:text-[11px] font-bold text-white px-2 py-0.5 rounded-full bg-blue-600/90 backdrop-blur-md shadow-xs uppercase tracking-widest leading-normal">
+                              {planInfo.dDayLabel}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     {/* 좌측 상단 반투명 알약 뱃지: LIVE, NEW, EDITING, PLAN */}
                     {(() => {
                       const liveStatus = getLiveTripStatus(trip.date);
@@ -1887,13 +1913,15 @@ export function HomePage({
                       const isEditingBadge = trip.statusBadge === 'EDITING';
                       if (!isPlanBadge && !isNewBadge && !isEditingBadge) return null;
 
-                      const badgeText = isPlanBadge ? 'PLAN' : (isNewBadge ? 'NEW' : 'EDITING');
+                      const badgeText = isPlanBadge 
+                        ? (planInfo.dDayLabel && planInfo.dDayLabel !== 'PLAN' ? `PLAN · ${planInfo.dDayLabel}` : 'PLAN') 
+                        : (isNewBadge ? 'NEW' : 'EDITING');
                       const badgeBg = isPlanBadge 
                         ? 'bg-blue-600/90 text-white' 
                         : (isNewBadge ? 'bg-red-600/90 text-white' : 'bg-amber-600/90 text-white');
 
                       return (
-                        <div className={`absolute top-3 left-3 sm:top-3.5 sm:left-3.5 px-2.5 sm:px-3 py-1 backdrop-blur-md font-mono text-[9px] sm:text-[10px] font-bold tracking-wider uppercase rounded-full shadow-xs ${badgeBg}`}>
+                        <div className={`absolute top-3 left-3 sm:top-3.5 sm:left-3.5 px-2.5 sm:px-3 py-1 backdrop-blur-md font-mono text-[9px] sm:text-[10px] font-bold tracking-wider uppercase rounded-full shadow-xs z-10 ${badgeBg}`}>
                           <span>{badgeText}</span>
                         </div>
                       );
@@ -1904,7 +1932,7 @@ export function HomePage({
                       const tripYear = getYearAndMonth(trip.date).year || (trip.date ? trip.date.match(/\b(19\d\d|20\d\d)\b/)?.[0] : '') || String(new Date().getFullYear());
                       return (
                         <div 
-                          className="absolute top-3 right-3 sm:top-3.5 sm:right-3.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 text-black dark:text-white shadow-xs flex items-center justify-center font-mono text-[9.5px] sm:text-[10.5px] font-black tracking-tight group-hover:rotate-12 transition-transform duration-300"
+                          className="absolute top-3 right-3 sm:top-3.5 sm:right-3.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 text-black dark:text-white shadow-xs flex items-center justify-center font-mono text-[9.5px] sm:text-[10.5px] font-black tracking-tight group-hover:rotate-12 transition-transform duration-300 z-10"
                           title={`${tripYear}년 여정`}
                         >
                           <span>{tripYear}</span>
