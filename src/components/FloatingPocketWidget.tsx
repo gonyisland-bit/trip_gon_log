@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { SpotPocketItem, PocketCategory, Trip } from '../types';
 import { getSavedPockets } from '../utils/pocketStorage';
+import { findCityByNameOrAlias, findCountryByNameOrAlias } from '../data/worldDestinations';
 
 interface FloatingPocketWidgetProps {
   trip: Trip;
@@ -38,26 +39,95 @@ export function FloatingPocketWidget({
   const [spots] = useState<SpotPocketItem[]>(() => getSavedPockets());
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
 
-  // Filter spots matching this trip's country or city
-  const tripCountry = (trip.country || '').trim().toLowerCase();
-  const tripLocation = (trip.locationStr || '').trim().toLowerCase();
-  const tripTitle = (trip.title || '').trim().toLowerCase();
+  // 여정의 대상 도시 및 국가 토큰 정밀 추출
+  const { cityTokens, countryTokens } = useMemo(() => {
+    const cTokens = new Set<string>();
+    const coTokens = new Set<string>();
 
+    const rawLoc = (trip.locationStr || '').trim();
+    const rawCountry = (trip.country || '').trim();
+
+    if (rawLoc) {
+      rawLoc.split(',').forEach(part => {
+        const p = part.trim().toLowerCase();
+        if (p) {
+          cTokens.add(p);
+          const matched = findCityByNameOrAlias(p);
+          if (matched) {
+            cTokens.add(matched.nameKo.toLowerCase());
+            cTokens.add(matched.nameEn.toLowerCase());
+          }
+        }
+      });
+    }
+
+    if (trip.locations && trip.locations.length > 0) {
+      trip.locations.forEach(loc => {
+        if (loc.name) {
+          const p = loc.name.trim().toLowerCase();
+          cTokens.add(p);
+          const matched = findCityByNameOrAlias(p);
+          if (matched) {
+            cTokens.add(matched.nameKo.toLowerCase());
+            cTokens.add(matched.nameEn.toLowerCase());
+          }
+        }
+      });
+    }
+
+    if (rawCountry) {
+      const co = rawCountry.toLowerCase();
+      coTokens.add(co);
+      const matched = findCountryByNameOrAlias(co);
+      if (matched) {
+        coTokens.add(matched.nameKo.toLowerCase());
+        coTokens.add(matched.nameEn.toLowerCase());
+        coTokens.add(matched.code.toLowerCase());
+      }
+    }
+
+    return { cityTokens: cTokens, countryTokens: coTokens };
+  }, [trip]);
+
+  // 엄격 매칭: 도시가 지정된 경우, 반드시 해당 도시와 일치하는 포켓만 선별 (타 도시 포켓 원천 차단)
   const relevantSpots = useMemo(() => {
     return spots.filter(s => {
       if (s.tripId === trip.id) return true;
-      const c = (s.country || '').trim().toLowerCase();
-      const city = (s.city || '').trim().toLowerCase();
-      if (tripCountry && c && (tripCountry.includes(c) || c.includes(tripCountry))) return true;
-      if (tripLocation && city && (tripLocation.includes(city) || city.includes(tripLocation))) return true;
-      if (tripLocation && c && (tripLocation.includes(c) || c.includes(tripLocation))) return true;
-      if (tripTitle && city && tripTitle.includes(city)) return true;
+
+      const sCity = (s.city || '').trim().toLowerCase();
+      const sCountry = (s.country || '').trim().toLowerCase();
+      const sAddr = (s.address || '').trim().toLowerCase();
+      const sTitle = (s.title || '').trim().toLowerCase();
+
+      const spotCityObj = findCityByNameOrAlias(s.city || '');
+      const spotCountryObj = findCountryByNameOrAlias(s.country || '');
+
+      // 1. 여정에 도시가 지정된 경우: 해당 도시와 일치하는 포켓만 통과
+      if (cityTokens.size > 0) {
+        if (sCity && cityTokens.has(sCity)) return true;
+        if (spotCityObj && (cityTokens.has(spotCityObj.nameEn.toLowerCase()) || cityTokens.has(spotCityObj.nameKo.toLowerCase()))) return true;
+        for (const tok of cityTokens) {
+          if (tok && (sCity.includes(tok) || sAddr.includes(tok) || sTitle.includes(tok))) return true;
+        }
+        // 도시가 있는 경우 국가 일치만으로는 타 도시 포켓(예: 도쿄)을 통과시키지 않음!
+        return false;
+      }
+
+      // 2. 도시 없이 국가만 지정된 경우
+      if (countryTokens.size > 0) {
+        if (sCountry && countryTokens.has(sCountry)) return true;
+        if (spotCountryObj && (countryTokens.has(spotCountryObj.nameEn.toLowerCase()) || countryTokens.has(spotCountryObj.nameKo.toLowerCase()))) return true;
+        for (const tok of countryTokens) {
+          if (tok && (sCountry.includes(tok) || sAddr.includes(tok) || sTitle.includes(tok))) return true;
+        }
+      }
+
       return false;
     });
-  }, [spots, trip, tripCountry, tripLocation, tripTitle]);
+  }, [spots, trip.id, cityTokens, countryTokens]);
 
-  // Fallback to all spots if none matched destination
-  const displayList = relevantSpots.length > 0 ? relevantSpots : spots;
+  // 해당 여행지에 매칭된 스팟만 정밀 표시 (타 지역 포켓 억지 노출 배제)
+  const displayList = relevantSpots;
 
   const filteredList = useMemo(() => {
     if (selectedCategory === 'ALL') return displayList;
@@ -121,8 +191,8 @@ export function FloatingPocketWidget({
           {/* Spots Scrollable List */}
           <div className="flex-grow overflow-y-auto p-2.5 space-y-2 max-h-[300px]">
             {filteredList.length === 0 ? (
-              <div className="py-8 text-center text-xs font-mono text-black/40 dark:text-white/40">
-                일치하는 스팟이 없습니다
+              <div className="py-8 px-4 text-center text-[11px] font-mono text-black/40 dark:text-white/40 leading-relaxed">
+                현재 여행지({trip.locationStr || trip.title})에<br />저장된 포켓 스팟이 없습니다
               </div>
             ) : (
               filteredList.map(spot => {

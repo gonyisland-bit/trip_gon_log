@@ -448,6 +448,14 @@ function App() {
   const [dbError, setDbError] = useState<string | null>(null);
   const [tripsLoaded, setTripsLoaded] = useState<boolean>(false);
   const [plansLoaded, setPlansLoaded] = useState<boolean>(false);
+  const [isMapBuilderActive, setIsMapBuilderActive] = useState<boolean>(false);
+  const [pendingLeaveBuilderModal, setPendingLeaveBuilderModal] = useState<{
+    isOpen: boolean;
+    targetView?: string;
+    targetTripId?: number | null;
+    pushHistory?: boolean;
+    tagFilter?: string | null;
+  }>({ isOpen: false });
   
   const [timelineData, setTimelineData] = useState<TimelineData>(() => {
     try {
@@ -1599,6 +1607,18 @@ function App() {
 
     // Close any residual save complete modal upon navigation
     setShowSaveCompleteModal(false);
+
+    // 가이드(TripBuilder) 생성 작업 중 다른 화면으로 벗어나려 할 때 2단계 확인
+    if (!force && currentView === 'map' && isMapBuilderActive && view !== 'map') {
+      setPendingLeaveBuilderModal({
+        isOpen: true,
+        targetView: view,
+        targetTripId: tripId,
+        pushHistory,
+        tagFilter,
+      });
+      return;
+    }
 
     if (view !== 'map') {
       setMapBuilderRequested(false);
@@ -3214,6 +3234,7 @@ function App() {
                     initialBuilderCountry={createCountryInitial}
                     initialBuilderCity={createCityInitial}
                     initialBuilderDate={createDateInitial}
+                    onBuilderStateChange={setIsMapBuilderActive}
                   />
                 </div>
               )}
@@ -3518,6 +3539,26 @@ function App() {
             iconType="alert"
             onConfirm={handleConfirmDeleteJourney}
             onCancel={() => setJourneyDeleteConfirm({ isOpen: false, tripId: null, title: '' })}
+          />
+
+          {/* Leave Trip Builder Swiss Minimal Confirmation Modal */}
+          <ConfirmModal
+            isOpen={pendingLeaveBuilderModal.isOpen}
+            title="LEAVE BUILDER"
+            message={`작성 중인 여정 설정이 저장되지 않을 수 있습니다.\n정말 다른 화면으로 이동하시겠습니까?`}
+            confirmLabel="LEAVE"
+            cancelLabel="CONTINUE"
+            confirmVariant="danger"
+            iconType="alert"
+            onConfirm={() => {
+              const { targetView, targetTripId, pushHistory, tagFilter } = pendingLeaveBuilderModal;
+              setIsMapBuilderActive(false);
+              setPendingLeaveBuilderModal({ isOpen: false });
+              if (targetView) {
+                navigateTo(targetView, targetTripId, pushHistory, true, tagFilter);
+              }
+            }}
+            onCancel={() => setPendingLeaveBuilderModal({ isOpen: false })}
           />
         </Suspense>
 

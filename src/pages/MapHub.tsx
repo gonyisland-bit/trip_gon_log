@@ -6,6 +6,7 @@ import { Trip, Plan } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
 import { TripBuilderPanel } from '../components/TripBuilderPanel';
+import { ConfirmModal } from '../components/ConfirmModal';
 import { findCityByNameOrAlias, DestinationCountry, DestinationCity, PresetTripPlan, WORLD_CITIES } from '../data/worldDestinations';
 import { fetchCityWeather, getWeatherMeta, CityWeatherData } from '../utils/weatherApi';
 import { getNightTerminatorPolygon, shiftPolygonCoordinates, isLocationInNight, getContinuousNightPolygon } from '../utils/solarTerminator';
@@ -1568,6 +1569,7 @@ interface MapHubPageProps {
   initialBuilderCountry?: string;
   initialBuilderCity?: string;
   initialBuilderDate?: string;
+  onBuilderStateChange?: (isOpen: boolean) => void;
 }
 
 export function MapHubPage({
@@ -1582,6 +1584,7 @@ export function MapHubPage({
   initialBuilderCountry = '',
   initialBuilderCity = '',
   initialBuilderDate = '',
+  onBuilderStateChange,
 }: MapHubPageProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -1662,17 +1665,26 @@ export function MapHubPage({
     }
   }, [initialBuilderOpen, initialBuilderCountry, initialBuilderCity, initialBuilderDate]);
 
-  // Invalidate Leaflet size on builder split change & sync isBuilderOpenRef
+  // Invalidate Leaflet size on builder split change & sync isBuilderOpenRef & notify parent
   const isBuilderOpenRef = useRef<boolean>(isBuilderOpen);
   useEffect(() => {
     isBuilderOpenRef.current = isBuilderOpen;
+    onBuilderStateChange?.(isBuilderOpen);
     const timer = setTimeout(() => {
       if (mapRef.current) {
         mapRef.current.invalidateSize();
       }
     }, 250);
     return () => clearTimeout(timer);
-  }, [isBuilderOpen]);
+  }, [isBuilderOpen, onBuilderStateChange]);
+
+  // 도시 변경 확인 모달 상태 (Trip 가이드 생성 중 다른 도시 선택 시 실수 방지)
+  const [confirmChangeCityModal, setConfirmChangeCityModal] = useState<{
+    isOpen: boolean;
+    targetCity: string;
+    targetCountry?: string;
+    targetCountryCode?: string;
+  }>({ isOpen: false, targetCity: '' });
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchExpanded, setIsSearchExpanded] = useState<boolean>(false);
@@ -1814,6 +1826,39 @@ export function MapHubPage({
     toggleDestCityRef.current = toggleDestCity;
   }, [toggleDestCity]);
 
+  // Trip 가이드 활성화 중 도시 변경 요청 핸들러 (실수 방지 2단계 확인)
+  const requestChangeBuilderCity = useCallback((cityName: string, countryName?: string, countryCode?: string) => {
+    if (!cityName) return;
+    if (isBuilderOpenRef.current) {
+      if (builderCity === cityName) return;
+      setConfirmChangeCityModal({
+        isOpen: true,
+        targetCity: cityName,
+        targetCountry: countryName || selectedCountry?.name,
+        targetCountryCode: countryCode || selectedCountry?.code,
+      });
+    } else {
+      toggleDestCity(cityName);
+    }
+  }, [builderCity, selectedCountry, toggleDestCity]);
+
+  const requestChangeBuilderCityRef = useRef(requestChangeBuilderCity);
+  useEffect(() => {
+    requestChangeBuilderCityRef.current = requestChangeBuilderCity;
+  }, [requestChangeBuilderCity]);
+
+  const handleConfirmCityChange = useCallback(() => {
+    const { targetCity, targetCountry, targetCountryCode } = confirmChangeCityModal;
+    if (targetCity) {
+      setBuilderCity(targetCity);
+      setBuilderCities([targetCity]);
+      if (targetCountry) setBuilderCountry(targetCountry);
+      if (targetCountryCode) setBuilderCountryCode(targetCountryCode);
+      setActiveWeatherCity(targetCity);
+    }
+    setConfirmChangeCityModal({ isOpen: false, targetCity: '' });
+  }, [confirmChangeCityModal]);
+
   // Render subtle mini dot pins for all travel destinations in the selected country
   useEffect(() => {
     const L = (window as any).L;
@@ -1867,7 +1912,11 @@ export function MapHubPage({
       const dotMarker = L.marker([lat, effLng], { icon, zIndexOffset: 1200 }).addTo(map);
       dotMarker.on('click', (e: any) => {
         if (e && e.originalEvent) e.originalEvent.stopPropagation();
-        toggleDestCityRef.current(cityName);
+        if (isBuilderOpenRef.current) {
+          requestChangeBuilderCityRef.current(cityName);
+        } else {
+          toggleDestCityRef.current(cityName);
+        }
       });
       countryCityDotsRef.current.push(dotMarker);
     });
@@ -3052,7 +3101,6 @@ export function MapHubPage({
 
     // Direct map click to select country
     map.on('click', (e: any) => {
-      if (isBuilderOpenRef.current) return;
       if (e && e.latlng) {
         matchCountryFromLatLng(e.latlng);
       }
@@ -4016,6 +4064,12 @@ export function MapHubPage({
                       handleSelectCountry(c);
                       setIsSearchExpanded(false);
                       setIsSearchDropdownOpen(false);
+                      if (isBuilderOpenRef.current) {
+                        const targetCity = c.popularCities?.[0] || c.cities?.[0] || '';
+                        if (targetCity) {
+                          requestChangeBuilderCityRef.current(targetCity, c.name, c.code);
+                        }
+                      }
                     }}
                     className="p-2 sm:p-2.5 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer flex items-center justify-between gap-2.5 transition-colors"
                   >
@@ -5129,7 +5183,18 @@ export function MapHubPage({
             </div>
           </div>
         </div>
-      )}
+      {/* 2단계 확인: 여정 대상 도시 변경 모달 (실수 방지) */}
+      <ConfirmModal
+        isOpen={confirmChangeCityModal.isOpen}
+        title="CHANGE DESTINATION"
+        message={`생성 중인 여정의 대상 도시를 '${builderCity || '현재 도시'}'에서 '${confirmChangeCityModal.targetCity}'(으)로 변경하시겠습니까?\n(선택 시 가이드 일정 조건이 새 도시에 맞게 갱신됩니다)`}
+        confirmLabel="CHANGE"
+        cancelLabel="CANCEL"
+        confirmVariant="primary"
+        iconType="info"
+        onConfirm={handleConfirmCityChange}
+        onCancel={() => setConfirmChangeCityModal({ isOpen: false, targetCity: '' })}
+      />
 
       {/* Marker CSS Overrides, Swiss Minimal Typography & Label Toggle Rules */}
       <style>{`

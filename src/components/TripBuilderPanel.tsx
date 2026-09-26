@@ -23,7 +23,8 @@ import {
   ChevronDown,
   Bookmark,
   AlertTriangle,
-  ThermometerSun
+  ThermometerSun,
+  Users
 } from 'lucide-react';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { 
@@ -201,6 +202,60 @@ export function TripBuilderPanel({
     } catch (_) {}
     return ids;
   });
+
+  // Trip Members state
+  const [members, setMembers] = useState<string[]>([]);
+  const [memberInput, setMemberInput] = useState('');
+
+  const renderMembersSection = () => (
+    <div className="flex flex-col gap-1.5 pt-2 border-t border-black/10 dark:border-white/10 select-none">
+      <div className="flex items-center justify-between text-[11px] font-mono font-bold uppercase tracking-wider text-black/60 dark:text-white/60">
+        <span className="flex items-center gap-1.5">
+          <Users className="w-3.5 h-3.5 text-black dark:text-white" />
+          <span>MEMBERS ({members.length}명)</span>
+        </span>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {members.map((m, idx) => (
+          <span key={idx} className="luggage-tag group/luggage cursor-default">
+            <span className="luggage-tag-hole" />
+            <span className="font-mono font-bold tracking-tight text-[11px]">{m}</span>
+            <span className="luggage-barcode-strip ml-0.5">
+              <span className="luggage-barcode-bar w-[1px]" />
+              <span className="luggage-barcode-bar w-[2px]" />
+              <span className="luggage-barcode-bar w-[1px]" />
+            </span>
+            <button
+              type="button"
+              onClick={() => setMembers(prev => prev.filter((_, i) => i !== idx))}
+              className="hover:text-red-500 text-red-600 font-bold text-[10px] ml-1 leading-none cursor-pointer"
+              title="삭제"
+            >
+              <X className="w-2.5 h-2.5" />
+            </button>
+          </span>
+        ))}
+        <input
+          type="text"
+          value={memberInput}
+          onChange={(e) => setMemberInput(e.target.value)}
+          placeholder="+ Member (Enter)"
+          onKeyDown={(e) => {
+            if (e.nativeEvent.isComposing) return;
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              const val = memberInput.trim();
+              if (val && !members.includes(val)) {
+                setMembers(prev => [...prev, val]);
+                setMemberInput('');
+              }
+            }
+          }}
+          className="text-[11px] font-mono font-bold border border-black/20 dark:border-white/20 px-2 py-0.5 rounded-sm bg-transparent outline-none w-24 focus:w-32 focus:border-black dark:focus:border-white text-black dark:text-white transition-all"
+        />
+      </div>
+    </div>
+  );
 
   // Reload pockets when panel opens or external changes happen
   useEffect(() => {
@@ -1160,7 +1215,7 @@ export function TripBuilderPanel({
           [preset.country, ...preset.tags],
           lat,
           lng,
-          [],
+          members,
           [{ name: preset.city, lat, lng, country: preset.country }],
           'NEW',
           preset.country,
@@ -1252,7 +1307,7 @@ export function TripBuilderPanel({
           [prop.countryEn, prop.theme.toUpperCase(), `${prop.durationDays}박${prop.durationDays + 1}일`],
           prop.cityObj.lat,
           prop.cityObj.lng,
-          [],
+          members,
           prop.locations,
           'NEW',
           prop.countryEn,
@@ -1590,7 +1645,7 @@ export function TripBuilderPanel({
           [finalCountry, selectedTheme !== 'all' ? selectedTheme : 'Travel'],
           cityObj?.lat,
           cityObj?.lng,
-          [],
+          members,
           [{ name: finalCity, lat: cityObj?.lat, lng: cityObj?.lng, country: finalCountry }],
           'NEW',
           finalCountry,
@@ -1913,7 +1968,8 @@ export function TripBuilderPanel({
                         ))}
                       </div>
                     </div>
-                  )}
+                  {/* Trip Members */}
+                  {renderMembersSection()}
                 </div>
 
                 {/* Create Trip Action Button */}
@@ -2450,6 +2506,9 @@ export function TripBuilderPanel({
                   </div>
                 </div>
 
+                {/* Trip Members */}
+                {renderMembersSection()}
+
                 {/* Bottom Action Submit Button (Crear producte reference style) */}
                 <div className="pt-3">
                   <button
@@ -2494,6 +2553,9 @@ export function TripBuilderPanel({
 
                 {/* Matching Pockets Accordion for Proposals View */}
                 {renderPocketAccordion(isCuratorPocketOpen, setIsCuratorPocketOpen)}
+
+                {/* Trip Members */}
+                {renderMembersSection()}
 
                 {/* Proposals Card List */}
                 <div className="space-y-3">
@@ -3015,7 +3077,8 @@ export function TripBuilderPanel({
                   ))}
                 </div>
               )}
-            </div>
+            {/* Trip Members */}
+            {renderMembersSection()}
 
             <button
               type="submit"
