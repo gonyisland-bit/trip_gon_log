@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { ConfirmModal } from './ConfirmModal';
-import { ScrapedSpotData, ScrapedSpotCandidate, scrapeSnsMetadata } from '../utils/snsScraper';
+import { ScrapedSpotData, ScrapedSpotCandidate, scrapeSnsMetadata, extractAddressFromText } from '../utils/snsScraper';
 import { PocketCategory, SpotPocketItem, SpotPocketPlatform } from '../types';
 import { compressImage } from '../utils/imageHelper';
 import { uploadFileToR2 } from '../utils/storageHelper';
@@ -176,7 +176,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
     setSelectedImage(scrapedData.thumbnailUrl);
     setCity(scrapedData.city || '');
     setCountry(scrapedData.country || '');
-    setAddress('');
+    setAddress(scrapedData.address || extractAddressFromText(scrapedData.memo) || '');
     setLat(undefined);
     setLng(undefined);
     setActiveCandidateIndex(scrapedData.targetImgIndex ? scrapedData.targetImgIndex - 1 : null);
@@ -212,6 +212,12 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
       if (res.memo) setMemo(res.memo);
       if (res.city) setCity(res.city);
       if (res.country) setCountry(res.country);
+      if (res.address) {
+        setAddress(res.address);
+      } else if (res.memo) {
+        const detectedAddr = extractAddressFromText(res.memo);
+        if (detectedAddr) setAddress(detectedAddr);
+      }
       if (res.thumbnailUrl) {
         setSelectedImage(res.thumbnailUrl);
         await runOcrForImage(res.thumbnailUrl, false);
@@ -311,6 +317,12 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
     }
     if (candidate.city) setCity(candidate.city);
     if (candidate.country) setCountry(candidate.country);
+    if (candidate.address) {
+      setAddress(candidate.address);
+    } else if (candidate.memo) {
+      const detectedAddr = extractAddressFromText(candidate.memo);
+      if (detectedAddr) setAddress(detectedAddr);
+    }
 
     // If candidate has an index, also auto-pick image if available in allImages
     if (candidate.index && scrapedData.allImages[candidate.index - 1]) {
@@ -760,11 +772,11 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
               )}
             </div>
             <textarea 
-              rows={3}
+              rows={4}
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
-              placeholder="추천 메뉴, 웨이팅 팁, 주의사항 등..."
-              className="w-full px-3 py-2 text-xs font-sans font-medium leading-relaxed bg-white dark:bg-[#1A1A1C] border border-black/20 dark:border-white/20 text-black dark:text-white outline-none focus:border-black dark:focus:border-white transition-colors resize-none"
+              placeholder="추천 메뉴, 상세 위치/주소, 영업시간, 웨이팅 팁, 주의사항 등..."
+              className="w-full px-3 py-2 text-xs font-sans font-medium leading-relaxed bg-white dark:bg-[#1A1A1C] border border-black/20 dark:border-white/20 text-black dark:text-white outline-none focus:border-black dark:focus:border-white transition-colors resize-y min-h-[96px]"
             />
           </div>
 

@@ -7,6 +7,7 @@ export interface ScrapedSpotCandidate {
   memo?: string;
   city?: string;
   country?: string;
+  address?: string;
   index?: number;
 }
 
@@ -21,8 +22,21 @@ export interface ScrapedSpotData {
   targetImgIndex?: number;
   city?: string;
   country?: string;
+  address?: string;
   authorName?: string;
   candidates: ScrapedSpotCandidate[];
+}
+
+/**
+ * Extracts address line from notes if present (e.g. "주소: 도쿄도 ...", "위치: 서울시 ...")
+ */
+export function extractAddressFromText(text: string): string | undefined {
+  if (!text) return undefined;
+  const match = text.match(/(?:📍\s*)?(?:주소|위치|address|오시는\s*길)[:\s]+([^\r\n,]+(?:,\s*[^\r\n]+)?)/i);
+  if (match && match[1]) {
+    return match[1].trim().slice(0, 120);
+  }
+  return undefined;
 }
 
 /**
@@ -188,6 +202,7 @@ export function detectCityAndCountry(text: string): { city?: string; country?: s
 
 /**
  * Extracts multiple spot candidates from text if post introduces a list (e.g. "Tokyo Best 5", "1. 멘야무사시 2. 푸글렌")
+ * Uses a multi-line buffer to capture all trailing address, business hours, and tip lines under each spot.
  */
 export function extractMultiSpotCandidates(caption: string): ScrapedSpotCandidate[] {
   if (!caption) return [];
@@ -199,48 +214,72 @@ export function extractMultiSpotCandidates(caption: string): ScrapedSpotCandidat
   // Pattern 2: Emoji or bullet pins "📍 OOO", "✔️ OOO", "▫️ OOO"
   const pinRegex = /^(?:📍|🏷️|▫️|✔️|📌|▪️|\*)\s*([^\r\n—–-]+)(?:[—–-](.*))?$/;
 
+  let currentCandidate: ScrapedSpotCandidate | null = null;
+  const candidateMemoLines: string[] = [];
+
+  const flushCurrent = () => {
+    if (currentCandidate) {
+      const fullMemo = [
+        currentCandidate.memo,
+        ...candidateMemoLines
+      ].filter(Boolean).join('\n').trim();
+      currentCandidate.memo = fullMemo.slice(0, 2000);
+      currentCandidate.category = inferCategory(`${currentCandidate.title} ${fullMemo}`);
+      if (!currentCandidate.address) {
+        currentCandidate.address = extractAddressFromText(fullMemo);
+      }
+      candidates.push(currentCandidate);
+      currentCandidate = null;
+      candidateMemoLines.length = 0;
+    }
+  };
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
 
     const numMatch = line.match(numberedRegex);
-    if (numMatch) {
-      const idx = parseInt(numMatch[1], 10);
-      const rawTitle = numMatch[2].replace(/#[\w가-힣]+/g, '').trim();
-      const extraMemo = numMatch[3] ? numMatch[3].trim() : '';
-      if (rawTitle && rawTitle.length >= 2 && rawTitle.length <= 40) {
+    const pinMatch = !numMatch ? line.match(pinRegex) : null;
+
+    if (numMatch || pinMatch) {
+      flushCurrent();
+      const idx = numMatch ? parseInt(numMatch[1], 10) : candidates.length + 1;
+      const rawTitle = (numMatch ? numMatch[2] : pinMatch![1]).replace(/#[\w가-힣]+/g, '').trim();
+      const inlineMemo = (numMatch ? numMatch[3] : pinMatch![2]) ? (numMatch ? numMatch[3] : pinMatch![2])!.trim() : '';
+
+      if (rawTitle && rawTitle.length >= 2 && rawTitle.length <= 50) {
         const { city, country } = detectCityAndCountry(line);
-        candidates.push({
+        const address = extractAddressFromText(line);
+        currentCandidate = {
           index: idx,
           title: rawTitle,
-          category: inferCategory(`${rawTitle} ${extraMemo}`),
-          memo: extraMemo,
+          category: inferCategory(`${rawTitle} ${inlineMemo}`),
+          memo: inlineMemo,
           city,
-          country
-        });
+          country,
+          address
+        };
       }
-      continue;
-    }
-
-    const pinMatch = line.match(pinRegex);
-    if (pinMatch) {
-      const rawTitle = pinMatch[1].replace(/#[\w가-힣]+/g, '').trim();
-      const extraMemo = pinMatch[2] ? pinMatch[2].trim() : '';
-      if (rawTitle && rawTitle.length >= 2 && rawTitle.length <= 40) {
+    } else if (currentCandidate) {
+      // Accumulate subsequent lines (address, hours, tips, notes) under this candidate until next candidate begins
+      candidateMemoLines.push(line);
+      // Auto-detect city & country from detailed address line if not detected yet
+      if (!currentCandidate.city) {
         const { city, country } = detectCityAndCountry(line);
-        candidates.push({
-          index: candidates.length + 1,
-          title: rawTitle,
-          category: inferCategory(`${rawTitle} ${extraMemo}`),
-          memo: extraMemo,
-          city,
-          country
-        });
+        if (city) {
+          currentCandidate.city = city;
+          currentCandidate.country = country;
+        }
+      }
+      if (!currentCandidate.address) {
+        const addr = extractAddressFromText(line);
+        if (addr) currentCandidate.address = addr;
       }
     }
   }
+  flushCurrent();
 
-  return candidates.slice(0, 10);
+  return candidates.slice(0, 15);
 }
 
 /**
@@ -363,7 +402,10 @@ export async function scrapeSnsMetadata(rawUrl: string): Promise<ScrapedSpotData
   // If URL explicitly specified ?img_index=N, pick corresponding candidate if matched
   let finalTitle = cleanedTitle || '추천 여행 스팟';
   let finalCategory = category;
-  let finalMemo = memo.slice(0, 300);
+  let finalMemo = memo.slice(0, 2000).trim();
+  let finalAddress = extractAddressFromText(memo);
+  let finalCity = city;
+  let finalCountry = country;
 
   if (targetImgIndex && candidates.length > 0) {
     const matched = candidates.find(c => c.index === targetImgIndex);
@@ -371,6 +413,9 @@ export async function scrapeSnsMetadata(rawUrl: string): Promise<ScrapedSpotData
       finalTitle = matched.title;
       finalCategory = matched.category;
       if (matched.memo) finalMemo = matched.memo;
+      if (matched.address) finalAddress = matched.address;
+      if (matched.city) finalCity = matched.city;
+      if (matched.country) finalCountry = matched.country;
     }
   }
 
@@ -388,8 +433,9 @@ export async function scrapeSnsMetadata(rawUrl: string): Promise<ScrapedSpotData
     thumbnailUrl,
     allImages: allImages.slice(0, 15),
     targetImgIndex,
-    city,
-    country,
+    city: finalCity,
+    country: finalCountry,
+    address: finalAddress,
     authorName: authorName ? authorName.replace(/^@/, '') : undefined,
     candidates
   };

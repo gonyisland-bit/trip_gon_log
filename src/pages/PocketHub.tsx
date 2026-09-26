@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { 
   Bookmark, MapPin, Plus, ExternalLink, Trash2, Edit3, Compass, 
   Search, Check, X, ArrowUpRight, ChevronRight, Layers, Sparkles,
@@ -510,6 +510,45 @@ export function PocketHubPage({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isSelectionMode, selectedSpotIds.size, isAddModalOpen, isScrapModalOpen, selectedSpotForModal, spotToDelete, spotToUseInTrip, scheduleTargetTrip]);
+
+  const handleOpenBlankScrapModal = useCallback(() => {
+    setScrapedResult({
+      title: '',
+      category: 'spot',
+      memo: '',
+      sourceUrl: '',
+      platform: 'web',
+      thumbnailUrl: '',
+      allImages: [],
+      candidates: []
+    });
+    setIsScrapModalOpen(true);
+  }, []);
+
+  // Shortcut key: S or Alt+S to open Pocket Scrap modal
+  useEffect(() => {
+    const handleScrapKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is currently typing in input/textarea/select/contenteditable
+      const target = e.target as HTMLElement | null;
+      const isInput = target && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable);
+      if (isInput) return;
+
+      // Ignore if any modal is already open
+      if (isAddModalOpen || isScrapModalOpen || selectedSpotForModal || spotToDelete || spotToUseInTrip || scheduleTargetTrip) return;
+
+      // Check for standalone S or Alt+S
+      if ((e.key === 's' || e.key === 'S') && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        handleOpenBlankScrapModal();
+      } else if (e.altKey && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        handleOpenBlankScrapModal();
+      }
+    };
+
+    window.addEventListener('keydown', handleScrapKeyDown);
+    return () => window.removeEventListener('keydown', handleScrapKeyDown);
+  }, [isAddModalOpen, isScrapModalOpen, selectedSpotForModal, spotToDelete, spotToUseInTrip, scheduleTargetTrip, handleOpenBlankScrapModal]);
 
   const handleCreateTripFromSelectedPockets = () => {
     const selectedList = spots.filter(s => selectedSpotIds.has(s.id));
@@ -1205,24 +1244,15 @@ export function PocketHubPage({
           <div className="flex items-center w-full sm:w-auto">
             <button
               type="button"
-              onClick={() => {
-                setScrapedResult({
-                  title: '',
-                  category: 'spot',
-                  memo: '',
-                  sourceUrl: '',
-                  platform: 'web',
-                  thumbnailUrl: '',
-                  allImages: [],
-                  candidates: []
-                });
-                setIsScrapModalOpen(true);
-              }}
+              onClick={handleOpenBlankScrapModal}
               className="w-full sm:w-auto px-4 sm:px-5 py-1.5 sm:py-2 rounded-full bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90 font-mono text-[11px] sm:text-xs font-bold tracking-widest uppercase transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer shrink-0"
-              title="포켓 스크랩 & 추가 (URL / 스크린샷 이미지 OCR)"
+              title="포켓 스크랩 & 추가 (단축키: S 또는 Alt+S / Cmd+V 붙여넣기)"
             >
               <Bookmark className="w-3.5 h-3.5 fill-current" />
               <span>SCRAP</span>
+              <kbd className="hidden sm:inline-flex items-center justify-center font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/20 dark:bg-black/20 text-white/90 dark:text-black/90 leading-none">
+                S
+              </kbd>
             </button>
           </div>
         </div>

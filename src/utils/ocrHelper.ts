@@ -117,7 +117,7 @@ export async function extractTextFromImageUrl(
       .filter(line => line.length > 1 && !isNoiseText(line))
       .filter(line => !/^\d+$/.test(line));
 
-    const descriptionText = descLines.join('\n').slice(0, 600).trim();
+    const descriptionText = descLines.join('\n').slice(0, 1500).trim();
 
     return {
       fullText: rawText.trim(),
