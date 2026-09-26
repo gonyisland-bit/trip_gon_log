@@ -1206,7 +1206,7 @@ export function PocketHubPage({
             <button
               type="button"
               onClick={() => {
-                setScrapedDataForModal({
+                setScrapedResult({
                   title: '',
                   category: 'spot',
                   memo: '',

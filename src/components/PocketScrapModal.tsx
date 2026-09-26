@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   X, Check, ExternalLink, Image as ImageIcon,
   Utensils, Coffee, Camera, ShoppingBag, Lightbulb, Upload, Sparkles,
-  ScanText, Loader2, Link2, Clipboard, FileText, ZoomIn, MapPin
+  ScanText, Loader2, Link2, Clipboard, FileText, ZoomIn, MapPin,
+  Bookmark
 } from 'lucide-react';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { ConfirmModal } from './ConfirmModal';
@@ -838,16 +839,16 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
       {/* 2-Step Confirmation Modal on Unsaved Exit */}
       <ConfirmModal
         isOpen={showDiscardConfirmModal}
-        onClose={() => setShowDiscardConfirmModal(false)}
+        onCancel={() => setShowDiscardConfirmModal(false)}
         onConfirm={() => {
           setShowDiscardConfirmModal(false);
           onClose();
         }}
         title="작성 취소"
         message="작성 중인 내용이 있습니다. 저장을 취소하고 닫으시겠습니까?"
-        confirmText="저장 취소 (닫기)"
-        cancelText="계속 작성"
-        isDanger={true}
+        confirmLabel="저장 취소 (닫기)"
+        cancelLabel="계속 작성"
+        confirmVariant="danger"
       />
     </div>
   );
