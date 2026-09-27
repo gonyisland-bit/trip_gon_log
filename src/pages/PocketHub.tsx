@@ -226,8 +226,8 @@ export function PocketHubPage({
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
 
   // Sort state
-  type SortMode = 'custom' | 'newest' | 'oldest' | 'title' | 'category';
-  const [sortMode, setSortMode] = useState<SortMode>('custom');
+  type SortMode = 'user' | 'city' | 'country' | 'new' | 'old';
+  const [sortMode, setSortMode] = useState<SortMode>('user');
   const [isSortOpen, setIsSortOpen] = useState<boolean>(false);
   const sortRef = useRef<HTMLDivElement>(null);
 
@@ -769,11 +769,11 @@ export function PocketHubPage({
   const sortedSpots = useMemo(() => {
     const copy = [...filteredSpots];
     switch (sortMode) {
-      case 'newest':   return copy.sort((a, b) => b.createdAt - a.createdAt);
-      case 'oldest':   return copy.sort((a, b) => a.createdAt - b.createdAt);
-      case 'title':    return copy.sort((a, b) => a.title.localeCompare(b.title));
-      case 'category': return copy.sort((a, b) => a.category.localeCompare(b.category));
-      case 'custom':
+      case 'new':     return copy.sort((a, b) => b.createdAt - a.createdAt);
+      case 'old':     return copy.sort((a, b) => a.createdAt - b.createdAt);
+      case 'city':    return copy.sort((a, b) => (a.city || '').localeCompare(b.city || '') || a.title.localeCompare(b.title));
+      case 'country': return copy.sort((a, b) => (a.country || '').localeCompare(b.country || '') || a.title.localeCompare(b.title));
+      case 'user':
       default:
         return copy.sort((a, b) => {
           const ao = typeof a.order === 'number' ? a.order : (originalIndexMap[a.id] ?? 0);
@@ -783,8 +783,8 @@ export function PocketHubPage({
     }
   }, [filteredSpots, sortMode, originalIndexMap]);
 
-  // Is drag-reorder mode active? (admin + explicit reorder toggle + custom sort + no filters)
-  const isDragMode = isAdmin && isReorderMode && sortMode === 'custom' && activeFilterCount === 0 && !searchQuery.trim();
+  // Is drag-reorder mode active? (admin + explicit reorder toggle + user sort + no filters)
+  const isDragMode = isAdmin && isReorderMode && sortMode === 'user' && activeFilterCount === 0 && !searchQuery.trim();
 
   // Grouped spots by country (top-level grouping — avoids sub-district fragmentation)
   const groupedSpots = useMemo(() => {
@@ -800,12 +800,12 @@ export function PocketHubPage({
   }, [sortedSpots]);
 
   // Sort labels
-  const SORT_LABELS: Record<string, string> = {
-    custom: 'CUSTOM',
-    newest: 'NEWEST',
-    oldest: 'OLDEST',
-    title: 'A-Z',
-    category: 'CATEGORY',
+  const SORT_LABELS: Record<SortMode, string> = {
+    user: 'USER',
+    city: 'CITY',
+    country: 'COUNTRY',
+    new: 'NEW',
+    old: 'OLD',
   };
 
   // Admin-only: reorder spots by drag result
@@ -1215,16 +1215,16 @@ export function PocketHubPage({
                 onChange={(e) => setSortMode(e.target.value as any)}
                 className="bg-transparent text-[10px] sm:text-xs font-black uppercase tracking-widest border border-black/20 dark:border-white/20 px-2.5 py-1.5 focus:outline-none focus:border-black dark:focus:border-white transition-colors cursor-pointer rounded-none font-sans text-black dark:text-white"
               >
-                <option value="custom" className="bg-[#F9F8F6] dark:bg-[#111111]">CUSTOM</option>
-                <option value="newest" className="bg-[#F9F8F6] dark:bg-[#111111]">NEWEST</option>
-                <option value="oldest" className="bg-[#F9F8F6] dark:bg-[#111111]">OLDEST</option>
-                <option value="title" className="bg-[#F9F8F6] dark:bg-[#111111]">A-Z</option>
-                <option value="category" className="bg-[#F9F8F6] dark:bg-[#111111]">CATEGORY</option>
+                <option value="user" className="bg-[#F9F8F6] dark:bg-[#111111]">USER</option>
+                <option value="city" className="bg-[#F9F8F6] dark:bg-[#111111]">CITY</option>
+                <option value="country" className="bg-[#F9F8F6] dark:bg-[#111111]">COUNTRY</option>
+                <option value="new" className="bg-[#F9F8F6] dark:bg-[#111111]">NEW</option>
+                <option value="old" className="bg-[#F9F8F6] dark:bg-[#111111]">OLD</option>
               </select>
             </div>
 
             {/* Admin Reorder Grip Button */}
-            {isAdmin && sortMode === 'custom' && (
+            {isAdmin && sortMode === 'user' && (
               <button
                 type="button"
                 onClick={() => setIsReorderMode(prev => !prev)}
@@ -1307,19 +1307,19 @@ export function PocketHubPage({
             </div>
           )}
 
-          {/* Slide-open Filter Panel */}
+          {/* Slide-open Filter Panel (Swiss Minimal Pill Design without redundant borders) */}
           {isFilterOpen && (
-            <div className="border border-black/15 dark:border-white/15 p-3 sm:p-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-150 bg-black/[0.015] dark:bg-white/[0.015]">
+            <div className="border border-black/15 dark:border-white/15 p-4 sm:p-5 space-y-4 animate-in fade-in slide-in-from-top-2 duration-150 bg-black/[0.015] dark:bg-white/[0.015]">
               {/* COUNTRY */}
-              <div className="flex items-start gap-2 flex-wrap">
-                <span className="text-[9px] font-mono tracking-widest text-black/40 dark:text-white/40 uppercase pt-1.5 shrink-0 w-16">COUNTRY</span>
+              <div className="flex items-start gap-2.5 flex-wrap">
+                <span className="text-[10px] font-mono font-extrabold tracking-widest text-black/75 dark:text-white/75 uppercase pt-1 shrink-0 w-20">COUNTRY</span>
                 <div className="flex flex-wrap gap-1.5 flex-1">
                   <button
                     onClick={() => { setSelectedCountry('ALL'); setSelectedCity('ALL'); }}
-                    className={`px-2 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors cursor-pointer ${
+                    className={`rounded-full px-2.5 py-0.5 sm:py-1 text-[11px] font-mono font-bold uppercase tracking-wider border transition-all cursor-pointer ${
                       selectedCountry === 'ALL'
-                        ? 'bg-black text-white dark:bg-white dark:text-black border-transparent font-bold'
-                        : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                        : 'border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white bg-transparent'
                     }`}
                   >ALL</button>
                   {countryOptions.map(({ country, count }) => {
@@ -1328,13 +1328,13 @@ export function PocketHubPage({
                       <button
                         key={country}
                         onClick={() => { setSelectedCountry(country); setSelectedCity('ALL'); }}
-                        className={`px-2 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors cursor-pointer ${
+                        className={`rounded-full px-2.5 py-0.5 sm:py-1 text-[11px] font-mono font-bold uppercase tracking-wider border transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-black text-white dark:bg-white dark:text-black border-transparent font-bold'
-                            : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                            : 'border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white bg-transparent'
                         }`}
                       >
-                        {country} <span className="opacity-60 text-[9px]">({count})</span>
+                        {country} <span className="opacity-60 text-[9.5px]">({count})</span>
                       </button>
                     );
                   })}
@@ -1343,15 +1343,15 @@ export function PocketHubPage({
 
               {/* CITY (Direct Major City Filtering: Always available if spots have cities) */}
               {cityOptions.length > 0 && (
-                <div className="flex items-start gap-2 flex-wrap pt-2 border-t border-black/10 dark:border-white/10">
-                  <span className="text-[9px] font-mono tracking-widest text-black/40 dark:text-white/40 uppercase pt-1.5 shrink-0 w-16">CITY</span>
+                <div className="flex items-start gap-2.5 flex-wrap">
+                  <span className="text-[10px] font-mono font-extrabold tracking-widest text-black/75 dark:text-white/75 uppercase pt-1 shrink-0 w-20">CITY</span>
                   <div className="flex flex-wrap gap-1.5 flex-1">
                     <button
                       onClick={() => setSelectedCity('ALL')}
-                      className={`px-2 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors cursor-pointer ${
+                      className={`rounded-full px-2.5 py-0.5 sm:py-1 text-[11px] font-mono font-bold uppercase tracking-wider border transition-all cursor-pointer ${
                         selectedCity === 'ALL'
-                          ? 'bg-black text-white dark:bg-white dark:text-black border-transparent font-bold'
-                          : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                          ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                          : 'border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white bg-transparent'
                       }`}
                     >ALL</button>
                     {cityOptions.map(({ city, count }) => {
@@ -1360,13 +1360,13 @@ export function PocketHubPage({
                         <button
                           key={city}
                           onClick={() => setSelectedCity(city)}
-                          className={`px-2 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors cursor-pointer ${
+                          className={`rounded-full px-2.5 py-0.5 sm:py-1 text-[11px] font-mono font-bold uppercase tracking-wider border transition-all cursor-pointer ${
                             isSelected
-                              ? 'bg-black text-white dark:bg-white dark:text-black border-transparent font-bold'
-                              : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                              ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                              : 'border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white bg-transparent'
                           }`}
                         >
-                          {city} <span className="opacity-60 text-[9px]">({count})</span>
+                          {city} <span className="opacity-60 text-[9.5px]">({count})</span>
                         </button>
                       );
                     })}
@@ -1375,15 +1375,15 @@ export function PocketHubPage({
               )}
 
               {/* CATEGORY */}
-              <div className="flex items-start gap-2 flex-wrap pt-2 border-t border-black/10 dark:border-white/10">
-                <span className="text-[9px] font-mono tracking-widest text-black/40 dark:text-white/40 uppercase pt-1.5 shrink-0 w-16">CATEGORY</span>
+              <div className="flex items-start gap-2.5 flex-wrap">
+                <span className="text-[10px] font-mono font-extrabold tracking-widest text-black/75 dark:text-white/75 uppercase pt-1 shrink-0 w-20">CATEGORY</span>
                 <div className="flex flex-wrap gap-1.5 flex-1">
                   <button
                     onClick={() => setSelectedCategory('ALL')}
-                    className={`px-2 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors cursor-pointer ${
+                    className={`rounded-full px-2.5 py-0.5 sm:py-1 text-[11px] font-mono font-bold uppercase tracking-wider border transition-all cursor-pointer ${
                       selectedCategory === 'ALL'
-                        ? 'bg-black text-white dark:bg-white dark:text-black border-transparent font-bold'
-                        : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                        ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                        : 'border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white bg-transparent'
                     }`}
                   >ALL</button>
                   {(Object.keys(CATEGORY_META) as PocketCategory[]).map(cat => {
@@ -1394,13 +1394,13 @@ export function PocketHubPage({
                       <button
                         key={cat}
                         onClick={() => setSelectedCategory(cat)}
-                        className={`px-2 py-1 text-[11px] font-mono uppercase tracking-wider border transition-colors flex items-center gap-1 cursor-pointer ${
+                        className={`rounded-full px-2.5 py-0.5 sm:py-1 text-[11px] font-mono font-bold uppercase tracking-wider border transition-all flex items-center gap-1.5 cursor-pointer ${
                           isSelected
-                            ? 'bg-black text-white dark:bg-white dark:text-black border-transparent font-bold'
-                            : 'border-black/15 dark:border-white/15 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
+                            : 'border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white bg-transparent'
                         }`}
                       >
-                        <CatIcon className="w-2.5 h-2.5" style={{ color: isSelected ? undefined : meta.color }} />
+                        <CatIcon className="w-3 h-3" style={{ color: isSelected ? undefined : meta.color }} />
                         <span>{meta.label}</span>
                       </button>
                     );
@@ -1409,20 +1409,22 @@ export function PocketHubPage({
               </div>
 
               {/* FAVORITES + RESET */}
-              <div className="flex items-center justify-between pt-1 border-t border-black/10 dark:border-white/10">
+              <div className="flex items-center justify-between pt-2">
                 <button
                   type="button"
                   onClick={() => setIsFavoriteFilter(prev => !prev)}
-                  className={`flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider cursor-pointer transition-colors ${
-                    isFavoriteFilter ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
+                  className={`rounded-full px-3 py-1 text-[11px] font-mono font-bold uppercase tracking-wider border transition-all flex items-center gap-1.5 cursor-pointer ${
+                    isFavoriteFilter 
+                      ? 'bg-amber-500 text-white border-amber-500 shadow-xs' 
+                      : 'border-black/20 dark:border-white/20 text-black/80 dark:text-white/80 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white bg-transparent'
                   }`}
                 >
-                  <Star className={`w-3 h-3 ${isFavoriteFilter ? 'fill-amber-500 text-amber-500' : ''}`} />
+                  <Star className={`w-3 h-3 ${isFavoriteFilter ? 'fill-white text-white' : 'fill-amber-500 text-amber-500'}`} />
                   <span>FAVORITES ({favoriteCount})</span>
                 </button>
                 <button
                   onClick={() => { setSelectedCountry('ALL'); setSelectedCity('ALL'); setSelectedCategory('ALL'); setIsFavoriteFilter(false); }}
-                  className="text-[10px] font-mono uppercase tracking-wider text-black/40 dark:text-white/40 hover:text-red-500 cursor-pointer transition-colors"
+                  className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/50 dark:text-white/50 hover:text-red-500 cursor-pointer transition-colors px-2 py-1"
                 >
                   RESET ALL
                 </button>

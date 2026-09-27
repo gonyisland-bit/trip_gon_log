@@ -32,6 +32,8 @@ interface MapAreaProps {
   onItemHover?: (id: number | null) => void;
   onAddSpotToTimeline?: (spot: SpotPocketItem) => void;
   radarFocusedSpot?: { lat: number; lng: number; title: string } | null;
+  radarRouteTarget?: { lat: number; lng: number; title: string; distance?: number } | null;
+  activeGhostSpotId?: string | number | null;
 }
 
 const getVehicleDimensions = (type: 'car' | 'train' | 'ship' | 'flight' | null | undefined): { iconSize: [number, number]; iconAnchor: [number, number] } => {
@@ -217,6 +219,8 @@ export function MapArea({
   onItemHover,
   onAddSpotToTimeline,
   radarFocusedSpot = null,
+  radarRouteTarget = null,
+  activeGhostSpotId = null,
 }: MapAreaProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -230,6 +234,10 @@ export function MapArea({
   const [isMapMenuOpen, setIsMapMenuOpen] = useState(false);
   const [showPocketPins, setShowPocketPins] = useState<boolean>(true);
   const pocketMarkersRef = useRef<{ [id: string]: any }>({});
+  const radarRoutePolylineRef = useRef<any>(null);
+  const userMovedMapRef = useRef(false);
+  const lastMapCenterRef = useRef<{ lat: number; lng: number } | null>(null);
+  const lastMapZoomRef = useRef<number | null>(null);
   const userLocationMarkerRef = useRef<any>(null);
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [locationToast, setLocationToast] = useState<{ show: boolean; message: string } | null>(null);
@@ -365,6 +373,83 @@ export function MapArea({
       mapRef.current.flyTo([lat, lng], 16, { duration: 1.2 });
     }
   }, [radarFocusedSpot]);
+
+  // ─── Radar Route Polyline Effect (Dashed Red Route between GPS & Spot) ───
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    const L = (window as any).L;
+    if (!L) return;
+
+    if (radarRoutePolylineRef.current) {
+      try { map.removeLayer(radarRoutePolylineRef.current); } catch (_) {}
+      radarRoutePolylineRef.current = null;
+    }
+
+    if (!radarRouteTarget) return;
+
+    let userLat: number | null = null;
+    let userLng: number | null = null;
+
+    if (userLocationMarkerRef.current) {
+      try {
+        const pos = userLocationMarkerRef.current.getLatLng();
+        userLat = pos.lat;
+        userLng = pos.lng;
+      } catch (_) {}
+    }
+
+    const targetLat = radarRouteTarget.lat;
+    const targetLng = radarRouteTarget.lng;
+
+    if (typeof targetLat !== 'number' || typeof targetLng !== 'number' || isNaN(targetLat) || isNaN(targetLng)) {
+      return;
+    }
+
+    if (userLat === null || userLng === null) {
+      map.flyTo([targetLat, targetLng], 16, { duration: 1.0 });
+      return;
+    }
+
+    const start: [number, number] = [userLat, userLng];
+    const end: [number, number] = [targetLat, targetLng];
+
+    const polyline = L.polyline([start, end], {
+      color: '#E11D48',
+      weight: 3.5,
+      dashArray: '6, 6',
+      opacity: 0.9,
+    });
+
+    const distText = radarRouteTarget.distance !== undefined
+      ? (radarRouteTarget.distance < 1000 ? `${Math.round(radarRouteTarget.distance)}m` : `${(radarRouteTarget.distance / 1000).toFixed(1)}km`)
+      : '';
+
+    if (distText) {
+      polyline.bindTooltip(distText, {
+        permanent: true,
+        direction: 'center',
+        className: 'font-mono text-[10px] font-extrabold bg-[#111] text-white px-2 py-0.5 rounded border border-white/20 shadow-md',
+      });
+    }
+
+    polyline.addTo(map);
+    radarRoutePolylineRef.current = polyline;
+
+    const bounds = L.latLngBounds([start, end]);
+    map.fitBounds(bounds, { padding: [60, 60], maxZoom: 16, animate: true });
+  }, [radarRouteTarget, mapReady]);
+
+  // ─── Active Ghost Spot Focus Effect ───
+  useEffect(() => {
+    if (!activeGhostSpotId || !mapRef.current) return;
+    const marker = pocketMarkersRef.current[activeGhostSpotId];
+    if (marker) {
+      const latLng = marker.getLatLng();
+      mapRef.current.flyTo(latLng, 16, { duration: 1.0 });
+      marker.openPopup();
+    }
+  }, [activeGhostSpotId]);
 
   // ─── Pocket Ghost Pins Layer Effect ───
   useEffect(() => {
@@ -588,6 +673,18 @@ export function MapArea({
       zIndex: 1,
       className: !cartoKey && isDarkMode ? 'map-tile-dark' : (!cartoKey ? 'map-tile-light' : ''),
     }).addTo(map);
+
+    map.on('dragstart zoomstart', () => {
+      userMovedMapRef.current = true;
+    });
+
+    map.on('moveend', () => {
+      try {
+        const center = map.getCenter();
+        lastMapCenterRef.current = { lat: center.lat, lng: center.lng };
+        lastMapZoomRef.current = map.getZoom();
+      } catch (_) {}
+    });
 
     // Fix blank tile edge after layout settles
     setTimeout(() => { if (mapRef.current) mapRef.current.invalidateSize(); }, 200);
@@ -1089,7 +1186,12 @@ export function MapArea({
         }
       }
 
-      const shouldFitAll = tabChanged || dateChanged || !isInteractive || !hasFitRef.current || isGalleryTab || (itemIdChanged && expandedItemId === null);
+      const explicitNavigation = tabChanged || dateChanged;
+      if (explicitNavigation) {
+        userMovedMapRef.current = false;
+      }
+
+      const shouldFitAll = explicitNavigation || (!userMovedMapRef.current && (!isInteractive || !hasFitRef.current || isGalleryTab || (itemIdChanged && expandedItemId === null)));
       if (activeTab !== 'summary' && expandedItemId === null && coords.length > 0 && shouldFitAll) {
         const bounds = L.latLngBounds(coords);
         if (coords.length === 1 || bounds.getNorthEast().equals(bounds.getSouthWest())) {
@@ -1917,15 +2019,15 @@ export function MapArea({
           <button
             type="button"
             onClick={() => setShowPocketPins(prev => !prev)}
-            className={`h-7 px-2 sm:px-2.5 rounded shadow-sm border transition-all cursor-pointer flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider ${
+            className={`w-7 h-7 rounded shadow-sm border transition-all cursor-pointer flex items-center justify-center bg-[#F9F8F6]/90 dark:bg-[#111111]/90 backdrop-blur-md active:scale-95 ${
               showPocketPins
-                ? 'bg-black text-white dark:bg-white dark:text-black border-black/20 dark:border-white/20 shadow-xs'
-                : 'bg-[#F9F8F6]/90 dark:bg-[#111111]/90 backdrop-blur-md text-black/50 dark:text-white/50 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
+                ? 'border-red-500/40 text-red-500'
+                : 'border-black/15 dark:border-white/15 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white'
             }`}
-            title="포켓 스팟 고스트 핀 지도 표시 On/Off"
+            title="포켓 스팟 지도 표시 토글 (POCKET)"
+            aria-label="Toggle pocket spots on map"
           >
-            <Bookmark className={`w-3 h-3 ${showPocketPins ? 'text-red-500 fill-red-500' : 'text-black/40 dark:text-white/40'}`} />
-            <span className="hidden sm:inline">POCKET</span>
+            <Bookmark className={`w-3.5 h-3.5 transition-colors ${showPocketPins ? 'text-red-500 fill-red-500' : 'text-black/40 dark:text-white/40'}`} />
           </button>
 
           <button

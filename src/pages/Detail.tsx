@@ -795,6 +795,8 @@ export function JourneyDetailPage({
   const [radarSnoozedUntil, setRadarSnoozedUntil] = useState<number>(0);
   const [isRadarMinimized, setIsRadarMinimized] = useState<boolean>(false);
   const [radarFocusedSpot, setRadarFocusedSpot] = useState<{ lat: number; lng: number; title: string } | null>(null);
+  const [radarRouteTarget, setRadarRouteTarget] = useState<{ lat: number; lng: number; title: string; distance?: number } | null>(null);
+  const [activeGhostSpotId, setActiveGhostSpotId] = useState<string | number | null>(null);
   const [isPocketWidgetOpen, setIsPocketWidgetOpen] = useState<boolean>(false);
 
   useEffect(() => {
@@ -4314,103 +4316,6 @@ export function JourneyDetailPage({
       }}
       className="flex flex-col md:flex-row h-full w-full max-w-full overflow-hidden overflow-x-hidden overscroll-none relative bg-transparent"
     >
-      {/* ── Ultra-Compact Swiss Minimal Radar Floating Widget & Re-open Toggle (RADAR 1KM) ── */}
-      {radarItems.length > 0 && (() => {
-        const currentRadarItem = radarItems[activeRadarIndex] || radarItems[0];
-        const isPocket = currentRadarItem.type === 'pocket';
-
-        // 1. Minimized Mode: Compact Pill Toggle (Allows reopening anytime)
-        if (isRadarMinimized) {
-          return (
-            <button
-              type="button"
-              onClick={() => setIsRadarMinimized(false)}
-              className="absolute top-3 left-1/2 -translate-x-1/2 z-40 bg-black/90 dark:bg-white/90 text-white dark:text-black backdrop-blur-md px-2.5 py-1 border border-black/20 dark:border-white/20 shadow-lg rounded-full flex items-center gap-1.5 animate-in fade-in zoom-in-95 duration-150 select-none cursor-pointer hover:border-red-500 transition-all"
-              title="근접 레이더 위젯 열기"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping shrink-0" />
-              <span className="font-mono font-bold text-[10px] tracking-wider uppercase text-red-500">RADAR</span>
-              <span className="text-[9px] font-mono font-bold px-1 rounded bg-red-500/20 text-red-500">
-                {radarItems.length}
-              </span>
-            </button>
-          );
-        }
-
-        // 2. Expanded Mode: Ultra-Compact Minimal HUD
-        return (
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-40 bg-black/90 dark:bg-white/90 text-white dark:text-black backdrop-blur-md px-2.5 py-1.5 border border-black/20 dark:border-white/20 shadow-xl rounded-full flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-150 select-none max-w-[calc(100vw-32px)]">
-            {/* Simple Radar Pulse Indicator */}
-            <div className="relative flex items-center justify-center shrink-0 w-3.5 h-3.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping absolute" />
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500 relative z-10" />
-            </div>
-
-            {/* Spot Name & Distance (Click to locate on map) */}
-            <button
-              type="button"
-              onClick={() => handleFocusRadarItemOnMap(currentRadarItem)}
-              className="flex items-center gap-1 min-w-0 hover:opacity-80 transition-opacity cursor-pointer text-left"
-              title="지도에서 위치 포커싱"
-            >
-              <span className="font-bold text-xs truncate max-w-[120px] sm:max-w-[180px]">
-                {currentRadarItem.title}
-              </span>
-              <span className="text-[10px] text-red-500 font-mono font-bold shrink-0">
-                {currentRadarItem.distance}m
-              </span>
-            </button>
-
-            {/* Minimal multi-item pagination (if 2 or more targets) */}
-            {radarItems.length > 1 && (
-              <div className="flex items-center gap-0.5 px-1 py-0.5 bg-white/10 dark:bg-black/10 rounded text-[9px] font-mono shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setActiveRadarIndex(prev => (prev > 0 ? prev - 1 : radarItems.length - 1))}
-                  className="hover:text-red-500 p-0.5 cursor-pointer"
-                  title="이전 장소"
-                >
-                  <ChevronLeft className="w-2.5 h-2.5" />
-                </button>
-                <span className="font-bold px-0.5">{activeRadarIndex + 1}/{radarItems.length}</span>
-                <button
-                  type="button"
-                  onClick={() => setActiveRadarIndex(prev => (prev < radarItems.length - 1 ? prev + 1 : 0))}
-                  className="hover:text-red-500 p-0.5 cursor-pointer"
-                  title="다음 장소"
-                >
-                  <ChevronRight className="w-2.5 h-2.5" />
-                </button>
-              </div>
-            )}
-
-            {/* Simple ADD button icon (Pockets only) */}
-            {isPocket && (
-              <button
-                type="button"
-                onClick={() => {
-                  handleDirectAddFromPocket(currentRadarItem.rawItem as SpotPocketItem);
-                  setRadarItems(prev => prev.filter((_, idx) => idx !== activeRadarIndex));
-                }}
-                className="w-5 h-5 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
-                title="타임라인에 추가"
-              >
-                <Plus className="w-3 h-3 stroke-[3]" />
-              </button>
-            )}
-
-            {/* Close / Minimize (X) icon */}
-            <button
-              type="button"
-              onClick={() => setIsRadarMinimized(true)}
-              className="text-white/60 dark:text-black/60 hover:text-white dark:hover:text-black p-0.5 cursor-pointer shrink-0"
-              title="레이더 접기 (언제든 다시 열 수 있습니다)"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-        );
-      })()}
       
       {/* Left: Map & Info Section (Responsive Height driven by mobileSheetSnap) */}
       <section 
@@ -4500,8 +4405,135 @@ export function JourneyDetailPage({
               onItemHover={setHoveredItemId}
               onAddSpotToTimeline={handleDirectAddFromPocket}
               radarFocusedSpot={radarFocusedSpot}
+              radarRouteTarget={radarRouteTarget}
+              activeGhostSpotId={activeGhostSpotId}
             />
           </ErrorBoundary>
+
+          {/* ── Ultra-Compact Swiss Minimal Radar Floating Widget in Map Bottom-Left (Avoiding Playlog) ── */}
+          {radarItems.length > 0 && (() => {
+            const currentRadarItem = radarItems[activeRadarIndex] || radarItems[0];
+            const isPocket = currentRadarItem.type === 'pocket';
+            const isRouteActive = Boolean(
+              radarRouteTarget &&
+              radarRouteTarget.lat === currentRadarItem.lat &&
+              radarRouteTarget.lng === currentRadarItem.lng
+            );
+
+            const handleToggleRoute = () => {
+              if (isRouteActive) {
+                setRadarRouteTarget(null);
+              } else {
+                setRadarRouteTarget({
+                  lat: currentRadarItem.lat,
+                  lng: currentRadarItem.lng,
+                  title: currentRadarItem.title,
+                  distance: currentRadarItem.distance,
+                });
+                setRadarFocusedSpot({
+                  lat: currentRadarItem.lat,
+                  lng: currentRadarItem.lng,
+                  title: currentRadarItem.title,
+                });
+              }
+            };
+
+            // 1. Minimized Mode: Compact Pill Toggle (Allows reopening anytime)
+            if (isRadarMinimized) {
+              return (
+                <button
+                  type="button"
+                  onClick={() => setIsRadarMinimized(false)}
+                  className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 z-35 bg-black/90 dark:bg-white/90 text-white dark:text-black backdrop-blur-md px-2.5 py-1 border border-black/20 dark:border-white/20 shadow-lg rounded-full flex items-center gap-1.5 animate-in fade-in zoom-in-95 duration-150 select-none cursor-pointer hover:border-red-500 transition-all"
+                  title="근접 레이더 위젯 열기"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping shrink-0" />
+                  <span className="font-mono font-bold text-[10px] tracking-wider uppercase text-red-500">RADAR</span>
+                  <span className="text-[9px] font-mono font-bold px-1 rounded bg-red-500/20 text-red-500">
+                    {radarItems.length}
+                  </span>
+                </button>
+              );
+            }
+
+            // 2. Expanded Mode: Ultra-Compact Minimal HUD
+            return (
+              <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 z-35 bg-black/90 dark:bg-white/90 text-white dark:text-black backdrop-blur-md px-2.5 py-1.5 border border-black/20 dark:border-white/20 shadow-xl rounded-full flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-150 select-none max-w-[calc(100vw-32px)]">
+                {/* Simple Radar Pulse Indicator */}
+                <div className="relative flex items-center justify-center shrink-0 w-3.5 h-3.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping absolute" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 relative z-10" />
+                </div>
+
+                {/* Spot Name & Distance (Click to toggle route between GPS and Spot) */}
+                <button
+                  type="button"
+                  onClick={handleToggleRoute}
+                  className={`flex items-center gap-1 min-w-0 transition-all cursor-pointer text-left px-1.5 py-0.5 rounded ${
+                    isRouteActive 
+                      ? 'bg-red-500/20 text-red-500 ring-1 ring-red-500/50' 
+                      : 'hover:opacity-80'
+                  }`}
+                  title={isRouteActive ? "이동경로 끄기" : "이동경로 보기 (클릭시 토글)"}
+                >
+                  <span className="font-bold text-xs truncate max-w-[110px] sm:max-w-[160px]">
+                    {currentRadarItem.title}
+                  </span>
+                  <span className="text-[10px] text-red-500 font-mono font-bold shrink-0">
+                    {currentRadarItem.distance}m
+                  </span>
+                </button>
+
+                {/* Minimal multi-item pagination (if 2 or more targets) */}
+                {radarItems.length > 1 && (
+                  <div className="flex items-center gap-0.5 px-1 py-0.5 bg-white/10 dark:bg-black/10 rounded text-[9px] font-mono shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setActiveRadarIndex(prev => (prev > 0 ? prev - 1 : radarItems.length - 1))}
+                      className="hover:text-red-500 p-0.5 cursor-pointer"
+                      title="이전 장소"
+                    >
+                      <ChevronLeft className="w-2.5 h-2.5" />
+                    </button>
+                    <span className="font-bold px-0.5">{activeRadarIndex + 1}/{radarItems.length}</span>
+                    <button
+                      type="button"
+                      onClick={() => setActiveRadarIndex(prev => (prev < radarItems.length - 1 ? prev + 1 : 0))}
+                      className="hover:text-red-500 p-0.5 cursor-pointer"
+                      title="다음 장소"
+                    >
+                      <ChevronRight className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Simple ADD button icon (Pockets only) */}
+                {isPocket && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleDirectAddFromPocket(currentRadarItem.rawItem as SpotPocketItem);
+                      setRadarItems(prev => prev.filter((_, idx) => idx !== activeRadarIndex));
+                    }}
+                    className="w-5 h-5 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                    title="타임라인에 추가"
+                  >
+                    <Plus className="w-3 h-3 stroke-[3]" />
+                  </button>
+                )}
+
+                {/* Close / Minimize (X) icon */}
+                <button
+                  type="button"
+                  onClick={() => setIsRadarMinimized(true)}
+                  className="text-white/60 dark:text-black/60 hover:text-white dark:hover:text-black p-0.5 cursor-pointer shrink-0"
+                  title="레이더 접기 (언제든 다시 열 수 있습니다)"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            );
+          })()}
 
           {/* Floating Morphing Player (Swiss Minimal Floating Widget <-> Expanded Editorial Bar) */}
           {cinematicItems.length > 0 && (activeTab === 'timeline' || activeTab === 'gallery') && (
@@ -6406,6 +6438,12 @@ export function JourneyDetailPage({
             isOpen={isPocketWidgetOpen}
             onToggle={() => setIsPocketWidgetOpen(!isPocketWidgetOpen)}
             onAddSpotToTimeline={(spot) => handleDirectAddFromPocket(spot)}
+            onSelectSpot={(spot) => {
+              if (typeof spot.lat === 'number' && typeof spot.lng === 'number') {
+                setRadarFocusedSpot({ lat: spot.lat, lng: spot.lng, title: spot.title });
+                setActiveGhostSpotId(spot.id);
+              }
+            }}
             isEditing={isEditing}
           />
         )}

@@ -12,6 +12,7 @@ interface FloatingPocketWidgetProps {
   selectedDate: string;
   allTripDates: string[];
   onAddSpotToTimeline: (spot: SpotPocketItem) => void;
+  onSelectSpot?: (spot: SpotPocketItem) => void;
   isOpen: boolean;
   onToggle: () => void;
   isEditing: boolean;
@@ -31,6 +32,7 @@ export function FloatingPocketWidget({
   selectedDate,
   allTripDates,
   onAddSpotToTimeline,
+  onSelectSpot,
   isOpen,
   onToggle,
   isEditing,
@@ -196,43 +198,70 @@ export function FloatingPocketWidget({
               </div>
             ) : (
               filteredList.map(spot => {
+                const IconComponent = CATEGORY_ICONS[spot.category] || Camera;
+                const locationText = spot.city || spot.country || spot.address || '';
+
                 return (
                   <div
                     key={spot.id}
-                    className="p-2 border border-black/10 dark:border-white/10 bg-white dark:bg-[#181818] hover:border-black/30 dark:hover:border-white/30 transition-colors flex flex-col gap-1.5 shadow-2xs"
+                    className="p-1.5 border border-black/10 dark:border-white/10 bg-white dark:bg-[#181818] hover:border-black/30 dark:hover:border-white/30 transition-colors flex items-center justify-between gap-2 shadow-2xs group"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1 mb-0.5">
-                          <span className="text-[8.5px] font-mono uppercase font-bold text-black/50 dark:text-white/50 border border-black/10 dark:border-white/10 px-1 py-0.2">
-                            {spot.category}
-                          </span>
-                          <span className="text-xs font-bold text-black dark:text-white truncate">
-                            {spot.title}
-                          </span>
-                        </div>
-                        {spot.memo && (
-                          <p className="text-[10px] font-mono text-black/70 dark:text-white/70 line-clamp-2 leading-tight bg-black/[0.02] dark:bg-white/[0.02] p-1 border-l border-red-500">
-                            {spot.memo}
-                          </p>
+                    {/* Spot info row - click to pan map & open pin */}
+                    <div
+                      onClick={() => onSelectSpot?.(spot)}
+                      className="min-w-0 flex-1 flex items-center gap-2 cursor-pointer py-0.5"
+                      title="지도에서 장소 위치 보기"
+                    >
+                      {/* Thumbnail or Category Icon */}
+                      <div className="w-8 h-8 rounded overflow-hidden shrink-0 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 flex items-center justify-center">
+                        {spot.imageUrl ? (
+                          <img
+                            src={spot.imageUrl}
+                            alt={spot.title}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // Fallback on image load error
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <IconComponent className="w-3.5 h-3.5 text-black/50 dark:text-white/50" />
                         )}
                       </div>
 
-                      {/* + Icon Button (Minimal, disabled when !isEditing) */}
-                      <button
-                        type="button"
-                        onClick={() => onAddSpotToTimeline(spot)}
-                        disabled={!isEditing}
-                        className={`w-7 h-7 flex items-center justify-center transition-colors shrink-0 ${
-                          isEditing
-                            ? 'bg-black text-white dark:bg-white dark:text-black hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white cursor-pointer'
-                            : 'bg-black/10 text-black/30 dark:bg-white/10 dark:text-white/30 cursor-not-allowed'
-                        }`}
-                        title={isEditing ? "타임라인에 추가" : "수정 모드에서만 타임라인에 추가할 수 있습니다"}
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
+                      {/* Title + Location + Category in a clean one-line layout */}
+                      <div className="min-w-0 flex-1 flex items-center gap-1.5 overflow-hidden">
+                        <span className="text-xs font-bold text-black dark:text-white truncate max-w-[120px] sm:max-w-[140px] group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                          {spot.title}
+                        </span>
+                        {locationText && (
+                          <span className="text-[10px] font-mono text-black/40 dark:text-white/40 truncate hidden sm:inline">
+                            · {locationText}
+                          </span>
+                        )}
+                        <span className="text-[8px] font-mono uppercase font-bold text-black/50 dark:text-white/50 border border-black/15 dark:border-white/15 px-1 py-0.2 shrink-0 ml-auto">
+                          {spot.category}
+                        </span>
+                      </div>
                     </div>
+
+                    {/* + Icon Button (Minimal, disabled when !isEditing) */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddSpotToTimeline(spot);
+                      }}
+                      disabled={!isEditing}
+                      className={`w-6 h-6 flex items-center justify-center transition-colors shrink-0 ${
+                        isEditing
+                          ? 'bg-black text-white dark:bg-white dark:text-black hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white cursor-pointer'
+                          : 'bg-black/10 text-black/30 dark:bg-white/10 dark:text-white/30 cursor-not-allowed'
+                      }`}
+                      title={isEditing ? "타임라인에 추가" : "수정 모드에서만 타임라인에 추가할 수 있습니다"}
+                    >
+                      <Plus className="w-3 h-3" />
+                    </button>
                   </div>
                 );
               })
