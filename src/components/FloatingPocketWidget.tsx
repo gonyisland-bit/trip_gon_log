@@ -316,7 +316,7 @@ export function FloatingPocketWidget({
                         {/* Tags */}
                         {spot.tags && spot.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1">
-                            {spot.tags.map((t, tidx) => (
+                            {spot.tags.map((t: string, tidx: number) => (
                               <span
                                 key={tidx}
                                 className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-xs bg-black/5 dark:bg-white/5 text-black/70 dark:text-white/70 border border-black/10 dark:border-white/10"

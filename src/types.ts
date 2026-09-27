@@ -194,6 +194,8 @@ export interface SpotPocketItem {
   category: PocketCategory;
   memo?: string;
   sourceUrl?: string;
+  linkUrl?: string;
+  tags?: string[];
   platform?: SpotPocketPlatform;
   thumbnailUrl?: string;
   country?: string;
