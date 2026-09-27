@@ -231,7 +231,7 @@ export function TripBuilderPanel({
       return trimmed;
     };
 
-    // 1. currentUserProfile.firstName이 있고 유효한 이름인 경우
+    // 1. currentUserProfile.firstName (사용자 등록시/설정시 입력된 실제 '이름')
     const pFirst = currentUserProfile?.firstName?.trim();
     if (pFirst && pFirst.toUpperCase() !== 'ADMIN') {
       return extractNameOnly(pFirst);
@@ -243,19 +243,23 @@ export function TripBuilderPanel({
       return extractNameOnly(dName);
     }
 
-    // 3. currentUserProfile.username
-    const uName = currentUserProfile?.username?.trim();
-    if (uName && uName.toUpperCase() !== 'ADMIN' && uName.toUpperCase() !== 'SUPER ADMIN') {
-      return extractNameOnly(uName);
-    }
-
-    // 4. 이메일 아이디 특화 분석 (gonyisland / changgon 계정)
+    // 3. 이메일 아이디 특화 분석 (gonyisland / changgon 계정)
     const email = (auth.currentUser?.email || currentUserProfile?.email || '').toLowerCase().trim();
     if (email.includes('gony') || email.includes('changgon')) {
       return '창곤';
     }
 
-    if (pFirst) return pFirst;
+    // 4. currentUserProfile.firstName이 등록되어 있으면 관리자여도 적용
+    if (pFirst) {
+      return extractNameOnly(pFirst);
+    }
+
+    // 5. currentUserProfile.username (닉네임)
+    const uName = currentUserProfile?.username?.trim();
+    if (uName && uName.toUpperCase() !== 'ADMIN' && uName.toUpperCase() !== 'SUPER ADMIN') {
+      return extractNameOnly(uName);
+    }
+
     if (email) return email.split('@')[0];
     return '나';
   }, [currentUserProfile]);
@@ -266,12 +270,15 @@ export function TripBuilderPanel({
   });
   const [memberInput, setMemberInput] = useState('');
 
-  // 패널이 열리거나 프로필이 로드될 때 members가 비어있으면 즉시 1인으로 자동 복원
+  // 패널이 열리거나 프로필이 로드될 때 members가 비어있거나 플레이스홀더('나'/'solo' 등)일 때 최신 이름으로 자동 동기화
   useEffect(() => {
     if (isOpen) {
       const nameToSeed = defaultMemberName || '나';
       setMembers(prev => {
         if (prev.length === 0) return [nameToSeed];
+        if (prev.length === 1 && (prev[0] === '나' || prev[0].toLowerCase() === 'solo' || prev[0].toLowerCase() === 'admin')) {
+          return [nameToSeed];
+        }
         return prev;
       });
     }
@@ -751,8 +758,15 @@ export function TripBuilderPanel({
       setSmartStartDate(startStr);
       setLocationInput('');
       setTagInput('');
-      setMembers([]);
       setMemberInput('');
+      setMembers(prev => {
+        const seedName = defaultMemberName || '나';
+        if (prev.length === 0) return [seedName];
+        if (prev.length === 1 && (prev[0] === '나' || prev[0].toLowerCase() === 'solo' || prev[0].toLowerCase() === 'admin')) {
+          return [seedName];
+        }
+        return prev;
+      });
       setStatusBadge('');
       setError('');
       setBuilderStep('criteria');

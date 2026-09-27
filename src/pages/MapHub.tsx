@@ -2092,6 +2092,19 @@ export function MapHubPage({
 
   const [selectedPinGroup, setSelectedPinGroup] = useState<MapPinGroup | null>(null);
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
+  const [searchSelectedIndex, setSearchSelectedIndex] = useState<number>(-1);
+  const searchDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll focused item into view when navigating via keyboard
+  useEffect(() => {
+    if (searchSelectedIndex >= 0 && searchDropdownRef.current) {
+      const container = searchDropdownRef.current;
+      const targetItem = container.children[searchSelectedIndex] as HTMLElement | undefined;
+      if (targetItem && typeof targetItem.scrollIntoView === 'function') {
+        targetItem.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [searchSelectedIndex]);
   const [isWishlistModalOpen, setIsWishlistModalOpen] = useState(false);
   const [wishlistTab, setWishlistTab] = useState<'countries' | 'cities'>('countries');
   const [isPlaceListModalOpen, setIsPlaceListModalOpen] = useState(false);
@@ -3997,6 +4010,7 @@ export function MapHubPage({
                   if (isMobileControlsOpen || isControlsClosingRef.current) return;
                   setSearchQuery(e.target.value);
                   setIsSearchDropdownOpen(true);
+                  setSearchSelectedIndex(-1);
                 }}
                 onFocus={(e) => {
                   if (isMobileControlsOpen || isControlsClosingRef.current) {
@@ -4005,6 +4019,46 @@ export function MapHubPage({
                   }
                   setIsMobileControlsOpen(false);
                   setIsSearchDropdownOpen(true);
+                }}
+                onKeyDown={(e) => {
+                  if (e.nativeEvent.isComposing) return;
+                  if (!isSearchDropdownOpen || filteredCountries.length === 0) {
+                    if (e.key === 'ArrowDown' && filteredCountries.length > 0) {
+                      e.preventDefault();
+                      setIsSearchDropdownOpen(true);
+                      setSearchSelectedIndex(0);
+                    }
+                    return;
+                  }
+
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setSearchSelectedIndex(prev => (prev + 1) % filteredCountries.length);
+                  } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setSearchSelectedIndex(prev => (prev <= 0 ? filteredCountries.length - 1 : prev - 1));
+                  } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const target = (searchSelectedIndex >= 0 && searchSelectedIndex < filteredCountries.length)
+                      ? filteredCountries[searchSelectedIndex]
+                      : filteredCountries[0];
+                    if (target) {
+                      handleSelectCountry(target);
+                      setIsSearchExpanded(false);
+                      setIsSearchDropdownOpen(false);
+                      setSearchSelectedIndex(-1);
+                      if (isBuilderOpenRef.current) {
+                        const targetCity = target.cities?.[0] || '';
+                        if (targetCity) {
+                          requestChangeBuilderCityRef.current(targetCity, target.name, target.code);
+                        }
+                      }
+                    }
+                  } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setIsSearchDropdownOpen(false);
+                    setSearchSelectedIndex(-1);
+                  }
                 }}
                 placeholder="SEARCH..."
                 className={`w-full bg-transparent text-[11px] sm:text-xs font-sans font-bold uppercase tracking-wider text-black dark:text-white placeholder:text-black/35 dark:placeholder:text-white/35 outline-none truncate ${
@@ -4021,6 +4075,7 @@ export function MapHubPage({
                   } else {
                     setIsSearchExpanded(false);
                     setIsSearchDropdownOpen(false);
+                    setSearchSelectedIndex(-1);
                   }
                 }}
                 className="p-0.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white cursor-pointer mr-0.5"
@@ -4064,54 +4119,69 @@ export function MapHubPage({
             <>
               <div 
                 className="fixed inset-0 z-40" 
-                onClick={() => setIsSearchDropdownOpen(false)}
+                onClick={() => {
+                  setIsSearchDropdownOpen(false);
+                  setSearchSelectedIndex(-1);
+                }}
               />
-              <div className="absolute top-full left-0 mt-1 w-[calc(100vw-24px)] max-w-sm sm:w-full sm:max-w-none bg-white/95 dark:bg-[#121212]/95 backdrop-blur-md border border-black/15 dark:border-white/15 max-h-60 overflow-y-auto z-[600] shadow-2xl divide-y divide-black/5 dark:divide-white/5">
-                {filteredCountries.map(c => (
-                  <div
-                    key={c.code}
-                    onClick={() => {
-                      handleSelectCountry(c);
-                      setIsSearchExpanded(false);
-                      setIsSearchDropdownOpen(false);
-                      if (isBuilderOpenRef.current) {
-                        const targetCity = c.cities?.[0] || '';
-                        if (targetCity) {
-                          requestChangeBuilderCityRef.current(targetCity, c.name, c.code);
+              <div 
+                ref={searchDropdownRef}
+                className="absolute top-full left-0 mt-1 w-[calc(100vw-24px)] max-w-sm sm:w-full sm:max-w-none bg-white/95 dark:bg-[#121212]/95 backdrop-blur-md border border-black/15 dark:border-white/15 max-h-60 overflow-y-auto z-[600] shadow-2xl divide-y divide-black/5 dark:divide-white/5"
+              >
+                {filteredCountries.map((c, idx) => {
+                  const isSelected = searchSelectedIndex === idx;
+                  return (
+                    <div
+                      key={c.code}
+                      onClick={() => {
+                        handleSelectCountry(c);
+                        setIsSearchExpanded(false);
+                        setIsSearchDropdownOpen(false);
+                        setSearchSelectedIndex(-1);
+                        if (isBuilderOpenRef.current) {
+                          const targetCity = c.cities?.[0] || '';
+                          if (targetCity) {
+                            requestChangeBuilderCityRef.current(targetCity, c.name, c.code);
+                          }
                         }
-                      }
-                    }}
-                    className="p-2 sm:p-2.5 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer flex items-center justify-between gap-2.5 transition-colors"
-                  >
-                    <div className="flex-1 min-w-0">
-                      {/* Row 1: Code Badge + English Name + Korean Name */}
-                      <div className="flex items-center gap-1.5 flex-nowrap truncate">
-                        <span className="text-[10px] font-mono font-black text-red-600 dark:text-red-500 shrink-0">
-                          {c.code}
-                        </span>
-                        <span className="text-xs font-black uppercase text-black dark:text-white truncate">
-                          {c.name}
-                        </span>
-                        <span className="text-[10.5px] font-sans text-black/50 dark:text-white/50 shrink-0">
-                          ({c.nameKo})
-                        </span>
+                      }}
+                      onMouseEnter={() => setSearchSelectedIndex(idx)}
+                      className={`p-2 sm:p-2.5 cursor-pointer flex items-center justify-between gap-2.5 transition-colors ${
+                        isSelected 
+                          ? 'bg-black/10 dark:bg-white/10' 
+                          : 'hover:bg-black/5 dark:hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        {/* Row 1: Code Badge + English Name + Korean Name */}
+                        <div className="flex items-center gap-1.5 flex-nowrap truncate">
+                          <span className="text-[10px] font-mono font-black text-red-600 dark:text-red-500 shrink-0">
+                            {c.code}
+                          </span>
+                          <span className="text-xs font-black uppercase text-black dark:text-white truncate">
+                            {c.name}
+                          </span>
+                          <span className="text-[10.5px] font-sans text-black/50 dark:text-white/50 shrink-0">
+                            ({c.nameKo})
+                          </span>
+                        </div>
+                        {/* Row 2: Continent Pill + Representative Cities */}
+                        <div className="flex items-center gap-1.5 mt-0.5 text-[9.5px] font-mono text-black/40 dark:text-white/40 truncate">
+                          <span className="px-1 py-0.2 text-[8.5px] font-bold bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 shrink-0">
+                            {c.continentKo}
+                          </span>
+                          <span className="truncate">
+                            {c.cities.slice(0, 4).join(' · ')}
+                          </span>
+                        </div>
                       </div>
-                      {/* Row 2: Continent Pill + Representative Cities */}
-                      <div className="flex items-center gap-1.5 mt-0.5 text-[9.5px] font-mono text-black/40 dark:text-white/40 truncate">
-                        <span className="px-1 py-0.2 text-[8.5px] font-bold bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 shrink-0">
-                          {c.continentKo}
-                        </span>
-                        <span className="truncate">
-                          {c.cities.slice(0, 4).join(' · ')}
-                        </span>
-                      </div>
+                      {/* Right: Currency Code */}
+                      <span className="text-[10px] font-mono font-bold text-black/70 dark:text-white/70 shrink-0">
+                        {c.currency}
+                      </span>
                     </div>
-                    {/* Right: Currency Code */}
-                    <span className="text-[10px] font-mono font-bold text-black/70 dark:text-white/70 shrink-0">
-                      {c.currency}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           )}
