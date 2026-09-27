@@ -148,7 +148,8 @@ export function Navigation({
             title="Tripgon log 홈으로 이동 (스플래시 실행)"
           >
             <img 
-              src="/logo-logotype.png" 
+              src="/tripgon-logotype.svg"
+              data-brand-logo
               alt="Tripgon log" 
               className="h-5 sm:h-6 md:h-6.5 w-auto object-contain dark:invert transition-opacity group-hover:opacity-80 select-none" 
             />
@@ -290,7 +291,7 @@ export function Navigation({
             title="Tripgon log 홈으로 이동 (스플래시 실행)"
           >
             <img 
-              src="/logo-logotype.png" 
+              src="/tripgon-logotype.svg" 
               alt="Tripgon log" 
               className="h-5 sm:h-6 w-auto object-contain dark:invert transition-opacity group-hover:opacity-80 select-none" 
             />
