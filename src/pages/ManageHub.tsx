@@ -466,7 +466,6 @@ export function ManageHubPage({
 
   // PRESETS Management State
   const [utilSubTab, setUtilSubTab] = useState<'ui' | 'bgm' | 'map' | 'system'>('ui');
-  const [mapSubTab, setMapSubTab] = useState<'settings' | 'presets'>('settings');
   const [presetsList, setPresetsList] = useState<PresetTripPlan[]>(() => getSavedPresets());
   const [presetSearchQuery, setPresetSearchQuery] = useState<string>('');
   const [presetThemeFilter, setPresetThemeFilter] = useState<string>('all');
@@ -1106,30 +1105,6 @@ export function ManageHubPage({
     setShowRestorePresetsConfirm(false);
   };
 
-  const handleSavePresets = async (showModal: boolean = true) => {
-    setIsSavingPresets(true);
-    try {
-      saveAllPresets(presetsList);
-      try {
-        await setDoc(doc(db, 'users', 'public', 'settings', 'presets'), {
-          presets: presetsList,
-          updatedAt: new Date().toISOString()
-        }, { merge: true });
-      } catch (fErr) {
-        console.warn('Firestore presets sync warning:', fErr);
-      }
-      savedPresetsSnapshotRef.current = JSON.stringify(presetsList);
-      setPresetsSaveSuccess(true);
-      if (showModal) setShowSaveSuccessModal(true);
-      setTimeout(() => setPresetsSaveSuccess(false), 2000);
-    } catch (err) {
-      console.error('Failed to save presets:', err);
-      alert('프리셋 저장 중 오류가 발생했습니다.');
-    } finally {
-      setIsSavingPresets(false);
-    }
-  };
-
   const handleMoveHeroOrder = (index: number, direction: 'up' | 'down') => {
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= selectedHeroIds.length) return;
@@ -1202,8 +1177,6 @@ export function ManageHubPage({
   const [momentsList, setMomentsList] = useState<MagazineMoment[]>(magazineMoments || []);
   const [selectedTripForMoments, setSelectedTripForMoments] = useState<number | null>(null);
   const [momentSearchQuery, setMomentSearchQuery] = useState('');
-  const [isSavingMoments, setIsSavingMoments] = useState(false);
-  const [momentsSaveSuccess, setMomentsSaveSuccess] = useState(false);
   const [isSavingMagazine, setIsSavingMagazine] = useState(false);
   const [magazineSaveSuccess, setMagazineSaveSuccess] = useState(false);
   const [showAddSectionModal, setShowAddSectionModal] = useState(false);
@@ -1641,43 +1614,6 @@ export function ManageHubPage({
             }
             if (onPermanentDeleteMagazineSection) {
               for (const sId of selectedTrashSectionIds) {
-                await onPermanentDeleteMagazineSection(sId);
-              }
-            }
-          }
-          setSelectedTrashJourneyIds([]);
-          setSelectedTrashSectionIds([]);
-        } finally {
-          setIsDeletingTrash(false);
-        }
-      },
-    });
-  };
-
-  const requestEmptyTrash = () => {
-    const totalCount = trashedJourneys.length + trashedSections.length;
-    if (totalCount === 0) return;
-
-    setTrashDeleteModal({
-      isOpen: true,
-      title: 'EMPTY TRASH',
-      message: `휴지통의 모든 항목(${totalCount}개)을 영구 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`,
-      onConfirm: async () => {
-        try {
-          setIsDeletingTrash(true);
-          const allJourneyIds = trashedJourneys.map(j => j.id);
-          const allSectionIds = trashedSections.map(s => s.id);
-          if (onBatchPermanentDelete) {
-            await onBatchPermanentDelete({
-              journeyIds: allJourneyIds,
-              sectionIds: allSectionIds,
-            });
-          } else {
-            for (const jId of allJourneyIds) {
-              await onPermanentDeleteJourney(jId);
-            }
-            if (onPermanentDeleteMagazineSection) {
-              for (const sId of allSectionIds) {
                 await onPermanentDeleteMagazineSection(sId);
               }
             }
@@ -3010,13 +2946,6 @@ export function ManageHubPage({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeMode, isHomeDirty, isArchiveDirty, isMagazineDirty, title, subtitle, selectedHeroIds, autoSlide, showMarquee, homeMarquee, homeSpeed, mediaType, momentsList, slideDuration, gradientEnabled, gradientFrom, gradientTo, selectedJourney, editTitle, editDate, editLocation, editCountry, editTags, editImg, editVideoUrl, editHeroImg, editHeroVideoUrl, editStatusBadge, sectionsList, magUndoStack, magRedoStack]);
 
-  // Save Map Settings
-  const handleSaveMapSettings = () => {
-    localStorage.setItem('mapTileStyle', mapTileStyle);
-    window.dispatchEvent(new CustomEvent('mapTileStyleChanged', { detail: mapTileStyle }));
-    alert('지도 스타일 설정이 저장되었습니다.');
-  };
-
   // Filter hero candidate journeys by search query
   const filteredHeroCandidates = useMemo(() => {
     if (!heroSearchQuery.trim()) return localJourneys;
@@ -3169,75 +3098,6 @@ export function ManageHubPage({
 
     return list;
   }, [timelineData, localJourneys, selectedTripForMoments, momentSearchQuery]);
-
-  // Add timeline item as a magazine moment
-  const handleAddMomentFromTimeline = (item: TimelineItem & { journeyTitle?: string; journeyLocation?: string }) => {
-    if (!item.img) return;
-
-    // Prevent duplicate addition in current section
-    const isDuplicate = momentsList.some(m => 
-      (m.timelineItemId !== undefined && m.timelineItemId === item.id) ||
-      (m.img && item.img && (m.img === item.img || m.img.split('?')[0] === item.img.split('?')[0]))
-    );
-    if (isDuplicate) {
-      alert("이미 현재 매거진 섹션에 등록된 이미지입니다.");
-      return;
-    }
-
-    const parentTrip = trips.find(t => t.id === item.tripId);
-    const pName = safeStr(item.place);
-    const jTitle = safeStr(item.journeyTitle) || parentTrip?.title || '';
-    const jLoc = parentTrip?.locationStr || (parentTrip?.locations && parentTrip.locations[0]?.name) || safeStr(item.journeyLocation);
-    
-    // Resolve location using chronological backwards inheritance:
-    const allTripTimelineItems: TimelineItem[] = [];
-    Object.values(timelineData || {}).forEach(dayItems => {
-      if (Array.isArray(dayItems)) {
-        dayItems.forEach(t => {
-          if (t.tripId === item.tripId) {
-            allTripTimelineItems.push(t);
-          }
-        });
-      }
-    });
-    const locStr = resolveTimelinePlaceName(item, allTripTimelineItems, parentTrip);
-
-    const newMoment: MagazineMoment = {
-      id: `moment-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      tripId: item.tripId,
-      timelineItemId: item.id,
-      title: pName || jTitle || 'UNTITLED MOMENT',
-      date: safeStr(item.date),
-      placeName: locStr,
-      location: jLoc,
-      caption: '',
-      quote: '',
-      img: item.img,
-      order: momentsList.length,
-    };
-    setMomentsList(prev => [...prev, newMoment]);
-  };
-
-  // Move moment up/down
-  const handleMoveMoment = (index: number, direction: 'up' | 'down') => {
-    const targetIdx = direction === 'up' ? index - 1 : index + 1;
-    if (targetIdx < 0 || targetIdx >= momentsList.length) return;
-    const updated = [...momentsList];
-    const temp = updated[index];
-    updated[index] = updated[targetIdx];
-    updated[targetIdx] = temp;
-    setMomentsList(updated.map((m, i) => ({ ...m, order: i })));
-  };
-
-  // Remove moment
-  const handleRemoveMoment = (id: string) => {
-    setMomentsList(prev => prev.filter(m => m.id !== id));
-  };
-
-  // Update moment field
-  const handleUpdateMoment = (id: string, field: keyof MagazineMoment, value: any) => {
-    setMomentsList(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
-  };
 
   // Section Management Handlers
   const handleAddSection = async () => {
@@ -4246,35 +4106,6 @@ export function ManageHubPage({
     setActiveMagSectionId(firestoreMagSections[0]?.id || 'main');
     alert(`✅ Firestore에서 ${firestoreMagSections.length}개 섹션을 현재 편집기로 불러왔습니다.\n매거진 모드로 이동 후 "SAVE MAGAZINE SETTINGS" 버튼으로 최종 저장하세요.`);
     setActiveMode('MAGAZINE');
-  };
-
-  // Force push: save current sectionsList directly to Firestore (emergency save)
-  const handleForceSaveCurrentSectionsToFirestore = async () => {
-    if (sectionsList.length === 0) {
-      alert('현재 섹션 목록이 비어있어 저장할 수 없습니다.');
-      return;
-    }
-    if (!confirm(`현재 편집기의 ${sectionsList.length}개 섹션을 Firestore에 강제 저장하시겠습니까?`)) return;
-    try {
-      const cleaned = sectionsList.map((s, idx) => ({
-        ...s,
-        order: idx,
-        items: (s.items || []).map((it, iIdx) => ({ ...it, order: iIdx })),
-      }));
-      if (onSaveMagazineSections) {
-        await onSaveMagazineSections(cleaned);
-      } else {
-        await setDoc(doc(db, 'users', 'public', 'settings', 'home'), {
-          magazineSections: cleaned,
-        }, { merge: true });
-      }
-      alert(`✅ ${cleaned.length}개 섹션이 Firestore에 성공적으로 저장되었습니다!`);
-      // Refresh diagnostics
-      await handleLoadFirestoreMagazineSections();
-    } catch (err: any) {
-      console.error('Force save error:', err);
-      alert(`강제 저장 실패: ${err?.message || err}`);
-    }
   };
 
   // Sync saveRef with the unified save handler so any unsaved state across all tabs gets saved before navigating away

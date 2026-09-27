@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense, startTransition } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, Suspense, startTransition } from 'react';
 import { Compass, Sun, Moon } from 'lucide-react';
 import { Navigation } from './components/Navigation';
 import { Footer } from './components/Footer';
@@ -9,34 +9,8 @@ import { ScrollToTop } from './components/ScrollToTop';
 import { DetailSkeleton, TopProgressBar } from './components/EditorialSkeleton';
 import { FlightTransitionOverlay } from './components/FlightTransitionOverlay';
 import { SplashScreen } from './components/SplashScreen';
-import { preloadDetailPage, preloadMapPage, preloadManagePage, scheduleIdlePrefetch } from './utils/prefetchHelper';
-import { sortJourneysByOrder } from './utils/journeyOrderHelper';
+import { scheduleIdlePrefetch } from './utils/prefetchHelper';
 
-// Resilient lazy import with automatic retry on chunk loading failure (e.g. browser reconnect or new deploy)
-function lazyWithRetry<T extends React.ComponentType<any>>(
-  factory: () => Promise<{ default: T }>
-) {
-  return lazy(async () => {
-    try {
-      return await factory();
-    } catch (error) {
-      console.warn("Chunk load failed, retrying once in 800ms...", error);
-      try {
-        await new Promise(resolve => setTimeout(resolve, 800));
-        return await factory();
-      } catch (retryError) {
-        console.error("Chunk load retry failed, performing auto reload:", retryError);
-        const lastReloadKey = 'chunk_reload_ts';
-        const lastReload = parseInt(sessionStorage.getItem(lastReloadKey) || '0', 10);
-        if (Date.now() - lastReload > 10000) {
-          sessionStorage.setItem(lastReloadKey, Date.now().toString());
-          window.location.reload();
-        }
-        throw retryError;
-      }
-    }
-  });
-}
 
 // Lazy loaded secondary pages & modals with auto retry on reconnect
 const MapHubPage = lazyWithRetry(() => import('./pages/MapHub').then(m => ({ default: m.MapHubPage })));
@@ -53,142 +27,33 @@ const ConfirmModal = lazyWithRetry(() => import('./components/ConfirmModal').the
 const LandingGuestView = lazyWithRetry(() => import('./components/LandingGuestView').then(m => ({ default: m.LandingGuestView })));
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { fetchCoordinates } from './utils/googleMapsHelper';
-import { 
-  resolveTimelinePlaceName, 
-  buildDefaultMagazineSections,
-  computeEditorialLayoutTypes,
-  compareMagazineItemsChronologically,
-  syncSectionItemsWithTimeline
-} from './utils/magazineHelper';
+import { resolveTimelinePlaceName, buildDefaultMagazineSections, syncSectionItemsWithTimeline } from './utils/magazineHelper';
 import {
-  BgmTrack,
-  saveStoredBgmTracks,
-  saveStoredBgmAutoplay,
-  saveStoredBgmDefaultVolume,
-  saveStoredBgmShuffle,
-  saveStoredSlideshowInterval,
+  BgmTrack, saveStoredBgmTracks, saveStoredBgmAutoplay, saveStoredBgmDefaultVolume,
+  saveStoredBgmShuffle, saveStoredSlideshowInterval
 } from './utils/audioHelper';
-import { 
-  initialTrips, 
-  initialPlans, 
-  timelineDataByDate, 
-  initialFlightsByTrip, 
-  initialStaysByTrip, 
-  initialTransitByTrip 
+import {
+  initialTrips, initialPlans, timelineDataByDate, initialFlightsByTrip, initialStaysByTrip,
+  initialTransitByTrip
 } from './data/mockData';
-import { 
-  Trip, 
-  Plan, 
-  TimelineData, 
-  TimelineItem, 
-  FlightItem, 
-  StayItem, 
-  TransitItem,
-  MagazineMoment,
-  MagazineSection,
-  MagazineItem,
-  MagazineHubConfig,
-  ArchiveHubConfig,
-  TrashedMagazineSection,
-  UserProfile,
-  LandingHeroMediaItem,
-  CityWeatherConfig
+import {
+  Trip, Plan, TimelineData, TimelineItem, FlightItem, StayItem, TransitItem, MagazineMoment,
+  MagazineSection, MagazineHubConfig, ArchiveHubConfig, TrashedMagazineSection, UserProfile,
+  LandingHeroMediaItem, CityWeatherConfig
 } from './types';
 import { WeatherEffectLayer } from './components/WeatherEffectLayer';
 import { fetchCityWeather, CityWeatherData } from './utils/weatherApi';
 import { auth, db } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { 
-  collection, 
-  doc, 
-  setDoc, 
-  getDoc,
-  updateDoc,
-  deleteDoc, 
-  onSnapshot, 
-  getDocs, 
-  writeBatch,
-  query,
+import {
+  collection, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, getDocs, writeBatch, query,
   where
 } from 'firebase/firestore';
+import {
+  lazyWithRetry, cleanForFirestore, applyJourneyOrder, SUPER_ADMIN_EMAIL, ADMIN_EMAILS,
+  getInitialNavigationState, NightModeSetting, isNightTimeNow
+} from './app/appUtils';
 
-function cleanForFirestore(obj: any): any {
-  if (obj === null || obj === undefined) return null;
-  if (typeof obj !== 'object') return obj;
-  if (obj instanceof Date) return obj;
-  if (Array.isArray(obj)) {
-    return obj.map(cleanForFirestore);
-  }
-  const cleaned: any = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (value !== undefined) {
-      cleaned[key] = cleanForFirestore(value);
-    }
-  }
-  return cleaned;
-}
-
-function applyJourneyOrder<T extends { id: number; displayOrder?: number }>(items: T[]): T[] {
-  return sortJourneysByOrder(items);
-}
-
-const SUPER_ADMIN_EMAIL = 'gonyisland@naver.com';
-const ADMIN_EMAILS = ['gonyisland@naver.com', 'gonyisland@google.com'];
-
-function getInitialNavigationState(): { view: string; tripId: number | null; isShare: boolean } {
-  try {
-    const path = window.location.pathname;
-    const params = new URLSearchParams(window.location.search);
-    const idParam = params.get('id');
-    const shareParam = params.get('share');
-    const isShare = shareParam === 'true';
-
-    if (isShare && idParam) {
-      return { view: 'detail', tripId: Number(idParam), isShare: true };
-    }
-
-    if (path === '/archive' || window.location.hash === '#archive' || path === '/plan' || window.location.hash === '#plan') {
-      return { view: 'archive', tripId: null, isShare: false };
-    }
-    if (path === '/map' || window.location.hash === '#map') {
-      return { view: 'map', tripId: null, isShare: false };
-    }
-    if (path === '/manage' || window.location.hash === '#manage') {
-      return { view: 'manage', tripId: null, isShare: false };
-    }
-    if (path === '/magazine' || window.location.hash === '#magazine') {
-      return { view: 'magazine', tripId: null, isShare: false };
-    }
-    if (path === '/calendar' || window.location.hash === '#calendar') {
-      return { view: 'calendar', tripId: null, isShare: false };
-    }
-    if (path === '/pocket' || window.location.hash === '#pocket') {
-      return { view: 'pocket', tripId: null, isShare: false };
-    }
-    if (path === '/detail' || idParam) {
-      return { view: 'detail', tripId: idParam ? Number(idParam) : null, isShare: false };
-    }
-
-    const lastView = sessionStorage.getItem('lastView') || localStorage.getItem('lastView');
-    if (lastView && ['home', 'archive', 'map', 'manage', 'magazine', 'calendar', 'detail', 'pocket'].includes(lastView)) {
-      const lastTripId = sessionStorage.getItem('lastTripId') || localStorage.getItem('lastTripId');
-      return {
-        view: lastView,
-        tripId: lastTripId ? Number(lastTripId) : null,
-        isShare: false,
-      };
-    }
-  } catch (_) {}
-
-  return { view: 'home', tripId: null, isShare: false };
-}
-
-export type NightModeSetting = 'auto' | 'light' | 'dark';
-
-export const isNightTimeNow = (): boolean => {
-  const hour = new Date().getHours();
-  return hour >= 18 || hour < 6;
-};
 
 function App() {
   const [initialNavState] = useState(() => getInitialNavigationState());
