@@ -973,31 +973,6 @@ export function useAppState() {
       setDbError(err.message);
     });
 
-    const unsubTrash = onSnapshot(collection(db, 'users', uid, 'trash'), (snapshot) => {
-      const journeyList: Trip[] = [];
-      const sectionList: TrashedMagazineSection[] = [];
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        if (data.deletedType === 'magazine_section' || (data.items && data.id && typeof data.id === 'string' && !data.locationStr && !data.tags)) {
-          sectionList.push({
-            ...data,
-            id: data.id || doc.id,
-            docId: doc.id,
-          } as unknown as TrashedMagazineSection);
-        } else {
-          journeyList.push({
-            ...data,
-            id: typeof data.id === 'number' ? data.id : (Number(doc.id) || data.id),
-            docId: doc.id,
-          } as unknown as Trip);
-        }
-      });
-      setTrashedJourneys(journeyList.sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0)));
-      setTrashedSections(sectionList.sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0)));
-    }, (err) => {
-      console.error("Trash snapshot subscription error:", err);
-    });
-
     const unsubSettings = onSnapshot(doc(db, 'users', uid, 'settings', 'home'), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -1118,24 +1093,6 @@ export function useAppState() {
       setSettingsLoaded(true);
     });
 
-    const unsubAdmin = onSnapshot(doc(db, 'users', uid, 'settings', 'admin'), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (data.superAdminEmail && typeof data.superAdminEmail === 'string') {
-          const email = data.superAdminEmail.toLowerCase().trim();
-          setSuperAdminEmail(email);
-          try {
-            localStorage.setItem('cached_super_admin_email', email);
-          } catch (_) {}
-        }
-        const customAdmins = Array.isArray(data.allowedAdmins) ? data.allowedAdmins.map((e: string) => String(e).toLowerCase().trim()) : [];
-        const dynamicSuper = data.superAdminEmail ? [data.superAdminEmail.toLowerCase().trim()] : [];
-        setAdminEmails(Array.from(new Set([...ADMIN_EMAILS, ...dynamicSuper, ...customAdmins])));
-      }
-    }, (err) => {
-      console.warn("Admin snapshot subscription notice:", err);
-    });
-
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         // If we are in the middle of creating an account, ignore this transient login event
@@ -1167,11 +1124,67 @@ export function useAppState() {
       unsubFlights();
       unsubStays();
       unsubTransit();
-      unsubTrash();
       unsubSettings();
-      unsubAdmin();
     };
   }, []);
+
+  // Trash and admin config are readable only when signed in (Firestore rules).
+  // Subscribe after auth resolves so a sign-in without reload re-creates the listeners.
+  useEffect(() => {
+    if (!isAuthReady || !isLoggedIn) return;
+    const uid = 'public';
+
+    const unsubTrash = onSnapshot(collection(db, 'users', uid, 'trash'), (snapshot) => {
+      const journeyList: Trip[] = [];
+      const sectionList: TrashedMagazineSection[] = [];
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.deletedType === 'magazine_section' || (data.items && data.id && typeof data.id === 'string' && !data.locationStr && !data.tags)) {
+          sectionList.push({
+            ...data,
+            id: data.id || doc.id,
+            docId: doc.id,
+          } as unknown as TrashedMagazineSection);
+        } else {
+          journeyList.push({
+            ...data,
+            id: typeof data.id === 'number' ? data.id : (Number(doc.id) || data.id),
+            docId: doc.id,
+          } as unknown as Trip);
+        }
+      });
+      setTrashedJourneys(journeyList.sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0)));
+      setTrashedSections(sectionList.sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0)));
+    }, (err) => {
+      console.error("Trash snapshot subscription error:", err);
+    });
+
+    const unsubAdmin = onSnapshot(doc(db, 'users', uid, 'settings', 'admin'), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.superAdminEmail && typeof data.superAdminEmail === 'string') {
+          const email = data.superAdminEmail.toLowerCase().trim();
+          setSuperAdminEmail(email);
+          try {
+            localStorage.setItem('cached_super_admin_email', email);
+          } catch (_) {}
+        }
+        const customAdmins = Array.isArray(data.allowedAdmins) ? data.allowedAdmins.map((e: string) => String(e).toLowerCase().trim()) : [];
+        const dynamicSuper = data.superAdminEmail ? [data.superAdminEmail.toLowerCase().trim()] : [];
+        setAdminEmails(Array.from(new Set([...ADMIN_EMAILS, ...dynamicSuper, ...customAdmins])));
+      }
+    }, (err) => {
+      console.warn("Admin snapshot subscription notice:", err);
+    });
+
+    return () => {
+      unsubTrash();
+      unsubAdmin();
+      // Signed out: drop trash data that is no longer readable
+      setTrashedJourneys([]);
+      setTrashedSections([]);
+    };
+  }, [isAuthReady, isLoggedIn]);
 
   // Handle email one-click user approval (?approve_uid=...&token=...)
   useEffect(() => {
