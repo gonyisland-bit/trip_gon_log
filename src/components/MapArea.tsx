@@ -31,6 +31,7 @@ interface MapAreaProps {
   hoveredItemId?: number | null;
   onItemHover?: (id: number | null) => void;
   onAddSpotToTimeline?: (spot: SpotPocketItem) => void;
+  radarFocusedSpot?: { lat: number; lng: number; title: string } | null;
 }
 
 const getVehicleDimensions = (type: 'car' | 'train' | 'ship' | 'flight' | null | undefined): { iconSize: [number, number]; iconAnchor: [number, number] } => {
@@ -215,6 +216,7 @@ export function MapArea({
   hoveredItemId = null,
   onItemHover,
   onAddSpotToTimeline,
+  radarFocusedSpot = null,
 }: MapAreaProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -354,6 +356,15 @@ export function MapArea({
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
+
+  // ─── Radar Focused Spot Pan Effect (RADAR 1KM) ───
+  useEffect(() => {
+    if (!radarFocusedSpot || !mapRef.current) return;
+    const { lat, lng } = radarFocusedSpot;
+    if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
+      mapRef.current.flyTo([lat, lng], 16, { duration: 1.2 });
+    }
+  }, [radarFocusedSpot]);
 
   // ─── Pocket Ghost Pins Layer Effect ───
   useEffect(() => {

@@ -23,7 +23,8 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { Footer } from '../components/Footer';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { FloatingPocketWidget } from '../components/FloatingPocketWidget';
-import { getSavedPockets, findNearbySpots, calculateDistanceInMeters } from '../utils/pocketStorage';
+import { getSavedPockets, calculateDistanceInMeters } from '../utils/pocketStorage';
+import { findUnifiedNearbyTargets, RadarItem } from '../utils/radarService';
 import { 
   Trip, 
   Plan,
@@ -788,8 +789,11 @@ export function JourneyDetailPage({
   const [costModalItem, setCostModalItem] = useState<TimelineItem | null>(null);
   const [isQuickBookingOpen, setIsQuickBookingOpen] = useState(false);
 
-  // ── 300m Hotspot Radar State ──
-  const [nearbySpotAlert, setNearbySpotAlert] = useState<{ spot: SpotPocketItem; distance: number } | null>(null);
+  // ── Unified 1km Proximity Radar State (RADAR 1KM) ──
+  const [radarItems, setRadarItems] = useState<RadarItem[]>([]);
+  const [activeRadarIndex, setActiveRadarIndex] = useState<number>(0);
+  const [radarSnoozedUntil, setRadarSnoozedUntil] = useState<number>(0);
+  const [radarFocusedSpot, setRadarFocusedSpot] = useState<{ lat: number; lng: number; title: string } | null>(null);
   const [isPocketWidgetOpen, setIsPocketWidgetOpen] = useState<boolean>(false);
 
   useEffect(() => {
@@ -2076,12 +2080,14 @@ export function JourneyDetailPage({
     return '01:00 PM';
   };
 
-  // ── 300m Hotspot Radar Watcher & Auto-Alert (Strict User Current GPS Only) ──
+  // ── Unified 1km Proximity Radar Watcher (Trip Spots & Saved Pockets) ──
   useEffect(() => {
-    const savedPockets = getSavedPockets();
-    if (savedPockets.length === 0) return;
+    // If user snoozed radar, skip
+    if (Date.now() < radarSnoozedUntil) return;
 
-    if ('geolocation' in navigator) {
+    if (!('geolocation' in navigator)) return;
+
+    const checkRadar = () => {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const userLat = pos.coords.latitude;
@@ -2095,23 +2101,39 @@ export function JourneyDetailPage({
 
           if (typeof tripLat === 'number' && typeof tripLng === 'number') {
             const distToTrip = calculateDistanceInMeters(userLat, userLng, tripLat, tripLng);
-            if (distToTrip > 50000) return; // 50km 밖이면 레이더 오작동 원천 차단
+            if (distToTrip > 50000) {
+              setRadarItems([]);
+              return; // 50km 밖이면 레이더 오작동 원천 차단
+            }
           }
 
-          const nearby = findNearbySpots(savedPockets, userLat, userLng, 300);
-          // 0m(가상 동일 좌표/오류) 제외 및 300m 이내 유효 거리만 필터
-          const validNearby = nearby.filter(n => n.distance > 0 && n.distance <= 300);
-          if (validNearby.length > 0) {
-            setNearbySpotAlert(validNearby[0]);
-          }
+          const savedPockets = getSavedPockets();
+          const timelineItems = isEditing ? draftTimeline : baseTimeline;
+          const nearby = findUnifiedNearbyTargets(userLat, userLng, timelineItems, savedPockets, 1000);
+
+          setRadarItems(nearby);
+          setActiveRadarIndex(0);
         },
         () => {
           // GPS 실패 시 가상 좌표 fallback 금지 (현재 위치 기준 원칙)
         },
         { timeout: 8000, enableHighAccuracy: true }
       );
+    };
+
+    checkRadar();
+    // 30초 주기로 현장 도보 이동 갱신
+    const intervalId = setInterval(checkRadar, 30000);
+    return () => clearInterval(intervalId);
+  }, [trip?.id, baseTimeline, draftTimeline, isEditing, radarSnoozedUntil]);
+
+  const handleFocusRadarItemOnMap = (item: RadarItem) => {
+    if (!item) return;
+    if (item.type === 'trip_spot' && item.rawItem && typeof (item.rawItem as TimelineItem).id === 'number') {
+      handleItemToggle((item.rawItem as TimelineItem).id);
     }
-  }, [trip?.id, baseTimeline]);
+    setRadarFocusedSpot({ lat: item.lat, lng: item.lng, title: item.title });
+  };
 
   const handleDirectAddFromPocket = (spot: SpotPocketItem, targetDateParam?: string, targetTimeParam?: string) => {
     // 1. 타임라인에서 현재 선택된 아이템 파악
@@ -4291,36 +4313,107 @@ export function JourneyDetailPage({
       }}
       className="flex flex-col md:flex-row h-full w-full max-w-full overflow-hidden overflow-x-hidden overscroll-none relative bg-transparent"
     >
-      {/* ── 300m Hotspot Radar Minimal Floating Chip ── */}
-      {nearbySpotAlert && (
-        <div className="absolute top-16 right-4 sm:right-6 z-50 bg-black/95 dark:bg-white/95 text-white dark:text-black backdrop-blur-md px-3.5 py-2 border border-red-500 shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-200 select-none">
-          <div className="flex items-center gap-2 text-xs font-mono">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-            <span className="font-bold text-red-500 uppercase tracking-wider text-[10px]">RADAR 300M</span>
-            <span className="text-black/30 dark:text-white/30">|</span>
-            <span className="font-bold text-xs truncate max-w-[150px] sm:max-w-[200px]">{nearbySpotAlert.spot.title}</span>
-            <span className="text-[10px] text-red-400 font-mono">({nearbySpotAlert.distance}m)</span>
+      {/* ── Unified 1km Proximity Radar Swiss Minimal Floating HUD (RADAR 1KM) ── */}
+      {radarItems.length > 0 && (() => {
+        const currentRadarItem = radarItems[activeRadarIndex] || radarItems[0];
+        const isPocket = currentRadarItem.type === 'pocket';
+        return (
+          <div className="absolute top-16 right-4 sm:right-6 z-50 bg-black/95 dark:bg-white/95 text-white dark:text-black backdrop-blur-md px-3 sm:px-4 py-2 border border-black/20 dark:border-white/20 shadow-2xl flex items-center gap-2.5 sm:gap-3.5 animate-in fade-in slide-in-from-top-2 duration-200 select-none max-w-[calc(100vw-32px)]">
+            {/* Left: Ping indicator, Title & Type Badge */}
+            <div className="flex items-center gap-2 text-xs font-mono shrink-0">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-ping shrink-0" />
+              <span className="font-bold text-red-500 uppercase tracking-widest text-[10px] shrink-0">RADAR 1KM</span>
+              <span className={`px-1.5 py-0.5 text-[8.5px] font-mono font-bold tracking-wider uppercase shrink-0 ${
+                isPocket
+                  ? 'bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30'
+                  : 'bg-black/10 dark:bg-white/10 text-black/80 dark:text-white/80 border border-black/15 dark:border-white/15'
+              }`}>
+                {isPocket ? 'POCKET' : 'TRIP SPOT'}
+              </span>
+            </div>
+
+            <span className="text-black/20 dark:text-white/20 hidden sm:inline">|</span>
+
+            {/* Center: Spot Title, Distance & Time */}
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="font-bold text-xs truncate max-w-[110px] sm:max-w-[180px]">
+                {currentRadarItem.title}
+              </span>
+              <span className="text-[10.5px] text-red-500 font-mono font-bold shrink-0">
+                ({currentRadarItem.distance}m)
+              </span>
+              {currentRadarItem.time && (
+                <span className="text-[9px] text-black/50 dark:text-white/50 font-mono hidden md:inline shrink-0">
+                  {currentRadarItem.time}
+                </span>
+              )}
+            </div>
+
+            {/* Multi-item pagination queue (if 2 or more targets detected within 1km) */}
+            {radarItems.length > 1 && (
+              <div className="flex items-center gap-0.5 bg-black/10 dark:bg-white/10 px-1 py-0.5 text-[9px] font-mono shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setActiveRadarIndex(prev => (prev > 0 ? prev - 1 : radarItems.length - 1))}
+                  className="hover:text-red-500 p-0.5 cursor-pointer"
+                  title="이전 근접 장소"
+                >
+                  <ChevronLeft className="w-3 h-3" />
+                </button>
+                <span className="px-0.5 font-bold">{activeRadarIndex + 1}/{radarItems.length}</span>
+                <button
+                  type="button"
+                  onClick={() => setActiveRadarIndex(prev => (prev < radarItems.length - 1 ? prev + 1 : 0))}
+                  className="hover:text-red-500 p-0.5 cursor-pointer"
+                  title="다음 근접 장소"
+                >
+                  <ChevronRight className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+
+            {/* Action 1: Locate on Map */}
+            <button
+              type="button"
+              onClick={() => handleFocusRadarItemOnMap(currentRadarItem)}
+              className="h-6 px-2 bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 text-black dark:text-white text-[10px] font-mono font-bold tracking-wider uppercase flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+              title="지도에서 위치 포커싱"
+            >
+              <MapPin className="w-3 h-3 text-red-500 shrink-0" />
+              <span className="hidden sm:inline">MAP</span>
+            </button>
+
+            {/* Action 2: Add to Timeline (Pockets only) */}
+            {isPocket && (
+              <button
+                type="button"
+                onClick={() => {
+                  handleDirectAddFromPocket(currentRadarItem.rawItem as SpotPocketItem);
+                  setRadarItems(prev => prev.filter((_, idx) => idx !== activeRadarIndex));
+                }}
+                className="h-6 px-2 bg-red-600 hover:bg-red-700 text-white text-[10px] font-mono font-bold tracking-wider uppercase flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+                title="현재 타임라인에 바로 추가"
+              >
+                <Plus className="w-3 h-3 shrink-0" />
+                <span>ADD</span>
+              </button>
+            )}
+
+            {/* Action 3: Snooze 10 minutes & Close */}
+            <button
+              type="button"
+              onClick={() => {
+                setRadarSnoozedUntil(Date.now() + 10 * 60 * 1000);
+                setRadarItems([]);
+              }}
+              className="text-white/50 dark:text-black/50 hover:text-white dark:hover:text-black p-0.5 cursor-pointer shrink-0"
+              title="10분 동안 레이더 알림 끄기"
+            >
+              <X className="w-3 h-3" />
+            </button>
           </div>
-          <button
-            onClick={() => {
-              handleDirectAddFromPocket(nearbySpotAlert.spot);
-              setNearbySpotAlert(null);
-            }}
-            className="h-6 px-2 bg-red-600 hover:bg-red-700 text-white text-[10px] font-mono font-bold tracking-wider uppercase flex items-center gap-1 transition-colors cursor-pointer shrink-0"
-            title="현재 타임라인에 바로 추가"
-          >
-            <Plus className="w-3 h-3" />
-            <span>ADD TO TIMELINE</span>
-          </button>
-          <button
-            onClick={() => setNearbySpotAlert(null)}
-            className="text-white/50 dark:text-black/50 hover:text-white dark:hover:text-black p-0.5 ml-0.5 cursor-pointer"
-            title="닫기"
-          >
-            <X className="w-3 h-3" />
-          </button>
-        </div>
-      )}
+        );
+      })()}
       
       {/* Left: Map & Info Section (Responsive Height driven by mobileSheetSnap) */}
       <section 
@@ -4409,6 +4502,7 @@ export function JourneyDetailPage({
               hoveredItemId={hoveredItemId}
               onItemHover={setHoveredItemId}
               onAddSpotToTimeline={handleDirectAddFromPocket}
+              radarFocusedSpot={radarFocusedSpot}
             />
           </ErrorBoundary>
 
