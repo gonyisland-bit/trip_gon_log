@@ -2,10 +2,10 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { 
   Bookmark, MapPin, Plus, ExternalLink, Trash2, Edit3, Compass, 
   Search, Check, X, ArrowUpRight, ChevronRight, Layers, Sparkles,
-  Utensils, Coffee, Camera, ShoppingBag, Lightbulb, Map, MoreVertical, Star,
+  Utensils, Coffee, Camera, ShoppingBag, Lightbulb, MoreVertical, Star,
   Upload, Image as ImageIcon, Loader2, Heart, MessageSquare,
   Globe, FileText, CheckSquare, Square,
-  SlidersHorizontal, ArrowUpDown, ChevronDown, GripVertical, ArrowUp, ArrowDown,
+  SlidersHorizontal, ArrowUpDown, ChevronDown, ChevronUp, GripVertical, ArrowUp, ArrowDown,
   Tag, Link2, ScanText, Clipboard
 } from 'lucide-react';
 import { SpotPocketItem, PocketCategory, Trip, Plan, TimelineItem, PocketComment, UserProfile } from '../types';
@@ -814,21 +814,21 @@ export function PocketHubPage({
 
     if (sortMode === 'city') {
       // City 정렬: 도시별 그룹으로 나누되, 같은 나라는 City 배열을 순서에 모음 (일본 도시들 -> 한국 도시들 순)
-      const cityMap = new Map<string, { country: string; city: string; items: SpotPocketItem[] }>();
+      const cityRecord: Record<string, { country: string; city: string; items: SpotPocketItem[] }> = {};
 
       sortedSpots.forEach(s => {
         const country = getNormalizedCountry(s.country) || 'OTHER';
         const city = getNormalizedCity(s) || '기타 지역';
         const groupKey = `${country}__${city}`;
 
-        if (!cityMap.has(groupKey)) {
-          cityMap.set(groupKey, { country, city, items: [] });
+        if (!cityRecord[groupKey]) {
+          cityRecord[groupKey] = { country, city, items: [] };
         }
-        cityMap.get(groupKey)!.items.push(s);
+        cityRecord[groupKey].items.push(s);
       });
 
       // 국가명 기준 오름차순, 동일 국가 내에서는 도시명 기준 정렬
-      const sortedEntries = Array.from(cityMap.entries()).sort((a, b) => {
+      const sortedEntries = Object.entries(cityRecord).sort((a, b) => {
         const cComp = a[1].country.localeCompare(b[1].country);
         if (cComp !== 0) return cComp;
         return a[1].city.localeCompare(b[1].city);
