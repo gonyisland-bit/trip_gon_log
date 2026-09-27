@@ -194,7 +194,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
                     <button
                       type="button"
                       onClick={() => setActiveRadarIndex(prev => (prev > 0 ? prev - 1 : radarItems.length - 1))}
-                      className="hover:text-red-500 p-0.5 cursor-pointer"
+                      className="tap-target hover:text-red-500 p-0.5 cursor-pointer"
                       title="이전 장소"
                     >
                       <ChevronLeft className="w-2.5 h-2.5" />
@@ -203,7 +203,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
                     <button
                       type="button"
                       onClick={() => setActiveRadarIndex(prev => (prev < radarItems.length - 1 ? prev + 1 : 0))}
-                      className="hover:text-red-500 p-0.5 cursor-pointer"
+                      className="tap-target hover:text-red-500 p-0.5 cursor-pointer"
                       title="다음 장소"
                     >
                       <ChevronRight className="w-2.5 h-2.5" />
@@ -219,7 +219,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
                       handleDirectAddFromPocket(currentRadarItem.rawItem as SpotPocketItem);
                       setRadarItems(prev => prev.filter((_, idx) => idx !== activeRadarIndex));
                     }}
-                    className="w-5 h-5 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                    className="tap-target w-5 h-5 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
                     title="타임라인에 추가"
                   >
                     <Plus className="w-3 h-3 stroke-[3]" />
@@ -230,7 +230,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
                 <button
                   type="button"
                   onClick={() => setIsRadarMinimized(true)}
-                  className="text-white/60 dark:text-black/60 hover:text-white dark:hover:text-black p-0.5 cursor-pointer shrink-0"
+                  className="tap-target text-white/60 dark:text-black/60 hover:text-white dark:hover:text-black p-0.5 cursor-pointer shrink-0"
                   title="레이더 접기 (언제든 다시 열 수 있습니다)"
                 >
                   <X className="w-3 h-3" />
@@ -361,7 +361,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
                           onClick={() => {
                             setCinematicIndex(prev => (prev - 1 + cinematicItems.length) % cinematicItems.length);
                           }}
-                          className="p-1 text-black/70 hover:text-black transition-colors cursor-pointer"
+                          className="tap-target p-1 text-black/70 hover:text-black transition-colors cursor-pointer"
                           title="이전 스팟 (←)"
                         >
                           <SkipBack className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
@@ -371,7 +371,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
                           onClick={() => {
                             setCinematicIndex(prev => (prev + 1) % cinematicItems.length);
                           }}
-                          className="p-1 text-black/70 hover:text-black transition-colors cursor-pointer"
+                          className="tap-target p-1 text-black/70 hover:text-black transition-colors cursor-pointer"
                           title="다음 스팟 (→)"
                         >
                           <SkipForward className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
@@ -379,7 +379,7 @@ export function DetailMapPanel({ s }: { s: JourneyDetailState }) {
 
                         <button
                           onClick={() => setIsCinematicMode(false)}
-                          className="p-1 text-black/60 hover:text-black transition-colors cursor-pointer ml-0.5"
+                          className="tap-target p-1 text-black/60 hover:text-black transition-colors cursor-pointer ml-0.5"
                           title="종료 (Esc)"
                         >
                           <CloseIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />

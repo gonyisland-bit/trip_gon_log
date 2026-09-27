@@ -9,6 +9,7 @@ import { TripBuilderPanel } from '../components/TripBuilderPanel';
 import { findCityByNameOrAlias, DestinationCountry, DestinationCity, PresetTripPlan, WORLD_CITIES } from '../data/worldDestinations';
 import { fetchCityWeather, getWeatherMeta, CityWeatherData } from '../utils/weatherApi';
 import { getNightTerminatorPolygon, shiftPolygonCoordinates, isLocationInNight, getContinuousNightPolygon } from '../utils/solarTerminator';
+import { notify } from '../utils/feedback';
 
 export interface CountryInfo {
   code: string;
@@ -2204,7 +2205,7 @@ export function MapHubPage({
           favoriteCities.includes(city.toUpperCase())
         );
         if (hasFavoritedCity) {
-          alert(`위시리스트에 등록된 해당 국가의 도시가 포함되어 있어 국가 위시를 해제할 수 없습니다.\n먼저 도시 위시를 해제해주세요.`);
+          notify(`위시리스트에 등록된 해당 국가의 도시가 포함되어 있어 국가 위시를 해제할 수 없습니다.\n먼저 도시 위시를 해제해주세요.`);
           return;
         }
       }
@@ -3973,7 +3974,7 @@ export function MapHubPage({
                 setIsSearchExpanded(true);
                 setTimeout(() => searchInputRef.current?.focus(), 60);
               }}
-              className="p-2 sm:px-2.5 sm:py-2 flex items-center justify-center text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer shrink-0"
+              className="tap-target p-2 sm:px-2.5 sm:py-2 flex items-center justify-center text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer shrink-0"
               title="검색 (클릭하여 열기)"
             >
               <Search className="w-3.5 h-3.5" />
@@ -4053,7 +4054,7 @@ export function MapHubPage({
                     setSearchSelectedIndex(-1);
                   }
                 }}
-                className="p-0.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer mr-0.5"
+                className="tap-target p-0.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer mr-0.5"
                 title={searchQuery ? "지우기" : "검색 닫기"}
               >
                 <X className="w-3.5 h-3.5" />
@@ -4174,7 +4175,7 @@ export function MapHubPage({
                 setIsMobileControlsOpen(true);
               }
             }}
-            className={`h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+            className={`tap-target h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
               isMobileControlsOpen
                 ? 'bg-black text-white dark:bg-white dark:text-black'
                 : 'text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5'
@@ -4192,7 +4193,7 @@ export function MapHubPage({
             <button
               type="button"
               onClick={togglePinLabels}
-              className={`h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+              className={`tap-target h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
                 showPinLabels
                   ? 'bg-black text-white dark:bg-white dark:text-black'
                   : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
@@ -4206,7 +4207,7 @@ export function MapHubPage({
             <button
               type="button"
               onClick={toggleVisitedPins}
-              className={`h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+              className={`tap-target h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
                 showVisitedPins
                   ? 'bg-black text-white dark:bg-white dark:text-black'
                   : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
@@ -4220,7 +4221,7 @@ export function MapHubPage({
             <button
               type="button"
               onClick={toggleWishlistPins}
-              className={`h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+              className={`tap-target h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
                 showWishlistPins
                   ? 'bg-black text-white dark:bg-white dark:text-black'
                   : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
@@ -4234,7 +4235,7 @@ export function MapHubPage({
             <button
               type="button"
               onClick={togglePlaneAnim}
-              className={`h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+              className={`tap-target h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
                 isPlaneAnimEnabled
                   ? 'bg-black text-white dark:bg-white dark:text-black'
                   : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
@@ -4265,7 +4266,7 @@ export function MapHubPage({
                 handleResetToDefaultView();
                 setIsMobileControlsOpen(false);
               }}
-              className="h-full px-2.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+              className="tap-target h-full px-2.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
               title="RESET VIEW (H)"
             >
               <HomeIcon className="w-3.5 h-3.5" />
@@ -4278,7 +4279,7 @@ export function MapHubPage({
                 setIsPlaceListModalOpen(true);
                 setIsMobileControlsOpen(false);
               }}
-              className="h-full px-2.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+              className="tap-target h-full px-2.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
               title="PLACES LIST"
             >
               <List className="w-3.5 h-3.5" />
@@ -4295,7 +4296,7 @@ export function MapHubPage({
                 }
                 setIsMobileControlsOpen(false);
               }}
-              className={`h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+              className={`tap-target h-full px-2.5 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
                 isBuilderOpen
                   ? 'bg-red-600 text-white dark:bg-red-500 dark:text-black'
                   : 'bg-black text-white dark:bg-white dark:text-black'
@@ -4313,7 +4314,7 @@ export function MapHubPage({
                   handleReCenterBuilderTarget();
                   setIsMobileControlsOpen(false);
                 }}
-                className="h-full px-2.5 text-black/70 dark:text-white/70 hover:text-red-600 dark:hover:text-red-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+                className="tap-target h-full px-2.5 text-black/70 dark:text-white/70 hover:text-red-600 dark:hover:text-red-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
                 title={`RE-CENTER TO: ${builderTargetName}`}
               >
                 <LocateFixed className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
@@ -4328,7 +4329,7 @@ export function MapHubPage({
           <button
             type="button"
             onClick={togglePinLabels}
-            className={`h-full px-2.5 sm:px-3 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+            className={`tap-target h-full px-2.5 sm:px-3 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
               showPinLabels
                 ? 'bg-black text-white dark:bg-white dark:text-black'
                 : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
@@ -4342,7 +4343,7 @@ export function MapHubPage({
           <button
             type="button"
             onClick={toggleVisitedPins}
-            className={`h-full px-2.5 sm:px-3 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+            className={`tap-target h-full px-2.5 sm:px-3 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
               showVisitedPins
                 ? 'bg-black text-white dark:bg-white dark:text-black'
                 : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
@@ -4356,7 +4357,7 @@ export function MapHubPage({
           <button
             type="button"
             onClick={toggleWishlistPins}
-            className={`h-full px-2.5 sm:px-3 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+            className={`tap-target h-full px-2.5 sm:px-3 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
               showWishlistPins
                 ? 'bg-black text-white dark:bg-white dark:text-black'
                 : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
@@ -4370,7 +4371,7 @@ export function MapHubPage({
           <button
             type="button"
             onClick={togglePlaneAnim}
-            className={`h-full px-2.5 sm:px-3 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+            className={`tap-target h-full px-2.5 sm:px-3 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
               isPlaneAnimEnabled
                 ? 'bg-black text-white dark:bg-white dark:text-black'
                 : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
@@ -4384,7 +4385,7 @@ export function MapHubPage({
           <button
             type="button"
             onClick={handleResetToDefaultView}
-            className="h-full px-2.5 sm:px-3 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+            className="tap-target h-full px-2.5 sm:px-3 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
             title="RESET VIEW (H)"
           >
             <HomeIcon className="w-3.5 h-3.5" />
@@ -4394,7 +4395,7 @@ export function MapHubPage({
           <button
             type="button"
             onClick={() => setIsPlaceListModalOpen(true)}
-            className="h-full px-2.5 sm:px-3 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+            className="tap-target h-full px-2.5 sm:px-3 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
             title="PLACES LIST"
           >
             <List className="w-3.5 h-3.5" />
@@ -4426,7 +4427,7 @@ export function MapHubPage({
             <button
               type="button"
               onClick={handleReCenterBuilderTarget}
-              className="h-full px-2.5 sm:px-3 text-black/70 dark:text-white/70 hover:text-red-600 dark:hover:text-red-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+              className="tap-target h-full px-2.5 sm:px-3 text-black/70 dark:text-white/70 hover:text-red-600 dark:hover:text-red-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center shrink-0"
               title={`RE-CENTER TO: ${builderTargetName}`}
             >
               <LocateFixed className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
@@ -4527,7 +4528,7 @@ export function MapHubPage({
             </div>
             <button
               onClick={handleCloseCountry}
-              className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer -mr-1"
+              className="tap-target p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer -mr-1"
               title="닫기 (ESC)"
             >
               <X className="w-4 h-4" />
@@ -4873,7 +4874,7 @@ export function MapHubPage({
               <button 
                 type="button"
                 onClick={() => setIsWishlistModalOpen(false)}
-                className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
+                className="tap-target p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -4953,7 +4954,7 @@ export function MapHubPage({
                           <button
                             type="button"
                             onClick={() => toggleFavoriteCountry(country.code)}
-                            className="p-1 text-black/60 dark:text-white/60 hover:text-red-500 cursor-pointer"
+                            className="tap-target p-1 text-black/60 dark:text-white/60 hover:text-red-500 cursor-pointer"
                             title="즐겨찾기 해제"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -5011,7 +5012,7 @@ export function MapHubPage({
                           <button
                             type="button"
                             onClick={() => toggleFavoriteCity(city)}
-                            className="p-1 text-black/60 dark:text-white/60 hover:text-red-500 cursor-pointer"
+                            className="tap-target p-1 text-black/60 dark:text-white/60 hover:text-red-500 cursor-pointer"
                             title="도시 즐겨찾기 해제"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -5069,7 +5070,7 @@ export function MapHubPage({
               </div>
               <button
                 onClick={() => setSelectedPinGroup(null)}
-                className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
+                className="tap-target p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -5150,7 +5151,7 @@ export function MapHubPage({
               <button
                 type="button"
                 onClick={() => setIsPlaceListModalOpen(false)}
-                className="p-1.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                className="tap-target p-1.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>

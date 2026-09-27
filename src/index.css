@@ -978,3 +978,48 @@ div[data-pin-hover],
   94% { opacity: 0.7; }
 }
 
+
+/* ── Accessibility: keyboard focus ring (keyboard only, never on mouse click) ── */
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible,
+[role="tab"]:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible,
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible,
+input[type="range"]:focus-visible {
+  outline: 2px solid #dc2626 !important;
+  outline-offset: 2px !important;
+}
+.dark button:focus-visible,
+.dark a:focus-visible,
+.dark summary:focus-visible,
+.dark select:focus-visible,
+.dark [role="button"]:focus-visible,
+.dark [role="tab"]:focus-visible,
+.dark [tabindex]:not([tabindex="-1"]):focus-visible,
+.dark input[type="checkbox"]:focus-visible,
+.dark input[type="radio"]:focus-visible,
+.dark input[type="range"]:focus-visible {
+  outline-color: #ef4444 !important;
+}
+
+/* ── Touch: enlarge the hit area of small icon buttons without changing their look ── */
+@media (pointer: coarse) {
+  /* keep absolutely/fixed positioned buttons where they are; they already anchor ::after */
+  .tap-target:not(.absolute):not(.fixed):not(.sticky) { position: relative; }
+  .tap-target::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+  }
+}
+
+/* ── Toast entrance ── */
+@keyframes tglToastIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.tgl-toast { animation: tglToastIn 220ms cubic-bezier(.2, 0, 0, 1) both; }

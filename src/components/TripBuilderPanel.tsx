@@ -52,6 +52,7 @@ import {
 import { getSavedPockets } from '../utils/pocketStorage';
 import { SpotPocketItem, UserProfile } from '../types';
 import { auth } from '../firebase';
+import { confirmDialog } from '../utils/feedback';
 
 export interface TripBuilderPanelProps {
   isOpen: boolean;
@@ -305,7 +306,7 @@ export function TripBuilderPanel({
             <button
               type="button"
               onClick={() => setMembers(prev => prev.filter((_, i) => i !== idx))}
-              className="hover:text-red-500 text-red-600 font-bold text-meta ml-1 leading-none cursor-pointer"
+              className="tap-target hover:text-red-500 text-red-600 font-bold text-meta ml-1 leading-none cursor-pointer"
               title="삭제"
             >
               <X className="w-2.5 h-2.5" />
@@ -1840,7 +1841,7 @@ export function TripBuilderPanel({
           <button
             type="button"
             onClick={onClose}
-            className="p-1 -ml-1 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white cursor-pointer transition-colors"
+            className="tap-target p-1 -ml-1 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white cursor-pointer transition-colors"
             title="닫기"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -1852,7 +1853,7 @@ export function TripBuilderPanel({
         <button
           type="button"
           onClick={onClose}
-          className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
+          className="tap-target p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
           title="닫기"
         >
           <X className="w-4 h-4" />
@@ -2153,7 +2154,7 @@ export function TripBuilderPanel({
                     <button
                       type="button"
                       onClick={() => setTemplateToastMessage(null)}
-                      className="p-1 opacity-70 hover:opacity-100 cursor-pointer"
+                      className="tap-target p-1 opacity-70 hover:opacity-100 cursor-pointer"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -2225,7 +2226,7 @@ export function TripBuilderPanel({
                               setCountrySearchInput('');
                               onFocusLocationChange?.({});
                             }}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
+                            className="tap-target absolute right-2.5 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
                             title="국가 선택 해제"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -2288,7 +2289,7 @@ export function TripBuilderPanel({
                                 onFocusLocationChange?.({});
                               }
                             }}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
+                            className="tap-target absolute right-2.5 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
                             title="도시 선택 해제"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -2872,7 +2873,7 @@ export function TripBuilderPanel({
                           setCountrySearchInput('');
                           onFocusLocationChange?.({});
                         }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
+                        className="tap-target absolute right-2 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
                         title="국가 선택 해제"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -2935,7 +2936,7 @@ export function TripBuilderPanel({
                             onFocusLocationChange?.({});
                           }
                         }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
+                        className="tap-target absolute right-2 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5 cursor-pointer transition-colors"
                         title="도시 선택 해제"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -3191,7 +3192,7 @@ export function TripBuilderPanel({
               <button
                 type="button"
                 onClick={() => setIsTemplateDrawerOpen(false)}
-                className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer transition-colors"
+                className="tap-target p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -3270,14 +3271,14 @@ export function TripBuilderPanel({
                         </div>
                         <button
                           type="button"
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
-                            if (window.confirm(`'${cp.title}' 템플릿을 삭제하시겠습니까?`)) {
+                            if (await confirmDialog(`'${cp.title}' 템플릿을 삭제하시겠습니까?`)) {
                               deletePresetById(cp.id);
                               setPresets(getSavedPresets());
                             }
                           }}
-                          className="p-1.5 text-black/60 dark:text-white/60 hover:text-red-600 transition-colors cursor-pointer shrink-0"
+                          className="tap-target p-1.5 text-black/60 dark:text-white/60 hover:text-red-600 transition-colors cursor-pointer shrink-0"
                           title="템플릿 삭제"
                         >
                           <Trash2 className="w-3.5 h-3.5" />

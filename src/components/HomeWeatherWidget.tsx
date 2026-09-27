@@ -210,7 +210,7 @@ export function HomeWeatherWidget({
             type="button"
             onClick={fetchAllWeather}
             disabled={isLoading}
-            className="p-1 hover:text-black dark:hover:text-white transition-colors cursor-pointer disabled:opacity-40"
+            className="tap-target p-1 hover:text-black dark:hover:text-white transition-colors cursor-pointer disabled:opacity-40"
             title="날씨 새로고침"
           >
             <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
@@ -344,7 +344,7 @@ export function HomeWeatherWidget({
             <button
               type="button"
               onClick={() => setSelectedCityEn(null)}
-              className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+              className="tap-target p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
               title="예보 닫기"
             >
               <X className="w-3.5 h-3.5" />

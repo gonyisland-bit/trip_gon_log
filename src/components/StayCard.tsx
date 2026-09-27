@@ -8,6 +8,7 @@ import { auth } from '../firebase';
 import { compressImage } from '../utils/imageHelper';
 import { Lightbox } from './Lightbox';
 import { SettlementExpenseInput } from './SettlementExpenseInput';
+import { notify } from '../utils/feedback';
 
 interface StayCardProps {
   stay: StayItem;
@@ -113,7 +114,7 @@ export function StayCard({
   const uploadMultipleAdditionalImages = async (files: File[]) => {
     const user = auth.currentUser;
     if (!user) {
-      alert("이미지를 업로드하려면 로그인이 필요합니다.");
+      notify("이미지를 업로드하려면 로그인이 필요합니다.");
       return;
     }
     const imageFiles = files.filter(f => f.type.startsWith('image/'));
@@ -142,7 +143,7 @@ export function StayCard({
       }
     } catch (error) {
       console.error("Additional images upload failed:", error);
-      alert("이미지 업로드에 실패했습니다.");
+      notify("이미지 업로드에 실패했습니다.");
     } finally {
       setUploadingImage(false);
     }
@@ -542,7 +543,7 @@ export function StayCard({
                       <button
                         type="button"
                         onClick={(e) => removeAdditionalImage(e, idx)}
-                        className="absolute top-0.5 right-0.5 p-1 bg-black/80 hover:bg-red-600 text-white transition-colors sm:opacity-0 group-hover/thumb:opacity-100 opacity-100 cursor-pointer z-10"
+                        className="tap-target absolute top-0.5 right-0.5 p-1 bg-black/80 hover:bg-red-600 text-white transition-colors sm:opacity-0 group-hover/thumb:opacity-100 opacity-100 cursor-pointer z-10"
                         title="Delete image"
                       >
                         <X className="w-3 h-3" />
@@ -572,7 +573,7 @@ export function StayCard({
       {isEditMode && (
         <button 
           onClick={(e) => { e.stopPropagation(); onDelete(stay.id); }}
-          className="absolute bottom-2 right-2 p-1 text-red-500 hover:text-red-700 transition-colors z-10"
+          className="tap-target absolute bottom-2 right-2 p-1 text-red-500 hover:text-red-700 transition-colors z-10"
           title="Delete Stay"
         >
           <Trash2 className="w-3.5 h-3.5" />

@@ -1027,7 +1027,7 @@ export function Lightbox({
               {/* Prev button */}
               <button
                 onClick={handlePrev}
-                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer"
+                className="tap-target p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer"
                 title="이전 (←)"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -1043,7 +1043,7 @@ export function Lightbox({
               {/* Next button */}
               <button
                 onClick={handleNext}
-                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer"
+                className="tap-target p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer"
                 title="다음 (→)"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -1095,7 +1095,7 @@ export function Lightbox({
                 <button
                   type="button"
                   onClick={handleToggleShuffle}
-                  className={`p-1 transition-colors cursor-pointer border-l border-white/15 ${
+                  className={`tap-target p-1 transition-colors cursor-pointer border-l border-white/15 ${
                     isBgmShuffle ? 'text-red-400 bg-white/10' : 'text-white/60 hover:text-white'
                   }`}
                   title={isBgmShuffle ? '셔플 재생 중 (클릭 시 순차 재생)' : '순차 재생 중 (클릭 시 셔플 재생)'}
@@ -1106,7 +1106,7 @@ export function Lightbox({
                 {/* Next Track Button */}
                 <button
                   onClick={() => bgmPlayer.next()}
-                  className="p-1 hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer border-l border-white/15"
+                  className="tap-target p-1 hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer border-l border-white/15"
                   title="다음 배경음악 트랙"
                 >
                   <SkipForward className="w-3 h-3" />
@@ -1206,7 +1206,7 @@ export function Lightbox({
                   handleStopSlideshow();
                   onClose();
                 }}
-                className="p-2 rounded-full hover:bg-white/10 text-white transition-all cursor-pointer"
+                className="tap-target p-2 rounded-full hover:bg-white/10 text-white transition-all cursor-pointer"
                 title="닫기"
               >
                 <X className="w-4 h-4" />
@@ -1322,7 +1322,7 @@ export function Lightbox({
             <button
               type="button"
               onClick={handleVolumeUp}
-              className="p-1 text-white/70 hover:text-white hover:bg-white/10 rounded-xs transition-colors cursor-pointer"
+              className="tap-target p-1 text-white/70 hover:text-white hover:bg-white/10 rounded-xs transition-colors cursor-pointer"
               title="볼륨 올리기 (↑)"
             >
               <ChevronUp className="w-4 h-4" />
@@ -1349,7 +1349,7 @@ export function Lightbox({
             <button
               type="button"
               onClick={handleVolumeDown}
-              className="p-1 text-white/70 hover:text-white hover:bg-white/10 rounded-xs transition-colors cursor-pointer"
+              className="tap-target p-1 text-white/70 hover:text-white hover:bg-white/10 rounded-xs transition-colors cursor-pointer"
               title="볼륨 내리기 (↓)"
             >
               <ChevronDown className="w-4 h-4" />
@@ -1447,7 +1447,7 @@ export function Lightbox({
               <button
                 onClick={handleZoomOut}
                 disabled={scale <= 0.5}
-                className="p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors disabled:opacity-30 cursor-pointer"
+                className="tap-target p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors disabled:opacity-30 cursor-pointer"
                 title="Zoom Out (-)"
               >
                 <ZoomOut className="w-4 h-4 md:w-5 md:h-5" />
@@ -1460,7 +1460,7 @@ export function Lightbox({
               <button
                 onClick={handleZoomIn}
                 disabled={scale >= 4}
-                className="p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors disabled:opacity-30 cursor-pointer"
+                className="tap-target p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors disabled:opacity-30 cursor-pointer"
                 title="Zoom In (+)"
               >
                 <ZoomIn className="w-4 h-4 md:w-5 md:h-5" />
@@ -1469,7 +1469,7 @@ export function Lightbox({
               <button
                 onClick={resetZoom}
                 disabled={scale === 1 && position.x === 0 && position.y === 0}
-                className="p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors disabled:opacity-30 cursor-pointer"
+                className="tap-target p-1.5 md:p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors disabled:opacity-30 cursor-pointer"
                 title="Reset Zoom (*)"
               >
                 <RotateCcw className="w-4 h-4 md:w-5 md:h-5" />
@@ -1484,7 +1484,7 @@ export function Lightbox({
                 bgmPlayer.stop();
                 onClose();
               }}
-              className="p-2 sm:p-2.5 rounded-full bg-black/60 hover:bg-white/20 active:scale-95 text-white transition-all shadow-md cursor-pointer border border-white/20 flex items-center justify-center shrink-0"
+              className="tap-target p-2 sm:p-2.5 rounded-full bg-black/60 hover:bg-white/20 active:scale-95 text-white transition-all shadow-md cursor-pointer border border-white/20 flex items-center justify-center shrink-0"
               title="나가기 / 닫기 (ESC)"
               aria-label="Close Lightbox"
             >
@@ -1503,7 +1503,7 @@ export function Lightbox({
         {images.length > 1 && (!isSlideshow || isControlsVisible) && (
           <button
             onClick={handlePrev}
-            className={`absolute left-3 md:left-8 z-40 p-2 md:p-3 bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-xs border border-white/20 hover:border-white/40 text-white rounded-full transition-all duration-300 focus:outline-none flex items-center justify-center cursor-pointer shadow-lg active:scale-95 ${
+            className={`tap-target absolute left-3 md:left-8 z-40 p-2 md:p-3 bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-xs border border-white/20 hover:border-white/40 text-white rounded-full transition-all duration-300 focus:outline-none flex items-center justify-center cursor-pointer shadow-lg active:scale-95 ${
               isSlideshow && !isControlsVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'
             }`}
             title="이전 사진 (←)"
@@ -1609,7 +1609,7 @@ export function Lightbox({
         {images.length > 1 && (!isSlideshow || isControlsVisible) && (
           <button
             onClick={handleNext}
-            className={`absolute right-3 md:right-8 z-40 p-2 md:p-3 bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-xs border border-white/20 hover:border-white/40 text-white rounded-full transition-all duration-300 focus:outline-none flex items-center justify-center cursor-pointer shadow-lg active:scale-95 ${
+            className={`tap-target absolute right-3 md:right-8 z-40 p-2 md:p-3 bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-xs border border-white/20 hover:border-white/40 text-white rounded-full transition-all duration-300 focus:outline-none flex items-center justify-center cursor-pointer shadow-lg active:scale-95 ${
               isSlideshow && !isControlsVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'
             }`}
             title="다음 사진 (→)"

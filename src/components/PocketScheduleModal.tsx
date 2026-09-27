@@ -97,7 +97,7 @@ export function PocketScheduleModal({
           </div>
           <button
             onClick={onClose}
-            className="text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
+            className="tap-target text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>

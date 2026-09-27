@@ -532,7 +532,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                         type="button"
                         disabled={idx === 0}
                         onClick={() => handleMoveBgmTrack(idx, 'up')}
-                        className="p-1.5 border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-25 cursor-pointer"
+                        className="tap-target p-1.5 border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-25 cursor-pointer"
                         title="위로 이동"
                       >
                         <ArrowUp className="w-3.5 h-3.5" />
@@ -542,7 +542,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                         type="button"
                         disabled={idx === bgmTracks.length - 1}
                         onClick={() => handleMoveBgmTrack(idx, 'down')}
-                        className="p-1.5 border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-25 cursor-pointer"
+                        className="tap-target p-1.5 border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-25 cursor-pointer"
                         title="아래로 이동"
                       >
                         <ArrowDown className="w-3.5 h-3.5" />
@@ -551,7 +551,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                       <button
                         type="button"
                         onClick={() => handleDeleteBgmTrack(track.id)}
-                        className="p-1.5 border border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white transition-colors cursor-pointer"
+                        className="tap-target p-1.5 border border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white transition-colors cursor-pointer"
                         title="트랙 삭제"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -669,7 +669,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                 <button
                   type="button"
                   onClick={() => setPresetSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white"
+                  className="tap-target absolute right-2 top-1/2 -translate-y-1/2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -760,7 +760,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                           <button
                             type="button"
                             onClick={() => handleOpenEditPreset(preset)}
-                            className="p-1 border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
+                            className="tap-target p-1 border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
                             title="수정"
                           >
                             <Edit className="w-3 h-3" />
@@ -768,7 +768,7 @@ export function UtilMode({ s }: { s: ManageHubState }) {
                           <button
                             type="button"
                             onClick={() => handleDeletePresetClick(preset)}
-                            className="p-1 border border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white transition-colors cursor-pointer"
+                            className="tap-target p-1 border border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white transition-colors cursor-pointer"
                             title="삭제"
                           >
                             <Trash2 className="w-3 h-3" />

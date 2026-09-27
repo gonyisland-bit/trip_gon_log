@@ -212,7 +212,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                           setEditingUser(adminUser);
                           setIsUserEditModalOpen(true);
                         }}
-                        className="p-1.5 border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black transition-colors cursor-pointer"
+                        className="tap-target p-1.5 border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black transition-colors cursor-pointer"
                         title="관리자 정보 수정"
                       >
                         <Edit className="w-3.5 h-3.5" />
@@ -463,7 +463,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                           setEditingUser(user);
                           setIsUserEditModalOpen(true);
                         }}
-                        className="p-1.5 border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black transition-colors cursor-pointer"
+                        className="tap-target p-1.5 border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black transition-colors cursor-pointer"
                         title="유저 정보 수정"
                       >
                         <Edit className="w-3.5 h-3.5" />
@@ -474,7 +474,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                         type="button"
                         onClick={() => setPasswordResetTarget(user)}
                         disabled={!user.email}
-                        className="p-1.5 border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="tap-target p-1.5 border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                         title="비밀번호 재설정 메일 보내기"
                         aria-label="비밀번호 재설정 메일 보내기"
                       >
@@ -485,7 +485,7 @@ export function UsersMode({ s }: { s: ManageHubState }) {
                       <button
                         type="button"
                         onClick={() => handleDeleteUserByAdmin(user)}
-                        className="p-1.5 border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-red-600 hover:text-red-600 transition-colors cursor-pointer"
+                        className="tap-target p-1.5 border border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-red-600 hover:text-red-600 transition-colors cursor-pointer"
                         title="유저 계정 영구 삭제 (잘못 가입한 계정 제거)"
                       >
                         <Trash2 className="w-3.5 h-3.5" />

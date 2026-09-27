@@ -4,6 +4,7 @@ import { uploadFileToR2 } from '../utils/storageHelper';
 import { auth } from '../firebase';
 import { compressImage } from '../utils/imageHelper';
 import { extractGpsFromImage } from '../utils/exifHelper';
+import { notify } from '../utils/feedback';
 
 interface ImageEditOverlayProps {
   isEditMode: boolean;
@@ -45,17 +46,17 @@ export function ImageEditOverlay({
           }
         }
       }
-      alert("클립보드에 복사된 이미지가 없습니다. 이미지를 복사한 후 다시 시도해 주세요.");
+      notify("클립보드에 복사된 이미지가 없습니다. 이미지를 복사한 후 다시 시도해 주세요.");
     } catch (err) {
       console.warn("Clipboard read error:", err);
-      alert("클립보드 이미지를 붙여넣으려면 키보드 단축키 Ctrl+V를 사용해주세요.");
+      notify("클립보드 이미지를 붙여넣으려면 키보드 단축키 Ctrl+V를 사용해주세요.");
     }
   };
 
   const uploadFile = async (file: File) => {
     const user = auth.currentUser;
     if (!user) {
-      alert("이미지를 업로드하려면 로그인이 필요합니다.");
+      notify("이미지를 업로드하려면 로그인이 필요합니다.");
       return;
     }
 
@@ -74,7 +75,7 @@ export function ImageEditOverlay({
       onImageUploaded(downloadUrl, gps);
     } catch (error) {
       console.error("Image upload failed:", error);
-      alert("이미지 업로드에 실패했습니다. 다시 시도해 주세요.");
+      notify("이미지 업로드에 실패했습니다. 다시 시도해 주세요.");
     } finally {
       setUploading(false);
     }
@@ -114,7 +115,7 @@ export function ImageEditOverlay({
       if (file.type.startsWith('image/')) {
         await uploadFile(file);
       } else {
-        alert("이미지 파일만 업로드할 수 있습니다.");
+        notify("이미지 파일만 업로드할 수 있습니다.");
       }
     }
   };
@@ -146,14 +147,14 @@ export function ImageEditOverlay({
         <>
           <button
             onClick={handleChangeClick}
-            className="p-1 bg-white/20 hover:bg-red-600 text-white rounded transition-colors shadow-sm"
+            className="tap-target p-1 bg-white/20 hover:bg-red-600 text-white rounded transition-colors shadow-sm"
             title="사진 선택 / 파일 업로드"
           >
             <ImagePlus className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={handlePasteClick}
-            className="p-1 bg-white/20 hover:bg-red-600 text-white rounded transition-colors shadow-sm"
+            className="tap-target p-1 bg-white/20 hover:bg-red-600 text-white rounded transition-colors shadow-sm"
             title="클립보드 사진 붙여넣기 (Ctrl+V)"
           >
             <ClipboardPaste className="w-3.5 h-3.5" />
@@ -164,7 +165,7 @@ export function ImageEditOverlay({
                 e.stopPropagation();
                 onImageRemoved();
               }}
-              className="p-1 bg-white/20 hover:bg-red-600 text-white rounded transition-colors shadow-sm cursor-pointer"
+              className="tap-target p-1 bg-white/20 hover:bg-red-600 text-white rounded transition-colors shadow-sm cursor-pointer"
               title="사진 삭제"
             >
               <Trash2 className="w-3.5 h-3.5" />

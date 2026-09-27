@@ -5,6 +5,7 @@ import { SettlementExpenseInput } from './SettlementExpenseInput';
 import { uploadFileToR2, getEffectiveImageUrl } from '../utils/storageHelper';
 import { auth } from '../firebase';
 import { Lightbox } from './Lightbox';
+import { notify, confirmDialog } from '../utils/feedback';
 
 interface FlightCardProps {
   flight: FlightItem;
@@ -189,7 +190,7 @@ export function FlightCard({
   const uploadFile = async (file: File) => {
     const user = auth.currentUser;
     if (!user) {
-      alert("로그인이 필요합니다.");
+      notify("로그인이 필요합니다.");
       return;
     }
     setUploadingAttachment(true);
@@ -202,7 +203,7 @@ export function FlightCard({
       onUpdate(flight.id, 'attachments', newList);
     } catch (error) {
       console.error("Flight attachment upload failed:", error);
-      alert("파일 업로드에 실패했습니다.");
+      notify("파일 업로드에 실패했습니다.");
     } finally {
       setUploadingAttachment(false);
     }
@@ -217,9 +218,9 @@ export function FlightCard({
     }
   };
 
-  const removeAttachment = (e: React.MouseEvent, indexToRemove: number) => {
+  const removeAttachment = async (e: React.MouseEvent, indexToRemove: number) => {
     e.stopPropagation();
-    if (confirm("이 첨부파일을 삭제하시겠습니까?")) {
+    if (await confirmDialog("이 첨부파일을 삭제하시겠습니까?")) {
       const currentList = flight.attachments || [];
       const newList = currentList.filter((_, idx) => idx !== indexToRemove);
       onUpdate(flight.id, 'attachments', newList);
@@ -453,7 +454,7 @@ export function FlightCard({
                       console.warn(err);
                     }
                   }}
-                  className="p-1 sm:p-1.5 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-black/5 dark:bg-white/10 cursor-pointer flex items-center justify-center shrink-0"
+                  className="tap-target p-1 sm:p-1.5 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-black/5 dark:bg-white/10 cursor-pointer flex items-center justify-center shrink-0"
                   title="시간 선택"
                 >
                   <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/60 dark:text-white/60" />
@@ -485,7 +486,7 @@ export function FlightCard({
                   onUpdate(flight.id, 'toTerminal', tempTerminal);
                   onUpdate(flight.id, 'toTime', tempTime);
                 }}
-                className="mb-1.5 sm:mb-2 p-1 sm:p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors flex items-center justify-center text-red-600 dark:text-red-400 border border-black/10 dark:border-white/10 bg-[#F9F8F6] dark:bg-[#161616] cursor-pointer"
+                className="tap-target mb-1.5 sm:mb-2 p-1 sm:p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors flex items-center justify-center text-red-600 dark:text-red-400 border border-black/10 dark:border-white/10 bg-[#F9F8F6] dark:bg-[#161616] cursor-pointer"
                 title="출발지/도착지 반전"
               >
                 <RefreshCw className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
@@ -642,7 +643,7 @@ export function FlightCard({
                       console.warn(err);
                     }
                   }}
-                  className="p-1 sm:p-1.5 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-black/5 dark:bg-white/10 cursor-pointer flex items-center justify-center shrink-0"
+                  className="tap-target p-1 sm:p-1.5 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-black/5 dark:bg-white/10 cursor-pointer flex items-center justify-center shrink-0"
                   title="시간 선택"
                 >
                   <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black/60 dark:text-white/60" />
@@ -885,7 +886,7 @@ export function FlightCard({
       {isEditMode && (
         <button 
           onClick={(e) => { e.stopPropagation(); onDelete(flight.id); }}
-          className="absolute bottom-2 right-2 p-1 text-red-500 hover:text-red-700 transition-colors"
+          className="tap-target absolute bottom-2 right-2 p-1 text-red-500 hover:text-red-700 transition-colors"
           title="Delete Flight"
         >
           <Trash2 className="w-3.5 h-3.5" />

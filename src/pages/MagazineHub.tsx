@@ -816,7 +816,7 @@ export function MagazineHubPage({
                           <button
                             type="button"
                             onClick={() => setMagSearchQuery('')}
-                            className="absolute right-1.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5 cursor-pointer"
+                            className="tap-target absolute right-1.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5 cursor-pointer"
                             title="검색어 지우기"
                           >
                             <X className="w-3 h-3" />
@@ -1096,7 +1096,7 @@ export function MagazineHubPage({
                             type="button"
                             onClick={handlePrevPreviewSection}
                             disabled={safePreviewIdx <= 0}
-                            className="w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white"
+                            className="tap-target w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white"
                             title="이전 섹션"
                           >
                             <ChevronLeft className="w-4 h-4 stroke-[2]" />
@@ -1105,7 +1105,7 @@ export function MagazineHubPage({
                             type="button"
                             onClick={handleNextPreviewSection}
                             disabled={safePreviewIdx >= effectiveSections.length - 1}
-                            className="w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white"
+                            className="tap-target w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white"
                             title="다음 섹션"
                           >
                             <ChevronRight className="w-4 h-4 stroke-[2]" />
@@ -1277,7 +1277,7 @@ export function MagazineHubPage({
                       e.stopPropagation();
                       handlePrevSection();
                     }}
-                    className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-3 rounded-full bg-black/30 hover:bg-black/60 text-white/80 hover:text-white backdrop-blur-md border border-white/20 transition-all cursor-pointer shadow-lg active:scale-95 flex items-center justify-center opacity-80 group-hover:opacity-100"
+                    className="tap-target absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-3 rounded-full bg-black/30 hover:bg-black/60 text-white/80 hover:text-white backdrop-blur-md border border-white/20 transition-all cursor-pointer shadow-lg active:scale-95 flex items-center justify-center opacity-80 group-hover:opacity-100"
                     title="이전 매거진 섹션"
                     aria-label="Previous magazine section"
                   >
@@ -1290,7 +1290,7 @@ export function MagazineHubPage({
                       e.stopPropagation();
                       handleNextSection();
                     }}
-                    className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-3 rounded-full bg-black/30 hover:bg-black/60 text-white/80 hover:text-white backdrop-blur-md border border-white/20 transition-all cursor-pointer shadow-lg active:scale-95 flex items-center justify-center opacity-80 group-hover:opacity-100"
+                    className="tap-target absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-3 rounded-full bg-black/30 hover:bg-black/60 text-white/80 hover:text-white backdrop-blur-md border border-white/20 transition-all cursor-pointer shadow-lg active:scale-95 flex items-center justify-center opacity-80 group-hover:opacity-100"
                     title="다음 매거진 섹션"
                     aria-label="Next magazine section"
                   >
@@ -1381,7 +1381,7 @@ export function MagazineHubPage({
                   type="button"
                   onClick={() => handleScrollTab('left')}
                   disabled={!canScrollLeft}
-                  className={`p-1.5 rounded transition-all shrink-0 cursor-pointer ${
+                  className={`tap-target p-1.5 rounded transition-all shrink-0 cursor-pointer ${
                     canScrollLeft
                       ? 'text-black/80 dark:text-white/80 hover:bg-black/10 dark:hover:bg-white/10 hover:text-black dark:hover:text-white opacity-90'
                       : 'text-black/60 dark:text-white/60 opacity-20 pointer-events-none'
@@ -1420,7 +1420,7 @@ export function MagazineHubPage({
                   type="button"
                   onClick={() => handleScrollTab('right')}
                   disabled={!canScrollRight}
-                  className={`p-1.5 rounded transition-all shrink-0 cursor-pointer ${
+                  className={`tap-target p-1.5 rounded transition-all shrink-0 cursor-pointer ${
                     canScrollRight
                       ? 'text-black/80 dark:text-white/80 hover:bg-black/10 dark:hover:bg-white/10 hover:text-black dark:hover:text-white opacity-90'
                       : 'text-black/60 dark:text-white/60 opacity-20 pointer-events-none'

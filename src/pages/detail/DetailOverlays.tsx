@@ -95,7 +95,7 @@ export function DetailOverlays({ s }: { s: JourneyDetailState }) {
               </div>
               <button 
                 onClick={() => setIsSwitcherOpen(false)}
-                className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                className="tap-target p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -115,7 +115,7 @@ export function DetailOverlays({ s }: { s: JourneyDetailState }) {
               {switcherSearch && (
                 <button 
                   onClick={() => setSwitcherSearch('')}
-                  className="text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white cursor-pointer"
+                  className="tap-target text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -243,7 +243,7 @@ export function DetailOverlays({ s }: { s: JourneyDetailState }) {
               <button
                 type="button"
                 onClick={() => setCostModalItem(null)}
-                className="p-1 text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white hover:rotate-90 transition-all cursor-pointer"
+                className="tap-target p-1 text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white hover:rotate-90 transition-all cursor-pointer"
                 title="닫기 (ESC)"
               >
                 <X className="w-5 h-5" />
@@ -316,7 +316,7 @@ export function DetailOverlays({ s }: { s: JourneyDetailState }) {
               <button
                 type="button"
                 onClick={() => setIsCoverModalOpen(false)}
-                className="p-1 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-black/60 dark:text-white/60 cursor-pointer"
+                className="tap-target p-1 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-black/60 dark:text-white/60 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>

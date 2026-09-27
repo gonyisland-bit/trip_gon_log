@@ -199,7 +199,7 @@ export function LandingGuestView({
               <button
                 type="button"
                 onClick={handlePrev}
-                className="p-1.5 hover:bg-white/15 text-white/80 hover:text-white transition-colors cursor-pointer"
+                className="tap-target p-1.5 hover:bg-white/15 text-white/80 hover:text-white transition-colors cursor-pointer"
                 title="이전 슬라이드"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -208,7 +208,7 @@ export function LandingGuestView({
               <button
                 type="button"
                 onClick={handleNext}
-                className="p-1.5 hover:bg-white/15 text-white/80 hover:text-white transition-colors cursor-pointer"
+                className="tap-target p-1.5 hover:bg-white/15 text-white/80 hover:text-white transition-colors cursor-pointer"
                 title="다음 슬라이드"
               >
                 <ChevronRight className="w-4 h-4" />

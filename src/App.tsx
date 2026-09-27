@@ -9,6 +9,7 @@ import { ScrollToTop } from './components/ScrollToTop';
 import { DetailSkeleton, TopProgressBar } from './components/EditorialSkeleton';
 import { FlightTransitionOverlay } from './components/FlightTransitionOverlay';
 import { SplashScreen } from './components/SplashScreen';
+import { FeedbackHost } from './components/FeedbackHost';
 
 
 // Lazy loaded secondary pages & modals with auto retry on reconnect
@@ -67,7 +68,10 @@ function App() {
 
   return (
     <div className={`${isDarkMode ? 'dark' : ''} overflow-x-hidden w-full`}>
-      {/* Editorial Kinetic Typography Splash Screen */}
+      {/* Toasts (notify) and confirm dialogs (confirmDialog) */}
+      <FeedbackHost />
+
+      {/* Official-logo 3D splash */}
       {showSplash && (
         <SplashScreen onFinish={handleFinishSplash} minDurationMs={1700} />
       )}

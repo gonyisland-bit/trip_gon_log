@@ -6,6 +6,7 @@ import { Trip, Plan, MagazineItem, TimelineItem } from '../../types';
 import { getEffectiveImageUrl } from '../../utils/storageHelper';
 import { resolveTimelinePlaceName } from '../../utils/magazineHelper';
 import type { ManageHubState } from './useManageHubState';
+import { notify } from '../../utils/feedback';
 
 export function MagazineMode({ s }: { s: ManageHubState }) {
   const {
@@ -188,7 +189,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                   type="button"
                   onClick={() => activeIdx > 0 && handleMoveSection(activeIdx, 'up')}
                   disabled={activeIdx <= 0}
-                  className="p-1.5 border border-black/20 dark:border-white/20 bg-white dark:bg-[#161616] text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer transition-colors"
+                  className="tap-target p-1.5 border border-black/20 dark:border-white/20 bg-white dark:bg-[#161616] text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer transition-colors"
                   title="섹션 앞으로 이동"
                 >
                   <ChevronUp className="w-3.5 h-3.5" />
@@ -197,7 +198,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                   type="button"
                   onClick={() => activeIdx < sectionsList.length - 1 && handleMoveSection(activeIdx, 'down')}
                   disabled={activeIdx >= sectionsList.length - 1}
-                  className="p-1.5 border border-black/20 dark:border-white/20 bg-white dark:bg-[#161616] text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer transition-colors"
+                  className="tap-target p-1.5 border border-black/20 dark:border-white/20 bg-white dark:bg-[#161616] text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer transition-colors"
                   title="섹션 뒤로 이동"
                 >
                   <ChevronDown className="w-3.5 h-3.5" />
@@ -206,7 +207,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                   type="button"
                   onClick={() => handleDeleteSection(activeMagSectionId)}
                   disabled={sectionsList.length <= 1}
-                  className="p-1.5 border border-red-500/30 text-red-500 hover:bg-red-500/10 disabled:opacity-20 cursor-pointer transition-colors"
+                  className="tap-target p-1.5 border border-red-500/30 text-red-500 hover:bg-red-500/10 disabled:opacity-20 cursor-pointer transition-colors"
                   title={sectionsList.length <= 1 ? "최소 1개의 섹션은 유지되어야 합니다" : "현재 섹션 삭제"}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -223,7 +224,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
               type="button"
               onClick={handleMagazineUndo}
               disabled={magUndoStack.length === 0}
-              className="p-1.5 border border-black/20 dark:border-white/20 text-black dark:text-white disabled:opacity-20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+              className="tap-target p-1.5 border border-black/20 dark:border-white/20 text-black dark:text-white disabled:opacity-20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
               title="실행 취소 (Ctrl+Z)"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -232,7 +233,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
               type="button"
               onClick={handleMagazineRedo}
               disabled={magRedoStack.length === 0}
-              className="p-1.5 border border-black/20 dark:border-white/20 text-black dark:text-white disabled:opacity-20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+              className="tap-target p-1.5 border border-black/20 dark:border-white/20 text-black dark:text-white disabled:opacity-20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
               title="다시 실행 (Ctrl+Y / Ctrl+Shift+Z)"
             >
               <RotateCw className="w-3.5 h-3.5" />
@@ -753,7 +754,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                           type="button"
                           onClick={() => handleMoveItemInCurrentSection(idx, 'up')}
                           disabled={idx === 0}
-                          className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
+                          className="tap-target p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
                           title="앞으로 이동"
                         >
                           <ChevronUp className="w-3 h-3 -rotate-90" />
@@ -762,7 +763,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                           type="button"
                           onClick={() => handleMoveItemInCurrentSection(idx, 'down')}
                           disabled={idx === items.length - 1}
-                          className="p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
+                          className="tap-target p-1 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
                           title="뒤로 이동"
                         >
                           <ChevronDown className="w-3 h-3 -rotate-90" />
@@ -776,7 +777,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                             }
                             handleRemoveItemFromCurrentSection(item.id);
                           }}
-                          className="p-1 text-red-500 hover:bg-red-500/10 border border-red-500/30 cursor-pointer"
+                          className="tap-target p-1 text-red-500 hover:bg-red-500/10 border border-red-500/30 cursor-pointer"
                           title="카드 삭제"
                         >
                           <Trash2 className="w-3 h-3" />
@@ -1012,7 +1013,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
                     key={`mag-cand-${item.id || i}-${i}`}
                     onClick={() => {
                       if (isAttached) {
-                        alert("이미 현재 매거진 섹션에 등록된 사진입니다.");
+                        notify("이미 현재 매거진 섹션에 등록된 사진입니다.");
                         return;
                       }
                       handleAddItemToCurrentSection(item);
@@ -1090,7 +1091,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
               <button
                 type="button"
                 onClick={() => setShowAddSectionModal(false)}
-                className="p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer"
+                className="tap-target p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1179,7 +1180,7 @@ export function MagazineMode({ s }: { s: ManageHubState }) {
               <button
                 type="button"
                 onClick={() => setShowAutoGenerateModal(false)}
-                className="p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer"
+                className="tap-target p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>

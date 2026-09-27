@@ -218,7 +218,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                               type="button"
                               onClick={() => handleMoveHeroOrder(idx, 'up')}
                               disabled={idx === 0}
-                              className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+                              className="tap-target p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
                               title="위로 이동"
                             >
                               <ChevronUp className="w-4 h-4" />
@@ -227,7 +227,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                               type="button"
                               onClick={() => handleMoveHeroOrder(idx, 'down')}
                               disabled={idx === selectedHeroIds.length - 1}
-                              className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
+                              className="tap-target p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed"
                               title="아래로 이동"
                             >
                               <ChevronDown className="w-4 h-4" />
@@ -235,7 +235,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                             <button
                               type="button"
                               onClick={() => handleToggleHero(id)}
-                              className="p-1 text-black/60 dark:text-white/60 hover:text-red-600 transition-colors cursor-pointer"
+                              className="tap-target p-1 text-black/60 dark:text-white/60 hover:text-red-600 transition-colors cursor-pointer"
                               title="제거"
                             >
                               <X className="w-3.5 h-3.5" />
@@ -466,7 +466,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveLandingHeroMedia(item.id)}
-                                  className="p-1 bg-black/80 hover:bg-red-600 text-white transition-colors cursor-pointer"
+                                  className="tap-target p-1 bg-black/80 hover:bg-red-600 text-white transition-colors cursor-pointer"
                                   title="미디어 삭제"
                                 >
                                   <X className="w-3 h-3" />
@@ -492,7 +492,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                               type="button"
                               disabled={idx === 0}
                               onClick={() => handleMoveLandingHeroMedia(idx, 'up')}
-                              className="p-1 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
+                              className="tap-target p-1 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
                               title="앞으로 이동"
                             >
                               <ChevronUp className="w-3 h-3" />
@@ -501,7 +501,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                               type="button"
                               disabled={idx === localLandingHeroMedia.length - 1}
                               onClick={() => handleMoveLandingHeroMedia(idx, 'down')}
-                              className="p-1 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
+                              className="tap-target p-1 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 cursor-pointer"
                               title="뒤로 이동"
                             >
                               <ChevronDown className="w-3 h-3" />
@@ -960,7 +960,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                           type="button"
                           onClick={() => handleMoveHomeWeatherCity(idx, 'up')}
                           disabled={idx === 0}
-                          className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer"
+                          className="tap-target p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer"
                           title="위로 이동"
                         >
                           <ChevronUp className="w-3.5 h-3.5" />
@@ -969,7 +969,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                           type="button"
                           onClick={() => handleMoveHomeWeatherCity(idx, 'down')}
                           disabled={idx === widgetCities.length - 1}
-                          className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer"
+                          className="tap-target p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white disabled:opacity-20 cursor-pointer"
                           title="아래로 이동"
                         >
                           <ChevronDown className="w-3.5 h-3.5" />
@@ -977,7 +977,7 @@ export function HomeMode({ s }: { s: ManageHubState }) {
                         <button
                           type="button"
                           onClick={() => handleRemoveHomeWeatherCity(idx)}
-                          className="p-1 text-red-600/70 hover:text-red-600 dark:text-red-400/70 dark:hover:text-red-400 cursor-pointer ml-1"
+                          className="tap-target p-1 text-red-600/70 hover:text-red-600 dark:text-red-400/70 dark:hover:text-red-400 cursor-pointer ml-1"
                           title="삭제"
                         >
                           <Trash2 className="w-3.5 h-3.5" />

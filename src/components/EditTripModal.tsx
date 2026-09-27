@@ -7,6 +7,7 @@ import { inspectAndPrepareVideo } from '../utils/videoHelper';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { ImageEditOverlay } from './ImageEditOverlay';
 import { ConfirmModal } from './ConfirmModal';
+import { notify, confirmDialog } from '../utils/feedback';
 
 
 interface EditTripModalProps {
@@ -306,7 +307,7 @@ export function EditTripModal({
       onClose();
     } catch (err) {
       console.error(err);
-      alert('여정 정보 저장에 실패했습니다.');
+      notify('여정 정보 저장에 실패했습니다.');
     } finally {
       setSaving(false);
     }
@@ -314,7 +315,7 @@ export function EditTripModal({
 
   const uploadVideoFile = async (file: File) => {
     if (file.size > 30 * 1024 * 1024) {
-      alert("모바일 로딩 지연을 방지하기 위해, 30MB 이하의 동영상 파일만 업로드할 수 있습니다.");
+      notify("모바일 로딩 지연을 방지하기 위해, 30MB 이하의 동영상 파일만 업로드할 수 있습니다.");
       return;
     }
 
@@ -322,7 +323,7 @@ export function EditTripModal({
     try {
       const inspection = await inspectAndPrepareVideo(file);
       if (!inspection.isCompatible) {
-        alert("경고: 선택하신 동영상은 모바일(아이폰)에서 지원되지 않는 비표준 코덱(VP9/AV1/ProRes 등)을 포함하고 있습니다. 모바일 정상 재생을 위해 표준 H.264 MP4 형식의 영상을 권장합니다.");
+        notify("경고: 선택하신 동영상은 모바일(아이폰)에서 지원되지 않는 비표준 코덱(VP9/AV1/ProRes 등)을 포함하고 있습니다. 모바일 정상 재생을 위해 표준 H.264 MP4 형식의 영상을 권장합니다.");
       }
 
       const storagePath = `users/public/covers/${Date.now()}_${file.name}`;
@@ -331,7 +332,7 @@ export function EditTripModal({
       setImgUrl(''); // 1개 미디어 전용: 기존 이미지 초기화
     } catch (error) {
       console.error("Cover video upload failed:", error);
-      alert("커버 영상 업로드에 실패했습니다.");
+      notify("커버 영상 업로드에 실패했습니다.");
     } finally {
       setVideoUploading(false);
       if (videoFileInputRef.current) videoFileInputRef.current.value = '';
@@ -340,7 +341,7 @@ export function EditTripModal({
 
   const uploadHeroVideoFile = async (file: File) => {
     if (file.size > 30 * 1024 * 1024) {
-      alert("모바일 로딩 지연을 방지하기 위해, 30MB 이하의 동영상 파일만 업로드할 수 있습니다.");
+      notify("모바일 로딩 지연을 방지하기 위해, 30MB 이하의 동영상 파일만 업로드할 수 있습니다.");
       return;
     }
 
@@ -348,7 +349,7 @@ export function EditTripModal({
     try {
       const inspection = await inspectAndPrepareVideo(file);
       if (!inspection.isCompatible) {
-        alert("경고: 선택하신 동영상은 모바일(아이폰)에서 지원되지 않는 비표준 코덱(VP9/AV1/ProRes 등)을 포함하고 있습니다. 모바일 정상 재생을 위해 표준 H.264 MP4 형식의 영상을 권장합니다.");
+        notify("경고: 선택하신 동영상은 모바일(아이폰)에서 지원되지 않는 비표준 코덱(VP9/AV1/ProRes 등)을 포함하고 있습니다. 모바일 정상 재생을 위해 표준 H.264 MP4 형식의 영상을 권장합니다.");
       }
 
       const storagePath = `users/public/covers/hero_${Date.now()}_${file.name}`;
@@ -357,7 +358,7 @@ export function EditTripModal({
       setHeroImgUrl(''); // 1개 미디어 전용: 기존 히어로 이미지 초기화
     } catch (error) {
       console.error("Hero cover video upload failed:", error);
-      alert("히어로 동영상 업로드에 실패했습니다.");
+      notify("히어로 동영상 업로드에 실패했습니다.");
     } finally {
       setHeroVideoUploading(false);
       if (heroVideoFileInputRef.current) heroVideoFileInputRef.current.value = '';
@@ -389,7 +390,7 @@ export function EditTripModal({
       if (file.type.startsWith('video/')) {
         await uploadHeroVideoFile(file);
       } else {
-        alert("동영상 파일만 업로드할 수 있습니다.");
+        notify("동영상 파일만 업로드할 수 있습니다.");
       }
     }
   };
@@ -407,7 +408,7 @@ export function EditTripModal({
       setHeroVideoUrl(''); // 1개 미디어 전용: 기존 히어로 비디오 초기화
     } catch (error) {
       console.error("Hero cover image upload failed:", error);
-      alert("히어로 커버 이미지 업로드에 실패했습니다.");
+      notify("히어로 커버 이미지 업로드에 실패했습니다.");
     } finally {
       setHeroUploading(false);
       if (heroFileInputRef.current) heroFileInputRef.current.value = '';
@@ -439,7 +440,7 @@ export function EditTripModal({
       if (file.type.startsWith('video/')) {
         await uploadVideoFile(file);
       } else {
-        alert("동영상 파일만 업로드할 수 있습니다.");
+        notify("동영상 파일만 업로드할 수 있습니다.");
       }
     }
   };
@@ -455,7 +456,7 @@ export function EditTripModal({
       setVideoUrl(''); // 1개 미디어 전용: 기존 비디오 초기화
     } catch (error) {
       console.error("Cover image upload failed:", error);
-      alert("커버 이미지 업로드에 실패했습니다.");
+      notify("커버 이미지 업로드에 실패했습니다.");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -473,7 +474,7 @@ export function EditTripModal({
       setHeroVideoUrl('');
     } catch (error) {
       console.error("Hero image upload failed:", error);
-      alert("히어로 이미지 업로드에 실패했습니다.");
+      notify("히어로 이미지 업로드에 실패했습니다.");
     } finally {
       setHeroUploading(false);
       if (heroFileInputRef.current) heroFileInputRef.current.value = '';
@@ -481,13 +482,13 @@ export function EditTripModal({
   };
 
   const handleCopyMedia = async (url: string, label: string) => {
-    if (!url) return alert(`복사할 ${label} 미디어가 없습니다.`);
+    if (!url) return notify(`복사할 ${label} 미디어가 없습니다.`);
     try {
       await navigator.clipboard.writeText(url);
-      alert(`${label} 미디어 URL이 클립보드에 복사되었습니다.`);
+      notify(`${label} 미디어 URL이 클립보드에 복사되었습니다.`);
     } catch (err) {
       console.error(err);
-      alert('클립보드 복사에 실패했습니다.');
+      notify('클립보드 복사에 실패했습니다.');
     }
   };
 
@@ -534,10 +535,10 @@ export function EditTripModal({
           return;
         }
       }
-      alert("클립보드에 복사된 이미지 또는 URL이 없습니다. 이미지를 복사한 후 다시 시도해 주세요.");
+      notify("클립보드에 복사된 이미지 또는 URL이 없습니다. 이미지를 복사한 후 다시 시도해 주세요.");
     } catch (err) {
       console.warn("Clipboard read error:", err);
-      alert("클립보드 이미지를 붙여넣으려면 키보드 단축키 Ctrl+V를 사용해주세요.");
+      notify("클립보드 이미지를 붙여넣으려면 키보드 단축키 Ctrl+V를 사용해주세요.");
     }
   };
 
@@ -598,7 +599,7 @@ export function EditTripModal({
           <button
             type="button"
             onClick={handleAttemptClose}
-            className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-black/60 dark:text-white/60 cursor-pointer"
+            className="tap-target p-1.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-black/60 dark:text-white/60 cursor-pointer"
             aria-label="Close edit modal"
           >
             <X className="w-5 h-5" />
@@ -623,7 +624,7 @@ export function EditTripModal({
                 type="button"
                 onClick={async () => {
                   if (isPlanJourney && onMoveToArchive && trip) {
-                    if (confirm('이 계획을 [LOG (여정)]으로 전환하시겠습니까?')) {
+                    if (await confirmDialog('이 계획을 [LOG (여정)]으로 전환하시겠습니까?')) {
                       await onMoveToArchive(trip);
                       onClose();
                     }
@@ -643,7 +644,7 @@ export function EditTripModal({
                 type="button"
                 onClick={async () => {
                   if (!isPlanJourney && onMoveToPlans && trip) {
-                    if (confirm('이 여정을 [PLAN (계획)]으로 전환하시겠습니까?')) {
+                    if (await confirmDialog('이 여정을 [PLAN (계획)]으로 전환하시겠습니까?')) {
                       await onMoveToPlans(trip);
                       onClose();
                     }
@@ -862,12 +863,12 @@ export function EditTripModal({
                     </span>
                     <button
                       type="button"
-                      onClick={() => {
-                        if (window.confirm(`정말 '${m}' 인원을 삭제하시겠습니까?`)) {
+                      onClick={async () => {
+                        if (await confirmDialog(`정말 '${m}' 인원을 삭제하시겠습니까?`)) {
                           setMembers(prev => prev.filter(x => x !== m));
                         }
                       }}
-                      className="text-red-500 hover:text-red-700 transition-colors font-bold text-meta ml-0.5 leading-none p-0.5"
+                      className="tap-target text-red-500 hover:text-red-700 transition-colors font-bold text-meta ml-0.5 leading-none p-0.5"
                       title="인원 삭제"
                     >
                       <X className="w-2.5 h-2.5" />
@@ -889,7 +890,7 @@ export function EditTripModal({
                     const cleanName = memberInput.trim();
                     if (cleanName) {
                       if (members.includes(cleanName)) {
-                        alert("이미 등록된 인원입니다.");
+                        notify("이미 등록된 인원입니다.");
                       } else {
                         setMembers(prev => [...prev, cleanName]);
                         setMemberInput('');
@@ -906,7 +907,7 @@ export function EditTripModal({
                   const cleanName = memberInput.trim();
                   if (cleanName) {
                     if (members.includes(cleanName)) {
-                      alert("이미 등록된 인원입니다.");
+                      notify("이미 등록된 인원입니다.");
                     } else {
                       setMembers(prev => [...prev, cleanName]);
                       setMemberInput('');
@@ -1036,7 +1037,7 @@ export function EditTripModal({
                     <button
                       type="button"
                       onClick={() => {
-                        if (!videoUrl && !imgUrl) return alert('복사할 MAIN 미디어가 없습니다.');
+                        if (!videoUrl && !imgUrl) return notify('복사할 MAIN 미디어가 없습니다.');
                         if (videoUrl) {
                           setHeroVideoUrl(videoUrl);
                           setHeroImgUrl('');
@@ -1044,7 +1045,7 @@ export function EditTripModal({
                           setHeroImgUrl(imgUrl);
                           setHeroVideoUrl('');
                         }
-                        alert('MAIN 미디어가 HERO로 복사되었습니다.');
+                        notify('MAIN 미디어가 HERO로 복사되었습니다.');
                       }}
                       className="px-2.5 bg-red-600 hover:bg-red-700 text-white text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                       title="MAIN 미디어를 HERO로 복사"
@@ -1077,7 +1078,7 @@ export function EditTripModal({
                           setVideoUrl(''); // 1개 미디어 전용
                         } catch (err) {
                           console.error(err);
-                          alert("이미지 업로드에 실패했습니다.");
+                          notify("이미지 업로드에 실패했습니다.");
                         } finally {
                           setUploading(false);
                         }
@@ -1218,7 +1219,7 @@ export function EditTripModal({
                     <button
                       type="button"
                       onClick={() => {
-                        if (!heroVideoUrl && !heroImgUrl) return alert('복사할 HERO 미디어가 없습니다.');
+                        if (!heroVideoUrl && !heroImgUrl) return notify('복사할 HERO 미디어가 없습니다.');
                         if (heroVideoUrl) {
                           setVideoUrl(heroVideoUrl);
                           setImgUrl('');
@@ -1226,7 +1227,7 @@ export function EditTripModal({
                           setImgUrl(heroImgUrl);
                           setVideoUrl('');
                         }
-                        alert('HERO 미디어가 MAIN으로 복사되었습니다.');
+                        notify('HERO 미디어가 MAIN으로 복사되었습니다.');
                       }}
                       className="px-2.5 bg-black text-white dark:bg-white dark:text-black text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                       title="HERO 미디어를 MAIN으로 복사"
@@ -1259,7 +1260,7 @@ export function EditTripModal({
                           setHeroVideoUrl(''); // 1개 미디어 전용
                         } catch (err) {
                           console.error(err);
-                          alert("히어로 이미지 업로드에 실패했습니다.");
+                          notify("히어로 이미지 업로드에 실패했습니다.");
                         } finally {
                           setHeroUploading(false);
                         }

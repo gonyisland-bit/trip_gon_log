@@ -20,6 +20,7 @@ import { compressImage } from '../utils/imageHelper';
 import { uploadFileToR2 } from '../utils/storageHelper';
 import { extractTextFromImageUrl } from '../utils/ocrHelper';
 import { auth } from '../firebase';
+import { notify } from '../utils/feedback';
 
 interface PocketHubPageProps {
   trips: Trip[];
@@ -323,7 +324,7 @@ export function PocketHubPage({
       setActionSuccessToast(null);
     } catch (err: any) {
       console.error('[PocketHub] Image scrap failed:', err);
-      alert('스크린샷 이미지 분석에 실패했습니다. 다시 시도해주세요.');
+      notify('스크린샷 이미지 분석에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsScraping(false);
     }
@@ -332,7 +333,7 @@ export function PocketHubPage({
   const handleQuickScrapSubmit = async (urlToScrap: string) => {
     const targetUrl = urlToScrap.trim();
     if (!targetUrl) {
-      alert('SNS 또는 웹 링크(Instagram, Threads, X, YouTube 등)를 입력해주세요.');
+      notify('SNS 또는 웹 링크(Instagram, Threads, X, YouTube 등)를 입력해주세요.');
       return;
     }
 
@@ -343,7 +344,7 @@ export function PocketHubPage({
       setIsScrapModalOpen(true);
     } catch (err: any) {
       console.error('[PocketHub] Scrap failed:', err);
-      alert(err.message || '링크 메타데이터를 파싱하지 못했습니다. 링크를 확인해주세요.');
+      notify(err.message || '링크 메타데이터를 파싱하지 못했습니다. 링크를 확인해주세요.');
     } finally {
       setIsScraping(false);
     }
@@ -609,7 +610,7 @@ export function PocketHubPage({
       setNewThumbnailUrl(url);
     } catch (err) {
       console.error('Failed to upload pocket thumbnail:', err);
-      alert('이미지 업로드에 실패했습니다. 다시 시도해주세요.');
+      notify('이미지 업로드에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsUploadingThumbnail(false);
       setIsDraggingThumbnail(false);
@@ -961,7 +962,7 @@ export function PocketHubPage({
   // Run OCR on current thumbnail image in modal
   const handleRunOcrInModal = async () => {
     if (!newThumbnailUrl) {
-      alert('분석할 썸네일 이미지가 없습니다. 이미지를 먼저 등록해주세요.');
+      notify('분석할 썸네일 이미지가 없습니다. 이미지를 먼저 등록해주세요.');
       return;
     }
 
@@ -1006,7 +1007,7 @@ export function PocketHubPage({
     }
 
     if (!finalTitle) {
-      alert('제목(장소명 또는 꿀팁 제목)을 입력해주세요.');
+      notify('제목(장소명 또는 꿀팁 제목)을 입력해주세요.');
       return;
     }
 
@@ -1253,7 +1254,7 @@ export function PocketHubPage({
                   <button
                     type="button"
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-1.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5 cursor-pointer"
+                    className="tap-target absolute right-1.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5 cursor-pointer"
                     title="검색어 지우기"
                   >
                     <X className="w-3 h-3" />
@@ -1286,7 +1287,7 @@ export function PocketHubPage({
               <button
                 type="button"
                 onClick={() => setIsReorderMode(prev => !prev)}
-                className={`p-1.5 border rounded-none transition-colors cursor-pointer shrink-0 ${
+                className={`tap-target p-1.5 border rounded-none transition-colors cursor-pointer shrink-0 ${
                   isReorderMode
                     ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
                     : 'border-black/20 dark:border-white/20 text-black/60 dark:text-white/60 hover:border-black dark:hover:border-white'
@@ -1593,7 +1594,7 @@ export function PocketHubPage({
                           <button
                             type="button"
                             onClick={(e) => handleToggleSelectSpot(spot.id, e)}
-                            className={`w-7 h-7 rounded-full border flex items-center justify-center transition-all cursor-pointer shadow-sm ${
+                            className={`tap-target w-7 h-7 rounded-full border flex items-center justify-center transition-all cursor-pointer shadow-sm ${
                               isSelected
                                 ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
                                 : 'bg-white/90 dark:bg-black/90 border-black/20 dark:border-white/20 text-transparent hover:border-black dark:hover:border-white'
@@ -1607,7 +1608,7 @@ export function PocketHubPage({
                             <button
                               type="button"
                               onClick={(e) => handleToggleFavorite(spot.id, e)}
-                              className="w-7 h-7 rounded-full bg-white/90 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 flex items-center justify-center text-black/60 dark:text-white/60 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer shadow-xs"
+                              className="tap-target w-7 h-7 rounded-full bg-white/90 dark:bg-black/85 backdrop-blur-md border border-black/10 dark:border-white/15 flex items-center justify-center text-black/60 dark:text-white/60 hover:text-amber-500 dark:hover:text-amber-400 transition-colors cursor-pointer shadow-xs"
                               title={spot.isFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
                             >
                               <Star className={`w-3.5 h-3.5 ${spot.isFavorite ? 'text-amber-400 fill-amber-400' : ''}`} />
@@ -1691,7 +1692,7 @@ export function PocketHubPage({
                           <button
                             type="button"
                             onClick={() => setSpotToUseInTrip(spot)}
-                            className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full border border-black/10 dark:border-white/15 flex items-center justify-center text-black/60 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30 transition-colors cursor-pointer shrink-0"
+                            className="tap-target w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full border border-black/10 dark:border-white/15 flex items-center justify-center text-black/60 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30 transition-colors cursor-pointer shrink-0"
                             title="여정 타임라인에 추가"
                           >
                             <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
@@ -1820,7 +1821,7 @@ export function PocketHubPage({
               </div>
               <button
                 onClick={() => setSpotToUseInTrip(null)}
-                className="text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white"
+                className="tap-target text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1912,7 +1913,7 @@ export function PocketHubPage({
               <button
                 type="button"
                 onClick={handleCloseModal}
-                className="text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
+                className="tap-target text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>

@@ -359,7 +359,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess, a
         {/* Close Button */}
         <button 
           onClick={onClose}
-          className="absolute top-5 right-5 p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+          className="tap-target absolute top-5 right-5 p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>

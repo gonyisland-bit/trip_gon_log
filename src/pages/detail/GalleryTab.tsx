@@ -61,7 +61,7 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
                         e.stopPropagation();
                         handleRemoveGalleryImage(imgItem.url, e);
                       }}
-                      className={`absolute top-2 right-2 p-1.5 bg-black/75 hover:bg-red-600 text-white transition-colors z-10 rounded-none ${isPhotoActive ? 'opacity-100' : 'opacity-0 group-hover/gallery:opacity-100'}`}
+                      className={`tap-target absolute top-2 right-2 p-1.5 bg-black/75 hover:bg-red-600 text-white transition-colors z-10 rounded-none ${isPhotoActive ? 'opacity-100' : 'opacity-0 group-hover/gallery:opacity-100'}`}
                       title="Remove Image"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -79,7 +79,7 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
                           setExpandedItemId(imgItem.id);
                         }
                       }}
-                      className={`absolute top-2 ${isLoggedIn ? 'right-9' : 'right-2'} p-1.5 transition-colors z-10 rounded-none ${!imgItem.excludeFromMap ? 'bg-red-500 hover:bg-red-600 text-white opacity-100' : (isPhotoActive ? 'bg-black/75 hover:bg-black text-white/60 hover:text-white opacity-100' : 'bg-black/75 hover:bg-black text-white/60 hover:text-white opacity-0 group-hover/gallery:opacity-100 focus:opacity-100')}`}
+                      className={`tap-target absolute top-2 ${isLoggedIn ? 'right-9' : 'right-2'} p-1.5 transition-colors z-10 rounded-none ${!imgItem.excludeFromMap ? 'bg-red-500 hover:bg-red-600 text-white opacity-100' : (isPhotoActive ? 'bg-black/75 hover:bg-black text-white/60 hover:text-white opacity-100' : 'bg-black/75 hover:bg-black text-white/60 hover:text-white opacity-0 group-hover/gallery:opacity-100 focus:opacity-100')}`}
                       title={imgItem.excludeFromMap ? "지도에 핀 표시하기" : "지도에서 핀 숨기기"}
                     >
                       <MapPin className="w-3.5 h-3.5" />
@@ -94,7 +94,7 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
                       setLightboxIndex(globalIdx);
                       setIsLightboxOpen(true);
                     }}
-                    className={`absolute bottom-2 right-2 p-1.5 bg-black/75 hover:bg-black text-white transition-colors z-10 rounded-none ${isPhotoActive ? 'opacity-100' : 'opacity-0 group-hover/gallery:opacity-100 focus:opacity-100'}`}
+                    className={`tap-target absolute bottom-2 right-2 p-1.5 bg-black/75 hover:bg-black text-white transition-colors z-10 rounded-none ${isPhotoActive ? 'opacity-100' : 'opacity-0 group-hover/gallery:opacity-100 focus:opacity-100'}`}
                     title="전체화면"
                   >
                     <Maximize2 className="w-3.5 h-3.5" />
@@ -175,7 +175,7 @@ export function GalleryTab({ s }: { s: JourneyDetailState }) {
                                 e.stopPropagation();
                                 handleJumpToTimelineItem(targetItemId, targetDate);
                               }}
-                              className="p-1 transition-colors cursor-pointer bg-black/5 dark:bg-white/5 hover:bg-black hover:text-white dark:hover:bg-black dark:hover:text-white text-black/60 dark:text-white/60"
+                              className="tap-target p-1 transition-colors cursor-pointer bg-black/5 dark:bg-white/5 hover:bg-black hover:text-white dark:hover:bg-black dark:hover:text-white text-black/60 dark:text-white/60"
                               title="일정으로 이동"
                             >
                               <ArrowRight className="w-3 h-3" />

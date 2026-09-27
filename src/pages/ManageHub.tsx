@@ -13,6 +13,7 @@ import { CalendarMode } from './manage/CalendarMode';
 import { MagazineMode } from './manage/MagazineMode';
 import { UtilMode } from './manage/UtilMode';
 import { UsersMode } from './manage/UsersMode';
+import { notify } from '../utils/feedback';
 
 export function ManageHubPage(props: ManageHubPageProps) {
   const s = useManageHubState(props);
@@ -49,7 +50,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
             onClick={() => {
               executeWithGuard(() => navigateSafely(getReturnView()));
             }}
-            className="p-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer rounded-none"
+            className="tap-target p-1.5 border border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer rounded-none"
             title="돌아가기"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -181,7 +182,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
               <button 
                 type="button" 
                 onClick={() => { setIsDelegatingModalOpen(false); setDelegatingUser(null); }} 
-                className="p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer"
+                className="tap-target p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -272,7 +273,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
           onClick={() => {
             executeWithGuard(() => navigateSafely(getReturnView()));
           }}
-          className="w-12 h-12 rounded-full flex items-center justify-center shadow-2xl bg-white dark:bg-[#1a1a1a] text-black dark:text-white border border-black/15 dark:border-white/15 hover:scale-110 active:scale-95 transition-all cursor-pointer"
+          className="tap-target w-12 h-12 rounded-full flex items-center justify-center shadow-2xl bg-white dark:bg-[#1a1a1a] text-black dark:text-white border border-black/15 dark:border-white/15 hover:scale-110 active:scale-95 transition-all cursor-pointer"
           title="뷰 모드로 이동"
         >
           <Eye className="w-5 h-5" />
@@ -285,7 +286,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
         onClick={scrollToTop}
         aria-label="맨 위로 이동"
         title="맨 위로 이동 (TOP)"
-        className={`fixed bottom-6 right-6 z-[600] w-12 h-12 rounded-full flex items-center justify-center shadow-2xl bg-black text-white dark:bg-white dark:text-black border border-white/20 dark:border-black/20 transition-all duration-300 cursor-pointer select-none group ${
+        className={`tap-target fixed bottom-6 right-6 z-[600] w-12 h-12 rounded-full flex items-center justify-center shadow-2xl bg-black text-white dark:bg-white dark:text-black border border-white/20 dark:border-black/20 transition-all duration-300 cursor-pointer select-none group ${
           showScrollTop
             ? 'opacity-100 translate-y-0 pointer-events-auto hover:scale-110 active:scale-95'
             : 'opacity-0 translate-y-4 pointer-events-none'
@@ -389,7 +390,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
               <button
                 type="button"
                 onClick={() => setShowQuickPhotoPicker(false)}
-                className="p-1 hover:bg-black/10 dark:hover:bg-white/10 text-black dark:text-white cursor-pointer"
+                className="tap-target p-1 hover:bg-black/10 dark:hover:bg-white/10 text-black dark:text-white cursor-pointer"
                 title="닫기"
               >
                 <X className="w-4 h-4" />
@@ -448,7 +449,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                         key={`quick-picker-${photoItem.id || pIdx}-${pIdx}`}
                         onClick={() => {
                           if (isAttached) {
-                            alert("이미 현재 매거진 섹션에 등록된 사진입니다.");
+                            notify("이미 현재 매거진 섹션에 등록된 사진입니다.");
                             return;
                           }
                           handleAddItemToCurrentSection(photoItem);
@@ -557,7 +558,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
               <button 
                 type="button" 
                 onClick={() => { setIsPresetModalOpen(false); setEditingPreset(null); }} 
-                className="p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer"
+                className="tap-target p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -717,7 +718,7 @@ export function ManageHubPage(props: ManageHubPageProps) {
                   매거진 섹션 복구 (RESTORE MAGAZINE SECTIONS)
                 </h3>
               </div>
-              <button type="button" onClick={() => setShowRestoreModal(false)} className="p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer">
+              <button type="button" onClick={() => setShowRestoreModal(false)} className="tap-target p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>

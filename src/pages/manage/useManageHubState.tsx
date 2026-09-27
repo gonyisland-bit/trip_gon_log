@@ -28,6 +28,7 @@ import {
 import {
   PresetTripPlan, getSavedPresets, restoreDefaultPresets, saveAllPresets, WORLD_COUNTRIES
 } from '../../data/worldDestinations';
+import { notify, confirmDialog } from '../../utils/feedback';
 
 export interface ManageHubPageProps {
   trips: Trip[];
@@ -343,7 +344,7 @@ export function useManageHubState(props: ManageHubPageProps) {
 
     const exists = calendarWeatherCities.some(c => c.nameEn.toUpperCase() === newCity.nameEn.toUpperCase());
     if (exists) {
-      alert('이미 등록된 도시입니다.');
+      notify('이미 등록된 도시입니다.');
       return;
     }
     const updated = [...calendarWeatherCities, newCity];
@@ -370,7 +371,7 @@ export function useManageHubState(props: ManageHubPageProps) {
 
   const handleRemoveCalendarWeatherCity = (cityEn: string) => {
     if (calendarWeatherCities.length <= 1) {
-      alert('최소 1개 이상의 날씨 지역이 필요합니다.');
+      notify('최소 1개 이상의 날씨 지역이 필요합니다.');
       return;
     }
     const updated = calendarWeatherCities.filter(c => c.nameEn.toUpperCase() !== cityEn.toUpperCase());
@@ -388,7 +389,7 @@ export function useManageHubState(props: ManageHubPageProps) {
       setTimeout(() => setCalendarSaveSuccess(false), 2000);
     } catch (err) {
       console.error('Failed to save calendar weather cities:', err);
-      alert('캘린더 날씨 도시 저장 중 오류가 발생했습니다.');
+      notify('캘린더 날씨 도시 저장 중 오류가 발생했습니다.');
     } finally {
       setIsSavingCalendar(false);
     }
@@ -454,7 +455,7 @@ export function useManageHubState(props: ManageHubPageProps) {
     const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/i.test(file.name);
 
     if (!isImage && !isVideo) {
-      alert('이미지 또는 동영상 파일만 업로드 가능합니다.');
+      notify('이미지 또는 동영상 파일만 업로드 가능합니다.');
       return;
     }
 
@@ -482,7 +483,7 @@ export function useManageHubState(props: ManageHubPageProps) {
       }
     } catch (err) {
       console.error('Failed to upload landing hero media:', err);
-      alert('게스트 랜딩 미디어 업로드에 실패했습니다.');
+      notify('게스트 랜딩 미디어 업로드에 실패했습니다.');
     } finally {
       setIsUploadingLandingHero(false);
     }
@@ -493,7 +494,7 @@ export function useManageHubState(props: ManageHubPageProps) {
     const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/i.test(file.name);
 
     if (!isImage && !isVideo) {
-      alert('이미지 또는 동영상 파일만 업로드 가능합니다.');
+      notify('이미지 또는 동영상 파일만 업로드 가능합니다.');
       return;
     }
 
@@ -520,7 +521,7 @@ export function useManageHubState(props: ManageHubPageProps) {
       }
     } catch (err) {
       console.error('Failed to replace landing hero media:', err);
-      alert('게스트 랜딩 미디어 교체에 실패했습니다.');
+      notify('게스트 랜딩 미디어 교체에 실패했습니다.');
     } finally {
       setReplacingLandingHeroIndex(null);
       setDragOverLandingHeroIndex(null);
@@ -699,7 +700,7 @@ export function useManageHubState(props: ManageHubPageProps) {
   const handleUpdateAdminEmail = async () => {
     const trimmed = newAdminEmailInput.trim().toLowerCase();
     if (!trimmed || !trimmed.includes('@')) {
-      alert("유효한 이메일 주소를 입력해 주세요.");
+      notify("유효한 이메일 주소를 입력해 주세요.");
       return;
     }
     setAdminEmailSaving(true);
@@ -716,7 +717,7 @@ export function useManageHubState(props: ManageHubPageProps) {
       setTimeout(() => setUserActionToast(null), 4000);
     } catch (err: any) {
       console.error("Failed to update admin email:", err);
-      alert(`관리자 이메일 저장 실패: ${err?.message || err}`);
+      notify(`관리자 이메일 저장 실패: ${err?.message || err}`);
     } finally {
       setAdminEmailSaving(false);
     }
@@ -734,12 +735,12 @@ export function useManageHubState(props: ManageHubPageProps) {
       setTimeout(() => setUserActionToast(null), 2500);
     } catch (err) {
       console.error('Failed to approve user:', err);
-      alert('승인 처리 중 오류가 발생했습니다.');
+      notify('승인 처리 중 오류가 발생했습니다.');
     }
   };
 
   const handleRejectUser = async (user: UserProfile) => {
-    if (!window.confirm(`[${user.lastName} ${user.firstName}] 님의 가입 신청을 거절하시겠습니까?`)) return;
+    if (!await confirmDialog(`[${user.lastName} ${user.firstName}] 님의 가입 신청을 거절하시겠습니까?`)) return;
     try {
       await Promise.allSettled([
         updateDoc(doc(db, 'users', user.uid), { status: 'rejected', rejectedAt: Date.now() }),
@@ -751,17 +752,17 @@ export function useManageHubState(props: ManageHubPageProps) {
       setTimeout(() => setUserActionToast(null), 2500);
     } catch (err) {
       console.error('Failed to reject user:', err);
-      alert('거절 처리 중 오류가 발생했습니다.');
+      notify('거절 처리 중 오류가 발생했습니다.');
     }
   };
 
   const handleDeleteUserByAdmin = async (user: UserProfile) => {
     if (isTargetAdminAccount(user.email, user.role)) {
-      alert("관리자 계정은 삭제할 수 없습니다.");
+      notify("관리자 계정은 삭제할 수 없습니다.");
       return;
     }
     const fullName = `${user.lastName} ${user.firstName}`.trim() || user.username || user.email;
-    if (!window.confirm(`정말로 회원 [${fullName} (${user.email})] 계정을 영구 삭제하시겠습니까?\n모든 프로필 데이터가 완전히 제거됩니다.`)) return;
+    if (!await confirmDialog(`정말로 회원 [${fullName} (${user.email})] 계정을 영구 삭제하시겠습니까?\n모든 프로필 데이터가 완전히 제거됩니다.`)) return;
 
     try {
       await Promise.allSettled([
@@ -774,7 +775,7 @@ export function useManageHubState(props: ManageHubPageProps) {
       setTimeout(() => setUserActionToast(null), 3000);
     } catch (err: any) {
       console.error('Failed to delete user:', err);
-      alert(`회원 삭제 중 오류가 발생했습니다: ${err?.message || err}`);
+      notify(`회원 삭제 중 오류가 발생했습니다: ${err?.message || err}`);
     }
   };
 
@@ -792,7 +793,7 @@ export function useManageHubState(props: ManageHubPageProps) {
       setTimeout(() => setUserActionToast(null), 3000);
     } catch (err: any) {
       console.error('Failed to send password reset email:', err);
-      alert(`재설정 메일 발송 중 오류가 발생했습니다: ${err?.message || err}`);
+      notify(`재설정 메일 발송 중 오류가 발생했습니다: ${err?.message || err}`);
     }
   };
 
@@ -818,7 +819,7 @@ export function useManageHubState(props: ManageHubPageProps) {
       setTimeout(() => setUserActionToast(null), 2500);
     } catch (err) {
       console.error('Failed to update permission:', err);
-      alert('권한 변경 중 오류가 발생했습니다.');
+      notify('권한 변경 중 오류가 발생했습니다.');
     }
   };
 
@@ -841,7 +842,7 @@ export function useManageHubState(props: ManageHubPageProps) {
       setTimeout(() => setUserActionToast(null), 2500);
     } catch (err) {
       console.error('Failed to update user:', err);
-      alert('유저 정보 수정에 실패했습니다.');
+      notify('유저 정보 수정에 실패했습니다.');
     }
   };
 
@@ -961,7 +962,7 @@ export function useManageHubState(props: ManageHubPageProps) {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         if (!file.type.startsWith('audio/') && !/\.(mp3|m4a|wav|aac|ogg)$/i.test(file.name)) {
-          alert(`${file.name}은(는) 지원되지 않는 오디오 파일 형식입니다.`);
+          notify(`${file.name}은(는) 지원되지 않는 오디오 파일 형식입니다.`);
           continue;
         }
 
@@ -989,7 +990,7 @@ export function useManageHubState(props: ManageHubPageProps) {
       }
     } catch (err) {
       console.error('Failed to upload BGM:', err);
-      alert('음원 업로드 중 오류가 발생했습니다.');
+      notify('음원 업로드 중 오류가 발생했습니다.');
     } finally {
       setIsUploadingBgm(false);
       if (bgmFileInputRef.current) bgmFileInputRef.current.value = '';
@@ -1209,12 +1210,12 @@ export function useManageHubState(props: ManageHubPageProps) {
     }
     if (onUpdateMagazineSections) onUpdateMagazineSections(reordered);
     setShowRestoreModal(false);
-    alert(`기본 매거진 홈 및 추천 섹션 ${reordered.length - sectionsList.length}개가 복구되었습니다.\n"SAVE MAGAZINE SETTINGS" 또는 "SAVE ALL" 버튼을 눌러 영구 저장하세요.`);
+    notify(`기본 매거진 홈 및 추천 섹션 ${reordered.length - sectionsList.length}개가 복구되었습니다.\n"SAVE MAGAZINE SETTINGS" 또는 "SAVE ALL" 버튼을 눌러 영구 저장하세요.`);
   };
 
-  const handleApplyBackup = (sections: MagazineSection[]) => {
+  const handleApplyBackup = async (sections: MagazineSection[]) => {
     if (!sections || sections.length === 0) return;
-    if (!confirm(`선택한 백업(${sections.length}개 섹션)으로 복원하시겠습니까?\n현재 변경사항은 실행 취소(Ctrl+Z)로 되돌릴 수 있습니다.`)) return;
+    if (!await confirmDialog(`선택한 백업(${sections.length}개 섹션)으로 복원하시겠습니까?\n현재 변경사항은 실행 취소(Ctrl+Z)로 되돌릴 수 있습니다.`)) return;
     pushMagazineSnapshot();
     const reordered = sections.map((s, idx) => ({ ...s, order: idx }));
     setSectionsList(reordered);
@@ -1223,7 +1224,7 @@ export function useManageHubState(props: ManageHubPageProps) {
     }
     if (onUpdateMagazineSections) onUpdateMagazineSections(reordered);
     setShowRestoreModal(false);
-    alert(`백업 데이터(${reordered.length}개 섹션)가 복원되었습니다.\n"SAVE MAGAZINE SETTINGS" 또는 "SAVE ALL" 버튼을 눌러 최종 저장하세요.`);
+    notify(`백업 데이터(${reordered.length}개 섹션)가 복원되었습니다.\n"SAVE MAGAZINE SETTINGS" 또는 "SAVE ALL" 버튼을 눌러 최종 저장하세요.`);
   };
 
   // Firestore magazine sections direct diagnostic state
@@ -1791,7 +1792,7 @@ export function useManageHubState(props: ManageHubPageProps) {
       return report;
     } catch (err: any) {
       console.error('Diagnostic scan error:', err);
-      alert(`데이터베이스 진단 스캔 중 오류가 발생했습니다:\n${err?.message || err}`);
+      notify(`데이터베이스 진단 스캔 중 오류가 발생했습니다:\n${err?.message || err}`);
       return null;
     } finally {
       setIsScanning(false);
@@ -1801,7 +1802,7 @@ export function useManageHubState(props: ManageHubPageProps) {
   const handleExecuteCleanup = async (reportParam?: DiagnosticReport, skipConfirm = false) => {
     const targetReport = reportParam || diagReport;
     if (!targetReport) return;
-    if (!skipConfirm && !confirm('안전 최적화 및 찌꺼기 정리를 실행하시겠습니까?\n\n[안전 보장 원칙]\n- 현재 등록된 모든 활성 여정 및 타임라인 데이터는 100% 안전하게 온전히 보존됩니다.\n- 이미 삭제된 과거 여정의 고아(Orphaned) 문서와 폐기된 subtitle 속성만 선별 정리됩니다.\n- 매거진은 원본 타임라인 데이터를 기준으로 완벽하게 최적화 및 동기화됩니다.')) {
+    if (!skipConfirm && !await confirmDialog('안전 최적화 및 찌꺼기 정리를 실행하시겠습니까?\n\n[안전 보장 원칙]\n- 현재 등록된 모든 활성 여정 및 타임라인 데이터는 100% 안전하게 온전히 보존됩니다.\n- 이미 삭제된 과거 여정의 고아(Orphaned) 문서와 폐기된 subtitle 속성만 선별 정리됩니다.\n- 매거진은 원본 타임라인 데이터를 기준으로 완벽하게 최적화 및 동기화됩니다.')) {
       return;
     }
 
@@ -1975,7 +1976,7 @@ export function useManageHubState(props: ManageHubPageProps) {
       await handleScanCleanup();
     } catch (err: any) {
       console.error('Execute cleanup error:', err);
-      alert(`정리 작업 중 오류가 발생했습니다:\n${err?.message || err}`);
+      notify(`정리 작업 중 오류가 발생했습니다:\n${err?.message || err}`);
     } finally {
       setIsCleaning(false);
     }
@@ -2081,7 +2082,7 @@ export function useManageHubState(props: ManageHubPageProps) {
 
     const exists = widgetCities.some(c => c.nameEn.toUpperCase() === newCity.nameEn.toUpperCase());
     if (exists) {
-      alert('이미 등록된 도시입니다.');
+      notify('이미 등록된 도시입니다.');
       return;
     }
     setWidgetCities(prev => [...prev, newCity]);
@@ -2566,7 +2567,7 @@ export function useManageHubState(props: ManageHubPageProps) {
 
   // Order shift handlers (▲ / ▼)
   const handleMoveOrder = (index: number, direction: 'up' | 'down') => {
-    if (!isLoggedIn) return alert('로그인 후 순서를 변경할 수 있습니다.');
+    if (!isLoggedIn) return notify('로그인 후 순서를 변경할 수 있습니다.');
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= localJourneys.length) return;
 
@@ -2604,7 +2605,7 @@ export function useManageHubState(props: ManageHubPageProps) {
   // Save journey handler
   const handleSaveJourney = async (showModal: boolean = true) => {
     if (!selectedJourney) return;
-    if (!isLoggedIn) return alert('로그인 후 저장 가능합니다.');
+    if (!isLoggedIn) return notify('로그인 후 저장 가능합니다.');
 
     setIsSavingTrip(true);
     try {
@@ -2670,7 +2671,7 @@ export function useManageHubState(props: ManageHubPageProps) {
       setTimeout(() => setTripSaveSuccess(false), 2000);
     } catch (err) {
       console.error('Error saving trip:', err);
-      alert('여정 저장에 실패했습니다.');
+      notify('여정 저장에 실패했습니다.');
     } finally {
       setIsSavingTrip(false);
     }
@@ -2698,7 +2699,7 @@ export function useManageHubState(props: ManageHubPageProps) {
       }
     } catch (err) {
       console.error('File upload failed:', err);
-      alert('파일 업로드에 실패했습니다.');
+      notify('파일 업로드에 실패했습니다.');
     } finally {
       setIsUploading(false);
     }
@@ -2799,7 +2800,7 @@ export function useManageHubState(props: ManageHubPageProps) {
       setTimeout(() => setHomeSaveSuccess(false), 2000);
     } catch (err) {
       console.error('Failed to save home settings:', err);
-      alert('홈 설정 저장에 실패했습니다.');
+      notify('홈 설정 저장에 실패했습니다.');
     } finally {
       setIsSavingHome(false);
     }
@@ -3050,7 +3051,7 @@ export function useManageHubState(props: ManageHubPageProps) {
   // Section Management Handlers
   const handleAddSection = async () => {
     if (!newSectionTitle.trim()) {
-      alert('섹션 제목을 입력해주세요.');
+      notify('섹션 제목을 입력해주세요.');
       return;
     }
     pushMagazineSnapshot();
@@ -3087,7 +3088,7 @@ export function useManageHubState(props: ManageHubPageProps) {
   const handleAutoGenerateSectionFromTrip = async (tripId: number) => {
     const targetTrip = localJourneys.find(j => Number(j.id) === Number(tripId)) || trips.find(t => Number(t.id) === Number(tripId)) || plans.find(p => Number(p.id) === Number(tripId));
     if (!targetTrip) {
-      alert('여정을 찾을 수 없습니다.');
+      notify('여정을 찾을 수 없습니다.');
       return;
     }
 
@@ -3314,11 +3315,11 @@ export function useManageHubState(props: ManageHubPageProps) {
 
   const handleDeleteSection = async (sectionId: string) => {
     if (sectionsList.length <= 1) {
-      alert('최소 1개의 매거진 섹션은 유지되어야 합니다.');
+      notify('최소 1개의 매거진 섹션은 유지되어야 합니다.');
       return;
     }
     const target = sectionsList.find(s => s.id === sectionId);
-    if (!window.confirm(`'${target?.title || '선택한'}' 매거진 섹션을 삭제하시겠습니까?\n\n삭제된 섹션은 휴지통(TRASH) 탭에서 언제든 복원할 수 있습니다.`)) {
+    if (!await confirmDialog(`'${target?.title || '선택한'}' 매거진 섹션을 삭제하시겠습니까?\n\n삭제된 섹션은 휴지통(TRASH) 탭에서 언제든 복원할 수 있습니다.`)) {
       return;
     }
 
@@ -3375,7 +3376,7 @@ export function useManageHubState(props: ManageHubPageProps) {
       (m.img && item.img && (m.img === item.img || m.img.split('?')[0] === item.img.split('?')[0]))
     );
     if (isDuplicate) {
-      alert("이미 현재 매거진 섹션에 등록된 이미지입니다.");
+      notify("이미 현재 매거진 섹션에 등록된 이미지입니다.");
       return;
     }
 
@@ -3634,17 +3635,17 @@ export function useManageHubState(props: ManageHubPageProps) {
       } catch (_) {}
 
       if (addedCount > 0 && changesCount > 0) {
-        alert(`타임라인 기준 매거진 동기화가 완료되었습니다.\n(${changesCount}개 기존 항목 최신화 및 ${addedCount}개 신규 타임라인 항목 추가/시간순 정렬 완료)`);
+        notify(`타임라인 기준 매거진 동기화가 완료되었습니다.\n(${changesCount}개 기존 항목 최신화 및 ${addedCount}개 신규 타임라인 항목 추가/시간순 정렬 완료)`);
       } else if (addedCount > 0) {
-        alert(`타임라인 기준 매거진 동기화가 완료되었습니다.\n(${addedCount}개 신규 타임라인 항목 추가 및 시간순 정렬 완료)`);
+        notify(`타임라인 기준 매거진 동기화가 완료되었습니다.\n(${addedCount}개 신규 타임라인 항목 추가 및 시간순 정렬 완료)`);
       } else if (changesCount > 0) {
-        alert(`타임라인 기준 매거진 동기화가 완료되었습니다.\n(${changesCount}개 항목 최신화 완료)`);
+        notify(`타임라인 기준 매거진 동기화가 완료되었습니다.\n(${changesCount}개 항목 최신화 완료)`);
       } else {
-        alert('모든 매거진 카드가 이미 타임라인 최신 데이터와 일치합니다.');
+        notify('모든 매거진 카드가 이미 타임라인 최신 데이터와 일치합니다.');
       }
     } catch (err: any) {
       console.error('Failed to sync magazine with timeline:', err);
-      alert('타임라인 동기화 중 오류가 발생했습니다: ' + (err?.message || err));
+      notify('타임라인 동기화 중 오류가 발생했습니다: ' + (err?.message || err));
     } finally {
       setIsSyncingMagazine(false);
     }
@@ -3677,7 +3678,7 @@ export function useManageHubState(props: ManageHubPageProps) {
       setTimeout(() => setMagazineSaveSuccess(false), 2000);
     } catch (err) {
       console.error('Failed to save magazine settings:', err);
-      alert('매거진 설정 저장에 실패했습니다.');
+      notify('매거진 설정 저장에 실패했습니다.');
     } finally {
       setIsSavingMagazine(false);
     }
@@ -3970,7 +3971,7 @@ export function useManageHubState(props: ManageHubPageProps) {
       }, 2000);
     } catch (err) {
       console.error('Failed to save all management changes:', err);
-      alert('설정 저장 중 오류가 발생했습니다.');
+      notify('설정 저장 중 오류가 발생했습니다.');
       throw err;
     } finally {
       setIsSavingAll(false);
@@ -4038,7 +4039,7 @@ export function useManageHubState(props: ManageHubPageProps) {
       }
     } catch (err: any) {
       console.error('Failed to load Firestore magazine sections:', err);
-      alert('Firestore 매거진 섹션 로드 실패: ' + (err?.message || err));
+      notify('Firestore 매거진 섹션 로드 실패: ' + (err?.message || err));
     } finally {
       setIsLoadingFirestoreMag(false);
     }
@@ -4047,12 +4048,12 @@ export function useManageHubState(props: ManageHubPageProps) {
   // Force restore: load Firestore data into current sectionsList and save
   const handleForceRestoreSectionsFromFirestore = () => {
     if (!firestoreMagSections || firestoreMagSections.length === 0) {
-      alert('Firestore에 복구할 데이터가 없습니다. 먼저 진단 스캔을 실행해주세요.');
+      notify('Firestore에 복구할 데이터가 없습니다. 먼저 진단 스캔을 실행해주세요.');
       return;
     }
     setSectionsList(firestoreMagSections);
     setActiveMagSectionId(firestoreMagSections[0]?.id || 'main');
-    alert(`✅ Firestore에서 ${firestoreMagSections.length}개 섹션을 현재 편집기로 불러왔습니다.\n매거진 모드로 이동 후 "SAVE MAGAZINE SETTINGS" 버튼으로 최종 저장하세요.`);
+    notify(`✅ Firestore에서 ${firestoreMagSections.length}개 섹션을 현재 편집기로 불러왔습니다.\n매거진 모드로 이동 후 "SAVE MAGAZINE SETTINGS" 버튼으로 최종 저장하세요.`);
     setActiveMode('MAGAZINE');
   };
 

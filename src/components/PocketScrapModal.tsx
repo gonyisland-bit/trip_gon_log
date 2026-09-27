@@ -13,6 +13,7 @@ import { PocketCategory, SpotPocketItem, SpotPocketPlatform } from '../types';
 import { compressImage } from '../utils/imageHelper';
 import { uploadFileToR2 } from '../utils/storageHelper';
 import { extractTextFromImageUrl } from '../utils/ocrHelper';
+import { notify } from '../utils/feedback';
 
 interface PocketScrapModalProps {
   isOpen: boolean;
@@ -205,7 +206,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
   // Fetch metadata directly from URL inside modal
   const handleFetchUrl = async () => {
     if (!sourceUrlInput.trim() || !/^https?:\/\//i.test(sourceUrlInput.trim())) {
-      alert('유효한 웹/SNS 링크 URL(https://...)을 입력해주세요.');
+      notify('유효한 웹/SNS 링크 URL(https://...)을 입력해주세요.');
       return;
     }
     try {
@@ -237,7 +238,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
       }
     } catch (err) {
       console.warn('[PocketScrapModal] Fetch URL error:', err);
-      alert('링크 정보를 불러오는데 실패했습니다. 스크린샷 이미지를 붙여넣어주세요.');
+      notify('링크 정보를 불러오는데 실패했습니다. 스크린샷 이미지를 붙여넣어주세요.');
     } finally {
       setIsFetchingUrl(false);
     }
@@ -255,7 +256,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
       await runOcrForImage(publicUrl, true);
     } catch (err) {
       console.error('[PocketScrapModal] Image upload/OCR failed:', err);
-      alert('이미지 업로드 및 글씨 인식에 실패했습니다.');
+      notify('이미지 업로드 및 글씨 인식에 실패했습니다.');
     } finally {
       setIsUploading(false);
     }
@@ -303,7 +304,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
   // OCR handler: Extract text from selected thumbnail image
   const handleRunOcr = async (autoApply: boolean = false) => {
     if (!selectedImage) {
-      alert('분석할 이미지가 없습니다.');
+      notify('분석할 이미지가 없습니다.');
       return;
     }
     await runOcrForImage(selectedImage, autoApply, true);
@@ -351,7 +352,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
-      alert('장소명(제목)을 입력해주세요.');
+      notify('장소명(제목)을 입력해주세요.');
       return;
     }
 
@@ -377,7 +378,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
       onClose();
     } catch (err) {
       console.error('[PocketScrapModal] Save failed:', err);
-      alert('포켓 보관 중 오류가 발생했습니다.');
+      notify('포켓 보관 중 오류가 발생했습니다.');
     } finally {
       setIsSubmitting(false);
     }
@@ -404,7 +405,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
           <button
             type="button"
             onClick={handleAttemptClose}
-            className="p-1.5 text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer"
+            className="tap-target p-1.5 text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer"
             title="닫기 (ESC)"
           >
             <X className="w-4 h-4" />
@@ -842,7 +843,7 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
               <button
                 type="button"
                 onClick={() => setIsLightboxOpen(false)}
-                className="p-1.5 hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer"
+                className="tap-target p-1.5 hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer"
                 title="닫기 (ESC)"
               >
                 <X className="w-5 h-5" />

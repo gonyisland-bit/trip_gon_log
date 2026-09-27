@@ -8,6 +8,7 @@ import { getEffectiveImageUrl, uploadFileToR2 } from '../../utils/storageHelper'
 import { compressImage } from '../../utils/imageHelper';
 import { inspectAndPrepareVideo } from '../../utils/videoHelper';
 import type { ManageHubState } from './useManageHubState';
+import { notify } from '../../utils/feedback';
 
 export function ArchiveMode({ s }: { s: ManageHubState }) {
   const {
@@ -513,7 +514,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                                   setEditVideoUrl(url);
                                   setEditImg('');
                                 } catch (err) {
-                                  alert('비디오 업로드 실패');
+                                  notify('비디오 업로드 실패');
                                 } finally {
                                   setIsUploading(false);
                                 }
@@ -528,13 +529,13 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                           type="button"
                           onClick={async () => {
                             const currentUrl = editVideoUrl || editImg;
-                            if (!currentUrl) return alert('복사할 미디어가 없습니다.');
+                            if (!currentUrl) return notify('복사할 미디어가 없습니다.');
                             try {
                               await navigator.clipboard.writeText(currentUrl);
-                              alert('MAIN 미디어 URL이 클립보드에 복사되었습니다.');
+                              notify('MAIN 미디어 URL이 클립보드에 복사되었습니다.');
                             } catch (err) {
                               console.error(err);
-                              alert('클립보드 복사 실패');
+                              notify('클립보드 복사 실패');
                             }
                           }}
                           className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
@@ -582,10 +583,10 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                                   return;
                                 }
                               }
-                              alert('클립보드에 이미지 또는 URL이 없습니다.');
+                              notify('클립보드에 이미지 또는 URL이 없습니다.');
                             } catch (err) {
                               console.warn(err);
-                              alert('클립보드 붙여넣기에 실패했습니다. URL 입력창에서 Ctrl+V를 사용해주세요.');
+                              notify('클립보드 붙여넣기에 실패했습니다. URL 입력창에서 Ctrl+V를 사용해주세요.');
                             }
                           }}
                           className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
@@ -598,7 +599,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                           type="button"
                           onClick={() => {
                             const currentUrl = editVideoUrl || editImg;
-                            if (!currentUrl) return alert('복사할 MAIN 미디어가 없습니다.');
+                            if (!currentUrl) return notify('복사할 MAIN 미디어가 없습니다.');
                             if (editVideoUrl) {
                               setEditHeroVideoUrl(editVideoUrl);
                               setEditHeroImg('');
@@ -606,7 +607,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                               setEditHeroImg(editImg);
                               setEditHeroVideoUrl('');
                             }
-                            alert('MAIN 미디어가 HERO로 복사되었습니다.');
+                            notify('MAIN 미디어가 HERO로 복사되었습니다.');
                           }}
                           className="px-2.5 bg-red-600 hover:bg-red-700 text-white text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                           title="MAIN 미디어를 HERO로 복사"
@@ -633,7 +634,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                                 setEditVideoUrl(url);
                                 setEditImg('');
                               } catch (err) {
-                                alert('비디오 업로드 실패');
+                                notify('비디오 업로드 실패');
                               } finally {
                                 setIsUploading(false);
                               }
@@ -645,7 +646,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                                 setEditImg(url);
                                 setEditVideoUrl('');
                               } catch (err) {
-                                alert('이미지 업로드 실패');
+                                notify('이미지 업로드 실패');
                               } finally {
                                 setIsUploading(false);
                               }
@@ -747,13 +748,13 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                                 try {
                                   const inspection = await inspectAndPrepareVideo(file);
                                   if (!inspection.isCompatible) {
-                                    alert("경고: 선택하신 동영상은 모바일(아이폰)에서 지원되지 않는 비표준 코덱(VP9/AV1/ProRes 등)을 포함하고 있습니다. 모바일 정상 재생을 위해 표준 H.264 MP4 형식의 영상을 권장합니다.");
+                                    notify("경고: 선택하신 동영상은 모바일(아이폰)에서 지원되지 않는 비표준 코덱(VP9/AV1/ProRes 등)을 포함하고 있습니다. 모바일 정상 재생을 위해 표준 H.264 MP4 형식의 영상을 권장합니다.");
                                   }
                                   const url = await uploadFileToR2(file, `covers/hero_${Date.now()}_${file.name}`);
                                   setEditHeroVideoUrl(url);
                                   setEditHeroImg('');
                                 } catch (err) {
-                                  alert('비디오 업로드 실패');
+                                  notify('비디오 업로드 실패');
                                 } finally {
                                   setIsUploading(false);
                                 }
@@ -768,13 +769,13 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                           type="button"
                           onClick={async () => {
                             const currentUrl = editHeroVideoUrl || editHeroImg;
-                            if (!currentUrl) return alert('복사할 HERO 미디어가 없습니다.');
+                            if (!currentUrl) return notify('복사할 HERO 미디어가 없습니다.');
                             try {
                               await navigator.clipboard.writeText(currentUrl);
-                              alert('HERO 미디어 URL이 클립보드에 복사되었습니다.');
+                              notify('HERO 미디어 URL이 클립보드에 복사되었습니다.');
                             } catch (err) {
                               console.error(err);
-                              alert('클립보드 복사 실패');
+                              notify('클립보드 복사 실패');
                             }
                           }}
                           className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
@@ -822,10 +823,10 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                                   return;
                                 }
                               }
-                              alert('클립보드에 이미지 또는 URL이 없습니다.');
+                              notify('클립보드에 이미지 또는 URL이 없습니다.');
                             } catch (err) {
                               console.warn(err);
-                              alert('클립보드 붙여넣기에 실패했습니다. URL 입력창에서 Ctrl+V를 사용해주세요.');
+                              notify('클립보드 붙여넣기에 실패했습니다. URL 입력창에서 Ctrl+V를 사용해주세요.');
                             }
                           }}
                           className="px-2.5 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-black dark:text-white border border-black/15 dark:border-white/15 text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
@@ -838,7 +839,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                           type="button"
                           onClick={() => {
                             const currentUrl = editHeroVideoUrl || editHeroImg;
-                            if (!currentUrl) return alert('복사할 HERO 미디어가 없습니다.');
+                            if (!currentUrl) return notify('복사할 HERO 미디어가 없습니다.');
                             if (editHeroVideoUrl) {
                               setEditVideoUrl(editHeroVideoUrl);
                               setEditImg('');
@@ -846,7 +847,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                               setEditImg(editHeroImg);
                               setEditVideoUrl('');
                             }
-                            alert('HERO 미디어가 MAIN으로 복사되었습니다.');
+                            notify('HERO 미디어가 MAIN으로 복사되었습니다.');
                           }}
                           className="px-2.5 bg-black text-white dark:bg-white dark:text-black text-meta font-extrabold uppercase tracking-widest transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                           title="HERO 미디어를 MAIN으로 복사"
@@ -871,13 +872,13 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                               try {
                                 const inspection = await inspectAndPrepareVideo(file);
                                 if (!inspection.isCompatible) {
-                                  alert("경고: 선택하신 동영상은 모바일(아이폰)에서 지원되지 않는 비표준 코덱(VP9/AV1/ProRes 등)을 포함하고 있습니다. 모바일 정상 재생을 위해 표준 H.264 MP4 형식의 영상을 권장합니다.");
+                                  notify("경고: 선택하신 동영상은 모바일(아이폰)에서 지원되지 않는 비표준 코덱(VP9/AV1/ProRes 등)을 포함하고 있습니다. 모바일 정상 재생을 위해 표준 H.264 MP4 형식의 영상을 권장합니다.");
                                 }
                                 const url = await uploadFileToR2(file, `covers/hero_${Date.now()}_${file.name}`);
                                 setEditHeroVideoUrl(url);
                                 setEditHeroImg('');
                               } catch (err) {
-                                alert('비디오 업로드 실패');
+                                notify('비디오 업로드 실패');
                               } finally {
                                 setIsUploading(false);
                               }
@@ -889,7 +890,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                                 setEditHeroImg(url);
                                 setEditHeroVideoUrl('');
                               } catch (err) {
-                                alert('이미지 업로드 실패');
+                                notify('이미지 업로드 실패');
                               } finally {
                                 setIsUploading(false);
                               }
@@ -1050,7 +1051,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                       type="button"
                       onClick={() => handleMoveOrder(idx, 'up')}
                       disabled={idx === 0}
-                      className="p-0.5 border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer"
+                      className="tap-target p-0.5 border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer"
                       title="위로 이동"
                     >
                       <ChevronUp className="w-3.5 h-3.5" />
@@ -1059,7 +1060,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                       type="button"
                       onClick={() => handleMoveOrder(idx, 'down')}
                       disabled={idx === localJourneys.length - 1}
-                      className="p-0.5 border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer"
+                      className="tap-target p-0.5 border border-black/20 dark:border-white/20 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer"
                       title="아래로 이동"
                     >
                       <ChevronDown className="w-3.5 h-3.5" />
@@ -1112,7 +1113,7 @@ export function ArchiveMode({ s }: { s: ManageHubState }) {
                       e.stopPropagation();
                       executeWithGuard(() => navigateSafely('detail', journey.id));
                     }}
-                    className="p-1.5 text-black/60 dark:text-white/60 hover:text-red-600 dark:hover:text-red-500 hover:bg-black/5 dark:hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
+                    className="tap-target p-1.5 text-black/60 dark:text-white/60 hover:text-red-600 dark:hover:text-red-500 hover:bg-black/5 dark:hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
                     title="여정 상세 페이지 바로 보기"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />

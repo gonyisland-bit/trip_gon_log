@@ -16,6 +16,7 @@ import { fetchCityWeather, getWeatherMeta, getSimulatedWeatherForDate, CityWeath
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
 import { WORLD_CITIES } from '../data/worldDestinations';
+import { confirmDialog } from '../utils/feedback';
 
 export interface CalendarWeatherCity {
   name: string;
@@ -1716,7 +1717,7 @@ export function CalendarHubPage({
 
   // 일정 삭제
   const handleDeleteEvent = async (eventId: string) => {
-    if (!window.confirm("이 일정을 삭제하시겠습니까?")) return;
+    if (!await confirmDialog("이 일정을 삭제하시겠습니까?")) return;
 
     setCustomEvents(prev => {
       const next = prev.filter(item => item.id !== eventId);
@@ -1980,7 +1981,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={viewMode === 'month' ? handlePrevMonth : () => setCurrentYear(prev => prev - 1)}
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
+                className="tap-target w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
                 title={viewMode === 'month' ? "이전 달" : "이전 연도"}
               >
                 <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -1998,7 +1999,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={viewMode === 'month' ? handleNextMonth : () => setCurrentYear(prev => prev + 1)}
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
+                className="tap-target w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#141414] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-black dark:text-white cursor-pointer shadow-xs flex items-center justify-center shrink-0"
                 title={viewMode === 'month' ? "다음 달" : "다음 연도"}
               >
                 <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -2044,7 +2045,7 @@ export function CalendarHubPage({
             <button
               type="button"
               onClick={() => setIsWeatherMode(prev => !prev)}
-              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-xs ${
+              className={`tap-target w-7 h-7 sm:w-8 sm:h-8 rounded-full border transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-xs ${
                 isWeatherMode
                   ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white ring-2 ring-black/20 dark:ring-white/20'
                   : 'bg-white/80 dark:bg-zinc-900/80 border-black/15 dark:border-white/15 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:border-black/30 dark:hover:border-white/30'
@@ -2151,7 +2152,7 @@ export function CalendarHubPage({
               type="button"
               onClick={scrollChipsLeft}
               disabled={!canScrollChipsLeft}
-              className={`w-6 h-6 rounded-full border border-black/15 dark:border-white/15 flex items-center justify-center shrink-0 transition-all ${
+              className={`tap-target w-6 h-6 rounded-full border border-black/15 dark:border-white/15 flex items-center justify-center shrink-0 transition-all ${
                 canScrollChipsLeft
                   ? 'text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer shadow-2xs'
                   : 'opacity-20 text-black/60 dark:text-white/60 cursor-not-allowed border-transparent'
@@ -2192,7 +2193,7 @@ export function CalendarHubPage({
               type="button"
               onClick={scrollChipsRight}
               disabled={!canScrollChipsRight}
-              className={`w-6 h-6 rounded-full border border-black/15 dark:border-white/15 flex items-center justify-center shrink-0 transition-all ${
+              className={`tap-target w-6 h-6 rounded-full border border-black/15 dark:border-white/15 flex items-center justify-center shrink-0 transition-all ${
                 canScrollChipsRight
                   ? 'text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer shadow-2xs'
                   : 'opacity-20 text-black/60 dark:text-white/60 cursor-not-allowed border-transparent'
@@ -2733,7 +2734,7 @@ export function CalendarHubPage({
                                     e.stopPropagation();
                                     handleShareEvent(item.data);
                                   }}
-                                  className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                                  className="tap-target p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                                   title="일정 공유"
                                 >
                                   <Share2 className="w-3.5 h-3.5" />
@@ -2744,7 +2745,7 @@ export function CalendarHubPage({
                                     e.stopPropagation();
                                     openEditEventModal(item.data);
                                   }}
-                                  className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                                  className="tap-target p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                                   title="일정 수정"
                                 >
                                   <Edit3 className="w-3.5 h-3.5" />
@@ -2764,7 +2765,7 @@ export function CalendarHubPage({
                                   handleCustomEventClick(e, item.data);
                                 }
                               }}
-                              className={`p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/15 active:scale-95 transition-all cursor-pointer ${
+                              className={`tap-target p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/15 active:scale-95 transition-all cursor-pointer ${
                                 isHighlighted ? 'text-red-600 dark:text-red-400' : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                               }`}
                               title="상세 일정 보기"
@@ -3048,7 +3049,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={closeEventModal}
-                className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                className="tap-target p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -3250,7 +3251,7 @@ export function CalendarHubPage({
                     setViewingEvent(null);
                     openEditEventModal(evt);
                   }}
-                  className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                  className="tap-target p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                   title="일정 수정"
                 >
                   <Edit3 className="w-4 h-4" />
@@ -3274,7 +3275,7 @@ export function CalendarHubPage({
                 <button
                   type="button"
                   onClick={() => setViewingEvent(null)}
-                  className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                  className="tap-target p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                   title="닫기 (ESC)"
                 >
                   <X className="w-4 h-4" />
@@ -3361,7 +3362,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={() => setViewingTrip(null)}
-                className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                className="tap-target p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                 title="닫기 (ESC)"
               >
                 <X className="w-4 h-4" />
@@ -3475,7 +3476,7 @@ export function CalendarHubPage({
                   setHoveredTooltip(null);
                   setSelectedYearDate(null);
                 }}
-                className="text-white/60 hover:text-white transition-colors ml-0.5 p-0.5 cursor-pointer"
+                className="tap-target text-white/60 hover:text-white transition-colors ml-0.5 p-0.5 cursor-pointer"
                 title="닫기"
               >
                 <X className="w-3 h-3" />
@@ -3511,7 +3512,7 @@ export function CalendarHubPage({
                     setHoveredTooltip(null);
                     setSelectedYearDate(null);
                   }}
-                  className="text-white/60 hover:text-white transition-colors p-0.5 cursor-pointer"
+                  className="tap-target text-white/60 hover:text-white transition-colors p-0.5 cursor-pointer"
                   title="닫기"
                 >
                   <X className="w-3 h-3" />
@@ -3576,7 +3577,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={closeQuickView}
-                className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                className="tap-target w-7 h-7 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                 title="닫기"
               >
                 <X className="w-4 h-4" />
@@ -3691,7 +3692,7 @@ export function CalendarHubPage({
               <button
                 type="button"
                 onClick={() => setIsYearTripsModalOpen(false)}
-                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                className="tap-target w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                 title="닫기"
               >
                 <X className="w-4 h-4" />

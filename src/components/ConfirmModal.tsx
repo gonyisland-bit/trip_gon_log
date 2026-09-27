@@ -164,7 +164,7 @@ export function ConfirmModal({
         <button
           type="button"
           onClick={() => handleImmediateClose(onCancel)}
-          className="absolute top-3.5 right-3.5 p-1 text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer"
+          className="tap-target absolute top-3.5 right-3.5 p-1 text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer"
           title="닫기 (ESC)"
         >
           <X className="w-4 h-4" />
@@ -179,7 +179,7 @@ export function ConfirmModal({
         </div>
 
         {/* Message: Single-line English Question / Notification */}
-        <p className="text-xs sm:text-sm text-black/80 dark:text-white/80 font-sans leading-relaxed break-keep font-medium">
+        <p className="text-xs sm:text-sm text-black/80 dark:text-white/80 font-sans leading-relaxed break-keep font-medium whitespace-pre-line">
           {message}
         </p>
 
@@ -211,7 +211,7 @@ export function ConfirmModal({
             onClick={() => handleImmediateClose(onConfirm)}
             className={`px-2 py-2.5 text-center transition-colors cursor-pointer shadow-sm whitespace-nowrap text-[11px] outline-none ring-2 ring-transparent focus:ring-black dark:focus:ring-white ${
               confirmVariant === 'danger'
-                ? 'bg-black text-white dark:bg-white dark:text-black hover:opacity-85'
+                ? 'bg-red-600 text-white dark:bg-red-500 hover:bg-red-700 dark:hover:bg-red-600'
                 : 'bg-black text-white dark:bg-white dark:text-black hover:opacity-85'
             }`}
           >

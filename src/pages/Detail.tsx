@@ -247,7 +247,7 @@ export function JourneyDetailPage(props: JourneyDetailPageProps) {
                     handleScrollToTop();
                     resetQuickJumpCollapseTimer();
                   }}
-                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all text-white/80 hover:text-white cursor-pointer shrink-0"
+                  className="tap-target w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all text-white/80 hover:text-white cursor-pointer shrink-0"
                   title="맨 위로 스크롤 (Scroll to top)"
                 >
                   <ChevronUp className="w-4 h-4" />

@@ -1374,7 +1374,7 @@ export function HomePage({
                             <button
                               type="button"
                               onClick={(e) => { e.stopPropagation(); goToPrev(); }}
-                              className="p-1 text-black/60 dark:text-white/60 active:scale-90"
+                              className="tap-target p-1 text-black/60 dark:text-white/60 active:scale-90"
                               title="Prev"
                             >
                               <ChevronLeft className="w-3.5 h-3.5" />
@@ -1382,7 +1382,7 @@ export function HomePage({
                             <button
                               type="button"
                               onClick={(e) => { e.stopPropagation(); goToNext(); }}
-                              className="p-1 text-black/60 dark:text-white/60 active:scale-90"
+                              className="tap-target p-1 text-black/60 dark:text-white/60 active:scale-90"
                               title="Next"
                             >
                               <ChevronRight className="w-3.5 h-3.5" />
@@ -1435,7 +1435,7 @@ export function HomePage({
                       <button
                         type="button"
                         onClick={() => onNavigate('detail', currentHero.id)}
-                        className="w-10 h-10 rounded-full border border-black/20 dark:border-white/20 bg-black text-white dark:bg-white dark:text-black flex items-center justify-center shrink-0 active:scale-95 shadow-sm cursor-pointer"
+                        className="tap-target w-10 h-10 rounded-full border border-black/20 dark:border-white/20 bg-black text-white dark:bg-white dark:text-black flex items-center justify-center shrink-0 active:scale-95 shadow-sm cursor-pointer"
                         title="VIEW TRIP"
                       >
                         <ArrowRight className="w-4 h-4" />
@@ -1475,7 +1475,7 @@ export function HomePage({
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); goToPrev(); }}
-                          className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                          className="tap-target p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                           title="이전 슬라이드"
                         >
                           <ChevronLeft className="w-3.5 h-3.5" />
@@ -1483,7 +1483,7 @@ export function HomePage({
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); goToNext(); }}
-                          className="p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                          className="tap-target p-1 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                           title="다음 슬라이드"
                         >
                           <ChevronRight className="w-3.5 h-3.5" />
@@ -1513,7 +1513,7 @@ export function HomePage({
                     <button
                       type="button"
                       onClick={() => onNavigate('detail', currentHero.id)}
-                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-black/30 dark:border-white/30 hover:border-black dark:hover:border-white flex items-center justify-center transition-all hover:scale-105 cursor-pointer text-black dark:text-white shadow-xs"
+                      className="tap-target w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-black/30 dark:border-white/30 hover:border-black dark:hover:border-white flex items-center justify-center transition-all hover:scale-105 cursor-pointer text-black dark:text-white shadow-xs"
                       title="VIEW TRIP"
                     >
                       <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -1611,7 +1611,7 @@ export function HomePage({
                   <button
                     type="button"
                     onClick={() => handleSetCardViewMode('grid')}
-                    className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
+                    className={`tap-target p-1.5 rounded-xs transition-colors cursor-pointer ${
                       cardViewMode === 'grid' 
                         ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
                         : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -1623,7 +1623,7 @@ export function HomePage({
                   <button
                     type="button"
                     onClick={() => handleSetCardViewMode('wide')}
-                    className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
+                    className={`tap-target p-1.5 rounded-xs transition-colors cursor-pointer ${
                       cardViewMode === 'wide' 
                         ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
                         : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -1635,7 +1635,7 @@ export function HomePage({
                   <button
                     type="button"
                     onClick={() => handleSetCardViewMode('list')}
-                    className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
+                    className={`tap-target p-1.5 rounded-xs transition-colors cursor-pointer ${
                       cardViewMode === 'list' 
                         ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
                         : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -1674,7 +1674,7 @@ export function HomePage({
                       <button
                         type="button"
                         onClick={() => setTagSearchQuery('')}
-                        className="absolute right-2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
+                        className="tap-target absolute right-2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white cursor-pointer"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -2112,7 +2112,7 @@ export function HomePage({
                         type="button"
                         onClick={handlePrevSection}
                         disabled={safeSecIndex <= 0}
-                        className="w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white"
+                        className="tap-target w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white"
                         title="이전 섹션"
                       >
                         <ChevronLeft className="w-4 h-4 stroke-[2]" />
@@ -2121,7 +2121,7 @@ export function HomePage({
                         type="button"
                         onClick={handleNextSection}
                         disabled={safeSecIndex >= availableSections.length - 1}
-                        className="w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white"
+                        className="tap-target w-9 h-9 border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center bg-transparent text-black dark:text-white"
                         title="다음 섹션"
                       >
                         <ChevronRight className="w-4 h-4 stroke-[2]" />

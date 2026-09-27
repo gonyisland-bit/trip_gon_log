@@ -8,6 +8,7 @@ import { UserProfileAvatar } from './UserProfileAvatar';
 import { PasswordVerifyModal } from './PasswordVerifyModal';
 import { ProfileEditModal } from './ProfileEditModal';
 import { MiniWeatherWidget } from './MiniWeatherWidget';
+import { confirmDialog } from '../utils/feedback';
 
 interface NavigationProps {
   currentView: string;
@@ -88,7 +89,7 @@ export function Navigation({
 
   const handleLogout = async () => {
     setShowSettings(false);
-    if (window.confirm("로그아웃 하시겠습니까?")) {
+    if (await confirmDialog("로그아웃 하시겠습니까?")) {
       await signOut(auth);
       navigateTo('home');
     }
@@ -232,7 +233,7 @@ export function Navigation({
           <button 
             type="button"
             onClick={onSearchClick}
-            className="p-2 sm:p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors cursor-pointer flex items-center justify-center"
+            className="tap-target p-2 sm:p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors cursor-pointer flex items-center justify-center"
             title="통합 검색 (⌘K / Ctrl+K)"
           >
             <Search className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
@@ -299,7 +300,7 @@ export function Navigation({
           <button
             type="button"
             onClick={() => setShowSettings(false)}
-            className="p-1.5 sm:p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black dark:text-white transition-colors cursor-pointer"
+            className="tap-target p-1.5 sm:p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-black dark:text-white transition-colors cursor-pointer"
             title="메뉴 닫기 (ESC)"
           >
             <X className="w-5 h-5 sm:w-5.5 sm:h-5.5" />

@@ -151,7 +151,7 @@ export function FloatingPocketWidget({
             </div>
             <button
               onClick={onToggle}
-              className="hover:opacity-70 transition-opacity p-0.5 cursor-pointer"
+              className="tap-target hover:opacity-70 transition-opacity p-0.5 cursor-pointer"
               title="위젯 닫기"
             >
               <X className="w-4 h-4" />
@@ -267,7 +267,7 @@ export function FloatingPocketWidget({
                             onAddSpotToTimeline(spot);
                           }}
                           disabled={!isEditing}
-                          className={`w-6 h-6 flex items-center justify-center transition-colors shrink-0 ${
+                          className={`tap-target w-6 h-6 flex items-center justify-center transition-colors shrink-0 ${
                             isEditing
                               ? 'bg-black text-white dark:bg-white dark:text-black hover:bg-red-600 dark:hover:bg-red-500 dark:hover:text-white cursor-pointer'
                               : 'bg-black/10 text-black/60 dark:bg-white/10 dark:text-white/60 cursor-not-allowed'

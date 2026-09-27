@@ -7,6 +7,7 @@ import { SettlementExpenseInput } from './SettlementExpenseInput';
 import { uploadFileToR2, getEffectiveImageUrl } from '../utils/storageHelper';
 import { auth } from '../firebase';
 import { Lightbox } from './Lightbox';
+import { notify, confirmDialog } from '../utils/feedback';
 
 interface TransitCardProps {
   transit: TransitItem;
@@ -117,7 +118,7 @@ export function TransitCard({
   const uploadFile = async (file: File) => {
     const user = auth.currentUser;
     if (!user) {
-      alert("로그인이 필요합니다.");
+      notify("로그인이 필요합니다.");
       return;
     }
     setUploadingAttachment(true);
@@ -130,7 +131,7 @@ export function TransitCard({
       onUpdate(transit.id, 'attachments', newList);
     } catch (error) {
       console.error("Transit attachment upload failed:", error);
-      alert("파일 업로드에 실패했습니다.");
+      notify("파일 업로드에 실패했습니다.");
     } finally {
       setUploadingAttachment(false);
     }
@@ -145,9 +146,9 @@ export function TransitCard({
     }
   };
 
-  const removeAttachment = (e: React.MouseEvent, indexToRemove: number) => {
+  const removeAttachment = async (e: React.MouseEvent, indexToRemove: number) => {
     e.stopPropagation();
-    if (confirm("이 첨부파일을 삭제하시겠습니까?")) {
+    if (await confirmDialog("이 첨부파일을 삭제하시겠습니까?")) {
       const currentList = transit.attachments || [];
       const newList = currentList.filter((_, idx) => idx !== indexToRemove);
       onUpdate(transit.id, 'attachments', newList);
@@ -524,7 +525,7 @@ export function TransitCard({
                       console.warn(err);
                     }
                   }}
-                  className="p-1.5 md:p-2 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-black/5 dark:bg-white/10 cursor-pointer flex items-center justify-center"
+                  className="tap-target p-1.5 md:p-2 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 rounded-sm bg-black/5 dark:bg-white/10 cursor-pointer flex items-center justify-center"
                   title="시간 선택"
                 >
                   <Clock className="w-4 h-4 md:w-5 md:h-5 text-black/60 dark:text-white/60" />
@@ -918,7 +919,7 @@ export function TransitCard({
       {isEditMode && (
         <button 
           onClick={(e) => { e.stopPropagation(); onDelete(transit.id); }}
-          className="absolute bottom-2 right-2 p-1 text-red-500 hover:text-red-700 transition-colors z-10"
+          className="tap-target absolute bottom-2 right-2 p-1 text-red-500 hover:text-red-700 transition-colors z-10"
           title="Delete Transit"
         >
           <Trash2 className="w-3.5 h-3.5" />

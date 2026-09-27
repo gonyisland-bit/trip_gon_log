@@ -39,6 +39,7 @@ import {
   bgmPlayer,
 } from '../utils/audioHelper';
 import { uploadFileToR2 } from '../utils/storageHelper';
+import { notify } from '../utils/feedback';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -195,7 +196,7 @@ export function SettingsModal({
       onClose();
     } catch (err) {
       console.error(err);
-      alert('설정 저장에 실패했습니다.');
+      notify('설정 저장에 실패했습니다.');
     } finally {
       setSaving(false);
     }
@@ -306,7 +307,7 @@ export function SettingsModal({
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         if (!file.type.startsWith('audio/') && !/\.(mp3|m4a|wav|aac|ogg)$/i.test(file.name)) {
-          alert(`${file.name}은(는) 지원되지 않는 오디오 파일 형식입니다.`);
+          notify(`${file.name}은(는) 지원되지 않는 오디오 파일 형식입니다.`);
           continue;
         }
 
@@ -334,7 +335,7 @@ export function SettingsModal({
       }
     } catch (err) {
       console.error('Failed to upload BGM:', err);
-      alert('음원 업로드 중 오류가 발생했습니다.');
+      notify('음원 업로드 중 오류가 발생했습니다.');
     } finally {
       setIsUploadingBgm(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -363,7 +364,7 @@ export function SettingsModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-black/60 dark:text-white/60"
+            className="tap-target p-1.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-black/60 dark:text-white/60"
             aria-label="Close settings"
           >
             <X className="w-5 h-5" />
@@ -888,7 +889,7 @@ export function SettingsModal({
                             type="button"
                             disabled={idx === 0}
                             onClick={() => handleMoveBgmTrack(idx, 'up')}
-                            className="p-1.5 rounded-sm border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 cursor-pointer"
+                            className="tap-target p-1.5 rounded-sm border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 cursor-pointer"
                             title="위로 이동"
                           >
                             <ArrowUp className="w-3.5 h-3.5" />
@@ -899,7 +900,7 @@ export function SettingsModal({
                             type="button"
                             disabled={idx === bgmTracks.length - 1}
                             onClick={() => handleMoveBgmTrack(idx, 'down')}
-                            className="p-1.5 rounded-sm border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 cursor-pointer"
+                            className="tap-target p-1.5 rounded-sm border border-black/20 dark:border-white/20 text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 cursor-pointer"
                             title="아래로 이동"
                           >
                             <ArrowDown className="w-3.5 h-3.5" />
@@ -909,7 +910,7 @@ export function SettingsModal({
                           <button
                             type="button"
                             onClick={() => handleDeleteBgmTrack(track.id)}
-                            className="p-1.5 rounded-sm border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white transition-colors cursor-pointer"
+                            className="tap-target p-1.5 rounded-sm border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white transition-colors cursor-pointer"
                             title="트랙 삭제"
                           >
                             <Trash2 className="w-3.5 h-3.5" />

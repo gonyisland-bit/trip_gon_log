@@ -7,6 +7,7 @@ import {
 import { Trip, TimelineItem, FlightItem, StayItem, TransitItem } from '../types';
 import html2canvas from 'html2canvas';
 import { createPortal } from 'react-dom';
+import { notify } from '../utils/feedback';
 
 const EXCHANGE_RATES: { [currency: string]: number } = {
   KRW: 1,
@@ -588,7 +589,7 @@ export function SummaryView({
           setCapturedImg(imgData);
         } catch (err) {
           console.error('Summary capture failed:', err);
-          alert('이미지 생성에 실패했습니다.');
+          notify('이미지 생성에 실패했습니다.');
         } finally {
           setIsCapturing(false);
           // Restore previous expansion states
@@ -627,7 +628,7 @@ export function SummaryView({
           text: '여정 요약 결과 내역입니다.',
         });
       } else {
-        alert('이 브라우저에서는 공유 기능을 지원하지 않습니다. 이미지 다운로드를 이용해 주세요.');
+        notify('이 브라우저에서는 공유 기능을 지원하지 않습니다. 이미지 다운로드를 이용해 주세요.');
       }
     } catch (err) {
       console.error('Share failed:', err);
@@ -1081,7 +1082,7 @@ export function SummaryView({
               </span>
               <button 
                 onClick={() => setCapturedImg(null)} 
-                className="text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-1 transition-colors cursor-pointer"
+                className="tap-target text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-1 transition-colors cursor-pointer"
                 title="닫기 (ESC)"
               >
                 <X className="w-4 h-4" />

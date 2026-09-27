@@ -40,7 +40,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
             {/* Scroll buttons for desktop/web */}
             <button 
               onClick={() => scrollDays('left')}
-              className="absolute left-0 top-0 bottom-0 px-1.5 bg-gradient-to-r from-white via-white to-transparent dark:from-[#0A0A0A] dark:via-[#0A0A0A] z-10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer"
+              className="tap-target absolute left-0 top-0 bottom-0 px-1.5 bg-gradient-to-r from-white via-white to-transparent dark:from-[#0A0A0A] dark:via-[#0A0A0A] z-10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer"
               aria-label="Scroll left"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
@@ -96,7 +96,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
 
             <button 
               onClick={() => scrollDays('right')}
-              className="absolute right-0 top-0 bottom-0 px-1.5 bg-gradient-to-l from-white via-white to-transparent dark:from-[#0A0A0A] dark:via-[#0A0A0A] z-10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer"
+              className="tap-target absolute right-0 top-0 bottom-0 px-1.5 bg-gradient-to-l from-white via-white to-transparent dark:from-[#0A0A0A] dark:via-[#0A0A0A] z-10 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer"
               aria-label="Scroll right"
             >
               <ChevronRight className="w-3.5 h-3.5" />
@@ -244,7 +244,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               <button
                                 type="button"
                                 onClick={() => handleWeatherChange(item.date || '', 'sunny', weatherInfo?.temp || '')}
-                                className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'sunny' ? 'bg-orange-500 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'sunny' ? 'bg-orange-500 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
                                 title="Sunny (해)"
                               >
                                 <Sun className="w-4 h-4" />
@@ -253,7 +253,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               <button
                                 type="button"
                                 onClick={() => handleWeatherChange(item.date || '', 'overcast', weatherInfo?.temp || '')}
-                                className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'overcast' ? 'bg-slate-400 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'overcast' ? 'bg-slate-400 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
                                 title="Overcast (흐림)"
                               >
                                 <Cloudy className="w-4 h-4" />
@@ -262,7 +262,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               <button
                                 type="button"
                                 onClick={() => handleWeatherChange(item.date || '', 'cloudy', weatherInfo?.temp || '')}
-                                className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'cloudy' ? 'bg-blue-400 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'cloudy' ? 'bg-blue-400 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
                                 title="Cloudy (구름)"
                               >
                                 <Cloud className="w-4 h-4" />
@@ -271,7 +271,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               <button
                                 type="button"
                                 onClick={() => handleWeatherChange(item.date || '', 'rainy', weatherInfo?.temp || '')}
-                                className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'rainy' ? 'bg-indigo-400 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'rainy' ? 'bg-indigo-400 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
                                 title="Rainy (비)"
                               >
                                 <CloudRain className="w-4 h-4" />
@@ -280,7 +280,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               <button
                                 type="button"
                                 onClick={() => handleWeatherChange(item.date || '', 'snowy', weatherInfo?.temp || '')}
-                                className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'snowy' ? 'bg-sky-400 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'snowy' ? 'bg-sky-400 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
                                 title="Snowy (눈)"
                               >
                                 <Snowflake className="w-4 h-4" />
@@ -289,7 +289,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               <button
                                 type="button"
                                 onClick={() => handleWeatherChange(item.date || '', 'stormy', weatherInfo?.temp || '')}
-                                className={`p-1 rounded-xs transition-colors ${weatherInfo?.type === 'stormy' ? 'bg-red-500 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                className={`tap-target p-1 rounded-xs transition-colors ${weatherInfo?.type === 'stormy' ? 'bg-red-500 text-white' : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5'}`}
                                 title="Stormy (태풍)"
                               >
                                 <CloudLightning className="w-4 h-4" />
@@ -435,7 +435,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               <button
                                 type="button"
                                 onClick={() => handleDeleteTimelineItem(item.id)}
-                                className="text-red-500 hover:text-red-700 p-0.5 transition-colors cursor-pointer"
+                                className="tap-target text-red-500 hover:text-red-700 p-0.5 transition-colors cursor-pointer"
                                 title="일정 삭제"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -474,7 +474,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               <button
                                 type="button"
                                 onClick={() => updateTimelineItem(item.id, 'vehicleType', item.vehicleType === 'car' ? null : 'car')}
-                                className={`py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
+                                className={`tap-target py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
                                   item.vehicleType === 'car'
                                     ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
                                     : 'bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
@@ -486,7 +486,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               <button
                                 type="button"
                                 onClick={() => updateTimelineItem(item.id, 'vehicleType', item.vehicleType === 'train' ? null : 'train')}
-                                className={`py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
+                                className={`tap-target py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
                                   item.vehicleType === 'train'
                                     ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
                                     : 'bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
@@ -498,7 +498,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               <button
                                 type="button"
                                 onClick={() => updateTimelineItem(item.id, 'vehicleType', item.vehicleType === 'ship' ? null : 'ship')}
-                                className={`py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
+                                className={`tap-target py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
                                   item.vehicleType === 'ship'
                                     ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
                                     : 'bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
@@ -510,7 +510,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                               <button
                                 type="button"
                                 onClick={() => updateTimelineItem(item.id, 'vehicleType', item.vehicleType === 'flight' ? null : 'flight')}
-                                className={`py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
+                                className={`tap-target py-1 flex items-center justify-center border transition-colors cursor-pointer rounded-xs ${
                                   item.vehicleType === 'flight'
                                     ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs'
                                     : 'bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 border-black/15 dark:border-white/15 hover:text-black dark:hover:text-white'
@@ -638,7 +638,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                   e.stopPropagation();
                                   setCostModalItem(item);
                                 }}
-                                className="p-1 text-amber-500 hover:text-amber-600 dark:hover:text-amber-400 hover:scale-110 transition-transform cursor-pointer shrink-0"
+                                className="tap-target p-1 text-amber-500 hover:text-amber-600 dark:hover:text-amber-400 hover:scale-110 transition-transform cursor-pointer shrink-0"
                                 title={`비용 확인: ${item.currency || 'KRW'} ${item.cost}`}
                               >
                                 <Coins className="w-4 h-4" />
@@ -741,7 +741,7 @@ export function TimelineTab({ s }: { s: JourneyDetailState }) {
                                     const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location || '')}`;
                                     setMapConfirm({ placeName: item.location || '', url });
                                   }}
-                                  className="p-1 -m-1 text-black/60 hover:text-red-600 dark:text-white/60 dark:hover:text-red-400 transition-colors cursor-pointer shrink-0 rounded hover:bg-black/5 dark:hover:bg-white/5"
+                                  className="tap-target p-1 -m-1 text-black/60 hover:text-red-600 dark:text-white/60 dark:hover:text-red-400 transition-colors cursor-pointer shrink-0 rounded hover:bg-black/5 dark:hover:bg-white/5"
                                   title="구글 지도에서 위치 확인 (새 창)"
                                   aria-label="구글 지도 열기"
                                 >

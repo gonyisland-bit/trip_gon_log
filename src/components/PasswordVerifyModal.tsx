@@ -69,7 +69,7 @@ export function PasswordVerifyModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white transition-colors cursor-pointer"
+            className="tap-target p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>

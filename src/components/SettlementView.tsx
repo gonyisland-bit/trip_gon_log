@@ -9,6 +9,7 @@ import { uploadFileToR2, getEffectiveImageUrl } from '../utils/storageHelper';
 import { auth } from '../firebase';
 import html2canvas from 'html2canvas';
 import { createPortal } from 'react-dom';
+import { notify, confirmDialog } from '../utils/feedback';
 
 const EXCHANGE_RATES: { [currency: string]: number } = {
   KRW: 1,
@@ -253,13 +254,13 @@ export function SettlementView({
   const handleAddMember = () => {
     const n = newMemberName.trim();
     if (!n) return;
-    if (members.includes(n)) { alert("이미 등록된 인원입니다."); return; }
+    if (members.includes(n)) { notify("이미 등록된 인원입니다."); return; }
     onUpdateMembers([...members, n]);
     setNewMemberName('');
   };
-  const handleRemoveMember = (name: string) => {
-    if (members.length <= 1) { alert("최소 한 명의 인원은 여정에 설정되어 있어야 합니다."); return; }
-    if (window.confirm(`정말 '${name}' 인원을 삭제하시겠습니까?`)) {
+  const handleRemoveMember = async (name: string) => {
+    if (members.length <= 1) { notify("최소 한 명의 인원은 여정에 설정되어 있어야 합니다."); return; }
+    if (await confirmDialog(`정말 '${name}' 인원을 삭제하시겠습니까?`)) {
       onUpdateMembers(members.filter(m => m !== name));
     }
   };
@@ -287,7 +288,7 @@ export function SettlementView({
 
   // --- Custom expenses CRUD ---
   const handleAddCustom = () => {
-    if (!newItem.name.trim() || !newItem.cost.trim()) { alert("항목명과 금액을 입력해 주세요."); return; }
+    if (!newItem.name.trim() || !newItem.cost.trim()) { notify("항목명과 금액을 입력해 주세요."); return; }
     const item: CustomExpenseItem = {
       id: `custom-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
       name: newItem.name.trim(),
@@ -302,8 +303,8 @@ export function SettlementView({
     setShowAddForm(false);
   };
 
-  const handleDeleteCustom = (id: string) => {
-    if (window.confirm('이 항목을 삭제하시겠습니까?')) {
+  const handleDeleteCustom = async (id: string) => {
+    if (await confirmDialog('이 항목을 삭제하시겠습니까?')) {
       onUpdateCustomExpenses?.(customExpenses.filter(c => c.id !== id));
     }
   };
@@ -329,7 +330,7 @@ export function SettlementView({
   const handleAttachmentUpload = async (rowKey: string, files: FileList | null) => {
     if (!files || files.length === 0) return;
     const user = auth.currentUser;
-    if (!user) { alert("로그인이 필요합니다."); return; }
+    if (!user) { notify("로그인이 필요합니다."); return; }
     
     // Find the item matching this rowKey
     const matchedItem = expenseItems.find(it => `${it.itemType}-${it.id}` === rowKey.split('-').slice(0, 2).join('-'));
@@ -359,7 +360,7 @@ export function SettlementView({
       }
     } catch (e) {
       console.error('Attachment upload failed:', e);
-      alert('파일 업로드에 실패했습니다.');
+      notify('파일 업로드에 실패했습니다.');
     } finally {
       setUploadingKey(null);
       setActiveUploadKey(null);
@@ -396,7 +397,7 @@ export function SettlementView({
           setCapturedImg(imgData);
         } catch (err) {
           console.error('Capture failed:', err);
-          alert('이미지 생성에 실패했습니다.');
+          notify('이미지 생성에 실패했습니다.');
         } finally {
           setIsCapturing(false);
         }
@@ -427,7 +428,7 @@ export function SettlementView({
           text: '정산 결과 내역입니다.',
         });
       } else {
-        alert('이 브라우저에서는 공유 기능을 지원하지 않습니다. 이미지 다운로드를 이용해 주세요.');
+        notify('이 브라우저에서는 공유 기능을 지원하지 않습니다. 이미지 다운로드를 이용해 주세요.');
       }
     } catch (err) {
       console.error('Share failed:', err);
@@ -443,7 +444,7 @@ export function SettlementView({
           className="fixed inset-0 z-[100000] bg-black/90 flex items-center justify-center p-4"
           onClick={() => setLightboxUrl(null)}
         >
-          <button className="absolute top-4 right-4 text-white/70 hover:text-white p-2" onClick={() => setLightboxUrl(null)}>
+          <button className="tap-target absolute top-4 right-4 text-white/70 hover:text-white p-2" onClick={() => setLightboxUrl(null)}>
             <X className="w-6 h-6" />
           </button>
           {isPdf(lightboxUrl) ? (
@@ -464,7 +465,7 @@ export function SettlementView({
                 <Coins className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-500" />
                 정산표 이미지 저장 및 공유
               </span>
-              <button onClick={() => setCapturedImg(null)} className="text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-1 transition-colors cursor-pointer">
+              <button onClick={() => setCapturedImg(null)} className="tap-target text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-1 transition-colors cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -696,7 +697,7 @@ export function SettlementView({
                             {isEditing && !isCapturing && item.itemType === 'custom' && (
                               <button
                                 onClick={e => { e.stopPropagation(); handleDeleteCustom(item.id as string); }}
-                                className="ml-1 text-red-400 hover:text-red-600 transition-colors shrink-0"
+                                className="tap-target ml-1 text-red-400 hover:text-red-600 transition-colors shrink-0"
                                 title="삭제"
                               >
                                 <Trash2 className="w-3 h-3" />

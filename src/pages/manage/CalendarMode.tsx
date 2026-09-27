@@ -136,7 +136,7 @@ export function CalendarMode({ s }: { s: ManageHubState }) {
                     type="button"
                     onClick={() => handleMoveCalendarWeatherCity(idx, 'up')}
                     disabled={idx === 0}
-                    className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-20 transition-colors cursor-pointer text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white"
+                    className="tap-target p-1.5 hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-20 transition-colors cursor-pointer text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white"
                     title="위로 이동"
                   >
                     <ChevronUp className="w-4 h-4" />
@@ -145,7 +145,7 @@ export function CalendarMode({ s }: { s: ManageHubState }) {
                     type="button"
                     onClick={() => handleMoveCalendarWeatherCity(idx, 'down')}
                     disabled={idx === calendarWeatherCities.length - 1}
-                    className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-20 transition-colors cursor-pointer text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white"
+                    className="tap-target p-1.5 hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-20 transition-colors cursor-pointer text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white"
                     title="아래로 이동"
                   >
                     <ChevronDown className="w-4 h-4" />
@@ -154,7 +154,7 @@ export function CalendarMode({ s }: { s: ManageHubState }) {
                     type="button"
                     onClick={() => handleRemoveCalendarWeatherCity(c.nameEn)}
                     disabled={calendarWeatherCities.length <= 1}
-                    className="p-1.5 hover:bg-red-500/10 text-red-600/70 hover:text-red-600 dark:text-red-400/70 dark:hover:text-red-400 disabled:opacity-20 transition-colors cursor-pointer ml-1"
+                    className="tap-target p-1.5 hover:bg-red-500/10 text-red-600/70 hover:text-red-600 dark:text-red-400/70 dark:hover:text-red-400 disabled:opacity-20 transition-colors cursor-pointer ml-1"
                     title="도시 삭제"
                   >
                     <Trash2 className="w-4 h-4" />

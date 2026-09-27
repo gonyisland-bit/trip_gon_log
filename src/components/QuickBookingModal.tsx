@@ -112,7 +112,7 @@ function QuickBookingModalContent({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer"
+            className="tap-target p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer"
             title="닫기 (ESC)"
           >
             <X className="w-4 h-4" />

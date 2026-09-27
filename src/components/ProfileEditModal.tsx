@@ -13,6 +13,7 @@ import { deleteUser, updatePassword } from 'firebase/auth';
 import { PasswordInput } from './PasswordInput';
 import { doc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+import { notify } from '../utils/feedback';
 
 interface ProfileEditModalProps {
   isOpen: boolean;
@@ -132,9 +133,9 @@ export function ProfileEditModal({
     } catch (err: any) {
       console.error('Account deletion error:', err);
       if (err.code === 'auth/requires-recent-login') {
-        alert('보안을 위해 재로그인이 필요합니다. 로그아웃 후 다시 로그인하여 탈퇴를 진행해 주세요.');
+        notify('보안을 위해 재로그인이 필요합니다. 로그아웃 후 다시 로그인하여 탈퇴를 진행해 주세요.');
       } else {
-        alert(`탈퇴 처리 중 오류가 발생했습니다: ${err?.message || err}`);
+        notify(`탈퇴 처리 중 오류가 발생했습니다: ${err?.message || err}`);
       }
     } finally {
       setIsDeleting(false);
@@ -232,10 +233,10 @@ export function ProfileEditModal({
           }
         }
       }
-      alert('클립보드에 복사된 이미지가 없습니다. 이미지를 복사한 후 다시 시도하거나 Ctrl+V를 눌러주세요.');
+      notify('클립보드에 복사된 이미지가 없습니다. 이미지를 복사한 후 다시 시도하거나 Ctrl+V를 눌러주세요.');
     } catch (err) {
       console.warn('Clipboard read error:', err);
-      alert('클립보드 이미지를 붙여넣으려면 키보드 단축키 Ctrl+V를 사용해주세요.');
+      notify('클립보드 이미지를 붙여넣으려면 키보드 단축키 Ctrl+V를 사용해주세요.');
     }
   };
 
@@ -335,7 +336,7 @@ export function ProfileEditModal({
             <button 
               type="button" 
               onClick={onClose}
-              className="p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white transition-colors cursor-pointer"
+              className="tap-target p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -364,7 +365,7 @@ export function ProfileEditModal({
                       setProfileType('icon');
                       setProfileIcon('user');
                     }}
-                    className="absolute -top-1 -right-1 p-1 bg-red-600 text-white text-micro font-mono hover:bg-red-700 transition-colors shadow-xs"
+                    className="tap-target absolute -top-1 -right-1 p-1 bg-red-600 text-white text-micro font-mono hover:bg-red-700 transition-colors shadow-xs"
                     title="이미지 제거 및 기본값으로 복귀"
                   >
                     <Trash2 className="w-3 h-3" />
@@ -667,7 +668,7 @@ export function ProfileEditModal({
               <button
                 type="button"
                 onClick={() => setIsAvatarPickerOpen(false)}
-                className="p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white transition-colors cursor-pointer"
+                className="tap-target p-1 hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>

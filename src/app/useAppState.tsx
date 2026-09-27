@@ -26,6 +26,7 @@ import {
   cleanForFirestore, applyJourneyOrder, SUPER_ADMIN_EMAIL, ADMIN_EMAILS, getInitialNavigationState,
   NightModeSetting, isNightTimeNow
 } from './appUtils';
+import { notify } from '../utils/feedback';
 
 export function useAppState() {
   const [initialNavState] = useState(() => getInitialNavigationState());
@@ -525,7 +526,7 @@ export function useAppState() {
           auth.signOut();
           setIsLoggedIn(false);
           setCurrentUserProfile(null);
-          alert('가입 승인이 거절된 계정입니다. 관리자에게 문의해 주세요.');
+          notify('가입 승인이 거절된 계정입니다. 관리자에게 문의해 주세요.');
           return;
         }
         setCurrentUserProfile(profile);
@@ -555,7 +556,7 @@ export function useAppState() {
                 auth.signOut();
                 setIsLoggedIn(false);
                 setCurrentUserProfile(null);
-                alert('가입 승인이 거절된 계정입니다. 관리자에게 문의해 주세요.');
+                notify('가입 승인이 거절된 계정입니다. 관리자에게 문의해 주세요.');
                 return;
               }
               setCurrentUserProfile(pubProfile);
@@ -681,7 +682,7 @@ export function useAppState() {
   useEffect(() => {
     if (!isAuthReady) return;
     if (currentView === 'manage' && (!isLoggedIn || !isAdmin)) {
-      alert("관리자(Admin) 계정만 Management Hub를 이용할 수 있습니다. 여정은 상세 페이지에서 편집하실 수 있습니다.");
+      notify("관리자(Admin) 계정만 Management Hub를 이용할 수 있습니다. 여정은 상세 페이지에서 편집하실 수 있습니다.");
       navigateTo('home', null, true);
     }
   }, [currentView, isLoggedIn, isAdmin, isAuthReady]);
@@ -1208,14 +1209,14 @@ export function useAppState() {
           }
 
           if (!userData) {
-            alert("존재하지 않는 회원 계정입니다.");
+            notify("존재하지 않는 회원 계정입니다.");
             return;
           }
 
           if (userData.status === 'approved') {
-            alert(`[${userData.email || userData.firstName || '회원'}] 이미 승인 완료된 계정입니다.`);
+            notify(`[${userData.email || userData.firstName || '회원'}] 이미 승인 완료된 계정입니다.`);
           } else if (userData.approvalToken && userData.approvalToken !== token) {
-            alert("유효하지 않거나 만료된 승인 토큰입니다.");
+            notify("유효하지 않거나 만료된 승인 토큰입니다.");
             return;
           } else {
             const updatePayload = {
@@ -1227,7 +1228,7 @@ export function useAppState() {
               setDoc(doc(db, 'users', 'public', 'users', approveUid), { ...userData, ...updatePayload }, { merge: true }),
               deleteDoc(doc(db, 'users', 'public', 'settings', `pendingApproval_${approveUid}`))
             ]);
-            alert(`회원 [${userData.email || userData.firstName || approveUid}] 가입 승인이 성공적으로 완료되었습니다.\n이제 해당 회원이 로그인할 수 있습니다.`);
+            notify(`회원 [${userData.email || userData.firstName || approveUid}] 가입 승인이 성공적으로 완료되었습니다.\n이제 해당 회원이 로그인할 수 있습니다.`);
           }
         } catch (err: any) {
           console.error("User approval error:", err);
@@ -1572,12 +1573,12 @@ export function useAppState() {
       }, { merge: true });
     } catch (err: any) {
       console.error("Error updating trip:", err);
-      alert("정보 저장에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+      notify("정보 저장에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
     }
   };
 
   const handleMoveToArchive = async (plan: Plan) => {
-    if (!isLoggedIn) return alert("로그인 후 이용 가능합니다.");
+    if (!isLoggedIn) return notify("로그인 후 이용 가능합니다.");
 
     const planRef = doc(db, 'users', 'public', 'plans', String(plan.id));
     const tripRef = doc(db, 'users', 'public', 'trips', String(plan.id));
@@ -1602,12 +1603,12 @@ export function useAppState() {
       setTrips(prev => [...prev.filter(t => String(t.id) !== String(plan.id)), newTrip as Trip]);
     } catch (err: any) {
       console.error("Error moving plan to archive:", err);
-      alert("로그(여정)로 이동하는 데 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+      notify("로그(여정)로 이동하는 데 실패했습니다. Firebase 권한 설정을 확인해주세요.");
     }
   };
 
   const handleMoveToPlans = async (trip: Trip) => {
-    if (!isLoggedIn) return alert("로그인 후 이용 가능합니다.");
+    if (!isLoggedIn) return notify("로그인 후 이용 가능합니다.");
 
     const tripRef = doc(db, 'users', 'public', 'trips', String(trip.id));
     const planRef = doc(db, 'users', 'public', 'plans', String(trip.id));
@@ -1635,16 +1636,16 @@ export function useAppState() {
       setPlans(prev => [...prev.filter(p => String(p.id) !== String(trip.id)), newPlan as Plan]);
     } catch (err: any) {
       console.error("Error moving trip to plans:", err);
-      alert("플랜으로 이동하는 데 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+      notify("플랜으로 이동하는 데 실패했습니다. Firebase 권한 설정을 확인해주세요.");
     }
   };
 
   const handleCloneJourney = async (tripId: number) => {
-    if (!isLoggedIn) return alert("로그인 후 이용 가능합니다.");
+    if (!isLoggedIn) return notify("로그인 후 이용 가능합니다.");
     const oldTrip = trips.find(t => t.id === tripId);
     const oldPlan = plans.find(p => p.id === tripId);
     const oldJourney = oldTrip || oldPlan;
-    if (!oldJourney) return alert("여정을 찾을 수 없습니다.");
+    if (!oldJourney) return notify("여정을 찾을 수 없습니다.");
 
     const newId = Date.now();
     const isPlan = !!oldPlan;
@@ -1718,10 +1719,10 @@ export function useAppState() {
       });
 
       await batch.commit();
-      alert("여정이 성공적으로 복제되었습니다.");
+      notify("여정이 성공적으로 복제되었습니다.");
     } catch (err: any) {
       console.error("Error cloning journey:", err);
-      alert("여정 복제에 실패했습니다.");
+      notify("여정 복제에 실패했습니다.");
     }
   };
 
@@ -1852,7 +1853,7 @@ export function useAppState() {
 
   const handleSaveMagazineMoments = async (moments: MagazineMoment[]) => {
     if (!isLoggedIn || !isAdmin) {
-      alert("관리자(Admin)만 잡지 연출 설정을 저장할 수 있습니다.");
+      notify("관리자(Admin)만 잡지 연출 설정을 저장할 수 있습니다.");
       return;
     }
     try {
@@ -1865,14 +1866,14 @@ export function useAppState() {
       } catch (_) {}
     } catch (err) {
       console.error("Failed to save magazine moments:", err);
-      alert("잡지 연출 저장에 실패했습니다.");
+      notify("잡지 연출 저장에 실패했습니다.");
       throw err;
     }
   };
 
   const handleSaveMagazineHubConfig = async (config: MagazineHubConfig) => {
     if (!isLoggedIn || !isAdmin) {
-      alert("관리자(Admin)만 매거진 허브 설정을 저장할 수 있습니다.");
+      notify("관리자(Admin)만 매거진 허브 설정을 저장할 수 있습니다.");
       return;
     }
     try {
@@ -1885,14 +1886,14 @@ export function useAppState() {
       } catch (_) {}
     } catch (err) {
       console.error("Failed to save magazine hub config:", err);
-      alert("매거진 허브 설정 저장에 실패했습니다.");
+      notify("매거진 허브 설정 저장에 실패했습니다.");
       throw err;
     }
   };
 
   const handleSaveArchiveHubConfig = async (config: ArchiveHubConfig) => {
     if (!isLoggedIn || !isAdmin) {
-      alert("관리자(Admin)만 여정 허브 설정을 저장할 수 있습니다.");
+      notify("관리자(Admin)만 여정 허브 설정을 저장할 수 있습니다.");
       return;
     }
     try {
@@ -1905,14 +1906,14 @@ export function useAppState() {
       } catch (_) {}
     } catch (err) {
       console.error("Failed to save archive hub config:", err);
-      alert("여정 허브 설정 저장에 실패했습니다.");
+      notify("여정 허브 설정 저장에 실패했습니다.");
       throw err;
     }
   };
 
   const handleSaveMagazineSections = async (sections: MagazineSection[]) => {
     if (!isLoggedIn || !isAdmin) {
-      alert("관리자(Admin)만 매거진 설정을 저장할 수 있습니다.");
+      notify("관리자(Admin)만 매거진 설정을 저장할 수 있습니다.");
       return;
     }
     try {
@@ -1925,7 +1926,7 @@ export function useAppState() {
       } catch (_) {}
     } catch (err) {
       console.error("Failed to save magazine sections:", err);
-      alert("매거진 설정 저장에 실패했습니다.");
+      notify("매거진 설정 저장에 실패했습니다.");
       throw err;
     }
   };
@@ -2051,13 +2052,13 @@ export function useAppState() {
       }
     } catch (err: any) {
       console.error("Error updating trip cover:", err);
-      alert("여정 정보 저장에 실패했습니다.");
+      notify("여정 정보 저장에 실패했습니다.");
       throw err;
     }
   };
 
   const handleAddArchive = async () => {
-    if (!isLoggedIn) return alert("로그인 후 이용 가능합니다.");
+    if (!isLoggedIn) return notify("로그인 후 이용 가능합니다.");
     setCreateModalType('archive');
     setCreateCountryInitial('');
     setCreateCityInitial('');
@@ -2067,7 +2068,7 @@ export function useAppState() {
   };
 
   const handleCreateTripForCountry = (countryName: string, cityName?: string, initialDate?: string) => {
-    if (!isLoggedIn) return alert("로그인 후 이용 가능합니다.");
+    if (!isLoggedIn) return notify("로그인 후 이용 가능합니다.");
     setCreateCountryInitial(countryName || '');
     setCreateCityInitial(cityName || '');
     setCreateDateInitial(initialDate || '');
@@ -2299,7 +2300,7 @@ export function useAppState() {
       });
     } catch (err: any) {
       console.error("Error creating journey:", err);
-      alert("여정 생성에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+      notify("여정 생성에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
     }
   };
 
@@ -2313,7 +2314,7 @@ export function useAppState() {
     updatedTransits: TransitItem[]
   ) => {
     if (!isLoggedIn) {
-      alert('로그인 후 저장할 수 있습니다.');
+      notify('로그인 후 저장할 수 있습니다.');
       return;
     }
 
@@ -2497,11 +2498,11 @@ export function useAppState() {
       console.error('Error message:', err?.message);
       // Provide user-friendly message based on error type
       if (err?.code === 'permission-denied') {
-        alert('저장 권한이 없습니다. 로그인 상태를 확인해주세요.');
+        notify('저장 권한이 없습니다. 로그인 상태를 확인해주세요.');
       } else if (err?.code === 'unavailable') {
-        alert('네트워크 연결을 확인해주세요.');
+        notify('네트워크 연결을 확인해주세요.');
       } else {
-        alert(`저장에 실패했습니다. (${err?.code || err?.message || '알 수 없는 오류'})`);
+        notify(`저장에 실패했습니다. (${err?.code || err?.message || '알 수 없는 오류'})`);
       }
       throw err;
     }
@@ -2555,7 +2556,7 @@ export function useAppState() {
       }
     } catch (err: any) {
       console.error("Error soft-deleting journey:", err);
-      alert("삭제에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
+      notify("삭제에 실패했습니다. Firebase 권한 설정을 확인해주세요.");
     }
   };
 
@@ -2576,10 +2577,10 @@ export function useAppState() {
       batch.set(restoreRef, cleanForFirestore(restoredData));
       batch.delete(trashRef);
       await batch.commit();
-      alert(`'${trashed.title}' 여정이 성공적으로 복구되었습니다.`);
+      notify(`'${trashed.title}' 여정이 성공적으로 복구되었습니다.`);
     } catch (err: any) {
       console.error("Error restoring journey:", err);
-      alert("복구에 실패했습니다.");
+      notify("복구에 실패했습니다.");
     }
   };
 
@@ -2641,10 +2642,10 @@ export function useAppState() {
       // 2. Remove from active sections & save
       const updated = magazineSections.filter(s => s.id !== sectionId).map((s, idx) => ({ ...s, order: idx }));
       await handleSaveMagazineSections(updated);
-      alert(`'${target.title}' 매거진 섹션이 휴지통으로 이동되었습니다.\n\n휴지통(TRASH) 탭에서 복원하거나 완전히 삭제할 수 있습니다.`);
+      notify(`'${target.title}' 매거진 섹션이 휴지통으로 이동되었습니다.\n\n휴지통(TRASH) 탭에서 복원하거나 완전히 삭제할 수 있습니다.`);
     } catch (err) {
       console.error("Error soft-deleting magazine section:", err);
-      alert("매거진 섹션 삭제 중 오류가 발생했습니다.");
+      notify("매거진 섹션 삭제 중 오류가 발생했습니다.");
     }
   };
 
@@ -2681,10 +2682,10 @@ export function useAppState() {
       // 2. Add to active magazine sections
       const updated = [...magazineSections, { ...cleanSection, order: magazineSections.length }];
       await handleSaveMagazineSections(updated);
-      alert(`'${trashed.title}' 매거진 섹션이 성공적으로 복구되었습니다.`);
+      notify(`'${trashed.title}' 매거진 섹션이 성공적으로 복구되었습니다.`);
     } catch (err) {
       console.error("Error restoring magazine section:", err);
-      alert("매거진 섹션 복구 중 오류가 발생했습니다.");
+      notify("매거진 섹션 복구 중 오류가 발생했습니다.");
     }
   };
 
@@ -2797,7 +2798,7 @@ export function useAppState() {
     if (currentView === 'detail' && activeTrip) {
       const isPlan = plans.some(p => String(p.id) === String(activeTrip.id));
       if (!isLoggedIn && isPlan) {
-        alert("이 계획 여정은 로그인 후 조회할 수 있습니다.");
+        notify("이 계획 여정은 로그인 후 조회할 수 있습니다.");
         navigateTo('home', null, true);
       }
     }

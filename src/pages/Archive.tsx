@@ -776,7 +776,7 @@ export function ArchiveHubPage({
                       <button
                         type="button"
                         onClick={() => setHubSearchQuery('')}
-                        className="absolute right-1.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5 cursor-pointer"
+                        className="tap-target absolute right-1.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white p-0.5 cursor-pointer"
                         title="검색어 지우기"
                       >
                         <X className="w-3 h-3" />
@@ -935,7 +935,7 @@ export function ArchiveHubPage({
                 <button
                   type="button"
                   onClick={() => handleSetCardViewMode('grid')}
-                  className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
+                  className={`tap-target p-1.5 rounded-xs transition-colors cursor-pointer ${
                     cardViewMode === 'grid' 
                       ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
                       : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -947,7 +947,7 @@ export function ArchiveHubPage({
                 <button
                   type="button"
                   onClick={() => handleSetCardViewMode('wide')}
-                  className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
+                  className={`tap-target p-1.5 rounded-xs transition-colors cursor-pointer ${
                     cardViewMode === 'wide' 
                       ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
                       : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
@@ -959,7 +959,7 @@ export function ArchiveHubPage({
                 <button
                   type="button"
                   onClick={() => handleSetCardViewMode('list')}
-                  className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
+                  className={`tap-target p-1.5 rounded-xs transition-colors cursor-pointer ${
                     cardViewMode === 'list' 
                       ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs' 
                       : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'

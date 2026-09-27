@@ -258,7 +258,7 @@ export function SearchModal({
           />
           <button
             onClick={onClose}
-            className="p-1 hover:bg-black/5 dark:hover:bg-white/5 transition-colors shrink-0 cursor-pointer"
+            className="tap-target p-1 hover:bg-black/5 dark:hover:bg-white/5 transition-colors shrink-0 cursor-pointer"
             title="Close Search"
           >
             <X className="w-5 h-5 opacity-55" />

@@ -27,6 +27,7 @@ import {
   airportCoords, extractCountry, getCountryName, generateDateList, minutesToTimeStr,
   parseTimeToMinutes, parseDateRange
 } from './detailUtils';
+import { notify, confirmDialog } from '../../utils/feedback';
 
 export interface JourneyDetailPageProps {
   isLoggedIn: boolean;
@@ -323,11 +324,11 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
     const shareUrl = `${window.location.origin}?id=${trip.id}&share=true`;
     navigator.clipboard.writeText(shareUrl)
       .then(() => {
-        alert("공유 전용 링크가 클립보드에 복사되었습니다.");
+        notify("공유 전용 링크가 클립보드에 복사되었습니다.");
       })
       .catch((err) => {
         console.error("공유 링크 복사 실패:", err);
-        alert("링크 복사에 실패했습니다.");
+        notify("링크 복사에 실패했습니다.");
       });
   };
 
@@ -397,7 +398,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
       setIsCoverModalOpen(false);
     } catch (err) {
       console.error("Failed to update trip cover:", err);
-      alert("커버 변경 저장에 실패했습니다.");
+      notify("커버 변경 저장에 실패했습니다.");
     } finally {
       setIsCoverUploading(false);
     }
@@ -413,7 +414,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
       setCoverInputUrl(url);
     } catch (err) {
       console.error("Cover upload error:", err);
-      alert("커버 이미지 업로드 실패");
+      notify("커버 이미지 업로드 실패");
     } finally {
       setIsCoverUploading(false);
     }
@@ -441,7 +442,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
           return;
         }
       }
-      alert("클립보드에 이미지나 이미지 URL이 없습니다.");
+      notify("클립보드에 이미지나 이미지 URL이 없습니다.");
     } catch (err) {
       console.warn("Clipboard paste error:", err);
     }
@@ -1100,10 +1101,10 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
   };
 
   // Generate default timeline template for the entire journey duration
-  const handleGenerateDefaultTemplate = () => {
+  const handleGenerateDefaultTemplate = async () => {
     if (!draftTrip) return;
     if (draftTimeline.length > 0) {
-      if (!window.confirm("기존의 모든 타임라인 일정이 초기화되고 기본 템플릿으로 대체됩니다. 진행하시겠습니까?")) {
+      if (!await confirmDialog("기존의 모든 타임라인 일정이 초기화되고 기본 템플릿으로 대체됩니다. 진행하시겠습니까?")) {
         return;
       }
     }
@@ -2446,7 +2447,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
   const uploadTimelineImageFile = async (itemId: number, file: File) => {
     const user = auth.currentUser;
     if (!user) {
-      alert("이미지를 업로드하려면 로그인이 필요합니다.");
+      notify("이미지를 업로드하려면 로그인이 필요합니다.");
       return;
     }
     try {
@@ -2476,7 +2477,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
       }
     } catch (err) {
       console.error("Paste image upload failed:", err);
-      alert("이미지 업로드에 실패했습니다.");
+      notify("이미지 업로드에 실패했습니다.");
     }
   };
 
@@ -2549,7 +2550,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
       updateTimelineItem(item.id, 'excludeFromMap', newExclude);
     } else {
       if (!isLoggedIn) {
-        alert('로그인 후 지도의 표시 상태를 변경할 수 있습니다.');
+        notify('로그인 후 지도의 표시 상태를 변경할 수 있습니다.');
         return;
       }
       try {
@@ -2904,7 +2905,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
   const processGalleryFiles = async (files: FileList | File[]) => {
     const user = auth.currentUser;
     if (!user) {
-      alert("로그인 상태에서만 업로드할 수 있습니다.");
+      notify("로그인 상태에서만 업로드할 수 있습니다.");
       return;
     }
 
@@ -2978,7 +2979,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
       }
     } catch (error) {
       console.error("Gallery image upload failed:", error);
-      alert("이미지 업로드에 실패했습니다.");
+      notify("이미지 업로드에 실패했습니다.");
     } finally {
       setUploadingImage(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -3023,7 +3024,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
       if (filesArray.length > 0) {
         await processGalleryFiles(filesArray);
       } else {
-        alert("이미지 파일만 업로드할 수 있습니다.");
+        notify("이미지 파일만 업로드할 수 있습니다.");
       }
     }
   };
@@ -3207,7 +3208,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
               <button
                 type="button"
                 onClick={handleOpenInCalendar}
-                className="p-0.5 hover:bg-black/5 dark:hover:bg-white/10 rounded transition-colors text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white shrink-0 cursor-pointer"
+                className="tap-target p-0.5 hover:bg-black/5 dark:hover:bg-white/10 rounded transition-colors text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white shrink-0 cursor-pointer"
                 title="스위스 달력에서 이 여정 확인하기"
               >
                 <Calendar className="w-3.5 h-3.5" />
@@ -3232,7 +3233,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
               setIsSwitcherOpen(true);
               setSwitcherSearch('');
             }}
-            className="p-1.5 rounded transition-colors cursor-pointer flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60"
+            className="tap-target p-1.5 rounded transition-colors cursor-pointer flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60"
             title="다른 여정으로 바로 이동 (Quick Switcher)"
             aria-label="Switch journey"
           >
@@ -3245,7 +3246,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
               setActiveTab(prev => prev === 'summary' ? 'timeline' : 'summary');
               setExpandedItemId(null);
             }}
-            className={`p-1.5 rounded transition-colors cursor-pointer flex items-center justify-center ${
+            className={`tap-target p-1.5 rounded transition-colors cursor-pointer flex items-center justify-center ${
               activeTab === 'summary'
                 ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
                 : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'
@@ -3262,7 +3263,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                 type="button"
                 onClick={handleUndo}
                 disabled={!canUndo}
-                className={`p-1.5 rounded transition-colors flex items-center justify-center ${
+                className={`tap-target p-1.5 rounded transition-colors flex items-center justify-center ${
                   canUndo
                     ? 'hover:bg-black/5 dark:hover:bg-white/5 text-black/80 dark:text-white/80 cursor-pointer'
                     : 'text-black/60 dark:text-white/60 cursor-not-allowed'
@@ -3275,7 +3276,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                 type="button"
                 onClick={handleRedo}
                 disabled={!canRedo}
-                className={`p-1.5 rounded transition-colors flex items-center justify-center ${
+                className={`tap-target p-1.5 rounded transition-colors flex items-center justify-center ${
                   canRedo
                     ? 'hover:bg-black/5 dark:hover:bg-white/5 text-black/80 dark:text-white/80 cursor-pointer'
                     : 'text-black/60 dark:text-white/60 cursor-not-allowed'
@@ -3317,7 +3318,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                 setCoverInputUrl(tripToUse?.img || '');
                 setIsCoverModalOpen(true);
               }}
-              className="p-1.5 rounded border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 text-black/80 dark:text-white/80 transition-colors cursor-pointer flex items-center justify-center"
+              className="tap-target p-1.5 rounded border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 text-black/80 dark:text-white/80 transition-colors cursor-pointer flex items-center justify-center"
               title="카드 커버 이미지 변경"
             >
               <ImageIcon className="w-3.5 h-3.5" />
@@ -3327,7 +3328,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
           {/* Accordion Menu Toggle Button */}
           <button
             onClick={() => setIsBannerMenuOpen(p => !p)}
-            className={`p-1.5 rounded transition-all cursor-pointer ${
+            className={`tap-target p-1.5 rounded transition-all cursor-pointer ${
               isBannerMenuOpen
                 ? 'bg-black/10 dark:bg-white/15 text-red-600 dark:text-red-400'
                 : 'hover:bg-black/5 dark:hover:bg-white/5 text-black/60 dark:text-white/60'
@@ -3571,7 +3572,7 @@ export function useJourneyDetailState(props: JourneyDetailPageProps) {
                           const newMembers = (draftTrip.members || []).filter(x => x !== m);
                           setDraftTrip({ ...draftTrip, members: newMembers });
                         }}
-                        className="hover:text-red-500 text-red-600 font-bold text-meta ml-1 leading-none"
+                        className="tap-target hover:text-red-500 text-red-600 font-bold text-meta ml-1 leading-none"
                         title="삭제"
                       >
                         <X className="w-2.5 h-2.5" />

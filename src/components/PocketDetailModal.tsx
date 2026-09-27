@@ -6,6 +6,7 @@ import {
   MessageSquare, Send, Check, ZoomIn
 } from 'lucide-react';
 import { SpotPocketItem, PocketCategory, PocketComment, UserProfile } from '../types';
+import { confirmDialog } from '../utils/feedback';
 
 interface PocketDetailModalProps {
   isOpen: boolean;
@@ -175,7 +176,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-3.5 right-3.5 z-30 w-8 h-8 rounded-full bg-black/60 dark:bg-white/20 backdrop-blur-md text-white flex items-center justify-center hover:bg-black dark:hover:bg-white dark:hover:text-black transition-all cursor-pointer shadow-md"
+          className="tap-target absolute top-3.5 right-3.5 z-30 w-8 h-8 rounded-full bg-black/60 dark:bg-white/20 backdrop-blur-md text-white flex items-center justify-center hover:bg-black dark:hover:bg-white dark:hover:text-black transition-all cursor-pointer shadow-md"
           title="닫기 (ESC)"
         >
           <X className="w-4 h-4 stroke-[2.5]" />
@@ -332,13 +333,13 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
                             {canManage && onSaveComments && (
                               <button
                                 type="button"
-                                onClick={() => {
-                                  if (window.confirm('댓글을 삭제하시겠습니까?')) {
+                                onClick={async () => {
+                                  if (await confirmDialog('댓글을 삭제하시겠습니까?')) {
                                     const updated = (spot.comments || []).filter(item => item.id !== c.id);
                                     onSaveComments(spot.id, updated);
                                   }
                                 }}
-                                className="text-red-500/70 hover:text-red-600 p-0.5 transition-colors cursor-pointer"
+                                className="tap-target text-red-500/70 hover:text-red-600 p-0.5 transition-colors cursor-pointer"
                                 title="댓글 삭제"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -398,7 +399,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
                         onSaveComments(spot.id, [...(spot.comments || []), newComment]);
                         setQuickCommentText('');
                       }}
-                      className="px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed text-[11px] font-mono font-bold uppercase rounded cursor-pointer"
+                      className="tap-target px-3 py-1.5 bg-black text-white dark:bg-white dark:text-black hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed text-[11px] font-mono font-bold uppercase rounded cursor-pointer"
                     >
                       <Send className="w-3 h-3" />
                     </button>
@@ -429,7 +430,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
                     onClose();
                     onEdit(spot);
                   }}
-                  className="p-1.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded transition-colors cursor-pointer"
+                  className="tap-target p-1.5 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded transition-colors cursor-pointer"
                   title="스팟 수정"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
@@ -442,7 +443,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
                     onClose();
                     onDelete(spot);
                   }}
-                  className="p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 rounded transition-colors cursor-pointer"
+                  className="tap-target p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 rounded transition-colors cursor-pointer"
                   title="스팟 삭제"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -536,7 +537,7 @@ export const PocketDetailModal: React.FC<PocketDetailModalProps> = ({
               <button
                 type="button"
                 onClick={() => setIsLightboxOpen(false)}
-                className="p-1.5 hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer"
+                className="tap-target p-1.5 hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer"
                 title="닫기 (ESC)"
               >
                 <X className="w-5 h-5" />
