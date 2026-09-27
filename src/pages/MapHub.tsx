@@ -1830,7 +1830,15 @@ export function MapHubPage({
   const requestChangeBuilderCity = useCallback((cityName: string, countryName?: string, countryCode?: string) => {
     if (!cityName) return;
     if (isBuilderOpenRef.current) {
-      if (builderCity === cityName) return;
+      if (!builderCity || builderCity === cityName) {
+        // 기존 작성 중인 대상 도시가 없을 때는 불필요한 모달 없이 즉시 세팅
+        setBuilderCity(cityName);
+        setBuilderCities([cityName]);
+        if (countryName || selectedCountry?.name) setBuilderCountry(countryName || selectedCountry?.name || '');
+        if (countryCode || selectedCountry?.code) setBuilderCountryCode(countryCode || selectedCountry?.code || '');
+        setActiveWeatherCity(cityName);
+        return;
+      }
       setConfirmChangeCityModal({
         isOpen: true,
         targetCity: cityName,

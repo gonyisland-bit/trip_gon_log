@@ -2273,9 +2273,22 @@ function App() {
       localStorage.setItem('journey_order', JSON.stringify(updatedOrder));
     } catch (_) {}
 
+    // Ensure unique journey title if identical title already exists
+    let finalTitle = (title || '').trim();
+    const allExistingJourneys = [...trips, ...plans];
+    const existingTitles = new Set(allExistingJourneys.map(j => (j.title || '').trim().toLowerCase()));
+    if (existingTitles.has(finalTitle.toLowerCase())) {
+      const baseName = finalTitle.replace(/\s*#\d+$/, '').trim();
+      let nextNumber = 2;
+      while (existingTitles.has(`${baseName} #${nextNumber}`.toLowerCase())) {
+        nextNumber++;
+      }
+      finalTitle = `${baseName} #${nextNumber}`;
+    }
+
     const newJourney: any = {
       id: newId,
-      title,
+      title: finalTitle,
       date: dateRange,
       tags: createModalType === 'plan' ? [...tags, 'Plan'] : tags,
       img,

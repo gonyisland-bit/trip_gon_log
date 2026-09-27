@@ -23,7 +23,7 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { Footer } from '../components/Footer';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { FloatingPocketWidget } from '../components/FloatingPocketWidget';
-import { getSavedPockets, findNearbySpots } from '../utils/pocketStorage';
+import { getSavedPockets, findNearbySpots, calculateDistanceInMeters } from '../utils/pocketStorage';
 import { 
   Trip, 
   Plan,
@@ -2036,7 +2036,47 @@ export function JourneyDetailPage({
     return map;
   }, [baseTimeline]);
 
-  // ── 300m Hotspot Radar Watcher & Auto-Alert ──
+  // 시간 연산 헬퍼: 기존 시간 기준 1시간 뒤 자동 계산 (12시간제/24시간제 완벽 대응)
+  const calculateNextTimelineTime = (baseTimeStr?: string): string => {
+    if (!baseTimeStr) return '10:00 AM';
+    const clean = baseTimeStr.trim().toUpperCase();
+
+    // 12-hour format e.g. "10:30 AM", "12:00 PM", "02:15 PM"
+    const ampmMatch = clean.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/);
+    if (ampmMatch) {
+      let hours = parseInt(ampmMatch[1], 10);
+      const minutes = ampmMatch[2];
+      const ampm = ampmMatch[3];
+
+      if (ampm) {
+        if (hours === 11 && ampm === 'AM') {
+          return `12:${minutes} PM`;
+        } else if (hours === 12 && ampm === 'AM') {
+          return `01:${minutes} AM`;
+        } else if (hours === 11 && ampm === 'PM') {
+          return `12:${minutes} AM`;
+        } else if (hours === 12 && ampm === 'PM') {
+          return `01:${minutes} PM`;
+        } else {
+          const nextHour = hours + 1;
+          return `${String(nextHour).padStart(2, '0')}:${minutes} ${ampm}`;
+        }
+      } else {
+        const nextHour = (hours + 1) % 24;
+        return `${String(nextHour).padStart(2, '0')}:${minutes}`;
+      }
+    }
+
+    const hourMatch = clean.match(/^(\d{1,2})/);
+    if (hourMatch) {
+      const nextH = (parseInt(hourMatch[1], 10) + 1) % 24;
+      return `${String(nextH).padStart(2, '0')}:00`;
+    }
+
+    return '01:00 PM';
+  };
+
+  // ── 300m Hotspot Radar Watcher & Auto-Alert (Strict User Current GPS Only) ──
   useEffect(() => {
     const savedPockets = getSavedPockets();
     if (savedPockets.length === 0) return;
@@ -2044,33 +2084,65 @@ export function JourneyDetailPage({
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          const nearby = findNearbySpots(savedPockets, pos.coords.latitude, pos.coords.longitude, 300);
-          if (nearby.length > 0) {
-            setNearbySpotAlert(nearby[0]);
+          const userLat = pos.coords.latitude;
+          const userLng = pos.coords.longitude;
+
+          // 여정 지역과의 거리 검사 (반경 50km 이내에 실제 사용자가 있을 때만 가동)
+          const currentTimelinePoints = (isEditing ? draftTimeline : baseTimeline)
+            .filter(item => typeof item.lat === 'number' && typeof item.lng === 'number');
+          const tripLat = trip?.lat ?? currentTimelinePoints[0]?.lat;
+          const tripLng = trip?.lng ?? currentTimelinePoints[0]?.lng;
+
+          if (typeof tripLat === 'number' && typeof tripLng === 'number') {
+            const distToTrip = calculateDistanceInMeters(userLat, userLng, tripLat, tripLng);
+            if (distToTrip > 50000) return; // 50km 밖이면 레이더 오작동 원천 차단
+          }
+
+          const nearby = findNearbySpots(savedPockets, userLat, userLng, 300);
+          // 0m(가상 동일 좌표/오류) 제외 및 300m 이내 유효 거리만 필터
+          const validNearby = nearby.filter(n => n.distance > 0 && n.distance <= 300);
+          if (validNearby.length > 0) {
+            setNearbySpotAlert(validNearby[0]);
           }
         },
         () => {
-          const refItem = (isEditing ? draftTimeline : baseTimeline).find(item => typeof item.lat === 'number' && typeof item.lng === 'number');
-          const refLat = refItem?.lat ?? trip?.lat;
-          const refLng = refItem?.lng ?? trip?.lng;
-          if (typeof refLat === 'number' && typeof refLng === 'number') {
-            const nearby = findNearbySpots(savedPockets, refLat, refLng, 300);
-            if (nearby.length > 0) {
-              setNearbySpotAlert(nearby[0]);
-            }
-          }
+          // GPS 실패 시 가상 좌표 fallback 금지 (현재 위치 기준 원칙)
         },
-        { timeout: 5000, enableHighAccuracy: false }
+        { timeout: 8000, enableHighAccuracy: true }
       );
     }
   }, [trip?.id, baseTimeline]);
 
   const handleDirectAddFromPocket = (spot: SpotPocketItem, targetDateParam?: string, targetTimeParam?: string) => {
-    const targetDate = targetDateParam || (selectedDate === 'ALL' ? (allTripDates[0] || trip?.date?.split('-')[0]?.trim() || '2025.04.12') : selectedDate);
+    // 1. 타임라인에서 현재 선택된 아이템 파악
+    const currentList = isEditing ? draftTimeline : baseTimeline;
+    const selectedItem = expandedItemId !== null ? currentList.find(i => i.id === expandedItemId) : null;
+
+    // 타깃 일자: 파라미터 > 선택된 아이템의 날짜 > 현재 탭 선택 날짜 > 첫째 날
+    const targetDate = targetDateParam || 
+      selectedItem?.date || 
+      (selectedDate === 'ALL' ? (allTripDates[0] || trip?.date?.split('-')[0]?.trim() || '2025.04.12') : selectedDate);
+
+    // 타깃 시간: 파라미터 > 선택된 아이템의 다음 시간(+1시간) > 해당 날짜 마지막 아이템 다음 시간 > 기본 10:00 AM
+    let targetTime = targetTimeParam;
+    if (!targetTime) {
+      if (selectedItem && selectedItem.time) {
+        targetTime = calculateNextTimelineTime(selectedItem.time);
+      } else {
+        const sameDayItems = currentList.filter(i => (i.date || targetDate) === targetDate);
+        if (sameDayItems.length > 0) {
+          const lastItem = sameDayItems[sameDayItems.length - 1];
+          targetTime = calculateNextTimelineTime(lastItem.time);
+        } else {
+          targetTime = '10:00 AM';
+        }
+      }
+    }
+
     const newId = Date.now();
     const newItem: TimelineItem = {
       id: newId,
-      time: targetTimeParam || '12:00 PM',
+      time: targetTime,
       type: spot.category === 'food' || spot.category === 'cafe' ? 'restaurant' : 'activity',
       place: spot.title,
       cost: '-',
@@ -2082,8 +2154,22 @@ export function JourneyDetailPage({
       tripId: trip?.id,
       link: spot.sourceUrl || ''
     };
+
     recordHistory();
-    setDraftTimeline(prev => [...prev, newItem]);
+
+    // 선택된 아이템이 있으면 바로 뒤에 삽입, 없으면 끝에 추가
+    setDraftTimeline(prev => {
+      if (selectedItem) {
+        const insertIdx = prev.findIndex(i => i.id === selectedItem.id);
+        if (insertIdx !== -1) {
+          const next = [...prev];
+          next.splice(insertIdx + 1, 0, newItem);
+          return next;
+        }
+      }
+      return [...prev, newItem];
+    });
+
     setIsEditing(true);
     setActiveTab('timeline');
     setExpandedItemId(newId);
@@ -4107,7 +4193,7 @@ export function JourneyDetailPage({
                   title="항공권 & 숙소 원클릭 스마트 예약 비교"
                 >
                   <Sparkles className="w-3 h-3 text-emerald-500" />
-                  <span>RESERVE SHORTCUT</span>
+                  <span>SMART BOOKING</span>
                 </button>
               </div>
             )}
@@ -5449,7 +5535,7 @@ export function JourneyDetailPage({
                     className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90 font-mono text-[10px] font-bold tracking-widest uppercase transition-all active:scale-[0.98] shadow-xs cursor-pointer"
                   >
                     <Sparkles className="w-3 h-3 text-emerald-400" />
-                    <span>ONE-CLICK SEARCH</span>
+                    <span>SMART BOOKING</span>
                   </button>
                 </div>
 
@@ -5597,7 +5683,7 @@ export function JourneyDetailPage({
                     className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/90 font-mono text-[10px] font-bold tracking-widest uppercase transition-all active:scale-[0.98] shadow-xs cursor-pointer"
                   >
                     <Sparkles className="w-3 h-3 text-emerald-400" />
-                    <span>ONE-CLICK SEARCH</span>
+                    <span>SMART BOOKING</span>
                   </button>
                 </div>
                 {(isEditing ? draftStays : stays).length === 0 ? (

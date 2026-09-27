@@ -279,7 +279,78 @@ export function extractMultiSpotCandidates(caption: string): ScrapedSpotCandidat
   }
   flushCurrent();
 
+  // If no numbered or pinned candidates found, fallback to extractKeywordCandidates
+  if (candidates.length === 0) {
+    const fallbackKeywords = extractKeywordCandidates(caption);
+    return fallbackKeywords.slice(0, 10).map((kw, idx) => {
+      const { city, country } = detectCityAndCountry(kw);
+      return {
+        index: idx + 1,
+        title: kw,
+        category: inferCategory(kw),
+        memo: '',
+        city,
+        country
+      };
+    });
+  }
+
   return candidates.slice(0, 15);
+}
+
+/**
+ * Extracts potential place names and keywords from free-form text or memo.
+ * Useful when no numbered list or bullet emojis exist.
+ */
+export function extractKeywordCandidates(text: string): string[] {
+  if (!text) return [];
+  const results: string[] = [];
+  const seen = new Set<string>();
+
+  const add = (candidate: string) => {
+    const cleaned = candidate
+      .replace(/^[#@📍🏷️▫️✔️📌▪️\*\s"\'「」『』\[\]]+/, '')
+      .replace(/[#@📍🏷️▫️✔️📌▪️\*\s"\'「」『』\[\]]+$/, '')
+      .trim();
+    if (
+      cleaned.length >= 2 &&
+      cleaned.length <= 40 &&
+      !/^(여행|추천|정보|공유|일상|데일리|소통|선팔|맞팔|좋아요|후기|코스|일정|사진|영상|리뷰|블로그|인스타|피드|핫플)$/i.test(cleaned) &&
+      !seen.has(cleaned.toLowerCase())
+    ) {
+      seen.add(cleaned.toLowerCase());
+      results.push(cleaned);
+    }
+  };
+
+  // 1. Quoted terms: "OOO", 'OOO', 「OOO」, 『OOO』, [OOO]
+  const quoteMatches = text.matchAll(/(?:["'「『\[])([^"'」』\]\r\n]{2,30})(?:["'」』\]])/g);
+  for (const match of quoteMatches) {
+    if (match[1]) add(match[1]);
+  }
+
+  // 2. Place suffixes: ~식당, ~카페, ~베이커리, ~호텔, ~타워, ~시장, ~공원, ~미술관, ~박물관, ~스토어, ~점 등
+  const suffixMatches = text.matchAll(/([가-힣a-zA-Z0-9]{2,15}(?:식당|카페|베이커리|맛집|호텔|스테이션|타워|시장|공원|미술관|박물관|빌리지|사원|신사|궁|성|로드|스트리트|빌딩|몰|스토어|라운지|하우스|플레이스|포차|스시|라멘|우동|이자카야|점))/g);
+  for (const match of suffixMatches) {
+    if (match[1]) add(match[1]);
+  }
+
+  // 3. Meaningful hashtags
+  const tagMatches = text.matchAll(/#([가-힣a-zA-Z0-9]{2,20})/g);
+  for (const match of tagMatches) {
+    if (match[1]) add(match[1]);
+  }
+
+  // 4. Short stand-alone lines (likely titles or spot names)
+  const lines = text.split(/[\r\n]+/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.length >= 2 && trimmed.length <= 25 && !trimmed.includes('http') && !trimmed.endsWith('.') && !trimmed.endsWith('!')) {
+      add(trimmed);
+    }
+  }
+
+  return results.slice(0, 15);
 }
 
 /**

@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import { ConfirmModal } from './ConfirmModal';
-import { ScrapedSpotData, ScrapedSpotCandidate, scrapeSnsMetadata, extractAddressFromText } from '../utils/snsScraper';
+import { ScrapedSpotData, ScrapedSpotCandidate, scrapeSnsMetadata, extractAddressFromText, extractKeywordCandidates } from '../utils/snsScraper';
 import { PocketCategory, SpotPocketItem, SpotPocketPlatform } from '../types';
 import { compressImage } from '../utils/imageHelper';
 import { uploadFileToR2 } from '../utils/storageHelper';
@@ -182,8 +182,11 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
     setActiveCandidateIndex(scrapedData.targetImgIndex ? scrapedData.targetImgIndex - 1 : null);
     setIsUserEditedTitle(false);
 
-    // Initial candidates from scrapedData
-    const initialCandidates = scrapedData.candidates?.map(c => c.title) || [];
+    // Initial candidates from scrapedData or extracted from memo/title
+    let initialCandidates = scrapedData.candidates?.map(c => c.title) || [];
+    if (initialCandidates.length === 0 && (scrapedData.memo || scrapedData.title)) {
+      initialCandidates = extractKeywordCandidates(`${scrapedData.title || ''} ${scrapedData.memo || ''}`);
+    }
     setOcrCandidates(initialCandidates);
     setOcrDescription('');
     setOcrError(null);
@@ -224,6 +227,9 @@ export function PocketScrapModal({ isOpen, onClose, scrapedData, onSave }: Pocke
       }
       if (res.candidates && res.candidates.length > 0) {
         setOcrCandidates(res.candidates.map(c => c.title));
+      } else if (res.memo || res.title) {
+        const extracted = extractKeywordCandidates(`${res.title || ''} ${res.memo || ''}`);
+        if (extracted.length > 0) setOcrCandidates(extracted);
       }
     } catch (err) {
       console.warn('[PocketScrapModal] Fetch URL error:', err);

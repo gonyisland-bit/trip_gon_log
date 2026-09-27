@@ -1902,7 +1902,7 @@ export function HomePage({
                       if (!isPlanBadge && !isNewBadge && !isEditingBadge) return null;
 
                       const badgeText = isPlanBadge 
-                        ? (planInfo.dDayLabel && planInfo.dDayLabel !== 'PLAN' ? `PLAN · ${planInfo.dDayLabel}` : 'PLAN') 
+                        ? 'PLAN'
                         : (isNewBadge ? 'NEW' : 'EDITING');
                       const badgeBg = isPlanBadge 
                         ? 'bg-blue-600/90 text-white' 

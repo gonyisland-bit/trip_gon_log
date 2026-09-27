@@ -1250,9 +1250,6 @@ export function PocketHubPage({
             >
               <Bookmark className="w-3.5 h-3.5 fill-current" />
               <span>SCRAP</span>
-              <kbd className="hidden sm:inline-flex items-center justify-center font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/20 dark:bg-black/20 text-white/90 dark:text-black/90 leading-none">
-                S
-              </kbd>
             </button>
           </div>
         </div>

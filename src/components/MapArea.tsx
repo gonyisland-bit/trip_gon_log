@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { MapPin, Plus, Minus, Store, ShoppingBag, Train, Loader2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Menu, Lock, Unlock, Bookmark } from 'lucide-react';
+import { MapPin, Plus, Minus, Store, ShoppingBag, Train, Loader2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Menu, Lock, Unlock, Bookmark, Locate, User } from 'lucide-react';
 import { Trip, TimelineItem, TransitItem, SpotPocketItem } from '../types';
-import { getSavedPockets } from '../utils/pocketStorage';
+import { getSavedPockets, calculateDistanceInMeters } from '../utils/pocketStorage';
 
 const dayColors = [
   '#dc2626', // Day 1: Red
@@ -228,6 +228,81 @@ export function MapArea({
   const [isMapMenuOpen, setIsMapMenuOpen] = useState(false);
   const [showPocketPins, setShowPocketPins] = useState<boolean>(true);
   const pocketMarkersRef = useRef<{ [id: string]: any }>({});
+  const userLocationMarkerRef = useRef<any>(null);
+  const [isLocating, setIsLocating] = useState<boolean>(false);
+  const [locationToast, setLocationToast] = useState<{ show: boolean; message: string } | null>(null);
+
+  const handleLocateUser = () => {
+    if (!('geolocation' in navigator)) {
+      setLocationToast({ show: true, message: '이 브라우저는 위치 서비스를 지원하지 않습니다.' });
+      setTimeout(() => setLocationToast(null), 3000);
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setIsLocating(false);
+        const userLat = pos.coords.latitude;
+        const userLng = pos.coords.longitude;
+
+        // 여정 중심 좌표 또는 지도 포인트들과의 거리 계산
+        const validPoints = mapPoints.filter(p => typeof p.lat === 'number' && typeof p.lng === 'number');
+        const refLat = trip?.lat ?? validPoints[0]?.lat;
+        const refLng = trip?.lng ?? validPoints[0]?.lng;
+
+        if (typeof refLat === 'number' && typeof refLng === 'number') {
+          const dist = calculateDistanceInMeters(userLat, userLng, refLat, refLng);
+          // 50km 이상 떨어져 있으면 해당 지역에 없음
+          if (dist > 50000) {
+            setLocationToast({ show: true, message: '해당 지역에 있지 않습니다' });
+            setTimeout(() => setLocationToast(null), 3000);
+            return;
+          }
+        }
+
+        const map = mapRef.current;
+        const L = (window as any).L;
+        if (!map || !L) return;
+
+        // 기존 내 위치 마커 제거 후 새로 생성
+        if (userLocationMarkerRef.current) {
+          try { userLocationMarkerRef.current.remove(); } catch (_) {}
+          userLocationMarkerRef.current = null;
+        }
+
+        // 빨간색 미니멀 사람 SVG 마커 + 동심원 펄스 애니메이션 (내가 여기 있다)
+        const userIcon = L.divIcon({
+          className: 'user-current-location-marker',
+          html: `
+            <div style="position: relative; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; pointer-events: none;">
+              <div class="pin-radar-ring" style="position: absolute; width: 40px; height: 40px; border-radius: 50%; background-color: rgba(225, 29, 72, 0.25); border: 1.5px solid rgba(225, 29, 72, 0.8);"></div>
+              <div class="pin-radar-ring-2" style="position: absolute; width: 40px; height: 40px; border-radius: 50%; background-color: rgba(225, 29, 72, 0.15); border: 1.5px solid rgba(225, 29, 72, 0.5);"></div>
+              <div style="position: relative; z-index: 10; width: 24px; height: 24px; border-radius: 50%; background: #E11D48; border: 2px solid #FFFFFF; box-shadow: 0 2px 10px rgba(225, 29, 72, 0.5); display: flex; align-items: center; justify-content: center;">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              </div>
+            </div>
+          `,
+          iconSize: [40, 40],
+          iconAnchor: [20, 20],
+        });
+
+        const marker = L.marker([userLat, userLng], { icon: userIcon, zIndexOffset: 3000 }).addTo(map);
+        userLocationMarkerRef.current = marker;
+
+        map.flyTo([userLat, userLng], 15, { duration: 1.2 });
+      },
+      (err) => {
+        setIsLocating(false);
+        setLocationToast({ show: true, message: '현재 위치를 가져올 수 없습니다.' });
+        setTimeout(() => setLocationToast(null), 3000);
+      },
+      { timeout: 8000, enableHighAccuracy: true }
+    );
+  };
 
   const lastTabRef = useRef<string | undefined>(undefined);
   const lastExpandedItemIdRef = useRef<number | null>(null);
@@ -1788,9 +1863,33 @@ export function MapArea({
         </div>
       )}
 
-      {/* ── Compact Map Tools Controls (Pocket Pins + Hamburger) ── */}
+      {/* ── Location Alert Toast (Swiss Minimal Floating Pill) ── */}
+      {locationToast && locationToast.show && (
+        <div className="absolute top-12 left-1/2 -translate-x-1/2 z-50 bg-black/90 dark:bg-white/90 text-white dark:text-black text-xs font-mono font-bold tracking-wide px-4 py-2 border border-red-500 shadow-2xl rounded-none animate-in fade-in slide-in-from-top-2 duration-150 flex items-center gap-2 select-none">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+          <span>{locationToast.message}</span>
+        </div>
+      )}
+
+      {/* ── Compact Map Tools Controls (Locate + Pocket Pins + Hamburger) ── */}
       <div className="absolute top-3 right-3 z-30 flex flex-col items-end gap-1.5 pointer-events-auto select-none">
         <div className="flex items-center gap-1.5">
+          {/* Current Location Button */}
+          <button
+            type="button"
+            onClick={handleLocateUser}
+            disabled={isLocating}
+            className="w-7 h-7 rounded shadow-sm border transition-all cursor-pointer flex items-center justify-center bg-[#F9F8F6]/90 dark:bg-[#111111]/90 backdrop-blur-md text-black/70 dark:text-white/70 border-black/15 dark:border-white/15 hover:text-red-600 dark:hover:text-red-400 active:scale-95"
+            title="현재 위치 찾기 (GPS)"
+            aria-label="Find my current location"
+          >
+            {isLocating ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-red-600" />
+            ) : (
+              <Locate className="w-3.5 h-3.5" />
+            )}
+          </button>
+
           <button
             type="button"
             onClick={() => setShowPocketPins(prev => !prev)}

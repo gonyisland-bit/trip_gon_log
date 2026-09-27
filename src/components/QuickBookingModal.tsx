@@ -102,7 +102,7 @@ export function QuickBookingModal({
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <h2 className="font-mono text-xs md:text-sm font-bold tracking-widest uppercase">
-              ONE-CLICK BOOKING SHORTCUT
+              SMART BOOKING
             </h2>
           </div>
           <button
@@ -193,27 +193,27 @@ export function QuickBookingModal({
             </div>
 
             {/* Dates row */}
-            <div className="grid grid-cols-2 gap-2 pt-1 border-t border-black/5 dark:border-white/5 text-xs">
-              <div>
-                <label className="flex items-center gap-1 text-[10px] font-mono text-black/50 dark:text-white/50 mb-1">
-                  <Calendar className="w-3 h-3" /> 가는 날 (체크인)
+            <div className="grid grid-cols-2 gap-2 pt-1 border-t border-black/5 dark:border-white/5 text-xs w-full min-w-0">
+              <div className="min-w-0">
+                <label className="flex items-center gap-1 text-[10px] font-mono text-black/50 dark:text-white/50 mb-1 truncate">
+                  <Calendar className="w-3 h-3 shrink-0" /> 가는 날 (체크인)
                 </label>
                 <input
                   type="date"
                   value={depDate}
                   onChange={(e) => setDepDate(e.target.value)}
-                  className="w-full px-2.5 py-1.5 font-mono text-xs bg-white dark:bg-[#1a1a1a] border border-black/15 dark:border-white/15 rounded focus:border-black dark:focus:border-white outline-none"
+                  className="w-full min-w-0 max-w-full px-2 sm:px-2.5 py-1.5 font-mono text-xs bg-white dark:bg-[#1a1a1a] border border-black/15 dark:border-white/15 rounded focus:border-black dark:focus:border-white outline-none box-border"
                 />
               </div>
-              <div>
-                <label className="flex items-center gap-1 text-[10px] font-mono text-black/50 dark:text-white/50 mb-1">
-                  <Calendar className="w-3 h-3" /> 오는 날 (체크아웃)
+              <div className="min-w-0">
+                <label className="flex items-center gap-1 text-[10px] font-mono text-black/50 dark:text-white/50 mb-1 truncate">
+                  <Calendar className="w-3 h-3 shrink-0" /> 오는 날 (체크아웃)
                 </label>
                 <input
                   type="date"
                   value={retDate}
                   onChange={(e) => setRetDate(e.target.value)}
-                  className="w-full px-2.5 py-1.5 font-mono text-xs bg-white dark:bg-[#1a1a1a] border border-black/15 dark:border-white/15 rounded focus:border-black dark:focus:border-white outline-none"
+                  className="w-full min-w-0 max-w-full px-2 sm:px-2.5 py-1.5 font-mono text-xs bg-white dark:bg-[#1a1a1a] border border-black/15 dark:border-white/15 rounded focus:border-black dark:focus:border-white outline-none box-border"
                 />
               </div>
             </div>
@@ -231,22 +231,22 @@ export function QuickBookingModal({
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
               <a
                 href={skyscannerUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="group p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer"
+                className="group p-2 sm:p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer min-w-0"
               >
-                <div className="flex items-center justify-between w-full mb-1.5">
-                  <span className="text-xs font-bold font-mono tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                <div className="flex items-center justify-between w-full mb-1">
+                  <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate">
                     스카이스캐너
                   </span>
-                  <ExternalLink className="w-3 h-3 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white transition-colors" />
+                  <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
                 </div>
-                <span className="text-[10px] text-black/50 dark:text-white/50">
-                  전 세계 최저가 항공권 비교
+                <span className="text-[9px] sm:text-[10px] text-black/50 dark:text-white/50 line-clamp-1">
+                  전 세계 최저가 비교
                 </span>
               </a>
 
@@ -255,16 +255,16 @@ export function QuickBookingModal({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="group p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer"
+                className="group p-2 sm:p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer min-w-0"
               >
-                <div className="flex items-center justify-between w-full mb-1.5">
-                  <span className="text-xs font-bold font-mono tracking-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
+                <div className="flex items-center justify-between w-full mb-1">
+                  <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400 truncate">
                     네이버 항공권
                   </span>
-                  <ExternalLink className="w-3 h-3 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white transition-colors" />
+                  <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
                 </div>
-                <span className="text-[10px] text-black/50 dark:text-white/50">
-                  국내 카드사 할인 혜택 비교
+                <span className="text-[9px] sm:text-[10px] text-black/50 dark:text-white/50 line-clamp-1">
+                  국내 카드사 할인
                 </span>
               </a>
 
@@ -273,16 +273,16 @@ export function QuickBookingModal({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="group p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer"
+                className="group p-2 sm:p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer min-w-0"
               >
-                <div className="flex items-center justify-between w-full mb-1.5">
-                  <span className="text-xs font-bold font-mono tracking-tight group-hover:text-rose-600 dark:group-hover:text-rose-400">
+                <div className="flex items-center justify-between w-full mb-1">
+                  <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-rose-600 dark:group-hover:text-rose-400 truncate">
                     구글 플라이트
                   </span>
-                  <ExternalLink className="w-3 h-3 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white transition-colors" />
+                  <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
                 </div>
-                <span className="text-[10px] text-black/50 dark:text-white/50">
-                  실시간 가격 변동 트렌드
+                <span className="text-[9px] sm:text-[10px] text-black/50 dark:text-white/50 line-clamp-1">
+                  가격 변동 트렌드
                 </span>
               </a>
             </div>
@@ -300,22 +300,22 @@ export function QuickBookingModal({
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
               <a
                 href={agodaUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="group p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer"
+                className="group p-2 sm:p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer min-w-0"
               >
-                <div className="flex items-center justify-between w-full mb-1.5">
-                  <span className="text-xs font-bold font-mono tracking-tight group-hover:text-amber-600 dark:group-hover:text-amber-400">
-                    아고다 (Agoda)
+                <div className="flex items-center justify-between w-full mb-1">
+                  <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-amber-600 dark:group-hover:text-amber-400 truncate">
+                    아고다
                   </span>
-                  <ExternalLink className="w-3 h-3 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white transition-colors" />
+                  <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
                 </div>
-                <span className="text-[10px] text-black/50 dark:text-white/50">
-                  아시아권 호텔 & 리조트 특가
+                <span className="text-[9px] sm:text-[10px] text-black/50 dark:text-white/50 line-clamp-1">
+                  호텔 & 리조트 특가
                 </span>
               </a>
 
@@ -324,16 +324,16 @@ export function QuickBookingModal({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="group p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer"
+                className="group p-2 sm:p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer min-w-0"
               >
-                <div className="flex items-center justify-between w-full mb-1.5">
-                  <span className="text-xs font-bold font-mono tracking-tight group-hover:text-blue-700 dark:group-hover:text-blue-400">
+                <div className="flex items-center justify-between w-full mb-1">
+                  <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-blue-700 dark:group-hover:text-blue-400 truncate">
                     부킹닷컴
                   </span>
-                  <ExternalLink className="w-3 h-3 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white transition-colors" />
+                  <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
                 </div>
-                <span className="text-[10px] text-black/50 dark:text-white/50">
-                  무료 취소 & 전 세계 숙소
+                <span className="text-[9px] sm:text-[10px] text-black/50 dark:text-white/50 line-clamp-1">
+                  무료 취소 & 전세계
                 </span>
               </a>
 
@@ -342,16 +342,16 @@ export function QuickBookingModal({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="group p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer"
+                className="group p-2 sm:p-3 border border-black/15 dark:border-white/15 hover:border-black dark:hover:border-white rounded-lg bg-black/[0.01] hover:bg-black/[0.04] dark:bg-white/[0.01] dark:hover:bg-white/[0.04] transition-all flex flex-col justify-between text-left active:scale-[0.98] cursor-pointer min-w-0"
               >
-                <div className="flex items-center justify-between w-full mb-1.5">
-                  <span className="text-xs font-bold font-mono tracking-tight group-hover:text-rose-500">
+                <div className="flex items-center justify-between w-full mb-1">
+                  <span className="text-[11px] sm:text-xs font-bold font-mono tracking-tight group-hover:text-rose-500 truncate">
                     에어비앤비
                   </span>
-                  <ExternalLink className="w-3 h-3 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white transition-colors" />
+                  <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black/30 dark:text-white/30 group-hover:text-black dark:group-hover:text-white transition-colors shrink-0" />
                 </div>
-                <span className="text-[10px] text-black/50 dark:text-white/50">
-                  현지 감성 독채 및 아파트
+                <span className="text-[9px] sm:text-[10px] text-black/50 dark:text-white/50 line-clamp-1">
+                  현지 감성 독채
                 </span>
               </a>
             </div>
@@ -359,15 +359,8 @@ export function QuickBookingModal({
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] flex items-center justify-between text-[11px] font-mono text-black/50 dark:text-white/50 shrink-0">
-          <span>각 버튼을 누르면 새 탭에서 즉시 실시간 검색 결과가 열립니다.</span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-3.5 py-1.5 bg-black text-white dark:bg-white dark:text-black rounded text-xs font-bold uppercase active:scale-[0.98] transition-transform cursor-pointer"
-          >
-            닫기
-          </button>
+        <div className="px-4 py-2.5 border-t border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] text-center text-[10px] sm:text-[11px] font-mono text-black/50 dark:text-white/50 shrink-0 truncate">
+          각 버튼 클릭 시 새 탭에서 실시간 예약 검색이 열립니다.
         </div>
       </div>
     </div>

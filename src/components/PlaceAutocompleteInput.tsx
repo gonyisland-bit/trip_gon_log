@@ -25,7 +25,7 @@ export function PlaceAutocompleteInput({
   const lastTypedValRef = useRef(value || '');
 
   useEffect(() => {
-    if (!isFocusedRef.current && inputRef.current) {
+    if (inputRef.current && inputRef.current.value !== (value || '')) {
       inputRef.current.value = value || '';
       lastTypedValRef.current = value || '';
     }
@@ -170,11 +170,16 @@ export function PlaceAutocompleteInput({
           defaultValue={value || ''}
           onFocus={handleFocus}
           onChange={(e) => {
-            lastTypedValRef.current = e.target.value;
+            const val = e.target.value;
+            lastTypedValRef.current = val;
+            onChange(val);
           }}
           onCompositionUpdate={(e) => {
             const val = (e.target as HTMLInputElement).value;
-            if (val) lastTypedValRef.current = val;
+            if (val) {
+              lastTypedValRef.current = val;
+              onChange(val);
+            }
           }}
           onCompositionEnd={(e) => {
             const val = (e.target as HTMLInputElement).value;
