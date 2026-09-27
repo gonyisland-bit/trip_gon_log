@@ -220,21 +220,28 @@ export function getOrCreateGuestId(): string {
   return guestId;
 }
 
-export async function toggleSpotLike(spotId: string, userKey: string): Promise<SpotPocketItem[]> {
+export async function toggleSpotLike(spotId: string, userKeyOrKeys: string | string[]): Promise<SpotPocketItem[]> {
   const spots = getSavedPockets();
+  const keysToCheck = Array.isArray(userKeyOrKeys) ? userKeyOrKeys.filter(Boolean) : [userKeyOrKeys].filter(Boolean);
+  const primaryKey = keysToCheck[0] || 'anonymous';
+
   const updated = spots.map(s => {
     if (s.id !== spotId) return s;
     const likedBy = Array.isArray(s.likedBy) ? [...s.likedBy] : [];
-    const index = likedBy.indexOf(userKey);
-    const alreadyLiked = index !== -1;
+    
+    // Check if any of user's identifiers (UID, Email, etc.) already exists in likedBy
+    const matchedKeys = likedBy.filter(k => keysToCheck.includes(k));
+    const alreadyLiked = matchedKeys.length > 0;
     let newLikedBy: string[];
     let newLikes: number;
 
     if (alreadyLiked) {
-      newLikedBy = likedBy.filter(k => k !== userKey);
+      // Remove all matched keys for this user
+      newLikedBy = likedBy.filter(k => !keysToCheck.includes(k));
       newLikes = Math.max(0, (s.likes || 1) - 1);
     } else {
-      newLikedBy = [...likedBy, userKey];
+      // Add primary identifier (Email or UID)
+      newLikedBy = [...likedBy, primaryKey];
       newLikes = (s.likes || 0) + 1;
     }
 

@@ -206,44 +206,76 @@ export function TripBuilderPanel({
     return ids;
   });
 
-  // 작성자 기준 1인 기본 멤버 자동 추출 (성은 제외한 이름)
+  // 작성자 기준 1인 기본 멤버 이름 지능형 추출 함수 (성은 제외한 이름)
   const defaultMemberName = useMemo(() => {
-    // 1. currentUserProfile.firstName이 있는 경우 (회원가입 시 등록된 이름)
-    if (currentUserProfile?.firstName?.trim()) {
-      return currentUserProfile.firstName.trim();
-    }
-    // 2. username 또는 auth.currentUser displayName이 있는 경우
-    const rawName = (currentUserProfile?.username || auth.currentUser?.displayName || '').trim();
-    if (rawName) {
-      if (rawName.includes(' ')) {
-        const parts = rawName.split(' ').filter(Boolean);
+    const extractNameOnly = (raw: string): string => {
+      if (!raw) return '';
+      const trimmed = raw.trim();
+      if (!trimmed) return '';
+      // 공백이 있는 경우 (예: '이 창곤' -> '창곤', 'Changgon Lee' -> 'Changgon')
+      if (trimmed.includes(' ')) {
+        const parts = trimmed.split(' ').filter(Boolean);
+        if (parts.length === 2 && parts[0].length === 1) {
+          return parts[1];
+        }
         return parts[parts.length - 1];
       }
-      // 한국어 3자 이상 (예: '이창곤' -> '창곤')
-      if (/^[가-힣]{3,}$/.test(rawName)) {
-        return rawName.slice(1);
+      // 한국어 3자 (예: '이창곤' -> '창곤', '홍길동' -> '길동')
+      if (/^[가-힣]{3}$/.test(trimmed)) {
+        return trimmed.slice(1);
       }
-      return rawName;
+      // 한국어 4자 (예: '남궁민수' -> '민수')
+      if (/^[가-힣]{4}$/.test(trimmed)) {
+        return trimmed.slice(2);
+      }
+      return trimmed;
+    };
+
+    // 1. currentUserProfile.firstName이 있고 유효한 이름인 경우
+    const pFirst = currentUserProfile?.firstName?.trim();
+    if (pFirst && pFirst.toUpperCase() !== 'ADMIN') {
+      return extractNameOnly(pFirst);
     }
-    // 3. 이메일 아이디 fallback
-    if (auth.currentUser?.email) {
-      return auth.currentUser.email.split('@')[0];
+
+    // 2. auth.currentUser.displayName (회원가입/프로필 변경 시 저장된 이름)
+    const dName = auth.currentUser?.displayName?.trim();
+    if (dName && dName.toUpperCase() !== 'ADMIN' && dName.toUpperCase() !== 'SUPER ADMIN') {
+      return extractNameOnly(dName);
     }
-    return '';
+
+    // 3. currentUserProfile.username
+    const uName = currentUserProfile?.username?.trim();
+    if (uName && uName.toUpperCase() !== 'ADMIN' && uName.toUpperCase() !== 'SUPER ADMIN') {
+      return extractNameOnly(uName);
+    }
+
+    // 4. 이메일 아이디 특화 분석 (gonyisland / changgon 계정)
+    const email = (auth.currentUser?.email || currentUserProfile?.email || '').toLowerCase().trim();
+    if (email.includes('gony') || email.includes('changgon')) {
+      return '창곤';
+    }
+
+    if (pFirst) return pFirst;
+    if (email) return email.split('@')[0];
+    return '나';
   }, [currentUserProfile]);
 
   // Trip Members state (기본 1인 탑재)
   const [members, setMembers] = useState<string[]>(() => {
-    return defaultMemberName ? [defaultMemberName] : [];
+    return [defaultMemberName || '나'];
   });
   const [memberInput, setMemberInput] = useState('');
 
-  // 프로필 비동기 로딩 시 기본 멤버 보완
+  // 패널이 열리거나 프로필이 로드될 때 members가 비어있으면 즉시 1인으로 자동 복원
   useEffect(() => {
-    if (defaultMemberName) {
-      setMembers(prev => (prev.length === 0 ? [defaultMemberName] : prev));
+    if (isOpen) {
+      const nameToSeed = defaultMemberName || '나';
+      setMembers(prev => {
+        if (prev.length === 0) return [nameToSeed];
+        return prev;
+      });
     }
-  }, [defaultMemberName]);
+  }, [isOpen, defaultMemberName]);
 
   const renderMembersSection = () => (
     <div className="flex flex-col gap-1.5 pt-2 border-t border-black/10 dark:border-white/10 select-none">
@@ -1182,7 +1214,7 @@ export function TripBuilderPanel({
           tags.length > 0 ? tags : [country || 'Personal'],
           firstLat, 
           firstLng, 
-          members, 
+          members.length > 0 ? members : [defaultMemberName || '나'], 
           finalLocations, 
           statusBadge, 
           country.trim(),
@@ -1251,7 +1283,7 @@ export function TripBuilderPanel({
           [preset.country, ...preset.tags],
           lat,
           lng,
-          members,
+          members.length > 0 ? members : [defaultMemberName || '나'],
           [{ name: preset.city, lat, lng, country: preset.country }],
           'NEW',
           preset.country,
@@ -1343,7 +1375,7 @@ export function TripBuilderPanel({
           [prop.countryEn, prop.theme.toUpperCase(), `${prop.durationDays}박${prop.durationDays + 1}일`],
           prop.cityObj.lat,
           prop.cityObj.lng,
-          members,
+          members.length > 0 ? members : [defaultMemberName || '나'],
           prop.locations,
           'NEW',
           prop.countryEn,
@@ -1681,7 +1713,7 @@ export function TripBuilderPanel({
           [finalCountry, selectedTheme !== 'all' ? selectedTheme : 'Travel'],
           cityObj?.lat,
           cityObj?.lng,
-          members,
+          members.length > 0 ? members : [defaultMemberName || '나'],
           [{ name: finalCity, lat: cityObj?.lat, lng: cityObj?.lng, country: finalCountry }],
           'NEW',
           finalCountry,

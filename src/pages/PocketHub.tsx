@@ -238,6 +238,18 @@ export function PocketHubPage({
 
   const [visibleCount, setVisibleCount] = useState<number>(40);
   
+  // Collapsed accordion state for categorized groups (Country or City)
+  const [collapsedGroupKeys, setCollapsedGroupKeys] = useState<Set<string>>(new Set());
+
+  const toggleGroupCollapse = (key: string) => {
+    setCollapsedGroupKeys(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+  
   // New or Edit Spot Modal state
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [editingSpot, setEditingSpot] = useState<SpotPocketItem | null>(null);
@@ -408,17 +420,27 @@ export function PocketHubPage({
   const [selectedSpotForModal, setSelectedSpotForModal] = useState<SpotPocketItem | null>(null);
 
   // User/Guest identifier for Likes (Ensures 1 account = 1 like across all devices)
-  const currentUserId = useMemo(() => {
-    if (auth.currentUser?.uid) return auth.currentUser.uid;
-    if (auth.currentUser?.email) return auth.currentUser.email;
-    if (currentUserProfile?.email) return currentUserProfile.email;
+  const currentUserIdentifiers = useMemo(() => {
+    const list: string[] = [];
+    if (auth.currentUser?.email) list.push(auth.currentUser.email.toLowerCase().trim());
+    if (auth.currentUser?.uid) list.push(auth.currentUser.uid);
+    if (currentUserProfile?.email) list.push(currentUserProfile.email.toLowerCase().trim());
+    if (currentUserProfile?.uid) list.push(currentUserProfile.uid);
     const cachedEmail = localStorage.getItem('currentUserEmail') || localStorage.getItem('cached_user_email');
-    if (cachedEmail) return cachedEmail;
-    return getOrCreateGuestId();
+    if (cachedEmail) list.push(cachedEmail.toLowerCase().trim());
+    if (list.length === 0) list.push(getOrCreateGuestId());
+    return Array.from(new Set(list));
   }, [isLoggedIn, currentUserProfile]);
 
+  const currentUserId = currentUserIdentifiers[0] || 'anonymous';
+
+  const isSpotLikedByUser = useCallback((spot?: SpotPocketItem | null): boolean => {
+    if (!spot || !Array.isArray(spot.likedBy) || spot.likedBy.length === 0) return false;
+    return spot.likedBy.some(k => currentUserIdentifiers.includes(k) || currentUserIdentifiers.includes(k.toLowerCase()));
+  }, [currentUserIdentifiers]);
+
   const handleToggleLike = async (spotId: string) => {
-    const updated = await toggleSpotLike(spotId, currentUserId);
+    const updated = await toggleSpotLike(spotId, currentUserIdentifiers);
     setSpots(updated);
     if (selectedSpotForModal && selectedSpotForModal.id === spotId) {
       const updatedItem = updated.find(s => s.id === spotId);
@@ -786,9 +808,45 @@ export function PocketHubPage({
   // Is drag-reorder mode active? (admin + explicit reorder toggle + user sort + no filters)
   const isDragMode = isAdmin && isReorderMode && sortMode === 'user' && activeFilterCount === 0 && !searchQuery.trim();
 
-  // Grouped spots by country (top-level grouping — avoids sub-district fragmentation)
+  // Grouped spots by country or city (with country-clustering priority)
   const groupedSpots = useMemo(() => {
-    const groups: { key: string; label: string; items: SpotPocketItem[] }[] = [];
+    const groups: { key: string; label: string; subBadge?: string; items: SpotPocketItem[] }[] = [];
+
+    if (sortMode === 'city') {
+      // City 정렬: 도시별 그룹으로 나누되, 같은 나라는 City 배열을 순서에 모음 (일본 도시들 -> 한국 도시들 순)
+      const cityMap = new Map<string, { country: string; city: string; items: SpotPocketItem[] }>();
+
+      sortedSpots.forEach(s => {
+        const country = getNormalizedCountry(s.country) || 'OTHER';
+        const city = getNormalizedCity(s) || '기타 지역';
+        const groupKey = `${country}__${city}`;
+
+        if (!cityMap.has(groupKey)) {
+          cityMap.set(groupKey, { country, city, items: [] });
+        }
+        cityMap.get(groupKey)!.items.push(s);
+      });
+
+      // 국가명 기준 오름차순, 동일 국가 내에서는 도시명 기준 정렬
+      const sortedEntries = Array.from(cityMap.entries()).sort((a, b) => {
+        const cComp = a[1].country.localeCompare(b[1].country);
+        if (cComp !== 0) return cComp;
+        return a[1].city.localeCompare(b[1].city);
+      });
+
+      sortedEntries.forEach(([key, val]) => {
+        groups.push({
+          key,
+          label: val.city.toUpperCase(),
+          subBadge: val.country.toUpperCase(),
+          items: val.items
+        });
+      });
+
+      return groups;
+    }
+
+    // Country 정렬 또는 기타 모드: 나라별 그룹
     const record: Record<string, SpotPocketItem[]> = {};
     sortedSpots.forEach(s => {
       const country = getNormalizedCountry(s.country) || 'UNCATEGORIZED';
@@ -797,7 +855,7 @@ export function PocketHubPage({
     });
     Object.entries(record).forEach(([key, items]) => groups.push({ key, label: key.toUpperCase(), items }));
     return groups;
-  }, [sortedSpots]);
+  }, [sortedSpots, sortMode]);
 
   // Sort labels
   const SORT_LABELS: Record<SortMode, string> = {
@@ -1463,7 +1521,7 @@ export function PocketHubPage({
                 const isDimmed = hasAnySelected && !isSelected;
                 const isDraggingThis = draggingSpotId === spot.id;
                 const isDragOver = dragOverSpotId === spot.id;
-                const isLiked = Array.isArray(spot.likedBy) && spot.likedBy.includes(currentUserId);
+                const isLiked = isSpotLikedByUser(spot);
 
                 return (
                   <div
@@ -1662,21 +1720,42 @@ export function PocketHubPage({
                 <>
                   {/* Grouped sections by country — Always maintains consistent structure in both normal and reorder mode */}
                   <div className="space-y-10">
-                    {groupedSpots.map(group => (
-                      <div key={group.key}>
-                        {/* Section header */}
-                        <div className="flex items-center gap-3 mb-4">
-                          <span className="text-[11px] font-mono font-black tracking-widest uppercase text-black dark:text-white">
-                            {group.label}
-                          </span>
-                          <span className="text-[10px] font-mono text-black/40 dark:text-white/40">{group.items.length}</span>
-                          <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
+                    {groupedSpots.map(group => {
+                      const isCollapsed = collapsedGroupKeys.has(group.key);
+                      return (
+                        <div key={group.key} className="transition-all">
+                          {/* Section header (Accordion Toggle) */}
+                          <div
+                            onClick={() => toggleGroupCollapse(group.key)}
+                            className="flex items-center gap-2.5 mb-4 cursor-pointer select-none group"
+                            title={isCollapsed ? "섹션 펼치기" : "섹션 접기"}
+                          >
+                            {group.subBadge && (
+                              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-xs bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/60 border border-black/10 dark:border-white/10">
+                                {group.subBadge}
+                              </span>
+                            )}
+                            <span className="text-[11px] font-mono font-black tracking-widest uppercase text-black dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                              {group.label}
+                            </span>
+                            <span className="text-[10px] font-mono text-black/40 dark:text-white/40">
+                              {group.items.length}
+                            </span>
+                            <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
+                            <span className="text-black/40 dark:text-white/40 group-hover:text-black dark:group-hover:text-white p-0.5 transition-transform duration-200">
+                              {isCollapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+                            </span>
+                          </div>
+
+                          {/* Card Grid (Collapsible) */}
+                          {!isCollapsed && (
+                            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3.5 sm:gap-5 md:gap-6 animate-in fade-in duration-150">
+                              {group.items.slice(0, visibleCount).map((spot, idx) => renderCard(spot, idx))}
+                            </div>
+                          )}
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3.5 sm:gap-5 md:gap-6">
-                          {group.items.slice(0, visibleCount).map((spot, idx) => renderCard(spot, idx))}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {/* Selection Mode Floating Action Bar */}
@@ -2187,7 +2266,7 @@ export function PocketHubPage({
         onUseInTrip={(spot) => setSpotToUseInTrip(spot)}
         onEdit={(spot) => handleOpenEditSpot(spot)}
         onDelete={(spot) => setSpotToDelete(spot)}
-        isLiked={Boolean(selectedSpotForModal && Array.isArray(selectedSpotForModal.likedBy) && selectedSpotForModal.likedBy.includes(currentUserId))}
+        isLiked={isSpotLikedByUser(selectedSpotForModal)}
         isAdmin={isAdmin}
         onSaveComments={handleSaveSpotComments}
         isLoggedIn={isLoggedIn}
