@@ -2266,9 +2266,14 @@ function App() {
 
     // Calculate front-most display order
     // 신규 여정은 무조건 맨 앞(인덱스 0)에 위치하며, 기존 여정들은 뒤로 차례대로 순차 정렬
+    const allCurrentIds = [...trips, ...plans].map(j => j.id);
     const saved = localStorage.getItem('journey_order');
     const existingOrder: number[] = saved ? JSON.parse(saved) : [];
-    const updatedOrder = [newId, ...existingOrder.filter(id => id !== newId)];
+    const existingCombined = [
+      ...existingOrder.filter(id => allCurrentIds.includes(id)),
+      ...allCurrentIds.filter(id => !existingOrder.includes(id))
+    ];
+    const updatedOrder = [newId, ...existingCombined.filter(id => id !== newId)];
     try {
       localStorage.setItem('journey_order', JSON.stringify(updatedOrder));
     } catch (_) {}
@@ -2429,12 +2434,13 @@ function App() {
 
       // Clear creator & builder states
       setMapBuilderRequested(false);
+      setIsMapBuilderActive(false);
       setCreateCountryInitial('');
       setCreateCityInitial('');
       setCreateDateInitial('');
 
-      // Navigate to detail page
-      navigateTo('detail', newId);
+      // Navigate to detail page (force = true prevents leave builder confirm modal)
+      navigateTo('detail', newId, true, null, true);
 
       // Background geocoding
       fetchCoordinates(location).then(async (coords) => {
@@ -3248,6 +3254,7 @@ function App() {
                     initialBuilderCity={createCityInitial}
                     initialBuilderDate={createDateInitial}
                     onBuilderStateChange={setIsMapBuilderActive}
+                    currentUserProfile={currentUserProfile}
                   />
                 </div>
               )}

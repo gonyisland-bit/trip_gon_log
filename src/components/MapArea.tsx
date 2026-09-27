@@ -648,8 +648,24 @@ export function MapArea({
       setMapReady(false);
     }
 
-    const defaultLat = typeof trip.lat === 'number' && !isNaN(trip.lat) ? trip.lat : 35.0116;
-    const defaultLng = typeof trip.lng === 'number' && !isNaN(trip.lng) ? trip.lng : 135.7681;
+    // Restore preserved user view from sessionStorage if available
+    let initialLat = typeof trip.lat === 'number' && !isNaN(trip.lat) ? trip.lat : 35.0116;
+    let initialLng = typeof trip.lng === 'number' && !isNaN(trip.lng) ? trip.lng : 135.7681;
+    let initialZoom = 13;
+
+    try {
+      const savedViewRaw = sessionStorage.getItem(`trip_map_view_${trip.id}`);
+      if (savedViewRaw) {
+        const parsed = JSON.parse(savedViewRaw);
+        if (typeof parsed.lat === 'number' && typeof parsed.lng === 'number' && typeof parsed.zoom === 'number') {
+          initialLat = parsed.lat;
+          initialLng = parsed.lng;
+          initialZoom = parsed.zoom;
+          userMovedMapRef.current = true;
+          hasFitRef.current = true;
+        }
+      }
+    } catch (_) {}
 
     const map = L.map(containerRef.current, {
       zoomControl: false,       // we render custom controls
@@ -658,7 +674,7 @@ export function MapArea({
       dragging: true,           // enabled by default (unlocked)
       touchZoom: true,          // enabled by default (unlocked)
       doubleClickZoom: true,    // enabled by default (unlocked)
-    }).setView([defaultLat, defaultLng], 13);
+    }).setView([initialLat, initialLng], initialZoom);
 
     mapRef.current = map;
 
@@ -678,11 +694,19 @@ export function MapArea({
       userMovedMapRef.current = true;
     });
 
-    map.on('moveend', () => {
+    map.on('moveend zoomend', () => {
       try {
         const center = map.getCenter();
+        const zoom = map.getZoom();
         lastMapCenterRef.current = { lat: center.lat, lng: center.lng };
-        lastMapZoomRef.current = map.getZoom();
+        lastMapZoomRef.current = zoom;
+        if (userMovedMapRef.current) {
+          sessionStorage.setItem(`trip_map_view_${trip.id}`, JSON.stringify({
+            lat: center.lat,
+            lng: center.lng,
+            zoom
+          }));
+        }
       } catch (_) {}
     });
 
@@ -1189,6 +1213,7 @@ export function MapArea({
       const explicitNavigation = tabChanged || dateChanged;
       if (explicitNavigation) {
         userMovedMapRef.current = false;
+        try { sessionStorage.removeItem(`trip_map_view_${trip.id}`); } catch (_) {}
       }
 
       const shouldFitAll = explicitNavigation || (!userMovedMapRef.current && (!isInteractive || !hasFitRef.current || isGalleryTab || (itemIdChanged && expandedItemId === null)));

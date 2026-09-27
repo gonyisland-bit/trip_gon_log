@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { Search, X, ArrowRight, Calendar, Star, Plus, Tag, MapPin, Bookmark, Home as HomeIcon, List, Clock, LocateFixed, Plane, Sun, Moon, Droplets, ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Trip, Plan } from '../types';
+import { Trip, Plan, UserProfile } from '../types';
 import { getEffectiveImageUrl } from '../utils/storageHelper';
 import { cleanAdministrativeDistricts } from '../components/SummaryView';
 import { TripBuilderPanel } from '../components/TripBuilderPanel';
@@ -1570,6 +1570,7 @@ interface MapHubPageProps {
   initialBuilderCity?: string;
   initialBuilderDate?: string;
   onBuilderStateChange?: (isOpen: boolean) => void;
+  currentUserProfile?: UserProfile | null;
 }
 
 export function MapHubPage({
@@ -1585,6 +1586,7 @@ export function MapHubPage({
   initialBuilderCity = '',
   initialBuilderDate = '',
   onBuilderStateChange,
+  currentUserProfile,
 }: MapHubPageProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -4811,6 +4813,7 @@ export function MapHubPage({
             initialCities={builderCities}
             initialStartDate={builderDate}
             isAdmin={isAdmin}
+            currentUserProfile={currentUserProfile}
             onFocusLocationChange={handleBuilderFocusChange}
           />
         </div>

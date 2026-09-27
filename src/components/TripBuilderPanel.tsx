@@ -50,12 +50,14 @@ import {
   convertProposalToPreset
 } from '../utils/tripRecommender';
 import { getSavedPockets } from '../utils/pocketStorage';
-import { SpotPocketItem } from '../types';
+import { SpotPocketItem, UserProfile } from '../types';
+import { auth } from '../firebase';
 
 export interface TripBuilderPanelProps {
   isOpen: boolean;
   onClose: () => void;
   isAdmin?: boolean;
+  currentUserProfile?: UserProfile | null;
   initialCountry?: string;
   initialCountryCode?: string;
   initialCity?: string;
@@ -163,6 +165,7 @@ export function TripBuilderPanel({
   existingTags = [],
   onCreate,
   onFocusLocationChange,
+  currentUserProfile,
 }: TripBuilderPanelProps) {
   // Tabs: CURATOR | TEMPLATES | CUSTOM
   const [panelTab, setPanelTab] = useState<'curator' | 'templates' | 'custom'>('curator');
@@ -203,9 +206,44 @@ export function TripBuilderPanel({
     return ids;
   });
 
-  // Trip Members state
-  const [members, setMembers] = useState<string[]>([]);
+  // 작성자 기준 1인 기본 멤버 자동 추출 (성은 제외한 이름)
+  const defaultMemberName = useMemo(() => {
+    // 1. currentUserProfile.firstName이 있는 경우 (회원가입 시 등록된 이름)
+    if (currentUserProfile?.firstName?.trim()) {
+      return currentUserProfile.firstName.trim();
+    }
+    // 2. username 또는 auth.currentUser displayName이 있는 경우
+    const rawName = (currentUserProfile?.username || auth.currentUser?.displayName || '').trim();
+    if (rawName) {
+      if (rawName.includes(' ')) {
+        const parts = rawName.split(' ').filter(Boolean);
+        return parts[parts.length - 1];
+      }
+      // 한국어 3자 이상 (예: '이창곤' -> '창곤')
+      if (/^[가-힣]{3,}$/.test(rawName)) {
+        return rawName.slice(1);
+      }
+      return rawName;
+    }
+    // 3. 이메일 아이디 fallback
+    if (auth.currentUser?.email) {
+      return auth.currentUser.email.split('@')[0];
+    }
+    return '';
+  }, [currentUserProfile]);
+
+  // Trip Members state (기본 1인 탑재)
+  const [members, setMembers] = useState<string[]>(() => {
+    return defaultMemberName ? [defaultMemberName] : [];
+  });
   const [memberInput, setMemberInput] = useState('');
+
+  // 프로필 비동기 로딩 시 기본 멤버 보완
+  useEffect(() => {
+    if (defaultMemberName) {
+      setMembers(prev => (prev.length === 0 ? [defaultMemberName] : prev));
+    }
+  }, [defaultMemberName]);
 
   const renderMembersSection = () => (
     <div className="flex flex-col gap-1.5 pt-2 border-t border-black/10 dark:border-white/10 select-none">

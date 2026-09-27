@@ -26,22 +26,33 @@ export function sortJourneysByOrder<T extends { id: number; displayOrder?: numbe
   if (order && Array.isArray(order) && order.length > 0) {
     const idMap = new Map<number, number>(order.map((id, idx) => [id, idx]));
     return [...items].sort((a, b) => {
-      const hasA = idMap.has(a.id);
-      const hasB = idMap.has(b.id);
+      const idxA = idMap.has(a.id) ? idMap.get(a.id)! : -1;
+      const idxB = idMap.has(b.id) ? idMap.get(b.id)! : -1;
 
-      // 둘 다 저장된 순서가 있는 경우
-      if (hasA && hasB) {
-        return idMap.get(a.id)! - idMap.get(b.id)!;
+      // 0순위 항목은 어떤 경우에도 무조건 최상단(맨 앞)에 배치
+      if (idxA === 0) return -1;
+      if (idxB === 0) return 1;
+
+      // 둘 다 저장된 순서가 있는 경우: order 인덱스 오름차순 (0, 1, 2...)
+      if (idxA !== -1 && idxB !== -1) {
+        return idxA - idxB;
       }
-      // a만 신규(저장 순서에 없음) -> a가 최우선(맨 앞)
-      if (!hasA && hasB) {
+
+      // a만 order에 있는 경우: order 항목이 미등록 항목보다 우선
+      if (idxA !== -1 && idxB === -1) {
         return -1;
       }
-      // b만 신규 -> b가 최우선(맨 앞)
-      if (hasA && !hasB) {
+      // b만 order에 있는 경우: b가 우선
+      if (idxA === -1 && idxB !== -1) {
         return 1;
       }
-      // 둘 다 신규인 경우: id(타임스탬프) 최신순 (내림차순)
+
+      // 둘 다 order에 없는 경우: displayOrder 비교 후 생성 시각(id) 최신순
+      const orderA = a.displayOrder !== undefined ? a.displayOrder : 999999;
+      const orderB = b.displayOrder !== undefined ? b.displayOrder : 999999;
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
       return b.id - a.id;
     });
   }
